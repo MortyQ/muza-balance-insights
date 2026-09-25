@@ -4,7 +4,7 @@ Desktop app that shows where your money goes, from your Monobank statement — o
 
 > **Unofficial app, not affiliated with Monobank.** Неофициальное приложение, не связано с Monobank.
 
-**Status:** early development, first release `0.1.0` in preparation. macOS, Windows, Linux.
+**Status:** early development (`0.1.x`, pre-release). macOS, Windows, Linux.
 
 ## Install
 

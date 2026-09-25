@@ -8,6 +8,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Ver
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-09-25
+
+### Added
+
+- First start: choose your bank (Monobank; more banks marked «coming soon»), then paste the token.
+- Settings screen: connected bank (replace the token, disconnect — data stays), «Delete all data», about.
+  Opens from the gear on the home screen or with Cmd+, / Ctrl+, (menu «Настройки…»); Esc goes back.
+- With data but no token the home screen stays and shows a «connect your bank» notice.
+
+### Changed
+
+- Home screen shows only spending, balances and import; the token and data cards moved to settings.
+- Internal: the interface code is split into layers with automatic checks of their boundaries.
+
 ## [0.1.0] — 2026-09-25
 
 First release. Installers: macOS (Apple Silicon, Intel), Windows x64, Linux x64 AppImage — not signed, see [INSTALL](docs/INSTALL.md).
