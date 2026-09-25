@@ -112,7 +112,8 @@
   Копию пересобирает пользователь (`pnpm --filter @mono/mcp export:analysis`), автоматически — после sync и recategorize.
 - Что в копии: только колонки из whitelist `apps/mcp/src/analysis/schema.ts`. `description` замаскирован
   (`packages/core/src/masking.ts` → `maskDescription` провайдера): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
-  плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`.
+  плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`. У счёта — `participant_id` (число;
+  подпись участника в копию не идёт).
   Новую колонку или шаблон добавлять в whitelist/маскировку только после ок пользователя.
 - Доступ дополнительно ограничен `permissions.deny` и sandbox в `.claude/settings.json`.
   Не пытаться обойти ни то, ни другое.
@@ -162,6 +163,12 @@
   (проверено на истории с 01.01; серия −1345 ₴ покрыта частично, принята как есть).
 - Комиссия: строка с `commission_rate > 0` в агрегатах делится на тело (`amount + commission_rate`)
   и комиссию → «комиссии банка». У internal-строки тело исключается, комиссия остаётся тратой.
+- **Переводы внутри семьи** (`transfer_rule = 'family'`): пара (`pair` / `pair_fx` / `pair_fee`) или совпадение `iban`
+  между счетами **разных участников**. `is_internal_transfer = 0`; категория — «семье» у отправителя и «поступления» у
+  получателя (раньше оверрайдов, как internal); не возврат. Итоги (`spendingSummary`, `comparePeriods`, `incomeSummary`):
+  без `participantId` — вся семья, `family` исключается как internal (комиссия остаётся тратой); с `participantId` —
+  только счета участника, `family` — трата «семье» / доход с источником `family`. С одним участником `family` не
+  возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
   в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).

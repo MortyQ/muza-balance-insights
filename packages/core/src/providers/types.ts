@@ -30,7 +30,7 @@ export type CategoryHint = 'installments' | 'taxes' | 'income' | 'p2p';
  * other_bank = incoming transfer from another bank, named_sender = a named sender (people and FOP clients alike),
  * transfer = other incoming transfers, other = anything else in «поступления».
  */
-export type IncomeSource = 'other_bank' | 'named_sender' | 'transfer' | 'other';
+export type ProviderIncomeSource = 'other_bank' | 'named_sender' | 'transfer' | 'other';
 
 export const JAR_PLACEHOLDER = '[jar]';
 export const OTHER_PLACEHOLDER = '[other]';
@@ -69,7 +69,7 @@ export interface ProviderRules {
   isBusinessAccount(account: { type: string | null }): boolean;
   /** Category from the shape of the operation, before the MCC table; null = no opinion. */
   categoryHint(tx: RuleTx): CategoryHint | null;
-  incomeSource(tx: RuleTx): IncomeSource;
+  incomeSource(tx: RuleTx): ProviderIncomeSource;
   /** A named incoming transfer split into the bank's label and the sender's name («Від: Name» → «Від:», «Name»), or null. */
   namedSender(description: string): { label: string; name: string } | null;
   /** A transfer whose description is a person's name (not a bank template, not the treasury). */

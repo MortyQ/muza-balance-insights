@@ -249,7 +249,7 @@ function upsertStatement(
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
-    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false, provider },
+    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false, isFamilyTransfer: false, provider },
     overrides,
   );
   // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).

@@ -19,6 +19,7 @@ export type RefundTx = {
   amount: number;
   mcc: number;
   description: string;
+  /** An own (internal) or family transfer: never a purchase or a refund. */
   isInternal: boolean;
   /** Whose rules apply (the account's connection's provider). */
   provider: ProviderId;
@@ -56,7 +57,7 @@ function cmp(a: string, b: string): number {
 
 type StoredRow = RefundTx & { isCancelled: boolean; pairId: string | null };
 
-const COLUMNS = 'id, account_id, time, amount, mcc, description, is_internal_transfer, is_cancelled, refund_pair_id';
+const COLUMNS = 'id, account_id, time, amount, mcc, description, is_internal_transfer, transfer_rule, is_cancelled, refund_pair_id';
 
 /**
  * Recomputes refund pairs: all rows, or rows within [from − W, to + W] of a synced window plus their
@@ -111,7 +112,8 @@ async function load(db: Db, sql: string, args: Array<string | number>): Promise<
     amount: Number(r.amount),
     mcc: Number(r.mcc),
     description: String(r.description ?? ''),
-    isInternal: Number(r.is_internal_transfer) === 1,
+    // A family transfer is not a refund either.
+    isInternal: Number(r.is_internal_transfer) === 1 || r.transfer_rule === 'family',
     isCancelled: Number(r.is_cancelled) === 1,
     pairId: r.refund_pair_id === null ? null : String(r.refund_pair_id),
   }));

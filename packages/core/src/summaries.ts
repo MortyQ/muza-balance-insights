@@ -8,7 +8,7 @@ import { currencyAlpha } from './currency.ts';
 import { accountLabels, kyivStartOfDay, parseLocalDate, toKyivDate } from './format.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
-import type { IncomeSource, ProviderId } from './providers/types.ts';
+import type { ProviderId, ProviderIncomeSource } from './providers/types.ts';
 import { isScope, type Scope } from './scope.ts';
 
 export class SummaryError extends Error {
@@ -91,13 +91,30 @@ function perDay(amount: number, info: PeriodInfo): number | null {
   return info.coveredDays > 0 ? Math.round(amount / info.coveredDays) : null;
 }
 
-type Filters = { scope?: Scope; accountId?: string };
+/**
+ * participantId: the view of one participant — only their accounts, and a family transfer counts (spending of the
+ * sender, income of the receiver). Absent: the whole family — family transfers are excluded like internal ones.
+ */
+type Filters = { scope?: Scope; accountId?: string; participantId?: number };
+
+/** WHERE parts for the participant filter (rows of t). */
+function participantWhere(f: Filters, where: string[], args: Array<string | number>): void {
+  if (f.participantId === undefined) return;
+  where.push('t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE pc.participant_id = ?)');
+  args.push(f.participantId);
+}
+
+/** SQL: this row is not spending / income in the view — internal always, family only for the whole family. */
+// COALESCE: transfer_rule is NULL for most rows, and «0 OR NULL» is NULL, not 0.
+const excludedTransferSql = (f: Filters) =>
+  f.participantId === undefined ? `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')` : '(t.is_internal_transfer = 1)';
 
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
 type SpendingFilters = Filters & { operationCurrency?: number };
 
 function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
+  if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
 }
 
 async function labelsById(db: Db): Promise<Map<string, string>> {
@@ -172,9 +189,10 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
  * Spending for local_date in [from, to]:
  * - a row with commission_rate > 0 (amount < 0) is split: body = amount + commission keeps its category,
  *   the commission is a separate «комиссии банка» line;
- * - internal transfers: the body is excluded, the commission stays spending;
+ * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays
+ *   spending;
  * - refunds are positive lines in a spending category; «поступления» and «свои переводы» are excluded.
- * Filters: scope, accountId, category (applies to lines, so «комиссии банка» works too).
+ * Filters: scope, accountId, participantId, category (applies to lines, so «комиссии банка» works too).
  */
 export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number): Promise<SpendingSummary> {
   const groupBy = q.groupBy ?? 'category';
@@ -187,6 +205,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
+  participantWhere(q, where, args);
   const outer = ['category NOT IN (?, ?)', 'amount <> 0'];
   const outerArgs: string[] = [CATEGORY.income, CATEGORY.ownTransfers];
   if (q.category) (outer.push('category = ?'), outerArgs.push(q.category));
@@ -194,7 +213,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   const rs = await db.execute({
     sql: `WITH base AS (
             SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.category,
-                   t.is_internal_transfer AS internal, t.amount, t.currency_code AS op_currency,
+                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
             FROM transactions t JOIN accounts a ON a.id = t.account_id
@@ -249,6 +268,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
       ...(q.scope ? { scope: q.scope } : {}),
       ...(q.accountId ? { accountId: q.accountId } : {}),
       ...(q.operationCurrency !== undefined ? { operationCurrency: q.operationCurrency } : {}),
+      ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
       ...(q.category ? { category: q.category } : {}),
     },
     groups,
@@ -321,7 +341,10 @@ export async function comparePeriods(
   q: { a: Period; b: Period; groupBy?: SpendingGroupBy; category?: string } & SpendingFilters,
   nowSec: number,
 ): Promise<PeriodComparison> {
-  const common = { groupBy: q.groupBy, category: q.category, scope: q.scope, accountId: q.accountId, operationCurrency: q.operationCurrency };
+  const common = {
+    groupBy: q.groupBy, category: q.category, scope: q.scope, accountId: q.accountId, operationCurrency: q.operationCurrency,
+    participantId: q.participantId,
+  };
   const [sa, sb] = [await spendingSummary(db, { ...q.a, ...common }, nowSec), await spendingSummary(db, { ...q.b, ...common }, nowSec)];
 
   const rows = new Map<string, CompareRow>();
@@ -353,10 +376,11 @@ export async function comparePeriods(
 export const INCOME_GROUP_BY = ['source', 'month', 'account', 'scope'] as const;
 export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number];
 
-export type { IncomeSource } from './providers/types.ts';
+/** The provider's sources, plus `family`: money from another participant (participant view only). */
+export type IncomeSource = ProviderIncomeSource | 'family';
 
 /** Where a credit came from, by the shape of the operation (never by name) — the provider's rule. */
-export function incomeSource(mcc: number, description: string, provider: ProviderId): IncomeSource {
+export function incomeSource(mcc: number, description: string, provider: ProviderId): ProviderIncomeSource {
   // Income rows are credits: the amount only says so.
   return rulesFor(provider).incomeSource({ mcc, description, amount: 1 });
 }
@@ -373,6 +397,7 @@ export type IncomeSummary = {
 /**
  * Income = non-internal rows in «поступления» for local_date in [from, to]. Refunds are not income
  * (they sit in the purchase's category), internal transfers neither. Cashback is not included.
+ * A family transfer is income of the receiver (source `family`) in a participant's view, and not income of the family.
  */
 export async function incomeSummary(
   db: Db,
@@ -384,12 +409,13 @@ export async function incomeSummary(
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', 't.is_internal_transfer = 0', 't.category = ?', 't.local_date BETWEEN ? AND ?'];
+  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, 't.category = ?', 't.local_date BETWEEN ? AND ?'];
   const args: Array<string | number> = [CATEGORY.income, q.from, q.to];
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
+  participantWhere(q, where, args);
   const rs = await db.execute({
-    sql: `SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount
+    sql: `SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount, t.transfer_rule
           FROM transactions t JOIN accounts a ON a.id = t.account_id
           WHERE ${where.join(' AND ')}`,
     args,
@@ -400,7 +426,10 @@ export async function incomeSummary(
   const groups = new Map<string, IncomeGroup>();
   for (const r of rs.rows) {
     const key =
-      groupBy === 'source' ? incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
+      groupBy === 'source'
+        ? r.transfer_rule === 'family'
+          ? ('family' satisfies IncomeSource)
+          : incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
       : groupBy === 'month' ? String(r.local_date).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)
       : String(r.scope);
@@ -425,7 +454,11 @@ export async function incomeSummary(
   return {
     period,
     groupBy,
-    filters: { ...(q.scope ? { scope: q.scope } : {}), ...(q.accountId ? { accountId: q.accountId } : {}) },
+    filters: {
+      ...(q.scope ? { scope: q.scope } : {}),
+      ...(q.accountId ? { accountId: q.accountId } : {}),
+      ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
+    },
     groups: list,
     totals: [...totals.values()].sort((a, b) => a.currency - b.currency).map((t) => ({ ...t, totalPerDay: perDay(t.total, period) })),
   };

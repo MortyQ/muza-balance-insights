@@ -33,6 +33,7 @@ export const CATEGORY = {
   charity: 'благотворительность',
   fees: 'комиссии банка', // never assigned to a row: the commission part of a row, split in aggregates
   p2p: 'переводы людям',
+  family: 'семье', // a transfer to another participant (transfer_rule family), the sender's side
   installments: 'рассрочки и кредиты',
   ownTransfers: 'свои переводы',
   income: 'поступления',
@@ -117,12 +118,16 @@ export type CategorizeInput = {
   amount: number;
   counterName: string | null;
   isInternalTransfer: boolean;
+  /** transfer_rule = family: money between two participants. */
+  isFamilyTransfer: boolean;
   /** Whose rules apply (the account's connection's provider). */
   provider: ProviderId;
 };
 
 export function categorize(tx: CategorizeInput, overrides: readonly CategoryOverride[] = []): string {
   if (tx.isInternalTransfer) return CATEGORY.ownTransfers;
+  // Before overrides, like internal: what it is structurally, not whom it went to.
+  if (tx.isFamilyTransfer) return tx.amount < 0 ? CATEGORY.family : CATEGORY.income;
 
   const override = matchOverride(tx.counterName, overrides);
   if (override) return override.category;
@@ -167,7 +172,7 @@ export async function loadOverrides(db: Db): Promise<CategoryOverride[]> {
  */
 export async function recategorize(db: Db, range?: TimeRange | null): Promise<number> {
   const [overrides, providers] = await Promise.all([loadOverrides(db), accountProviders(db)]);
-  const cols = 'id, account_id, description, mcc, amount, counter_name, is_internal_transfer, category, refund_pair_id';
+  const cols = 'id, account_id, description, mcc, amount, counter_name, is_internal_transfer, transfer_rule, category, refund_pair_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM transactions WHERE time BETWEEN ? AND ?`, args: [range.from, range.to] })
     : await db.execute(`SELECT ${cols} FROM transactions`);
@@ -183,6 +188,7 @@ export async function recategorize(db: Db, range?: TimeRange | null): Promise<nu
           amount: Number(r.amount),
           counterName: r.counter_name === null ? null : String(r.counter_name),
           isInternalTransfer: Number(r.is_internal_transfer) === 1,
+          isFamilyTransfer: r.transfer_rule === 'family',
           provider: providerOf(providers, String(r.account_id)),
         },
         overrides,

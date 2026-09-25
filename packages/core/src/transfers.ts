@@ -7,6 +7,8 @@
 //   jar_reversal an auto top-up rolled back inside the same jar
 //   iban         counter_iban is one of the user's own IBANs (single row)
 //   text         bank-generated own-transfer description, no pair found (single row)
+// A pair or an iban match between accounts of DIFFERENT participants is `family`: not internal (it is spending of the
+// sender and income of the receiver when one person is viewed), excluded only when the whole family is viewed.
 // Thresholds come from real data (phase 3 report): all mirrors within 0–14 s. What a transfer, an own-transfer text
 // or an auto top-up looks like is the provider's (providers/<id>/rules.ts), per account.
 import type { Db, Stmt } from './db.ts';
@@ -17,7 +19,7 @@ import type { ProviderId, ProviderRules } from './providers/types.ts';
 /** Max |Δt| between the two halves of a pair, seconds. */
 export const TRANSFER_WINDOW_SEC = 20;
 
-export type TransferRule = 'pair' | 'pair_fx' | 'pair_fee' | 'jar_reversal' | 'iban' | 'text';
+export type TransferRule = 'pair' | 'pair_fx' | 'pair_fee' | 'jar_reversal' | 'iban' | 'text' | 'family';
 
 export type TransferTx = {
   id: string;
@@ -40,6 +42,8 @@ export type TransferAccount = {
   title: string | null;
   /** Whose rules apply to this account's rows (its connection's provider). */
   provider: ProviderId;
+  /** Whose account it is (its connection's participant): transfers between two participants are `family`. */
+  participantId: number;
 };
 
 export type TransferMark = { rule: TransferRule; pairId: string | null };
@@ -55,7 +59,13 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
   const providers = new Map(accounts.map((a) => [a.id, a.provider]));
   const rulesOf = (tx: TransferTx): ProviderRules => rulesFor(providerOf(providers, tx.accountId));
   const transferLike = (tx: TransferTx) => rulesOf(tx).isTransferLike(tx);
-  const ownIbans = new Set(accounts.map((a) => normalizeIban(a.iban)).filter((i): i is string => i !== null));
+  const participantOf = (tx: TransferTx) => acc.get(tx.accountId)?.participantId;
+  // IBAN → its owner (participant).
+  const ownIbans = new Map<string, number>();
+  for (const a of accounts) {
+    const iban = normalizeIban(a.iban);
+    if (iban !== null) ownIbans.set(iban, a.participantId);
+  }
   const jarTitles = new Set(
     accounts.filter((a) => a.kind === 'jar' && a.title).map((a) => (a.title as string).trim()),
   );
@@ -80,8 +90,9 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
     edges.sort((x, y) => x.dt - y.dt || cmp(x.a.id, y.a.id) || cmp(x.b.id, y.b.id));
     for (const e of edges) {
       if (marks.has(e.a.id) || marks.has(e.b.id)) continue;
-      marks.set(e.a.id, { rule, pairId: e.b.id });
-      marks.set(e.b.id, { rule, pairId: e.a.id });
+      const r: TransferRule = participantOf(e.a) === participantOf(e.b) ? rule : 'family';
+      marks.set(e.a.id, { rule: r, pairId: e.b.id });
+      marks.set(e.b.id, { rule: r, pairId: e.a.id });
     }
   };
 
@@ -133,8 +144,9 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
   for (const r of sorted) {
     if (marks.has(r.id)) continue;
     const iban = normalizeIban(r.counterIban);
-    if (iban !== null && ownIbans.has(iban)) {
-      marks.set(r.id, { rule: 'iban', pairId: null });
+    const owner = iban === null ? undefined : ownIbans.get(iban);
+    if (owner !== undefined) {
+      marks.set(r.id, { rule: owner === participantOf(r) ? 'iban' : 'family', pairId: null });
     } else if (rulesOf(r).isOwnTransferText(r, ctx)) {
       marks.set(r.id, { rule: 'text', pairId: null });
     }
@@ -211,7 +223,8 @@ export async function markInternalTransfers(db: Db, range?: TimeRange): Promise<
   const stmts: Stmt[] = [];
   for (const r of candidates) {
     const m = r.isCancelled ? undefined : marks.get(r.id);
-    const next = { internal: m !== undefined, pairId: m?.pairId ?? null, rule: m?.rule ?? null };
+    // family is marked (rule + pair) but not internal.
+    const next = { internal: m !== undefined && m.rule !== 'family', pairId: m?.pairId ?? null, rule: m?.rule ?? null };
     if (next.internal === r.isInternal && next.pairId === r.pairId && next.rule === r.rule) continue;
     stmts.push({
       sql: `UPDATE transactions SET is_internal_transfer = ?, transfer_pair_id = ?, transfer_rule = ? WHERE id = ?`,
@@ -225,10 +238,13 @@ export async function markInternalTransfers(db: Db, range?: TimeRange): Promise<
 }
 
 async function loadAccounts(db: Db): Promise<TransferAccount[]> {
-  const rs = await db.execute('SELECT id, kind, currency_code, iban, title FROM accounts');
+  const rs = await db.execute(
+    'SELECT a.id, a.kind, a.currency_code, a.iban, a.title, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id',
+  );
   const providers = await accountProviders(db);
   return rs.rows.map((r) => ({
     provider: providerOf(providers, String(r.id)),
+    participantId: Number(r.participant_id),
     id: String(r.id),
     kind: r.kind === 'jar' ? 'jar' : 'card',
     currencyCode: Number(r.currency_code),

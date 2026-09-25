@@ -7,8 +7,11 @@ import { spendingSummary } from './summaries.ts';
 import type { TransferRule } from './transfers.ts';
 
 export type TransferDiagnostics = {
-  /** Non-cancelled rows per transfer_rule; 'none' = not an internal transfer. */
-  byRule: Record<TransferRule | 'none', number>;
+  /**
+   * Non-cancelled rows per transfer_rule; 'none' = not an internal transfer. `family` only when there are such rows
+   * (one participant: the recategorize report stays as it was).
+   */
+  byRule: Record<Exclude<TransferRule, 'family'> | 'none', number> & { family?: number };
   /**
    * Transfer rows with a bank-generated own-transfer description (Monobank: MCC 4829, incl. «Переказ на картку»)
    * but no pair.

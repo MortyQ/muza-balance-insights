@@ -140,7 +140,7 @@ export async function memoryDb(): Promise<Db> {
  */
 export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
   // The test's accounts belong to the one Monobank connection unless the row says otherwise.
-  const full: Record<string, SqlArg> = { connection_id: await testConnection(db), ...row };
+  const full: Record<string, SqlArg> = 'connection_id' in row ? { ...row } : { connection_id: await testConnection(db), ...row };
   const cols = Object.keys(full);
   await db.execute({
     sql: `INSERT INTO accounts (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,

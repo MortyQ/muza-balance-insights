@@ -15,12 +15,12 @@ import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } fr
 
 const JAR_TITLE = 'На мрію';
 const ACCOUNTS: TransferAccount[] = [
-  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null, provider: 'monobank' },
-  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null, provider: 'monobank' },
-  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null, provider: 'monobank' },
-  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null, provider: 'monobank' },
-  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null, provider: 'monobank' },
-  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE, provider: 'monobank' },
+  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE, provider: 'monobank', participantId: 1 },
 ];
 
 function tx(id: string, accountId: string, time: number, amount: number, extra: Partial<TransferTx> = {}): TransferTx {
