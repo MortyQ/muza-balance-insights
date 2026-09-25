@@ -25,12 +25,24 @@
 
 - pnpm 12.6.0 установлен глобально через npm (`packageManager` в корневом `package.json`), Corepack не используется.
   Node — `.nvmrc` (22).
-- `packages/core` (`@mono/core`) — платформенно-независимое ядро: клиент API, sync, категории, переводы, возвраты,
+- `packages/core` (`@mono/core`) — платформенно-независимое ядро: провайдеры банков (сейчас Monobank), sync, категории, переводы, возвраты,
   scope, агрегаты, миграции и интерфейс `Db`. Без Node, браузера и глобалов: `fetch`, часы, логгер, id передаются
   снаружи (`packages/core/src/platform.ts`). Проверки: `packages/core/tests/purity.test.ts` и `tsconfig.json` ядра
   (`lib: ES2023 + WebWorker`, `types: []`). Runtime-зависимости — только `zod` и `@date-fns/tz`.
   Экспорт — TS-исходники по модулю: `@mono/core/<модуль>` → `src/<модуль>.ts`, без сборки.
   Доменные тесты — в `packages/core/tests`, на Node-адаптере (devDependency).
+- **Провайдеры банков** (`packages/core/src/providers/`, спека — `reports/2026-09-26-connections-spec.md`):
+  - контракт — `providers/types.ts` (`ProviderRules`, `ProviderClient`, `NormalizedAccount` / `NormalizedTx`), без импортов;
+  - провайдер = две половины: **правила** `providers/<id>/rules.ts` (чистые: признаки строки, маскировка, лимиты API) и
+    **клиент** `providers/<id>/client.ts` (сеть, страницы, 429). Разметка (`rederive`) клиента не загружает;
+  - домен (`transfers`, `refunds`, `categories`, `scope`, `summaries`, `search`, `queries`, `masking`, `sync`) входит в
+    провайдеры только через `providers/types.ts` и реестр правил `providers/rules.ts`; провайдеры друг друга не импортируют;
+    в коде домена нет MCC 4829/6012, текстов Monobank, `'fop'` и хоста банка. Всё это проверяет
+    `packages/core/tests/providers-boundary.test.ts` (с «ломающими» примерами);
+  - Monobank: `providers/monobank/{rules,descriptions,client,constants}.ts`. Пока подключений нет, у всех счетов
+    провайдер `LEGACY_PROVIDER` (`monobank`); с подключениями — из `connections.provider`;
+  - общее для всех клиентов: слот запросов `src/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/errors.ts`
+    (`RateLimitError`, `StatementFormatError`).
 - `packages/db-libsql` (`@mono/db-libsql`) — Node-адаптер libsql → `Db` (PRAGMA, WAL). Не зависит от core (типы
   повторены, расхождение ловит typecheck ядра), чтобы не было цикла зависимостей. Нужен apps/mcp и main-процессу Electron.
 - `apps/mcp` (`@mono/mcp`) — MCP-сервер, CLI, скрипты, обезличенная копия (`analysis/*`), `.env`/токен (`config.ts`).
@@ -86,7 +98,7 @@
   `analysis/analysis.sqlite` (read-only, один SELECT/WITH, не больше 500 строк).
   Копию пересобирает пользователь (`pnpm --filter @mono/mcp export:analysis`), автоматически — после sync и recategorize.
 - Что в копии: только колонки из whitelist `apps/mcp/src/analysis/schema.ts`. `description` замаскирован
-  (`packages/core/src/masking.ts`): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
+  (`packages/core/src/masking.ts` → `maskDescription` провайдера): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
   плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`.
   Новую колонку или шаблон добавлять в whitelist/маскировку только после ок пользователя.
 - Доступ дополнительно ограничен `permissions.deny` и sandbox в `.claude/settings.json`.
@@ -131,7 +143,8 @@
   кроме «Переказ на картку»). После `pair_fx` идёт `pair_fee`: одна валюта,
   `out.amount + out.commission_rate = −in.amount`, комиссия > 0. Пары строго один-к-одному: минимальный Δt,
   при равенстве — id.
-- Шаблоны описаний — один источник в `packages/core/src/masking.ts`, их используют и маскировка, и разметка.
+- Шаблоны описаний Monobank — один источник в `packages/core/src/providers/monobank/descriptions.ts`, их используют и
+  маскировка, и разметка (через правила провайдера).
 - «Щомісячний платіж» → «рассрочки и кредиты», не internal. Двойного счёта с исходной покупкой нет
   (проверено на истории с 01.01; серия −1345 ₴ покрыта частично, принята как есть).
 - Комиссия: строка с `commission_rate > 0` в агрегатах делится на тело (`amount + commission_rate`)
@@ -187,8 +200,8 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
-- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`,
-  пути — `apps/mcp/src/paths.ts`.
+- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
+  (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.
 
 ## Фаза 5: MCP-сервер
 
