@@ -6,6 +6,10 @@ Desktop app that shows where your money goes, from your Monobank statement — o
 
 **Status:** early development, first release `0.1.0` in preparation. macOS, Windows, Linux.
 
+## Install
+
+Download from [Releases](https://github.com/MortyQ/muza-balance-insights/releases/latest) and follow [the install steps](docs/INSTALL.md): the installers are not signed, so macOS and Windows warn you the first time.
+
 ## What it does
 
 - Imports your statement with your personal Monobank API token (you create it at [api.monobank.ua](https://api.monobank.ua/)).

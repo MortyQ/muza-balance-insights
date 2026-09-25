@@ -128,4 +128,4 @@ jobs:
             --verify-tag \
             --draft \
             --title "Balance Insights ${GITHUB_REF_NAME#v}" \
-            --notes "Unofficial app, not affiliated with Monobank. Check the files against SHA256SUMS.txt and the build provenance attestation (gh attestation verify <file> --repo $GITHUB_REPOSITORY). The installers are not signed: see the install page for the macOS Gatekeeper and Windows SmartScreen steps."
+            --notes "Unofficial app, not affiliated with Monobank. Check the files against SHA256SUMS.txt and the build provenance attestation (gh attestation verify <file> --repo $GITHUB_REPOSITORY). The installers are not signed: install steps for macOS Gatekeeper and Windows SmartScreen are at https://github.com/$GITHUB_REPOSITORY/blob/main/docs/INSTALL.md"

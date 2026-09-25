@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Ver
 
 ## [Unreleased]
 
+## [0.1.0] — 2026-09-25
+
+First release. Installers: macOS (Apple Silicon, Intel), Windows x64, Linux x64 AppImage — not signed, see [INSTALL](docs/INSTALL.md).
+
 ### Added
 
 - Desktop app (Electron) for macOS, Windows and Linux.
