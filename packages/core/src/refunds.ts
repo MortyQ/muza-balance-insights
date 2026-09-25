@@ -1,15 +1,15 @@
 // Refunds that arrive with a different MCC than the purchase (observed: a purchase with MCC 5816,
 // its cancellation 50 s later as an MCC 4829 credit). Without pairing, the amount counts twice:
 // as spending in the purchase's category and as income. Not a transfer — separate column refund_pair_id.
-// Rule: same account, credit with MCC 4829 that is not «Від: …», amount = |purchase|, purchase not 4829,
-// the credit 0–15 min after the purchase, strictly one-to-one (smallest Δt, ties by id).
+// Rule: same account, a credit the provider calls a refund candidate (Monobank: MCC 4829, not «Від: …»),
+// amount = |purchase|, the purchase not transfer-like, the credit 0–15 min after the purchase, strictly one-to-one
+// (smallest Δt, ties by id).
 import type { Db, Stmt } from './db.ts';
-import { isFromPrefixDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { ProviderId } from './providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const REFUND_WINDOW_SEC = 15 * 60;
-
-const TRANSFER_MCC = 4829;
 
 export type RefundTx = {
   id: string;
@@ -19,14 +19,15 @@ export type RefundTx = {
   mcc: number;
   description: string;
   isInternal: boolean;
+  /** Whose rules apply (the account's provider); Monobank when absent (before connections). */
+  provider?: ProviderId;
 };
 
 /** Pure core: id → id of the other half, for both halves of each pair. */
 export function detectRefunds(rows: readonly RefundTx[]): Map<string, string> {
-  const purchases = rows.filter((r) => !r.isInternal && r.amount < 0 && r.mcc !== TRANSFER_MCC);
-  const credits = rows.filter(
-    (r) => !r.isInternal && r.amount > 0 && r.mcc === TRANSFER_MCC && !isFromPrefixDescription(r.description),
-  );
+  const rules = (r: RefundTx) => rulesFor(r.provider ?? LEGACY_PROVIDER);
+  const purchases = rows.filter((r) => !r.isInternal && r.amount < 0 && !rules(r).isTransferLike(r));
+  const credits = rows.filter((r) => !r.isInternal && rules(r).isRefundCredit(r));
   const edges: Array<{ p: RefundTx; c: RefundTx; dt: number }> = [];
   for (const c of credits) {
     for (const p of purchases) {

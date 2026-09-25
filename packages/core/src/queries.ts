@@ -1,7 +1,7 @@
 // Read-only queries over the real database, shared by the CLI and (phase 5) the MCP tools.
 import { CATEGORY } from './categories.ts';
 import type { Db } from './db.ts';
-import { isTransferServiceDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
 import { spendingSummary } from './summaries.ts';
 import type { TransferRule } from './transfers.ts';
 
@@ -9,7 +9,8 @@ export type TransferDiagnostics = {
   /** Non-cancelled rows per transfer_rule; 'none' = not an internal transfer. */
   byRule: Record<TransferRule | 'none', number>;
   /**
-   * MCC 4829 rows with a bank-generated own-transfer description (incl. «Переказ на картку») but no pair.
+   * Transfer rows with a bank-generated own-transfer description (Monobank: MCC 4829, incl. «Переказ на картку»)
+   * but no pair.
    * Non-zero means a half is missing or outside the synced range; such rows are text-marked or unmarked.
    */
   unpairedService4829: number;
@@ -28,11 +29,11 @@ export async function transferDiagnostics(db: Db): Promise<TransferDiagnostics> 
   const jars = await db.execute(`SELECT title FROM accounts WHERE kind = 'jar' AND title IS NOT NULL`);
   const jarTitles = new Set(jars.rows.map((r) => String(r.title).trim()));
   const unpaired = await db.execute(
-    `SELECT description FROM transactions
-     WHERE is_cancelled = 0 AND mcc = 4829 AND transfer_pair_id IS NULL`,
+    `SELECT description, mcc, amount FROM transactions WHERE is_cancelled = 0 AND transfer_pair_id IS NULL`,
   );
+  const provider = rulesFor(LEGACY_PROVIDER);
   const unpairedService4829 = unpaired.rows.filter((r) =>
-    isTransferServiceDescription(String(r.description ?? ''), jarTitles, { includeGeneric: true }),
+    provider.isServiceTransferText({ description: String(r.description ?? ''), mcc: Number(r.mcc), amount: Number(r.amount) }, { jarTitles }),
   ).length;
 
   const refunds = await db.execute(

@@ -5,7 +5,8 @@
 import type { Db } from './db.ts';
 import { toMajor } from './currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
-import { isFromPrefixDescription, isTransferServiceDescription, isTreasuryDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { ProviderId } from './providers/types.ts';
 import { getSettings } from './settings.ts';
 import { isScope, type Scope } from './scope.ts';
 import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './summaries.ts';
@@ -80,9 +81,9 @@ const JAR_LABEL = 'банка';
 
 /**
  * What the model sees instead of the raw description:
- * - «Від: Name» → «Від: N. S.»; a description containing counter_name → initials of the whole description;
+ * - a named sender («Від: Name», the provider's rule) → «Від: N. S.»; a description containing counter_name → initials of the whole description;
  * - a masked card number → «[картка]»; a jar title → «банка»;
- * - an MCC 4829 transfer that is not a bank template or a treasury payment is a person's name → initials.
+ * - a transfer the provider calls a person's (Monobank: MCC 4829, not a bank template or the treasury) → initials.
  * Everything else (merchants, bank templates) as is. reveal = settings.reveal_full_names.
  */
 export function merchantForOutput(
@@ -91,15 +92,18 @@ export function merchantForOutput(
   mcc: number,
   jarTitles: ReadonlySet<string>,
   reveal: boolean,
+  provider: ProviderId = LEGACY_PROVIDER,
 ): string {
+  const rules = rulesFor(provider);
   let d = description.trim();
   for (const title of jarTitles) if (title) d = d.split(title).join(JAR_LABEL);
   if (reveal) return d;
-  if (isFromPrefixDescription(d)) return `Від: ${displayCounterName(d.slice(d.indexOf(':') + 1), false) ?? ''}`.trim();
+  const sender = rules.namedSender(d);
+  if (sender) return `${sender.label} ${displayCounterName(sender.name, false) ?? ''}`.trim();
   if (CARD_PAN.test(d)) return '[картка]';
   const name = counterName?.trim();
   if (name && normalizeSearch(d).includes(normalizeSearch(name))) return displayCounterName(d, false) ?? '';
-  if (mcc === 4829 && d !== JAR_LABEL && !isTransferServiceDescription(d, jarTitles, { includeGeneric: true }) && !isTreasuryDescription(d)) {
+  if (d !== JAR_LABEL && rules.isPersonTransfer({ description: d, mcc, amount: 0 }, { jarTitles })) {
     return displayCounterName(d, false) ?? '';
   }
   return d;

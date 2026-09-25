@@ -1,7 +1,9 @@
-// Transaction categories: MCC mapping, transfer / installment rules and manual overrides by counter_name.
+// Transaction categories: manual overrides by counter_name, the provider's hint from the shape of the operation
+// (transfers, installments, taxes — providers/<id>/rules.ts), then the MCC table (ISO 18245, not bank-specific).
 // Recomputed after the internal-transfer pass (category depends on is_internal_transfer).
 import type { Db, Stmt } from './db.ts';
-import { INSTALLMENT_DESCRIPTION, isTreasuryDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { CategoryHint, ProviderId } from './providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const DEFAULT_CATEGORY = 'другое';
@@ -36,10 +38,17 @@ export const CATEGORY = {
   other: DEFAULT_CATEGORY,
 } as const;
 
+const HINT_CATEGORY: Readonly<Record<CategoryHint, string>> = {
+  installments: CATEGORY.installments,
+  taxes: CATEGORY.taxes,
+  income: CATEGORY.income,
+  p2p: CATEGORY.p2p,
+};
+
 /**
  * MCCs seen in real data (phase 3 reports). Anything else falls back to «другое».
  * Deliberately unmapped (ambiguous, decided): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791.
- * 6012 is split by sign in categorize(), not mapped here.
+ * Transfers (4829) and 6012 come from the provider's hint, not from here.
  */
 const MCC_CATEGORY: ReadonlyMap<number, string> = new Map([
   [5411, CATEGORY.groceries], // supermarkets
@@ -99,11 +108,6 @@ const MCC_CATEGORY: ReadonlyMap<number, string> = new Map([
   [8398, CATEGORY.charity], // charitable organizations
 ]);
 
-const TRANSFER_MCC = 4829;
-/** Financial institutions: observed as credit-limit charges (debits, 1st of the month) and incoming
- *  transfers from other banks (credits, «Від: …») — opposite flows, so split by sign. */
-const FINANCIAL_INSTITUTION_MCC = 6012;
-
 export type CategoryOverride = { pattern: string; matchType: 'exact' | 'contains'; category: string };
 
 export type CategorizeInput = {
@@ -112,6 +116,8 @@ export type CategorizeInput = {
   amount: number;
   counterName: string | null;
   isInternalTransfer: boolean;
+  /** Whose rules apply (the account's provider); Monobank when absent (before connections). */
+  provider?: ProviderId;
 };
 
 export function categorize(tx: CategorizeInput, overrides: readonly CategoryOverride[] = []): string {
@@ -120,14 +126,8 @@ export function categorize(tx: CategorizeInput, overrides: readonly CategoryOver
   const override = matchOverride(tx.counterName, overrides);
   if (override) return override.category;
 
-  const description = tx.description.trim();
-  if (description === INSTALLMENT_DESCRIPTION) return CATEGORY.installments;
-
-  if (tx.mcc === TRANSFER_MCC) {
-    if (isTreasuryDescription(description)) return CATEGORY.taxes;
-    return tx.amount > 0 ? CATEGORY.income : CATEGORY.p2p;
-  }
-  if (tx.mcc === FINANCIAL_INSTITUTION_MCC) return tx.amount > 0 ? CATEGORY.income : CATEGORY.installments;
+  const hint = rulesFor(tx.provider ?? LEGACY_PROVIDER).categoryHint(tx);
+  if (hint) return HINT_CATEGORY[hint];
   return MCC_CATEGORY.get(tx.mcc) ?? DEFAULT_CATEGORY;
 }
 

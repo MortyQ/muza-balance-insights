@@ -7,14 +7,14 @@
 //   jar_reversal an auto top-up rolled back inside the same jar
 //   iban         counter_iban is one of the user's own IBANs (single row)
 //   text         bank-generated own-transfer description, no pair found (single row)
-// Thresholds come from real data (phase 3 report): all mirrors within 0–14 s, all on MCC 4829.
+// Thresholds come from real data (phase 3 report): all mirrors within 0–14 s. What a transfer, an own-transfer text
+// or an auto top-up looks like is the provider's (providers/<id>/rules.ts), per account.
 import type { Db, Stmt } from './db.ts';
-import { AUTO_TOPUP_DESCRIPTIONS, isTransferServiceDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { ProviderId, ProviderRules } from './providers/types.ts';
 
 /** Max |Δt| between the two halves of a pair, seconds. */
 export const TRANSFER_WINDOW_SEC = 20;
-
-const TRANSFER_MCC = 4829;
 
 export type TransferRule = 'pair' | 'pair_fx' | 'pair_fee' | 'jar_reversal' | 'iban' | 'text';
 
@@ -31,7 +31,15 @@ export type TransferTx = {
   counterIban: string | null;
 };
 
-export type TransferAccount = { id: string; kind: 'card' | 'jar'; currencyCode: number; iban: string | null; title: string | null };
+export type TransferAccount = {
+  id: string;
+  kind: 'card' | 'jar';
+  currencyCode: number;
+  iban: string | null;
+  title: string | null;
+  /** Whose rules apply to this account's rows; Monobank when absent (before connections). */
+  provider?: ProviderId;
+};
 
 export type TransferMark = { rule: TransferRule; pairId: string | null };
 
@@ -43,10 +51,13 @@ type Edge = { a: TransferTx; b: TransferTx; dt: number };
  */
 export function detectTransfers(rows: readonly TransferTx[], accounts: readonly TransferAccount[]): Map<string, TransferMark> {
   const acc = new Map(accounts.map((a) => [a.id, a]));
+  const rulesOf = (tx: TransferTx): ProviderRules => rulesFor(acc.get(tx.accountId)?.provider ?? LEGACY_PROVIDER);
+  const transferLike = (tx: TransferTx) => rulesOf(tx).isTransferLike(tx);
   const ownIbans = new Set(accounts.map((a) => normalizeIban(a.iban)).filter((i): i is string => i !== null));
   const jarTitles = new Set(
     accounts.filter((a) => a.kind === 'jar' && a.title).map((a) => (a.title as string).trim()),
   );
+  const ctx = { jarTitles };
   const sorted = [...rows].sort((x, y) => x.time - y.time || cmp(x.id, y.id));
   const marks = new Map<string, TransferMark>();
 
@@ -79,7 +90,7 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
       aa !== undefined && ab !== undefined && a.accountId !== b.accountId &&
       aa.currencyCode === ab.currencyCode &&
       a.amount < 0 && a.amount === -b.amount &&
-      a.mcc === TRANSFER_MCC && b.mcc === TRANSFER_MCC
+      transferLike(a) && transferLike(b)
     );
   });
 
@@ -91,7 +102,7 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
       a.amount < 0 && b.amount > 0 &&
       a.operationAmount !== null && b.operationAmount !== null &&
       a.operationAmount === -b.amount && b.operationAmount === -a.amount &&
-      a.mcc === TRANSFER_MCC && b.mcc === TRANSFER_MCC
+      transferLike(a) && transferLike(b)
     );
   });
 
@@ -103,7 +114,7 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
       aa.currencyCode === ab.currencyCode &&
       a.amount < 0 && b.amount > 0 && a.commissionRate > 0 &&
       a.amount + a.commissionRate === -b.amount &&
-      a.mcc === TRANSFER_MCC && b.mcc === TRANSFER_MCC
+      transferLike(a) && transferLike(b)
     );
   });
 
@@ -113,7 +124,7 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
     return (
       aa?.kind === 'jar' && a.accountId === b.accountId &&
       a.amount > 0 && a.amount === -b.amount && a.time <= b.time &&
-      AUTO_TOPUP_DESCRIPTIONS.has(a.description.trim()) && AUTO_TOPUP_DESCRIPTIONS.has(b.description.trim())
+      rulesOf(a).isAutoTopUp(a) && rulesOf(b).isAutoTopUp(b)
     );
   });
 
@@ -122,7 +133,7 @@ export function detectTransfers(rows: readonly TransferTx[], accounts: readonly 
     const iban = normalizeIban(r.counterIban);
     if (iban !== null && ownIbans.has(iban)) {
       marks.set(r.id, { rule: 'iban', pairId: null });
-    } else if (r.mcc === TRANSFER_MCC && isTransferServiceDescription(r.description, jarTitles, { includeGeneric: false })) {
+    } else if (rulesOf(r).isOwnTransferText(r, ctx)) {
       marks.set(r.id, { rule: 'text', pairId: null });
     }
   }

@@ -6,7 +6,8 @@ import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
 import { currencyAlpha } from './currency.ts';
 import { accountLabels, kyivStartOfDay, parseLocalDate, toKyivDate } from './format.ts';
-import { isFromPrefixDescription } from './masking.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { IncomeSource, ProviderId } from './providers/types.ts';
 import { isScope, type Scope } from './scope.ts';
 
 export class SummaryError extends Error {
@@ -351,18 +352,12 @@ export async function comparePeriods(
 export const INCOME_GROUP_BY = ['source', 'month', 'account', 'scope'] as const;
 export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number];
 
-/**
- * Where income came from, by the shape of the operation (never by name):
- * other_bank = MCC 6012 (incoming transfer from another bank), named_sender = «Від: …» (people and FOP clients alike),
- * transfer = other MCC 4829 credits, other = anything else in «поступления».
- */
-export type IncomeSource = 'other_bank' | 'named_sender' | 'transfer' | 'other';
+export type { IncomeSource } from './providers/types.ts';
 
-export function incomeSource(mcc: number, description: string): IncomeSource {
-  if (mcc === 6012) return 'other_bank';
-  if (isFromPrefixDescription(description)) return 'named_sender';
-  if (mcc === 4829) return 'transfer';
-  return 'other';
+/** Where a credit came from, by the shape of the operation (never by name) — the provider's rule. */
+export function incomeSource(mcc: number, description: string, provider: ProviderId = LEGACY_PROVIDER): IncomeSource {
+  // Income rows are credits: the amount only says so.
+  return rulesFor(provider).incomeSource({ mcc, description, amount: 1 });
 }
 
 export type IncomeGroup = { currency: number; key: string; label?: string; lines: number; total: number; totalPerDay: number | null };
