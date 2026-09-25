@@ -1,7 +1,7 @@
 // Pure helpers of the screen: money formatting and Kyiv months.
 import { describe, expect, it } from 'vitest';
-import { formatMoney, currencySymbol } from '../src/renderer/src/lib/money.ts';
-import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '../src/renderer/src/lib/months.ts';
+import { formatMoney, currencySymbol } from '../src/renderer/src/shared/lib/money.ts';
+import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '../src/renderer/src/shared/lib/months.ts';
 
 // Intl puts a no-break space between thousands; compare with plain spaces.
 const plain = (s: string) => s.replace(/[  ]/g, ' ');

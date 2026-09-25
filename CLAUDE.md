@@ -2,6 +2,25 @@
 
 Локальный stdio MCP-сервер: транзакции Monobank → SQLite → готовые агрегаты трат. Дальше — десктоп на Electron.
 
+## Инструкции и скиллы из muzakit (`.agents/`)
+
+Скопированы из `muzakit/.agents` 25.09.2026 (без скиллов `vtable` и `use-api`). Действуют для кода renderer:
+
+@.agents/instructions/conventions.md
+@.agents/instructions/vue-syntax.instructions.md
+@.agents/instructions/typescript.instructions.md
+@.agents/instructions/ui-component-migration.md
+@.agents/claude/behavior.md
+
+- При расхождении правил этот файл важнее `.agents/`.
+- `project.md`, `testing.md`, `workflow.md` описывают саму muzakit (её пакеты, тесты `@muzakit/ui`, husky + commit-lint)
+  и сюда не подключены; из `workflow.md` берём только Conventional Commits.
+- `ui-component-migration.md` (BEM + SCSS, никаких Tailwind-классов в шаблоне) — только для копий в
+  `apps/desktop/src/renderer/src/shared/ui/`. Экраны и компоненты приложения вне `shared/ui/` — на Tailwind-утилитах (решение этапа 1).
+- Порядок импортов: vue → пакеты → `@contract/*` → `@/*` (слои) → относительные. Раскладка слоёв — раздел «Архитектура renderer»
+  ниже; примеры с Apollo/GQL — только примеры.
+- Скиллы: `.agents/skills/emil-design-eng` (полировка UI, анимации), `.agents/skills/find-skills`; источник — `skills-lock.json`.
+
 ## Структура монорепы (pnpm workspace)
 
 - pnpm 12.6.0 установлен глобально через npm (`packageManager` в корневом `package.json`), Corepack не используется.
@@ -254,14 +273,36 @@
 - «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токен → остановка worker (`Importer.stop`,
   kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, токен, задача импорта).
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
-  в `apps/desktop/src/renderer/src/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
+  в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
   `assetsInlineLimit: 0`: prod-CSP не пускает `data:`. Тема — по системной, через `data-theme`.
   Библиотеку muzakit целиком не подключаем, пока она не публикуется пакетом. Нужные компоненты — копиями в
-  `apps/desktop/src/renderer/src/ui/` (шапка «copied from muzakit», отличия — `ui/README.md`), без `vue-router`,
-  `@vueuse`, `@iconify/vue`. Иконки — `unplugin-icons` (`autoInstall: false`) из локального `@iconify-json/lucide`,
+  `apps/desktop/src/renderer/src/shared/ui/` (шапка «copied from muzakit», отличия — `shared/ui/README.md`), без `vue-router`
+  внутри копий, `@vueuse`, `@iconify/vue`. Иконки — `unplugin-icons` (`autoInstall: false`) из локального `@iconify-json/lucide`,
   явный реестр `ui/components/base/icons.ts`, канонические имена Lucide (не алиасы).
   Таблицу трат и формат сумм пишем свои (`VTable` и `formatCurrency` из muzakit не подходят).
+- **Архитектура renderer — FSD** (`apps/desktop/src/renderer/src`), проверяет `apps/desktop/tests/architecture.test.ts`
+  (правила — `tests/helpers/architecture.ts`, у каждого правила есть «ломающий» пример):
+  - слои `app → pages → widgets → features → entities → shared`, импорт только вниз; слайсы одного слоя друг друга не
+    импортируют (кроме сегментов `shared`: `api`, `config`, `lib`, `ui`); внутри слайса — относительные импорты;
+  - снаружи слайс доступен только через `index.ts` (`@/features/x`, без глубоких путей); `index.ts` только реэкспортирует;
+  - алиасы: `@/` → `src/renderer/src`, `@contract/` → `src/shared` (типы и константы, общие с main и preload);
+  - пакеты в renderer — только белый список (`vue`, `vue-router`, `pinia`, `@mono/core/currency`, `~icons/lucide/*`, шрифт);
+    `electron`, `node:*` и новая зависимость — ошибка теста;
+  - `window.balance` читает только `shared/api/balance.ts`; `balanceApi` вызывают только сегменты `api/` слайсов
+    (`api/use<X>Request.ts`, возвращают объект функций) и подписки в `app/listeners.ts`;
+  - сегменты слайса: `<Name>Feature.vue` (корень фичи), `api/`, `composables/` (логика, явный `Use<X>Return` в `types.ts`),
+    `components/` (только отображение), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
+    (чистые функции); страницы — тонкие оболочки над фичами и виджетами;
+  - общее состояние — Pinia в `entities`: `token` (статус токена), `sync-status` (статус данных и `version`, на который
+    перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts`;
+  - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
+- Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
+  имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): подключение — только если нет ни токена,
+  ни данных; данные без токена → главный с плашкой; настройки доступны всегда.
+  Банки — `entities/bank` (Monobank + «Скоро»), подключение в main пока только Monobank (`setToken`/`clearToken`).
+  Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
+  «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
 
 ## Бэклог
 
@@ -288,6 +329,10 @@
     следующем запуске).
   - Флаг минимальной версии в подписанном манифесте для критичных обновлений; остальные можно отложить.
   - Сеть обновлятора только из main, адреса GitHub Releases — в том же allowlist, что и api.monobank.ua; renderer без сети.
+- **Живое обновление при импорте**: после каждого записанного окна (тик прогресса `windows` с новым `windowsDone`)
+  обновлять статус данных и карточки/график, чтобы данные появлялись по мере загрузки, а не только в конце
+  (сейчас `refreshData` — только на `done` / `cancelled` / `error`). Не чаще раза в несколько секунд, без мигания уже
+  показанного (старые цифры остаются до прихода новых), период «неполный» виден явно.
 - Остальные экраны: сравнение месяцев, поездки по валюте операции, доходы, поиск операций.
 - AI-режим со своим API-ключом: ключ в main через safeStorage, модель выбирает график из белого списка компонентов,
   код не генерирует.

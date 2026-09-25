@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig } from 'electron-vite';
@@ -40,6 +41,14 @@ export default defineConfig({
   },
   renderer: {
     plugins: [vue(), tailwindcss(), Icons(ICONS_OPTIONS), cspMetaPlugin(PROD_CSP)],
+    // `@/` = src/renderer/src: slices import each other by layer (`@/features/x`); `@contract/` = src/shared, the types and
+    // constants shared with main and the preload. Layer rules: tests/architecture.test.ts.
+    resolve: {
+      alias: {
+        '@contract': fileURLToPath(new URL('./src/shared', import.meta.url)),
+        '@': fileURLToPath(new URL('./src/renderer/src', import.meta.url)),
+      },
+    },
     build: {
       // Never inline assets as data: URIs — the prod CSP allows fonts and images only from 'self'
       // (a 2.5 KB font subset would otherwise be inlined and silently blocked).

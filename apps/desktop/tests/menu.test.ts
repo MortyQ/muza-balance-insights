@@ -18,8 +18,15 @@ const roles = (items: MenuItemConstructorOptions[]) => flatten(items).map((i) =>
 describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) => {
   const build = (isPackaged: boolean) => {
     let aboutCalls = 0;
-    const t = menuTemplate({ name: ABOUT.name, platform, isPackaged, showAbout: () => void (aboutCalls += 1) });
-    return { t, aboutCalls: () => aboutCalls };
+    let settingsCalls = 0;
+    const t = menuTemplate({
+      name: ABOUT.name,
+      platform,
+      isPackaged,
+      showAbout: () => void (aboutCalls += 1),
+      openSettings: () => void (settingsCalls += 1),
+    });
+    return { t, aboutCalls: () => aboutCalls, settingsCalls: () => settingsCalls };
   };
 
   it('packaged: no reload, no DevTools, no help role (it would bring back default links)', () => {
@@ -34,18 +41,26 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
     expect(dev.filter((r) => !prod.includes(r))).toEqual(['reload', 'forceReload', 'toggleDevTools']);
   });
 
-  it('About is reachable; the only click handler in the menu is About', () => {
+  it('About is reachable; the only click handlers in the menu are Settings and About', () => {
     const { t, aboutCalls } = build(true);
     const items = flatten(t);
     const clickable = items.filter((i) => typeof i.click === 'function');
     if (platform === 'darwin') {
       expect(items.some((i) => i.role === 'about')).toBe(true);
-      expect(clickable).toEqual([]);
+      expect(clickable.map((i) => i.label)).toEqual(['Настройки…']);
     } else {
-      expect(clickable.map((i) => i.label)).toEqual(['О программе']);
-      (clickable[0]!.click as () => void)();
+      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'О программе']);
+      (clickable[1]!.click as () => void)();
       expect(aboutCalls()).toBe(1);
     }
+  });
+
+  it('Settings: Cmd/Ctrl+, and it only asks the renderer to open its screen', () => {
+    const { t, settingsCalls, aboutCalls } = build(true);
+    const item = flatten(t).find((i) => i.label === 'Настройки…');
+    expect(item?.accelerator).toBe('CmdOrCtrl+,');
+    (item!.click as () => void)();
+    expect([settingsCalls(), aboutCalls()]).toEqual([1, 0]);
   });
 });
 
@@ -66,11 +81,14 @@ describe('About', () => {
     for (const s of [DISCLAIMER, COPYRIGHT, REPO]) expect(t.detail).toContain(s);
   });
 
-  it('the disclaimer is the agreed text, and the renderer shows the same constant', () => {
+  it('the disclaimer is the agreed text, and the renderer shows the same constant (connect screen and settings)', () => {
     expect(DISCLAIMER).toBe('Неофициальное приложение, не связано с Monobank.');
-    const app = fs.readFileSync(fileURLToPath(new URL('../src/renderer/src/App.vue', import.meta.url)), 'utf8');
-    expect(app).toContain("import { DISCLAIMER } from '../../shared/about.ts'");
-    expect(app).not.toContain('не связано с Monobank');
+    for (const file of ['features/connect-bank/ConnectBankFeature.vue', 'widgets/about-app/AboutApp.vue']) {
+      const src = fs.readFileSync(fileURLToPath(new URL(`../src/renderer/src/${file}`, import.meta.url)), 'utf8');
+      expect(src, file).toMatch(/import \{[^}]*\bDISCLAIMER\b[^}]*\} from '@contract\/about\.ts'/);
+      expect(src, file).toMatch(/\{\{ DISCLAIMER \}\}/);
+      expect(src, file).not.toContain('не связано с Monobank');
+    }
   });
 
   it('main installs the menu and the About panel before the window is created', () => {

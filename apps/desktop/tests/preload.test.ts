@@ -1,7 +1,7 @@
 // The preload with a fake Electron module: what exactly reaches window.balance (Checklist #20).
 import fs from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { API_KEY, METHODS, PROGRESS_CHANNEL } from '../src/shared/channels.ts';
+import { API_KEY, METHODS, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL } from '../src/shared/channels.ts';
 
 const exposed: Array<[string, any]> = [];
 const invoked: unknown[][] = [];
@@ -25,11 +25,11 @@ beforeEach(async () => {
 });
 
 describe('preload API', () => {
-  it('exposes exactly one object under window.balance: the contract methods + onProgress, all functions, frozen', () => {
+  it('exposes exactly one object under window.balance: the contract methods + two subscriptions, all functions, frozen', () => {
     expect(exposed).toHaveLength(1);
     const [key, api] = exposed[0]!;
     expect(key).toBe(API_KEY);
-    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onProgress'].sort());
+    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onOpenSettings', 'onProgress'].sort());
     expect(Object.values(api).every((v) => typeof v === 'function')).toBe(true);
     expect(Object.isFrozen(api)).toBe(true);
   });
@@ -53,6 +53,17 @@ describe('preload API', () => {
     off();
     expect(listeners.has(PROGRESS_CHANNEL)).toBe(false);
     expect(() => api.onProgress('not a function')).toThrow(TypeError);
+  });
+
+  it('onOpenSettings: its own channel, the callback gets nothing from the event, unsubscribes', () => {
+    const api = exposed[0]![1];
+    const got: unknown[][] = [];
+    const off = api.onOpenSettings((...a: unknown[]) => got.push(a));
+    listeners.get(OPEN_SETTINGS_CHANNEL)!({ sender: { secret: true } });
+    expect(got).toEqual([[undefined]]);
+    off();
+    expect(listeners.has(OPEN_SETTINGS_CHANNEL)).toBe(false);
+    expect(() => api.onOpenSettings(null)).toThrow(TypeError);
   });
 
   it('the preload source imports only the Electron module and the channel list (bundles into one CJS file)', () => {

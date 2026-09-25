@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
-import { PROGRESS_CHANNEL } from '../shared/channels.ts';
+import { OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL } from '../shared/channels.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
@@ -60,6 +60,12 @@ app.whenReady().then(async () => {
         platform: process.platform,
         isPackaged: app.isPackaged,
         showAbout: () => void dialog.showMessageBox({ type: 'info', buttons: ['OK'], ...aboutText(about) }),
+        openSettings: () => {
+          if (!win) return;
+          if (win.isMinimized()) win.restore();
+          win.focus();
+          win.webContents.send(OPEN_SETTINGS_CHANNEL);
+        },
       }),
     ),
   );
