@@ -21,6 +21,11 @@ export const ARG_SCHEMAS = {
   getBalances: z.tuple([]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
+  getUpdate: z.tuple([]),
+  checkForUpdates: z.tuple([]),
+  downloadUpdate: z.tuple([]),
+  installUpdate: z.tuple([]),
+  setUpdateChecks: z.tuple([z.boolean()]),
 } as const satisfies Record<Method, z.ZodType<unknown[]>>;
 
 export type Args<M extends Method> = z.infer<(typeof ARG_SCHEMAS)[M]>;

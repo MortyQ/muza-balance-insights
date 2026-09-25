@@ -1,5 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
+import type { UpdateView } from './update.ts';
 
 export type TokenStatus = {
   present: boolean;
@@ -26,6 +27,15 @@ export type BalanceApi = {
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
   deleteAllData(): Promise<{ deleted: boolean }>;
+  getUpdate(): Promise<UpdateView>;
+  checkForUpdates(): Promise<UpdateView>;
+  /** manual mode: download, verify and save to Downloads (auto mode downloads by itself). */
+  downloadUpdate(): Promise<UpdateView>;
+  /** auto mode, `ready` only: quits and installs. Refused while an import runs. */
+  installUpdate(): Promise<{ started: boolean; reason?: 'import-running' | 'not-ready' }>;
+  setUpdateChecks(enabled: boolean): Promise<UpdateView>;
+  /** Returns an unsubscribe function. */
+  onUpdate(cb: (v: UpdateView) => void): () => void;
 };
 
 // ---------- data for the screen ----------

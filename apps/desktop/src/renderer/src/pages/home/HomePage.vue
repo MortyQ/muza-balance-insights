@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useSyncStatusStore } from '@/entities/sync-status';
+import { UpdateBannerFeature } from '@/features/app-update';
 import { BalancesFeature } from '@/features/balances';
 import { ImportFeature } from '@/features/import-statement';
 import { SpendingFeature } from '@/features/spending-summary';
@@ -13,6 +14,7 @@ const syncStatus = useSyncStatusStore();
   <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 py-6">
     <AppHeader />
     <HomeNotices />
+    <UpdateBannerFeature />
     <template v-if="syncStatus.hasData">
       <SpendingFeature />
       <BalancesFeature />

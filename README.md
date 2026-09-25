@@ -21,7 +21,9 @@ Download from [Releases](https://github.com/MortyQ/muza-balance-insights/release
 
 - Data stays on your computer: a local SQLite database in the app folder.
 - The token is kept in the system keychain (macOS Keychain, Windows DPAPI, Linux Secret Service or KWallet). If there is no secure store, it is kept in memory only and never written to disk.
-- The only network destination is `api.monobank.ua`. No analytics, no telemetry, no update checks (yet).
+- Network only to trusted services: `api.monobank.ua` (your statement) and GitHub (update checks — every few hours the app asks
+  whether a new version is out; you can switch this off in Settings). No analytics, no telemetry.
+- Updates are installed only if they are signed by the author and the file matches the signed description.
 - «Delete all data» in the app removes the database, the token and any unfinished import.
 
 ## Repository

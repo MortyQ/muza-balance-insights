@@ -89,6 +89,20 @@ describe('update manifest signing', () => {
     fs.writeFileSync(file, pem);
     expect(signingKeyFromEnv({ UPDATE_SIGNING_KEY_FILE: file }).asymmetricKeyType).toBe('ed25519');
     expect(() => signingKeyFromEnv({})).toThrow(/not set/);
+    // Wrong secrets get a reason, never the secret itself.
+    const pub = String(k.privateKey.export({ type: 'pkcs8', format: 'pem' }));
+    const body = pub.split('\n')[1]!;
+    expect(() => signingKeyFromEnv({ UPDATE_SIGNING_KEY: pair().publicPem })).toThrow(/PUBLIC key/);
+    expect(() => signingKeyFromEnv({ UPDATE_SIGNING_KEY: body })).toThrow(/BEGIN\/END/);
+    const cut = `-----BEGIN PRIVATE KEY-----\n${body.slice(0, 10)}\n-----END PRIVATE KEY-----\n`;
+    let msg = '';
+    try {
+      signingKeyFromEnv({ UPDATE_SIGNING_KEY: cut });
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toMatch(/not a readable PEM/);
+    expect(msg).not.toContain(body.slice(0, 10));
     const rsa = generateKeyPairSync('rsa', { modulusLength: 1024 }).privateKey.export({ type: 'pkcs8', format: 'pem' });
     expect(() => signingKeyFromEnv({ UPDATE_SIGNING_KEY: String(rsa) })).toThrow(/not ed25519/);
   });

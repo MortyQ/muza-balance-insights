@@ -25,11 +25,11 @@ beforeEach(async () => {
 });
 
 describe('preload API', () => {
-  it('exposes exactly one object under window.balance: the contract methods + two subscriptions, all functions, frozen', () => {
+  it('exposes exactly one object under window.balance: the contract methods + three subscriptions, all functions, frozen', () => {
     expect(exposed).toHaveLength(1);
     const [key, api] = exposed[0]!;
     expect(key).toBe(API_KEY);
-    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onOpenSettings', 'onProgress'].sort());
+    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onOpenSettings', 'onProgress', 'onUpdate'].sort());
     expect(Object.values(api).every((v) => typeof v === 'function')).toBe(true);
     expect(Object.isFrozen(api)).toBe(true);
   });

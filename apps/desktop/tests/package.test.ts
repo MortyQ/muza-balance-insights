@@ -73,13 +73,18 @@ describe('electron-builder config', () => {
     expect(config.dmg).toEqual({ sign: false, writeUpdateInfo: false });
     expect(config.win).toEqual({ target: [{ target: 'nsis', arch: ['x64'] }], artifactName: 'Balance-Insights-${version}-win-${arch}.${ext}' });
     // Per-user install, no admin prompt; uninstall keeps the data folder (deleting it is «Delete all data» in the app).
-    expect(config.nsis).toEqual({ oneClick: true, perMachine: false, deleteAppDataOnUninstall: false });
+    // No .blockmap: the release does not carry them (electron-updater downloads the whole installer).
+    expect(config.nsis).toEqual({ oneClick: true, perMachine: false, deleteAppDataOnUninstall: false, differentialPackage: false });
     expect(config.linux).toEqual({
       target: [{ target: 'AppImage', arch: ['x64'] }],
       executableName: LINUX_EXECUTABLE,
       category: 'Finance',
       artifactName: 'Balance-Insights-${version}-linux-${arch}.${ext}',
     });
+  });
+
+  it('update feed: the GitHub releases of this repository, a draft only — the config only makes latest*.yml, nothing publishes', () => {
+    expect(config.publish).toEqual({ provider: 'github', owner: 'MortyQ', repo: 'muza-balance-insights', releaseType: 'draft' });
   });
 
   it('scripts: installers never publish by themselves (the release job does); the local Electron only for --dir', () => {
