@@ -19,6 +19,8 @@ export type BalanceApi = {
   cancelImport(): Promise<void>;
   /** Returns an unsubscribe function. */
   onProgress(cb: (p: ImportProgress) => void): () => void;
+  /** The «Настройки…» menu item. Returns an unsubscribe function. */
+  onOpenSettings(cb: () => void): () => void;
   spendingSummary(q: SpendingQuery): Promise<SpendingView>;
   getBalances(): Promise<BalancesView>;
   getSyncStatus(): Promise<DataStatus>;

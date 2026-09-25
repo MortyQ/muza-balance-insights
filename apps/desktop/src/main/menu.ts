@@ -19,10 +19,18 @@ export function aboutText(opts: { name: string; version: string }): { message: s
 }
 
 /**
- * macOS: the app menu with the native About panel. Windows / Linux: File → Quit, Help → About (a message box).
+ * macOS: the app menu with the native About panel and «Настройки…» (Cmd+,). Windows / Linux: File → Settings (Ctrl+,) and
+ * Quit, Help → About (a message box). Settings only tells the renderer to open its screen.
  * Reload and DevTools only in an unpackaged app (webPreferences.devTools is off in a packaged one anyway).
  */
-export function menuTemplate(opts: { name: string; platform: NodeJS.Platform; isPackaged: boolean; showAbout: () => void }): MenuItemConstructorOptions[] {
+export function menuTemplate(opts: {
+  name: string;
+  platform: NodeJS.Platform;
+  isPackaged: boolean;
+  showAbout: () => void;
+  openSettings: () => void;
+}): MenuItemConstructorOptions[] {
+  const settings: MenuItemConstructorOptions = { label: 'Настройки…', accelerator: 'CmdOrCtrl+,', click: () => opts.openSettings() };
   const dev: MenuItemConstructorOptions[] = opts.isPackaged
     ? []
     : [{ label: 'Разработка', submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }] }];
@@ -32,6 +40,8 @@ export function menuTemplate(opts: { name: string; platform: NodeJS.Platform; is
         label: opts.name,
         submenu: [
           { role: 'about', label: 'О программе' },
+          { type: 'separator' },
+          settings,
           { type: 'separator' },
           { role: 'hide' },
           { role: 'hideOthers' },
@@ -46,7 +56,7 @@ export function menuTemplate(opts: { name: string; platform: NodeJS.Platform; is
     ];
   }
   return [
-    { label: 'Файл', submenu: [{ role: 'quit', label: 'Выход' }] },
+    { label: 'Файл', submenu: [settings, { type: 'separator' }, { role: 'quit', label: 'Выход' }] },
     { role: 'editMenu' },
     ...dev,
     { label: 'Справка', submenu: [{ label: 'О программе', click: () => opts.showAbout() }] },

@@ -21,9 +21,9 @@ describe('Renderer styles (Tailwind, fonts) stay inside the prod CSP', () => {
   });
 
   it('Tailwind scans only the renderer sources, not out/ or node_modules', () => {
-    const theme = fs.readFileSync(path.join(rendererSrc, 'styles/theme.css'), 'utf8');
+    const theme = fs.readFileSync(path.join(rendererSrc, 'app/styles/theme.css'), 'utf8');
     expect(theme).toMatch(/@import "tailwindcss" source\(none\);/);
-    expect([...theme.matchAll(/@source "([^"]+)"/g)].map((m) => m[1])).toEqual(['../']);
+    expect([...theme.matchAll(/@source "([^"]+)"/g)].map((m) => m[1])).toEqual(['../../']);
   });
 
   it('no remote URL or data: URI in renderer styles and components', () => {
@@ -35,7 +35,7 @@ describe('Renderer styles (Tailwind, fonts) stay inside the prod CSP', () => {
   });
 
   it('the font is bundled from local files, with Cyrillic and the hryvnia sign', () => {
-    const main = fs.readFileSync(path.join(rendererSrc, 'main.ts'), 'utf8');
+    const main = fs.readFileSync(path.join(rendererSrc, 'app/main.ts'), 'utf8');
     expect(main).toContain("import '@fontsource-variable/manrope/wght.css';");
     const css = fs.readFileSync(path.join(root, 'node_modules/@fontsource-variable/manrope/wght.css'), 'utf8');
     const urls = [...css.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1]);

@@ -5,7 +5,8 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": [],
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "paths": { "@/*": ["./src/renderer/src/*"], "@contract/*": ["./src/shared/*"] }
   },
   "include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.vue"]
 }

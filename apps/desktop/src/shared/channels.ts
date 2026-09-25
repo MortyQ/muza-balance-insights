@@ -21,5 +21,8 @@ export const channel = (m: Method): string => `${CHANNEL_PREFIX}${m}`;
 /** main → renderer only (import progress). */
 export const PROGRESS_CHANNEL = `${CHANNEL_PREFIX}progress`;
 
+/** main → renderer only, no payload: the «Настройки…» menu item (Cmd/Ctrl+,). */
+export const OPEN_SETTINGS_CHANNEL = `${CHANNEL_PREFIX}open-settings`;
+
 /** The name of the API object in the renderer: window.balance. */
 export const API_KEY = 'balance';

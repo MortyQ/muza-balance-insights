@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { ICONS_OPTIONS } from '../electron.vite.config.ts';
 
 const rendererSrc = fileURLToPath(new URL('../src/renderer/src', import.meta.url));
-const uiDir = path.join(rendererSrc, 'ui');
+const uiDir = path.join(rendererSrc, 'shared/ui');
 const read = (f: string) => fs.readFileSync(f, 'utf8');
 
 function filesUnder(dir: string, ext: RegExp): string[] {
