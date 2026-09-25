@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { currencyAlpha } from '@mono/core/currency';
 import { formatMoney, monthTitle, shiftMonth } from '@/shared/lib';
-import { VButton, VButtonGroup, VCard, VInfoNotice, VSegmentedControl } from '@/shared/ui';
-import SpendingTable from './components/SpendingTable.vue';
+import { VButton, VButtonGroup, VCard, VInfoNotice, VSegmentedControl, VSimpleTable } from '@/shared/ui';
 import { useSpending } from './composables/useSpending.ts';
 import { SCOPES } from './constants.ts';
+import { share, spendingColumns, spendingFooter } from './utils.ts';
 
 const { thisMonth, month, scope, state, view, periodNote } = useSpending();
 </script>
@@ -42,7 +42,14 @@ const { thisMonth, month, scope, state, view, periodNote } = useSpending();
 
       <div v-for="c in view?.currencies ?? []" :key="c.currency" class="flex flex-col gap-2" :class="{ 'opacity-60': state.status === 'loading' }">
         <h3 v-if="(view?.currencies.length ?? 0) > 1" class="text-sm font-medium text-foreground-secondary">Счета в {{ currencyAlpha(c.currency) }}</h3>
-        <SpendingTable :currency="c" />
+        <VSimpleTable :columns="spendingColumns(c.currency)" :rows="c.categories" :row-key="(r) => r.category" :footer="spendingFooter(c)">
+          <template #cell-share="{ row }">
+            <svg class="block h-2 w-full" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
+              <rect width="100" height="8" rx="2" class="fill-surface-sunken" />
+              <rect :width="share(row.net, c.categories[0]?.net ?? 0)" height="8" rx="2" class="fill-primary" />
+            </svg>
+          </template>
+        </VSimpleTable>
         <p v-if="c.total.netPerDay !== null && view" class="text-sm text-foreground-muted">
           В среднем {{ formatMoney(c.total.netPerDay, c.currency) }} в день
           <template v-if="view.period.coveredDays < view.period.days">(по {{ view.period.coveredDays }} полным дням с данными)</template>

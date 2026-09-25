@@ -8,3 +8,5 @@ export { default as VSegmentedControl, type SegmentOption } from "./components/i
 export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";
 export { default as VTooltip } from "./components/overlay/VTooltip.vue";
+export { default as VSimpleTable } from "./table/VSimpleTable.vue";
+export type { TableAlign, TableColumn, TableFooterCell } from "./table/types";

@@ -52,9 +52,9 @@ describe('ui components copied from muzakit', () => {
     }
   });
 
-  it('every copied file carries the provenance header (icons.ts and index.ts are ours)', () => {
+  it('every copied file carries the provenance header (icons.ts, index.ts and table/ are ours)', () => {
     for (const f of filesUnder(uiDir, /\.(vue|ts|scss|css)$/)) {
-      const own = ['icons.ts', 'index.ts'].includes(path.basename(f));
+      const own = ['icons.ts', 'index.ts'].includes(path.basename(f)) || path.relative(uiDir, f).startsWith(`table${path.sep}`);
       expect((read(f).split('\n', 1)[0] ?? '').includes('copied from muzakit'), f).toBe(!own);
     }
   });

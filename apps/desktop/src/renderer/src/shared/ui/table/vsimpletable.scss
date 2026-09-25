@@ -1,0 +1,54 @@
+/* A plain data table: header, rows with hairlines, an optional total row. Numbers line up (tabular figures). */
+.v-simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+
+  &__th {
+    width: var(--v-simple-table-col-width, auto);
+    padding: var(--ui-space-xs) var(--ui-space-lg) var(--ui-space-xs) 0;
+    font-size: var(--ui-text-sm);
+    line-height: var(--ui-leading-sm);
+    font-weight: 500;
+    text-align: start;
+    color: var(--ui-foreground-muted);
+  }
+
+  &__td {
+    padding: var(--ui-space-sm) var(--ui-space-lg) var(--ui-space-sm) 0;
+    border-top: 1px solid var(--ui-border-subtle);
+  }
+
+  &__foot-td {
+    padding: var(--ui-space-md) var(--ui-space-lg) var(--ui-space-md) 0;
+    border-top: 1px solid var(--ui-border);
+    font-weight: 600;
+  }
+
+  &__th:last-child,
+  &__td:last-child,
+  &__foot-td:last-child {
+    padding-inline-end: 0;
+  }
+
+  &__cell--end {
+    text-align: end;
+  }
+
+  &__cell--secondary {
+    color: var(--ui-foreground-secondary);
+  }
+
+  &__cell--strong {
+    font-weight: 500;
+  }
+
+  &__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
