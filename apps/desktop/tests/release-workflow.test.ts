@@ -1,7 +1,8 @@
 // .github/workflows/release.yml is a trust anchor (CLAUDE.md): it builds and publishes under the author's name.
 // Its guarantees as text checks, so an edit that drops one fails here: actions pinned by commit SHA, no permissions
-// by default and writes only in the release job, no pull-request triggers, no secrets, no ${{ github.event.* }}
-// inside shell code, a draft release only, installers that never publish by themselves.
+// by default and writes only in the release job, no pull-request triggers, one secret (the update signing key) only in
+// the GitHub Environment "release" and only in the signing steps, no ${{ github.event.* }} inside shell code, a draft
+// release only, installers that never publish by themselves.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -41,8 +42,8 @@ describe('release workflow', () => {
   it('no permissions by default; read-only jobs; writes (release, attestations) only in the release job, only on a tag', () => {
     expect(code).toMatch(/\npermissions: \{\}\n/);
     const j = jobs();
-    expect(Object.keys(j).sort()).toEqual(['build', 'release', 'test']);
-    for (const name of ['test', 'build']) {
+    expect(Object.keys(j).sort()).toEqual(['build', 'release', 'signing-key-check', 'test']);
+    for (const name of ['test', 'build', 'signing-key-check']) {
       expect(j[name]).toMatch(/permissions:\n\s+contents: read\n/);
       expect(j[name]).not.toMatch(/: write/);
     }
@@ -51,8 +52,26 @@ describe('release workflow', () => {
     expect(writes).toEqual(['attestations', 'contents', 'id-token']);
   });
 
-  it('no secrets; the only token is the job’s own, and only for gh in the release step', () => {
-    expect(code).not.toMatch(/secrets\./);
+  it('one secret — the update signing key — only as the env of the two signing steps, both in the Environment "release"', () => {
+    expect([...code.matchAll(/secrets\.(\w+)/g)].map((m) => m[1])).toEqual(['UPDATE_SIGNING_KEY', 'UPDATE_SIGNING_KEY']);
+    const step = (cmd: string) =>
+      new RegExp(`env:\\n\\s+UPDATE_SIGNING_KEY: \\$\\{\\{ secrets\\.UPDATE_SIGNING_KEY \\}\\}\\n\\s+run: ${cmd.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\n`);
+    const j = jobs();
+    expect(j['signing-key-check']).toMatch(step('node apps/desktop/scripts/update-sign.mjs check'));
+    expect(j.release).toMatch(step('node apps/desktop/scripts/update-sign.mjs manifest dist "${GITHUB_REF_NAME#v}"'));
+    for (const name of ['release', 'signing-key-check']) expect(j[name]).toMatch(/\n    environment: release\n/);
+    for (const name of ['test', 'build']) expect(j[name]).not.toMatch(/environment:|secrets\./);
+    // The key is only ever handed to the script: no shell step reads the variable.
+    expect(code).not.toMatch(/\$\{?UPDATE_SIGNING_KEY/);
+  });
+
+  it('the key check runs only on a manual run, read-only, and does nothing but check', () => {
+    const k = jobs()['signing-key-check']!;
+    expect(k).toMatch(/if: github\.event_name == 'workflow_dispatch'\n/);
+    expect([...k.matchAll(/run: (.+)$/gm)].map((m) => m[1])).toEqual(['node apps/desktop/scripts/update-sign.mjs check']);
+  });
+
+  it('the only token is the job’s own, and only for gh in the release step', () => {
     expect([...code.matchAll(/github\.token/g)]).toHaveLength(1);
     expect(jobs().release).toContain('GH_TOKEN: ${{ github.token }}');
   });
@@ -65,7 +84,7 @@ describe('release workflow', () => {
 
   it('checkout never keeps the token in .git; installs from the lockfile only', () => {
     const checkouts = [...code.matchAll(/uses: actions\/checkout@\S+.*\n\s+with:\n\s+persist-credentials: false/g)];
-    expect(checkouts).toHaveLength(2);
+    expect(checkouts).toHaveLength(4);
     expect([...code.matchAll(/pnpm install --frozen-lockfile/g)]).toHaveLength(2);
     expect(code).not.toMatch(/pnpm install(?! --frozen-lockfile)/);
   });
@@ -86,6 +105,9 @@ describe('release workflow', () => {
     expect(r).toContain('sha256sum Balance-Insights-* > SHA256SUMS.txt');
     expect(r).toMatch(/attest-build-provenance@[0-9a-f]{40}[^\n]*\n\s+with:\n\s+subject-path: dist\/Balance-Insights-\*/);
     expect(r.indexOf('attest-build-provenance')).toBeLessThan(r.indexOf('gh release create'));
+    // The signed manifest is built from the same files, after SHA256SUMS and before the release is created.
+    expect(r.indexOf('sha256sum Balance-Insights-*')).toBeLessThan(r.indexOf('update-sign.mjs manifest'));
+    expect(r.indexOf('update-sign.mjs manifest')).toBeLessThan(r.indexOf('gh release create'));
   });
 
   it('the tag must match the app version, before anything is built', () => {

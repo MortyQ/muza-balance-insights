@@ -8,8 +8,9 @@ const read = (p: string) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 describe('worker entry', () => {
   const code = read('../src/worker/import.ts');
 
-  it('network only through the allowlist; the abortable clock; the shared importer', () => {
-    expect(code).toMatch(/fetch: allowlistedFetch\(net\.fetch\)/);
+  it('network only through the allowlist, scoped to Monobank; the abortable clock; the shared importer', () => {
+    // Monobank only: the X-Token header can never reach another trusted service.
+    expect(code).toMatch(/fetch: allowlistedFetch\(net\.fetch, \['monobank'\]\)/);
     expect(code).toMatch(/clock: abortableClock/);
     expect(code).toMatch(/await runImport\(/);
   });

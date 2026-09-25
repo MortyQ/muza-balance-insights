@@ -20,6 +20,7 @@ import {
   expectFuses,
   expectOwnIcon,
   expectValidSignature,
+  SLOW_CHECK_MS,
   unpackedNatives,
   type Built,
 } from './helpers/app-checks.ts';
@@ -87,7 +88,7 @@ describe.skipIf(present.length === 0)('.dmg images', () => {
       );
       mount = /<key>mount-point<\/key>\s*<string>([^<]+)<\/string>/.exec(plist)?.[1] ?? '';
       app = built(mount, 'darwin');
-    });
+    }, SLOW_CHECK_MS);
     afterAll(() => {
       if (mount) execFileSync('hdiutil', ['detach', mount, '-force'], { stdio: 'pipe' });
     });
@@ -114,6 +115,6 @@ describe.skipIf(present.length === 0)('.dmg images', () => {
       expectAsarContents(app);
       expectValidSignature(app);
       expectOwnIcon(app, path.join(root, 'build', 'icon.icns'));
-    });
+    }, SLOW_CHECK_MS);
   });
 });

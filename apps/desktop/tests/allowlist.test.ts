@@ -1,15 +1,38 @@
-// Network only to api.monobank.ua — one list, one wrapper, and nothing in the app fetches around it.
+// Network only to trusted services — one list, each caller scoped to the services it needs, one wrapper, and nothing
+// in the app fetches around it.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { ALLOWED_HOSTS, NetworkPolicyError, allowlistedFetch, assertAllowedUrl, type InnerFetch } from '../src/net/allowlist.ts';
+import {
+  NetworkPolicyError,
+  TRUSTED_SERVICES,
+  allowlistedFetch,
+  assertAllowedUrl,
+  hostsOf,
+  isAllowedUrl,
+  type InnerFetch,
+} from '../src/net/allowlist.ts';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 
 describe('allowlist', () => {
-  it('exactly one host', () => {
-    expect(ALLOWED_HOSTS).toEqual(['api.monobank.ua']);
+  it('exactly these services and hosts, in this order (a new one is a reviewed change of this test)', () => {
+    expect(TRUSTED_SERVICES.map((s) => [s.id, [...s.hosts]])).toEqual([
+      ['github', ['github.com', 'release-assets.githubusercontent.com']],
+      ['monobank', ['api.monobank.ua']],
+    ]);
+    for (const s of TRUSTED_SERVICES) expect(s.purpose.length, s.id).toBeGreaterThan(10);
+  });
+
+  it('a scope sees only its own hosts: Monobank never reaches GitHub and back', () => {
+    expect(hostsOf(['monobank'])).toEqual(['api.monobank.ua']);
+    expect(hostsOf([])).toEqual([]);
+    expect(isAllowedUrl('https://github.com/MortyQ/muza-balance-insights/releases.atom', ['monobank'])).toBe(false);
+    expect(isAllowedUrl('https://api.monobank.ua/personal/client-info', ['github'])).toBe(false);
+    expect(isAllowedUrl('https://release-assets.githubusercontent.com/x', ['github'])).toBe(true);
+    expect(isAllowedUrl('https://api.github.com/repos/x', ['github'])).toBe(false);
+    expect(isAllowedUrl('https://objects.githubusercontent.com/x', ['github'])).toBe(false);
   });
 
   it.each([
@@ -18,7 +41,7 @@ describe('allowlist', () => {
     'HTTPS://API.MONOBANK.UA/personal/client-info', // normalized by URL
     'https://api.monobank.ua:443/x', // URL drops the default port: same origin
   ])('allows %s', (url) => {
-    expect(() => assertAllowedUrl(url)).not.toThrow();
+    expect(() => assertAllowedUrl(url, ['monobank'])).not.toThrow();
   });
 
   it.each([
@@ -35,13 +58,14 @@ describe('allowlist', () => {
     'file:///etc/passwd',
     'not a url',
   ])('refuses %s', (url) => {
-    expect(() => assertAllowedUrl(url)).toThrow(NetworkPolicyError);
+    expect(() => assertAllowedUrl(url, ['monobank'])).toThrow(NetworkPolicyError);
+    expect(() => assertAllowedUrl(url, ['github', 'monobank'].filter((s) => s !== 'monobank') as ['github'])).toThrow(NetworkPolicyError);
   });
 
   it('refusal names the host, never the path (ids live there)', () => {
     const err = (() => {
       try {
-        assertAllowedUrl('https://evil.example/personal/statement/SECRET-ACCOUNT/1/2');
+        assertAllowedUrl('https://evil.example/personal/statement/SECRET-ACCOUNT/1/2', ['github', 'monobank']);
       } catch (e) {
         return e as Error;
       }
@@ -58,10 +82,11 @@ describe('allowlistedFetch', () => {
       calls.push([url, init]);
       return { status: 200, ok: true, headers: { get: () => null }, text: async () => '{}' };
     };
-    const f = allowlistedFetch(inner);
+    const f = allowlistedFetch(inner, ['monobank']);
     await f('https://api.monobank.ua/personal/client-info', { headers: { 'X-Token': 't' } });
     await expect(f('https://evil.example/x', { headers: { 'X-Token': 't' } })).rejects.toBeInstanceOf(NetworkPolicyError);
     await expect(f('http://api.monobank.ua/x', { headers: {} })).rejects.toBeInstanceOf(NetworkPolicyError);
+    await expect(f('https://github.com/x', { headers: { 'X-Token': 't' } })).rejects.toBeInstanceOf(NetworkPolicyError);
     expect(calls).toEqual([['https://api.monobank.ua/personal/client-info', { headers: { 'X-Token': 't' }, redirect: 'error' }]]);
   });
 
@@ -70,7 +95,7 @@ describe('allowlistedFetch', () => {
     const f = allowlistedFetch(async (_u, init) => {
       seen = init.redirect;
       return { status: 200, ok: true, headers: { get: () => null }, text: async () => '' };
-    });
+    }, ['monobank']);
     await f('https://api.monobank.ua/x', { headers: {}, redirect: 'follow' } as any);
     expect(seen).toBe('error');
   });
@@ -85,13 +110,13 @@ describe('nothing in the app goes around the allowlist', () => {
     });
   }
 
-  it('no fetch / net.fetch / net.request / http(s) / WebSocket outside src/net/allowlist.ts (net.fetch only as allowlistedFetch(net.fetch))', () => {
+  it('no fetch / net.fetch / net.request / http(s) / WebSocket outside src/net/allowlist.ts (net.fetch only as allowlistedFetch(net.fetch, [...]))', () => {
     const files = listTs(SRC);
     expect(files.length).toBeGreaterThan(10);
     const pattern = /(?<![.\w])fetch\s*\(|\bnet\.(fetch|request)\b|from ['"](node:)?https?['"]|require\(['"](node:)?https?['"]\)|new WebSocket\b|XMLHttpRequest|navigator\.sendBeacon/;
     const offenders = files
       .filter((f) => !f.endsWith(path.join('net', 'allowlist.ts')))
-      .filter((f) => pattern.test(fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/allowlistedFetch\(net\.fetch\)/g, '')))
+      .filter((f) => pattern.test(fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/allowlistedFetch\(net\.fetch, \[[^\]]*\]\)/g, '')))
       .map((f) => path.relative(SRC, f));
     expect(offenders).toEqual([]);
   });

@@ -51,7 +51,9 @@
 - `apps/mcp/tests/recategorize-safety.test.ts`: тест, который `recategorize` прогоняет первым шагом;
 - `.claude/settings.json`: allow/deny, sandbox и `excludedCommands` (правит только пользователь).
 - `.github/workflows/release.yml`: что собирается и публикуется от имени автора. Его гарантии проверяет
-  `apps/desktop/tests/release-workflow.test.ts` (actions по SHA, права, триггеры, без секретов, только draft).
+  `apps/desktop/tests/release-workflow.test.ts` (actions по SHA, права, триггеры, только draft; один секрет —
+  `UPDATE_SIGNING_KEY`, только в Environment `release` с ручным подтверждением и только в шагах `update-sign.mjs`).
+  Публичная половина ключа — `apps/desktop/src/main/update/public-key.ts`: смена = установленные копии отвергнут обновления.
 
 Правила:
 - любое изменение в них — отдельным пунктом в отчёте: что изменено и зачем;
@@ -281,6 +283,10 @@
   внутри копий, `@vueuse`, `@iconify/vue`. Иконки — `unplugin-icons` (`autoInstall: false`) из локального `@iconify-json/lucide`,
   явный реестр `ui/components/base/icons.ts`, канонические имена Lucide (не алиасы).
   Таблицу трат и формат сумм пишем свои (`VTable` и `formatCurrency` из muzakit не подходят).
+- **Сеть — список доверенных сервисов** (`apps/desktop/src/net/allowlist.ts`, `TRUSTED_SERVICES`): `github` (обновления:
+  `github.com`, `release-assets.githubusercontent.com`), `monobank` (`api.monobank.ua`). Каждый потребитель ограничен своими
+  сервисами (`allowlistedFetch(fetch, ['monobank'])` — X-Token не уйдёт на другой хост); https, порт по умолчанию, без
+  редиректов. Добавлять — только надёжные известные сервисы, отдельным шагом, с правкой `tests/allowlist.test.ts`.
 - **Архитектура renderer — FSD** (`apps/desktop/src/renderer/src`), проверяет `apps/desktop/tests/architecture.test.ts`
   (правила — `tests/helpers/architecture.ts`, у каждого правила есть «ломающий» пример):
   - слои `app → pages → widgets → features → entities → shared`, импорт только вниз; слайсы одного слоя друг друга не
