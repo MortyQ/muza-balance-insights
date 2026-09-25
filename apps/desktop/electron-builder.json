@@ -6,7 +6,8 @@
   },
   "files": [
     "out/**",
-    "package.json"
+    "package.json",
+    "!**/*.map"
   ],
   "asar": true,
   "asarUnpack": [

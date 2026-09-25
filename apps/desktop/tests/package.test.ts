@@ -59,7 +59,8 @@ describe('electron-builder config', () => {
     expect(config.productName).toBe(PRODUCT);
     // Frozen after the first release (CLAUDE.md): bundle id, updates, Windows install identity.
     expect(config.appId).toBe(APP_ID);
-    expect(config.files).toEqual(['out/**', 'package.json']);
+    // Source maps stay out, including the ones runtime deps (electron-updater, js-yaml …) ship in node_modules.
+    expect(config.files).toEqual(['out/**', 'package.json', '!**/*.map']);
     expect(config.asar).toBe(true);
     expect(config.asarUnpack).toEqual(['**/*.node']);
     expect(config.npmRebuild).toBe(false);

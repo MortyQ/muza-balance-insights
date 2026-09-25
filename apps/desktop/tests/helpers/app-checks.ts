@@ -95,6 +95,7 @@ export function expectAsarContents(b: Built) {
   for (const f of ['package.json', 'out/main/index.js', 'out/preload/index.cjs', 'out/renderer/index.html']) expect(files).toContain(f);
   expect(files.some((f) => f.startsWith('node_modules/@libsql/client/'))).toBe(true);
   expect(files.some((f) => f.startsWith('node_modules/zod/'))).toBe(true);
+  expect(files.some((f) => f.startsWith('node_modules/electron-updater/'))).toBe(true);
   const bad = files.filter(
     (f) =>
       /^(src|tests|scripts|build)\//.test(f) ||
