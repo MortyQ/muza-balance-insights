@@ -6,7 +6,7 @@ import { useSpending } from './composables/useSpending.ts';
 import { SCOPES } from './constants.ts';
 import { share, spendingColumns, spendingFooter } from './utils.ts';
 
-const { thisMonth, month, scope, state, view, periodNote } = useSpending();
+const { thisMonth, month, scope, state, view, periodNote, importing } = useSpending();
 </script>
 
 <template>
@@ -32,6 +32,7 @@ const { thisMonth, month, scope, state, view, periodNote } = useSpending();
         subtitle="Не удалось посчитать траты. Попробуй ещё раз или перезапусти приложение."
       />
       <VInfoNotice v-else-if="periodNote" :card="false" icon="lucide:info" tone="info" :subtitle="periodNote" />
+      <p v-if="importing" class="text-sm text-foreground-muted">Идёт импорт — цифры дополняются по мере загрузки выписки.</p>
       <p v-if="view && view.period.pendingHolds > 0" class="text-sm text-foreground-muted">
         Операций в обработке банком: {{ view.period.pendingHolds }} — их суммы ещё могут измениться.
       </p>
