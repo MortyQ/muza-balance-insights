@@ -38,7 +38,7 @@ port.on('message', (event: { data: unknown }) => {
       await migrate(db, Math.floor(Date.now() / 1000));
       await runImport({
         db,
-        fetch: allowlistedFetch(net.fetch),
+        fetch: allowlistedFetch(net.fetch, ['monobank']),
         clock: abortableClock,
         token: msg.token,
         sinceSec: msg.sinceSec,
