@@ -8,6 +8,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Ver
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-09-25
+
+First version with automatic updates: install it by hand once, later versions come by themselves.
+
 ### Added
 
 - Automatic updates on Windows and Linux (AppImage): downloaded in the background, installed on restart or quit.

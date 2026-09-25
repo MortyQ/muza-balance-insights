@@ -69,7 +69,7 @@ Without GNOME Keyring or KWallet the token is kept in memory only: you will ente
   the saved token — choose **Always Allow**.
 - Every update is checked against a signature of the author before it is installed or saved; a file that does not match is deleted.
 - Settings → Updates: your version, «Проверить сейчас», and a switch to turn automatic checks off.
-- Versions before automatic updates (0.1.x) have to be updated by hand once.
+- Automatic updates start with 0.1.2: from 0.1.0 or 0.1.1, install 0.1.2 by hand once.
 
 ## Where your data is, and removing it
 
