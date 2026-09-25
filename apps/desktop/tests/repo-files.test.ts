@@ -41,6 +41,13 @@ describe.runIf(fs.existsSync(path.join(REPO, '.git')))('.gitignore vs the worksp
     expect(ignored(files)).toEqual([]);
   });
 
+  it('.gitattributes: text is checked out with LF on every OS (a Windows runner turned LICENSE into CRLF), icons stay binary', () => {
+    const attr = (file: string, name: string) =>
+      execFileSync('git', ['check-attr', name, '--', file], { cwd: REPO, encoding: 'utf8' }).trim().split(': ').at(-1);
+    for (const f of ['LICENSE', 'package.json', 'apps/desktop/src/main/index.ts', '.github/workflows/release.yml']) expect(attr(f, 'eol'), f).toBe('lf');
+    for (const f of ['apps/desktop/build/icon.icns', 'apps/desktop/build/icon.ico', 'apps/desktop/build/icon.png']) expect(attr(f, 'text'), f).toBe('unset');
+  });
+
   it('the data rules still hold: root data/, analysis/, reports/, and *.db / .env anywhere', () => {
     const must = ['data/x', 'analysis/analysis.sqlite', 'reports/r.md', 'reply.md', 'apps/mcp/x.db', 'apps/mcp/x.db-wal', 'apps/mcp/.env', '.env.local'];
     expect(ignored(must).sort()).toEqual([...must].sort());

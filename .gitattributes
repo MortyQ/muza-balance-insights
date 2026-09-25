@@ -1,0 +1,10 @@
+# LF everywhere, whatever the OS or its core.autocrlf: a Windows checkout (CI runner included) must build and test
+# the same bytes as macOS and Linux.
+* text=auto eol=lf
+
+# Binary: never touched.
+*.icns binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff2 binary
