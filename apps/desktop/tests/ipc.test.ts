@@ -81,6 +81,13 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['hasToken', ['x']],
     ['cancelImport', [1]],
     ['getSyncStatus', [{}]],
+    ['getUpdate', [1]],
+    ['checkForUpdates', ['now']],
+    ['downloadUpdate', [{ url: 'https://evil.example/x.dmg' }]],
+    ['installUpdate', [true]],
+    ['setUpdateChecks', []],
+    ['setUpdateChecks', ['yes']],
+    ['setUpdateChecks', [true, 'extra']],
   ];
   it.each(INVALID)('%s(%j) → rejected, handler not called', async (m, args) => {
     const ipc = fakeIpcMain();

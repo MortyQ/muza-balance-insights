@@ -110,12 +110,13 @@ describe('nothing in the app goes around the allowlist', () => {
     });
   }
 
-  it('no fetch / net.fetch / net.request / http(s) / WebSocket outside src/net/allowlist.ts (net.fetch only as allowlistedFetch(net.fetch, [...]))', () => {
+  it('no fetch / net.fetch / net.request / http(s) / WebSocket outside src/net/allowlist.ts and the guarded update session (net.fetch only as allowlistedFetch(net.fetch, [...]))', () => {
     const files = listTs(SRC);
     expect(files.length).toBeGreaterThan(10);
     const pattern = /(?<![.\w])fetch\s*\(|\bnet\.(fetch|request)\b|from ['"](node:)?https?['"]|require\(['"](node:)?https?['"]\)|new WebSocket\b|XMLHttpRequest|navigator\.sendBeacon/;
     const offenders = files
-      .filter((f) => !f.endsWith(path.join('net', 'allowlist.ts')))
+      // The updater's session fetch: that session is guarded by the same list (tests/update-session.test.ts).
+      .filter((f) => !f.endsWith(path.join('net', 'allowlist.ts')) && !f.endsWith(path.join('main', 'update', 'session.ts')))
       .filter((f) => pattern.test(fs.readFileSync(f, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '').replace(/allowlistedFetch\(net\.fetch, \[[^\]]*\]\)/g, '')))
       .map((f) => path.relative(SRC, f));
     expect(offenders).toEqual([]);

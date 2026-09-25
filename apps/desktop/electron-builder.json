@@ -16,6 +16,12 @@
   "electronDownload": {
     "cache": "node_modules/.cache/electron"
   },
+  "publish": {
+    "provider": "github",
+    "owner": "MortyQ",
+    "repo": "muza-balance-insights",
+    "releaseType": "draft"
+  },
   "mac": {
     "target": [
       {
@@ -48,7 +54,8 @@
   "nsis": {
     "oneClick": true,
     "perMachine": false,
-    "deleteAppDataOnUninstall": false
+    "deleteAppDataOnUninstall": false,
+    "differentialPackage": false
   },
   "linux": {
     "target": [

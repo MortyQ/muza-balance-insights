@@ -11,6 +11,11 @@ export const METHODS = [
   'getBalances',
   'getSyncStatus',
   'deleteAllData',
+  'getUpdate',
+  'checkForUpdates',
+  'downloadUpdate',
+  'installUpdate',
+  'setUpdateChecks',
 ] as const;
 
 export type Method = (typeof METHODS)[number];
@@ -20,6 +25,9 @@ export const channel = (m: Method): string => `${CHANNEL_PREFIX}${m}`;
 
 /** main → renderer only (import progress). */
 export const PROGRESS_CHANNEL = `${CHANNEL_PREFIX}progress`;
+
+/** main → renderer only: the app-update view (src/shared/update.ts) whenever it changes. */
+export const UPDATE_CHANNEL = `${CHANNEL_PREFIX}update`;
 
 /** main → renderer only, no payload: the «Настройки…» menu item (Cmd/Ctrl+,). */
 export const OPEN_SETTINGS_CHANNEL = `${CHANNEL_PREFIX}open-settings`;

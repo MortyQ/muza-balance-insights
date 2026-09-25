@@ -26,7 +26,17 @@ export function appPublicKeyPem(file = PUBLIC_KEY_FILE) {
 export function signingKeyFromEnv(env = process.env) {
   const pem = env.UPDATE_SIGNING_KEY || (env.UPDATE_SIGNING_KEY_FILE ? fs.readFileSync(env.UPDATE_SIGNING_KEY_FILE, 'utf8') : '');
   if (!pem.trim()) throw new Error('UPDATE_SIGNING_KEY (or UPDATE_SIGNING_KEY_FILE) is not set');
-  const key = createPrivateKey(pem);
+  // Say what is wrong with the secret without ever showing it.
+  if (pem.includes('BEGIN PUBLIC KEY')) throw new Error('the signing key is a PUBLIC key: put the private key file content into the secret');
+  if (!pem.includes('-----BEGIN PRIVATE KEY-----') || !pem.includes('-----END PRIVATE KEY-----')) {
+    throw new Error('the signing key has no BEGIN/END PRIVATE KEY lines: paste the whole private key file, all three lines');
+  }
+  let key;
+  try {
+    key = createPrivateKey(pem);
+  } catch {
+    throw new Error('the signing key is not a readable PEM private key (cut off, extra characters or quotes?)');
+  }
   if (key.asymmetricKeyType !== 'ed25519') throw new Error('the signing key is not ed25519');
   return key;
 }

@@ -3,7 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
-import { OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL } from '../shared/channels.ts';
+import { OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
@@ -15,6 +15,7 @@ import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenStore } from './token.ts';
+import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { windowOptions } from './window.ts';
 import { DB_FILE, deleteAllData } from './wipe.ts';
 
@@ -91,6 +92,12 @@ app.whenReady().then(async () => {
     log: (msg) => process.stderr.write(`[import] ${msg}\n`),
   });
   app.on('before-quit', () => importer.shutdown());
+  const updater = createUpdater({
+    userDataDir: userData,
+    importRunning: () => importer.running,
+    send: (v) => win?.webContents.send(UPDATE_CHANNEL, v),
+    log: (msg) => process.stderr.write(`[update] ${msg}\n`),
+  });
   const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
   const confirmDelete = async () => {
     const opts = {
@@ -116,6 +123,11 @@ app.whenReady().then(async () => {
     getSyncStatus: () => data.status(),
     deleteAllData: () =>
       deleteAllData({ confirm: confirmDelete, tokens, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
+    getUpdate: async () => updater.view(),
+    checkForUpdates: () => updater.check(true),
+    downloadUpdate: () => updater.download(),
+    installUpdate: async () => updater.install(),
+    setUpdateChecks: (enabled) => updater.setChecks(enabled),
   }, {
     trusted: (event) => isTrustedSender(event, win, devOrigin),
     onError: (method, err) => process.stderr.write(`[ipc] ${method}: ${err instanceof Error ? err.name : 'error'}\n`),
@@ -139,9 +151,11 @@ app.whenReady().then(async () => {
   let resumeChecked = false;
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send(PROGRESS_CHANNEL, importer.lastProgress);
+    win?.webContents.send(UPDATE_CHANNEL, updater.view());
     if (!resumeChecked) {
       resumeChecked = true;
       void importer.resumeOnLaunch();
+      scheduleChecks(updater);
     }
   });
   if (devOrigin) await win.loadURL(`${devOrigin}/`);

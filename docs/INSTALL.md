@@ -60,6 +60,17 @@ Without GNOME Keyring or KWallet the token is kept in memory only: you will ente
 2. Paste it into the app. «Remember on this computer» keeps it in the system keychain.
 3. Choose how many months to import. The first import of a long history takes a while: Monobank allows one statement request per minute. You can close the app — the import continues next time.
 
+## Updates
+
+- **Windows** and **Linux (AppImage)**: the app checks GitHub every few hours, downloads a new version in the background and
+  shows «Перезапустить и обновить». It also installs on the next quit.
+- **macOS**: the app shows the new version, downloads the `.dmg` into Downloads when you click «Скачать». Open it and drag
+  Balance Insights onto Applications, replacing the old one. macOS asks once for your password to let the new version use
+  the saved token — choose **Always Allow**.
+- Every update is checked against a signature of the author before it is installed or saved; a file that does not match is deleted.
+- Settings → Updates: your version, «Проверить сейчас», and a switch to turn automatic checks off.
+- Versions before automatic updates (0.1.x) have to be updated by hand once.
+
 ## Where your data is, and removing it
 
 Everything stays on your computer:

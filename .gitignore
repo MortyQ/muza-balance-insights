@@ -13,3 +13,6 @@ node_modules/
 out/
 dist/
 .DS_Store
+
+# brainstorming mockups (superpowers visual companion)
+.superpowers/

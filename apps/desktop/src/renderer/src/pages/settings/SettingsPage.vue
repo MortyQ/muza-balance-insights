@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { UpdateSettingsFeature } from '@/features/app-update';
 import { BankConnectionFeature } from '@/features/connect-bank';
 import { DeleteDataFeature } from '@/features/delete-data';
 import { ROUTE } from '@/shared/config';
@@ -20,6 +21,7 @@ useEscape(back);
       <h1 class="text-xl font-semibold">Настройки</h1>
     </header>
     <BankConnectionFeature />
+    <UpdateSettingsFeature />
     <DeleteDataFeature @deleted="back" />
     <AboutApp />
   </main>

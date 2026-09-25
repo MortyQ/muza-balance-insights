@@ -95,6 +95,15 @@ describe('release workflow', () => {
     expect(b).toMatch(/PACKAGE_CHECK: '1'\n\s+run: pnpm --filter @mono\/desktop exec vitest run tests\/package\.test\.ts/);
     expect(b).toMatch(/DMG_CHECK: '1'\n\s+run: pnpm --filter @mono\/desktop exec vitest run tests\/dmg\.test\.ts/);
     expect(b.indexOf('tests/package.test.ts')).toBeLessThan(b.indexOf('upload-artifact'));
+    // The installers plus electron-updater's feeds (Windows, Linux); no .blockmap, no other file of dist/.
+    const paths = /path: \|\n((?:\s{12}.+\n)+)/.exec(b)![1]!.trim().split(/\s+/);
+    expect(paths).toEqual([
+      'apps/desktop/dist/Balance-Insights-*.dmg',
+      'apps/desktop/dist/Balance-Insights-*.exe',
+      'apps/desktop/dist/Balance-Insights-*.AppImage',
+      'apps/desktop/dist/latest.yml',
+      'apps/desktop/dist/latest-linux.yml',
+    ]);
     expect(code).not.toMatch(/electron-builder/);
   });
 

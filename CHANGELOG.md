@@ -8,6 +8,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Ver
 
 ## [Unreleased]
 
+### Added
+
+- Automatic updates on Windows and Linux (AppImage): downloaded in the background, installed on restart or quit.
+- macOS: «new version» notice; the verified `.dmg` is saved to Downloads.
+- Settings → Updates: version, «check now», automatic checks on/off (on by default).
+
+### Security
+
+- Every update is verified with the author's ed25519 signature (the public key is inside the app) and its size and sha512
+  before it is installed or saved.
+- Network access is a list of trusted services (GitHub for updates, Monobank for the import); each part of the app may use
+  only its own.
+
 ## [0.1.1] — 2026-09-25
 
 ### Added

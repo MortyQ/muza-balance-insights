@@ -8,7 +8,9 @@ import LucideDownload from "~icons/lucide/download";
 import LucideInfo from "~icons/lucide/info";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucidePlug from "~icons/lucide/plug";
+import LucideRefreshCw from "~icons/lucide/refresh-cw";
 import LucideSettings from "~icons/lucide/settings";
+import LucideSparkles from "~icons/lucide/sparkles";
 import LucideSquare from "~icons/lucide/square";
 import LucideTrash from "~icons/lucide/trash";
 import LucideTriangleAlert from "~icons/lucide/triangle-alert";
@@ -32,7 +34,9 @@ export const ICONS: Record<string, Component> = {
   "lucide:info": LucideInfo,
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:plug": LucidePlug,
+  "lucide:refresh-cw": LucideRefreshCw,
   "lucide:settings": LucideSettings,
+  "lucide:sparkles": LucideSparkles,
   "lucide:square": LucideSquare,
   "lucide:trash": LucideTrash,
   "lucide:triangle-alert": LucideTriangleAlert,
