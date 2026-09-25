@@ -19,6 +19,7 @@ import {
   expectOwnIcon,
   expectValidSignature,
   libsqlNative,
+  SLOW_CHECK_MS,
   unpackedNatives,
   type Platform,
 } from './helpers/app-checks.ts';
@@ -151,5 +152,5 @@ describe.skipIf(!present)(`packaged app (dist/, ${platform}-${arch})`, () => {
     expect(binaryArchs(app!)).toEqual([arch === 'arm64' ? 'arm64' : 'x86_64']);
     // Flipping fuses breaks the arm64 signature; without the ad-hoc re-sign macOS kills the app.
     expectValidSignature(app!);
-  });
+  }, SLOW_CHECK_MS);
 });

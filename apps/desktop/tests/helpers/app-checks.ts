@@ -120,6 +120,12 @@ export function expectValidSignature(b: Built) {
   expect(() => execFileSync('codesign', ['--verify', '--deep', '--strict', b.root], { stdio: 'pipe' })).not.toThrow();
 }
 
+/**
+ * Time for checks that read the whole app: `codesign --verify --deep` hashes every file of the Electron framework
+ * (~200 MB), and on a CI runner that can take longer than vitest's default 5 s.
+ */
+export const SLOW_CHECK_MS = 120_000;
+
 /** macOS: architectures of the main executable, as `lipo` names them (arm64, x86_64). */
 export function binaryArchs(b: Built): string[] {
   return execFileSync('lipo', ['-archs', b.binary], { encoding: 'utf8' }).trim().split(/\s+/).sort();
