@@ -1,0 +1,7 @@
+packages:
+  - packages/*
+  - apps/*
+allowBuilds:
+  '@parcel/watcher': false
+  electron-winstaller: false
+  esbuild: false

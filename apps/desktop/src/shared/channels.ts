@@ -1,0 +1,25 @@
+// The whole renderer ↔ main surface. No dependencies: the sandboxed preload bundles this file as is.
+// Adding a method = one line here + a zod schema in src/main/ipc.ts (typecheck enforces both) + a handler.
+
+export const METHODS = [
+  'setToken',
+  'clearToken',
+  'hasToken',
+  'startImport',
+  'cancelImport',
+  'spendingSummary',
+  'getBalances',
+  'getSyncStatus',
+  'deleteAllData',
+] as const;
+
+export type Method = (typeof METHODS)[number];
+
+export const CHANNEL_PREFIX = 'balance:';
+export const channel = (m: Method): string => `${CHANNEL_PREFIX}${m}`;
+
+/** main → renderer only (import progress). */
+export const PROGRESS_CHANNEL = `${CHANNEL_PREFIX}progress`;
+
+/** The name of the API object in the renderer: window.balance. */
+export const API_KEY = 'balance';

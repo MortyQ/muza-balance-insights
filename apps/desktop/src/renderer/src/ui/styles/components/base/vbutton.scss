@@ -1,0 +1,327 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+/* ─── BASE ───────────────────────────────────────────────────────────────────
+   One chrome, no flag. 30px tall, 8px radius, a 1px hairline, 13px/450 type and
+   a single tier of elevation. so-platform ships this behind `modern` because
+   flipping it there would repaint screens drawn against its legacy 40px button;
+   this library has no such history, so there is one appearance and no prop to
+   choose between two.
+
+   0.12s, not 0.3s: no static frame differs, only the time taken to reach it. At
+   300ms a hover reads as lag rather than as a response. */
+.v-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-control-gap);
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-lg);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--ui-shadow-xs);
+  transition: background-color 120ms ease,
+  color 120ms ease,
+  border-color 120ms ease,
+  box-shadow 120ms ease;
+
+  &:active:not(:disabled) {
+    transform: translateY(0.5px);
+  }
+}
+
+.v-button__icon,
+.v-button__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v-button__label {
+  /* Was Tailwind's `gap-0.75` — 0.75 × the 0.25rem spacing step. */
+  gap: 0.1875rem;
+}
+
+.v-button--icon-only {
+  width: var(--ui-control-h);
+  padding: 0;
+}
+
+/* Opacity only — the variant keeps its own colours. This used to recolour the
+   text to `--ui-foreground-disabled` *and* drop the opacity, which dimmed twice:
+   on the filled `secondary` the text vanished into its own fill, and in the
+   dark theme, where that token is L 35% on a dark surface, every disabled
+   button came out close to unreadable.
+
+   Keyed on the class, not on `:disabled`. The native attribute is also set
+   while loading — it is what blocks the click — so a `:disabled` rule would
+   dim a loading button too. */
+.v-button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* Busy, not unavailable: full colour so the spinner is legible, input blocked
+   by the native `disabled` attribute the component sets. The same reasoning
+   VSegmentedControl's loading state is built on. */
+.v-button--loading {
+  cursor: progress;
+}
+
+.v-button:focus-visible {
+  outline: 2px solid var(--ui-ring);
+  outline-offset: 2px;
+}
+
+/* ─── THE TONAL VARIANTS ─────────────────────────────────────────────────────
+   One recipe, six hues: a 9% fill, a 16% hairline in the same hue, and that
+   hue's own text tone. There is deliberately no filled tier — a filled button
+   beside five tonal ones is not a peer with more emphasis, it is the only thing
+   on the row that looks like a button, and in a toolbar that is a rank nobody
+   asked for. `secondary` is the single exception, below.
+
+   Hover raises the alpha of the same hue rather than swapping the token.
+   Deliberately not `filter: brightness()`: on a light-theme fill that reads as a
+   hover, on the dark theme's already-bright primary it washes toward white and
+   reads as disabled, and on a 9%-alpha tonal surface it does nothing at all.
+
+   The text tone is `--ui-{hue}-hover`, which is the darker step in the light
+   theme and the lighter one in dark. so-platform needs an explicit
+   `[data-theme="dark"]` block here because its preset inverts the hue bases but
+   leaves the `-700` steps alone, leaving dark-on-dark text; these tokens are
+   theme-scoped on both sides, so the swap is the tokens' job rather than this
+   file's. */
+.v-button--primary {
+  background-color: color-mix(in oklch, var(--ui-primary) 9%, transparent);
+  border-color: color-mix(in oklch, var(--ui-primary) 16%, transparent);
+  color: var(--ui-primary-hover);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-primary) 15%, transparent);
+    border-color: color-mix(in oklch, var(--ui-primary) 24%, transparent);
+  }
+}
+
+.v-button--info {
+  background-color: color-mix(in oklch, var(--ui-info) 9%, transparent);
+  border-color: color-mix(in oklch, var(--ui-info) 16%, transparent);
+  color: var(--ui-info-hover);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-info) 15%, transparent);
+    border-color: color-mix(in oklch, var(--ui-info) 24%, transparent);
+  }
+}
+
+.v-button--positive {
+  background-color: color-mix(in oklch, var(--ui-success) 9%, transparent);
+  border-color: color-mix(in oklch, var(--ui-success) 16%, transparent);
+  color: var(--ui-success-hover);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-success) 15%, transparent);
+    border-color: color-mix(in oklch, var(--ui-success) 24%, transparent);
+  }
+}
+
+.v-button--warning {
+  background-color: color-mix(in oklch, var(--ui-warning) 9%, transparent);
+  border-color: color-mix(in oklch, var(--ui-warning) 16%, transparent);
+  color: var(--ui-warning-hover);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-warning) 15%, transparent);
+    border-color: color-mix(in oklch, var(--ui-warning) 24%, transparent);
+  }
+}
+
+.v-button--negative {
+  background-color: color-mix(in oklch, var(--ui-danger) 9%, transparent);
+  border-color: color-mix(in oklch, var(--ui-danger) 16%, transparent);
+  color: var(--ui-danger-hover);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-danger) 15%, transparent);
+    border-color: color-mix(in oklch, var(--ui-danger) 24%, transparent);
+  }
+}
+
+/* `--ui-foreground` is near-black on a near-white page, so the same alphas that
+   read as a tint in a saturated hue read as grey paint here. Halved, and the
+   text tone is the hue itself. */
+.v-button--neutral {
+  background-color: color-mix(in oklch, var(--ui-foreground) 4%, transparent);
+  border-color: color-mix(in oklch, var(--ui-foreground) 8%, transparent);
+  color: var(--ui-foreground);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in oklch, var(--ui-foreground) 8%, transparent);
+    border-color: color-mix(in oklch, var(--ui-foreground) 13%, transparent);
+  }
+}
+
+/* ─── SECONDARY — the one filled variant ─────────────────────────────────────
+   Left out of the tonal system on purpose. `neutral` already *is* the tonal
+   quiet button, so converting this one would leave two spellings of one
+   appearance; keeping it filled is what gives a row somewhere to put the single
+   button that should outrank the others. */
+.v-button--secondary {
+  background-color: var(--ui-border-strong);
+  border-color: var(--ui-border-strong);
+  color: var(--ui-foreground-inverted);
+
+  &:hover:not(:disabled) {
+    background-color: var(--ui-foreground-muted);
+    border-color: var(--ui-foreground-muted);
+  }
+
+  &:active:not(:disabled) {
+    background-color: var(--ui-foreground-secondary);
+    border-color: var(--ui-foreground-secondary);
+  }
+}
+
+/* ─── LINK ───────────────────────────────────────────────────────────────────
+   Not a surface at all, so it opts out of the chrome's height, padding, border
+   and elevation rather than restating them. */
+.v-button--link {
+  height: auto;
+  padding: 0 var(--ui-space-md);
+  min-width: unset;
+  position: relative;
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--ui-primary);
+  font-weight: 500;
+
+  &::after {
+    content: '';
+    display: block;
+    position: absolute;
+    /* Inside the padding, so the line starts and ends with the content */
+    left: var(--ui-space-md);
+    /* Solved from the button's own height, which for a link is its line of
+       text: the gap under the line box, less 2px, lands just beneath the
+       glyphs whether the button is `auto` tall or stands at a control height. */
+    bottom: calc((100% - var(--ui-leading-base)) / 2 - var(--ui-space-2xs));
+    width: calc(100% - 2 * var(--ui-space-md));
+    height: 2px;
+    background: linear-gradient(90deg, var(--ui-primary), var(--ui-primary-hover));
+    opacity: 0.2;
+    border-radius: 1px;
+    transition: opacity 120ms ease, transform 120ms ease;
+    transform: scaleX(0.6);
+    transform-origin: left;
+  }
+
+  &:hover:not(:disabled),
+  &.router-link-active {
+    color: var(--ui-primary-hover);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  &:hover:not(:disabled)::after,
+  &.router-link-active::after {
+    opacity: 0.8;
+    transform: scaleX(1);
+  }
+
+  &:active:not(:disabled) {
+    transform: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+  }
+
+  /* The class, not `:disabled` — see the base disabled rule. */
+  &.v-button--disabled {
+    color: var(--ui-foreground-muted);
+    background: transparent;
+  }
+}
+
+/* ─── GROUPED — a cell of a VButtonGroup ─────────────────────────────────────
+   Placed after the variants deliberately: it overrides their `border-radius`
+   and elevation at equal specificity, so source order is what decides.
+
+   There is no track element. The cells' own hairlines, pulled onto each other,
+   *are* the frame — which is why the group can stay pure layout, and why a
+   `warning` cell keeps its amber border without anything having to know about
+   it. */
+.v-button--grouped {
+  border-radius: 0;
+  /* Lifts the pointed-at cell above its neighbours, so the border it shares with
+     them is drawn by the cell being interacted with rather than by whichever
+     happens to come later in the DOM. */
+  position: relative;
+  /* A cell casts no shadow of its own — `VButtonGroup` casts one for the whole
+     track. Four cells each dropping their own would draw shadow seams down the
+     inside of the track, which is the one place per-button elevation genuinely
+     looks broken. */
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    box-shadow: none;
+  }
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    z-index: 1;
+  }
+
+  & + & {
+    margin-left: -1px;
+  }
+
+  &:first-child {
+    border-top-left-radius: var(--ui-radius-lg);
+    border-bottom-left-radius: var(--ui-radius-lg);
+  }
+
+  &:last-child {
+    border-top-right-radius: var(--ui-radius-lg);
+    border-bottom-right-radius: var(--ui-radius-lg);
+  }
+
+  /* A press that moved one cell down would break the track's top edge. */
+  &:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ─── SIZE SCALE ─────────────────────────────────────────────────────────────
+   Last on purpose: an explicit `size` overrides the chrome's natural height.
+   Height only — the horizontal padding and type scale belong to the chrome, not
+   to the size. */
+.v-button--sm {
+  height: var(--ui-control-h-sm);
+
+  &.v-button--icon-only {
+    width: var(--ui-control-h-sm);
+  }
+}
+
+.v-button--md {
+  height: var(--ui-control-h-md);
+
+  &.v-button--icon-only {
+    width: var(--ui-control-h-md);
+  }
+}
+
+.v-button--lg {
+  height: var(--ui-control-h-lg);
+
+  &.v-button--icon-only {
+    width: var(--ui-control-h-lg);
+  }
+}

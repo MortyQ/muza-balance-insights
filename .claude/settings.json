@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(pnpm q *)",
+      "Bash(pnpm --filter @mono/mcp recategorize)"
+    ],
+    "deny": [
+      "Read(.env)", "Read(.env.*)", "Edit(.env)", "Read(/data/**)", "Edit(/data/**)", "Read(*.db)", "Read(*.db-*)",
+      "Bash(sqlite3 *)", "Bash(less *)", "Bash(more *)", "Bash(strings *)", "Bash(xxd *)", "Bash(od *)",
+      "Bash(hexdump *)", "Bash(npm run sync)", "Bash(npm run sync *)", "Bash(pnpm sync)", "Bash(pnpm sync *)",
+      "Bash(pnpm * sync)", "Bash(pnpm * sync *)", "Bash(npm run accounts)", "Bash(npm run accounts *)",
+      "Bash(pnpm accounts)", "Bash(pnpm accounts *)", "Bash(pnpm * accounts)", "Bash(pnpm * accounts *)",
+      "Bash(npm run dev:mcp)", "Bash(npm run dev:mcp *)", "Bash(pnpm dev:mcp)", "Bash(pnpm dev:mcp *)",
+      "Bash(pnpm * dev:mcp)", "Bash(pnpm * dev:mcp *)", "Bash(npm run recategorize)",
+      "Bash(npm run recategorize *)", "Bash(pnpm recategorize)", "Bash(pnpm recategorize *)",
+      "Bash(pnpm * recategorize *)", "Bash(npm run overrides:*)", "Bash(pnpm overrides:*)",
+      "Bash(pnpm * overrides:*)", "Bash(npm run scope-overrides:*)", "Bash(pnpm scope-overrides:*)",
+      "Bash(pnpm * scope-overrides:*)", "Bash(npm run settings:*)", "Bash(pnpm settings:*)",
+      "Bash(pnpm * settings:*)", "Bash(npm run export:analysis)", "Bash(npm run export:analysis *)",
+      "Bash(pnpm export:analysis)", "Bash(pnpm export:analysis *)", "Bash(pnpm * export:analysis)",
+      "Bash(pnpm * export:analysis *)", "Bash(npm run verify:merchants)", "Bash(npm run verify:merchants *)",
+      "Bash(pnpm verify:merchants)", "Bash(pnpm verify:merchants *)", "Bash(pnpm * verify:merchants)",
+      "Bash(pnpm * verify:merchants *)", "Bash(*tsx *src/cli/*)", "Bash(*tsx *src/server.ts*)",
+      "Bash(node *src/cli/*)", "Bash(node *src/server.ts*)", "Bash(*tsx *scripts/overrides*)",
+      "Bash(*tsx *scripts/scope-overrides*)", "Bash(*tsx *scripts/settings*)",
+      "Bash(*tsx *scripts/export-analysis*)", "Bash(*tsx *scripts/verify-merchants*)",
+      "Bash(node *scripts/overrides*)", "Bash(node *scripts/scope-overrides*)", "Bash(node *scripts/settings*)",
+      "Bash(node *scripts/export-analysis*)", "Bash(node *scripts/verify-merchants*)",
+      "Read(~/Library/Application Support/Balans Insights/**)",
+      "Edit(~/Library/Application Support/Balans Insights/**)", "Read(~/Library/Caches/Balans Insights/**)",
+      "Edit(~/Library/Caches/Balans Insights/**)", "Read(~/Library/Logs/Balans Insights/**)",
+      "Edit(~/Library/Logs/Balans Insights/**)", "Read(~/Library/Application Support/Balans Insights Dev/**)",
+      "Edit(~/Library/Application Support/Balans Insights Dev/**)", "Read(~/Library/Caches/Balans Insights Dev/**)",
+      "Edit(~/Library/Caches/Balans Insights Dev/**)", "Read(~/Library/Logs/Balans Insights Dev/**)",
+      "Edit(~/Library/Logs/Balans Insights Dev/**)",
+      "Read(~/Library/Application Support/Balance Insights/**)", "Edit(~/Library/Application Support/Balance Insights/**)",
+      "Read(~/Library/Application Support/Balance Insights Dev/**)", "Edit(~/Library/Application Support/Balance Insights Dev/**)",
+      "Read(~/Library/Caches/Balance Insights/**)", "Edit(~/Library/Caches/Balance Insights/**)",
+      "Read(~/Library/Caches/Balance Insights Dev/**)", "Edit(~/Library/Caches/Balance Insights Dev/**)",
+      "Read(~/Library/Logs/Balance Insights/**)", "Edit(~/Library/Logs/Balance Insights/**)",
+      "Read(~/Library/Logs/Balance Insights Dev/**)", "Edit(~/Library/Logs/Balance Insights Dev/**)", "Read(~/Library/Application Support/Electron/**)",
+      "Edit(~/Library/Application Support/Electron/**)", "Read(~/Library/Caches/Electron/**)",
+      "Edit(~/Library/Caches/Electron/**)", "Read(~/Library/Logs/Electron/**)", "Edit(~/Library/Logs/Electron/**)",
+      "Read(~/Library/Application Support/@mono/desktop/**)",
+      "Edit(~/Library/Application Support/@mono/desktop/**)", "Read(~/Library/Caches/@mono/desktop/**)",
+      "Edit(~/Library/Caches/@mono/desktop/**)", "Read(~/Library/Logs/@mono/desktop/**)",
+      "Edit(~/Library/Logs/@mono/desktop/**)", "Bash(pnpm * dev)", "Bash(pnpm * dev *)", "Bash(pnpm dev)",
+      "Bash(pnpm dev *)", "Bash(pnpm * preview)", "Bash(pnpm * preview *)", "Bash(*electron-vite*)",
+      "Bash(*electron *)", "Bash(*electron)", "Bash(*Electron.app*)", "Bash(*Balans Insights*)", "Bash(*Balance Insights*)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "excludedCommands": [
+      "pnpm --filter @mono/mcp recategorize"
+    ],
+    "filesystem": {
+      "denyRead": [
+        "./.env",
+        "./.env.*",
+        "./**/.env",
+        "./**/.env.*",
+        "./data",
+        "./**/*.db",
+        "./**/*.db-*",
+        "~/Library/Application Support/Balans Insights",
+        "~/Library/Caches/Balans Insights",
+        "~/Library/Logs/Balans Insights",
+        "~/Library/Application Support/Balans Insights Dev",
+        "~/Library/Caches/Balans Insights Dev",
+        "~/Library/Logs/Balans Insights Dev",
+        "~/Library/Application Support/Balance Insights",
+        "~/Library/Caches/Balance Insights",
+        "~/Library/Logs/Balance Insights",
+        "~/Library/Application Support/Balance Insights Dev",
+        "~/Library/Caches/Balance Insights Dev",
+        "~/Library/Logs/Balance Insights Dev",
+        "~/Library/Application Support/Electron",
+        "~/Library/Caches/Electron",
+        "~/Library/Logs/Electron",
+        "~/Library/Application Support/@mono/desktop",
+        "~/Library/Caches/@mono/desktop",
+        "~/Library/Logs/@mono/desktop"
+      ]
+    }
+  }
+}

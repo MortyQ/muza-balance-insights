@@ -1,0 +1,25 @@
+{
+  "name": "@mono/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Platform-neutral core: Monobank API client, sync, categories, transfers, scope, aggregates",
+  "type": "module",
+  "exports": {
+    "./test-helpers": "./tests/helpers.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@date-fns/tz": "^1.5.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@mono/db-libsql": "workspace:*",
+    "@types/node": "^22.20.4",
+    "typescript": "7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

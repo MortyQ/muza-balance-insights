@@ -1,0 +1,137 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+.v-info-notice {
+  --v-notice-tone: var(--ui-primary);
+
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ui-space-lg);
+  }
+
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--ui-space-md);
+  }
+
+  &__head-text,
+  &__body {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--ui-text-base);
+    line-height: var(--ui-leading-base);
+  }
+
+  &__icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    /* Centres a 20px glyph on the title's first line. */
+    margin-top: calc((var(--ui-leading-base) - 1.25rem) / 2);
+    color: var(--v-notice-tone);
+  }
+
+  &__title {
+    font-weight: 600;
+    color: var(--ui-foreground);
+  }
+
+  &__subtitle {
+    margin-top: var(--ui-space-2xs);
+    font-size: var(--ui-text-sm);
+    line-height: var(--ui-leading-sm);
+    color: var(--ui-foreground-secondary);
+  }
+
+  &__actions {
+    flex-shrink: 0;
+  }
+
+  &__features {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--ui-space-md);
+  }
+
+  &__feature {
+    display: flex;
+    align-items: center;
+    gap: var(--ui-space-md);
+    padding: var(--ui-space-md);
+    border: 1px solid color-mix(in oklch, var(--ui-border) 50%, transparent);
+    border-radius: var(--ui-radius-lg);
+    background-color: color-mix(in oklch, var(--ui-surface) 50%, transparent);
+  }
+
+  &__feature-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: var(--ui-control-h-sm);
+    height: var(--ui-control-h-sm);
+    border-radius: var(--ui-radius-lg);
+    background-color: color-mix(in oklch, var(--v-notice-tone) 10%, transparent);
+    color: var(--v-notice-tone);
+  }
+
+  &__feature-text {
+    min-width: 0;
+  }
+
+  &__feature-title {
+    overflow: hidden;
+    font-size: var(--ui-text-base);
+    font-weight: 500;
+    color: var(--ui-foreground);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__feature-description {
+    overflow: hidden;
+    font-size: var(--ui-text-sm);
+    color: var(--ui-foreground-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__hint {
+    display: flex;
+    align-items: center;
+    gap: var(--ui-space-sm);
+    padding-top: var(--ui-space-md);
+    border-top: 1px solid color-mix(in oklch, var(--ui-border) 30%, transparent);
+    font-size: var(--ui-text-sm);
+    color: var(--ui-foreground-secondary);
+  }
+
+  &--tone-primary {
+    --v-notice-tone: var(--ui-primary);
+  }
+
+  &--tone-success {
+    --v-notice-tone: var(--ui-success);
+  }
+
+  &--tone-warning {
+    --v-notice-tone: var(--ui-warning);
+  }
+
+  &--tone-danger {
+    --v-notice-tone: var(--ui-danger);
+  }
+
+  &--tone-info {
+    --v-notice-tone: var(--ui-info);
+  }
+
+  &--tone-muted {
+    --v-notice-tone: var(--ui-foreground-muted);
+  }
+}
+
+@media (width >= 48rem) {
+  .v-info-notice__features {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

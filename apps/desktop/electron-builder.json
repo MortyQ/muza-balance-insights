@@ -1,0 +1,22 @@
+{
+  "appId": "com.balansinsights.desktop",
+  "productName": "Balance Insights",
+  "directories": { "output": "dist" },
+  "files": ["out/**", "package.json"],
+  "asar": true,
+  "asarUnpack": ["**/*.node"],
+  "npmRebuild": false,
+  "electronDist": "node_modules/electron/dist",
+  "mac": { "target": "dir", "identity": null, "category": "public.app-category.finance" },
+  "electronFuses": {
+    "runAsNode": false,
+    "enableNodeOptionsEnvironmentVariable": false,
+    "enableNodeCliInspectArguments": false,
+    "enableEmbeddedAsarIntegrityValidation": true,
+    "onlyLoadAppFromAsar": true,
+    "grantFileProtocolExtraPrivileges": false,
+    "enableCookieEncryption": false,
+    "loadBrowserProcessSpecificV8Snapshot": false,
+    "resetAdHocDarwinSignature": true
+  }
+}

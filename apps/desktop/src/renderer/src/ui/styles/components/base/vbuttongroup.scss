@@ -1,0 +1,17 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+.v-button-group {
+  display: inline-flex;
+  /* Cells match the tallest of them rather than each sizing itself, so a cell
+     with a badge or a two-line label cannot leave a step in the track. */
+  align-items: stretch;
+  width: fit-content;
+  /* Matches the cells' own corner radius, so the shadow below follows the
+     track's outline rather than a rectangle poking out behind the rounded ends.
+     Nothing is clipped — `overflow: hidden` would cut off a cell's focus ring. */
+  border-radius: var(--ui-radius-lg);
+  /* The one elevation for the whole track. One tier under the filled CTA that
+     sits beside the group — the track is a surface, the CTA is the action on it.
+     The cells give up their own shadow (see `.v-button--grouped`); four of them
+     each dropping one would draw shadow seams down the inside of the track. */
+  box-shadow: var(--ui-shadow-xs);
+}

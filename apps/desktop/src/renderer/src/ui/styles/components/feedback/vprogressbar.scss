@@ -1,0 +1,133 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+.v-progress-bar {
+  --v-progress-value: 0%;
+  --v-progress-track-height: 6px;
+  --v-progress-accent: var(--ui-primary);
+  --v-progress-accent-soft: var(--ui-primary-hover);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 200px;
+  padding-top: 0.375rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background-color: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  overflow: hidden;
+
+  &--sm {
+    --v-progress-track-height: 4px;
+  }
+
+  &--md {
+    --v-progress-track-height: 6px;
+  }
+
+  &--lg {
+    --v-progress-track-height: 8px;
+  }
+
+  &--completed {
+    --v-progress-accent: var(--ui-success);
+    --v-progress-accent-soft: var(--ui-success-hover);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+    padding: 0 1rem;
+  }
+
+  &__step {
+    overflow: hidden;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ui-foreground);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__percentage {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--v-progress-accent);
+  }
+
+  &__track {
+    position: relative;
+    flex-shrink: 0;
+    overflow: hidden;
+    width: 100%;
+    height: var(--v-progress-track-height);
+    background-color: color-mix(in oklch, var(--ui-border) 50%, transparent);
+  }
+
+  &__fill {
+    position: relative;
+    width: var(--v-progress-value);
+    min-width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        var(--v-progress-accent) 0%,
+        var(--v-progress-accent-soft) 50%,
+        var(--v-progress-accent) 100%
+    );
+    background-size: 200% 100%;
+    animation: v-progress-flow 2s ease infinite;
+    transition: width 0.3s ease-out;
+  }
+
+  &--completed &__fill {
+    animation: none;
+  }
+
+  &__shine {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        color-mix(in oklch, var(--ui-foreground-inverted) 30%, transparent) 50%,
+        transparent 100%
+    );
+    animation: v-progress-shine 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes v-progress-shine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes v-progress-flow {
+  0% {
+    background-position: 0 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-progress-bar__fill,
+  .v-progress-bar__shine {
+    animation: none;
+  }
+}

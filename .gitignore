@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+*.db
+*.db-*
+data/
+analysis/
+reports/
+.claude/settings.local.json
+.idea/
+reply.md
+out/
+dist/

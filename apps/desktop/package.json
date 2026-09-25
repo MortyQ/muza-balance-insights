@@ -1,0 +1,44 @@
+{
+  "name": "@mono/desktop",
+  "productName": "Balance Insights",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Balance Insights — unofficial desktop app over @mono/core (Electron). Not affiliated with Monobank.",
+  "type": "module",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "node scripts/electron-binary.mjs --check && electron-vite dev",
+    "build": "node scripts/electron-binary.mjs --check && electron-vite build",
+    "binary:install": "node scripts/electron-binary.mjs --install",
+    "package:dir": "pnpm run build && electron-builder --dir --config electron-builder.json",
+    "test": "vitest run",
+    "test:package": "pnpm run package:dir && PACKAGE_CHECK=1 vitest run tests/package.test.ts",
+    "typecheck": "tsc -p tsconfig.node.json && vue-tsc -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^1.8.0",
+    "@fontsource-variable/manrope": "5.3.0",
+    "@iconify-json/lucide": "^1.2.136",
+    "@mono/core": "workspace:*",
+    "@mono/db-libsql": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^22.20.4",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vue/compiler-sfc": "3.5.43",
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3",
+    "electron-vite": "^5.0.0",
+    "sass": "^1.105.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "6.0.3",
+    "unplugin-icons": "^24.0.0",
+    "vite": "^7.3.6",
+    "vitest": "^5.0.1",
+    "vue": "^3.5.43",
+    "vue-tsc": "^3.3.11"
+  }
+}

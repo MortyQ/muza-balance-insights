@@ -1,0 +1,19 @@
+{
+  "name": "monobank-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo: Monobank transactions → SQLite → spending aggregates (core, Node adapter, MCP server)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "q": "node --import tsx apps/mcp/scripts/q.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  },
+  "packageManager": "pnpm@12.6.0"
+}

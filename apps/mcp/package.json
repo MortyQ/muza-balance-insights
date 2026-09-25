@@ -1,0 +1,42 @@
+{
+  "name": "@mono/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local stdio MCP server + CLI over @mono/core (Node)",
+  "type": "module",
+  "scripts": {
+    "dev:mcp": "node --import tsx src/server.ts",
+    "sync": "node --import tsx src/cli/sync.ts",
+    "accounts": "node --import tsx src/cli/accounts.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json",
+    "export:analysis": "node --import tsx scripts/export-analysis.ts",
+    "recategorize": "vitest run tests/recategorize-safety.test.ts && node --import tsx src/cli/recategorize.ts",
+    "overrides:candidates": "node --import tsx scripts/overrides.ts candidates",
+    "overrides:add": "node --import tsx scripts/overrides.ts add",
+    "overrides:list": "node --import tsx scripts/overrides.ts list",
+    "overrides:remove": "node --import tsx scripts/overrides.ts remove",
+    "scope-overrides:candidates": "node --import tsx scripts/scope-overrides.ts candidates",
+    "scope-overrides:add": "node --import tsx scripts/scope-overrides.ts add",
+    "scope-overrides:list": "node --import tsx scripts/scope-overrides.ts list",
+    "scope-overrides:remove": "node --import tsx scripts/scope-overrides.ts remove",
+    "settings:list": "node --import tsx scripts/settings.ts list",
+    "settings:set": "node --import tsx scripts/settings.ts set",
+    "argv-probe": "node --import tsx tests/fixtures/argv-probe.ts",
+    "argv-probe:cmd": "node --import tsx tests/fixtures/argv-probe.ts add"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "@modelcontextprotocol/sdk": "^1.30.1",
+    "@mono/core": "workspace:*",
+    "@mono/db-libsql": "workspace:*",
+    "libsql": "^0.5.29",
+    "tsx": "^4.23.15",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

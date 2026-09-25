@@ -1,0 +1,53 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+/* ============================================
+   ROOT WRAPPER (TRIGGER)
+   ============================================ */
+.v-tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* ============================================
+   FLOATING POPPER
+   ============================================ */
+.v-tooltip__popper {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* ============================================
+   TOOLTIP BODY
+   ============================================ */
+.v-tooltip__body {
+  background: var(--ui-surface);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-sm);
+  font-weight: 450;
+  padding: var(--ui-space-xs) var(--ui-space-md);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-lg);
+  border: 1px solid var(--ui-border);
+  word-break: break-word;
+  width: fit-content;
+  max-width: 20rem;
+}
+
+/* ============================================
+   TRANSITION
+   ============================================ */
+.v-tooltip-fade-enter-active {
+  transition: opacity 200ms ease-out;
+}
+
+.v-tooltip-fade-leave-active {
+  transition: opacity 150ms ease-in;
+}
+
+.v-tooltip-fade-enter-from,
+.v-tooltip-fade-leave-to {
+  opacity: 0;
+}
+

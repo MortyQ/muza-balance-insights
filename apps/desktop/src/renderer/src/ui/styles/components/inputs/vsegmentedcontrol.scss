@@ -1,0 +1,194 @@
+/* copied from muzakit/libs/ui/src (2026-09-25); changes: ui/README.md */
+/* ============================================
+   ROOT WRAPPER
+   ============================================ */
+/* The height is on the *track*, not on the segments, because the track is what
+   stands in the toolbar row next to a button. The segments take `height: 100%`
+   below and fill whatever the padding and border leave them, so the two can
+   never disagree about what 30px means. */
+.v-segmented-control {
+  /* The pill is positioned against this box. */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: var(--ui-control-h);
+  padding: var(--ui-space-2xs);
+  gap: var(--ui-space-2xs);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--ui-shadow-sm);
+
+  /* Height only, as everywhere else on the scale: the padding and the type
+     belong to the chrome, so two sizes differ in exactly one dimension. */
+  &--sm {
+    height: var(--ui-control-h-sm);
+  }
+
+  &--md {
+    height: var(--ui-control-h-md);
+  }
+
+  &--lg {
+    height: var(--ui-control-h-lg);
+  }
+
+  /* Each segment sits inside a VTooltip wrapper, so the wrapper is the flex item
+     and it is what has to stretch — to the track's height always, and to an
+     equal share of its width in full-width mode. The button then fills it. */
+  .v-tooltip {
+    display: inline-flex;
+    height: 100%;
+  }
+
+  &--full-width {
+    width: 100%;
+
+    .v-tooltip {
+      flex: 1;
+    }
+
+    .v-sc__item {
+      width: 100%;
+    }
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+/* ============================================
+   THE PILL
+
+   One surface that travels to the selected segment. The segments above it are
+   transparent when active and only change their text colour, so what the eye
+   follows is a single object moving rather than two backgrounds cross-fading.
+
+   The geometry arrives as two custom properties measured from the real
+   segment; nothing here is tuned to a size. Top and bottom are the track's own
+   padding step, so the pill always sits exactly where a segment does.
+   ============================================ */
+.v-sc__pill {
+  position: absolute;
+  top: var(--ui-space-2xs);
+  bottom: var(--ui-space-2xs);
+  left: 0;
+  width: var(--v-sc-pill-w, 0);
+  transform: translateX(var(--v-sc-pill-x, 0));
+  border-radius: calc(var(--ui-radius-lg) - 2px);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow-sm);
+  opacity: 0;
+  pointer-events: none;
+
+  &--visible {
+    opacity: 1;
+  }
+
+  /* Only once placed — see `isPillReady`. A strong ease-out: the pill should
+     arrive decisively and settle, not drift the whole way. */
+  &--ready {
+    transition:
+      transform 220ms cubic-bezier(0.23, 1, 0.32, 1),
+      width 220ms cubic-bezier(0.23, 1, 0.32, 1),
+      opacity 150ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &--ready {
+      transition: opacity 150ms ease-out;
+    }
+  }
+}
+
+/* ============================================
+   ITEM (SEGMENT BUTTON)
+   ============================================ */
+.v-sc__item {
+  position: relative;
+  /* Above the pill, which sits in the same box behind it. */
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 var(--ui-control-px);
+  gap: var(--ui-control-gap);
+  font-size: var(--ui-text-base);
+  border-radius: calc(var(--ui-radius-lg) - 2px);
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--ui-foreground-muted);
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: color 150ms ease-in-out,
+  background-color 150ms ease-in-out,
+  box-shadow 150ms ease-in-out;
+
+  &:hover:not(:disabled):not(.v-sc__item--active) {
+    color: var(--ui-foreground);
+    background: var(--ui-surface-hover);
+  }
+
+  /* No background of its own: the pill is the active surface. A segment that
+     painted one too would cut to it instantly and the slide would be invisible
+     underneath. */
+  &--active {
+    color: var(--ui-foreground);
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+}
+
+
+/* ============================================
+   LOADING
+
+   The control keeps its size, its pill and its position while a selection is
+   being written. Only the selected segment says anything, and it says it by
+   swapping its own label for a spinner in the same box — the width does not
+   change, so the pill has nothing to slide to.
+   ============================================ */
+.v-segmented-control--loading .v-sc__item {
+  cursor: progress;
+}
+
+/* Not the `--disabled` treatment: dimming the whole control would say the
+   control is unavailable, when in fact it is busy with what was just asked of
+   it. The unselected segments only stop responding to hover. */
+.v-segmented-control--loading .v-sc__item:not(.v-sc__item--active) {
+  opacity: 0.55;
+}
+
+.v-sc__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-control-gap);
+  transition: opacity 150ms ease-in-out;
+}
+
+.v-sc__item--pending .v-sc__label {
+  opacity: 0;
+}
+
+.v-sc__spinner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-foreground);
+}
