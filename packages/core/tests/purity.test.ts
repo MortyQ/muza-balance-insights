@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 const CORE = fileURLToPath(new URL('..', import.meta.url));
 const SRC = path.join(CORE, 'src');
 
-const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+// `//` after `:` is a URL (https://…), not a comment.
+const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/.*$/gm, '');
 
 function listTs(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -67,6 +68,8 @@ describe('core purity', () => {
     expect(violations(`const r = await opts.fetch(url, init); const d = new Date(ms);`)).toEqual([]);
     // Comments are ignored.
     expect(violations(`// process.env and Date.now() in a comment`)).toEqual([]);
+    // A URL is not a comment: code after `https://` on the same line is still checked.
+    expect(violations(`const u = 'https://x.invalid'; const t = Date.now();`)).toContain('wall clock');
   });
 
   it('runtime dependencies: only zod and @date-fns/tz; no adapters', () => {
