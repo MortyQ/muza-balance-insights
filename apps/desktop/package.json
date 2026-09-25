@@ -4,13 +4,28 @@
   "version": "0.1.0",
   "private": true,
   "description": "Balance Insights — unofficial desktop app over @mono/core (Electron). Not affiliated with Monobank.",
+  "author": "MortyQ",
+  "license": "MIT",
+  "homepage": "https://github.com/MortyQ/muza-balance-insights",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MortyQ/muza-balance-insights",
+    "directory": "apps/desktop"
+  },
+  "bugs": {
+    "url": "https://github.com/MortyQ/muza-balance-insights/issues"
+  },
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "node scripts/ensure-electron.mjs && electron-vite dev",
     "build": "node scripts/ensure-electron.mjs && electron-vite build",
     "binary:install": "node scripts/electron-binary.mjs --install",
-    "package:dir": "pnpm run build && electron-builder --dir --config electron-builder.json",
+    "package:dir": "pnpm run build && electron-builder --dir --config electron-builder.json -c.electronDist=node_modules/electron/dist -c.mac.target=dir",
+    "package:mac": "pnpm run build && electron-builder --mac --publish never --config electron-builder.json && node scripts/checksums.mjs dist",
+    "package:win": "pnpm run build && electron-builder --win --publish never --config electron-builder.json && node scripts/checksums.mjs dist",
+    "package:linux": "pnpm run build && electron-builder --linux --publish never --config electron-builder.json && node scripts/checksums.mjs dist",
+    "test:dmg": "DMG_CHECK=1 vitest run tests/dmg.test.ts",
     "test": "vitest run",
     "test:package": "pnpm run package:dir && PACKAGE_CHECK=1 vitest run tests/package.test.ts",
     "typecheck": "tsc -p tsconfig.node.json && vue-tsc -p tsconfig.web.json"

@@ -55,7 +55,9 @@
     "failIfUnavailable": true,
     "allowUnsandboxedCommands": false,
     "excludedCommands": [
-      "pnpm --filter @mono/mcp recategorize"
+      "pnpm --filter @mono/mcp recategorize",
+      "git add",
+      "git commit"
     ],
     "filesystem": {
       "denyRead": [

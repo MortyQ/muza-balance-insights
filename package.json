@@ -1,8 +1,18 @@
 {
-  "name": "monobank-mcp",
+  "name": "muza-balance-insights",
   "version": "0.1.0",
   "private": true,
   "description": "Monorepo: Monobank transactions → SQLite → spending aggregates (core, Node adapter, MCP server)",
+  "author": "MortyQ",
+  "license": "MIT",
+  "homepage": "https://github.com/MortyQ/muza-balance-insights",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MortyQ/muza-balance-insights"
+  },
+  "bugs": {
+    "url": "https://github.com/MortyQ/muza-balance-insights/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=22"

@@ -1,32 +1,43 @@
 // Security Checklist #19 (fuses) and the shape of the packaged app. The config part always runs; the binary part runs
-// on the output of `pnpm --filter @mono/desktop package:dir` (dist/). `test:package` builds first and fails if dist/
-// is missing (PACKAGE_CHECK=1), so a green run there really checked a binary. Nothing here launches the app.
-import { execFileSync } from 'node:child_process';
+// on the unpacked app in dist/ of this OS: `package:dir` locally (macOS), `package:mac|win|linux` in CI.
+// PACKAGE_CHECK=1 fails if that app is missing, so a green run there really checked a binary. Nothing here launches
+// the app. The same checks run on the app inside each .dmg: tests/dmg.test.ts.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FuseV1Options, getCurrentFuseWire } from '@electron/fuses';
 import { describe, expect, it } from 'vitest';
+import {
+  APP_ID,
+  LINUX_EXECUTABLE,
+  PRODUCT,
+  binaryArchs,
+  built,
+  expectAsarContents,
+  expectAsarOnly,
+  expectBundleId,
+  expectFuses,
+  expectOwnIcon,
+  expectValidSignature,
+  libsqlNative,
+  unpackedNatives,
+  type Platform,
+} from './helpers/app-checks.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const config = JSON.parse(fs.readFileSync(path.join(root, 'electron-builder.json'), 'utf8')) as Record<string, unknown>;
-const PRODUCT = 'Balance Insights';
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> } & Record<string, unknown>;
 
-/** @electron/fuses 1.x declares FuseState in dist/constants but does not export it: the wire bytes are '0' / '1'. */
-const FuseState = { DISABLE: 48, ENABLE: 49 } as const;
-type FuseState = (typeof FuseState)[keyof typeof FuseState];
-
-/** The agreed table (reports/2026-09-24-stage1-electron-plan.md, «Fuses»). */
-const EXPECTED_FUSES: Array<[FuseV1Options, FuseState, string]> = [
-  [FuseV1Options.RunAsNode, FuseState.DISABLE, 'ELECTRON_RUN_AS_NODE turns the app into plain Node'],
-  [FuseV1Options.EnableNodeOptionsEnvironmentVariable, FuseState.DISABLE, 'NODE_OPTIONS=--require would inject code into main'],
-  [FuseV1Options.EnableNodeCliInspectArguments, FuseState.DISABLE, '--inspect would attach a debugger to main'],
-  [FuseV1Options.EnableEmbeddedAsarIntegrityValidation, FuseState.ENABLE, 'app.asar hash checked at start'],
-  [FuseV1Options.OnlyLoadAppFromAsar, FuseState.ENABLE, 'code only from app.asar, not a side app/ folder'],
-  [FuseV1Options.GrantFileProtocolExtraPrivileges, FuseState.DISABLE, 'file:// gets no extra rights (we use app://)'],
-  [FuseV1Options.EnableCookieEncryption, FuseState.DISABLE, 'no cookies; Keychain is flaky unsigned'],
-  [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot, FuseState.DISABLE, 'no separate snapshot'],
-];
+describe('release metadata', () => {
+  it('author, MIT license and the repository in package.json; LICENSE at the repo root', () => {
+    expect(pkg).toMatchObject({
+      author: 'MortyQ',
+      license: 'MIT',
+      homepage: 'https://github.com/MortyQ/muza-balance-insights',
+      repository: { url: 'https://github.com/MortyQ/muza-balance-insights', directory: 'apps/desktop' },
+    });
+    expect(fs.readFileSync(path.join(root, '..', '..', 'LICENSE'), 'utf8')).toMatch(/^MIT License\n\nCopyright \(c\) 2026 MortyQ\n/);
+  });
+});
 
 describe('electron-builder config', () => {
   it('fuses exactly as agreed, plus an ad-hoc re-sign (flipping fuses breaks the arm64 signature)', () => {
@@ -43,104 +54,102 @@ describe('electron-builder config', () => {
     });
   });
 
-  it('only the build output goes in, as an asar; native modules unpacked; no rebuild, no download, no signing identity', () => {
+  it('only the build output goes in, as an asar; native modules unpacked; no rebuild, no signing identity', () => {
     expect(config.productName).toBe(PRODUCT);
     // Frozen after the first release (CLAUDE.md): bundle id, updates, Windows install identity.
-    expect(config.appId).toBe('io.github.mortyq.balanceinsights');
+    expect(config.appId).toBe(APP_ID);
     expect(config.files).toEqual(['out/**', 'package.json']);
     expect(config.asar).toBe(true);
     expect(config.asarUnpack).toEqual(['**/*.node']);
     expect(config.npmRebuild).toBe(false);
-    expect(config.electronDist).toBe('node_modules/electron/dist');
-    expect(config.mac).toMatchObject({ target: 'dir', identity: null });
+    expect(config.mac).toMatchObject({ identity: null });
+    // The Electron download cache inside the repo: ~/Library/Caches/electron is closed to the agent (same folder as …/Electron).
+    expect(config.electronDownload).toEqual({ cache: 'node_modules/.cache/electron' });
+  });
+
+  it('targets: a .dmg per Mac architecture, an nsis .exe, an AppImage — one artifact name scheme', () => {
+    expect(config.mac).toMatchObject({ target: [{ target: 'dmg', arch: ['arm64', 'x64'] }], artifactName: 'Balance-Insights-${version}-mac-${arch}.${ext}' });
+    expect(config.dmg).toEqual({ sign: false, writeUpdateInfo: false });
+    expect(config.win).toEqual({ target: [{ target: 'nsis', arch: ['x64'] }], artifactName: 'Balance-Insights-${version}-win-${arch}.${ext}' });
+    // Per-user install, no admin prompt; uninstall keeps the data folder (deleting it is «Delete all data» in the app).
+    expect(config.nsis).toEqual({ oneClick: true, perMachine: false, deleteAppDataOnUninstall: false });
+    expect(config.linux).toEqual({
+      target: [{ target: 'AppImage', arch: ['x64'] }],
+      executableName: LINUX_EXECUTABLE,
+      category: 'Finance',
+      artifactName: 'Balance-Insights-${version}-linux-${arch}.${ext}',
+    });
+  });
+
+  it('scripts: installers never publish by themselves (the release job does); the local Electron only for --dir', () => {
+    // node_modules/electron/dist is the host's Electron: in the shared config it would end up in the other-arch .dmg too.
+    expect(config).not.toHaveProperty('electronDist');
+    expect(pkg.scripts['package:dir']).toBe(
+      'pnpm run build && electron-builder --dir --config electron-builder.json -c.electronDist=node_modules/electron/dist -c.mac.target=dir',
+    );
+    for (const os of ['mac', 'win', 'linux'])
+      expect(pkg.scripts[`package:${os}`]).toBe(
+        `pnpm run build && electron-builder --${os} --publish never --config electron-builder.json && node scripts/checksums.mjs dist`,
+      );
   });
 });
 
-// ---------- the built app ----------
+describe('app icon (build/, picked up by electron-builder)', () => {
+  const build = path.join(root, 'build');
 
-function findApp(): string | null {
-  const dist = path.join(root, 'dist');
-  if (!fs.existsSync(dist)) return null;
-  for (const d of fs.readdirSync(dist)) {
-    const app = path.join(dist, d, `${PRODUCT}.app`);
-    if (fs.existsSync(app)) return app;
-  }
-  return null;
-}
+  it('mac .icns up to 1024 px, windows .ico up to 256 px, linux .png at least 512 px, square', () => {
+    const icns = fs.readFileSync(path.join(build, 'icon.icns'));
+    expect(icns.subarray(0, 4).toString('latin1')).toBe('icns');
+    // ic10 = 1024×1024 (512@2x): the Retina Dock / Finder size.
+    expect(icns.includes(Buffer.from('ic10', 'latin1'))).toBe(true);
+    const ico = fs.readFileSync(path.join(build, 'icon.ico'));
+    expect(ico.readUInt16LE(2)).toBe(1);
+    const sizes = Array.from({ length: ico.readUInt16LE(4) }, (_, i) => ico[6 + 16 * i] || 256);
+    expect(sizes).toContain(256);
+    const png = fs.readFileSync(path.join(build, 'icon.png'));
+    const [w, h] = [png.readUInt32BE(16), png.readUInt32BE(20)];
+    expect(w).toBe(h);
+    expect(w).toBeGreaterThanOrEqual(512);
+  });
+});
 
-/** asar header: uint32 4, uint32 header size, uint32, uint32 JSON length, then the JSON directory tree. */
-function asarFiles(asarPath: string): string[] {
-  const fd = fs.openSync(asarPath, 'r');
-  try {
-    const head = Buffer.alloc(16);
-    fs.readSync(fd, head, 0, 16, 0);
-    const json = Buffer.alloc(head.readUInt32LE(12));
-    fs.readSync(fd, json, 0, json.length, 16);
-    type Node = { files?: Record<string, Node> };
-    const out: string[] = [];
-    const walk = (n: Node, prefix: string) => {
-      for (const [name, child] of Object.entries(n.files ?? {})) {
-        const p = prefix ? `${prefix}/${name}` : name;
-        if (child.files) walk(child, p);
-        else out.push(p);
-      }
-    };
-    walk(JSON.parse(json.toString('utf8')) as Node, '');
-    return out;
-  } finally {
-    fs.closeSync(fd);
-  }
-}
+// ---------- the built app of this OS ----------
 
-const app = process.platform === 'darwin' ? findApp() : null;
-if (process.env.PACKAGE_CHECK === '1' && !app) throw new Error('PACKAGE_CHECK=1 but no dist/*/Balance Insights.app: run package:dir first');
+const platform = process.platform as Platform;
+const arch = process.arch;
+/** electron-builder's unpacked output folder per OS and arch. */
+const unpackedDir: Record<Platform, string> = {
+  darwin: arch === 'arm64' ? 'mac-arm64' : 'mac',
+  win32: arch === 'arm64' ? 'win-arm64-unpacked' : 'win-unpacked',
+  linux: arch === 'arm64' ? 'linux-arm64-unpacked' : 'linux-unpacked',
+};
+const known = platform in unpackedDir;
+const app = known ? built(path.join(root, 'dist', unpackedDir[platform]), platform) : null;
+const present = app !== null && fs.existsSync(app.binary);
+if (process.env.PACKAGE_CHECK === '1' && !present) throw new Error(`PACKAGE_CHECK=1 but no built app at ${app?.binary ?? platform}: package it first`);
 
-describe.skipIf(!app)('packaged app (dist/)', () => {
-  const contents = path.join(app ?? '', 'Contents');
-  const resources = path.join(contents, 'Resources');
-  const binary = path.join(contents, 'MacOS', PRODUCT);
-
-  it.each(EXPECTED_FUSES)('fuse %s is %s in the binary (%s)', async (fuse, state) => {
-    const wire = await getCurrentFuseWire(binary);
-    expect(wire[fuse]).toBe(state);
+describe.skipIf(!present)(`packaged app (dist/, ${platform}-${arch})`, () => {
+  it('fuses in the binary are exactly the agreed table', async () => {
+    await expectFuses(app!);
   });
 
-  it('code only from app.asar: no side app/ folder; the asar hash is in Info.plist', () => {
-    expect(fs.existsSync(path.join(resources, 'app.asar'))).toBe(true);
-    expect(fs.existsSync(path.join(resources, 'app'))).toBe(false);
-    expect(fs.readFileSync(path.join(contents, 'Info.plist'), 'utf8')).toContain('ElectronAsarIntegrity');
-  });
-
-  it('the bundle id is the frozen appId', () => {
-    const plist = fs.readFileSync(path.join(contents, 'Info.plist'), 'utf8');
-    expect(plist).toMatch(/<key>CFBundleIdentifier<\/key>\s*<string>io\.github\.mortyq\.balanceinsights<\/string>/);
+  it('code only from app.asar: no side app/ folder (macOS: the asar hash is in Info.plist)', () => {
+    expectAsarOnly(app!);
   });
 
   it('the asar holds the build output and runtime deps only — no sources, maps, tests, workspace packages or data', () => {
-    const files = asarFiles(path.join(resources, 'app.asar'));
-    for (const f of ['package.json', 'out/main/index.js', 'out/preload/index.cjs', 'out/renderer/index.html']) expect(files).toContain(f);
-    expect(files.some((f) => f.startsWith('node_modules/@libsql/client/'))).toBe(true);
-    expect(files.some((f) => f.startsWith('node_modules/zod/'))).toBe(true);
-    const bad = files.filter(
-      (f) =>
-        /^(src|tests|scripts)\//.test(f) ||
-        f.startsWith('node_modules/@mono/') ||
-        /\.map$/.test(f) ||
-        /(^|\/)\.env(\.|$)/.test(f) ||
-        /\.db(-|$)/.test(f) ||
-        /(^|\/)(electron-builder\.json|electron\.vite\.config\.ts|tsconfig[^/]*\.json)$/.test(f),
-    );
-    expect(bad).toEqual([]);
+    expectAsarContents(app!);
   });
 
-  it('the native libsql module is unpacked next to the asar (it cannot load from inside)', () => {
-    const unpacked = path.join(resources, 'app.asar.unpacked');
-    const natives = fs.existsSync(unpacked) ? fs.readdirSync(unpacked, { recursive: true, encoding: 'utf8' }).filter((f) => f.endsWith('.node')) : [];
-    expect(natives.some((f) => f.includes('libsql'))).toBe(true);
+  it('the native libsql module for this OS and arch is unpacked next to the asar (it cannot load from inside)', () => {
+    expect(unpackedNatives(app!).some((f) => f.includes(libsqlNative(platform, arch)))).toBe(true);
   });
 
-  it('the bundle is validly signed (ad-hoc) after the fuses were flipped — otherwise macOS on arm64 kills it', () => {
-    // codesign only reads the bundle; it does not start the app.
-    expect(() => execFileSync('codesign', ['--verify', '--deep', '--strict', app!], { stdio: 'pipe' })).not.toThrow();
+  it.runIf(platform === 'darwin')('macOS: frozen bundle id, own icon, host-arch executable, valid ad-hoc signature', () => {
+    expectBundleId(app!);
+    expectOwnIcon(app!, path.join(root, 'build', 'icon.icns'));
+    expect(binaryArchs(app!)).toEqual([arch === 'arm64' ? 'arm64' : 'x86_64']);
+    // Flipping fuses breaks the arm64 signature; without the ad-hoc re-sign macOS kills the app.
+    expectValidSignature(app!);
   });
 });

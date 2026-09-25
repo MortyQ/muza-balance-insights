@@ -92,13 +92,15 @@ describe('CLI (copies of the scripts next to node_modules/electron → the fake 
     ok
       ? `const fs=require('fs'),p=require('path');const exe=${JSON.stringify(EXE)};` +
         `fs.mkdirSync(p.dirname(p.join(__dirname,'dist',exe)),{recursive:true});fs.writeFileSync(p.join(__dirname,'dist','version'),'v${VERSION}');` +
-        `fs.writeFileSync(p.join(__dirname,'dist',exe),'');fs.writeFileSync(p.join(__dirname,'path.txt'),exe);fs.writeFileSync(p.join(__dirname,'ran'),'1');`
+        `fs.writeFileSync(p.join(__dirname,'dist',exe),'');fs.writeFileSync(p.join(__dirname,'path.txt'),exe);fs.writeFileSync(p.join(__dirname,'ran'),String(process.env.electron_config_cache));`
       : `require('fs').writeFileSync(require('path').join(__dirname,'ran'),'1');console.error('getaddrinfo ENOTFOUND github.com');process.exit(1);`;
 
   it('missing binary → runs the package install.js, exit 0', () => {
     const r = cli(fakeInstall(true));
     expect(r.status).toBe(0);
     expect(fs.existsSync(path.join(dir, 'ran'))).toBe(true);
+    // The download cache is inside the repo (next to the script copy here), never ~/Library/Caches/electron.
+    expect(fs.readFileSync(path.join(dir, 'ran'), 'utf8')).toMatch(/[\\/]node_modules[\\/]\.cache[\\/]electron$/);
   });
 
   it('binary present → install.js is not run', () => {

@@ -1,5 +1,5 @@
 // Electron main. Order matters: identity, sandbox and the app:// scheme privileges are set before `ready`.
-import { app, BrowserWindow, dialog, ipcMain, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
@@ -11,6 +11,7 @@ import { DataService } from './data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity } from './identity.ts';
 import { Importer } from './importer.ts';
+import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenStore } from './token.ts';
@@ -49,6 +50,19 @@ app.on('second-instance', () => {
 app.on('window-all-closed', () => app.quit());
 
 app.whenReady().then(async () => {
+  // Our own menu instead of Electron's default (no DevTools / reload in prod, no Help links to the outside).
+  const about = { name: identity.name, version: app.getVersion() };
+  app.setAboutPanelOptions(aboutPanelOptions(about));
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate(
+      menuTemplate({
+        name: identity.name,
+        platform: process.platform,
+        isPackaged: app.isPackaged,
+        showAbout: () => void dialog.showMessageBox({ type: 'info', buttons: ['OK'], ...aboutText(about) }),
+      }),
+    ),
+  );
   const s = session.defaultSession;
   denyAllPermissions(s);
   restrictRendererSession(s, {

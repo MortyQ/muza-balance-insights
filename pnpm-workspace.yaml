@@ -5,3 +5,12 @@ allowBuilds:
   '@parcel/watcher': false
   electron-winstaller: false
   esbuild: false
+# Optional native packages (libsql) for both Mac architectures, so one machine builds the arm64 and the x64 .dmg.
+# On Windows / Linux "current" is what that runner needs.
+supportedArchitectures:
+  os:
+    - current
+  cpu:
+    - current
+    - arm64
+    - x64

@@ -1,13 +1,68 @@
 {
   "appId": "io.github.mortyq.balanceinsights",
   "productName": "Balance Insights",
-  "directories": { "output": "dist" },
-  "files": ["out/**", "package.json"],
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "out/**",
+    "package.json"
+  ],
   "asar": true,
-  "asarUnpack": ["**/*.node"],
+  "asarUnpack": [
+    "**/*.node"
+  ],
   "npmRebuild": false,
-  "electronDist": "node_modules/electron/dist",
-  "mac": { "target": "dir", "identity": null, "category": "public.app-category.finance" },
+  "electronDownload": {
+    "cache": "node_modules/.cache/electron"
+  },
+  "mac": {
+    "target": [
+      {
+        "target": "dmg",
+        "arch": [
+          "arm64",
+          "x64"
+        ]
+      }
+    ],
+    "identity": null,
+    "category": "public.app-category.finance",
+    "artifactName": "Balance-Insights-${version}-mac-${arch}.${ext}"
+  },
+  "dmg": {
+    "sign": false,
+    "writeUpdateInfo": false
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "artifactName": "Balance-Insights-${version}-win-${arch}.${ext}"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "deleteAppDataOnUninstall": false
+  },
+  "linux": {
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": [
+          "x64"
+        ]
+      }
+    ],
+    "executableName": "balance-insights",
+    "category": "Finance",
+    "artifactName": "Balance-Insights-${version}-linux-${arch}.${ext}"
+  },
   "electronFuses": {
     "runAsNode": false,
     "enableNodeOptionsEnvironmentVariable": false,

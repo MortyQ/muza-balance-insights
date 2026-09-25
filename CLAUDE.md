@@ -1,4 +1,4 @@
-# monobank-mcp
+# muza-balance-insights (локальная папка — monobank-mcp)
 
 Локальный stdio MCP-сервер: транзакции Monobank → SQLite → готовые агрегаты трат. Дальше — десктоп на Electron.
 
@@ -31,6 +31,8 @@
   `recategorize` вне sandbox;
 - `apps/mcp/tests/recategorize-safety.test.ts`: тест, который `recategorize` прогоняет первым шагом;
 - `.claude/settings.json`: allow/deny, sandbox и `excludedCommands` (правит только пользователь).
+- `.github/workflows/release.yml`: что собирается и публикуется от имени автора. Его гарантии проверяет
+  `apps/desktop/tests/release-workflow.test.ts` (actions по SHA, права, триггеры, без секретов, только draft).
 
 Правила:
 - любое изменение в них — отдельным пунктом в отчёте: что изменено и зачем;
@@ -205,6 +207,25 @@
 - Бинарник Electron: `dev` и `build` первым шагом запускают `scripts/ensure-electron.mjs` (inline, без
   postinstall и других lifecycle-хуков). Нет бинарника — вызывает `install.js` пакета Electron, есть — ничего не делает,
   нет сети — ошибка с командой `binary:install`, которую выполняет пользователь.
+- Репозиторий — публичный `github.com/MortyQ/muza-balance-insights` (`muza` — бренд автора). Лицензия MIT,
+  `author: MortyQ` без email. Файлы для GitHub-сообщества (README, SECURITY, CONTRIBUTING, шаблоны) — на английском,
+  везде запрет выкладывать токен, выписки, суммы, имена, скриншоты с данными. Уязвимости — через private reporting.
+- Меню приложения — своё (`apps/desktop/src/main/menu.ts`): стандартное меню Electron даёт Reload/DevTools и Help-ссылки
+  через `shell.openExternal`. В prod — без reload, DevTools и роли `help`; «О программе» — нативная панель на macOS,
+  диалог на Windows/Linux. Дисклеймер — одна константа `apps/desktop/src/shared/about.ts` (панель и экран), репозиторий
+  в «О программе» — текстом, не ссылкой.
+- Иконка — `apps/desktop/build/` (`icon.icns` до 1024, `icon.ico` до 256, `icon.png` 512, исходник `icon.svg`),
+  electron-builder берёт её оттуда сам. `package.test.ts` / `dmg.test.ts` проверяют размеры и что в `.app` своя иконка.
+  Образы `.dmg` монтируются только в `test:dmg` (у пользователя): `hdiutil` в sandbox агента не работает.
+- Установщики (этап 2): mac `.dmg` arm64 и x64, win `nsis` x64 (per-user, `oneClick`, данные при удалении
+  остаются), linux `AppImage` x64, имена `Balance-Insights-<версия>-<os>-<arch>.<ext>`. Скрипты `package:mac|win|linux`
+  всегда с `--publish never` (иначе electron-builder на теге в CI публикует сам). Кэш загрузок Electron —
+  `apps/desktop/node_modules/.cache/electron` (`electronDownload.cache`, `electron_config_cache`).
+  libsql для обеих архитектур Mac — `supportedArchitectures` в `pnpm-workspace.yaml`.
+- Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux и
+  macOS → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
+  `SHA256SUMS.txt` и attestations. Публикует draft пользователь руками. Ручной запуск — только артефакты, без релиза.
+- Обновление без Developer ID (проверено 25.09.2026): macOS один раз спрашивает пароль к Keychain, токен сохраняется.
 - Прежнее имя до 25.09.2026 — «Balans Insights». Его пути остаются в deny и sandbox `.claude/settings.json`, пока
   пользователь не удалит старые папки (Application Support, Caches, Logs, в том числе Dev).
 - CSP в dev ослаблена только для HMR (`connect-src ws://localhost:<порт>`, `style-src 'unsafe-inline'`),
@@ -228,6 +249,8 @@
   Electron из `node_modules`, без подписи (ad-hoc после fuses). `test:package` собирает и проверяет бинарник
   (`apps/desktop/tests/package.test.ts`: fuse wire, содержимое asar, `codesign --verify`); без `dist/` бинарная часть пропускается.
   `@mono/*` в devDependencies десктопа: их вшивает electron-vite, в asar они не попадают.
+- Этап 1 закрыт 25.09.2026: Electron Security Checklist 20/20 (таблица — `reports/2026-09-25-stage1-step9-security-checklist.md`,
+  пункты 15 и 16 — `apps/desktop/tests/checklist.test.ts`), итоги трат месяца на экране совпали с MCP.
 - «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токен → остановка worker (`Importer.stop`,
   kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, токен, задача импорта).
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
@@ -258,6 +281,9 @@
   - Своя подпись релизов ed25519: приватный ключ только в секретах CI, публичный вшит в приложение, проверка подписи
     перед установкой, отказ при несовпадении. Тест с поддельным обновлением. (Без подписи ОС это единственная настоящая
     проверка: sha512 в `latest.yml` лежит в том же релизе, что и сборка.)
+  - Проверено 25.09.2026: новая сборка без Developer ID (другой CDHash, тот же bundle id) → macOS один раз спрашивает
+    пароль к Keychain («Разрешать всегда»), токен сохраняется. Экран обновления и страница установки должны это
+    предупреждать. Убирает запрос только Developer ID.
   - Проверка при старте: таймаут 5–10 с, офлайн не блокирует приложение, не прерывает импорт (обновление — при
     следующем запуске).
   - Флаг минимальной версии в подписанном манифесте для критичных обновлений; остальные можно отложить.

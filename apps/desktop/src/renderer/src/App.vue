@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import type { BalanceApi, DataStatus, TokenStatus } from '../../shared/api.ts';
+import { DISCLAIMER } from '../../shared/about.ts';
 import { IMPORT_DEPTHS, type ImportDepth, type ImportProgress } from '../../shared/progress.ts';
 import BalancesCard from './components/BalancesCard.vue';
 import SpendingCard from './components/SpendingCard.vue';
@@ -8,7 +9,7 @@ import { shortDate } from './lib/months.ts';
 import { VButton, VCard, VInfoNotice, VProgressBar } from './ui/index.ts';
 
 const api = (window as unknown as { balance: BalanceApi }).balance;
-const disclaimer = 'Неофициальное приложение, не связано с Monobank.';
+const disclaimer = DISCLAIMER;
 // A failed call to main (refused, main restarted, an old main without the handler) — shown, never an unhandled rejection.
 const FAILED_TEXT = 'Не удалось выполнить действие. Перезапусти приложение; если повторится — пришли строки [ipc] из терминала.';
 

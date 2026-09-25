@@ -27,7 +27,8 @@ describe('config', () => {
   });
 
   it('REPO_ROOT is the repository root (data/, .env and analysis/ stay there), not apps/mcp', () => {
-    expect(path.basename(path.resolve(REPO_ROOT))).toBe('monobank-mcp');
+    // By the root package, not the folder name: a clone (CI included) is called muza-balance-insights.
+    expect(JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'package.json'), 'utf8')).name).toBe('muza-balance-insights');
     expect(fs.existsSync(path.join(REPO_ROOT, 'pnpm-workspace.yaml'))).toBe(true);
   });
 });

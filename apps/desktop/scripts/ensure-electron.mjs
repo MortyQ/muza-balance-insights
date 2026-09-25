@@ -8,12 +8,19 @@ import { fileURLToPath } from 'node:url';
 import { electronDir, INSTALL_HINT, missingReason } from './electron-binary.mjs';
 
 /**
- * Electron's install.js in a child Node process; true when it exited 0.
+ * Download cache of install.js inside the repo, not ~/Library/Caches/electron: on a case-insensitive disk that is the
+ * same folder as ~/Library/Caches/Electron, closed to the agent (an app started without our name keeps its cache there).
+ */
+export const DOWNLOAD_CACHE = fileURLToPath(new URL('../node_modules/.cache/electron', import.meta.url));
+
+/**
+ * Electron's install.js in a child Node process; true when it exited 0. An explicit electron_config_cache wins.
  * @param {string} dir
  * @returns {boolean}
  */
 export function runInstallJs(dir) {
-  return spawnSync(process.execPath, [path.join(dir, 'install.js')], { stdio: 'inherit' }).status === 0;
+  const env = { ...process.env, electron_config_cache: process.env.electron_config_cache || DOWNLOAD_CACHE };
+  return spawnSync(process.execPath, [path.join(dir, 'install.js')], { stdio: 'inherit', env }).status === 0;
 }
 
 /**

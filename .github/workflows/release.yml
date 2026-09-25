@@ -1,0 +1,131 @@
+# Release: tag vX.Y.Z → tests → installers on each OS's own runner → one DRAFT release with SHA256SUMS.txt and
+# build provenance attestations. Publishing the draft is done by hand. Manual run (workflow_dispatch): tests and
+# installers as run artifacts only, no release.
+# Trust anchor (CLAUDE.md): what is built and published under the author's name. Actions are pinned by commit SHA;
+# no secrets; write permissions only in the release job; nothing runs for pull requests.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm (the version from package.json, installed like locally)
+        run: npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
+      - run: pnpm install --frozen-lockfile
+      - name: The tag matches the app version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          version="$(node -p "require('./apps/desktop/package.json').version")"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match apps/desktop/package.json version $version"
+            exit 1
+          fi
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  build:
+    name: Installers (${{ matrix.target }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, target: mac }
+          - { os: windows-latest, target: win }
+          - { os: ubuntu-latest, target: linux }
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm (the version from package.json, installed like locally)
+        run: npm install -g "pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
+      - run: pnpm install --frozen-lockfile
+      # --publish never is inside the script: electron-builder would otherwise publish by itself on a tag in CI.
+      - run: pnpm --filter @mono/desktop run package:${{ matrix.target }}
+      - name: Checks of the built app (fuses, asar, native libsql; macOS also bundle id, icon, signature)
+        env:
+          PACKAGE_CHECK: '1'
+        run: pnpm --filter @mono/desktop exec vitest run tests/package.test.ts
+      - name: Checks of the app inside each .dmg
+        if: matrix.target == 'mac'
+        env:
+          DMG_CHECK: '1'
+        run: pnpm --filter @mono/desktop exec vitest run tests/dmg.test.ts
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installers-${{ matrix.target }}
+          path: |
+            apps/desktop/dist/Balance-Insights-*.dmg
+            apps/desktop/dist/Balance-Insights-*.exe
+            apps/desktop/dist/Balance-Insights-*.AppImage
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: Draft release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the draft release
+      id-token: write # attestations
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: installers-*
+          merge-multiple: true
+          path: dist
+      - name: SHA256SUMS.txt
+        working-directory: dist
+        run: |
+          sha256sum Balance-Insights-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          test "$(wc -l < SHA256SUMS.txt)" -eq 4
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/Balance-Insights-*
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --draft \
+            --title "Balance Insights ${GITHUB_REF_NAME#v}" \
+            --notes "Unofficial app, not affiliated with Monobank. Check the files against SHA256SUMS.txt and the build provenance attestation (gh attestation verify <file> --repo $GITHUB_REPOSITORY). The installers are not signed: see the install page for the macOS Gatekeeper and Windows SmartScreen steps."
