@@ -2,7 +2,8 @@
 // (transfers, installments, taxes — providers/<id>/rules.ts), then the MCC table (ISO 18245, not bank-specific).
 // Recomputed after the internal-transfer pass (category depends on is_internal_transfer).
 import type { Db, Stmt } from './db.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { CategoryHint, ProviderId } from './providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
@@ -116,8 +117,8 @@ export type CategorizeInput = {
   amount: number;
   counterName: string | null;
   isInternalTransfer: boolean;
-  /** Whose rules apply (the account's provider); Monobank when absent (before connections). */
-  provider?: ProviderId;
+  /** Whose rules apply (the account's connection's provider). */
+  provider: ProviderId;
 };
 
 export function categorize(tx: CategorizeInput, overrides: readonly CategoryOverride[] = []): string {
@@ -126,7 +127,7 @@ export function categorize(tx: CategorizeInput, overrides: readonly CategoryOver
   const override = matchOverride(tx.counterName, overrides);
   if (override) return override.category;
 
-  const hint = rulesFor(tx.provider ?? LEGACY_PROVIDER).categoryHint(tx);
+  const hint = rulesFor(tx.provider).categoryHint(tx);
   if (hint) return HINT_CATEGORY[hint];
   return MCC_CATEGORY.get(tx.mcc) ?? DEFAULT_CATEGORY;
 }
@@ -165,8 +166,8 @@ export async function loadOverrides(db: Db): Promise<CategoryOverride[]> {
  * so it lands in that category's refunds instead of «поступления».
  */
 export async function recategorize(db: Db, range?: TimeRange | null): Promise<number> {
-  const overrides = await loadOverrides(db);
-  const cols = 'id, description, mcc, amount, counter_name, is_internal_transfer, category, refund_pair_id';
+  const [overrides, providers] = await Promise.all([loadOverrides(db), accountProviders(db)]);
+  const cols = 'id, account_id, description, mcc, amount, counter_name, is_internal_transfer, category, refund_pair_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM transactions WHERE time BETWEEN ? AND ?`, args: [range.from, range.to] })
     : await db.execute(`SELECT ${cols} FROM transactions`);
@@ -182,6 +183,7 @@ export async function recategorize(db: Db, range?: TimeRange | null): Promise<nu
           amount: Number(r.amount),
           counterName: r.counter_name === null ? null : String(r.counter_name),
           isInternalTransfer: Number(r.is_internal_transfer) === 1,
+          provider: providerOf(providers, String(r.account_id)),
         },
         overrides,
       ),

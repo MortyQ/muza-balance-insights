@@ -3,7 +3,8 @@
 import type { Db } from './db.ts';
 import { accountLabels, toKyivDate, toKyivDateTime } from './format.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { parseProviderId } from './connections.ts';
+import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
 import { transferDiagnostics, type TransferDiagnostics } from './queries.ts';
 import { scopeCounts, type Scope } from './scope.ts';
 
@@ -108,7 +109,7 @@ export type SyncStatus = {
   /** Date up to which every imported account is covered — periods ending later are incomplete. */
   data_until: string | null;
   last_sync_at: string | null;
-  /** Kyiv date-time when Monobank allows the next request; null = now. */
+  /** Kyiv date-time when the bank allows the next request (the latest of all connections); null = now. */
   next_request_at: string | null;
   diagnostics: {
     transfer_rules: TransferDiagnostics['byRule'];
@@ -136,9 +137,16 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
   const newest = rows.filter((r) => r.newest !== null).map((r) => r.newest!);
   const lastSync = rows.filter((r) => r.lastSyncAt !== null).map((r) => r.lastSyncAt!);
 
-  const api = await db.execute('SELECT MAX(called_at) AS last FROM api_calls');
-  const lastCall = api.rows[0]?.last === null || api.rows[0]?.last === undefined ? null : Number(api.rows[0].last);
-  const nextMs = lastCall === null ? null : lastCall + rulesFor(LEGACY_PROVIDER).api.requestIntervalMs;
+  // Each connection has its own slot, with its provider's interval; calls without a connection get the longest one.
+  const api = await db.execute(
+    `SELECT c.provider, MAX(k.called_at) AS last FROM api_calls k LEFT JOIN connections c ON c.id = k.connection_id
+     GROUP BY k.connection_id`,
+  );
+  const longest = Math.max(...Object.values(PROVIDER_RULES).map((p) => p.api.requestIntervalMs));
+  const frees = api.rows.map(
+    (r) => Number(r.last) + (r.provider === null ? longest : rulesFor(parseProviderId(r.provider)).api.requestIntervalMs),
+  );
+  const nextMs = frees.length === 0 ? null : Math.max(...frees);
 
   const d = await transferDiagnostics(db);
   // Only holds a sync can still update (last 3 days); older ones are final.

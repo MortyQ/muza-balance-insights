@@ -15,12 +15,12 @@ import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } fr
 
 const JAR_TITLE = 'На мрію';
 const ACCOUNTS: TransferAccount[] = [
-  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null },
-  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null },
-  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null },
-  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null },
-  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null },
-  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE },
+  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null, provider: 'monobank' },
+  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null, provider: 'monobank' },
+  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null, provider: 'monobank' },
+  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null, provider: 'monobank' },
+  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null, provider: 'monobank' },
+  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE, provider: 'monobank' },
 ];
 
 function tx(id: string, accountId: string, time: number, amount: number, extra: Partial<TransferTx> = {}): TransferTx {

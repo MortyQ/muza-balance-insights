@@ -120,9 +120,16 @@ export interface NormalizedTx {
   raw: string;
 }
 
+/** The account holder's accounts, and the bank's id of the holder (to catch a credential of another person). */
+export interface ProviderAccounts {
+  externalClientId: string | null;
+  accounts: NormalizedAccount[];
+}
+
 /** What the sync loop needs from a bank. Rate limits, pages and retries inside one request are the client's. */
 export interface ProviderClient {
-  accounts(): Promise<NormalizedAccount[]>;
+  provider: ProviderId;
+  accounts(): Promise<ProviderAccounts>;
   /** Every operation of one window [from, to] (unix seconds), all pages; nothing is written. */
   statementWindow(
     accountId: string,

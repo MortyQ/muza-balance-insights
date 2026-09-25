@@ -6,6 +6,7 @@ import { RATE_LIMIT_MS, getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
 import { accountLabels, formatDuration, kyivStartOfDay, toKyivDate } from '@mono/core/format';
 import { log } from '../log.ts';
+import { ensureDefaultConnection } from '@mono/core/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { cliArgs } from '../args.ts';
 import { systemClock } from '../clock.ts';
@@ -61,7 +62,10 @@ async function main(): Promise<void> {
   const db = await openDb(config.dbUrl);
   try {
     const labels = new Map<string, string>();
+    // The .env token is the database's one Monobank connection.
+    const connectionId = await ensureDefaultConnection(db, 'monobank', Math.floor(systemClock.nowMs() / 1000));
     const api = createMonoClient({
+      connectionId,
       token: getToken(),
       db,
       fetch,
@@ -72,6 +76,7 @@ async function main(): Promise<void> {
     const ctx: SyncContext = {
       db,
       api,
+      connectionId,
       clock: systemClock,
       onEvent: (e) => {
         const line = describeEvent(e, labels);
@@ -90,7 +95,7 @@ async function main(): Promise<void> {
     for (const [id, label] of byLabel) labels.set(id, label);
 
     const all = await listAccountIds(db);
-    const defaults = await defaultAccountSelection(db);
+    const defaults = await defaultAccountSelection(db, connectionId);
     let accountIds = defaults.selected;
     if (values.account) {
       const unknown = values.account.filter((id) => !all.includes(id));

@@ -1,4 +1,5 @@
 import { openLibsql } from '@mono/db-libsql';
+import { ensureDefaultConnection } from '../src/connections.ts';
 import { migrate, type Db, type SqlArg } from '../src/db.ts';
 import type { Clock } from '../src/platform.ts';
 
@@ -69,6 +70,8 @@ export function fakeMonobank(opts: {
   jars?: Array<{ id: string; title?: string; currencyCode?: number; balance?: number }>;
   statements?: Record<string, RawItem[]>;
   pageLimit?: number;
+  /** The holder id client-info reports (default 'c1'). */
+  clientId?: string;
   /** Intercept a call (by 0-based index) — e.g. to simulate failures. */
   intercept?: (callIndex: number, url: string) => Response | Promise<Response> | 'throw' | undefined;
 }) {
@@ -85,7 +88,7 @@ export function fakeMonobank(opts: {
     const path = new URL(url).pathname;
     if (path === '/personal/client-info') {
       return Response.json({
-        clientId: 'c1',
+        clientId: opts.clientId ?? 'c1',
         name: 'Test',
         accounts: (opts.accounts ?? []).map((a) => ({
           id: a.id,
@@ -136,18 +139,22 @@ export async function memoryDb(): Promise<Db> {
  * columns the schema requires beyond the test's interest are filled in one place.
  */
 export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
-  const cols = Object.keys(row);
+  // The test's accounts belong to the one Monobank connection unless the row says otherwise.
+  const full: Record<string, SqlArg> = { connection_id: await testConnection(db), ...row };
+  const cols = Object.keys(full);
   await db.execute({
     sql: `INSERT INTO accounts (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
-    args: cols.map((c) => row[c] as SqlArg),
+    args: cols.map((c) => full[c] as SqlArg),
   });
 }
 
+/** The single Monobank connection of a test database (created on first use). */
+export async function testConnection(db: Db): Promise<number> {
+  return ensureDefaultConnection(db, 'monobank', 0);
+}
+
 export async function insertAccount(db: Db, id: string, kind: 'card' | 'jar' = 'card', currency = 980, iban?: string) {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, currency_code, iban, balance, updated_at) VALUES (?, ?, ?, ?, 0, 0)`,
-    args: [id, kind, currency, iban ?? null],
-  });
+  await insertAccountRow(db, { id, kind, currency_code: currency, iban: iban ?? null, balance: 0, updated_at: 0 });
 }
 
 export async function allTextInDb(db: Db): Promise<string> {

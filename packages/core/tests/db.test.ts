@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { migrate, SCHEMA_VERSION, type Db } from '../src/db.ts';
-import { openTestDb as openDb } from './helpers.ts';
+import { insertAccountRow, openTestDb as openDb } from './helpers.ts';
 
 let db: Db | undefined;
 let tmpDir: string | undefined;
@@ -39,10 +39,7 @@ describe('db migrations', () => {
 
   it('is idempotent: re-running applies nothing and keeps data', async () => {
     db = await openDb(':memory:');
-    await db.execute({
-      sql: `INSERT INTO accounts (id, kind, currency_code, balance, updated_at) VALUES (?, 'card', 980, 100, 0)`,
-      args: ['acc1'],
-    });
+    await insertAccountRow(db, { id: 'acc1', kind: 'card', currency_code: 980, balance: 100, updated_at: 0 });
     expect(await migrate(db, 0)).toEqual([]);
     expect(await migrate(db, 0)).toEqual([]);
     const rs = await db.execute('SELECT COUNT(*) AS n FROM accounts');
@@ -78,7 +75,7 @@ describe('db migrations', () => {
       ),
     ).rejects.toThrow(/FOREIGN KEY/i);
     await expect(
-      db.execute(`INSERT INTO accounts (id, kind, currency_code, balance, updated_at) VALUES ('a', 'bogus', 980, 0, 0)`),
+      insertAccountRow(db, { id: 'a', kind: 'bogus', currency_code: 980, balance: 0, updated_at: 0 }),
     ).rejects.toThrow(/CHECK/i);
   });
 });

@@ -39,10 +39,23 @@
     провайдеры только через `providers/types.ts` и реестр правил `providers/rules.ts`; провайдеры друг друга не импортируют;
     в коде домена нет MCC 4829/6012, текстов Monobank, `'fop'` и хоста банка. Всё это проверяет
     `packages/core/tests/providers-boundary.test.ts` (с «ломающими» примерами);
-  - Monobank: `providers/monobank/{rules,descriptions,client,constants}.ts`. Пока подключений нет, у всех счетов
-    провайдер `LEGACY_PROVIDER` (`monobank`); с подключениями — из `connections.provider`;
+  - Monobank: `providers/monobank/{rules,descriptions,client,constants}.ts`;
+  - провайдер счёта — `connections.provider` его подключения (`accountProviders` / `providerOf` в
+    `packages/core/src/connections.ts`); счёт без подключения — ошибка, а не значение по умолчанию;
   - общее для всех клиентов: слот запросов `src/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/errors.ts`
     (`RateLimitError`, `StatementFormatError`).
+- **Участники и подключения** (миграция v8): `participants` (кто; подпись только локально, в копию не идёт) →
+  `connections` (провайдер + учётные данные; `external_client_id` — id владельца в банке, у Monobank `clientId`) →
+  `accounts.connection_id` (обязателен). Существующие данные при миграции → участник «Я» + подключение `monobank` (id 1).
+  - `syncAccounts` пишет счета под подключением контекста (`SyncContext.connectionId`, без него —
+    `ensureDefaultConnection`: единственное подключение провайдера, так работают mcp с токеном из `.env` и десктоп до
+    поддержки нескольких). Id владельца запоминается при первом синке; токен другого владельца — `ConnectionMismatchError`
+    до любой записи (сам id не печатается). Счёт другого подключения не перезаписывается (предупреждение).
+  - План импорта — только счета своего подключения (`defaultAccountSelection(db, connectionId)`).
+  - Слот запросов (`api_calls.connection_id`) — на подключение: лимит банка на учётные данные; `NULL` — вызовы без
+    подключения (тесты). `next_request_at` в статусе — самый поздний из слотов.
+  - Тестовые счета — через `insertAccountRow` / `insertAccount` (`@mono/core/test-helpers`): они привязывают счёт к
+    тестовому подключению Monobank.
 - `packages/db-libsql` (`@mono/db-libsql`) — Node-адаптер libsql → `Db` (PRAGMA, WAL). Не зависит от core (типы
   повторены, расхождение ловит typecheck ядра), чтобы не было цикла зависимостей. Нужен apps/mcp и main-процессу Electron.
 - `apps/mcp` (`@mono/mcp`) — MCP-сервер, CLI, скрипты, обезличенная копия (`analysis/*`), `.env`/токен (`config.ts`).

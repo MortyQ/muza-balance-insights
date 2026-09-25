@@ -5,7 +5,8 @@
 import type { Db } from './db.ts';
 import { toMajor } from './currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
 import { getSettings } from './settings.ts';
 import { isScope, type Scope } from './scope.ts';
@@ -92,7 +93,7 @@ export function merchantForOutput(
   mcc: number,
   jarTitles: ReadonlySet<string>,
   reveal: boolean,
-  provider: ProviderId = LEGACY_PROVIDER,
+  provider: ProviderId,
 ): string {
   const rules = rulesFor(provider);
   let d = description.trim();
@@ -145,6 +146,7 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
   });
 
   const accounts = await db.execute('SELECT id, kind, type, currency_code, title FROM accounts');
+  const providers = await accountProviders(db);
   const labels = accountLabels(
     accounts.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currencyCode: Number(r.currency_code) })),
   );
@@ -179,7 +181,7 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
         currency: Number(r.currency),
         operationAmount: Number(r.operation_amount ?? r.amount),
         operationCurrency: Number(r.op_currency),
-        merchant: merchantForOutput(String(r.description ?? ''), counterName, Number(r.mcc), jarTitles, reveal),
+        merchant: merchantForOutput(String(r.description ?? ''), counterName, Number(r.mcc), jarTitles, reveal, providerOf(providers, String(r.account_id))),
         counterparty: displayCounterName(counterName, reveal),
         category: String(r.category),
         mcc: Number(r.mcc),

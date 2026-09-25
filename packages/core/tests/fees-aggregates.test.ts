@@ -58,8 +58,8 @@ async function seedFeeTransfers() {
 describe('pair_fee', () => {
   it('pairs debit = credit + commission (pure), one-to-one, only with a positive commission', () => {
     const accounts: TransferAccount[] = [
-      { id: 'black', kind: 'card', currencyCode: 980, iban: null, title: null },
-      { id: 'white', kind: 'card', currencyCode: 980, iban: null, title: null },
+      { id: 'black', kind: 'card', currencyCode: 980, iban: null, title: null, provider: 'monobank' },
+      { id: 'white', kind: 'card', currencyCode: 980, iban: null, title: null, provider: 'monobank' },
     ];
     const tx = (id: string, acc: string, amount: number, commissionRate = 0): TransferTx => ({
       id, accountId: acc, time: 100, amount, operationAmount: amount, commissionRate, mcc: 4829, description: '', counterIban: null,

@@ -6,7 +6,8 @@ import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
 import { currencyAlpha } from './currency.ts';
 import { accountLabels, kyivStartOfDay, parseLocalDate, toKyivDate } from './format.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { IncomeSource, ProviderId } from './providers/types.ts';
 import { isScope, type Scope } from './scope.ts';
 
@@ -355,7 +356,7 @@ export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number];
 export type { IncomeSource } from './providers/types.ts';
 
 /** Where a credit came from, by the shape of the operation (never by name) — the provider's rule. */
-export function incomeSource(mcc: number, description: string, provider: ProviderId = LEGACY_PROVIDER): IncomeSource {
+export function incomeSource(mcc: number, description: string, provider: ProviderId): IncomeSource {
   // Income rows are credits: the amount only says so.
   return rulesFor(provider).incomeSource({ mcc, description, amount: 1 });
 }
@@ -395,10 +396,11 @@ export async function incomeSummary(
   });
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;
+  const providers = await accountProviders(db);
   const groups = new Map<string, IncomeGroup>();
   for (const r of rs.rows) {
     const key =
-      groupBy === 'source' ? incomeSource(Number(r.mcc), String(r.description ?? ''))
+      groupBy === 'source' ? incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
       : groupBy === 'month' ? String(r.local_date).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)
       : String(r.scope);

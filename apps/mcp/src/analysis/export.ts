@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient, type InValue } from '@libsql/client';
 import type { Db } from '../db.ts';
+import { accountProviders, providerOf } from '@mono/core/connections';
 import { JAR_PLACEHOLDER, OTHER_PLACEHOLDER, maskDescription, type DescClass } from '@mono/core/masking';
 import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA, type AnalysisTable } from './schema.ts';
 
@@ -87,8 +88,9 @@ async function readTransactions(source: Db, jarTitles: ReadonlySet<string>): Pro
             category, scope, is_internal_transfer, transfer_rule, transfer_pair_id, refund_pair_id, is_cancelled, synced_at
      FROM transactions ORDER BY account_id, time, id`,
   );
+  const providers = await accountProviders(source);
   return rs.rows.map((r) => {
-    const masked = maskDescription(String(r.description ?? ''), jarTitles);
+    const masked = maskDescription(String(r.description ?? ''), jarTitles, providerOf(providers, String(r.account_id)));
     return {
       id: r.id,
       account_id: r.account_id,

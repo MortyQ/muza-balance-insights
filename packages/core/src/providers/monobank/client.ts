@@ -13,8 +13,6 @@ export type { Clock } from '../../platform.ts';
 export type { RateLimitMode } from '../../ratelimit.ts';
 export { RateLimitError, StatementFormatError } from '../../errors.ts';
 
-const LIMIT = { intervalMs: RATE_LIMIT_MS, bank: 'Monobank' } as const;
-
 const BASE_URL = 'https://api.monobank.ua';
 const REQUEST_TIMEOUT_MS = 30_000;
 
@@ -42,6 +40,7 @@ const JarSchema = z.object({
 });
 
 export const ClientInfoSchema = z.object({
+  clientId: z.string().optional(),
   accounts: z.array(CardSchema).default([]),
   jars: z.array(JarSchema).default([]),
 });
@@ -100,6 +99,8 @@ export type MonoClientOptions = {
   fetch: FetchLike;
   clock: Clock;
   rateLimitMode?: RateLimitMode;
+  /** The connection whose request slot this client uses; absent = the slot of calls without a connection (tests). */
+  connectionId?: number;
   /** Called before sleeping for the rate limit (progress output). */
   onWait?: (waitMs: number) => void;
   /** Cancels waits and in-flight requests (SyncCancelledError). */
@@ -116,12 +117,13 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
   const { token, db } = opts;
   const { fetch: doFetch, clock } = opts;
   const mode = opts.rateLimitMode ?? 'wait';
+  const limit = { intervalMs: RATE_LIMIT_MS, bank: 'Monobank', connectionId: opts.connectionId ?? null };
 
   const redact = (s: string): string => (token ? s.split(token).join('***') : s);
 
   async function request(endpoint: string, pathname: string): Promise<unknown> {
     throwIfCancelled(opts.signal);
-    await acquireSlot(db, endpoint, clock, mode, LIMIT, opts.onWait, opts.signal);
+    await acquireSlot(db, endpoint, clock, mode, limit, opts.onWait, opts.signal);
     // From here on the slot is consumed, whatever happens (429, network error, bad JSON).
 
     let res: ResponseLike;
@@ -138,10 +140,10 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
 
     if (res.status === 429) {
       // Push the shared slot forward: the next request waits a full period from now.
-      await recordCall(db, endpoint, clock.nowMs());
+      await recordCall(db, endpoint, clock.nowMs(), limit.connectionId);
       const retryAfter = Number(res.headers.get('retry-after'));
       const sec = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : RATE_LIMIT_MS / 1000;
-      throw new RateLimitError(sec, 'server', LIMIT.bank, RATE_LIMIT_MS / 1000);
+      throw new RateLimitError(sec, 'server', limit.bank, RATE_LIMIT_MS / 1000);
     }
 
     const text = await res.text().catch(() => '');
@@ -179,6 +181,8 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
   }
 
   const client: MonoClient = {
+    provider: 'monobank',
+
     async clientInfo() {
       const endpoint = '/personal/client-info';
       const json = await request(endpoint, endpoint);
@@ -209,7 +213,7 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
 
     async accounts() {
       const info = await client.clientInfo();
-      return [...info.accounts.map(cardAccount), ...info.jars.map(jarAccount)];
+      return { externalClientId: info.clientId ?? null, accounts: [...info.accounts.map(cardAccount), ...info.jars.map(jarAccount)] };
     },
 
     async statementWindow(accountId, w, onPage) {

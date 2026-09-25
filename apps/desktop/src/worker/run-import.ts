@@ -3,6 +3,7 @@
 import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
 import type { Db } from '@mono/core/db';
 import { accountLabels, toKyivDate } from '@mono/core/format';
+import { ensureDefaultConnection } from '@mono/core/connections';
 import { MonoApiError, RateLimitError, createMonoClient } from '@mono/core/providers/monobank/client';
 import type { Clock, FetchLike } from '@mono/core/platform';
 import { rederiveCore } from '@mono/core/rederive';
@@ -66,7 +67,10 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   let remaining: Map<string, Window[]> | null = null;
   const eta = (waitSec: number) => Math.max(0, windowsTotal - windowsDone) * (RATE_LIMIT_MS / 1000) + waitSec;
 
+  // One Monobank connection until the app supports several (connections spec, step 4).
+  const connectionId = await ensureDefaultConnection(d.db, 'monobank', Math.floor(d.clock.nowMs() / 1000));
   const api = createMonoClient({
+    connectionId,
     token: d.token,
     db: d.db,
     fetch: d.fetch,
@@ -81,6 +85,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   const ctx: SyncContext = {
     db: d.db,
     api,
+    connectionId,
     clock: d.clock,
     signal: d.signal,
     warn: (msg) => d.emit({ type: 'log', message: `warn: ${msg.replace(/[^\s]{16,}/g, '…').slice(0, 280)}` }),

@@ -5,7 +5,8 @@
 // amount = |purchase|, the purchase not transfer-like, the credit 0–15 min after the purchase, strictly one-to-one
 // (smallest Δt, ties by id).
 import type { Db, Stmt } from './db.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
@@ -19,13 +20,13 @@ export type RefundTx = {
   mcc: number;
   description: string;
   isInternal: boolean;
-  /** Whose rules apply (the account's provider); Monobank when absent (before connections). */
-  provider?: ProviderId;
+  /** Whose rules apply (the account's connection's provider). */
+  provider: ProviderId;
 };
 
 /** Pure core: id → id of the other half, for both halves of each pair. */
 export function detectRefunds(rows: readonly RefundTx[]): Map<string, string> {
-  const rules = (r: RefundTx) => rulesFor(r.provider ?? LEGACY_PROVIDER);
+  const rules = (r: RefundTx) => rulesFor(r.provider);
   const purchases = rows.filter((r) => !r.isInternal && r.amount < 0 && !rules(r).isTransferLike(r));
   const credits = rows.filter((r) => !r.isInternal && rules(r).isRefundCredit(r));
   const edges: Array<{ p: RefundTx; c: RefundTx; dt: number }> = [];
@@ -101,8 +102,9 @@ export async function markRefunds(db: Db, range?: TimeRange): Promise<TimeRange 
 }
 
 async function load(db: Db, sql: string, args: Array<string | number>): Promise<StoredRow[]> {
-  const rs = await db.execute({ sql, args });
+  const [rs, providers] = await Promise.all([db.execute({ sql, args }), accountProviders(db)]);
   return rs.rows.map((r) => ({
+    provider: providerOf(providers, String(r.account_id)),
     id: String(r.id),
     accountId: String(r.account_id),
     time: Number(r.time),

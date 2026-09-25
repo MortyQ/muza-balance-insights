@@ -12,7 +12,7 @@ import {
   periodInfo,
   spendingSummary,
 } from '../src/summaries.ts';
-import { memoryDb } from './helpers.ts';
+import { insertAccountRow, memoryDb } from './helpers.ts';
 
 let db: Db;
 
@@ -21,10 +21,9 @@ const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
 const SYNCED_TO = kyivStartOfDay('2026-03-10') + 23 * 3600;
 
 async function account(id: string, type: string | null, currency = 980, balance = 0, creditLimit = 0, extra: { iban?: string; pan?: string; title?: string } = {}) {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, type, currency_code, iban, masked_pan, title, balance, credit_limit, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [id, type === null ? 'jar' : 'card', type, currency, extra.iban ?? null, extra.pan ?? null, extra.title ?? null, balance, creditLimit, SYNCED_TO],
+  await insertAccountRow(db, {
+    id, kind: type === null ? 'jar' : 'card', type, currency_code: currency, iban: extra.iban ?? null, masked_pan: extra.pan ?? null,
+    title: extra.title ?? null, balance, credit_limit: creditLimit, updated_at: SYNCED_TO,
   });
 }
 
@@ -217,7 +216,7 @@ describe('incomeSummary', () => {
     expect((await incomeSummary(db, { from: '2026-02-01', to: '2026-02-28', groupBy: 'account' }, NOW)).groups.map((g) => g.label)).toEqual([
       'black/USD', 'black/UAH',
     ]);
-    expect(incomeSource(5411, '')).toBe('other');
+    expect(incomeSource(5411, '', 'monobank')).toBe('other');
   });
 });
 

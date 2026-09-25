@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
 import { kyivStartOfDay } from '@mono/core/format';
-import { memoryDb } from '@mono/core/test-helpers';
+import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { DataService } from '../src/main/data.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
@@ -15,10 +15,9 @@ let svc: DataService;
 let seq = 0;
 
 async function account(id: string, type: string | null, currency: number, balance: number, creditLimit = 0) {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, type, currency_code, iban, masked_pan, title, balance, credit_limit, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [id, type === null ? 'jar' : 'card', type, currency, CANARIES[2]!, JSON.stringify([CANARIES[3]]), CANARIES[4]!, balance, creditLimit, SYNCED_TO],
+  await insertAccountRow(db, {
+    id, kind: type === null ? 'jar' : 'card', type, currency_code: currency, iban: CANARIES[2]!, masked_pan: JSON.stringify([CANARIES[3]]),
+    title: CANARIES[4]!, balance, credit_limit: creditLimit, updated_at: SYNCED_TO,
   });
 }
 

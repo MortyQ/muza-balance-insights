@@ -10,7 +10,8 @@
 // Thresholds come from real data (phase 3 report): all mirrors within 0–14 s. What a transfer, an own-transfer text
 // or an auto top-up looks like is the provider's (providers/<id>/rules.ts), per account.
 import type { Db, Stmt } from './db.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { ProviderId, ProviderRules } from './providers/types.ts';
 
 /** Max |Δt| between the two halves of a pair, seconds. */
@@ -37,8 +38,8 @@ export type TransferAccount = {
   currencyCode: number;
   iban: string | null;
   title: string | null;
-  /** Whose rules apply to this account's rows; Monobank when absent (before connections). */
-  provider?: ProviderId;
+  /** Whose rules apply to this account's rows (its connection's provider). */
+  provider: ProviderId;
 };
 
 export type TransferMark = { rule: TransferRule; pairId: string | null };
@@ -51,7 +52,8 @@ type Edge = { a: TransferTx; b: TransferTx; dt: number };
  */
 export function detectTransfers(rows: readonly TransferTx[], accounts: readonly TransferAccount[]): Map<string, TransferMark> {
   const acc = new Map(accounts.map((a) => [a.id, a]));
-  const rulesOf = (tx: TransferTx): ProviderRules => rulesFor(acc.get(tx.accountId)?.provider ?? LEGACY_PROVIDER);
+  const providers = new Map(accounts.map((a) => [a.id, a.provider]));
+  const rulesOf = (tx: TransferTx): ProviderRules => rulesFor(providerOf(providers, tx.accountId));
   const transferLike = (tx: TransferTx) => rulesOf(tx).isTransferLike(tx);
   const ownIbans = new Set(accounts.map((a) => normalizeIban(a.iban)).filter((i): i is string => i !== null));
   const jarTitles = new Set(
@@ -224,7 +226,9 @@ export async function markInternalTransfers(db: Db, range?: TimeRange): Promise<
 
 async function loadAccounts(db: Db): Promise<TransferAccount[]> {
   const rs = await db.execute('SELECT id, kind, currency_code, iban, title FROM accounts');
+  const providers = await accountProviders(db);
   return rs.rows.map((r) => ({
+    provider: providerOf(providers, String(r.id)),
     id: String(r.id),
     kind: r.kind === 'jar' ? 'jar' : 'card',
     currencyCode: Number(r.currency_code),

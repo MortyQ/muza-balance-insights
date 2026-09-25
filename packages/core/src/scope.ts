@@ -9,7 +9,8 @@
 // Internal transfers get a scope too, but they never count as spending in either scope.
 import { CATEGORY, matchOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
 import { getSettings, type Settings } from './settings.ts';
 import type { TimeRange } from './transfers.ts';
@@ -24,8 +25,8 @@ export type ScopeInput = {
   accountType: string | null;
   description: string;
   counterName: string | null;
-  /** Whose rules apply (the account's provider); Monobank when absent (before connections). */
-  provider?: ProviderId;
+  /** Whose rules apply (the account's connection's provider). */
+  provider: ProviderId;
 };
 
 export function computeScope(
@@ -35,7 +36,7 @@ export function computeScope(
 ): Scope {
   const override = matchOverride(overrideKey(tx), overrides);
   if (override) return override.scope;
-  const rules = rulesFor(tx.provider ?? LEGACY_PROVIDER);
+  const rules = rulesFor(tx.provider);
   if (rules.isBusinessAccount({ type: tx.accountType })) return 'business';
   if (settings.treasury_business && rules.isTreasury(tx.description)) return 'business';
   return 'personal';
@@ -61,8 +62,8 @@ export async function loadScopeOverrides(db: Db): Promise<ScopeOverride[]> {
 
 /** Recomputes scope for rows in the range (all rows if none). Writes only rows that change; returns their count. */
 export async function rescope(db: Db, range?: TimeRange | null): Promise<number> {
-  const [overrides, settings] = await Promise.all([loadScopeOverrides(db), getSettings(db)]);
-  const cols = `t.id, t.description, t.counter_name, t.amount, t.refund_pair_id, t.scope, a.type AS account_type`;
+  const [overrides, settings, providers] = await Promise.all([loadScopeOverrides(db), getSettings(db), accountProviders(db)]);
+  const cols = `t.id, t.account_id, t.description, t.counter_name, t.amount, t.refund_pair_id, t.scope, a.type AS account_type`;
   const from = 'transactions t JOIN accounts a ON a.id = t.account_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM ${from} WHERE t.time BETWEEN ? AND ?`, args: [range.from, range.to] })
@@ -77,6 +78,7 @@ export async function rescope(db: Db, range?: TimeRange | null): Promise<number>
           accountType: r.account_type === null ? null : String(r.account_type),
           description: String(r.description ?? ''),
           counterName: r.counter_name === null ? null : String(r.counter_name),
+          provider: providerOf(providers, String(r.account_id)),
         },
         overrides,
         settings,
@@ -148,9 +150,9 @@ export type ScopeCandidate = {
  * per account currency, by total.
  */
 export async function scopeOverrideCandidates(db: Db, limit = 30): Promise<ScopeCandidate[]> {
-  const accounts = await db.execute('SELECT id, type FROM accounts');
+  const [accounts, providers] = await Promise.all([db.execute('SELECT id, type FROM accounts'), accountProviders(db)]);
   const business = accounts.rows
-    .filter((r) => rulesFor(LEGACY_PROVIDER).isBusinessAccount({ type: r.type === null ? null : String(r.type) }))
+    .filter((r) => rulesFor(providerOf(providers, String(r.id))).isBusinessAccount({ type: r.type === null ? null : String(r.type) }))
     .map((r) => String(r.id));
   const notBusiness = business.length > 0 ? `AND a.id NOT IN (${business.map(() => '?').join(', ')})` : '';
   const rs = await db.execute({

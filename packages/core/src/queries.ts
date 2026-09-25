@@ -1,7 +1,8 @@
 // Read-only queries over the real database, shared by the CLI and (phase 5) the MCP tools.
 import { CATEGORY } from './categories.ts';
 import type { Db } from './db.ts';
-import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
 import { spendingSummary } from './summaries.ts';
 import type { TransferRule } from './transfers.ts';
 
@@ -29,11 +30,11 @@ export async function transferDiagnostics(db: Db): Promise<TransferDiagnostics> 
   const jars = await db.execute(`SELECT title FROM accounts WHERE kind = 'jar' AND title IS NOT NULL`);
   const jarTitles = new Set(jars.rows.map((r) => String(r.title).trim()));
   const unpaired = await db.execute(
-    `SELECT description, mcc, amount FROM transactions WHERE is_cancelled = 0 AND transfer_pair_id IS NULL`,
+    `SELECT account_id, description, mcc, amount FROM transactions WHERE is_cancelled = 0 AND transfer_pair_id IS NULL`,
   );
-  const provider = rulesFor(LEGACY_PROVIDER);
+  const providers = await accountProviders(db);
   const unpairedService4829 = unpaired.rows.filter((r) =>
-    provider.isServiceTransferText({ description: String(r.description ?? ''), mcc: Number(r.mcc), amount: Number(r.amount) }, { jarTitles }),
+    rulesFor(providerOf(providers, String(r.account_id))).isServiceTransferText({ description: String(r.description ?? ''), mcc: Number(r.mcc), amount: Number(r.amount) }, { jarTitles }),
   ).length;
 
   const refunds = await db.execute(
