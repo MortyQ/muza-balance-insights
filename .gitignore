@@ -12,3 +12,4 @@ reports/
 reply.md
 out/
 dist/
+.DS_Store

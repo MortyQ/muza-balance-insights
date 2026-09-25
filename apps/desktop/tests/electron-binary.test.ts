@@ -55,10 +55,14 @@ describe('missingReason (mirrors isInstalled() of Electron install.js)', () => {
 describe('scripts', () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 
-  it('dev and build check the binary inline, first (pnpm does not run pre-scripts)', () => {
-    expect(pkg.scripts.dev).toBe('node scripts/electron-binary.mjs --check && electron-vite dev');
-    expect(pkg.scripts.build).toBe('node scripts/electron-binary.mjs --check && electron-vite build');    expect(pkg.scripts['binary:install']).toBe('node scripts/electron-binary.mjs --install');
-    expect(Object.keys(pkg.scripts).filter((k) => /^(pre|post)/.test(k))).toEqual([]);
+  it('dev and build ensure the binary inline, first; no lifecycle hooks anywhere', () => {
+    expect(pkg.scripts.dev).toBe('node scripts/ensure-electron.mjs && electron-vite dev');
+    expect(pkg.scripts.build).toBe('node scripts/ensure-electron.mjs && electron-vite build');
+    expect(pkg.scripts['binary:install']).toBe('node scripts/electron-binary.mjs --install');
+    for (const file of ['package.json', '../../package.json']) {
+      const scripts = JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8')).scripts ?? {};
+      expect(Object.keys(scripts).filter((k) => /^(pre|post)|^(install|prepare|prepublish)$/.test(k))).toEqual([]);
+    }
   });
 
   it('the hint names the real script', () => {

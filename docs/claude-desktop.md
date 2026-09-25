@@ -4,15 +4,19 @@
 
 Открой `~/Library/Application Support/Claude/claude_desktop_config.json`: Claude Desktop → Settings → Developer → Edit Config. Добавь сервер в `mcpServers`. Если там уже есть другие серверы, не удаляй их.
 
+Подставь свои пути:
+- `<NODE>` — вывод `which node` (Node 22 из `.nvmrc`, например `~/.nvm/versions/node/v22.x.y/bin/node`, но полным путём, без `~`);
+- `<REPO>` — абсолютный путь к этому репозиторию (`pwd` в его корне).
+
 ```json
 {
   "mcpServers": {
     "monobank": {
-      "command": "/Users/serhii/.nvm/versions/node/v22.14.0/bin/node",
+      "command": "<NODE>",
       "args": [
         "--import",
-        "file:///Users/serhii/Desktop/Mine/mcp/monobank-mcp/apps/mcp/node_modules/tsx/dist/loader.mjs",
-        "/Users/serhii/Desktop/Mine/mcp/monobank-mcp/apps/mcp/src/server.ts"
+        "file://<REPO>/apps/mcp/node_modules/tsx/dist/loader.mjs",
+        "<REPO>/apps/mcp/src/server.ts"
       ]
     }
   }
@@ -22,7 +26,7 @@
 Почему пути абсолютные:
 - Claude Desktop не видит `nvm` в своём `PATH`, поэтому `node` указан полным путём.
 - Процесс запускается из произвольной папки, поэтому загрузчик `tsx` тоже задан полным путём.
-- Токен и путь к базе сервер берёт сам из `/Users/serhii/Desktop/Mine/mcp/monobank-mcp/.env` в корне репозитория (путь считается от файла сервера, а не от cwd). Поэтому блок `env` в конфиге не нужен.
+- Токен и путь к базе сервер берёт сам из `<REPO>/.env` в корне репозитория (путь считается от файла сервера, а не от cwd). Поэтому блок `env` в конфиге не нужен.
 
 Если обновишь Node через nvm, путь в `command` поменяется. Узнать новый: `which node`.
 
@@ -51,7 +55,7 @@
   - синтаксическая ошибка в JSON конфига.
 - Проверка без Claude Desktop: `pnpm --filter @mono/mcp dev:mcp` в терминале должен написать «сервер запущен (stdio)». Выйти: Ctrl+C.
 - MCP Inspector (по желанию, работает с реальными данными, запускать только самому):
-  `npx @modelcontextprotocol/inspector /Users/serhii/.nvm/versions/node/v22.14.0/bin/node --import file:///Users/serhii/Desktop/Mine/mcp/monobank-mcp/apps/mcp/node_modules/tsx/dist/loader.mjs /Users/serhii/Desktop/Mine/mcp/monobank-mcp/apps/mcp/src/server.ts`
+  `npx @modelcontextprotocol/inspector <NODE> --import file://<REPO>/apps/mcp/node_modules/tsx/dist/loader.mjs <REPO>/apps/mcp/src/server.ts`
 
 ## 4. Первые вопросы
 

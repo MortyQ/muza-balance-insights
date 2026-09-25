@@ -197,6 +197,14 @@
 - Имя и `userData` задаются явно до `ready` (`app.setName` / `app.setPath`): prod —
   `~/Library/Application Support/Balance Insights/`, dev — `~/Library/Application Support/Balance Insights Dev/`.
   Тест проверяет, что путь ровно такой. Агент эти папки не читает и приложение не запускает (deny + sandbox).
+- **Имя «Balance Insights» и `appId` `io.github.mortyq.balanceinsights` после первого релиза не меняются.**
+  От имени зависят папка userData и запись Keychain, которой safeStorage шифрует токен (по поведению Chromium —
+  «<имя> Safe Storage»). От `appId` — bundle id на macOS, установка и идентичность приложения на Windows, автообновление.
+  Смена = пользователи теряют токен и данные или получают второе приложение. `appId` проверяет `tests/package.test.ts`
+  (конфиг и `CFBundleIdentifier` в бинарнике).
+- Бинарник Electron: `dev` и `build` первым шагом запускают `scripts/ensure-electron.mjs` (inline, без
+  postinstall и других lifecycle-хуков). Нет бинарника — вызывает `install.js` пакета Electron, есть — ничего не делает,
+  нет сети — ошибка с командой `binary:install`, которую выполняет пользователь.
 - Прежнее имя до 25.09.2026 — «Balans Insights». Его пути остаются в deny и sandbox `.claude/settings.json`, пока
   пользователь не удалит старые папки (Application Support, Caches, Logs, в том числе Dev).
 - CSP в dev ослаблена только для HMR (`connect-src ws://localhost:<порт>`, `style-src 'unsafe-inline'`),

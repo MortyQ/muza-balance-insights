@@ -7,8 +7,8 @@
   "type": "module",
   "main": "./out/main/index.js",
   "scripts": {
-    "dev": "node scripts/electron-binary.mjs --check && electron-vite dev",
-    "build": "node scripts/electron-binary.mjs --check && electron-vite build",
+    "dev": "node scripts/ensure-electron.mjs && electron-vite dev",
+    "build": "node scripts/ensure-electron.mjs && electron-vite build",
     "binary:install": "node scripts/electron-binary.mjs --install",
     "package:dir": "pnpm run build && electron-builder --dir --config electron-builder.json",
     "test": "vitest run",

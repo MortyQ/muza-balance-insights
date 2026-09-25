@@ -45,6 +45,8 @@ describe('electron-builder config', () => {
 
   it('only the build output goes in, as an asar; native modules unpacked; no rebuild, no download, no signing identity', () => {
     expect(config.productName).toBe(PRODUCT);
+    // Frozen after the first release (CLAUDE.md): bundle id, updates, Windows install identity.
+    expect(config.appId).toBe('io.github.mortyq.balanceinsights');
     expect(config.files).toEqual(['out/**', 'package.json']);
     expect(config.asar).toBe(true);
     expect(config.asarUnpack).toEqual(['**/*.node']);
@@ -107,6 +109,11 @@ describe.skipIf(!app)('packaged app (dist/)', () => {
     expect(fs.existsSync(path.join(resources, 'app.asar'))).toBe(true);
     expect(fs.existsSync(path.join(resources, 'app'))).toBe(false);
     expect(fs.readFileSync(path.join(contents, 'Info.plist'), 'utf8')).toContain('ElectronAsarIntegrity');
+  });
+
+  it('the bundle id is the frozen appId', () => {
+    const plist = fs.readFileSync(path.join(contents, 'Info.plist'), 'utf8');
+    expect(plist).toMatch(/<key>CFBundleIdentifier<\/key>\s*<string>io\.github\.mortyq\.balanceinsights<\/string>/);
   });
 
   it('the asar holds the build output and runtime deps only — no sources, maps, tests, workspace packages or data', () => {

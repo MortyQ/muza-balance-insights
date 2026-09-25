@@ -1,5 +1,5 @@
 {
-  "appId": "com.balansinsights.desktop",
+  "appId": "io.github.mortyq.balanceinsights",
   "productName": "Balance Insights",
   "directories": { "output": "dist" },
   "files": ["out/**", "package.json"],
