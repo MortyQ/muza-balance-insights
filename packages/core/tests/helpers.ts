@@ -1,5 +1,5 @@
 import { openLibsql } from '@mono/db-libsql';
-import { migrate, type Db } from '../src/db.ts';
+import { migrate, type Db, type SqlArg } from '../src/db.ts';
 import type { Clock } from '../src/platform.ts';
 
 export const TEST_TOKEN = 'test-token-SHOULD-NEVER-LEAK-9f3a';
@@ -129,6 +129,18 @@ export async function openTestDb(url: string): Promise<Db> {
 
 export async function memoryDb(): Promise<Db> {
   return openTestDb(':memory:');
+}
+
+/**
+ * Inserts one account row with exactly the given columns (a fixture). Tests use this instead of a raw INSERT so that
+ * columns the schema requires beyond the test's interest are filled in one place.
+ */
+export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
+  const cols = Object.keys(row);
+  await db.execute({
+    sql: `INSERT INTO accounts (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+    args: cols.map((c) => row[c] as SqlArg),
+  });
 }
 
 export async function insertAccount(db: Db, id: string, kind: 'card' | 'jar' = 'card', currency = 980, iban?: string) {
