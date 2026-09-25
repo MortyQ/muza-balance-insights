@@ -11,7 +11,8 @@ import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 
 const ENTRY = path.join(MCP_ROOT, 'src', 'cli', 'recategorize.ts');
 
-const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+// `//` after `:` is a URL (https://…), not a comment: code after it on the same line is still checked.
+const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/.*$/gm, '');
 
 /** Workspace packages by name → { dir, exports }, read from their package.json. */
 function workspacePackages(): Map<string, { dir: string; exports: Record<string, string> }> {
@@ -89,6 +90,11 @@ describe('recategorize: no .env, no token', () => {
         'packages/db-libsql/src/index.ts',
       ]),
     );
+  });
+
+  it('control: comments are stripped, but a URL is not a comment (the checks below see code after it)', () => {
+    expect(stripComments('const a = 1; // getToken() in a comment')).not.toContain('getToken');
+    expect(stripComments("const u = 'https://x.invalid'; getToken();")).toContain('getToken');
   });
 
   it('the resolver follows package exports and refuses what it cannot resolve', () => {
