@@ -3,11 +3,11 @@
 import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
 import type { Db } from '@mono/core/db';
 import { accountLabels, toKyivDate } from '@mono/core/format';
-import { MonoApiError, RateLimitError, createMonoClient } from '@mono/core/monoApi';
+import { MonoApiError, RateLimitError, createMonoClient } from '@mono/core/providers/monobank/client';
 import type { Clock, FetchLike } from '@mono/core/platform';
 import { rederiveCore } from '@mono/core/rederive';
 import { planHistory, runPlan, syncAccounts, type SyncContext, type Window } from '@mono/core/sync';
-import { RATE_LIMIT_MS } from '@mono/core/constants';
+import { RATE_LIMIT_MS } from '@mono/core/providers/monobank/constants';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';

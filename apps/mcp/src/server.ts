@@ -5,7 +5,7 @@ import { getToken, loadConfig } from './config.ts';
 import { openDb } from './db.ts';
 import { log } from './log.ts';
 import { runStdioServer } from './mcp/run.ts';
-import { createMonoClient, type MonoClient } from '@mono/core/monoApi';
+import { createMonoClient, type MonoClient } from '@mono/core/providers/monobank/client';
 import { systemClock } from './clock.ts';
 
 async function main(): Promise<void> {

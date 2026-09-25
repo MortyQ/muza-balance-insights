@@ -1,10 +1,19 @@
+// Monobank personal API client: requests, response schemas, the shared request slot, pages of a statement.
+// The only Monobank code with network access; the sync loop sees it as a ProviderClient (providers/types.ts).
 import { z } from 'zod';
-import { RATE_LIMIT_MS } from './constants.ts';
-import type { Db } from './db.ts';
-import { SyncCancelledError, cancellableSleep, throwIfCancelled } from './cancel.ts';
-import type { Clock, FetchLike, ResponseLike } from './platform.ts';
+import { SyncCancelledError, throwIfCancelled } from '../../cancel.ts';
+import type { Db } from '../../db.ts';
+import { RateLimitError, StatementFormatError } from '../../errors.ts';
+import type { Clock, FetchLike, ResponseLike } from '../../platform.ts';
+import { acquireSlot, recordCall, type RateLimitMode } from '../../ratelimit.ts';
+import type { NormalizedAccount, NormalizedTx, ProviderClient } from '../types.ts';
+import { RATE_LIMIT_MS, STATEMENT_PAGE_LIMIT } from './constants.ts';
 
-export type { Clock } from './platform.ts';
+export type { Clock } from '../../platform.ts';
+export type { RateLimitMode } from '../../ratelimit.ts';
+export { RateLimitError, StatementFormatError } from '../../errors.ts';
+
+const LIMIT = { intervalMs: RATE_LIMIT_MS, bank: 'Monobank' } as const;
 
 const BASE_URL = 'https://api.monobank.ua';
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -71,37 +80,7 @@ export type StatementItem = z.infer<typeof StatementItemSchema> & {
 };
 
 // ---------- errors (never contain the token, URL-with-secrets or headers) ----------
-
-export class RateLimitError extends Error {
-  override name = 'RateLimitError';
-  constructor(
-    readonly retryAfterSec: number,
-    readonly source: 'local' | 'server',
-  ) {
-    super(
-      source === 'server'
-        ? `Monobank вернул 429 (rate limit). Повтори через ${retryAfterSec} с.`
-        : `Лимит Monobank API: 1 запрос в 60 с. Следующий запрос возможен через ${retryAfterSec} с.`,
-    );
-  }
-}
-
-/**
- * A statement item failed validation. Carries only field names and the transaction id —
- * never amounts, descriptions or counterparties.
- */
-export class StatementFormatError extends Error {
-  override name = 'StatementFormatError';
-  constructor(
-    readonly fields: string[],
-    readonly transactionId: string | null,
-    readonly itemIndex: number,
-  ) {
-    super(
-      `Неожиданный формат транзакции ${transactionId ?? `#${itemIndex} (без id)`}: поля ${fields.join(', ')}`,
-    );
-  }
-}
+// RateLimitError and StatementFormatError are shared by every provider (src/errors.ts).
 
 export class MonoApiError extends Error {
   override name = 'MonoApiError';
@@ -115,12 +94,6 @@ export class MonoApiError extends Error {
 
 // ---------- client ----------
 
-export type RateLimitMode =
-  /** CLI: sleep until the shared slot is free. */
-  | 'wait'
-  /** MCP: never block — throw RateLimitError with the remaining seconds. */
-  | 'fail';
-
 export type MonoClientOptions = {
   token: string;
   db: Db;
@@ -133,7 +106,7 @@ export type MonoClientOptions = {
   signal?: AbortSignal;
 };
 
-export type MonoClient = {
+export type MonoClient = ProviderClient & {
   clientInfo(): Promise<ClientInfo>;
   /** One raw statement request (no pagination). `from`/`to` are unix seconds. */
   statement(accountId: string, from: number, to: number): Promise<StatementItem[]>;
@@ -148,7 +121,7 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
 
   async function request(endpoint: string, pathname: string): Promise<unknown> {
     throwIfCancelled(opts.signal);
-    await acquireSlot(db, endpoint, clock, mode, opts.onWait, opts.signal);
+    await acquireSlot(db, endpoint, clock, mode, LIMIT, opts.onWait, opts.signal);
     // From here on the slot is consumed, whatever happens (429, network error, bad JSON).
 
     let res: ResponseLike;
@@ -168,7 +141,7 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
       await recordCall(db, endpoint, clock.nowMs());
       const retryAfter = Number(res.headers.get('retry-after'));
       const sec = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : RATE_LIMIT_MS / 1000;
-      throw new RateLimitError(sec, 'server');
+      throw new RateLimitError(sec, 'server', LIMIT.bank, RATE_LIMIT_MS / 1000);
     }
 
     const text = await res.text().catch(() => '');
@@ -205,7 +178,7 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
     return new MonoApiError(`Неожиданный формат ответа ${endpoint}: ${where}`, 200);
   }
 
-  return {
+  const client: MonoClient = {
     async clientInfo() {
       const endpoint = '/personal/client-info';
       const json = await request(endpoint, endpoint);
@@ -233,49 +206,59 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
         return { ...parsed.data, raw: JSON.stringify(raw) };
       });
     },
+
+    async accounts() {
+      const info = await client.clientInfo();
+      return [...info.accounts.map(cardAccount), ...info.jars.map(jarAccount)];
+    },
+
+    async statementWindow(accountId, w, onPage) {
+      return fetchAllPages(client, accountId, w, onPage);
+    },
+  };
+  return client;
+}
+
+function cardAccount(a: Card): NormalizedAccount {
+  return {
+    id: a.id, kind: 'card', type: a.type ?? null, currencyCode: a.currencyCode, iban: a.iban ?? null,
+    maskedPan: a.maskedPan ?? null, title: null, goal: null, balance: a.balance, creditLimit: a.creditLimit ?? null,
   };
 }
 
-// ---------- rate limiter (shared across processes via the api_calls table) ----------
-
-async function recordCall(db: Db, endpoint: string, atMs: number): Promise<void> {
-  await db.execute({ sql: 'INSERT INTO api_calls (endpoint, called_at) VALUES (?, ?)', args: [endpoint, atMs] });
-}
-
-/** Milliseconds until the shared slot frees up (0 = free now). */
-export async function msUntilSlotFree(db: Db, nowMs: number): Promise<number> {
-  const rs = await db.execute('SELECT MAX(called_at) AS last FROM api_calls');
-  const last = rs.rows[0]?.last;
-  if (last === null || last === undefined) return 0;
-  return Math.max(0, Number(last) + RATE_LIMIT_MS - nowMs);
+function jarAccount(j: Jar): NormalizedAccount {
+  return {
+    id: j.id, kind: 'jar', type: null, currencyCode: j.currencyCode, iban: null, maskedPan: null,
+    title: j.title ?? null, goal: j.goal ?? null, balance: j.balance, creditLimit: null,
+  };
 }
 
 /**
- * Atomically claims the slot: one INSERT … WHERE NOT EXISTS is a single SQLite write,
- * so two processes can't both claim it. Loops (mode 'wait') or throws (mode 'fail').
+ * Every page of one window. Per the Monobank docs, items come newest first and a response of exactly 500 items
+ * means "there may be more": repeat with `to` = time of the last (oldest) item until fewer than 500 come back.
+ * Items at that boundary second come back twice → dedupe by id. Nothing is written: if any page fails, the whole
+ * window is simply retried next time. A statement item already has the stored shape (NormalizedTx).
  */
-export async function acquireSlot(
-  db: Db,
-  endpoint: string,
-  clock: Clock,
-  mode: RateLimitMode,
-  onWait?: (waitMs: number) => void,
-  signal?: AbortSignal,
-): Promise<void> {
-  for (;;) {
-    const now = clock.nowMs();
-    const rs = await db.execute({
-      sql: `INSERT INTO api_calls (endpoint, called_at)
-            SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM api_calls WHERE called_at > ?)`,
-      args: [endpoint, now, now - RATE_LIMIT_MS],
-    });
-    if (rs.rowsAffected === 1) {
-      await db.execute({ sql: 'DELETE FROM api_calls WHERE called_at < ?', args: [now - 86_400_000] });
-      return;
+async function fetchAllPages(
+  client: MonoClient,
+  accountId: string,
+  w: { from: number; to: number },
+  onPage?: (page: number, received: number) => void,
+): Promise<NormalizedTx[]> {
+  const byId = new Map<string, NormalizedTx>();
+  let to = w.to;
+  for (let page = 1; ; page++) {
+    const items = await client.statement(accountId, w.from, to);
+    for (const it of items) byId.set(it.id, it);
+    onPage?.(page, items.length);
+    if (items.length < STATEMENT_PAGE_LIMIT) break;
+    // min() rather than items.at(-1): identical for newest-first order, and robust if it ever isn't.
+    const oldest = Math.min(...items.map((i) => i.time));
+    if (oldest >= to) {
+      // ≥ 500 transactions within one second — paginating by time cannot make progress.
+      throw new Error(`Пагинация не продвигается для счёта ${accountId}: ≥ ${STATEMENT_PAGE_LIMIT} транзакций в одну секунду`);
     }
-    const waitMs = Math.max(1, await msUntilSlotFree(db, now));
-    if (mode === 'fail') throw new RateLimitError(Math.ceil(waitMs / 1000), 'local');
-    onWait?.(waitMs);
-    await cancellableSleep(clock, waitMs, signal);
+    to = oldest;
   }
+  return [...byId.values()];
 }

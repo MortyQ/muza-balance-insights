@@ -9,7 +9,7 @@ import { CATEGORY } from '@mono/core/categories';
 import type { Db } from '../db.ts';
 import { currencyAlpha, currencyNumeric, toMajor } from '@mono/core/currency';
 import { log } from '../log.ts';
-import type { Clock, MonoClient } from '@mono/core/monoApi';
+import type { Clock, MonoClient } from '@mono/core/providers/monobank/client';
 import { SCOPES } from '@mono/core/scope';
 import { getBalances, getSyncStatus } from '@mono/core/status';
 import {

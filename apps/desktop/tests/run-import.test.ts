@@ -6,7 +6,7 @@ import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, item, memoryDb } from
 import { FromWorker } from '../src/shared/import-protocol.ts';
 import { RETRY_BUDGET_MS, RETRY_EVERY_MS, RETRY_FIRST_MS, SLEEP_TOLERANCE_MS, sleptDuringPause } from '../src/shared/retry.ts';
 import { describeError, errorTag, runImport, transientReason } from '../src/worker/run-import.ts';
-import { MonoApiError, RateLimitError } from '@mono/core/monoApi';
+import { MonoApiError, RateLimitError } from '@mono/core/providers/monobank/client';
 
 async function setup(opts: { intercept?: (i: number, url: string) => Response | 'throw' | undefined } = {}) {
   const db: Db = await memoryDb();
@@ -224,7 +224,7 @@ describe('runImport: transient failures are waited out (overnight import)', () =
   it('what counts as transient: network, 5xx, 429 — not 401/403/4xx, not a format error, not a cancel', () => {
     expect(transientReason(new MonoApiError('x', null))).toBe('network');
     expect(transientReason(new MonoApiError('x', 503))).toBe('server');
-    expect(transientReason(new RateLimitError(60, 'server'))).toBe('rate-limit');
+    expect(transientReason(new RateLimitError(60, 'server', 'Monobank', 60))).toBe('rate-limit');
     for (const s of [400, 401, 403, 404]) expect(transientReason(new MonoApiError('x', s))).toBeNull();
     expect(transientReason(new Error('Неожиданный формат ответа API: …'))).toBeNull();
     expect(errorTag(new MonoApiError(`Monobank ответил 500: ${TEST_TOKEN}`, 500))).toBe('MonoApiError status=500');

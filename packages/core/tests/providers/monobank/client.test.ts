@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
-import { MonoApiError, RateLimitError, StatementFormatError, createMonoClient } from '../src/monoApi.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from './helpers.ts';
+import type { Db } from '../../../src/db.ts';
+import { MonoApiError, RateLimitError, StatementFormatError, createMonoClient } from '../../../src/providers/monobank/client.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from '../../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());

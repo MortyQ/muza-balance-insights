@@ -1,19 +1,24 @@
-import { MAX_STATEMENT_WINDOW_SEC, RESYNC_OVERLAP_SEC, STATEMENT_PAGE_LIMIT } from './constants.ts';
+// The sync loop, for any provider: plan windows, fetch one window through the provider's client, write it with
+// sync_state in one transaction, then the derivation passes. What a request, a page or an account looks like at the
+// bank is the client's (providers/<id>/client.ts).
+import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import { categorize, loadOverrides, recategorize, type CategoryOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
+import { RateLimitError, StatementFormatError } from './errors.ts';
 import { toKyivDate } from './format.ts';
-import { RateLimitError, StatementFormatError, type MonoClient, type StatementItem } from './monoApi.ts';
 import type { Clock } from './platform.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
+import type { NormalizedTx, ProviderClient } from './providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from './cancel.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope } from './scope.ts';
 import { markInternalTransfers } from './transfers.ts';
 
 /**
- * Window length we request. One hour below the API maximum (31 d + 1 h) as a safety margin
- * against clock differences between us and the bank.
+ * Window length we request. One hour below the API maximum (Monobank: 31 d + 1 h) as a safety margin
+ * against clock differences between us and the bank. Until connections exist, every account is Monobank's.
  */
-export const WINDOW_SEC = MAX_STATEMENT_WINDOW_SEC - 3600;
+export const WINDOW_SEC = rulesFor(LEGACY_PROVIDER).api.maxWindowSec - 3600;
 
 const MAX_429_RETRIES = 3;
 
@@ -34,14 +39,14 @@ export type SyncEvent =
 
 export type SyncContext = {
   db: Db;
-  api: MonoClient;
+  api: ProviderClient;
   clock: Clock;
   onEvent?: (e: SyncEvent) => void;
   /** Logs a warning (CLI → stderr). */
   warn?: (msg: string) => void;
   /**
    * Cancels the run (SyncCancelledError): checked before each window and page and after rate-limit waits.
-   * Pass the same signal to createMonoClient so waits and in-flight requests stop too.
+   * Pass the same signal to the provider's client so waits and in-flight requests stop too.
    */
   signal?: AbortSignal;
 };
@@ -56,7 +61,7 @@ export type CommitResult = {
 // ---------- accounts ----------
 
 export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; jars: number }> {
-  const info = await ctx.api.clientInfo();
+  const accounts = await ctx.api.accounts();
   const now = Math.floor(ctx.clock.nowMs() / 1000);
   const upsert = `INSERT INTO accounts
       (id, kind, type, currency_code, iban, masked_pan, title, goal, balance, credit_limit, updated_at)
@@ -66,21 +71,15 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
       iban = excluded.iban, masked_pan = excluded.masked_pan, title = excluded.title,
       goal = excluded.goal, balance = excluded.balance, credit_limit = excluded.credit_limit,
       updated_at = excluded.updated_at`;
-  const stmts: Stmt[] = [
-    ...info.accounts.map((a) => ({
-      sql: upsert,
-      args: [
-        a.id, 'card', a.type ?? null, a.currencyCode, a.iban ?? null,
-        a.maskedPan ? JSON.stringify(a.maskedPan) : null, null, null, a.balance, a.creditLimit ?? null, now,
-      ],
-    })),
-    ...info.jars.map((j) => ({
-      sql: upsert,
-      args: [j.id, 'jar', null, j.currencyCode, null, null, j.title ?? null, j.goal ?? null, j.balance, null, now],
-    })),
-  ];
+  const stmts: Stmt[] = accounts.map((a) => ({
+    sql: upsert,
+    args: [
+      a.id, a.kind, a.type, a.currencyCode, a.iban, a.maskedPan ? JSON.stringify(a.maskedPan) : null,
+      a.title, a.goal, a.balance, a.creditLimit, now,
+    ],
+  }));
   if (stmts.length > 0) await ctx.db.batch(stmts);
-  const counts = { cards: info.accounts.length, jars: info.jars.length };
+  const counts = { cards: accounts.filter((a) => a.kind === 'card').length, jars: accounts.filter((a) => a.kind === 'jar').length };
   ctx.onEvent?.({ type: 'accounts', ...counts });
   return counts;
 }
@@ -160,30 +159,13 @@ export async function getSyncState(db: Db, accountId: string): Promise<SyncState
 
 // ---------- one window: fetch all pages, then commit atomically ----------
 
-/**
- * Fetches every page of one window. Per the Monobank docs, items come newest first and a response of
- * exactly 500 items means "there may be more": repeat with `to` = time of the last (oldest) item until
- * fewer than 500 come back. Items at that boundary second come back twice → dedupe by id.
- * Nothing is written to the DB here: if any page fails, the whole window is simply retried next time.
- */
-export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window): Promise<StatementItem[]> {
-  const byId = new Map<string, StatementItem>();
-  let to = w.to;
-  for (let page = 1; ; page++) {
+/** Every operation of one window, all pages (the client's job). Nothing is written to the DB here. */
+export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window): Promise<NormalizedTx[]> {
+  throwIfCancelled(ctx.signal);
+  return ctx.api.statementWindow(accountId, w, (page, received) => {
+    ctx.onEvent?.({ type: 'page', accountId, page, received });
     throwIfCancelled(ctx.signal);
-    const items = await ctx.api.statement(accountId, w.from, to);
-    for (const it of items) byId.set(it.id, it);
-    ctx.onEvent?.({ type: 'page', accountId, page, received: items.length });
-    if (items.length < STATEMENT_PAGE_LIMIT) break;
-    // min() rather than items.at(-1): identical for newest-first order, and robust if it ever isn't.
-    const oldest = Math.min(...items.map((i) => i.time));
-    if (oldest >= to) {
-      // ≥ 500 transactions within one second — paginating by time cannot make progress.
-      throw new Error(`Пагинация не продвигается для счёта ${accountId}: ≥ ${STATEMENT_PAGE_LIMIT} транзакций в одну секунду`);
-    }
-    to = oldest;
-  }
-  return [...byId.values()];
+  });
 }
 
 const UPSERT_TX = `INSERT INTO transactions (
@@ -203,7 +185,7 @@ const UPSERT_TX = `INSERT INTO transactions (
 // On conflict, category / is_internal_transfer / transfer_* are left alone: the pass after the commit
 // recomputes them for the window (a row may already be marked internal).
 
-function upsertStatement(accountId: string, it: StatementItem, syncedAt: number, overrides: readonly CategoryOverride[]): Stmt {
+function upsertStatement(accountId: string, it: NormalizedTx, syncedAt: number, overrides: readonly CategoryOverride[]): Stmt {
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
@@ -232,7 +214,7 @@ export async function commitWindow(
   ctx: SyncContext,
   accountId: string,
   w: Window,
-  items: StatementItem[],
+  items: NormalizedTx[],
 ): Promise<CommitResult> {
   const { db } = ctx;
   const nowSec = Math.floor(ctx.clock.nowMs() / 1000);

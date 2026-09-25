@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
-import { createMonoClient } from '../src/monoApi.ts';
+import { createMonoClient } from '../src/providers/monobank/client.ts';
 import { transferDiagnostics } from '../src/queries.ts';
 import { syncWindow, type SyncContext } from '../src/sync.ts';
 import {

@@ -5,7 +5,7 @@ import path from 'node:path';
 import { exportAnalysis } from '../src/analysis/export.ts';
 import { recategorize } from '@mono/core/categories';
 import type { Db } from '../src/db.ts';
-import { createMonoClient, type StatementItem } from '@mono/core/monoApi';
+import { createMonoClient, type StatementItem } from '@mono/core/providers/monobank/client';
 import { rederiveAll } from '../src/rederive.ts';
 import {
   ScopeOverrideError,

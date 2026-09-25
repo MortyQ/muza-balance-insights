@@ -2,7 +2,8 @@
 // accounts are identified by id and a "type/CUR" label.
 import type { Db } from './db.ts';
 import { accountLabels, toKyivDate, toKyivDateTime } from './format.ts';
-import { RATE_LIMIT_MS, RESYNC_OVERLAP_SEC } from './constants.ts';
+import { RESYNC_OVERLAP_SEC } from './constants.ts';
+import { LEGACY_PROVIDER, rulesFor } from './providers/rules.ts';
 import { transferDiagnostics, type TransferDiagnostics } from './queries.ts';
 import { scopeCounts, type Scope } from './scope.ts';
 
@@ -137,7 +138,7 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
 
   const api = await db.execute('SELECT MAX(called_at) AS last FROM api_calls');
   const lastCall = api.rows[0]?.last === null || api.rows[0]?.last === undefined ? null : Number(api.rows[0].last);
-  const nextMs = lastCall === null ? null : lastCall + RATE_LIMIT_MS;
+  const nextMs = lastCall === null ? null : lastCall + rulesFor(LEGACY_PROVIDER).api.requestIntervalMs;
 
   const d = await transferDiagnostics(db);
   // Only holds a sync can still update (last 3 days); older ones are final.

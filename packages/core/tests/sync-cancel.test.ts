@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { SyncCancelledError } from '../src/cancel.ts';
 import type { Db } from '../src/db.ts';
-import { createMonoClient } from '../src/monoApi.ts';
+import { createMonoClient } from '../src/providers/monobank/client.ts';
 import type { Clock } from '../src/platform.ts';
 import { WINDOW_SEC, getSyncState, planHistory, runPlan, syncAccounts, type SyncContext } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb, type RawItem } from './helpers.ts';

@@ -6,7 +6,7 @@ import { RATE_LIMIT_MS, getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
 import { accountLabels, formatDuration, kyivStartOfDay, toKyivDate } from '@mono/core/format';
 import { log } from '../log.ts';
-import { createMonoClient } from '@mono/core/monoApi';
+import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { cliArgs } from '../args.ts';
 import { systemClock } from '../clock.ts';
 import {
