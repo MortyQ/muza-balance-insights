@@ -407,7 +407,7 @@
   (операции загрузятся из банка заново, имена людей и настройки пропадут); 4) скорость. Потом спека → план → реализация.
   Исследование — `reports/2026-09-26-db-encryption-research.md`, инструкция для реализации —
   `docs/superpowers/briefs/2026-09-26-db-encryption.md`.
-- **Проверка токенов на Linux (до шифрования базы).** По коду Electron 44 / Chromium (не проверено на живой системе):
+- **Проверка токенов на Linux — исправлено в коде (`main/secure-store.ts`: надёжность по префиксу `v11`/`v12`), осталось проверить на живом Linux.** Было: По коду Electron 44 / Chromium (не проверено на живой системе):
   `safeStorage.getSelectedStorageBackend()` показывает бэкенд старого синхронного API, а async API без keyring молча
   шифрует встроенным ключом (префикс `v10`), и `isAsyncEncryptionAvailable()` всё равно `true`. Тогда проверка
   `INSECURE_BACKENDS` в `TokenVault` (`apps/desktop/src/main/token.ts`) может не сработать, и UI скажет «сохранён
