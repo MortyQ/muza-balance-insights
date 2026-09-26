@@ -10,7 +10,7 @@ import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
 import { DataService } from './data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
-import { configureIdentity } from './identity.ts';
+import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
@@ -88,6 +88,9 @@ app.whenReady().then(async () => {
   });
   protocol.handle(APP_SCHEME, createAppProtocolHandler(rendererDir, PROD_CSP));
   const userData = app.getPath('userData');
+  await restrictUserData(userData).catch((err: unknown) =>
+    process.stderr.write(`[identity] userData mode not set: ${err instanceof Error ? err.name : 'error'}\n`),
+  );
   const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData });
   const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
