@@ -45,6 +45,17 @@ describe('renderer architecture', () => {
     expect(violations(ok())).toEqual([]);
   });
 
+  it('reka-ui and @internationalized/date are allowed inside shared/ui', () => {
+    expect(
+      violations(
+        ok({
+          'shared/ui/index.ts': "export { s } from './s.ts';\n",
+          'shared/ui/s.ts': "import { SelectRoot } from 'reka-ui';\nimport { CalendarDate } from '@internationalized/date';\nexport const s = [SelectRoot, CalendarDate];\n",
+        }),
+      ),
+    ).toEqual([]);
+  });
+
   it.each([
     ['upwards (entities → features)', { 'entities/token/u.ts': "import { f } from '@/features/f';\n" }, 'must not import the higher layer'],
     ['sideways (entity → entity)', { 'entities/token/u.ts': "import { b } from '@/entities/bank';\n" }, 'must not import each other'],
@@ -52,6 +63,7 @@ describe('renderer architecture', () => {
     ['relative out of the slice', { 'features/f/u.ts': "import { b } from '../../entities/bank/b.ts';\n" }, 'leaves its slice'],
     ['a file outside the layers', { 'helpers.ts': 'export const x = 1;\n' }, 'not inside a slice'],
     ['a package that is not allowed', { 'features/f/u.ts': "import { ipcRenderer } from 'electron';\n" }, 'package not allowed'],
+    ['reka-ui outside shared/ui', { 'features/f/u.ts': "import { SelectRoot } from 'reka-ui';\n" }, 'package not allowed'],
     ['node inside the renderer', { 'shared/lib/b.ts': "import fs from 'node:fs';\n" }, 'package not allowed'],
     ['main called outside api/', { 'features/f/u.ts': "import { balanceApi } from '@/shared/api';\n" }, 'through an api/ segment'],
     ['window.balance outside the bridge', { 'features/f/u.ts': 'const api = window.balance;\n' }, 'reads window.balance'],

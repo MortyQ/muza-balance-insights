@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import { MONOBANK } from '@/entities/bank';
 import { useParticipantStore } from '@/entities/participant';
-import { VButton, VInfoNotice } from '@/shared/ui';
+import { VButton, VCheckbox, VInfoNotice, VInput, VSelect, type VSelectOption } from '@/shared/ui';
 import { useAddConnection } from '../composables/useAddConnection.ts';
 import { CONSENT_TEXT } from '../constants.ts';
 import TokenField from './TokenField.vue';
@@ -17,7 +17,11 @@ const emit = defineEmits<{ added: [] }>();
 const participant = useParticipantStore();
 const { person, newLabel, fromBank, tokenInput, remember, canSubmit, submit, save } = useAddConnection(() => defaultLabel);
 const personId = useId();
-const nameId = useId();
+
+const personOptions = computed<VSelectOption[]>(() => [
+  ...participant.people.map((p) => ({ label: p.label, value: p.id })),
+  { label: 'Новый человек', value: 'new' },
+]);
 
 async function onSubmit() {
   if (await save()) emit('added');
@@ -27,25 +31,17 @@ async function onSubmit() {
 <template>
   <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
     <div class="flex flex-col gap-2">
-      <label :for="personId" class="font-semibold">Чьи это счета</label>
-      <select :id="personId" v-model="person" class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-2">
-        <option v-for="p in participant.people" :key="p.id" :value="p.id">{{ p.label }}</option>
-        <option value="new">Новый человек</option>
-      </select>
+      <VSelect :id="personId" v-model="person" label="Чьи это счета" :options="personOptions" class="w-full max-w-[420px]" />
       <template v-if="person === 'new'">
-        <label :for="nameId" class="sr-only">Имя</label>
-        <input
-          :id="nameId"
+        <VInput
           v-model="newLabel"
-          class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-(--control-px) placeholder:text-input-placeholder focus:border-border-focus focus:outline-none disabled:text-foreground-disabled"
-          type="text"
-          maxlength="80"
-          placeholder="Имя, например «Я» или «Оля»"
           :disabled="fromBank"
+          maxlength="80"
+          name="Имя"
+          placeholder="Имя, например «Я» или «Оля»"
+          type="text"
         />
-        <label class="flex items-center gap-2">
-          <input v-model="fromBank" class="accent-primary" type="checkbox" /> Взять имя из банка (подставится при первом импорте)
-        </label>
+        <VCheckbox v-model="fromBank" label="Взять имя из банка (подставится при первом импорте)" />
       </template>
     </div>
     <TokenField v-model:token="tokenInput" v-model:remember="remember" :bank="MONOBANK" :secure-storage="participant.secureStorage" :autofocus />

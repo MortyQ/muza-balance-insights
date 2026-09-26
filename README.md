@@ -20,11 +20,25 @@ Download from [Releases](https://github.com/MortyQ/muza-balance-insights/release
 ## Privacy
 
 - Data stays on your computer: a local SQLite database in the app folder.
+- The database file itself is not encrypted; the app folder is readable only by your user account (macOS, Linux). Turn on disk encryption — FileVault on macOS, BitLocker or Device Encryption on Windows, LUKS on Linux — so a lost laptop or a copied disk doesn't expose it.
 - The token is kept in the system keychain (macOS Keychain, Windows DPAPI, Linux Secret Service or KWallet). If there is no secure store, it is kept in memory only and never written to disk.
 - Network only to trusted services: `api.monobank.ua` (your statement) and GitHub (update checks — every few hours the app asks
   whether a new version is out; you can switch this off in Settings). No analytics, no telemetry.
 - Updates are installed only if they are signed by the author and the file matches the signed description.
 - «Delete all data» in the app removes the database, the token and any unfinished import.
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+Windows builds will be signed this way once the project is set up with SignPath; until then the Windows installers are unsigned
+(see [Install](#install)). macOS builds are not signed with an Apple Developer ID.
+
+- Only builds made by the [release workflow](.github/workflows/release.yml) on GitHub-hosted runners from this repository's
+  source are signed, and each release is approved manually.
+- Committers and reviewers: [MortyQ](https://github.com/MortyQ)
+- Approvers: [MortyQ](https://github.com/MortyQ)
+- Privacy: see [Privacy](#privacy). The app sends nothing except your statement requests to `api.monobank.ua` (with the token
+  you enter) and update checks and downloads to GitHub, which you can switch off in Settings.
 
 ## Repository
 

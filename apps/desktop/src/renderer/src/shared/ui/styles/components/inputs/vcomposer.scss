@@ -1,0 +1,196 @@
+/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* ============================================
+   THE BOX
+
+   One box that grows, rather than a bar that vanishes and a panel that replaces
+   it: the collapsed row and the open header share its top edge, so the eye
+   follows one object through the transition.
+   ============================================ */
+.v-composer {
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  background-color: var(--ui-surface);
+  transition:
+    border-color 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* The row is a click target for a pointer only — the CTA inside it is the
+   keyboard entry point — so the hover cue is gated on a real pointer. */
+@media (hover: hover) and (pointer: fine) {
+  .v-composer:not(.v-composer--open):hover {
+    border-color: color-mix(in oklch, var(--ui-primary) 45%, transparent);
+  }
+
+  .v-composer--sent:not(.v-composer--open):hover {
+    border-color: color-mix(in oklch, var(--ui-success) 45%, transparent);
+  }
+}
+
+.v-composer--open {
+  border-color: color-mix(in oklch, var(--ui-primary) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ui-primary) 10%, transparent);
+}
+
+/* Sent is the one state that tints the surface: it is the only one that outlives
+   the interaction, so it has to read from across the page rather than on
+   inspection. */
+.v-composer--sent {
+  border-color: color-mix(in oklch, var(--ui-success) 25%, transparent);
+  background-color: color-mix(in oklch, var(--ui-success) 6%, transparent);
+}
+
+.v-composer--error,
+.v-composer--failed {
+  border-color: color-mix(in oklch, var(--ui-danger) 55%, transparent);
+}
+
+.v-composer--open.v-composer--error {
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--ui-danger) 10%, transparent);
+}
+
+.v-composer--failed .v-composer__preview {
+  color: var(--ui-danger);
+}
+
+/* ============================================
+   THE COLLAPSED ROW / THE OPEN HEADER
+   ============================================ */
+.v-composer__row,
+.v-composer__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.25rem;
+  padding: 0.1875rem 0.1875rem 0.1875rem 0.75rem;
+}
+
+.v-composer__row {
+  cursor: text;
+}
+
+.v-composer__icon {
+  flex: none;
+  opacity: 0.55;
+}
+
+.v-composer--sent .v-composer__icon {
+  opacity: 1;
+  color: var(--ui-success);
+}
+
+.v-composer__preview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--ui-foreground-secondary);
+}
+
+/* `-hover` is the darker step of the family in light and the lighter one in
+   dark, so the sent text clears its own 6% wash in both themes without an
+   override. */
+.v-composer--sent .v-composer__preview {
+  color: var(--ui-success-hover);
+}
+
+.v-composer__meta {
+  font-size: 0.75rem;
+  color: var(--ui-foreground-secondary);
+}
+
+.v-composer__edited {
+  color: var(--ui-foreground-secondary);
+}
+
+/* The dot is a separator, not decoration: it shows only when "edited" follows
+   something — the `#meta` slot's content — never as a leading mark on its own. */
+.v-composer__meta > * + .v-composer__edited::before {
+  content: "· ";
+}
+
+.v-composer__meta-actions {
+  display: flex;
+  gap: 0.375rem;
+  margin-left: auto;
+}
+
+/* ============================================
+   THE FIELD
+   ============================================ */
+.v-composer__body {
+  padding: 0 0.75rem 0.75rem;
+}
+
+/* The box is the field's outline — the textarea itself draws none. */
+.v-composer__field {
+  display: block;
+  width: 100%;
+  min-height: 7.5rem;
+  padding: 0.125rem 0;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ui-foreground);
+
+  &::placeholder {
+    color: var(--ui-input-placeholder);
+  }
+}
+
+.v-composer__message {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--ui-foreground-secondary);
+}
+
+.v-composer__message--error {
+  font-weight: 500;
+  color: var(--ui-danger);
+}
+
+/* ============================================
+   THE FOOTER
+   ============================================ */
+.v-composer__footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  padding-top: 0.625rem;
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+.v-composer__hint {
+  font-size: 0.71875rem;
+  color: var(--ui-foreground-secondary);
+
+  kbd {
+    padding: 0 0.3125rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-radius-xs);
+    font: inherit;
+    font-size: 0.6875rem;
+  }
+}
+
+.v-composer__failed {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ui-danger);
+}
+
+.v-composer__footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}

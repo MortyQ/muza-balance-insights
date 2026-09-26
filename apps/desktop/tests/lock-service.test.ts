@@ -1,0 +1,328 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LockService, type LockDeps, type TouchIdLike } from '../src/main/lock/service.ts';
+import { hashPin } from '../src/main/lock/pin.ts';
+import { LOCK_FILE, readLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
+
+// A hook into removeLock so a test can run code (e.g. fire a trigger) while disable()/reset() awaits it — a
+// pass-through by default, so every other test sees the real store.ts behaviour unchanged.
+const removeLockHook = vi.hoisted(() => ({ fn: async (): Promise<void> => undefined }));
+
+vi.mock('../src/main/lock/store.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/main/lock/store.ts')>();
+  return {
+    ...actual,
+    removeLock: async (dir: string) => {
+      await removeLockHook.fn();
+      await actual.removeLock(dir);
+    },
+  };
+});
+
+let dir: string;
+beforeEach(() => {
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-svc-'));
+  removeLockHook.fn = async () => undefined;
+});
+afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+/** A deferred, externally-resolvable stand-in for the Touch ID prompt — lets a test hold an op mid-flight at a
+ *  known point instead of racing against real (scrypt) timing. */
+function deferredPrompt(): { touchId: TouchIdLike; resolve: (ok: boolean) => void } {
+  let resolve: (ok: boolean) => void = () => undefined;
+  const pending = new Promise<boolean>((r) => (resolve = r));
+  return { touchId: { available: () => true, prompt: () => pending }, resolve };
+}
+
+function make(o: { touchId?: boolean; prompt?: boolean; touchIdDeps?: TouchIdLike } = {}) {
+  const clock = { now: 1_000_000 };
+  const events: string[] = [];
+  const touchId: TouchIdLike = o.touchIdDeps ?? { available: () => o.touchId ?? false, prompt: async () => o.prompt ?? true };
+  const deps: LockDeps = {
+    userDataDir: dir,
+    touchId,
+    importRunning: () => false,
+    now: () => clock.now,
+    onLocked: () => void events.push('reload'),
+    onChange: (v) => void events.push(v.locked ? 'locked' : 'open'),
+    log: () => undefined,
+  };
+  return { svc: new LockService(deps), clock, events, deps };
+}
+
+// Real scrypt (64 MiB per hash): under a parallel full run one test can take seconds, past the 5 s default.
+describe('LockService', { timeout: 30_000 }, () => {
+  it('off by default: not locked, lock() does nothing', () => {
+    const { svc, events } = make();
+    expect(svc.isLocked()).toBe(false);
+    expect(svc.view()).toMatchObject({ enabled: false, locked: false, broken: false });
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(false);
+    expect(events).toEqual([]);
+  });
+
+  it('enable: writes lock.json, stays open; Touch ID on only where available', async () => {
+    const { svc } = make({ touchId: true });
+    await svc.enable('2580');
+    expect(svc.view()).toMatchObject({ enabled: true, locked: false, touchId: true });
+    const read = readLock(dir);
+    expect(read.kind).toBe('ok');
+    expect(fs.readFileSync(path.join(dir, LOCK_FILE), 'utf8')).not.toContain('2580');
+    await expect(svc.enable('1397')).rejects.toThrow();
+  });
+
+  it('a weak PIN is refused by main too', async () => {
+    const { svc } = make();
+    await expect(svc.enable('1234')).rejects.toThrow();
+    expect(readLock(dir).kind).toBe('none');
+  });
+
+  it('enable is refused when lock.json is broken', async () => {
+    fs.writeFileSync(path.join(dir, LOCK_FILE), '{oops');
+    const { svc } = make();
+    await expect(svc.enable('2580')).rejects.toThrow();
+  });
+
+  it('lock → reload + change; the right PIN opens, the wrong one counts', async () => {
+    const { svc, events } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(true);
+    expect(events.slice(-2)).toEqual(['reload', 'locked']);
+    expect(await svc.unlockWithPin('1111')).toEqual({ ok: false, reason: 'wrong-pin', retryAt: null });
+    expect(svc.view().failedAttempts).toBe(1);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+    expect(svc.isLocked()).toBe(false);
+    expect(svc.view().failedAttempts).toBe(0);
+  });
+
+  it('lock() while already locked is a no-op: no extra reload/locked events', async () => {
+    const { svc, events } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    const countBefore = events.length;
+    svc.lock('manual');
+    expect(events.length).toBe(countBefore);
+  });
+
+  it('5th wrong PIN → 30 s pause; during it even the right PIN is not checked; after it, it opens', async () => {
+    const { svc, clock } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    for (let i = 0; i < 4; i++) await svc.unlockWithPin('1111');
+    expect(await svc.unlockWithPin('1111')).toEqual({ ok: false, reason: 'wrong-pin', retryAt: clock.now + 30_000 });
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: false, reason: 'wait', retryAt: clock.now + 30_000 });
+    clock.now += 30_000;
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('the counter survives a restart (a new service over the same folder)', async () => {
+    const first = make();
+    await first.svc.enable('2580');
+    first.svc.lock('manual');
+    for (let i = 0; i < 5; i++) await first.svc.unlockWithPin('1111');
+    const second = make();
+    expect(second.svc.isLocked()).toBe(true);
+    expect(second.svc.view()).toMatchObject({ failedAttempts: 5, retryAt: first.clock.now + 30_000 });
+  });
+
+  it('triggers: a switched-off trigger does not lock, manual always does', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    await svc.setTriggers({ startup: true, idle: false, screenLock: true, sleep: true });
+    svc.lock('idle');
+    expect(svc.isLocked()).toBe(false);
+    svc.lock('screenLock');
+    expect(svc.isLocked()).toBe(true);
+  });
+
+  it('startup trigger: a new service starts locked only when it is on', async () => {
+    const a = make();
+    await a.svc.enable('2580');
+    expect(make().svc.isLocked()).toBe(true);
+    await a.svc.setTriggers({ startup: false, idle: true, screenLock: true, sleep: true });
+    expect(make().svc.isLocked()).toBe(false);
+  });
+
+  it('broken lock.json: locked, no way in but reset()', async () => {
+    fs.writeFileSync(path.join(dir, LOCK_FILE), '{oops');
+    const { svc } = make();
+    expect(svc.view()).toMatchObject({ enabled: true, locked: true, broken: true });
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: false, reason: 'unavailable' });
+    await svc.reset();
+    expect(svc.view()).toMatchObject({ enabled: false, locked: false, broken: false });
+  });
+
+  it('Touch ID: opens and clears the counter; cancelled → stays locked; unavailable when switched off', async () => {
+    const ok = make({ touchId: true, prompt: true });
+    await ok.svc.enable('2580');
+    ok.svc.lock('manual');
+    await ok.svc.unlockWithPin('1111');
+    expect(await ok.svc.unlockWithTouchId()).toEqual({ ok: true });
+    expect(ok.svc.view().failedAttempts).toBe(0);
+
+    fs.rmSync(path.join(dir, LOCK_FILE));
+    const no = make({ touchId: true, prompt: false });
+    await no.svc.enable('2580');
+    no.svc.lock('manual');
+    expect(await no.svc.unlockWithTouchId()).toEqual({ ok: false, reason: 'cancelled' });
+    await no.svc.unlockWithPin('2580');
+    await no.svc.setTouchId(false);
+    no.svc.lock('manual');
+    expect(await no.svc.unlockWithTouchId()).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('setTouchId(true) is refused when Touch ID is unavailable', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    await expect(svc.setTouchId(true)).rejects.toThrow();
+  });
+
+  it('changePin needs the current PIN; disable removes lock.json', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    expect(await svc.changePin('1111', '1397')).toMatchObject({ ok: false, reason: 'wrong-pin' });
+    expect(await svc.changePin('2580', '1397')).toEqual({ ok: true });
+    svc.lock('manual');
+    expect(await svc.unlockWithPin('2580')).toMatchObject({ ok: false });
+    expect(await svc.unlockWithPin('1397')).toEqual({ ok: true });
+    expect(await svc.disable({ pin: '0000' })).toMatchObject({ ok: false, reason: 'wrong-pin' });
+    expect(await svc.disable({ pin: '1397' })).toEqual({ ok: true });
+    expect(readLock(dir).kind).toBe('none');
+    expect(svc.view().enabled).toBe(false);
+  });
+
+  it('changePin refuses a weak next PIN and leaves the file unchanged', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const before = readLock(dir);
+    await expect(svc.changePin('2580', '1234')).rejects.toThrow();
+    expect(readLock(dir)).toEqual(before);
+  });
+
+  it('after a successful disable the lock is off: isLocked() is false and lock() is a no-op', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    expect(await svc.disable({ pin: '2580' })).toEqual({ ok: true });
+    expect(svc.isLocked()).toBe(false);
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(false);
+  });
+
+  it('disable while locked is refused; the app still unlocks with the PIN afterwards', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    await expect(svc.disable({ pin: '2580' })).rejects.toThrow();
+    expect(svc.isLocked()).toBe(true);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('a failed write during changePin leaves the old PIN in force', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const tmp = path.join(dir, `${LOCK_FILE}.tmp`);
+    fs.mkdirSync(tmp);
+    await expect(svc.changePin('2580', '1397')).rejects.toThrow();
+    fs.rmSync(tmp, { recursive: true, force: true });
+    svc.lock('manual');
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('concurrent wrong PINs are checked one after another: 5 count towards the pause, the rest wait', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    const results = await Promise.all(Array.from({ length: 7 }, () => svc.unlockWithPin('1111')));
+    expect(svc.view().failedAttempts).toBe(5);
+    expect(results.slice(0, 4)).toEqual(Array.from({ length: 4 }, () => ({ ok: false, reason: 'wrong-pin', retryAt: null })));
+    const fifth = results[4];
+    expect(fifth?.ok).toBe(false);
+    const retryAt = fifth && !fifth.ok && fifth.reason === 'wrong-pin' ? fifth.retryAt : null;
+    expect(retryAt).not.toBeNull();
+    expect(results.slice(5)).toEqual([
+      { ok: false, reason: 'wait', retryAt },
+      { ok: false, reason: 'wait', retryAt },
+    ]);
+  });
+
+  it('a huge nextAttemptAt (tampered lock.json) is clamped to now + 15 min and expires exactly on schedule', async () => {
+    const record = await hashPin('2580');
+    const file: LockFile = {
+      version: 1,
+      ...record,
+      touchId: false,
+      triggers: { startup: true, idle: true, screenLock: true, sleep: true },
+      failedAttempts: 5,
+      nextAttemptAt: 1_000_000 + 10 * 24 * 60 * 60 * 1000,
+    };
+    await writeLock(dir, file);
+    const { svc, clock } = make();
+    expect(svc.view().retryAt).toBe(clock.now + 900_000);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: false, reason: 'wait', retryAt: clock.now + 900_000 });
+    clock.now += 900_000;
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('reset() while a Touch ID unlock is in flight: the unlock loses, and reset() still wins on disk', async () => {
+    const { touchId, resolve } = deferredPrompt();
+    const { svc } = make({ touchIdDeps: touchId });
+    await svc.enable('2580');
+    svc.lock('manual');
+    const p = svc.unlockWithTouchId();
+    // Let checkTouchId start and reach the (deferred, externally-resolvable) prompt before resolving it.
+    await Promise.resolve();
+    resolve(true);
+    // Without awaiting the unlock: reset() bumps the epoch and clears memory synchronously, then waits out
+    // whatever is in flight (the unlock, now unblocked) and removes lock.json itself afterwards.
+    await svc.reset();
+    expect(readLock(dir).kind).toBe('none');
+    expect(svc.view().enabled).toBe(false);
+    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('a trigger locking the app during a Touch ID disable prompt cancels the disable, not the lock', async () => {
+    const { touchId, resolve } = deferredPrompt();
+    const { svc } = make({ touchIdDeps: touchId });
+    await svc.enable('2580');
+    const p = svc.disable({ touchId: true });
+    // Let disable start and reach the deferred prompt before the sleep trigger fires mid-prompt.
+    await Promise.resolve();
+    svc.lock('sleep');
+    resolve(true);
+    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+    expect(readLock(dir).kind).toBe('ok');
+    expect(svc.isLocked()).toBe(true);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('a trigger firing while disable() awaits removeLock still leaves the lock off afterwards', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    // While disable()'s removeLock is in flight, a trigger fires: it still succeeds (this.file is untouched yet).
+    removeLockHook.fn = async () => void svc.lock('sleep');
+    expect(await svc.disable({ pin: '2580' })).toEqual({ ok: true });
+    expect(svc.isLocked()).toBe(false);
+    expect(svc.view().enabled).toBe(false);
+    expect(readLock(dir).kind).toBe('none');
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(false);
+  });
+
+  it('enable() queued right after reset(): reset’s removal runs before enable’s write', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const r = svc.reset();
+    const e = svc.enable('4173');
+    await Promise.all([r, e]);
+    expect(readLock(dir).kind).toBe('ok');
+    const view = svc.view();
+    expect(view.enabled).toBe(true);
+    expect(view.locked).toBe(false);
+    svc.lock('manual');
+    expect(await svc.unlockWithPin('2580')).toMatchObject({ ok: false, reason: 'wrong-pin' });
+    expect(await svc.unlockWithPin('4173')).toEqual({ ok: true });
+  });
+});

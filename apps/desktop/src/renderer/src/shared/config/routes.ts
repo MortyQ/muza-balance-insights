@@ -2,6 +2,7 @@
 export const ROUTE = {
   connect: 'connect',
   home: 'home',
+  lock: 'lock',
   settings: 'settings',
 } as const satisfies Record<string, string>;
 

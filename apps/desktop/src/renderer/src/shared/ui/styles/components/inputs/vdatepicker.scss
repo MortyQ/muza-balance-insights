@@ -1,0 +1,235 @@
+/* Ours, not copied — VDatepicker is built on reka-ui, not on @vuepic/vue-datepicker (see VDatepicker.vue header). */
+
+.v-datepicker {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+}
+
+.v-datepicker__label {
+  color: var(--ui-foreground-secondary);
+  font-size: var(--ui-text-sm);
+  font-weight: 500;
+}
+
+.v-datepicker__field-row {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-control-gap);
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-xs);
+  transition: border-color 200ms ease, border-width 200ms ease;
+
+  &:hover {
+    border-color: var(--ui-border-strong);
+  }
+
+  &:focus-within {
+    border-color: var(--ui-border-focus);
+    border-width: 2px;
+  }
+}
+
+.v-datepicker--disabled .v-datepicker__field-row {
+  cursor: not-allowed;
+  background-color: var(--ui-surface-sunken);
+}
+
+.v-datepicker__field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.v-datepicker__segment {
+  padding: 0 0.0625rem;
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  border-radius: var(--ui-radius-xs);
+  caret-color: transparent;
+
+  &:focus,
+  &[data-focused] {
+    background-color: var(--ui-primary-subtle);
+    color: var(--ui-primary);
+    outline: none;
+  }
+
+  &[aria-disabled="true"] {
+    color: var(--ui-foreground-disabled);
+  }
+}
+
+.v-datepicker__range-sep {
+  margin: 0 var(--ui-space-2xs);
+  color: var(--ui-foreground-muted);
+}
+
+.v-datepicker__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    color: var(--ui-primary);
+    background-color: var(--ui-surface-hover);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+    background-color: transparent;
+  }
+}
+
+.v-datepicker__trigger-icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+/* ============================================
+   CALENDAR POPOVER (teleported to body by PopoverPortal inside DatePickerContent —
+   Vue's scope attribute travels with the vnode through Teleport)
+   ============================================ */
+.v-datepicker__calendar {
+  z-index: 10000;
+  padding: var(--ui-space-md);
+  background-color: var(--ui-surface-raised);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-lg);
+}
+
+.v-datepicker__calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ui-space-sm);
+}
+
+.v-datepicker__calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    color: var(--ui-primary);
+    background-color: var(--ui-surface-hover);
+  }
+}
+
+.v-datepicker__calendar-nav-icon {
+  width: 0.8125rem;
+  height: 0.8125rem;
+}
+
+.v-datepicker__calendar-heading {
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 500;
+}
+
+.v-datepicker__grid {
+  border-collapse: collapse;
+}
+
+.v-datepicker__grid-row {
+  display: flex;
+}
+
+.v-datepicker__head-cell {
+  width: 2rem;
+  padding-bottom: var(--ui-space-xs);
+  color: var(--ui-foreground-muted);
+  font-size: var(--ui-text-xs);
+  font-weight: 500;
+  text-align: center;
+}
+
+.v-datepicker__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-sm);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--ui-surface-hover);
+  }
+
+  &[data-today] {
+    color: color-mix(in oklch, var(--ui-warning) 90%, transparent);
+    font-weight: 600;
+  }
+
+  &[data-outside-view] {
+    color: var(--ui-foreground-subtle);
+  }
+
+  &[data-disabled],
+  &[data-unavailable] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+    background-color: transparent;
+  }
+
+  /* Single date selection */
+  &[data-selected] {
+    background-color: var(--ui-primary);
+    color: var(--ui-primary-foreground);
+    font-weight: 500;
+  }
+
+  /* Range selection: the two endpoints and the days between them */
+  &[data-highlighted] {
+    background-color: var(--ui-surface-hover);
+    border-radius: 0;
+  }
+
+  &[data-selection-start],
+  &[data-selection-end] {
+    background-color: var(--ui-primary);
+    color: var(--ui-primary-foreground);
+    font-weight: 500;
+  }
+
+  &[data-selection-start] {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  &[data-selection-end] {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+}

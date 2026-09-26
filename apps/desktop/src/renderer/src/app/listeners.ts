@@ -1,4 +1,5 @@
 import type { Router } from 'vue-router';
+import { useAppLockStore } from '@/entities/app-lock';
 import { useAppUpdateStore } from '@/entities/app-update';
 import { FINISHED_PHASES, useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
@@ -22,6 +23,7 @@ export function listenToMain(router: Router): () => void {
   const refreshPeople = () => void participant.refresh().catch(() => undefined);
   const syncStatus = useSyncStatusStore();
   const appUpdate = useAppUpdateStore();
+  const appLock = useAppLockStore();
 
   const live = throttle(() => void syncStatus.refresh(), LIVE_REFRESH_MS);
   // windowsDone of the last refresh; any change (a new window, or a restarted worker counting from 0) is new data.
@@ -43,13 +45,22 @@ export function listenToMain(router: Router): () => void {
     }
   });
   const offUpdate = balanceApi.onUpdate((v) => appUpdate.set(v));
-  // main also sends the view when the page has loaded; this covers a subscription that came later.
-  void appUpdate.refresh().catch(() => undefined);
+  // main also sends the view when the page has loaded; this covers a subscription that came later. Skipped while
+  // locked: the gate refuses it (and logs it in main), and main pushes the update view again once the app unlocks.
+  if (!appLock.locked) void appUpdate.refresh().catch(() => undefined);
   const offSettings = balanceApi.onOpenSettings(() => void router.push({ name: ROUTE.settings }));
+  // main reloads the page when it locks; this covers the lock screen opening (and a lock from another trigger).
+  const offLock = balanceApi.onLock((v) => {
+    appLock.set(v);
+    const onLockScreen = router.currentRoute.value.name === ROUTE.lock;
+    if (v.locked && !onLockScreen) void router.replace({ name: ROUTE.lock });
+    if (!v.locked && onLockScreen) void router.replace({ name: ROUTE.home });
+  });
   return () => {
     live.cancel();
     offProgress();
     offUpdate();
     offSettings();
+    offLock();
   };
 }

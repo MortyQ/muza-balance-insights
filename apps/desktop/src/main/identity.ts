@@ -1,5 +1,6 @@
 // App name and userData location, fixed before `ready` (after it, Electron has already created the default folder).
 // The paths are also closed to the agent in .claude/settings.json (Read/Edit deny + sandbox denyRead).
+import fs from 'node:fs';
 import path from 'node:path';
 
 export const APP_NAME = 'Balance Insights';
@@ -25,4 +26,15 @@ export function configureIdentity(app: AppLike): { name: string; userData: strin
   app.setName(id.name);
   app.setPath('userData', id.userData);
   return id;
+}
+
+/**
+ * userData is closed to other local users: Electron creates it with the default mode (usually 0755), and the database,
+ * its WAL and the job file inside get 0644. On Linux a readable home would expose them; the folder's 0700 closes
+ * everything in it. Windows has no POSIX modes — the profile ACL does this there.
+ */
+export async function restrictUserData(dir: string, platform: NodeJS.Platform = process.platform): Promise<void> {
+  if (platform === 'win32') return;
+  await fs.promises.mkdir(dir, { recursive: true, mode: 0o700 });
+  await fs.promises.chmod(dir, 0o700);
 }

@@ -18,6 +18,15 @@ export const METHODS = [
   'downloadUpdate',
   'installUpdate',
   'setUpdateChecks',
+  'getLockState',
+  'unlockWithPin',
+  'unlockWithTouchId',
+  'lockNow',
+  'enableLock',
+  'changePin',
+  'disableLock',
+  'setLockTriggers',
+  'setTouchId',
 ] as const;
 
 export type Method = (typeof METHODS)[number];
@@ -33,6 +42,9 @@ export const UPDATE_CHANNEL = `${CHANNEL_PREFIX}update`;
 
 /** main → renderer only, no payload: the «Настройки…» menu item (Cmd/Ctrl+,). */
 export const OPEN_SETTINGS_CHANNEL = `${CHANNEL_PREFIX}open-settings`;
+
+/** main → renderer only: the app-lock view (src/shared/lock.ts) on every change; the only push while locked. */
+export const LOCK_CHANNEL = `${CHANNEL_PREFIX}lock`;
 
 /** The name of the API object in the renderer: window.balance. */
 export const API_KEY = 'balance';

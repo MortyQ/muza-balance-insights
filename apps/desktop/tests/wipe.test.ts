@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { APP_DIRS, APP_FILES, deleteAllData } from '../src/main/wipe.ts';
 
 let dir: string;
@@ -48,9 +48,9 @@ describe('deleteAllData', () => {
     expect(fs.readdirSync(dir)).toEqual(['Preferences']);
   });
 
-  it('covers the database with its WAL files, the tokens of every connection (and the old single token) and the import job', () => {
+  it('covers the database with its WAL files, the tokens of every connection (and the old single token), the import job and the app lock', () => {
     expect([...APP_FILES].sort()).toEqual(
-      ['import-job.json', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
+      ['import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
     );
     expect([...APP_DIRS]).toEqual(['tokens']);
   });
@@ -59,5 +59,21 @@ describe('deleteAllData', () => {
     for (const f of APP_FILES) fs.rmSync(path.join(dir, f));
     for (const d of APP_DIRS) fs.rmSync(path.join(dir, d), { recursive: true });
     await expect(deleteAllData(deps(true).d)).resolves.toEqual({ deleted: true });
+  });
+
+  it('the lock file is removed last of all — a failure partway through never leaves data unlocked', async () => {
+    const rm = vi.spyOn(fs.promises, 'rm');
+    try {
+      await deleteAllData(deps(true).d);
+      const removed = rm.mock.calls.map((args) => path.basename(args[0] as string));
+      const lockAt = [removed.indexOf('lock.json'), removed.indexOf('lock.json.tmp')];
+      const othersAt = removed
+        .map((name, i) => [name, i] as const)
+        .filter(([name]) => name !== 'lock.json' && name !== 'lock.json.tmp')
+        .map(([, i]) => i);
+      expect(Math.min(...lockAt)).toBeGreaterThan(Math.max(...othersAt));
+    } finally {
+      rm.mockRestore();
+    }
   });
 });

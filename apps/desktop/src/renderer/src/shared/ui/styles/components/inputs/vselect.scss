@@ -1,0 +1,178 @@
+/* Ours, not copied — VSelect is built on reka-ui, not on vue-multiselect (see VSelect.vue header).
+   BEM classes are new, but the surface/border/type read the same as VInput so the two sit together in a form row. */
+
+/* ============================================
+   LABEL
+   ============================================ */
+.v-select__label {
+  display: block;
+  margin-bottom: var(--ui-space-xs);
+  color: var(--ui-foreground-secondary);
+  font-size: var(--ui-text-sm);
+  font-weight: 500;
+}
+
+/* ============================================
+   TRIGGER (closed field)
+   ============================================ */
+.v-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-control-gap);
+  width: 100%;
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-xs);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  cursor: pointer;
+  transition: border-color 200ms ease, border-width 200ms ease;
+
+  &:hover {
+    border-color: var(--ui-border-strong);
+  }
+
+  &[data-state="open"],
+  &:focus-visible {
+    border-color: var(--ui-border-focus);
+    border-width: 2px;
+    outline: none;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    background-color: var(--ui-surface-sunken);
+    color: var(--ui-foreground-disabled);
+  }
+}
+
+.v-select--disabled .v-select__trigger {
+  cursor: not-allowed;
+  background-color: var(--ui-surface-sunken);
+}
+
+.v-select__value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &[data-placeholder] {
+    color: var(--ui-input-placeholder);
+  }
+}
+
+.v-select__caret {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.v-select__caret-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--ui-foreground-muted);
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+.v-select__trigger[data-state="open"] .v-select__caret-icon {
+  transform: rotate(180deg);
+  color: var(--ui-primary);
+}
+
+.v-select__trigger[data-disabled] .v-select__caret-icon {
+  color: var(--ui-foreground-disabled);
+}
+
+/* ============================================
+   CONTENT (teleported to body by SelectPortal — Vue's scope attribute still
+   applies, because it travels with the vnode through Teleport, not with its
+   final DOM parent)
+   ============================================ */
+.v-select__content {
+  z-index: 10000;
+  min-width: var(--reka-popper-anchor-width, 10rem);
+  max-height: var(--reka-popper-available-height, 20rem);
+  overflow: hidden;
+  background-color: var(--ui-input-bg);
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-lg);
+  padding: 0.1875rem;
+}
+
+.v-select__viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.v-select__scroll-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.25rem;
+  cursor: pointer;
+  color: var(--ui-foreground-muted);
+}
+
+.v-select__scroll-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* ============================================
+   OPTIONS
+   ============================================ */
+.v-select__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-sm);
+  padding: 0.3125rem 0.5rem;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 400;
+  line-height: var(--ui-leading-base);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &[data-highlighted] {
+    background-color: var(--ui-surface-hover);
+    color: var(--ui-foreground);
+    outline: none;
+  }
+
+  &[data-state="checked"] {
+    background-color: var(--ui-primary);
+    color: white;
+    font-weight: 500;
+  }
+
+  &[data-state="checked"][data-highlighted] {
+    background-color: var(--ui-primary-active);
+    color: var(--ui-primary-foreground);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+  }
+}
+
+.v-select__item-indicator {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.v-select__check-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}

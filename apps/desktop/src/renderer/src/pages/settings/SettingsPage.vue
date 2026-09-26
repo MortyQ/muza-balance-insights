@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { UpdateSettingsFeature } from '@/features/app-update';
-import { DeleteDataFeature } from '@/features/delete-data';
-import { PeopleFeature } from '@/features/people';
 import { ROUTE } from '@/shared/config';
 import { VButton } from '@/shared/ui';
 import { AboutApp } from '@/widgets/about-app';
+import { SettingsWidget } from '@/widgets/settings';
 import { useEscape } from './composables/useEscape.ts';
 
 const router = useRouter();
@@ -20,9 +18,7 @@ useEscape(back);
       <VButton variant="neutral" icon="lucide:chevron-left" title="Назад (Esc)" aria-label="Назад" @click="back" />
       <h1 class="text-xl font-semibold">Настройки</h1>
     </header>
-    <PeopleFeature />
-    <UpdateSettingsFeature />
-    <DeleteDataFeature @deleted="back" />
+    <SettingsWidget @deleted="back" />
     <AboutApp />
   </main>
 </template>

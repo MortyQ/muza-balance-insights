@@ -1,14 +1,21 @@
 import type { NavigationGuard } from 'vue-router';
+import { useAppLockStore } from '@/entities/app-lock';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { useParticipantStore } from '@/entities/participant';
 import { ROUTE } from '@/shared/config';
 import { startRoute } from './startRoute.ts';
 
 /**
- * Home and connect swap according to startRoute; settings are always reachable (Cmd+, works on the connect screen too).
+ * While locked every route is the lock screen; the lock route itself becomes home once open. Home and connect
+ * otherwise swap according to startRoute; settings are always reachable (Cmd+, works on the connect screen too).
  * The first navigation waits for the connections and data status, so no screen flashes before we know which one to show.
  */
 export const startGuard: NavigationGuard = async (to) => {
+  // main is the authority (its IPC gate refuses data while locked); this only picks the screen.
+  const appLock = useAppLockStore();
+  if (appLock.view === null) await appLock.refresh().catch(() => undefined);
+  if (appLock.locked) return to.name === ROUTE.lock ? true : { name: ROUTE.lock };
+  if (to.name === ROUTE.lock) return { name: ROUTE.home };
   if (to.name === ROUTE.settings) return true;
   const participant = useParticipantStore();
   const syncStatus = useSyncStatusStore();

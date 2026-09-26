@@ -30,6 +30,16 @@ pnpm typecheck
 
 Node 22 (`.nvmrc`), pnpm 12. The desktop app: `pnpm --filter @mono/desktop dev`.
 
+## Windows
+
+- Install pnpm globally via npm: `npm i -g pnpm@12.6.0` (matches `packageManager` in the root `package.json`; Corepack is not used here).
+- Use Node 22 (`.nvmrc`).
+- Install with the committed lockfile — `pnpm install --frozen-lockfile` — and don't let pnpm regenerate `pnpm-lock.yaml` on Windows.
+- Desktop dev: `pnpm --filter @mono/desktop dev`, same as above. If the Electron binary download fails, run `pnpm --filter @mono/desktop binary:install`.
+- Using Claude Code here? `.claude/settings.json` turns on an OS-level sandbox (Seatbelt on macOS, bubblewrap on Linux) that native Windows doesn't have. Prefer working inside WSL2, where the Linux sandbox applies normally.
+  If you must work on native Windows, add your own git-ignored `.claude/settings.local.json` with `{"sandbox": {"failIfUnavailable": false}}` — this runs agent commands **without the OS sandbox**; only the `permissions` allow/deny rules in `.claude/settings.json` still apply. Never edit `.claude/settings.json` itself to weaken it in a PR.
+- The data rule at the top of this file still applies: no tokens, statements, amounts, names, or screenshots with real data in issues or PRs.
+
 ## Pull request guidelines
 
 - One concern per PR — don't mix features with refactors.

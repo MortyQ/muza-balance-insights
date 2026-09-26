@@ -3,16 +3,20 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
-import { OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { importActive } from '../shared/progress.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
 import { DataService } from './data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
-import { configureIdentity } from './identity.ts';
+import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
+import { startLockTriggers, touchId } from './lock/electron.ts';
+import { gatedPush } from './lock/gate.ts';
+import { LockService } from './lock/service.ts';
 import { PeopleService } from './people.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
@@ -35,6 +39,9 @@ const preloadPath = fileURLToPath(new URL('../preload/index.cjs', import.meta.ur
 const devOrigin = app.isPackaged ? null : localDevOrigin(process.env.ELECTRON_RENDERER_URL);
 
 let win: BrowserWindow | null = null;
+// Created in whenReady; until then (and if it failed) the app counts as locked: pushes fail closed.
+let lock: LockService | null = null;
+const push = gatedPush(() => lock?.isLocked() ?? true, (ch, payload) => win?.webContents.send(ch, payload));
 
 /** Dev-only diagnostics (stdout of `pnpm dev`): what the guards blocked. URLs without query/fragment; no data. */
 const devLog = app.isPackaged ? undefined : (msg: string) => process.stdout.write(`[guard] ${msg}\n`);
@@ -66,8 +73,9 @@ app.whenReady().then(async () => {
           if (!win) return;
           if (win.isMinimized()) win.restore();
           win.focus();
-          win.webContents.send(OPEN_SETTINGS_CHANNEL);
+          push(OPEN_SETTINGS_CHANNEL);
         },
+        lockNow: () => lock?.lock('manual'),
       }),
     ),
   );
@@ -80,6 +88,9 @@ app.whenReady().then(async () => {
   });
   protocol.handle(APP_SCHEME, createAppProtocolHandler(rendererDir, PROD_CSP));
   const userData = app.getPath('userData');
+  await restrictUserData(userData).catch((err: unknown) =>
+    process.stderr.write(`[identity] userData mode not set: ${err instanceof Error ? err.name : 'error'}\n`),
+  );
   const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData });
   const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
@@ -99,16 +110,38 @@ app.whenReady().then(async () => {
     userDataDir: userData,
     dbPath: path.join(userData, DB_FILE),
     nowSec: () => Math.floor(Date.now() / 1000),
-    send: (p) => win?.webContents.send(PROGRESS_CHANNEL, p),
+    // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
+    send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),
     log: (msg) => process.stderr.write(`[import] ${msg}\n`),
   });
   app.on('before-quit', () => importer.shutdown());
   const updater = createUpdater({
     userDataDir: userData,
     importRunning: () => importer.running,
-    send: (v) => win?.webContents.send(UPDATE_CHANNEL, v),
+    send: (v) => void push(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
+  lock = new LockService({
+    userDataDir: userData,
+    touchId,
+    // Not importer.running: that stays true between a worker's final message and its exit event, and scheduleRestart
+    // emits `retry` before the restart timer is set — importActive reads the phase itself, so neither window shows
+    // «Идёт импорт» after the import is actually over.
+    importRunning: () => importActive(importer.lastProgress),
+    now: () => Date.now(),
+    // Whatever the renderer has shown leaves its memory with the page.
+    onLocked: () => win?.webContents.reload(),
+    onChange: (v) => {
+      push(LOCK_CHANNEL, v);
+      if (v.locked) return;
+      push(PROGRESS_CHANNEL, importer.lastProgress);
+      push(UPDATE_CHANNEL, updater.view());
+    },
+    log: (msg) => process.stderr.write(`[lock] ${msg}\n`),
+  });
+  const appLock = lock;
+  const stopLockTriggers = startLockTriggers(appLock);
+  app.on('will-quit', () => stopLockTriggers());
   const confirmDelete = async () => {
     const opts = {
       type: 'warning' as const,
@@ -151,15 +184,28 @@ app.whenReady().then(async () => {
     spendingSummary: (q) => data.spending(q),
     getBalances: (...q) => data.balances(q[0]),
     getSyncStatus: () => data.status(),
-    deleteAllData: () =>
-      deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
+    deleteAllData: async () => {
+      const r = await deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
+      if (r.deleted) await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
+      return r;
+    },
     getUpdate: async () => updater.view(),
     checkForUpdates: () => updater.check(true),
     downloadUpdate: () => updater.download(),
     installUpdate: async () => updater.install(),
     setUpdateChecks: (enabled) => updater.setChecks(enabled),
+    getLockState: async () => appLock.view(),
+    unlockWithPin: (pin) => appLock.unlockWithPin(pin),
+    unlockWithTouchId: () => appLock.unlockWithTouchId(),
+    lockNow: async () => appLock.lock('manual'),
+    enableLock: async (pin) => (await appLock.enable(pin), appLock.view()),
+    changePin: (current, next) => appLock.changePin(current, next),
+    disableLock: (auth) => appLock.disable(auth),
+    setLockTriggers: async (t) => (await appLock.setTriggers(t), appLock.view()),
+    setTouchId: async (enabled) => (await appLock.setTouchId(enabled), appLock.view()),
   }, {
     trusted: (event) => isTrustedSender(event, win, devOrigin),
+    locked: () => appLock.isLocked(),
     onError: (method, err) => process.stderr.write(`[ipc] ${method}: ${err instanceof Error ? err.name : 'error'}\n`),
   });
 
@@ -180,14 +226,16 @@ app.whenReady().then(async () => {
   // A (re)loaded renderer gets the current import state; the first load also resumes an unfinished import.
   let resumeChecked = false;
   win.webContents.on('did-finish-load', () => {
-    win?.webContents.send(PROGRESS_CHANNEL, importer.lastProgress);
-    win?.webContents.send(UPDATE_CHANNEL, updater.view());
+    push(LOCK_CHANNEL, appLock.view());
+    push(PROGRESS_CHANNEL, importer.lastProgress);
+    push(UPDATE_CHANNEL, updater.view());
     if (!resumeChecked) {
       resumeChecked = true;
       void importer.resumeOnLaunch();
       scheduleChecks(updater);
     }
   });
-  if (devOrigin) await win.loadURL(`${devOrigin}/`);
-  else await win.loadURL(APP_ENTRY);
-});
+  // A lock/reload racing the first load aborts it (ERR_ABORTED) — not a real failure, just logged.
+  const load = devOrigin ? win.loadURL(`${devOrigin}/`) : win.loadURL(APP_ENTRY);
+  await load.catch((err) => process.stderr.write(`[window] initial load did not finish: ${err instanceof Error ? err.name : 'error'}\n`));
+}).catch((err) => process.stderr.write(`[main] startup failed: ${err instanceof Error ? err.name : 'error'}\n`));

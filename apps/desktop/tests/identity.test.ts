@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { APP_NAME, DEV_APP_NAME, appIdentity, configureIdentity } from '../src/main/identity.ts';
+import os from 'node:os';
+import { APP_NAME, DEV_APP_NAME, appIdentity, configureIdentity, restrictUserData } from '../src/main/identity.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const APP_DATA = '/Users/test/Library/Application Support';
@@ -56,5 +57,32 @@ describe('app identity and userData', () => {
   it('package.json productName matches (the fallback name Electron would use)', () => {
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
     expect(pkg.productName).toBe(APP_NAME);
+  });
+});
+
+describe('restrictUserData', () => {
+  const mode = (p: string) => fs.statSync(p).mode & 0o777;
+
+  it.skipIf(process.platform === 'win32')('an existing 0755 folder becomes 0700; a missing one is created 0700', async () => {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), 'userdata-'));
+    try {
+      const existing = path.join(base, 'existing');
+      fs.mkdirSync(existing, { mode: 0o755 });
+      fs.chmodSync(existing, 0o755);
+      await restrictUserData(existing);
+      expect(mode(existing)).toBe(0o700);
+
+      const missing = path.join(base, 'missing', 'Balance Insights');
+      await restrictUserData(missing);
+      expect(mode(missing)).toBe(0o700);
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  it('Windows: nothing is touched (no POSIX modes)', async () => {
+    const dir = path.join(os.tmpdir(), 'userdata-never-created-on-win32');
+    await restrictUserData(dir, 'win32');
+    expect(fs.existsSync(dir)).toBe(false);
   });
 });
