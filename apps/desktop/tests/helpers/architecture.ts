@@ -16,6 +16,9 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
   /^@fontsource-variable\/manrope\/wght\.css$/,
 ];
 
+/** Packages allowed only inside shared/ui — the muzakit-copy component library — never elsewhere in the renderer. */
+export const UI_ONLY_PACKAGES: ReadonlyArray<RegExp> = [/^reka-ui$/, /^@internationalized\/date$/];
+
 /** The only file that reads window.balance. */
 export const BRIDGE_FILE = 'shared/api/balance.ts';
 
@@ -75,7 +78,11 @@ export function violations(files: Files): string[] {
       } else if (spec.startsWith('@contract/')) {
         if (!/^@contract\/[a-z-]+\.ts$/.test(spec)) found.push(`${where}: @contract/ is for the files of src/shared only`);
       } else if (!ALLOWED_PACKAGES.some((re) => re.test(spec))) {
-        found.push(`${where}: package not allowed in the renderer`);
+        if (UI_ONLY_PACKAGES.some((re) => re.test(spec)) && file.startsWith('shared/ui/')) {
+          // reka-ui and @internationalized/date are allowed, but only inside shared/ui.
+        } else {
+          found.push(`${where}: package not allowed in the renderer`);
+        }
       }
       if (spec === '@/shared/api' && !file.includes('/api/') && file !== 'app/listeners.ts') {
         found.push(`${where}: calls to main go through an api/ segment`);
