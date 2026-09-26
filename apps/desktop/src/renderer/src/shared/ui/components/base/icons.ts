@@ -5,8 +5,10 @@ import LucideChevronLeft from "~icons/lucide/chevron-left";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 import LucideCircleAlert from "~icons/lucide/circle-alert";
 import LucideDownload from "~icons/lucide/download";
+import LucideFingerprintPattern from "~icons/lucide/fingerprint-pattern";
 import LucideInfo from "~icons/lucide/info";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
+import LucideLock from "~icons/lucide/lock";
 import LucidePlug from "~icons/lucide/plug";
 import LucideRefreshCw from "~icons/lucide/refresh-cw";
 import LucideSettings from "~icons/lucide/settings";
@@ -31,8 +33,10 @@ export const ICONS: Record<string, Component> = {
   "lucide:chevron-right": LucideChevronRight,
   "lucide:circle-alert": LucideCircleAlert,
   "lucide:download": LucideDownload,
+  "lucide:fingerprint-pattern": LucideFingerprintPattern,
   "lucide:info": LucideInfo,
   "lucide:loader-circle": LucideLoaderCircle,
+  "lucide:lock": LucideLock,
   "lucide:plug": LucidePlug,
   "lucide:refresh-cw": LucideRefreshCw,
   "lucide:settings": LucideSettings,

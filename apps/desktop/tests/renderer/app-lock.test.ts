@@ -58,3 +58,22 @@ describe('onLock push', () => {
     off();
   });
 });
+
+const { resultText, waitText } = await import('@/features/app-lock/utils.ts');
+
+describe('texts', () => {
+  it('waitText: seconds under a minute, minutes above, empty when over', () => {
+    expect(waitText(null, 0)).toBe('');
+    expect(waitText(1_000, 5_000)).toBe('');
+    expect(waitText(25_000, 0)).toBe('Следующая попытка через 25 с');
+    expect(waitText(61_000, 0)).toBe('Следующая попытка через 2 мин');
+  });
+
+  it('resultText: one line per reason, empty for ok', () => {
+    expect(resultText({ ok: true })).toBe('');
+    expect(resultText({ ok: false, reason: 'wrong-pin', retryAt: null })).toBe('Неверный PIN.');
+    expect(resultText({ ok: false, reason: 'wait', retryAt: 1 })).toContain('попыток');
+    expect(resultText({ ok: false, reason: 'cancelled' })).toContain('Touch ID');
+    expect(resultText({ ok: false, reason: 'unavailable' })).toContain('недоступен');
+  });
+});
