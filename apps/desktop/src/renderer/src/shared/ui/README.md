@@ -22,6 +22,21 @@ Replace these copies with imports once muzakit is published as a package.
 
 ## Ours, not copied
 
+`VSelect` and `VDatepicker` are built fresh on [reka-ui](https://reka-ui.com) primitives, not copied from muzakit:
+muzakit's `VSelect` wraps `vue-multiselect` (`<style src="vue-multiselect/dist/vue-multiselect.css">`) and its
+`VDatepicker` wraps `@vuepic/vue-datepicker` — both inject a stylesheet at runtime, which the prod CSP
+(`default-src 'self'`, no `style-src 'unsafe-inline'`) blocks. reka-ui is headless (no injected styles; verified
+against `node_modules/reka-ui/dist` — see the header comments of both components) and ships keyboard nav, focus
+management and positioning we then style ourselves in BEM + `--ui-*` tokens, same as every other copy here.
+
+- `VSelect` keeps muzakit's `options` / `placeholder` / `disabled` / `label` props and v-model, for a single,
+  non-searchable select only — multiple selection, search/tagging and the floating label are dropped (reka-ui's
+  `SelectPortal` + `SelectContent[position=popper]` replace muzakit's manual fixed-position teleport).
+- `VDatepicker` keeps a single-date v-model and adds a named `range` v-model (`{ start, end }`), both as ISO
+  `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
+  holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
+  Locale is fixed to `uk-UA`, week starts Monday. No consumer yet.
+
 `table/VSimpleTable` — a plain data table (columns as data, `cell-<key>` slots, an optional total row), written in the same
 BEM + SCSS + `--ui-*` token style. Not muzakit's `VTable` (virtualised, TanStack), which this app does not need.
 
