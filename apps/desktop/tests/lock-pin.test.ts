@@ -8,7 +8,8 @@ function scrypt(pin: string, salt: Buffer, keylen: number, o: { N: number; r: nu
   );
 }
 
-describe('hashPin / verifyPin', () => {
+// Real scrypt (64 MiB per hash): under a parallel full run one test can take seconds, past the 5 s default.
+describe('hashPin / verifyPin', { timeout: 30_000 }, () => {
   it('the right PIN verifies, a wrong one does not', async () => {
     const h = await hashPin('2580');
     expect(await verifyPin('2580', h)).toBe(true);

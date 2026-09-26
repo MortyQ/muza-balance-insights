@@ -52,7 +52,8 @@ function make(o: { touchId?: boolean; prompt?: boolean; touchIdDeps?: TouchIdLik
   return { svc: new LockService(deps), clock, events, deps };
 }
 
-describe('LockService', () => {
+// Real scrypt (64 MiB per hash): under a parallel full run one test can take seconds, past the 5 s default.
+describe('LockService', { timeout: 30_000 }, () => {
   it('off by default: not locked, lock() does nothing', () => {
     const { svc, events } = make();
     expect(svc.isLocked()).toBe(false);
