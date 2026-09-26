@@ -1,6 +1,6 @@
 <!-- copied from muzakit/libs/ui/src (2026-09-26); changes: ui/README.md -->
 <script lang="ts" setup>
-import { computed, nextTick, ref, useId, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onScopeDispose, ref, useId, useTemplateRef, watch } from "vue";
 
 import type { FieldValidation } from "../../types/validation";
 import VButton from "../base/VButton.vue";
@@ -63,18 +63,53 @@ const emit = defineEmits<{
   expand: []
 }>();
 
-// navigator.clipboard.writeText in place of @vueuse/core's useClipboard (the only use of vueuse here).
-const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
+// Local copy() in place of @vueuse/core's useClipboard (the only use of vueuse here).
+const canCopy = typeof document !== "undefined";
 const copied = ref(false);
 let copiedTimer: ReturnType<typeof setTimeout> | null = null;
 
-const copy = async (value: string): Promise<void> => {
+const copyViaClipboardApi = async (value: string): Promise<boolean> => {
+  if (typeof navigator === "undefined" || !navigator.clipboard) return false;
   try {
     await navigator.clipboard.writeText(value);
+    return true;
   } catch {
-    // Denied or unsupported (e.g. the app's permission handler rejects it) — no feedback shown.
-    return;
+    // Electron's `denyAllPermissions` (apps/desktop/src/main/hardening.ts) answers every
+    // permission check with `false`, which can make this reject even from a user gesture.
+    return false;
   }
+};
+
+// vueuse's own legacy fallback, from before it dropped `execCommand` support: an
+// off-screen textarea, selected and copied via the deprecated but still-supported
+// `execCommand('copy')`. Positioned through CSSOM property setters, not `cssText` or
+// a string `style` attribute — prod CSP has no `style-src 'unsafe-inline'`.
+const copyViaExecCommand = (value: string): boolean => {
+  if (typeof document === "undefined") return false;
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.setProperty("position", "fixed");
+  textarea.style.setProperty("top", "-1000px");
+  textarea.style.setProperty("left", "-1000px");
+  textarea.style.setProperty("opacity", "0");
+  const previouslyFocused = document.activeElement;
+  document.body.appendChild(textarea);
+  textarea.select();
+  let succeeded = false;
+  try {
+    succeeded = document.execCommand("copy");
+  } catch {
+    succeeded = false;
+  }
+  textarea.remove();
+  if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+  return succeeded;
+};
+
+const copy = async (value: string): Promise<void> => {
+  const succeeded = (await copyViaClipboardApi(value)) || copyViaExecCommand(value);
+  if (!succeeded) return;
   copied.value = true;
   if (copiedTimer !== null) clearTimeout(copiedTimer);
   copiedTimer = setTimeout(() => {
@@ -82,6 +117,10 @@ const copy = async (value: string): Promise<void> => {
     copiedTimer = null;
   }, 2000);
 };
+
+onScopeDispose(() => {
+  if (copiedTimer !== null) clearTimeout(copiedTimer);
+});
 
 const fieldId = useId();
 
