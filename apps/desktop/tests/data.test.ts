@@ -135,3 +135,22 @@ describe('DataService (main → renderer view types)', () => {
     expect(opens).toBe(2);
   });
 });
+
+describe('DataService: one participant or the whole family', () => {
+  it('spending and balances take participantId; without it — everyone', async () => {
+    await account('mine', 'black', 980, 10_000);
+    const her = Number((await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Вигадана', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 3_000, updated_at: SYNCED_TO });
+    await tx('mine', '2026-03-02', -1_000, 'продукты');
+    await tx('hers', '2026-03-03', -400, 'продукты');
+    for (const a of ['mine', 'hers']) await synced(a);
+    const q = { from: '2026-03-01', to: '2026-03-10' };
+    const total = async (participantId?: number) =>
+      (await svc.spending({ ...q, ...(participantId !== undefined ? { participantId } : {}) })).currencies[0]?.total.net;
+    expect(await total()).toBe(1_400);
+    expect(await total(her)).toBe(400);
+    expect((await svc.balances({ participantId: her })).cards.map((c) => c.id)).toEqual(['hers']);
+    expect((await svc.balances()).totals).toEqual([{ currency: 980, ownFunds: 13_000 }]);
+  });
+});

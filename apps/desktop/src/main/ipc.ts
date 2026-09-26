@@ -3,22 +3,39 @@
 import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
+import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { IMPORT_DEPTHS } from '../shared/progress.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const id = z.number().int().positive();
+// The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
+const token = z.string().min(20).max(200).regex(/^\S+$/);
+const label = z.string().min(1).max(80);
 
 /** Argument tuples. z.tuple without a rest element rejects extra arguments. */
 export const ARG_SCHEMAS = {
   setToken: z.tuple([z.string().min(20).max(200).regex(/^\S+$/), z.boolean()]),
   clearToken: z.tuple([]),
   hasToken: z.tuple([]),
+  listPeople: z.tuple([]),
+  addConnection: z.tuple([
+    z.strictObject({
+      participant: z.union([z.strictObject({ id }), z.strictObject({ label }), z.strictObject({ fromBank: z.literal(true) })]),
+      provider: z.enum(PROVIDER_IDS),
+      token,
+      remember: z.boolean(),
+    }),
+  ]),
+  renameParticipant: z.tuple([id, label]),
+  setConnectionToken: z.tuple([id, token, z.boolean()]),
+  removeConnection: z.tuple([id]),
   // Exactly the depths the screen offers: one list, so the two can't drift apart.
   startImport: z.tuple([z.literal(IMPORT_DEPTHS)]),
   cancelImport: z.tuple([]),
   spendingSummary: z.tuple([
-    z.strictObject({ from: isoDate, to: isoDate, scope: z.enum(['personal', 'business']).optional() }),
+    z.strictObject({ from: isoDate, to: isoDate, scope: z.enum(['personal', 'business']).optional(), participantId: id.optional() }),
   ]),
-  getBalances: z.tuple([]),
+  getBalances: z.union([z.tuple([]), z.tuple([z.strictObject({ participantId: id.optional() })])]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

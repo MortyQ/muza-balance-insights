@@ -76,6 +76,30 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', sql: 'DROP TABLE x' }]],
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', scope: 'all' }]],
     ['getBalances', [1]],
+    ['getBalances', [{ participantId: 0 }]],
+    ['getBalances', [{ participantId: 1, sql: 'x' }]],
+    ['getBalances', [{}, 'extra']],
+    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: '1' }]],
+    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: 1.5 }]],
+    ['listPeople', [1]],
+    ['addConnection', []],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'short', remember: true }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'otherbank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { id: 0 }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { label: '' }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { fromBank: false }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { id: 1, label: 'x' }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'x'.repeat(40), remember: true, extra: 1 }]],
+    ['renameParticipant', [1]],
+    ['renameParticipant', [1, '']],
+    ['renameParticipant', [1, 'x'.repeat(81)]],
+    ['renameParticipant', ['1', 'Ім’я']],
+    ['setConnectionToken', [1, 'short', true]],
+    ['setConnectionToken', [-1, 'x'.repeat(40), true]],
+    ['setConnectionToken', [1, 'x'.repeat(40)]],
+    ['removeConnection', []],
+    ['removeConnection', [1.5]],
+    ['removeConnection', [1, true]],
     ['deleteAllData', [{ confirm: true }]],
     ['clearToken', ['x']],
     ['hasToken', ['x']],
@@ -115,6 +139,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'spendingSummary',
       a: [{ from: '2026-09-01', to: '2026-09-30' }],
     });
+    await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
+    await expect(ipc.handlers.get('balance:getBalances')!(good, { participantId: 2 })).resolves.toEqual({ m: 'getBalances', a: [{ participantId: 2 }] });
+    for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }]) {
+      const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
+      await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
+    }
   });
 
   it('handler errors reach the renderer as a fixed message; details go to onError only', async () => {

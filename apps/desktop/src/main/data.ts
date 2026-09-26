@@ -8,7 +8,7 @@ import type { ProviderId } from '@mono/core/providers/types';
 import { toKyivDateTime } from '@mono/core/format';
 import { getBalances } from '@mono/core/status';
 import { spendingSummary } from '@mono/core/summaries';
-import type { BalanceLine, BalancesView, DataStatus, SpendingQuery, SpendingView } from '../shared/api.ts';
+import type { BalanceLine, BalancesQuery, BalancesView, DataStatus, SpendingQuery, SpendingView } from '../shared/api.ts';
 
 export type DataServiceDeps = {
   open: () => Promise<Db>;
@@ -39,8 +39,23 @@ export class DataService {
     return opening;
   }
 
+  /** The migrated connection, for the other services of main (people.ts). */
+  database(): Promise<Db> {
+    return this.conn();
+  }
+
   async spending(q: SpendingQuery): Promise<SpendingView> {
-    const s = await spendingSummary(await this.conn(), { from: q.from, to: q.to, groupBy: 'category', ...(q.scope ? { scope: q.scope } : {}) }, this.d.nowSec());
+    const s = await spendingSummary(
+      await this.conn(),
+      {
+        from: q.from,
+        to: q.to,
+        groupBy: 'category',
+        ...(q.scope ? { scope: q.scope } : {}),
+        ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
+      },
+      this.d.nowSec(),
+    );
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = s.period;
     return {
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -55,8 +70,8 @@ export class DataService {
     };
   }
 
-  async balances(): Promise<BalancesView> {
-    const b = await getBalances(await this.conn());
+  async balances(q: BalancesQuery = {}): Promise<BalancesView> {
+    const b = await getBalances(await this.conn(), q.participantId !== undefined ? { participantId: q.participantId } : {});
     const line = (a: (typeof b.accounts)[number]): BalanceLine => ({
       id: a.id,
       label: a.label,

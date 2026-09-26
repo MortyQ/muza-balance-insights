@@ -330,6 +330,12 @@
   (`auth`) или чужой / уже подключённый владелец (`connection`) выключает только своё подключение: итог — `done` с
   `failed`; если не прошло ни одно — `error` первого. Подключение без токена main пропускает и добавляет в `failed`.
   При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
+- IPC людей и подключений (`apps/desktop/src/main/people.ts`, `PeopleService`): `listPeople` (подпись участника — единственное
+  имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
+  { fromBank: true }, provider, token, remember })` (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
+  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `setConnectionToken`,
+  `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
+  `spendingSummary` / `getBalances` принимают `participantId`.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.

@@ -13,6 +13,7 @@ import { configureIdentity } from './identity.ts';
 import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
+import { PeopleService } from './people.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault, type TokenStatus } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
@@ -138,15 +139,38 @@ app.whenReady().then(async () => {
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
   };
+  const people = new PeopleService({
+    db: () => data.database(),
+    tokens: vault,
+    importRunning: () => importer.running,
+    confirmRemove: async () => {
+      const opts = {
+        type: 'warning' as const,
+        buttons: ['Удалить подключение', 'Отмена'],
+        defaultId: 1,
+        cancelId: 1,
+        message: 'Удалить подключение?',
+        detail: 'Будут удалены его токен, счета и операции в этом приложении. В банке ничего не изменится. Отменить это нельзя.',
+      };
+      const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+      return r.response === 0;
+    },
+    nowSec: () => Math.floor(Date.now() / 1000),
+  });
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
     setToken: (token, remember) => singleToken.set(token, remember),
     clearToken: () => singleToken.clear(),
     hasToken: () => singleToken.status(),
+    listPeople: () => people.list(),
+    addConnection: (input) => people.addConnection(input),
+    renameParticipant: (id, label) => people.rename(id, label),
+    setConnectionToken: (id, token, remember) => people.setToken(id, token, remember),
+    removeConnection: (id) => people.remove(id),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
     spendingSummary: (q) => data.spending(q),
-    getBalances: () => data.balances(),
+    getBalances: (...q) => data.balances(q[0]),
     getSyncStatus: () => data.status(),
     deleteAllData: () =>
       deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
