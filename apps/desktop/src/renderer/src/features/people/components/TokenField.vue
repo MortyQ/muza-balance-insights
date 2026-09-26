@@ -31,7 +31,10 @@ onMounted(() => {
       autocomplete="off"
       spellcheck="false"
       type="password"
-    />
+    >
+      <!-- No reveal toggle: the token is pasted, not typed, and should not be shown on screen. -->
+      <template #icon-right />
+    </VInput>
     <VCheckbox v-model="remember" label="Запомнить на этом компьютере" />
     <VInfoNotice
       v-if="!secureStorage"
