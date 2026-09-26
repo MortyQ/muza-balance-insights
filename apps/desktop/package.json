@@ -31,8 +31,10 @@
     "typecheck": "tsc -p tsconfig.node.json && vue-tsc -p tsconfig.web.json"
   },
   "dependencies": {
+    "@internationalized/date": "^3.12.4",
     "@libsql/client": "^0.18.0",
     "electron-updater": "6.8.9",
+    "reka-ui": "^2.10.5",
     "zod": "^4.6.5"
   },
   "devDependencies": {
