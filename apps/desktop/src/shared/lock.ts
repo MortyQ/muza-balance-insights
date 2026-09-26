@@ -9,9 +9,9 @@ export const PIN_RE = /^\d{4,8}$/;
 /** Wrong PINs in a row before the first pause; from then on «Забыли PIN?» is always shown. */
 export const FREE_ATTEMPTS = 5;
 
-export type LockTrigger = 'startup' | 'idle' | 'screenLock' | 'sleep';
+export const LOCK_TRIGGERS = ['startup', 'idle', 'screenLock', 'sleep'] as const;
+export type LockTrigger = (typeof LOCK_TRIGGERS)[number];
 export type LockTriggers = Record<LockTrigger, boolean>;
-export const LOCK_TRIGGERS = ['startup', 'idle', 'screenLock', 'sleep'] as const satisfies ReadonlyArray<LockTrigger>;
 export const DEFAULT_TRIGGERS: LockTriggers = { startup: true, idle: true, screenLock: true, sleep: true };
 
 export type LockView = {

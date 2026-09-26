@@ -3,20 +3,30 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
+import { KDF, KEY_LEN, SALT_LEN } from './pin.ts';
 
 export const LOCK_FILE = 'lock.json';
 
-const base64 = z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/);
+/** Base64 that decodes to exactly `len` bytes — a hash or salt of the wrong size must never parse as valid. */
+function base64Of(len: number) {
+  return z
+    .string()
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/)
+    .refine((s) => Buffer.from(s, 'base64').length === len, `must decode to ${len} bytes`);
+}
+
 const LockFileSchema = z.strictObject({
   version: z.literal(1),
   kdf: z.strictObject({
     name: z.literal('scrypt'),
-    N: z.number().int().min(16384).max(1_048_576),
-    r: z.number().int().min(1).max(32),
-    p: z.number().int().min(1).max(16),
-    salt: base64,
+    // Pinned to the values pin.ts actually uses: any other N/r/p either isn't a valid scrypt cost
+    // (N must be a power of two) or blows past scrypt's memory limit (128·N·r bytes).
+    N: z.literal(KDF.N),
+    r: z.literal(KDF.r),
+    p: z.literal(KDF.p),
+    salt: base64Of(SALT_LEN),
   }),
-  hash: base64,
+  hash: base64Of(KEY_LEN),
   touchId: z.boolean(),
   triggers: z.strictObject({ startup: z.boolean(), idle: z.boolean(), screenLock: z.boolean(), sleep: z.boolean() }),
   failedAttempts: z.number().int().min(0),
@@ -40,10 +50,25 @@ export function readLock(dir: string): LockRead {
   }
 }
 
+// Callers (LockService) serialize every write through one chain — this function is not safe to call
+// concurrently for the same dir, and does not protect against that itself.
 export async function writeLock(dir: string, file: LockFile): Promise<void> {
   const target = path.join(dir, LOCK_FILE);
-  await fs.promises.writeFile(`${target}.tmp`, JSON.stringify(LockFileSchema.parse(file)), { mode: 0o600 });
-  await fs.promises.rename(`${target}.tmp`, target);
+  const tmp = `${target}.tmp`;
+  const text = JSON.stringify(LockFileSchema.parse(file));
+  try {
+    const handle = await fs.promises.open(tmp, 'w', 0o600);
+    try {
+      await handle.writeFile(text);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+  } catch (err) {
+    await fs.promises.rm(tmp, { force: true });
+    throw err;
+  }
+  await fs.promises.rename(tmp, target);
 }
 
 export async function removeLock(dir: string): Promise<void> {

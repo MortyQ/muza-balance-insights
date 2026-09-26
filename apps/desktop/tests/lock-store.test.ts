@@ -36,9 +36,17 @@ describe('lock.json', () => {
     ['missing hash', JSON.stringify({ ...FILE, hash: undefined })],
     ['extra field', JSON.stringify({ ...FILE, pin: '2580' })],
     ['weak KDF', JSON.stringify({ ...FILE, kdf: { ...FILE.kdf, N: 2 } })],
+    ['KDF not pinned to pin.ts (N=65536)', JSON.stringify({ ...FILE, kdf: { ...FILE.kdf, N: 65536 } })],
     ['negative attempts', JSON.stringify({ ...FILE, failedAttempts: -1 })],
+    ['hash of the wrong length', JSON.stringify({ ...FILE, hash: 'A' })],
+    ['salt of the wrong length (15 bytes)', JSON.stringify({ ...FILE, kdf: { ...FILE.kdf, salt: Buffer.alloc(15, 1).toString('base64') } })],
   ])('%s → broken (stays locked)', (_, text) => {
     fs.writeFileSync(path.join(dir, LOCK_FILE), text);
+    expect(readLock(dir)).toEqual({ kind: 'broken' });
+  });
+
+  it('a directory named lock.json → broken', () => {
+    fs.mkdirSync(path.join(dir, LOCK_FILE));
     expect(readLock(dir)).toEqual({ kind: 'broken' });
   });
 
