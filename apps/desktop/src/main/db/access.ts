@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Db } from '@mono/core/db';
 import type { SecureStore } from '../secure-store.ts';
+import { encryptingFiles } from './encrypt.ts';
 import { dbFileKind } from './header.ts';
 import type { DbKeyVault } from './key-vault.ts';
 
@@ -67,7 +68,7 @@ export class DbAccess {
 
   async init(): Promise<DbState> {
     this.key = null;
-    for (const f of [ENCRYPTING_FILE, `${ENCRYPTING_FILE}-journal`]) await fs.promises.rm(path.join(this.d.userDataDir, f), { force: true });
+    for (const f of encryptingFiles(this.file)) await fs.promises.rm(f, { force: true });
     const next = await this.decide();
     this.set(next);
     this.d.log(next.kind === 'ready' ? `state=ready encrypted=${next.encrypted}${next.notice ? ` notice=${next.notice}` : ''}` : `state=${next.kind}`);

@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
 import { openLibsql } from '@mono/db-libsql';
 import { DB_FILE, DbAccess, DbOpenError, ENCRYPTING_FILE, type DbAccessDeps, type DbState, type EncryptResult } from '../src/main/db/access.ts';
+import { encryptDatabase } from '../src/main/db/encrypt.ts';
 import type { KeyCreate, KeyLoad } from '../src/main/db/key-vault.ts';
 import type { Reliability } from '../src/main/secure-store.ts';
 
@@ -116,6 +117,16 @@ describe('DbAccess.init — a plain database', () => {
     const lost = access({ load: { kind: 'lost' }, encrypt: async () => ok });
     expect(await lost.a.init()).toEqual(ready(true));
     expect(lost.calls.create).toBe(1);
+  });
+
+  it('with the real migration: the plain database opens encrypted afterwards, rows kept', async () => {
+    await makeDb();
+    const { a } = access({
+      encrypt: (f, k) => encryptDatabase({ file: f, key: k, openDb: (u, o) => openLibsql(u, o), platform: process.platform, log: () => undefined }),
+    });
+    expect(await a.init()).toEqual(ready(true));
+    expect(fs.readFileSync(file()).subarray(0, 15).toString('latin1')).not.toBe('SQLite format 3');
+    expect((await (await a.open()).execute('SELECT x FROM t')).rows[0]?.x).toBe('row');
   });
 
   it('a failed migration → plain, encrypt-pending, the step in the log', async () => {

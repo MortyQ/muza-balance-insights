@@ -17,7 +17,12 @@ export { DB_FILE };
 /** The database key, removed right after the tokens. */
 const KEY_FILES = [DB_KEY_FILE, `${DB_KEY_FILE}.tmp`] as const;
 /** Everything but the key and the lock, removed after the worker stopped. */
-const OTHER_FILES = [DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`, JOB_FILE, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`] as const;
+const OTHER_FILES = [
+  DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`,
+  // A copy of an interrupted encryption (db/encrypt.ts: encryptingFiles).
+  `${DB_FILE}.encrypting`, `${DB_FILE}.encrypting-journal`, `${DB_FILE}.encrypting-wal`, `${DB_FILE}.encrypting-shm`,
+  JOB_FILE, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,
+] as const;
 /** The app lock, removed only after everything else (including APP_DIRS) is gone. */
 const LOCK_FILES = [LOCK_FILE, `${LOCK_FILE}.tmp`] as const;
 /** Every file the app itself writes to userData. Electron's own service files (Preferences, caches) hold no data of ours. */

@@ -18,6 +18,7 @@ import { gatedPush } from './lock/gate.ts';
 import { LockService } from './lock/service.ts';
 import { PeopleService } from './people.ts';
 import { DbAccess } from './db/access.ts';
+import { encryptDatabase } from './db/encrypt.ts';
 import { DbKeyVault } from './db/key-vault.ts';
 import { SecureStore } from './secure-store.ts';
 import { runDbSmoke } from './smoke.ts';
@@ -102,6 +103,9 @@ app.whenReady().then(async () => {
     keys: new DbKeyVault({ store: secureStore, userDataDir: userData, platform: process.platform }),
     store: secureStore,
     openDb: (url, opts) => openLibsql(url, opts),
+    // An existing plain database (before 0.1.4) is encrypted here, once; a failure keeps it plain until next launch.
+    encrypt: (file, key) =>
+      encryptDatabase({ file, key, openDb: (url, opts) => openLibsql(url, opts), platform: process.platform, log: (msg) => process.stderr.write(`[db] ${msg}\n`) }),
     log: (msg) => process.stderr.write(`[db] ${msg}\n`),
   });
   await dbAccess.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));

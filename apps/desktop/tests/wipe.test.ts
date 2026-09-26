@@ -50,7 +50,7 @@ describe('deleteAllData', () => {
 
   it('covers the database with its WAL files, the tokens of every connection (and the old single token), the import job and the app lock', () => {
     expect([...APP_FILES].sort()).toEqual(
-      ['db-key.bin', 'db-key.bin.tmp', 'import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
+      ['db-key.bin', 'db-key.bin.tmp', 'import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db.encrypting', 'monobank.db.encrypting-journal', 'monobank.db.encrypting-shm', 'monobank.db.encrypting-wal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
     );
     expect([...APP_DIRS]).toEqual(['tokens']);
   });
