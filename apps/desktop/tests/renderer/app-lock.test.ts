@@ -94,7 +94,7 @@ describe('lock hint', () => {
   });
 });
 
-const { canForgetPin, normalizePin } = await import('@/features/app-lock/utils.ts');
+const { canForgetPin, normalizePin, shouldAutoPromptTouchId } = await import('@/features/app-lock/utils.ts');
 
 describe('pin normalization and forget visibility', () => {
   it('normalizePin: strips non-digits, cuts to PIN_MAX', () => {
@@ -106,5 +106,15 @@ describe('pin normalization and forget visibility', () => {
     expect(canForgetPin(5, false)).toBe(true);
     expect(canForgetPin(4, false)).toBe(false);
     expect(canForgetPin(0, true)).toBe(true);
+  });
+
+  it('shouldAutoPromptTouchId: only once, only with Touch ID on, only in a focused window', () => {
+    const base = { touchId: true, broken: false, busy: false, prompted: false, focused: true };
+    expect(shouldAutoPromptTouchId(base)).toBe(true);
+    expect(shouldAutoPromptTouchId({ ...base, touchId: false })).toBe(false);
+    expect(shouldAutoPromptTouchId({ ...base, broken: true })).toBe(false);
+    expect(shouldAutoPromptTouchId({ ...base, busy: true })).toBe(false);
+    expect(shouldAutoPromptTouchId({ ...base, prompted: true })).toBe(false);
+    expect(shouldAutoPromptTouchId({ ...base, focused: false })).toBe(false);
   });
 });

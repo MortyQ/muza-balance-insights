@@ -37,3 +37,8 @@ export function normalizePin(raw: string): string {
 export function canForgetPin(failedAttempts: number, broken: boolean): boolean {
   return broken || failedAttempts >= FREE_ATTEMPTS;
 }
+
+/** The lock screen asks for Touch ID by itself once, and only in a focused window: a prompt nobody sees would time out. */
+export function shouldAutoPromptTouchId(s: { touchId: boolean; broken: boolean; busy: boolean; prompted: boolean; focused: boolean }): boolean {
+  return s.touchId && !s.broken && !s.busy && !s.prompted && s.focused;
+}
