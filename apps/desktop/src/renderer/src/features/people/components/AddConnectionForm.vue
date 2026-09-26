@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import { MONOBANK } from '@/entities/bank';
 import { useParticipantStore } from '@/entities/participant';
-import { VButton, VCheckbox, VInfoNotice } from '@/shared/ui';
+import { VButton, VCheckbox, VInfoNotice, VSelect, type VSelectOption } from '@/shared/ui';
 import { useAddConnection } from '../composables/useAddConnection.ts';
 import { CONSENT_TEXT } from '../constants.ts';
 import TokenField from './TokenField.vue';
@@ -19,6 +19,11 @@ const { person, newLabel, fromBank, tokenInput, remember, canSubmit, submit, sav
 const personId = useId();
 const nameId = useId();
 
+const personOptions = computed<VSelectOption[]>(() => [
+  ...participant.people.map((p) => ({ label: p.label, value: p.id })),
+  { label: 'Новый человек', value: 'new' },
+]);
+
 async function onSubmit() {
   if (await save()) emit('added');
 }
@@ -27,11 +32,7 @@ async function onSubmit() {
 <template>
   <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
     <div class="flex flex-col gap-2">
-      <label :for="personId" class="font-semibold">Чьи это счета</label>
-      <select :id="personId" v-model="person" class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-2">
-        <option v-for="p in participant.people" :key="p.id" :value="p.id">{{ p.label }}</option>
-        <option value="new">Новый человек</option>
-      </select>
+      <VSelect :id="personId" v-model="person" label="Чьи это счета" :options="personOptions" class="w-full max-w-[420px]" />
       <template v-if="person === 'new'">
         <label :for="nameId" class="sr-only">Имя</label>
         <input

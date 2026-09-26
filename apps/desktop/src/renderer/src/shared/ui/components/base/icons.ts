@@ -2,8 +2,11 @@ import type { Component } from "vue";
 
 import LucideCheck from "~icons/lucide/check";
 import LucideCircleCheckBig from "~icons/lucide/circle-check-big";
+import LucideCalendar from "~icons/lucide/calendar";
+import LucideChevronDown from "~icons/lucide/chevron-down";
 import LucideChevronLeft from "~icons/lucide/chevron-left";
 import LucideChevronRight from "~icons/lucide/chevron-right";
+import LucideChevronUp from "~icons/lucide/chevron-up";
 import LucideCircleAlert from "~icons/lucide/circle-alert";
 import LucideCopy from "~icons/lucide/copy";
 import LucideDownload from "~icons/lucide/download";
@@ -35,11 +38,14 @@ import LucideX from "~icons/lucide/x";
  * a component uses a name that is missing from this map.
  */
 export const ICONS: Record<string, Component> = {
+  "lucide:calendar": LucideCalendar,
   "lucide:check": LucideCheck,
   // Lucide renamed check-circle; the key keeps the name VProgressBar (copied as is) uses.
   "lucide:check-circle": LucideCircleCheckBig,
+  "lucide:chevron-down": LucideChevronDown,
   "lucide:chevron-left": LucideChevronLeft,
   "lucide:chevron-right": LucideChevronRight,
+  "lucide:chevron-up": LucideChevronUp,
   "lucide:circle-alert": LucideCircleAlert,
   "lucide:copy": LucideCopy,
   "lucide:download": LucideDownload,

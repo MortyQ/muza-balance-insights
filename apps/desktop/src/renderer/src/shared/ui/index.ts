@@ -8,7 +8,10 @@ export { default as VCheckbox, type CheckboxModelValue, type CheckboxValue } fro
 export { default as VComposer, type VComposerStatus } from "./components/inputs/VComposer.vue";
 export { default as VInput } from "./components/inputs/VInput.vue";
 export { default as VSegmentedControl, type SegmentOption } from "./components/inputs/VSegmentedControl.vue";
+export { default as VSelect, type VSelectOption } from "./components/inputs/VSelect.vue";
 export { default as VSwitch } from "./components/inputs/VSwitch.vue";
+export { default as VDatepicker } from "./components/inputs/VDatepicker.vue";
+export type { IsoDateRange } from "./components/inputs/calendarDate.ts";
 export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VCollapse } from "./components/layout/VCollapse.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";

@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { IMPORT_DEPTHS } from '@contract/progress.ts';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
-import { VButton, VCard, VInfoNotice, VProgressBar } from '@/shared/ui';
+import { VButton, VCard, VInfoNotice, VProgressBar, VSelect, type VSelectOption } from '@/shared/ui';
 import { useImport } from './composables/useImport.ts';
 import { failureLines, progressLine, windowsPercent } from './utils.ts';
 
@@ -14,22 +14,14 @@ const { depth, error, start, cancel } = useImport();
 const line = computed(() => progressLine(importProgress.progress, Date.now()));
 const percent = computed(() => windowsPercent(importProgress.progress));
 const failures = computed(() => failureLines(importProgress.progress, participant.labelOf));
+const depthOptions = computed<VSelectOption[]>(() => IMPORT_DEPTHS.map((d) => ({ label: `${d} мес.`, value: d })));
 </script>
 
 <template>
   <VCard title="Импорт" padding="md">
     <div class="flex flex-col gap-3">
       <div class="flex flex-wrap items-center gap-3">
-        <label class="flex items-center gap-2">
-          Глубина:
-          <select
-            v-model.number="depth"
-            class="h-(--control-h) rounded-md border border-input-border bg-input-bg px-2 disabled:text-foreground-disabled"
-            :disabled="importProgress.running"
-          >
-            <option v-for="d in IMPORT_DEPTHS" :key="d" :value="d">{{ d }} мес.</option>
-          </select>
-        </label>
+        <VSelect v-model="depth" label="Глубина" :options="depthOptions" :disabled="importProgress.running" class="w-32" />
         <VButton v-if="!importProgress.running" text="Загрузить" icon="lucide:download" :disabled="!participant.anyToken" @click="start" />
         <VButton v-else variant="neutral" text="Остановить" icon="lucide:square" @click="cancel" />
       </div>
