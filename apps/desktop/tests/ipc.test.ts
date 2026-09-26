@@ -202,11 +202,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     it('locked: every method outside ALLOWED_WHEN_LOCKED is refused before its arguments are parsed', async () => {
       const ipc = fakeIpcMain();
       const ran: string[] = [];
+      // Test-only map built from METHODS: every handler has the same shape, so the cast is safe here.
       const handlers = Object.fromEntries(METHODS.map((m) => [m, async () => void ran.push(m)])) as unknown as Handlers;
       registerIpc(ipc, handlers, { trusted: () => true, locked: () => true });
       for (const m of METHODS) {
         const call = ipc.handlers.get(channel(m))!(good, 'not', 'valid', 'args');
-        if ((ALLOWED_WHEN_LOCKED as ReadonlyArray<string>).includes(m)) await expect(call, m).rejects.toThrow(INVALID_ARGS);
+        if (new Set<string>(ALLOWED_WHEN_LOCKED).has(m)) await expect(call, m).rejects.toThrow(INVALID_ARGS);
         else await expect(call, m).rejects.toThrow(LOCKED);
       }
       expect(ran).toEqual([]);
@@ -217,6 +218,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => true });
       await expect(ipc.handlers.get('balance:unlockWithPin')!(good, '2580')).resolves.toEqual({ m: 'unlockWithPin', a: ['2580'] });
       await expect(ipc.handlers.get('balance:getLockState')!(good)).resolves.toEqual({ m: 'getLockState', a: [] });
+      await expect(ipc.handlers.get('balance:unlockWithTouchId')!(good)).resolves.toEqual({ m: 'unlockWithTouchId', a: [] });
+      await expect(ipc.handlers.get('balance:deleteAllData')!(good)).resolves.toEqual({ m: 'deleteAllData', a: [] });
     });
 
     it('exactly four methods pass a closed lock', () => {
@@ -229,6 +232,38 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       registerIpc(ipc, allHandlers, { trusted: () => false, locked: () => ((asked = true), true) });
       await expect(ipc.handlers.get('balance:getLockState')!(good)).rejects.toThrow(FORBIDDEN);
       expect(asked).toBe(false);
+    });
+
+    it('unlocks and locks back per call: the same registration reacts to a changing lock', async () => {
+      const ipc = fakeIpcMain();
+      let isLocked = false;
+      registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => isLocked });
+      await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
+      isLocked = true;
+      await expect(ipc.handlers.get('balance:getBalances')!(good)).rejects.toThrow(LOCKED);
+      isLocked = false;
+      await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
+    });
+
+    it('opts.locked() throwing fails closed with a fixed message; details go to onError only, handler not run', async () => {
+      const ipc = fakeIpcMain();
+      const seen: string[] = [];
+      let ran = false;
+      registerIpc(
+        ipc,
+        { getBalances: async () => ((ran = true), { m: 'getBalances', a: [] }) },
+        {
+          trusted: () => true,
+          locked: () => {
+            throw new Error('secret path');
+          },
+          onError: (m, err) => seen.push(`${m}:${(err as Error).message}`),
+        },
+      );
+      const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
+      expect((err as Error).message).toBe(LOCKED);
+      expect(seen).toEqual(['getBalances:secret path']);
+      expect(ran).toBe(false);
     });
   });
 });

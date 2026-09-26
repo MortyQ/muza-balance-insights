@@ -57,13 +57,13 @@
   отправитель → **замок** → аргументы → обработчик. Под замком проходят только методы `ALLOWED_WHEN_LOCKED`:
   `getLockState`, `unlockWithPin`, `unlockWithTouchId`, `deleteAllData`. Остальные — фиксированная ошибка
   `LOCKED = 'Приложение заблокировано'`.
-- **Push-события** под замком: уходит только `balance:lock-changed` и флаг «импорт идёт» (boolean). Прогресс импорта,
+- **Push-события** под замком: уходит только `balance:lock` и флаг «импорт идёт» (boolean). Прогресс импорта,
   статус обновлений и прочее не отправляются; после разблокировки renderer перечитывает всё сам.
 - **Очистка renderer.** При блокировке main делает `webContents.reload()`: всё, что окно уже показало, пропадает из
   памяти. После перезагрузки guard видит `locked` и открывает экран блокировки.
 - **Меню.** Под замком «Настройки…» (`CmdOrCtrl+,`) ничего не делает; «О программе» работает (данных нет).
 - Новые методы IPC (все с zod-схемой): `getLockState`, `unlockWithPin(pin)`, `unlockWithTouchId()`, `lockNow()`,
-  `enableLock(pin)`, `changePin(current, next)`, `disableLock(current | { touchId: true })`,
+  `enableLock(pin)`, `changePin(current, next)`, `disableLock({ pin } | { touchId: true })`,
   `setLockTriggers({ startup, idle, screenLock, sleep })`, `setTouchId(enabled)`. PIN в схеме — `^\d{4,8}$`.
   Методы настройки (кроме `getLockState`/`unlock*`) под замком запрещены шлюзом.
 
@@ -109,7 +109,7 @@ Renderer (FSD):
   подряд) плюс карточка `AppLockSettingsFeature`. `SettingsPage` становится тонкой оболочкой над виджетом.
   Раскладка с меню по макету `.superpowers/brainstorm/settings-page.html` — отдельный будущий рефактор, не в 0.1.4.
 - `app/router/guards.ts` — если `locked`, любой маршрут → `ROUTE.lock`; с `ROUTE.lock` без замка → главный.
-- `app/listeners.ts` — подписка на `lock-changed`.
+- `app/listeners.ts` — подписка на `lock`.
 
 Якоря доверия не затрагиваются: `release.yml`, `.claude/settings.json`, safety-тесты, нативных модулей нет.
 

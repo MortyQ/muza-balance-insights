@@ -93,7 +93,7 @@ export function isTrustedSender(event: IpcEventLike, win: { webContents: unknown
 export type IpcMainLike = { handle(channel: string, listener: (event: IpcEventLike, ...args: unknown[]) => Promise<unknown>): void };
 
 /**
- * Registers handlers for the given methods only (the rest arrive in later steps); returns the registered channels.
+ * Registers handlers for the given methods; returns the registered channels.
  * Order per call: sender → lock → arguments → handler. Handler errors reach the renderer as a fixed message;
  * details go to `onError` (main log), never to the renderer.
  */
@@ -108,7 +108,14 @@ export function registerIpc(
     if (!handler) continue;
     ipcMain.handle(channel(method), async (event, ...args) => {
       if (!opts.trusted(event)) throw new Error(FORBIDDEN);
-      if (opts.locked() && !allowedWhenLocked.has(method)) throw new Error(LOCKED);
+      let isLocked: boolean;
+      try {
+        isLocked = opts.locked();
+      } catch (err) {
+        opts.onError?.(method, err);
+        throw new Error(LOCKED);
+      }
+      if (isLocked && !allowedWhenLocked.has(method)) throw new Error(LOCKED);
       const parsed = ARG_SCHEMAS[method].safeParse(args);
       if (!parsed.success) throw new Error(INVALID_ARGS);
       try {
