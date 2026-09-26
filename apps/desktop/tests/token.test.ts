@@ -82,14 +82,34 @@ describe('secure store available (Keychain / DPAPI / libsecret)', () => {
     expect(await s.status()).toMatchObject({ present: false, stored: null });
   });
 
-  it('an undecryptable blob (rebuilt unsigned app, other machine) is removed and the UI is told to ask again', async () => {
+  it('an undecryptable blob (keychain denied, rebuilt unsigned app) is kept on disk and the UI is told to ask again', async () => {
     await store(fakeSafeStorage({ key: 'old' })).set(CANARY, true);
     const s = store(fakeSafeStorage({ key: 'new' }));
     expect(await s.get()).toBeNull();
-    expect(fs.existsSync(file())).toBe(false);
-    expect(await s.status()).toMatchObject({ present: false, needsReentry: true });
+    expect(fs.existsSync(file())).toBe(true);
+    expect(await s.status()).toMatchObject({ present: false, stored: null, needsReentry: true });
     await s.set(CANARY, true);
     expect((await s.status()).needsReentry).toBe(false);
+    expect(await s.get()).toBe(CANARY);
+  });
+
+  it('keychain denied once, allowed after a restart: the same file opens again', async () => {
+    await store(fakeSafeStorage({ key: 'k' })).set(CANARY, true);
+    const denied = store(fakeSafeStorage({ key: 'other' }));
+    expect(await denied.get()).toBeNull();
+    const restarted = store(fakeSafeStorage({ key: 'k' }));
+    expect(await restarted.get()).toBe(CANARY);
+    expect(await restarted.status()).toMatchObject({ present: true, stored: 'secure', needsReentry: false });
+  });
+
+  it('a file that decrypts to something that is not a token is damaged and removed', async () => {
+    const ss = fakeSafeStorage({ key: 'k' });
+    await store(ss).set(CANARY, true);
+    fs.writeFileSync(file(), await ss.encryptStringAsync('not a token'));
+    const s = store(ss);
+    expect(await s.get()).toBeNull();
+    expect(fs.existsSync(file())).toBe(false);
+    expect(await s.status()).toMatchObject({ present: false, needsReentry: true });
   });
 });
 

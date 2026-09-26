@@ -60,7 +60,8 @@ export class TokenVault {
   }
 
   async status(connectionId: number): Promise<TokenStatus> {
-    const onDisk = fs.existsSync(this.file(connectionId));
+    // A file that did not decrypt stays on disk (it may open after a restart) but counts as missing.
+    const onDisk = fs.existsSync(this.file(connectionId)) && !this.needsReentry.has(connectionId);
     const inMemory = this.memory.has(connectionId);
     return {
       present: inMemory || onDisk,
@@ -112,17 +113,24 @@ export class TokenVault {
     if (cached !== undefined) return cached;
     const file = this.file(connectionId);
     if (!fs.existsSync(file)) return null;
+    let result: string;
     try {
-      const { result } = await this.deps.safeStorage.decryptStringAsync(await fs.promises.readFile(file));
-      if (!ANY_CREDENTIAL(result)) throw new TokenError('bad token');
-      this.memory.set(connectionId, result);
-      return result;
+      ({ result } = await this.deps.safeStorage.decryptStringAsync(await fs.promises.readFile(file)));
     } catch {
-      // Undecryptable (other machine, rebuilt unsigned app, corrupted): drop it and ask again.
+      // Not decrypted: keychain access denied («Запретить» after an unsigned update), keychain locked, other machine.
+      // The file stays — after a restart and «Разрешить» it opens again; a new token entered meanwhile overwrites it.
+      this.needsReentry.add(connectionId);
+      return null;
+    }
+    if (!ANY_CREDENTIAL(result)) {
+      // Decrypted, but not a token: the file is damaged, nothing to wait for.
       await fs.promises.rm(file, { force: true });
       this.needsReentry.add(connectionId);
       return null;
     }
+    this.needsReentry.delete(connectionId);
+    this.memory.set(connectionId, result);
+    return result;
   }
 
   /** Connections with a token saved on disk (an import can resume without asking). */
