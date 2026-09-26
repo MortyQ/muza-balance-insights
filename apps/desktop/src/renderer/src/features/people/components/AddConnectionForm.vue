@@ -2,7 +2,7 @@
 import { useId } from 'vue';
 import { MONOBANK } from '@/entities/bank';
 import { useParticipantStore } from '@/entities/participant';
-import { VButton, VCheckbox, VInfoNotice } from '@/shared/ui';
+import { VButton, VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
 import { useAddConnection } from '../composables/useAddConnection.ts';
 import { CONSENT_TEXT } from '../constants.ts';
 import TokenField from './TokenField.vue';
@@ -17,7 +17,6 @@ const emit = defineEmits<{ added: [] }>();
 const participant = useParticipantStore();
 const { person, newLabel, fromBank, tokenInput, remember, canSubmit, submit, save } = useAddConnection(() => defaultLabel);
 const personId = useId();
-const nameId = useId();
 
 async function onSubmit() {
   if (await save()) emit('added');
@@ -33,15 +32,13 @@ async function onSubmit() {
         <option value="new">Новый человек</option>
       </select>
       <template v-if="person === 'new'">
-        <label :for="nameId" class="sr-only">Имя</label>
-        <input
-          :id="nameId"
+        <VInput
           v-model="newLabel"
-          class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-(--control-px) placeholder:text-input-placeholder focus:border-border-focus focus:outline-none disabled:text-foreground-disabled"
-          type="text"
-          maxlength="80"
-          placeholder="Имя, например «Я» или «Оля»"
           :disabled="fromBank"
+          maxlength="80"
+          name="Имя"
+          placeholder="Имя, например «Я» или «Оля»"
+          type="text"
         />
         <VCheckbox v-model="fromBank" label="Взять имя из банка (подставится при первом импорте)" />
       </template>
