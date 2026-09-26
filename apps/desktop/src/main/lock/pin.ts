@@ -8,6 +8,8 @@ export const SALT_LEN = 16;
 const MAXMEM = 64 * 1024 * 1024;
 
 export type PinHash = { kdf: { name: 'scrypt'; N: number; r: number; p: number; salt: string }; hash: string };
+/** What hashPin actually produces: the KDF pinned to the current constants (matches store.ts's schema exactly). */
+export type StoredPin = { kdf: typeof KDF & { salt: string }; hash: string };
 
 function scrypt(pin: string, salt: Buffer, len: number, o: { N: number; r: number; p: number }): Promise<Buffer> {
   return new Promise((resolve, reject) =>
@@ -15,9 +17,10 @@ function scrypt(pin: string, salt: Buffer, len: number, o: { N: number; r: numbe
   );
 }
 
-export async function hashPin(pin: string, salt: Buffer = crypto.randomBytes(SALT_LEN)): Promise<PinHash> {
+export async function hashPin(pin: string, salt: Buffer = crypto.randomBytes(SALT_LEN)): Promise<StoredPin> {
   const key = await scrypt(pin, salt, KEY_LEN, KDF);
-  return { kdf: { ...KDF, salt: salt.toString('base64') }, hash: key.toString('base64') };
+  const kdf: typeof KDF & { salt: string } = { ...KDF, salt: salt.toString('base64') };
+  return { kdf, hash: key.toString('base64') };
 }
 
 export async function verifyPin(pin: string, stored: PinHash): Promise<boolean> {

@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LockService, type LockDeps } from '../src/main/lock/service.ts';
-import { KDF, hashPin } from '../src/main/lock/pin.ts';
-import { LOCK_FILE, readLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
+import { hashPin } from '../src/main/lock/pin.ts';
+import { LOCK_FILE, readLock, removeLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
 
 let dir: string;
 beforeEach(() => void (dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-svc-'))));
@@ -51,6 +51,12 @@ describe('LockService', () => {
     expect(readLock(dir).kind).toBe('none');
   });
 
+  it('enable is refused when lock.json is broken', async () => {
+    fs.writeFileSync(path.join(dir, LOCK_FILE), '{oops');
+    const { svc } = make();
+    await expect(svc.enable('2580')).rejects.toThrow();
+  });
+
   it('lock → reload + change; the right PIN opens, the wrong one counts', async () => {
     const { svc, events } = make();
     await svc.enable('2580');
@@ -62,6 +68,15 @@ describe('LockService', () => {
     expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
     expect(svc.isLocked()).toBe(false);
     expect(svc.view().failedAttempts).toBe(0);
+  });
+
+  it('lock() while already locked is a no-op: no extra reload/locked events', async () => {
+    const { svc, events } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    const countBefore = events.length;
+    svc.lock('manual');
+    expect(events.length).toBe(countBefore);
   });
 
   it('5th wrong PIN → 30 s pause; during it even the right PIN is not checked; after it, it opens', async () => {
@@ -131,6 +146,12 @@ describe('LockService', () => {
     expect(await no.svc.unlockWithTouchId()).toEqual({ ok: false, reason: 'unavailable' });
   });
 
+  it('setTouchId(true) is refused when Touch ID is unavailable', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    await expect(svc.setTouchId(true)).rejects.toThrow();
+  });
+
   it('changePin needs the current PIN; disable removes lock.json', async () => {
     const { svc } = make();
     await svc.enable('2580');
@@ -145,39 +166,80 @@ describe('LockService', () => {
     expect(svc.view().enabled).toBe(false);
   });
 
-  it('concurrent wrong PINs are checked one after another (no race past the pause)', async () => {
+  it('changePin refuses a weak next PIN and leaves the file unchanged', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const before = readLock(dir);
+    await expect(svc.changePin('2580', '1234')).rejects.toThrow();
+    expect(readLock(dir)).toEqual(before);
+  });
+
+  it('disable while locked is refused; the app still unlocks with the PIN afterwards', async () => {
     const { svc } = make();
     await svc.enable('2580');
     svc.lock('manual');
-    await Promise.all(Array.from({ length: 7 }, () => svc.unlockWithPin('1111')));
-    expect(svc.view().failedAttempts).toBe(5);
+    await expect(svc.disable({ pin: '2580' })).rejects.toThrow();
+    expect(svc.isLocked()).toBe(true);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
   });
 
-  it('a huge nextAttemptAt (tampered lock.json) is clamped to now + 15 min', async () => {
+  it('a failed write during changePin leaves the old PIN in force', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const tmp = path.join(dir, `${LOCK_FILE}.tmp`);
+    fs.mkdirSync(tmp);
+    await expect(svc.changePin('2580', '1397')).rejects.toThrow();
+    fs.rmSync(tmp, { recursive: true, force: true });
+    svc.lock('manual');
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('concurrent wrong PINs are checked one after another: 5 count towards the pause, the rest wait', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    const results = await Promise.all(Array.from({ length: 7 }, () => svc.unlockWithPin('1111')));
+    expect(svc.view().failedAttempts).toBe(5);
+    expect(results.slice(0, 4)).toEqual(Array.from({ length: 4 }, () => ({ ok: false, reason: 'wrong-pin', retryAt: null })));
+    const fifth = results[4];
+    expect(fifth?.ok).toBe(false);
+    const retryAt = fifth && !fifth.ok && fifth.reason === 'wrong-pin' ? fifth.retryAt : null;
+    expect(retryAt).not.toBeNull();
+    expect(results.slice(5)).toEqual([
+      { ok: false, reason: 'wait', retryAt },
+      { ok: false, reason: 'wait', retryAt },
+    ]);
+  });
+
+  it('a huge nextAttemptAt (tampered lock.json) is clamped to now + 15 min and expires exactly on schedule', async () => {
     const record = await hashPin('2580');
-    const clock = { now: 1_000_000 };
     const file: LockFile = {
       version: 1,
-      hash: record.hash,
-      kdf: { ...KDF, salt: record.kdf.salt },
+      ...record,
       touchId: false,
       triggers: { startup: true, idle: true, screenLock: true, sleep: true },
       failedAttempts: 5,
-      nextAttemptAt: clock.now + 10 * 24 * 60 * 60 * 1000,
+      nextAttemptAt: 1_000_000 + 10 * 24 * 60 * 60 * 1000,
     };
     await writeLock(dir, file);
-    const events: string[] = [];
-    const deps: LockDeps = {
-      userDataDir: dir,
-      touchId: { available: () => false, prompt: async () => true },
-      importRunning: () => false,
-      now: () => clock.now,
-      onLocked: () => void events.push('reload'),
-      onChange: (v) => void events.push(v.locked ? 'locked' : 'open'),
-      log: () => undefined,
-    };
-    const svc = new LockService(deps);
+    const { svc, clock } = make();
     expect(svc.view().retryAt).toBe(clock.now + 900_000);
     expect(await svc.unlockWithPin('2580')).toEqual({ ok: false, reason: 'wait', retryAt: clock.now + 900_000 });
+    clock.now += 900_000;
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('reset() during an in-flight wrong-PIN check does not resurrect a deleted lock.json', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    svc.lock('manual');
+    const p = svc.unlockWithPin('1111');
+    // Let checkPin start and reach the real (async) verifyPin call before the file disappears from under it.
+    await Promise.resolve();
+    await removeLock(dir); // simulates «Удалить все данные» wiping lock.json while the check is in flight
+    svc.reset();
+    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+    expect(readLock(dir).kind).toBe('none');
+    expect(svc.view().enabled).toBe(false);
   });
 });
