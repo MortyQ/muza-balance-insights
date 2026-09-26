@@ -1,4 +1,4 @@
-import type { LockResult, LockView } from '@contract/lock.ts';
+import { FREE_ATTEMPTS, PIN_MAX, type LockResult, type LockView } from '@contract/lock.ts';
 
 export function waitText(retryAt: number | null, now: number): string {
   if (retryAt === null || retryAt <= now) return '';
@@ -26,4 +26,14 @@ export function isChecked(e: Event): boolean {
 
 export function shouldShowHint(view: LockView | null, dismissed: boolean): boolean {
   return view !== null && !view.enabled && !dismissed;
+}
+
+/** PinField's model setter: only digits, cut to the longest allowed PIN. */
+export function normalizePin(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, PIN_MAX);
+}
+
+/** «Забыли PIN?» is always offered once the free attempts run out, or when lock.json itself is unreadable. */
+export function canForgetPin(failedAttempts: number, broken: boolean): boolean {
+  return broken || failedAttempts >= FREE_ATTEMPTS;
 }

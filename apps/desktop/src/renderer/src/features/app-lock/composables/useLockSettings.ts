@@ -1,5 +1,5 @@
 import { computed, onMounted, ref } from 'vue';
-import { pinProblem, type LockResult, type LockTrigger } from '@contract/lock.ts';
+import { pinProblem, PIN_RE, type LockResult, type LockTrigger } from '@contract/lock.ts';
 import { useAppLockStore } from '@/entities/app-lock';
 import { FAILED_TEXT } from '@/shared/lib';
 import { useAppLockRequest } from '../api/useAppLockRequest.ts';
@@ -49,31 +49,48 @@ export function useLockSettings(): UseLockSettingsReturn {
     }
   }
 
+  // The current PIN's format is checked here so a too-short value never reaches the IPC schema (which would just
+  // show the generic failure text); its own correctness (right/wrong) is still main's call.
+  const currentPinProblem = (): string => (PIN_RE.test(current.value) ? '' : (pinProblem(current.value) ?? ''));
   const newPinProblem = (): string => (next.value !== repeat.value ? 'PIN не совпадают.' : (pinProblem(next.value) ?? ''));
   const withResult = async (call: Promise<LockResult>): Promise<string> => resultText(await call);
 
   function submit(): Promise<void> {
     switch (mode.value) {
       case 'enable':
-        return act(async () => newPinProblem() || (appLock.set(await request.enableLock(next.value)), '')).finally(clearPins);
+        return act(async () => {
+          const problem = newPinProblem();
+          if (problem) return problem;
+          appLock.set(await request.enableLock(next.value));
+          return '';
+        }).finally(clearPins);
       case 'change':
-        return act(async () => newPinProblem() || withResult(request.changePin(current.value, next.value))).finally(clearPins);
+        return act(async () => currentPinProblem() || newPinProblem() || withResult(request.changePin(current.value, next.value))).finally(
+          clearPins,
+        );
       case 'disable':
-        return act(() => withResult(request.disableLock({ pin: current.value }))).finally(clearPins);
+        return act(async () => currentPinProblem() || withResult(request.disableLock({ pin: current.value }))).finally(clearPins);
       case 'idle':
         return Promise.resolve();
     }
   }
 
-  const disableWithTouchId = () => act(() => withResult(request.disableLock({ touchId: true })));
+  const disableWithTouchId = () => act(() => withResult(request.disableLock({ touchId: true }))).finally(clearPins);
 
   function setTrigger(trigger: LockTrigger, on: boolean): Promise<void> {
     const v = appLock.view;
     if (!v) return Promise.resolve();
-    return act(async () => (appLock.set(await request.setLockTriggers({ ...v.triggers, [trigger]: on })), ''), false);
+    return act(async () => {
+      appLock.set(await request.setLockTriggers({ ...v.triggers, [trigger]: on }));
+      return '';
+    }, false);
   }
 
-  const setTouchId = (on: boolean) => act(async () => (appLock.set(await request.setTouchId(on)), ''), false);
+  const setTouchId = (on: boolean) =>
+    act(async () => {
+      appLock.set(await request.setTouchId(on));
+      return '';
+    }, false);
   const lockNow = () => void request.lockNow().catch(() => undefined);
 
   return { view, mode, current, next, repeat, busy, error, open, submit, disableWithTouchId, setTrigger, setTouchId, lockNow };

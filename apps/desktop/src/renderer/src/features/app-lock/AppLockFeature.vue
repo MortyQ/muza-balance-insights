@@ -8,7 +8,7 @@ const { pin, busy, error, wait, broken, touchId, canForget, importRunning, submi
 </script>
 
 <template>
-  <VCard title="Приложение заблокировано" padding="md" class="w-full max-w-sm">
+  <VCard title="Balance Insights" subtitle="Приложение заблокировано" padding="md" class="w-full max-w-sm">
     <div class="flex flex-col gap-4">
       <form v-if="!broken" class="flex flex-col gap-3" @submit.prevent="submitPin">
         <PinField v-model="pin" label="PIN" autofocus :disabled="busy || wait !== ''" />
@@ -18,12 +18,13 @@ const { pin, busy, error, wait, broken, touchId, canForget, importRunning, submi
         </div>
       </form>
       <p v-else class="text-foreground-secondary">Файл блокировки повреждён. Открыть приложение можно, только удалив все данные.</p>
-      <p v-if="wait" class="text-sm text-foreground-muted">{{ wait }}</p>
-      <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
+      <p v-if="wait" aria-hidden="true" class="text-sm text-foreground-muted">{{ wait }}</p>
+      <p class="sr-only" aria-live="polite">{{ wait ? 'Слишком много попыток — подожди.' : '' }}</p>
+      <VInfoNotice v-if="error" role="alert" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
       <p v-if="importRunning" class="text-sm text-foreground-muted">Идёт импорт — он продолжается, пока приложение заблокировано.</p>
       <div v-if="canForget" class="flex flex-col items-start gap-1">
         <p class="text-sm text-foreground-muted">PIN нельзя восстановить: можно только удалить все данные и загрузить выписку заново.</p>
-        <VButton variant="link" text="Забыли PIN?" @click="forgot" />
+        <VButton variant="link" text="Забыли PIN?" :disabled="busy" @click="forgot" />
       </div>
     </div>
   </VCard>

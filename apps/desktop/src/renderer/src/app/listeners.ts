@@ -45,8 +45,9 @@ export function listenToMain(router: Router): () => void {
     }
   });
   const offUpdate = balanceApi.onUpdate((v) => appUpdate.set(v));
-  // main also sends the view when the page has loaded; this covers a subscription that came later.
-  void appUpdate.refresh().catch(() => undefined);
+  // main also sends the view when the page has loaded; this covers a subscription that came later. Skipped while
+  // locked: the gate refuses it (and logs it in main), and main pushes the update view again once the app unlocks.
+  if (!appLock.locked) void appUpdate.refresh().catch(() => undefined);
   const offSettings = balanceApi.onOpenSettings(() => void router.push({ name: ROUTE.settings }));
   // main reloads the page when it locks; this covers the lock screen opening (and a lock from another trigger).
   const offLock = balanceApi.onLock((v) => {

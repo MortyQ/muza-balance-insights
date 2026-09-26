@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, useId, useTemplateRef } from 'vue';
-import { PIN_MAX } from '@contract/lock.ts';
+import { onMounted, useId, useTemplateRef, watch } from 'vue';
+import { normalizePin } from '../utils.ts';
 
 const { label, autofocus = false, disabled = false } = defineProps<{ label: string; autofocus?: boolean; disabled?: boolean }>();
-const pin = defineModel<string>({ required: true, set: (v) => v.replace(/\D/g, '').slice(0, PIN_MAX) });
+const pin = defineModel<string>({ required: true, set: normalizePin });
 
 const id = useId();
 const input = useTemplateRef<HTMLInputElement>('input');
@@ -11,6 +11,15 @@ const input = useTemplateRef<HTMLInputElement>('input');
 onMounted(() => {
   if (autofocus) input.value?.focus();
 });
+
+// A check or a pause disables the field; once it re-enables, the PIN box should have focus again, not the button.
+watch(
+  () => disabled,
+  (d) => {
+    if (!d && autofocus) input.value?.focus();
+  },
+  { flush: 'post' },
+);
 </script>
 
 <template>
@@ -24,7 +33,6 @@ onMounted(() => {
       type="password"
       inputmode="numeric"
       autocomplete="off"
-      :maxlength="PIN_MAX"
       :disabled
     />
   </div>

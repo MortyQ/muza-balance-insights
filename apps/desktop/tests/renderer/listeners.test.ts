@@ -3,6 +3,7 @@
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LockView } from '@contract/lock.ts';
 import type { ImportProgress, WindowProgress } from '@contract/progress.ts';
 
 const api = vi.hoisted(() => {
@@ -22,6 +23,12 @@ const api = vi.hoisted(() => {
 vi.mock('@/shared/api', () => ({ balanceApi: api.fake }));
 
 const { LIVE_REFRESH_MS, listenToMain } = await import('@/app/listeners.ts');
+const { useAppLockStore } = await import('@/entities/app-lock');
+
+const lockView = (locked: boolean): LockView => ({
+  enabled: true, locked, broken: false, touchIdAvailable: false, touchId: false,
+  triggers: { startup: true, idle: true, screenLock: true, sleep: true }, failedAttempts: 0, retryAt: null, importRunning: false,
+});
 
 const win = (windowsDone: number): WindowProgress => ({
   phase: 'windows', account: 'black/UAH', from: '2026-08-01', to: '2026-09-01', round: 1, index: 1, total: 3,
@@ -92,5 +99,25 @@ describe('listenToMain: live data during an import', () => {
     expect(people()).toBe(2);
     send({ phase: 'needs-token', connectionIds: [2] });
     expect(people()).toBe(3);
+  });
+});
+
+describe('listenToMain: the update view is not fetched while locked', () => {
+  it('skips getUpdate when the lock store is already locked', () => {
+    setActivePinia(createPinia());
+    api.fake.getUpdate.mockClear();
+    useAppLockStore().set(lockView(true));
+    const off = listenToMain({ push: vi.fn() } as never);
+    expect(api.fake.getUpdate).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('fetches it as before when open', () => {
+    setActivePinia(createPinia());
+    api.fake.getUpdate.mockClear();
+    useAppLockStore().set(lockView(false));
+    const off = listenToMain({ push: vi.fn() } as never);
+    expect(api.fake.getUpdate).toHaveBeenCalledTimes(1);
+    off();
   });
 });

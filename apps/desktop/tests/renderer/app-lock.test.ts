@@ -93,3 +93,18 @@ describe('lock hint', () => {
     expect(HINT_KEY).toBe('balance.lock-hint');
   });
 });
+
+const { canForgetPin, normalizePin } = await import('@/features/app-lock/utils.ts');
+
+describe('pin normalization and forget visibility', () => {
+  it('normalizePin: strips non-digits, cuts to PIN_MAX', () => {
+    expect(normalizePin('1234-5678')).toBe('12345678');
+    expect(normalizePin('12a34')).toBe('1234');
+  });
+
+  it('canForgetPin: at FREE_ATTEMPTS or when broken', () => {
+    expect(canForgetPin(5, false)).toBe(true);
+    expect(canForgetPin(4, false)).toBe(false);
+    expect(canForgetPin(0, true)).toBe(true);
+  });
+});
