@@ -152,6 +152,7 @@ export class LockService {
       await removeLock(this.d.userDataDir);
       if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
       this.file = null;
+      this.locked = false;
       this.changed();
       return r;
     });
@@ -175,17 +176,17 @@ export class LockService {
   }
 
   /** After «Удалить все данные»: lock.json went with the rest; the app opens as a fresh install.
-   *  Authoritative, not just another epoch-checked op: it waits out whatever is currently in flight (the chain
-   *  promise never rejects, see serial()) and then removes lock.json itself, so a write that op made after this
-   *  memory reset — but before noticing the epoch changed — still ends up deleted from disk. */
+   *  Authoritative, not just another epoch-checked op: queuing the removal through serial() puts it behind
+   *  whatever is currently in flight (the chain promise never rejects, see serial()) and ahead of anything
+   *  queued after this call, so a write that op made after this memory reset — but before noticing the epoch
+   *  changed — still ends up deleted from disk. */
   async reset(): Promise<void> {
     this.epoch++;
     this.file = null;
     this.broken = false;
     this.locked = false;
     this.changed();
-    await this.chain;
-    await removeLock(this.d.userDataDir);
+    await this.serial(() => removeLock(this.d.userDataDir));
   }
 
   private serial<T>(fn: () => Promise<T>): Promise<T> {

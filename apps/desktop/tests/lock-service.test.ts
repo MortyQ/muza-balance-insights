@@ -183,6 +183,15 @@ describe('LockService', () => {
     expect(readLock(dir)).toEqual(before);
   });
 
+  it('after a successful disable the lock is off: isLocked() is false and lock() is a no-op', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    expect(await svc.disable({ pin: '2580' })).toEqual({ ok: true });
+    expect(svc.isLocked()).toBe(false);
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(false);
+  });
+
   it('disable while locked is refused; the app still unlocks with the PIN afterwards', async () => {
     const { svc } = make();
     await svc.enable('2580');
