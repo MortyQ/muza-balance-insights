@@ -14,6 +14,7 @@ Replace these copies with imports once muzakit is published as a package.
 | `VTooltip` | one `!` on `placements[0]` for our `noUncheckedIndexedAccess` (the array is a fixed literal) |
 | `VButtonGroup`, `VCard`, `VInfoNotice`, `VLoader`, `VProgressBar`, their `.scss` | none |
 | `VCheckbox` | `ref<HTMLInputElement \| null>(null)` → `useTemplateRef` (vue-syntax.instructions.md Rule 4) |
+| `VSwitch` | none |
 
 ## Ours, not copied
 
