@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, useId, useTemplateRef } from 'vue';
+import { onMounted, useTemplateRef } from 'vue';
 import type { Bank } from '@/entities/bank';
-import { VCheckbox, VInfoNotice } from '@/shared/ui';
+import { VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
 
 const { bank, secureStorage, autofocus = false } = defineProps<{
   bank: Readonly<Bank>;
@@ -11,8 +11,7 @@ const { bank, secureStorage, autofocus = false } = defineProps<{
 const token = defineModel<string>('token', { required: true });
 const remember = defineModel<boolean>('remember', { required: true });
 
-const inputId = useId();
-const input = useTemplateRef<HTMLInputElement>('input');
+const input = useTemplateRef<{ focus: () => void }>('input');
 
 onMounted(() => {
   if (autofocus) input.value?.focus();
@@ -24,17 +23,18 @@ onMounted(() => {
     <ol class="flex list-decimal flex-col gap-1 pl-5 text-foreground-secondary">
       <li v-for="step in bank.tokenSteps" :key="step">{{ step }}</li>
     </ol>
-    <label :for="inputId" class="sr-only">Токен {{ bank.name }}</label>
-    <input
-      :id="inputId"
+    <VInput
       ref="input"
       v-model="token"
-      class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-(--control-px) placeholder:text-input-placeholder focus:border-border-focus focus:outline-none"
-      type="password"
+      :name="`Токен ${bank.name}`"
+      :placeholder="bank.tokenPlaceholder"
       autocomplete="off"
       spellcheck="false"
-      :placeholder="bank.tokenPlaceholder"
-    />
+      type="password"
+    >
+      <!-- No reveal toggle: the token is pasted, not typed, and should not be shown on screen. -->
+      <template #icon-right />
+    </VInput>
     <VCheckbox v-model="remember" label="Запомнить на этом компьютере" />
     <VInfoNotice
       v-if="!secureStorage"

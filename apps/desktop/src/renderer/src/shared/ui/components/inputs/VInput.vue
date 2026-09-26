@@ -70,6 +70,8 @@ const inputRef = useTemplateRef<HTMLInputElement | HTMLTextAreaElement>("inputRe
 
 const inputId = computed(() => id || `v-input-${generatedId}`);
 
+defineExpose({ focus: () => inputRef.value?.focus() });
+
 const delay = typeof debounceProp === "number" ? debounceProp : debounceProp ? 800 : 0;
 
 const localValue = ref<string | number>(model.value ?? "");

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, useId } from 'vue';
+import { ref } from 'vue';
 import type { PersonView } from '@contract/api.ts';
-import { VButton } from '@/shared/ui';
+import { VButton, VInput } from '@/shared/ui';
 import ConnectionRow from './ConnectionRow.vue';
 
 const { person, secureStorage } = defineProps<{ person: Readonly<PersonView>; secureStorage: boolean }>();
@@ -13,7 +13,6 @@ const emit = defineEmits<{
 
 const renaming = ref(false);
 const label = ref('');
-const nameId = useId();
 
 function startRename() {
   label.value = person.label;
@@ -31,13 +30,12 @@ function saveName() {
   <section class="flex flex-col gap-2">
     <div class="flex flex-wrap items-center gap-2">
       <form v-if="renaming" class="flex flex-wrap items-center gap-2" @submit.prevent="saveName">
-        <label :for="nameId" class="sr-only">Имя</label>
-        <input
-          :id="nameId"
+        <VInput
           v-model="label"
-          class="h-(--control-h) rounded-md border border-input-border bg-input-bg px-(--control-px) focus:border-border-focus focus:outline-none"
-          type="text"
+          class="max-w-[240px]"
           maxlength="80"
+          name="Имя"
+          type="text"
         />
         <VButton type="submit" text="Сохранить" :disabled="label.trim() === ''" />
         <VButton variant="neutral" text="Отмена" @click="renaming = false" />
