@@ -19,14 +19,16 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
   const build = (isPackaged: boolean) => {
     let aboutCalls = 0;
     let settingsCalls = 0;
+    let lockCalls = 0;
     const t = menuTemplate({
       name: ABOUT.name,
       platform,
       isPackaged,
       showAbout: () => void (aboutCalls += 1),
       openSettings: () => void (settingsCalls += 1),
+      lockNow: () => void (lockCalls += 1),
     });
-    return { t, aboutCalls: () => aboutCalls, settingsCalls: () => settingsCalls };
+    return { t, aboutCalls: () => aboutCalls, settingsCalls: () => settingsCalls, lockCalls: () => lockCalls };
   };
 
   it('packaged: no reload, no DevTools, no help role (it would bring back default links)', () => {
@@ -41,16 +43,16 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
     expect(dev.filter((r) => !prod.includes(r))).toEqual(['reload', 'forceReload', 'toggleDevTools']);
   });
 
-  it('About is reachable; the only click handlers in the menu are Settings and About', () => {
+  it('About is reachable; the only click handlers are Settings, Lock and About', () => {
     const { t, aboutCalls } = build(true);
     const items = flatten(t);
     const clickable = items.filter((i) => typeof i.click === 'function');
     if (platform === 'darwin') {
       expect(items.some((i) => i.role === 'about')).toBe(true);
-      expect(clickable.map((i) => i.label)).toEqual(['Настройки…']);
+      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'Заблокировать']);
     } else {
-      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'О программе']);
-      (clickable[1]!.click as () => void)();
+      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'Заблокировать', 'О программе']);
+      (clickable[2]!.click as () => void)();
       expect(aboutCalls()).toBe(1);
     }
   });
@@ -61,6 +63,14 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
     expect(item?.accelerator).toBe('CmdOrCtrl+,');
     (item!.click as () => void)();
     expect([settingsCalls(), aboutCalls()]).toEqual([1, 0]);
+  });
+
+  it('Lock: Cmd/Ctrl+L, it only asks main to lock', () => {
+    const { t, lockCalls, settingsCalls } = build(true);
+    const item = flatten(t).find((i) => i.label === 'Заблокировать');
+    expect(item?.accelerator).toBe('CmdOrCtrl+L');
+    (item!.click as () => void)();
+    expect([lockCalls(), settingsCalls()]).toEqual([1, 0]);
   });
 });
 

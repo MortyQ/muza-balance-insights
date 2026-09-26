@@ -21,6 +21,7 @@ export function aboutText(opts: { name: string; version: string }): { message: s
 /**
  * macOS: the app menu with the native About panel and «Настройки…» (Cmd+,). Windows / Linux: File → Settings (Ctrl+,) and
  * Quit, Help → About (a message box). Settings only tells the renderer to open its screen.
+ * Lock (Cmd/Ctrl+L) asks main to lock (a no-op while the lock is off).
  * Reload and DevTools only in an unpackaged app (webPreferences.devTools is off in a packaged one anyway).
  */
 export function menuTemplate(opts: {
@@ -29,8 +30,10 @@ export function menuTemplate(opts: {
   isPackaged: boolean;
   showAbout: () => void;
   openSettings: () => void;
+  lockNow: () => void;
 }): MenuItemConstructorOptions[] {
   const settings: MenuItemConstructorOptions = { label: 'Настройки…', accelerator: 'CmdOrCtrl+,', click: () => opts.openSettings() };
+  const lock: MenuItemConstructorOptions = { label: 'Заблокировать', accelerator: 'CmdOrCtrl+L', click: () => opts.lockNow() };
   const dev: MenuItemConstructorOptions[] = opts.isPackaged
     ? []
     : [{ label: 'Разработка', submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }] }];
@@ -42,6 +45,7 @@ export function menuTemplate(opts: {
           { role: 'about', label: 'О программе' },
           { type: 'separator' },
           settings,
+          lock,
           { type: 'separator' },
           { role: 'hide' },
           { role: 'hideOthers' },
@@ -56,7 +60,7 @@ export function menuTemplate(opts: {
     ];
   }
   return [
-    { label: 'Файл', submenu: [settings, { type: 'separator' }, { role: 'quit', label: 'Выход' }] },
+    { label: 'Файл', submenu: [settings, lock, { type: 'separator' }, { role: 'quit', label: 'Выход' }] },
     { role: 'editMenu' },
     ...dev,
     { label: 'Справка', submenu: [{ label: 'О программе', click: () => opts.showAbout() }] },
