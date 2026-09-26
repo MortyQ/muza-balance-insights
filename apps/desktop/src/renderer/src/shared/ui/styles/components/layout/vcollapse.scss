@@ -1,0 +1,38 @@
+/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* `grid-template-rows: 0fr → 1fr` is the only way to transition to a
+   content-derived height without measuring it in JS. Same technique and curve as
+   VAccordion, so the two feel identical. */
+.v-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--v-collapse-duration) cubic-bezier(0.23, 1, 0.32, 1);
+
+  &--expanded {
+    grid-template-rows: 1fr;
+  }
+
+  &__wrap {
+    overflow: hidden;
+  }
+
+  /* Content fades slightly behind the height so the text does not appear to
+     slide out from under the fold. Exit is faster than enter — the system
+     responding, not the user deciding. */
+  &__content {
+    opacity: 0;
+    transition: opacity calc(var(--v-collapse-duration) * 0.6) ease-out;
+  }
+
+  &--expanded &__content {
+    opacity: 1;
+    transition-delay: calc(var(--v-collapse-duration) * 0.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-collapse,
+  .v-collapse__content {
+    transition-duration: 1ms;
+    transition-delay: 0ms;
+  }
+}
