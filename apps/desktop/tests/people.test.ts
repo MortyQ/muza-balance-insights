@@ -135,7 +135,7 @@ describe('PeopleService', () => {
           setConnectionToken: (id, t, r) => people.setToken(id, t, r),
           removeConnection: (id) => people.remove(id),
         },
-        { trusted: () => true, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
+        { trusted: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
       );
     const ev = { sender: {}, senderFrame: { url: 'app://renderer/', parent: null } };
     const outputs: unknown[] = [];

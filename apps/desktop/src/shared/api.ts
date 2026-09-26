@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
 import type { UpdateView } from './update.ts';
 
@@ -87,6 +88,22 @@ export type BalanceApi = {
   setUpdateChecks(enabled: boolean): Promise<UpdateView>;
   /** Returns an unsubscribe function. */
   onUpdate(cb: (v: UpdateView) => void): () => void;
+  /** Allowed while locked. */
+  getLockState(): Promise<LockView>;
+  /** Allowed while locked. A wrong PIN counts towards the pause. */
+  unlockWithPin(pin: string): Promise<LockResult>;
+  /** Allowed while locked. macOS only; the system prompt may fall back to the Mac password. */
+  unlockWithTouchId(): Promise<LockResult>;
+  /** «Заблокировать сейчас»; a no-op while the lock is off. */
+  lockNow(): Promise<void>;
+  /** Sets the first PIN (all triggers on). Refused for a weak PIN. */
+  enableLock(pin: string): Promise<LockView>;
+  changePin(current: string, next: string): Promise<LockResult>;
+  disableLock(auth: DisableAuth): Promise<LockResult>;
+  setLockTriggers(triggers: LockTriggers): Promise<LockView>;
+  setTouchId(enabled: boolean): Promise<LockView>;
+  /** Returns an unsubscribe function. */
+  onLock(cb: (v: LockView) => void): () => void;
 };
 
 // ---------- data for the screen ----------
