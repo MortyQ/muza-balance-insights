@@ -286,8 +286,8 @@
   всегда с `--publish never` (иначе electron-builder на теге в CI публикует сам). Кэш загрузок Electron —
   `apps/desktop/node_modules/.cache/electron` (`electronDownload.cache`, `electron_config_cache`).
   libsql для обеих архитектур Mac — `supportedArchitectures` в `pnpm-workspace.yaml`.
-- Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux и
-  macOS → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
+- Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux,
+  macOS и Windows (на Windows обязательны только тесты `db-libsql` — шифр базы; полный набор пока информационно) → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
   `SHA256SUMS.txt` и attestations. Публикует draft пользователь руками. Ручной запуск — только артефакты, без релиза.
 - Обновление без Developer ID (проверено 25.09.2026): macOS один раз спрашивает пароль к Keychain, токен сохраняется.
 - Прежнее имя до 25.09.2026 — «Balans Insights». Его пути остаются в deny и sandbox `.claude/settings.json`, пока
