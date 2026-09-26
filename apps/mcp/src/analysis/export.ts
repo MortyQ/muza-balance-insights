@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createClient, type InValue } from '@libsql/client';
 import type { Db } from '../db.ts';
+import { accountProviders, providerOf } from '@mono/core/connections';
 import { JAR_PLACEHOLDER, OTHER_PLACEHOLDER, maskDescription, type DescClass } from '@mono/core/masking';
 import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA, type AnalysisTable } from './schema.ts';
 
@@ -57,7 +58,8 @@ export async function exportAnalysis(source: Db, outPath: string = ANALYSIS_DB_P
 
 async function readAccounts(source: Db): Promise<{ rows: Row[]; jarTitles: string[] }> {
   const rs = await source.execute(
-    `SELECT id, kind, type, currency_code, title, goal, balance, credit_limit, updated_at FROM accounts ORDER BY id`,
+    `SELECT a.id, c.participant_id, a.kind, a.type, a.currency_code, a.title, a.goal, a.balance, a.credit_limit, a.updated_at
+     FROM accounts a JOIN connections c ON c.id = a.connection_id ORDER BY a.id`,
   );
   const jarTitles: string[] = [];
   const rows = rs.rows.map((r) => {
@@ -65,6 +67,7 @@ async function readAccounts(source: Db): Promise<{ rows: Row[]; jarTitles: strin
     if (isJar && typeof r.title === 'string' && r.title.trim() !== '') jarTitles.push(r.title.trim());
     return {
       id: r.id,
+      participant_id: r.participant_id,
       kind: r.kind,
       type: r.type,
       currency_code: r.currency_code,
@@ -87,8 +90,9 @@ async function readTransactions(source: Db, jarTitles: ReadonlySet<string>): Pro
             category, scope, is_internal_transfer, transfer_rule, transfer_pair_id, refund_pair_id, is_cancelled, synced_at
      FROM transactions ORDER BY account_id, time, id`,
   );
+  const providers = await accountProviders(source);
   return rs.rows.map((r) => {
-    const masked = maskDescription(String(r.description ?? ''), jarTitles);
+    const masked = maskDescription(String(r.description ?? ''), jarTitles, providerOf(providers, String(r.account_id)));
     return {
       id: r.id,
       account_id: r.account_id,

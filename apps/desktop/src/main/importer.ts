@@ -1,17 +1,20 @@
 // Import orchestration in main: one worker (utilityProcess) per job, a job file for resume after the app is closed,
 // powerSaveBlocker while it runs, progress forwarded to the renderer after validation. Main closes the worker once its
 // final message arrives; a worker that dies without one is restarted on the shared retry policy (src/shared/retry.ts).
-// The token goes to the worker in the `start` message only; nothing sent to the renderer or logged can contain it.
+// All connections import in one job (one worker, one job file). Tokens go to the worker in the `start` message only;
+// nothing sent to the renderer or logged can contain them. A connection without a token is skipped and reported.
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import { kyivStartOfDay, toKyivDate } from '@mono/core/format';
+import type { ProviderId } from '@mono/core/providers/types';
 import { FromWorker, type ToWorker } from '../shared/import-protocol.ts';
-import type { ImportDepth, ImportProgress, StartImportResult } from '../shared/progress.ts';
+import type { ImportDepth, ImportFailure, ImportProgress, StartImportResult } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
 
 export const JOB_FILE = 'import-job.json';
 export const CANCEL_KILL_MS = 10_000;
+export const NO_TOKEN_MESSAGE = 'Токен не сохранён — введи его заново, чтобы импортировать это подключение.';
 export const CRASH_GIVE_UP_MESSAGE = 'Процесс импорта несколько часов подряд неожиданно завершался. Импорт продолжится со следующего запуска.';
 
 /** Start of the Kyiv day `depth` months before today (day clamped: 31 Mar − 1 month = 28/29 Feb). */
@@ -37,7 +40,12 @@ export type ChildLike = {
 
 export type ImporterDeps = {
   fork: () => ChildLike;
-  tokens: { get(): Promise<string | null>; status(): Promise<{ stored: 'secure' | 'memory' | null }> };
+  /** Every connection, in order. */
+  connections: () => Promise<ReadonlyArray<{ connectionId: number; provider: ProviderId }>>;
+  tokens: {
+    get(connectionId: number): Promise<string | null>;
+    status(connectionId: number): Promise<{ stored: 'secure' | 'memory' | null }>;
+  };
   powerSaveBlocker: { start(type: 'prevent-app-suspension'): number; stop(id: number): void };
   userDataDir: string;
   dbPath: string;
@@ -83,16 +91,21 @@ export class Importer {
     return this.launch({ sinceSec: sinceForDepth(depth, this.d.nowSec()), depth, startedAt: this.d.nowSec() }, false);
   }
 
-  /** On launch: an unfinished job resumes by itself if the token is in secure storage; otherwise the UI asks for it. */
+  /**
+   * On launch: an unfinished job resumes by itself for the connections whose token is in secure storage (the rest are
+   * reported as skipped); with none, the UI asks for the tokens.
+   */
   async resumeOnLaunch(): Promise<void> {
     const job = this.readJob();
     if (!job || this.running) return;
-    const { stored } = await this.d.tokens.status();
-    if (stored !== 'secure') {
-      this.emit({ phase: 'needs-token' });
+    const all = await this.d.connections();
+    const secure: number[] = [];
+    for (const c of all) if ((await this.d.tokens.status(c.connectionId)).stored === 'secure') secure.push(c.connectionId);
+    if (secure.length === 0) {
+      this.emit({ phase: 'needs-token', connectionIds: all.map((c) => c.connectionId) });
       return;
     }
-    await this.launch(job, true);
+    await this.launch(job, true, secure);
   }
 
   /** Cooperative cancel; the worker is killed if it hasn't exited within CANCEL_KILL_MS. */
@@ -140,11 +153,19 @@ export class Importer {
     this.child?.kill();
   }
 
-  private async launch(job: Job, resumed: boolean): Promise<StartImportResult> {
+  /** `only`: the connections to take (resume on launch: those with a saved token); absent — every connection. */
+  private async launch(job: Job, resumed: boolean, only?: readonly number[]): Promise<StartImportResult> {
     if (this.running) return { started: false, reason: 'running' };
-    const token = await this.d.tokens.get();
-    if (!token) {
-      if (resumed) this.emit({ phase: 'needs-token' });
+    const all = await this.d.connections();
+    const connections: Array<{ connectionId: number; provider: ProviderId; token: string }> = [];
+    for (const c of all) {
+      if (only && !only.includes(c.connectionId)) continue;
+      const token = await this.d.tokens.get(c.connectionId);
+      if (token) connections.push({ ...c, token });
+    }
+    const skipped = all.filter((c) => !connections.some((x) => x.connectionId === c.connectionId)).map((c) => c.connectionId);
+    if (connections.length === 0) {
+      if (resumed) this.emit({ phase: 'needs-token', connectionIds: skipped });
       return { started: false, reason: 'no-token' };
     }
     this.writeJob(job);
@@ -177,7 +198,11 @@ export class Importer {
       if (msg.type === 'done') {
         this.resetCrashes();
         this.removeJob();
-        this.emit({ phase: 'done', windowsTotal: msg.windowsTotal, transactions: msg.transactions });
+        const failed: ImportFailure[] = [
+          ...msg.failed.map(({ connectionId, message }) => ({ connectionId, message })),
+          ...skipped.map((connectionId) => ({ connectionId, message: NO_TOKEN_MESSAGE })),
+        ];
+        this.emit({ phase: 'done', windowsTotal: msg.windowsTotal, transactions: msg.transactions, failed });
       } else if (msg.kind === 'cancelled') {
         // A user cancel ends the job; any other error keeps it for the next launch.
         this.removeJob();
@@ -206,7 +231,7 @@ export class Importer {
       this.scheduleRestart(job);
     });
     this.emit({ phase: 'starting', resumed });
-    child.postMessage({ type: 'start', dbPath: this.d.dbPath, token, sinceSec: job.sinceSec });
+    child.postMessage({ type: 'start', dbPath: this.d.dbPath, connections, sinceSec: job.sinceSec });
     return { started: true };
   }
 

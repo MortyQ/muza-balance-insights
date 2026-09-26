@@ -10,7 +10,7 @@ import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA } from '../src/analysis/schema.ts';
 import { REPO_ROOT } from '../src/config.ts';
 import { MCP_ROOT } from '../src/paths.ts';
 import { maskDescription } from '@mono/core/masking';
-import { memoryDb } from '@mono/core/test-helpers';
+import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 
 // Every value that must never reach analysis.sqlite.
 const CANARY = {
@@ -28,6 +28,7 @@ const CANARY = {
   fromDescription: 'Від: Canary Fromenko',
   treasuryDescription: 'ГУК Canary обл/18050400',
   newColumn: 'canary-value-in-a-column-added-later',
+  participantLabel: 'Canary Participantenko',
 };
 
 let tmpDir: string;
@@ -47,16 +48,13 @@ afterEach(() => {
 });
 
 async function seed(db: Db): Promise<void> {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, type, currency_code, iban, masked_pan, balance, credit_limit, updated_at)
-          VALUES ('card1', 'card', 'black', 980, ?, ?, 100000, 0, 1)`,
-    args: [CANARY.iban, JSON.stringify([CANARY.pan])],
+  await insertAccountRow(db, {
+    id: 'card1', kind: 'card', type: 'black', currency_code: 980, iban: CANARY.iban, masked_pan: JSON.stringify([CANARY.pan]),
+    balance: 100000, credit_limit: 0, updated_at: 1,
   });
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, currency_code, title, goal, balance, updated_at)
-          VALUES ('jar1', 'jar', 980, ?, 500000, 2000, 1)`,
-    args: [CANARY.jarTitle],
-  });
+  await insertAccountRow(db, { id: 'jar1', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, goal: 500000, balance: 2000, updated_at: 1 });
+  // The participant's label is personal data (a typed name or the holder's name from the bank).
+  await db.execute({ sql: `UPDATE participants SET label = ?, label_source = 'bank'`, args: [CANARY.participantLabel] });
   await db.execute(`INSERT INTO sync_state (account_id, oldest_synced_time, newest_synced_time, last_sync_at) VALUES ('jar1', 1, 2, 3)`);
 
   const tx = (id: string, account: string, time: number, amount: number, description: string, extra: Record<string, string | null> = {}) =>
@@ -106,20 +104,20 @@ describe('masking', () => {
   const jars = new Set([CANARY.jarTitle]);
 
   it('keeps known service strings and hides the jar title', () => {
-    expect(maskDescription('10%', jars)).toEqual({ description: '10%', descClass: 'service' });
-    expect(maskDescription('Щомісячний платіж ', jars)).toEqual({ description: 'Щомісячний платіж', descClass: 'service' });
-    expect(maskDescription(CANARY.jarTitle, jars)).toEqual({ description: '[jar]', descClass: 'service' });
-    expect(maskDescription('Регулярне поповнення «anything»', jars)).toEqual({
+    expect(maskDescription('10%', jars, 'monobank')).toEqual({ description: '10%', descClass: 'service' });
+    expect(maskDescription('Щомісячний платіж ', jars, 'monobank')).toEqual({ description: 'Щомісячний платіж', descClass: 'service' });
+    expect(maskDescription(CANARY.jarTitle, jars, 'monobank')).toEqual({ description: '[jar]', descClass: 'service' });
+    expect(maskDescription('Регулярне поповнення «anything»', jars, 'monobank')).toEqual({
       description: 'Регулярне поповнення «[jar]»',
       descClass: 'service',
     });
   });
 
   it('turns everything else into [other] with a shape-only class', () => {
-    expect(maskDescription(CANARY.personDescription, jars)).toEqual({ description: '[other]', descClass: 'other' });
-    expect(maskDescription(CANARY.cardPanDescription, jars)).toEqual({ description: '[other]', descClass: 'card_pan' });
-    expect(maskDescription(CANARY.fromDescription, jars)).toEqual({ description: '[other]', descClass: 'from_prefix' });
-    expect(maskDescription(CANARY.treasuryDescription, jars)).toEqual({ description: '[other]', descClass: 'treasury' });
+    expect(maskDescription(CANARY.personDescription, jars, 'monobank')).toEqual({ description: '[other]', descClass: 'other' });
+    expect(maskDescription(CANARY.cardPanDescription, jars, 'monobank')).toEqual({ description: '[other]', descClass: 'card_pan' });
+    expect(maskDescription(CANARY.fromDescription, jars, 'monobank')).toEqual({ description: '[other]', descClass: 'from_prefix' });
+    expect(maskDescription(CANARY.treasuryDescription, jars, 'monobank')).toEqual({ description: '[other]', descClass: 'treasury' });
   });
 });
 

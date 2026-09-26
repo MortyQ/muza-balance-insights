@@ -1,12 +1,12 @@
 import { ref } from 'vue';
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { useTokenStore } from '@/entities/token';
+import { useParticipantStore } from '@/entities/participant';
 import { useDeleteDataRequest } from '../api/useDeleteDataRequest.ts';
 import type { UseDeleteDataReturn } from '../types.ts';
 
 export function useDeleteData(): UseDeleteDataReturn {
   const { deleteAllData } = useDeleteDataRequest();
-  const token = useTokenStore();
+  const participant = useParticipantStore();
   const syncStatus = useSyncStatusStore();
   const deleting = ref(false);
   const error = ref('');
@@ -17,7 +17,7 @@ export function useDeleteData(): UseDeleteDataReturn {
     try {
       const { deleted } = await deleteAllData();
       if (!deleted) return false;
-      await token.refresh();
+      await participant.refresh();
       await syncStatus.refresh();
       return true;
     } catch {

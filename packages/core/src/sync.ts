@@ -1,19 +1,30 @@
-import { MAX_STATEMENT_WINDOW_SEC, RESYNC_OVERLAP_SEC, STATEMENT_PAGE_LIMIT } from './constants.ts';
+// The sync loop, for any provider: plan windows, fetch one window through the provider's client, write it with
+// sync_state in one transaction, then the derivation passes. What a request, a page or an account looks like at the
+// bank is the client's (providers/<id>/client.ts).
+import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import { categorize, loadOverrides, recategorize, type CategoryOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
+import { RateLimitError, StatementFormatError } from './errors.ts';
 import { toKyivDate } from './format.ts';
-import { RateLimitError, StatementFormatError, type MonoClient, type StatementItem } from './monoApi.ts';
 import type { Clock } from './platform.ts';
+import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from './connections.ts';
+import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
+import type { NormalizedTx, ProviderClient, ProviderId } from './providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from './cancel.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope } from './scope.ts';
 import { markInternalTransfers } from './transfers.ts';
 
 /**
- * Window length we request. One hour below the API maximum (31 d + 1 h) as a safety margin
+ * Window length we request from `provider`: one hour below its API maximum (Monobank: 31 d + 1 h) as a safety margin
  * against clock differences between us and the bank.
  */
-export const WINDOW_SEC = MAX_STATEMENT_WINDOW_SEC - 3600;
+export function windowSecFor(provider: ProviderId): number {
+  return rulesFor(provider).api.maxWindowSec - 3600;
+}
+
+/** The default for the pure planners: the smallest window of all providers — never too long for any bank. */
+export const WINDOW_SEC = Math.min(...Object.values(PROVIDER_RULES).map((p) => p.api.maxWindowSec)) - 3600;
 
 const MAX_429_RETRIES = 3;
 
@@ -34,14 +45,19 @@ export type SyncEvent =
 
 export type SyncContext = {
   db: Db;
-  api: MonoClient;
+  api: ProviderClient;
+  /**
+   * The connection the client's credential belongs to. Absent: the single connection of the client's provider
+   * (ensureDefaultConnection) — apps/mcp and the desktop app until several connections are supported.
+   */
+  connectionId?: number;
   clock: Clock;
   onEvent?: (e: SyncEvent) => void;
   /** Logs a warning (CLI → stderr). */
   warn?: (msg: string) => void;
   /**
    * Cancels the run (SyncCancelledError): checked before each window and page and after rate-limit waits.
-   * Pass the same signal to createMonoClient so waits and in-flight requests stop too.
+   * Pass the same signal to the provider's client so waits and in-flight requests stop too.
    */
   signal?: AbortSignal;
 };
@@ -55,32 +71,93 @@ export type CommitResult = {
 
 // ---------- accounts ----------
 
+export class ConnectionMismatchError extends Error {
+  override name = 'ConnectionMismatchError';
+}
+
+/** The credential's holder is already another connection of the same bank (the same token or person added twice). */
+export class ConnectionDuplicateError extends Error {
+  override name = 'ConnectionDuplicateError';
+}
+
+/** The connection this sync writes to (see SyncContext.connectionId). */
+export async function syncConnectionId(ctx: SyncContext): Promise<number> {
+  return ctx.connectionId ?? ensureDefaultConnection(ctx.db, ctx.api.provider, Math.floor(ctx.clock.nowMs() / 1000));
+}
+
+/**
+ * Writes the holder's accounts under the sync's connection. The bank's holder id is remembered on the first sync; a
+ * credential of another holder is refused before anything is written (the id itself is never printed), and so is a
+ * holder that is already another connection (ConnectionDuplicateError: the same holder id, or every account already
+ * there). A single account that belongs to another connection is left as it is (warning). A participant whose label
+ * comes from the bank gets the holder's name.
+ */
 export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; jars: number }> {
-  const info = await ctx.api.clientInfo();
+  const connectionId = await syncConnectionId(ctx);
+  const { externalClientId, holderName, accounts: all } = await ctx.api.accounts();
   const now = Math.floor(ctx.clock.nowMs() / 1000);
+
+  const conn = await ctx.db.execute({
+    sql: `SELECT c.external_client_id, c.participant_id, p.label_source
+          FROM connections c JOIN participants p ON p.id = c.participant_id WHERE c.id = ?`,
+    args: [connectionId],
+  });
+  const known = conn.rows[0]?.external_client_id;
+  if (known !== null && known !== undefined && externalClientId !== null && String(known) !== externalClientId) {
+    throw new ConnectionMismatchError('Токен принадлежит другому аккаунту банка, чем это подключение. Данные не изменены.');
+  }
+  const duplicate = 'Этот аккаунт банка уже подключён в другом подключении. Данные не изменены.';
+  if (externalClientId !== null) {
+    const twin = await ctx.db.execute({
+      sql: 'SELECT 1 FROM connections WHERE provider = ? AND external_client_id = ? AND id <> ?',
+      args: [ctx.api.provider, externalClientId, connectionId],
+    });
+    if (twin.rows.length > 0) throw new ConnectionDuplicateError(duplicate);
+  }
+
+  const owners = await ctx.db.execute('SELECT id, connection_id FROM accounts');
+  const ownerOf = new Map(owners.rows.map((r) => [String(r.id), Number(r.connection_id)]));
+  const foreign = all.filter((a) => ownerOf.has(a.id) && ownerOf.get(a.id) !== connectionId);
+  if (foreign.length > 0 && foreign.length === all.length && new Set(foreign.map((a) => ownerOf.get(a.id))).size === 1) {
+    throw new ConnectionDuplicateError(duplicate);
+  }
+  if (foreign.length > 0) {
+    ctx.warn?.(`Счетов уже в другом подключении: ${foreign.length} — оставлены как есть`);
+  }
+  const accounts = all.filter((a) => !foreign.includes(a));
+
   const upsert = `INSERT INTO accounts
-      (id, kind, type, currency_code, iban, masked_pan, title, goal, balance, credit_limit, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, connection_id, kind, type, currency_code, iban, masked_pan, title, goal, balance, credit_limit, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
       kind = excluded.kind, type = excluded.type, currency_code = excluded.currency_code,
       iban = excluded.iban, masked_pan = excluded.masked_pan, title = excluded.title,
       goal = excluded.goal, balance = excluded.balance, credit_limit = excluded.credit_limit,
-      updated_at = excluded.updated_at`;
-  const stmts: Stmt[] = [
-    ...info.accounts.map((a) => ({
-      sql: upsert,
-      args: [
-        a.id, 'card', a.type ?? null, a.currencyCode, a.iban ?? null,
-        a.maskedPan ? JSON.stringify(a.maskedPan) : null, null, null, a.balance, a.creditLimit ?? null, now,
-      ],
-    })),
-    ...info.jars.map((j) => ({
-      sql: upsert,
-      args: [j.id, 'jar', null, j.currencyCode, null, null, j.title ?? null, j.goal ?? null, j.balance, null, now],
-    })),
-  ];
+      updated_at = excluded.updated_at
+    WHERE accounts.connection_id = excluded.connection_id`;
+  const stmts: Stmt[] = accounts.map((a) => ({
+    sql: upsert,
+    args: [
+      a.id, connectionId, a.kind, a.type, a.currencyCode, a.iban, a.maskedPan ? JSON.stringify(a.maskedPan) : null,
+      a.title, a.goal, a.balance, a.creditLimit, now,
+    ],
+  }));
+  if (known === null && externalClientId !== null) {
+    stmts.push({ sql: 'UPDATE connections SET external_client_id = ? WHERE id = ?', args: [externalClientId, connectionId] });
+  }
+  if (conn.rows[0]?.label_source === 'bank') {
+    const name = holderName?.replace(/\s+/g, ' ').trim().slice(0, PARTICIPANT_LABEL_MAX);
+    if (name) {
+      stmts.push({
+        sql: `UPDATE participants SET label = ? WHERE id = ? AND label_source = 'bank'`,
+        args: [name, Number(conn.rows[0].participant_id)],
+      });
+    } else {
+      ctx.warn?.('Банк не прислал имя владельца — подпись участника не изменена');
+    }
+  }
   if (stmts.length > 0) await ctx.db.batch(stmts);
-  const counts = { cards: info.accounts.length, jars: info.jars.length };
+  const counts = { cards: accounts.filter((a) => a.kind === 'card').length, jars: accounts.filter((a) => a.kind === 'jar').length };
   ctx.onEvent?.({ type: 'accounts', ...counts });
   return counts;
 }
@@ -100,12 +177,16 @@ export type AccountSelection = {
 /**
  * Default sync scope: every card + jars that have balance > 0 OR are already tracked (have sync_state).
  * A tracked jar stays in scope after it is emptied — otherwise its final withdrawal would never sync.
+ * With `connectionId`: only that connection's accounts (a credential can fetch only its own holder's statements).
  */
-export async function defaultAccountSelection(db: Db): Promise<AccountSelection> {
-  const rs = await db.execute(`
-    SELECT a.id, a.kind, a.title, a.balance, s.account_id IS NOT NULL AS tracked
-    FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
-    ORDER BY a.kind = 'jar', a.id`);
+export async function defaultAccountSelection(db: Db, connectionId?: number): Promise<AccountSelection> {
+  const rs = await db.execute({
+    sql: `SELECT a.id, a.kind, a.title, a.balance, s.account_id IS NOT NULL AS tracked
+          FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
+          ${connectionId === undefined ? '' : 'WHERE a.connection_id = ?'}
+          ORDER BY a.kind = 'jar', a.id`,
+    args: connectionId === undefined ? [] : [connectionId],
+  });
   const out: AccountSelection = { selected: [], skippedJars: [] };
   for (const r of rs.rows) {
     const id = String(r.id);
@@ -133,14 +214,19 @@ export function splitWindows(from: number, to: number, windowSec = WINDOW_SEC): 
  *  2. backward: from oldest down to `since` (newest first) — only if `since` is older than the coverage.
  * Without coverage: from now down to `since`, newest first.
  */
-export function planAccountWindows(state: SyncState | null, sinceSec: number | null, nowSec: number): Window[] {
+export function planAccountWindows(
+  state: SyncState | null,
+  sinceSec: number | null,
+  nowSec: number,
+  windowSec = WINDOW_SEC,
+): Window[] {
   if (!state) {
     if (sinceSec === null || sinceSec >= nowSec) return [];
-    return splitWindows(sinceSec, nowSec).reverse();
+    return splitWindows(sinceSec, nowSec, windowSec).reverse();
   }
   const forwardFrom = Math.max(state.oldest, state.newest - RESYNC_OVERLAP_SEC);
-  const forward = splitWindows(forwardFrom, nowSec);
-  const backward = sinceSec !== null && sinceSec < state.oldest ? splitWindows(sinceSec, state.oldest).reverse() : [];
+  const forward = splitWindows(forwardFrom, nowSec, windowSec);
+  const backward = sinceSec !== null && sinceSec < state.oldest ? splitWindows(sinceSec, state.oldest, windowSec).reverse() : [];
   return [...forward, ...backward];
 }
 
@@ -160,30 +246,13 @@ export async function getSyncState(db: Db, accountId: string): Promise<SyncState
 
 // ---------- one window: fetch all pages, then commit atomically ----------
 
-/**
- * Fetches every page of one window. Per the Monobank docs, items come newest first and a response of
- * exactly 500 items means "there may be more": repeat with `to` = time of the last (oldest) item until
- * fewer than 500 come back. Items at that boundary second come back twice → dedupe by id.
- * Nothing is written to the DB here: if any page fails, the whole window is simply retried next time.
- */
-export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window): Promise<StatementItem[]> {
-  const byId = new Map<string, StatementItem>();
-  let to = w.to;
-  for (let page = 1; ; page++) {
+/** Every operation of one window, all pages (the client's job). Nothing is written to the DB here. */
+export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window): Promise<NormalizedTx[]> {
+  throwIfCancelled(ctx.signal);
+  return ctx.api.statementWindow(accountId, w, (page, received) => {
+    ctx.onEvent?.({ type: 'page', accountId, page, received });
     throwIfCancelled(ctx.signal);
-    const items = await ctx.api.statement(accountId, w.from, to);
-    for (const it of items) byId.set(it.id, it);
-    ctx.onEvent?.({ type: 'page', accountId, page, received: items.length });
-    if (items.length < STATEMENT_PAGE_LIMIT) break;
-    // min() rather than items.at(-1): identical for newest-first order, and robust if it ever isn't.
-    const oldest = Math.min(...items.map((i) => i.time));
-    if (oldest >= to) {
-      // ≥ 500 transactions within one second — paginating by time cannot make progress.
-      throw new Error(`Пагинация не продвигается для счёта ${accountId}: ≥ ${STATEMENT_PAGE_LIMIT} транзакций в одну секунду`);
-    }
-    to = oldest;
-  }
-  return [...byId.values()];
+  });
 }
 
 const UPSERT_TX = `INSERT INTO transactions (
@@ -203,11 +272,17 @@ const UPSERT_TX = `INSERT INTO transactions (
 // On conflict, category / is_internal_transfer / transfer_* are left alone: the pass after the commit
 // recomputes them for the window (a row may already be marked internal).
 
-function upsertStatement(accountId: string, it: StatementItem, syncedAt: number, overrides: readonly CategoryOverride[]): Stmt {
+function upsertStatement(
+  accountId: string,
+  it: NormalizedTx,
+  syncedAt: number,
+  overrides: readonly CategoryOverride[],
+  provider: ProviderId,
+): Stmt {
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
-    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false },
+    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false, isFamilyTransfer: false, provider },
     overrides,
   );
   // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).
@@ -232,7 +307,7 @@ export async function commitWindow(
   ctx: SyncContext,
   accountId: string,
   w: Window,
-  items: StatementItem[],
+  items: NormalizedTx[],
 ): Promise<CommitResult> {
   const { db } = ctx;
   const nowSec = Math.floor(ctx.clock.nowMs() / 1000);
@@ -258,7 +333,7 @@ export async function commitWindow(
   }
 
   const overrides = await loadOverrides(db);
-  const stmts: Stmt[] = items.map((it) => upsertStatement(accountId, it, nowSec, overrides));
+  const stmts: Stmt[] = items.map((it) => upsertStatement(accountId, it, nowSec, overrides, ctx.api.provider));
   if (cancelIds.length > 0) {
     stmts.push({
       sql: `UPDATE transactions SET is_cancelled = 1, synced_at = ?
@@ -322,10 +397,10 @@ export type HistoryOptions = {
 /** Plans all accounts up front (so the CLI can print an estimate), then runs them. */
 export async function planHistory(ctx: SyncContext, opts: HistoryOptions): Promise<Map<string, Window[]>> {
   const nowSec = Math.floor(ctx.clock.nowMs() / 1000);
-  const ids = opts.accountIds ?? (await defaultAccountSelection(ctx.db)).selected;
+  const ids = opts.accountIds ?? (await defaultAccountSelection(ctx.db, await syncConnectionId(ctx))).selected;
   const plan = new Map<string, Window[]>();
   for (const id of ids) {
-    plan.set(id, planAccountWindows(await getSyncState(ctx.db, id), opts.sinceSec, nowSec));
+    plan.set(id, planAccountWindows(await getSyncState(ctx.db, id), opts.sinceSec, nowSec, windowSecFor(ctx.api.provider)));
   }
   return plan;
 }
@@ -356,20 +431,59 @@ export function interleavePlan(plan: ReadonlyMap<string, readonly Window[]>): Pl
   return out;
 }
 
+async function runPlannedWindow(ctx: SyncContext, p: PlannedWindow): Promise<void> {
+  const { accountId, window: w, index, total, round } = p;
+  throwIfCancelled(ctx.signal);
+  ctx.onEvent?.({ type: 'window-start', accountId, window: w, index, total, round });
+  try {
+    await syncWindow(ctx, accountId, w);
+  } catch (err) {
+    if (err instanceof StatementFormatError) {
+      throw new Error(describeFormatError(err, accountId, w, index, total), { cause: err });
+    }
+    throw err;
+  }
+}
+
 export async function runPlan(ctx: SyncContext, plan: Map<string, Window[]>): Promise<void> {
   for (const [accountId, windows] of plan) ctx.onEvent?.({ type: 'plan', accountId, windows: windows.length });
-  for (const { accountId, window: w, index, total, round } of interleavePlan(plan)) {
-    throwIfCancelled(ctx.signal);
-    ctx.onEvent?.({ type: 'window-start', accountId, window: w, index, total, round });
-    try {
-      await syncWindow(ctx, accountId, w);
-    } catch (err) {
-      if (err instanceof StatementFormatError) {
-        throw new Error(describeFormatError(err, accountId, w, index, total), { cause: err });
+  for (const p of interleavePlan(plan)) await runPlannedWindow(ctx, p);
+}
+
+/** One connection's part of a multi-connection run: its own context (client, credential, events) and plan. */
+export type ConnectionRun = { connectionId: number; ctx: SyncContext; plan: ReadonlyMap<string, readonly Window[]> };
+
+export type ConnectionFailure = { connectionId: number; error: unknown };
+
+/**
+ * Several connections in one run: their windows take turns (A1, B1, A2, B2 …; within a connection the order of
+ * interleavePlan). Each credential has its own request slot, so while A waits for its bank's limit, B's window is
+ * fetched. An error for which `isConnectionFailure` says true (a rejected credential, …) stops only that connection:
+ * it is returned in the list and the others go on. Any other error (cancellation, network, …) stops the whole run.
+ */
+export async function runPlans(
+  runs: readonly ConnectionRun[],
+  isConnectionFailure: (err: unknown) => boolean = () => false,
+): Promise<ConnectionFailure[]> {
+  for (const { ctx, plan } of runs) {
+    for (const [accountId, windows] of plan) ctx.onEvent?.({ type: 'plan', accountId, windows: windows.length });
+  }
+  const queues = runs.map((r) => ({ run: r, windows: interleavePlan(r.plan) }));
+  const failed: ConnectionFailure[] = [];
+  const rounds = Math.max(0, ...queues.map((q) => q.windows.length));
+  for (let k = 0; k < rounds; k++) {
+    for (const { run, windows } of queues) {
+      const p = windows[k];
+      if (!p || failed.some((f) => f.connectionId === run.connectionId)) continue;
+      try {
+        await runPlannedWindow(run.ctx, p);
+      } catch (err) {
+        if (!isConnectionFailure(err)) throw err;
+        failed.push({ connectionId: run.connectionId, error: err });
       }
-      throw err;
     }
   }
+  return failed;
 }
 
 export type RecentStatus =
@@ -385,7 +499,7 @@ export type RecentStatus =
  */
 export async function syncRecent(ctx: SyncContext, accountIds?: string[]): Promise<RecentStatus[]> {
   const nowSec = Math.floor(ctx.clock.nowMs() / 1000);
-  const ids = accountIds ?? (await defaultAccountSelection(ctx.db)).selected;
+  const ids = accountIds ?? (await defaultAccountSelection(ctx.db, await syncConnectionId(ctx))).selected;
   // Stalest first, so repeated calls under the rate limit eventually refresh everything.
   const withState = await Promise.all(ids.map(async (id) => ({ id, state: await getSyncState(ctx.db, id) })));
   withState.sort((a, b) => (a.state?.lastSyncAt ?? 0) - (b.state?.lastSyncAt ?? 0));
@@ -397,7 +511,7 @@ export async function syncRecent(ctx: SyncContext, accountIds?: string[]): Promi
       out.push({ accountId: id, status: 'not-imported' });
       continue;
     }
-    const windows = planAccountWindows(state, null, nowSec);
+    const windows = planAccountWindows(state, null, nowSec, windowSecFor(ctx.api.provider));
     if (windows.length > 1) {
       out.push({ accountId: id, status: 'needs-full-sync', windows: windows.length });
       continue;

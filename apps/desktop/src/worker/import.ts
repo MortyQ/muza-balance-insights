@@ -1,8 +1,10 @@
 // utilityProcess entry: the import runs here so the main process never blocks and a crash can't take it down.
-// It opens its own connection to the same database (WAL), gets the token once in `start`, and reaches the network
-// only through the allowlist. One job per process: main forks a fresh worker for every import.
+// It opens its own connection to the same database (WAL), gets the tokens once in `start`, and reaches the network
+// only through the allowlist — each provider's client only its own services. One job per process: main forks a fresh worker for every import.
 import { net } from 'electron';
 import { migrate, type Db } from '@mono/core/db';
+import type { FetchLike } from '@mono/core/platform';
+import type { ProviderId } from '@mono/core/providers/types';
 import { openLibsql } from '@mono/db-libsql';
 import { allowlistedFetch } from '../net/allowlist.ts';
 import { FromWorker, ToWorker } from '../shared/import-protocol.ts';
@@ -11,6 +13,11 @@ import { runImport } from './run-import.ts';
 
 /** Main closes the worker once the final message (done / error) arrives; this exit is only a fallback. */
 const EXIT_FALLBACK_MS = 5_000;
+
+// Each provider's client reaches only its own services: a bank token can never go to another trusted service.
+const FETCH: Record<ProviderId, FetchLike> = {
+  monobank: allowlistedFetch(net.fetch, ['monobank']),
+};
 
 const port = process.parentPort;
 const controller = new AbortController();
@@ -38,9 +45,9 @@ port.on('message', (event: { data: unknown }) => {
       await migrate(db, Math.floor(Date.now() / 1000));
       await runImport({
         db,
-        fetch: allowlistedFetch(net.fetch, ['monobank']),
+        fetchFor: (provider) => FETCH[provider],
         clock: abortableClock,
-        token: msg.token,
+        connections: msg.connections,
         sinceSec: msg.sinceSec,
         signal: controller.signal,
         emit: send,

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { kyivStartOfDay } from '@mono/core/format';
-import { CANCEL_KILL_MS, CRASH_GIVE_UP_MESSAGE, Importer, JOB_FILE, sinceForDepth, type ChildLike } from '../src/main/importer.ts';
+import { CANCEL_KILL_MS, CRASH_GIVE_UP_MESSAGE, Importer, JOB_FILE, NO_TOKEN_MESSAGE, sinceForDepth, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
 import type { ImportProgress } from '../src/shared/progress.ts';
@@ -38,7 +38,10 @@ class FakeChild extends EventEmitter implements ChildLike {
   }
 }
 
-function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null } = {}) {
+type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null };
+
+/** Default: one Monobank connection (id 1) whose token is in secure storage. `connections` replaces it. */
+function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null; connections?: Conn[] } = {}) {
   const children: FakeChild[] = [];
   const sent: ImportProgress[] = [];
   const logs: string[] = [];
@@ -46,13 +49,16 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
   const timers: Array<() => void> = [];
   const clock = { now: NOW };
   const token = opts.token === undefined ? TOKEN : opts.token;
+  const conns: Conn[] = opts.connections ?? [{ connectionId: 1, token, stored: opts.stored ?? (token ? 'secure' : null) }];
+  const byId = (id: number) => conns.find((c) => c.connectionId === id);
   const importer = new Importer({
     fork: () => {
       const c = new FakeChild();
       children.push(c);
       return c;
     },
-    tokens: { get: async () => token, status: async () => ({ stored: opts.stored ?? (token ? 'secure' : null) }) },
+    connections: async () => conns.map((c) => ({ connectionId: c.connectionId, provider: 'monobank' as const })),
+    tokens: { get: async (id) => byId(id)?.token ?? null, status: async (id) => ({ stored: byId(id)?.stored ?? null }) },
     powerSaveBlocker: {
       start: (t) => (blocker.started.push(t), blocker.next++),
       stop: (id) => void blocker.stopped.push(id),
@@ -88,7 +94,14 @@ describe('Importer', () => {
     expect(JSON.parse(fs.readFileSync(job(), 'utf8'))).toEqual({ sinceSec: kyivStartOfDay('2025-12-31'), depth: 3, startedAt: NOW });
     expect(blocker.started).toEqual(['prevent-app-suspension']);
     expect(children).toHaveLength(1);
-    expect(children[0]!.sent).toEqual([{ type: 'start', dbPath: path.join(dir, 'monobank.db'), token: TOKEN, sinceSec: kyivStartOfDay('2025-12-31') }]);
+    expect(children[0]!.sent).toEqual([
+      {
+        type: 'start',
+        dbPath: path.join(dir, 'monobank.db'),
+        connections: [{ connectionId: 1, provider: 'monobank', token: TOKEN }],
+        sinceSec: kyivStartOfDay('2025-12-31'),
+      },
+    ]);
     expect(sent).toEqual([{ phase: 'starting', resumed: false }]);
     expect(JSON.stringify({ sent, logs, job: fs.readFileSync(job(), 'utf8') })).not.toContain(TOKEN);
   });
@@ -109,11 +122,11 @@ describe('Importer', () => {
   it('done → job removed, blocker stopped, "done" sent', async () => {
     const { importer, children, sent, blocker } = setup();
     await importer.start(1);
-    children[0]!.reply({ type: 'done', windowsTotal: 2, transactions: 10 });
+    children[0]!.reply({ type: 'done', windowsTotal: 2, transactions: 10, failed: [] });
     children[0]!.exit();
     expect(fs.existsSync(job())).toBe(false);
     expect(blocker.stopped).toEqual([1]);
-    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 2, transactions: 10 });
+    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [] });
     expect(importer.running).toBe(false);
   });
 
@@ -135,7 +148,7 @@ describe('Importer', () => {
     expect(children[0]!.killed).toBe(true);
     expect(sent.at(-1)).toEqual({ phase: 'error', message: 'Monobank ответил 502.' });
     expect(logs).toEqual(['import: error: MonoApiError status=502', 'import: worker exit code=0']);
-    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 1 }); // late messages are ignored
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 1, failed: [] }); // late messages are ignored
     expect(sent.at(-1)).toMatchObject({ phase: 'error' });
     expect(importer.running).toBe(false);
   });
@@ -322,8 +335,8 @@ describe('Importer', () => {
     const { importer, children, sent } = setup({ token: null, stored: null });
     await importer.resumeOnLaunch();
     expect(children).toHaveLength(0);
-    expect(sent).toEqual([{ phase: 'needs-token' }]);
-    expect(importer.lastProgress).toEqual({ phase: 'needs-token' });
+    expect(sent).toEqual([{ phase: 'needs-token', connectionIds: [1] }]);
+    expect(importer.lastProgress).toEqual({ phase: 'needs-token', connectionIds: [1] });
   });
 
   it('resume on launch: automatic only from secure storage — a token held in memory does not count', async () => {
@@ -331,7 +344,7 @@ describe('Importer', () => {
     const { importer, children, sent } = setup({ token: TOKEN, stored: 'memory' });
     await importer.resumeOnLaunch();
     expect(children).toHaveLength(0);
-    expect(sent).toEqual([{ phase: 'needs-token' }]);
+    expect(sent).toEqual([{ phase: 'needs-token', connectionIds: [1] }]);
   });
 
   it('no job or a corrupted job file → nothing happens', async () => {
@@ -344,6 +357,53 @@ describe('Importer', () => {
     await a.importer.resumeOnLaunch();
     expect(a.children).toHaveLength(0);
     expect(a.sent).toEqual([]);
+  });
+
+  it('several connections: one worker gets every token; one without a token is skipped and reported in done', async () => {
+    const { importer, children, sent, logs } = setup({
+      connections: [
+        { connectionId: 1, token: TOKEN, stored: 'secure' },
+        { connectionId: 2, token: null },
+        { connectionId: 3, token: `${TOKEN}-her`, stored: 'memory' },
+      ],
+    });
+    expect(await importer.start(1)).toEqual({ started: true });
+    expect(children).toHaveLength(1);
+    expect(children[0]!.sent[0]).toMatchObject({
+      connections: [
+        { connectionId: 1, provider: 'monobank', token: TOKEN },
+        { connectionId: 3, provider: 'monobank', token: `${TOKEN}-her` },
+      ],
+    });
+    children[0]!.reply({ type: 'done', windowsTotal: 4, transactions: 9, failed: [{ connectionId: 3, kind: 'auth', message: 'Токен не принят' }] });
+    expect(sent.at(-1)).toEqual({
+      phase: 'done',
+      windowsTotal: 4,
+      transactions: 9,
+      failed: [
+        { connectionId: 3, message: 'Токен не принят' },
+        { connectionId: 2, message: NO_TOKEN_MESSAGE },
+      ],
+    });
+    expect(JSON.stringify({ sent, logs })).not.toContain(TOKEN);
+  });
+
+  it('resume on launch with several connections: only those with a saved token; none saved → ask for all', async () => {
+    fs.writeFileSync(job(), JSON.stringify({ sinceSec: 1_700_000_000, depth: 3, startedAt: 1 }));
+    const a = setup({
+      connections: [
+        { connectionId: 1, token: `${TOKEN}-mem`, stored: 'memory' },
+        { connectionId: 2, token: TOKEN, stored: 'secure' },
+      ],
+    });
+    await a.importer.resumeOnLaunch();
+    expect(a.children[0]!.sent[0]).toMatchObject({ connections: [{ connectionId: 2, token: TOKEN }] });
+    a.importer.shutdown();
+
+    const b = setup({ connections: [{ connectionId: 1, token: null }, { connectionId: 2, token: `${TOKEN}-mem`, stored: 'memory' }] });
+    await b.importer.resumeOnLaunch();
+    expect(b.children).toHaveLength(0);
+    expect(b.sent).toEqual([{ phase: 'needs-token', connectionIds: [1, 2] }]);
   });
 
   it('shutdown (app quit) kills the worker and keeps the job for resume', async () => {

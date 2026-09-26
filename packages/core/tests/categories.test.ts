@@ -3,7 +3,7 @@ import { categorize, recategorize, type CategorizeInput, type CategoryOverride }
 import type { Db } from '../src/db.ts';
 import { insertAccount, memoryDb } from './helpers.ts';
 
-const base: CategorizeInput = { description: '', mcc: 5411, amount: -100, counterName: null, isInternalTransfer: false };
+const base: CategorizeInput = { description: '', mcc: 5411, amount: -100, counterName: null, isInternalTransfer: false, isFamilyTransfer: false, provider: 'monobank' };
 const cat = (over: Partial<CategorizeInput>, overrides: CategoryOverride[] = []) => categorize({ ...base, ...over }, overrides);
 
 describe('categorize', () => {

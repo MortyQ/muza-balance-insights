@@ -25,12 +25,47 @@
 
 - pnpm 12.6.0 установлен глобально через npm (`packageManager` в корневом `package.json`), Corepack не используется.
   Node — `.nvmrc` (22).
-- `packages/core` (`@mono/core`) — платформенно-независимое ядро: клиент API, sync, категории, переводы, возвраты,
+- `packages/core` (`@mono/core`) — платформенно-независимое ядро: провайдеры банков (сейчас Monobank), sync, категории, переводы, возвраты,
   scope, агрегаты, миграции и интерфейс `Db`. Без Node, браузера и глобалов: `fetch`, часы, логгер, id передаются
   снаружи (`packages/core/src/platform.ts`). Проверки: `packages/core/tests/purity.test.ts` и `tsconfig.json` ядра
   (`lib: ES2023 + WebWorker`, `types: []`). Runtime-зависимости — только `zod` и `@date-fns/tz`.
   Экспорт — TS-исходники по модулю: `@mono/core/<модуль>` → `src/<модуль>.ts`, без сборки.
   Доменные тесты — в `packages/core/tests`, на Node-адаптере (devDependency).
+- **Провайдеры банков** (`packages/core/src/providers/`, спека — `reports/2026-09-26-connections-spec.md`):
+  - контракт — `providers/types.ts` (`ProviderRules`, `ProviderClient`, `NormalizedAccount` / `NormalizedTx`), без импортов;
+  - провайдер = две половины: **правила** `providers/<id>/rules.ts` (чистые: признаки строки, маскировка, лимиты API) и
+    **клиент** `providers/<id>/client.ts` (сеть, страницы, 429). Разметка (`rederive`) клиента не загружает;
+  - домен (`transfers`, `refunds`, `categories`, `scope`, `summaries`, `search`, `queries`, `masking`, `sync`) входит в
+    провайдеры только через `providers/types.ts` и реестр правил `providers/rules.ts`; провайдеры друг друга не импортируют;
+    в коде домена нет MCC 4829/6012, текстов Monobank, `'fop'` и хоста банка. Всё это проверяет
+    `packages/core/tests/providers-boundary.test.ts` (с «ломающими» примерами);
+  - Monobank: `providers/monobank/{rules,descriptions,client,constants}.ts`;
+  - провайдер счёта — `connections.provider` его подключения (`accountProviders` / `providerOf` в
+    `packages/core/src/connections.ts`); счёт без подключения — ошибка, а не значение по умолчанию;
+  - общее для всех клиентов: слот запросов `src/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/errors.ts`
+    (`RateLimitError`, `StatementFormatError`).
+- **Участники и подключения** (миграция v8): `participants` (кто; подпись только локально, в копию не идёт) →
+  `connections` (провайдер + учётные данные; `external_client_id` — id владельца в банке, у Monobank `clientId`) →
+  `accounts.connection_id` (обязателен). Существующие данные при миграции → участник «Я» + подключение `monobank` (id 1).
+  - `syncAccounts` пишет счета под подключением контекста (`SyncContext.connectionId`, без него —
+    `ensureDefaultConnection`: единственное подключение провайдера, так работают mcp с токеном из `.env` и десктоп до
+    поддержки нескольких). Id владельца запоминается при первом синке; токен другого владельца — `ConnectionMismatchError`
+    до любой записи (сам id не печатается). Счёт другого подключения не перезаписывается (предупреждение).
+  - План импорта — только счета своего подключения (`defaultAccountSelection(db, connectionId)`).
+  - Слот запросов (`api_calls.connection_id`) — на подключение: лимит банка на учётные данные; `NULL` — вызовы без
+    подключения (тесты). `next_request_at` в статусе — самый поздний из слотов.
+  - Тестовые счета — через `insertAccountRow` / `insertAccount` (`@mono/core/test-helpers`): они привязывают счёт к
+    тестовому подключению Monobank.
+  - Управление людьми и подключениями — `packages/core/src/participants.ts` (`listParticipants`, `addParticipant`,
+    `renameParticipant`, `listConnections` без `external_client_id`, `addConnection`, `deleteConnection`: данные подключения
+    одной транзакцией, пустой участник удаляется, затем полный `rederiveCore`).
+  - Имя участника (миграция v9, `participants.label_source`): `user` — ввёл пользователь, банк не меняет; `bank` — имя
+    владельца из банка (`ProviderAccounts.holderName`, у Monobank `name` из `client-info`) пишется при каждом
+    `syncAccounts`, переименование → `user`. Имя — персональные данные: только в базе, не в копии, логах, отчёте recategorize.
+  - Тот же владелец во втором подключении (тот же `external_client_id` или все счета уже в одном другом подключении) —
+    `ConnectionDuplicateError` до любой записи.
+  - Несколько подключений в одном прогоне — `runPlans`: окна по кругу между подключениями, у каждого свой слот;
+    ошибка, которую вызывающий признал ошибкой подключения, выключает только его, остальное останавливает прогон.
 - `packages/db-libsql` (`@mono/db-libsql`) — Node-адаптер libsql → `Db` (PRAGMA, WAL). Не зависит от core (типы
   повторены, расхождение ловит typecheck ядра), чтобы не было цикла зависимостей. Нужен apps/mcp и main-процессу Electron.
 - `apps/mcp` (`@mono/mcp`) — MCP-сервер, CLI, скрипты, обезличенная копия (`analysis/*`), `.env`/токен (`config.ts`).
@@ -86,8 +121,9 @@
   `analysis/analysis.sqlite` (read-only, один SELECT/WITH, не больше 500 строк).
   Копию пересобирает пользователь (`pnpm --filter @mono/mcp export:analysis`), автоматически — после sync и recategorize.
 - Что в копии: только колонки из whitelist `apps/mcp/src/analysis/schema.ts`. `description` замаскирован
-  (`packages/core/src/masking.ts`): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
-  плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`.
+  (`packages/core/src/masking.ts` → `maskDescription` провайдера): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
+  плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`. У счёта — `participant_id` (число;
+  подпись участника в копию не идёт).
   Новую колонку или шаблон добавлять в whitelist/маскировку только после ок пользователя.
 - Доступ дополнительно ограничен `permissions.deny` и sandbox в `.claude/settings.json`.
   Не пытаться обойти ни то, ни другое.
@@ -131,11 +167,18 @@
   кроме «Переказ на картку»). После `pair_fx` идёт `pair_fee`: одна валюта,
   `out.amount + out.commission_rate = −in.amount`, комиссия > 0. Пары строго один-к-одному: минимальный Δt,
   при равенстве — id.
-- Шаблоны описаний — один источник в `packages/core/src/masking.ts`, их используют и маскировка, и разметка.
+- Шаблоны описаний Monobank — один источник в `packages/core/src/providers/monobank/descriptions.ts`, их используют и
+  маскировка, и разметка (через правила провайдера).
 - «Щомісячний платіж» → «рассрочки и кредиты», не internal. Двойного счёта с исходной покупкой нет
   (проверено на истории с 01.01; серия −1345 ₴ покрыта частично, принята как есть).
 - Комиссия: строка с `commission_rate > 0` в агрегатах делится на тело (`amount + commission_rate`)
   и комиссию → «комиссии банка». У internal-строки тело исключается, комиссия остаётся тратой.
+- **Переводы внутри семьи** (`transfer_rule = 'family'`): пара (`pair` / `pair_fx` / `pair_fee`) или совпадение `iban`
+  между счетами **разных участников**. `is_internal_transfer = 0`; категория — «семье» у отправителя и «поступления» у
+  получателя (раньше оверрайдов, как internal); не возврат. Итоги (`spendingSummary`, `comparePeriods`, `incomeSummary`):
+  без `participantId` — вся семья, `family` исключается как internal (комиссия остаётся тратой); с `participantId` —
+  только счета участника, `family` — трата «семье» / доход с источником `family`. С одним участником `family` не
+  возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
   в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).
@@ -187,8 +230,8 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
-- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`,
-  пути — `apps/mcp/src/paths.ts`.
+- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
+  (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.
 
 ## Фаза 5: MCP-сервер
 
@@ -272,8 +315,26 @@
   `@mono/*` в devDependencies десктопа: их вшивает electron-vite, в asar они не попадают.
 - Этап 1 закрыт 25.09.2026: Electron Security Checklist 20/20 (таблица — `reports/2026-09-25-stage1-step9-security-checklist.md`,
   пункты 15 и 16 — `apps/desktop/tests/checklist.test.ts`), итоги трат месяца на экране совпали с MCP.
-- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токен → остановка worker (`Importer.stop`,
-  kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, токен, задача импорта).
+- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токены → остановка worker (`Importer.stop`,
+  kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, старый `token.bin`, задача импорта) и
+  папки `APP_DIRS` (`tokens/`).
+- Токены — `TokenVault` (`apps/desktop/src/main/token.ts`): файл на подключение `tokens/<connectionId>.bin` (safeStorage,
+  0600), статус и «ввести заново» — по подключению. Старый `token.bin` при запуске переносится к подключению Monobank
+  как есть, без расшифровки. Форма токена провайдера — `apps/desktop/src/net/providers.ts` (`DESKTOP_PROVIDERS`, запись на
+  каждый провайдер ядра — `tests/providers.test.ts`).
+- Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
+  `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
+  банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`); сеть — таблица `FETCH` в
+  `worker/import.ts`, у каждого провайдера `allowlistedFetch(net.fetch, [его сервисы])` буквально. Отклонённый токен
+  (`auth`) или чужой / уже подключённый владелец (`connection`) выключает только своё подключение: итог — `done` с
+  `failed`; если не прошло ни одно — `error` первого. Подключение без токена main пропускает и добавляет в `failed`.
+  При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
+- IPC людей и подключений (`apps/desktop/src/main/people.ts`, `PeopleService`): `listPeople` (подпись участника — единственное
+  имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
+  { fromBank: true }, provider, token, remember })` (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
+  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `setConnectionToken`,
+  `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
+  `spendingSummary` / `getBalances` принимают `participantId`.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
@@ -300,13 +361,20 @@
   - сегменты слайса: `<Name>Feature.vue` (корень фичи), `api/`, `composables/` (логика, явный `Use<X>Return` в `types.ts`),
     `components/` (только отображение), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
     (чистые функции); страницы — тонкие оболочки над фичами и виджетами;
-  - общее состояние — Pinia в `entities`: `token` (статус токена), `sync-status` (статус данных и `version`, на который
-    перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts`;
+  - общее состояние — Pinia в `entities`: `participant` (люди, подключения, статусы токенов, выбор «Вся семья / человек» —
+    `selectedId`, запоминается в `localStorage` только для удобства), `sync-status` (статус данных и `version`, на который
+    перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts` (люди обновляются на
+    `needs-token`, в начале окон импорта и в его конце);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
-  имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): подключение — только если нет ни токена,
-  ни данных; данные без токена → главный с плашкой; настройки доступны всегда.
-  Банки — `entities/bank` (Monobank + «Скоро»), подключение в main пока только Monobank (`setToken`/`clearToken`).
+  имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
+  одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
+  Банки — `entities/bank` (Monobank + «Скоро»), подключение — `addConnection` в main (пока только Monobank).
+- Простой UI людей (шаг 4e, до редизайна): настройки → «Люди и подключения» (`features/people`: имя и «Переименовать»,
+  подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий человек или
+  новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран — `ConnectFirstFeature` той же
+  формой с человеком «Я»; на главном — `features/participant-switch` («Вся семья / имена», только если людей больше одного),
+  траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
 
@@ -335,10 +403,11 @@
     в dev не проверяется. Релизы публикуются обычными, не pre-release (`/releases/latest`).
   - Ключ: `scripts/update-keygen.mjs` (только автор), подпись — `scripts/update-sign.mjs` в release job.
   - Не проверено на живом обновлении: фильтр сессии на редиректах GitHub, SmartScreen при тихой установке, карантин `.dmg`.
-- **Живое обновление при импорте**: после каждого записанного окна (тик прогресса `windows` с новым `windowsDone`)
-  обновлять статус данных и карточки/график, чтобы данные появлялись по мере загрузки, а не только в конце
-  (сейчас `refreshData` — только на `done` / `cancelled` / `error`). Не чаще раза в несколько секунд, без мигания уже
-  показанного (старые цифры остаются до прихода новых), период «неполный» виден явно.
+- **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`
+  не чаще раза в `LIVE_REFRESH_MS` (3 с, `throttle` из `shared/lib`, последний тик не теряется), конец импорта — ещё раз.
+  Экраны перезагружаются по `version` «тихо» (`useAsyncData(…, { quiet })`: без `loading`, старые цифры до прихода новых);
+  пока идёт импорт, в тратах строка «Идёт импорт — цифры дополняются». Тесты renderer с алиасами — `tests/renderer/`
+  (типы проверяет `tsconfig.web.json`).
 - Остальные экраны: сравнение месяцев, поездки по валюте операции, доходы, поиск операций.
 - AI-режим со своим API-ключом: ключ в main через safeStorage, модель выбирает график из белого списка компонентов,
   код не генерирует.

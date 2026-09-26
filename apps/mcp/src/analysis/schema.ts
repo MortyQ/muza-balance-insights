@@ -11,6 +11,7 @@ export type ColumnSpec = { readonly name: string; readonly type: string };
 export const ANALYSIS_SCHEMA = {
   accounts: [
     { name: 'id', type: 'TEXT' },
+    { name: 'participant_id', type: 'INTEGER' }, // whose account (a number; the participant's label never leaves the db)
     { name: 'kind', type: 'TEXT' },
     { name: 'type', type: 'TEXT' },
     { name: 'currency_code', type: 'INTEGER' },
@@ -40,7 +41,7 @@ export const ANALYSIS_SCHEMA = {
     { name: 'category', type: 'TEXT' },
     { name: 'scope', type: 'TEXT' }, // personal | business (src/scope.ts)
     { name: 'is_internal_transfer', type: 'INTEGER' },
-    { name: 'transfer_rule', type: 'TEXT' }, // pair / pair_fx / pair_fee / jar_reversal / iban / text
+    { name: 'transfer_rule', type: 'TEXT' }, // pair / pair_fx / pair_fee / jar_reversal / iban / text / family
     { name: 'transfer_pair_id', type: 'TEXT' }, // id of the other half (a transaction id, not a counterparty)
     { name: 'refund_pair_id', type: 'TEXT' }, // purchase ↔ refund with a different MCC (transaction ids)
     { name: 'is_cancelled', type: 'INTEGER' },

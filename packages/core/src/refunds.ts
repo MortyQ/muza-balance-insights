@@ -1,15 +1,16 @@
 // Refunds that arrive with a different MCC than the purchase (observed: a purchase with MCC 5816,
 // its cancellation 50 s later as an MCC 4829 credit). Without pairing, the amount counts twice:
 // as spending in the purchase's category and as income. Not a transfer — separate column refund_pair_id.
-// Rule: same account, credit with MCC 4829 that is not «Від: …», amount = |purchase|, purchase not 4829,
-// the credit 0–15 min after the purchase, strictly one-to-one (smallest Δt, ties by id).
+// Rule: same account, a credit the provider calls a refund candidate (Monobank: MCC 4829, not «Від: …»),
+// amount = |purchase|, the purchase not transfer-like, the credit 0–15 min after the purchase, strictly one-to-one
+// (smallest Δt, ties by id).
 import type { Db, Stmt } from './db.ts';
-import { isFromPrefixDescription } from './masking.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
+import type { ProviderId } from './providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const REFUND_WINDOW_SEC = 15 * 60;
-
-const TRANSFER_MCC = 4829;
 
 export type RefundTx = {
   id: string;
@@ -18,15 +19,17 @@ export type RefundTx = {
   amount: number;
   mcc: number;
   description: string;
+  /** An own (internal) or family transfer: never a purchase or a refund. */
   isInternal: boolean;
+  /** Whose rules apply (the account's connection's provider). */
+  provider: ProviderId;
 };
 
 /** Pure core: id → id of the other half, for both halves of each pair. */
 export function detectRefunds(rows: readonly RefundTx[]): Map<string, string> {
-  const purchases = rows.filter((r) => !r.isInternal && r.amount < 0 && r.mcc !== TRANSFER_MCC);
-  const credits = rows.filter(
-    (r) => !r.isInternal && r.amount > 0 && r.mcc === TRANSFER_MCC && !isFromPrefixDescription(r.description),
-  );
+  const rules = (r: RefundTx) => rulesFor(r.provider);
+  const purchases = rows.filter((r) => !r.isInternal && r.amount < 0 && !rules(r).isTransferLike(r));
+  const credits = rows.filter((r) => !r.isInternal && rules(r).isRefundCredit(r));
   const edges: Array<{ p: RefundTx; c: RefundTx; dt: number }> = [];
   for (const c of credits) {
     for (const p of purchases) {
@@ -54,7 +57,7 @@ function cmp(a: string, b: string): number {
 
 type StoredRow = RefundTx & { isCancelled: boolean; pairId: string | null };
 
-const COLUMNS = 'id, account_id, time, amount, mcc, description, is_internal_transfer, is_cancelled, refund_pair_id';
+const COLUMNS = 'id, account_id, time, amount, mcc, description, is_internal_transfer, transfer_rule, is_cancelled, refund_pair_id';
 
 /**
  * Recomputes refund pairs: all rows, or rows within [from − W, to + W] of a synced window plus their
@@ -100,15 +103,17 @@ export async function markRefunds(db: Db, range?: TimeRange): Promise<TimeRange 
 }
 
 async function load(db: Db, sql: string, args: Array<string | number>): Promise<StoredRow[]> {
-  const rs = await db.execute({ sql, args });
+  const [rs, providers] = await Promise.all([db.execute({ sql, args }), accountProviders(db)]);
   return rs.rows.map((r) => ({
+    provider: providerOf(providers, String(r.account_id)),
     id: String(r.id),
     accountId: String(r.account_id),
     time: Number(r.time),
     amount: Number(r.amount),
     mcc: Number(r.mcc),
     description: String(r.description ?? ''),
-    isInternal: Number(r.is_internal_transfer) === 1,
+    // A family transfer is not a refund either.
+    isInternal: Number(r.is_internal_transfer) === 1 || r.transfer_rule === 'family',
     isCancelled: Number(r.is_cancelled) === 1,
     pairId: r.refund_pair_id === null ? null : String(r.refund_pair_id),
   }));

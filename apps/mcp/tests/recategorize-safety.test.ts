@@ -7,11 +7,12 @@ import path from 'node:path';
 import type { Db } from '../src/db.ts';
 import { MCP_ROOT, REPO_ROOT } from '../src/paths.ts';
 import { rederiveAll } from '../src/rederive.ts';
-import { memoryDb } from '@mono/core/test-helpers';
+import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 
 const ENTRY = path.join(MCP_ROOT, 'src', 'cli', 'recategorize.ts');
 
-const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+// `//` after `:` is a URL (https://…), not a comment: code after it on the same line is still checked.
+const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/.*$/gm, '');
 
 /** Workspace packages by name → { dir, exports }, read from their package.json. */
 function workspacePackages(): Map<string, { dir: string; exports: Record<string, string> }> {
@@ -91,6 +92,11 @@ describe('recategorize: no .env, no token', () => {
     );
   });
 
+  it('control: comments are stripped, but a URL is not a comment (the checks below see code after it)', () => {
+    expect(stripComments('const a = 1; // getToken() in a comment')).not.toContain('getToken');
+    expect(stripComments("const u = 'https://x.invalid'; getToken();")).toContain('getToken');
+  });
+
   it('the resolver follows package exports and refuses what it cannot resolve', () => {
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/sync'))).toBe('packages/core/src/sync.ts');
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/test-helpers'))).toBe('packages/core/tests/helpers.ts');
@@ -154,15 +160,11 @@ describe('recategorize: output is aggregates and diagnostics only', () => {
   beforeEach(async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'recat-test-'));
     db = await memoryDb();
-    await db.execute({
-      sql: `INSERT INTO accounts (id, kind, type, currency_code, iban, masked_pan, balance, credit_limit, updated_at)
-            VALUES ('card1', 'card', 'black', 980, ?, ?, 0, 0, 1)`,
-      args: [CANARY.iban, JSON.stringify([CANARY.pan])],
+    await insertAccountRow(db, {
+      id: 'card1', kind: 'card', type: 'black', currency_code: 980, iban: CANARY.iban,
+      masked_pan: JSON.stringify([CANARY.pan]), balance: 0, credit_limit: 0, updated_at: 1,
     });
-    await db.execute({
-      sql: `INSERT INTO accounts (id, kind, currency_code, title, balance, updated_at) VALUES ('jar1', 'jar', 980, ?, 100, 1)`,
-      args: [CANARY.jarTitle],
-    });
+    await insertAccountRow(db, { id: 'jar1', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, balance: 100, updated_at: 1 });
     const tx = (id: string, time: number, amount: number, mcc: number, description: string, extra: { counterName?: string; counterIban?: string; comment?: string } = {}) =>
       db.execute({
         sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,

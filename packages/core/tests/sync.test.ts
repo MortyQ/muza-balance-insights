@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { MAX_STATEMENT_WINDOW_SEC, RESYNC_OVERLAP_SEC } from '../src/constants.ts';
+import { RESYNC_OVERLAP_SEC } from '../src/constants.ts';
+import { MAX_STATEMENT_WINDOW_SEC } from '../src/providers/monobank/constants.ts';
 import type { Db } from '../src/db.ts';
-import { createMonoClient } from '../src/monoApi.ts';
+import { createMonoClient } from '../src/providers/monobank/client.ts';
 import {
   WINDOW_SEC,
   commitWindow,

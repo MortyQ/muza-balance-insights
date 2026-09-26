@@ -9,9 +9,9 @@ import type { Db } from '../src/db.ts';
 import { openDb } from '../src/db.ts';
 import { displayCounterName, kyivStartOfDay } from '@mono/core/format';
 import { createServer } from '../src/mcp/tools.ts';
-import { createMonoClient } from '@mono/core/monoApi';
+import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { MCP_ROOT } from '../src/paths.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from '@mono/core/test-helpers';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
 
 // Values that must never appear in any tool answer. `description` may appear only in search_transactions (as the merchant).
 const CANARY = {
@@ -28,13 +28,12 @@ const NOW_SEC = kyivStartOfDay('2026-03-15') + 12 * 3600;
 const SYNCED = kyivStartOfDay('2026-03-10') + 23 * 3600;
 
 async function seed(db: Db): Promise<void> {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, type, currency_code, iban, masked_pan, balance, credit_limit, updated_at)
-          VALUES ('black', 'card', 'black', 980, ?, ?, 19000000, 20000000, ?)`,
-    args: [CANARY.iban, JSON.stringify([CANARY.pan]), SYNCED],
+  await insertAccountRow(db, {
+    id: 'black', kind: 'card', type: 'black', currency_code: 980, iban: CANARY.iban, masked_pan: JSON.stringify([CANARY.pan]),
+    balance: 19000000, credit_limit: 20000000, updated_at: SYNCED,
   });
-  await db.execute({ sql: `INSERT INTO accounts (id, kind, type, currency_code, balance, credit_limit, updated_at) VALUES ('fopusd', 'card', 'fop', 840, 4200, 0, ?)`, args: [SYNCED] });
-  await db.execute({ sql: `INSERT INTO accounts (id, kind, currency_code, title, balance, updated_at) VALUES ('jar', 'jar', 980, ?, 50000, ?)`, args: [CANARY.jarTitle, SYNCED] });
+  await insertAccountRow(db, { id: 'fopusd', kind: 'card', type: 'fop', currency_code: 840, balance: 4200, credit_limit: 0, updated_at: SYNCED });
+  await insertAccountRow(db, { id: 'jar', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, balance: 50000, updated_at: SYNCED });
   for (const id of ['black', 'fopusd', 'jar']) {
     await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: [id, kyivStartOfDay('2026-01-01'), SYNCED, SYNCED] });
   }

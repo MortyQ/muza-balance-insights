@@ -2,19 +2,21 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useImportProgressStore } from '@/entities/import-progress';
+import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { useTokenStore } from '@/entities/token';
 import { ROUTE } from '@/shared/config';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import { noTokenText } from './utils.ts';
 
 const router = useRouter();
-const token = useTokenStore();
+const participant = useParticipantStore();
 const syncStatus = useSyncStatusStore();
 const importProgress = useImportProgressStore();
 
-const showNoToken = computed(() => token.status !== null && !token.connected);
-const text = computed(() => noTokenText(token.status, importProgress.progress.phase));
+const showNoToken = computed(() => participant.withoutToken.length > 0);
+const text = computed(() =>
+  noTokenText(participant.withoutToken, participant.connections.length, importProgress.progress.phase, participant.labelOf),
+);
 </script>
 
 <template>
@@ -27,6 +29,6 @@ const text = computed(() => noTokenText(token.status, importProgress.progress.ph
   />
   <div v-if="showNoToken" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice :card="false" icon="lucide:plug" tone="warning" :subtitle="text" />
-    <VButton text="Подключить" @click="router.push({ name: ROUTE.settings })" />
+    <VButton text="Ввести токен" @click="router.push({ name: ROUTE.settings })" />
   </div>
 </template>

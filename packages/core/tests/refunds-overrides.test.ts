@@ -70,7 +70,7 @@ describe('refund_pair', () => {
   });
 
   const base = (over: Partial<RefundTx>): RefundTx => ({
-    id: 'x', accountId: 'black', time: T, amount: 0, mcc: 5411, description: '', isInternal: false, ...over,
+    id: 'x', accountId: 'black', time: T, amount: 0, mcc: 5411, description: '', isInternal: false, provider: 'monobank', ...over,
   });
 
   it('needs the same account, exact amount, 0…15 min after the purchase, a non-4829 purchase', () => {

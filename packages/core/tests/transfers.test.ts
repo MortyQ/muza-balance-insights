@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
-import { createMonoClient } from '../src/monoApi.ts';
+import { createMonoClient } from '../src/providers/monobank/client.ts';
 import { transferDiagnostics } from '../src/queries.ts';
 import { syncWindow, type SyncContext } from '../src/sync.ts';
 import {
@@ -15,12 +15,12 @@ import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } fr
 
 const JAR_TITLE = 'На мрію';
 const ACCOUNTS: TransferAccount[] = [
-  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null },
-  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null },
-  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null },
-  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null },
-  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null },
-  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE },
+  { id: 'black', kind: 'card', currencyCode: 980, iban: 'UA111', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'white', kind: 'card', currencyCode: 980, iban: 'UA222', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'usd', kind: 'card', currencyCode: 840, iban: 'UA333', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'fop980', kind: 'card', currencyCode: 980, iban: 'UA444', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'fop840', kind: 'card', currencyCode: 840, iban: 'UA555', title: null, provider: 'monobank', participantId: 1 },
+  { id: 'jar', kind: 'jar', currencyCode: 980, iban: null, title: JAR_TITLE, provider: 'monobank', participantId: 1 },
 ];
 
 function tx(id: string, accountId: string, time: number, amount: number, extra: Partial<TransferTx> = {}): TransferTx {

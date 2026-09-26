@@ -1,11 +1,14 @@
 // Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, getBalances), mapped
 // to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and «black/UAH» labels leave main —
 // never names, descriptions, card numbers or IBANs. The import worker writes the same file; WAL lets both work.
+import { ensureDefaultConnection } from '@mono/core/connections';
 import { migrate, type Db } from '@mono/core/db';
+import { listConnections } from '@mono/core/participants';
+import type { ProviderId } from '@mono/core/providers/types';
 import { toKyivDateTime } from '@mono/core/format';
 import { getBalances } from '@mono/core/status';
 import { spendingSummary } from '@mono/core/summaries';
-import type { BalanceLine, BalancesView, DataStatus, SpendingQuery, SpendingView } from '../shared/api.ts';
+import type { BalanceLine, BalancesQuery, BalancesView, DataStatus, SpendingQuery, SpendingView } from '../shared/api.ts';
 
 export type DataServiceDeps = {
   open: () => Promise<Db>;
@@ -36,8 +39,23 @@ export class DataService {
     return opening;
   }
 
+  /** The migrated connection, for the other services of main (people.ts). */
+  database(): Promise<Db> {
+    return this.conn();
+  }
+
   async spending(q: SpendingQuery): Promise<SpendingView> {
-    const s = await spendingSummary(await this.conn(), { from: q.from, to: q.to, groupBy: 'category', ...(q.scope ? { scope: q.scope } : {}) }, this.d.nowSec());
+    const s = await spendingSummary(
+      await this.conn(),
+      {
+        from: q.from,
+        to: q.to,
+        groupBy: 'category',
+        ...(q.scope ? { scope: q.scope } : {}),
+        ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
+      },
+      this.d.nowSec(),
+    );
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = s.period;
     return {
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -52,8 +70,8 @@ export class DataService {
     };
   }
 
-  async balances(): Promise<BalancesView> {
-    const b = await getBalances(await this.conn());
+  async balances(q: BalancesQuery = {}): Promise<BalancesView> {
+    const b = await getBalances(await this.conn(), q.participantId !== undefined ? { participantId: q.participantId } : {});
     const line = (a: (typeof b.accounts)[number]): BalanceLine => ({
       id: a.id,
       label: a.label,
@@ -82,6 +100,16 @@ export class DataService {
       dataUntil: newest === null ? null : toKyivDateTime(newest),
       lastSyncAt: last === null ? null : toKyivDateTime(last),
     };
+  }
+
+  /** Every connection (the import takes them all). */
+  async connections(): Promise<Array<{ connectionId: number; provider: ProviderId }>> {
+    return (await listConnections(await this.conn())).map((c) => ({ connectionId: c.id, provider: c.provider }));
+  }
+
+  /** The only Monobank connection (created with «Я» if there is none): the owner of an older version's token.bin. */
+  async legacyConnection(): Promise<number> {
+    return ensureDefaultConnection(await this.conn(), 'monobank', this.d.nowSec());
   }
 
   /** Closes the connection (before the files are deleted). The next call opens a fresh database. */

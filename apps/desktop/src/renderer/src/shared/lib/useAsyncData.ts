@@ -14,15 +14,27 @@ export interface UseAsyncDataReturn<T> {
   reload: () => Promise<void>;
 }
 
-/** Loads now and on every change of `sources`; an answer to an older request is dropped. */
-export function useAsyncData<T>(load: () => Promise<T>, sources: ReadonlyArray<WatchSource>): UseAsyncDataReturn<T> {
+export interface UseAsyncDataOptions {
+  /**
+   * Sources that reload in the background: the status stays as it is until the answer comes (no «loading» dimming),
+   * e.g. the data version that grows with every imported window.
+   */
+  quiet?: ReadonlyArray<WatchSource>;
+}
+
+/** Loads now and on every change of `sources` (or `quiet`); an answer to an older request is dropped. */
+export function useAsyncData<T>(
+  load: () => Promise<T>,
+  sources: ReadonlyArray<WatchSource>,
+  { quiet = [] }: UseAsyncDataOptions = {},
+): UseAsyncDataReturn<T> {
   // `as`: ref() types its value as UnwrapRef<T>; T is plain data from main (no refs inside), so that is T itself.
   const state = ref({ status: 'loading', data: null }) as Ref<Loadable<T>>;
   let request = 0;
 
-  async function reload(): Promise<void> {
+  async function run(background: boolean): Promise<void> {
     const id = ++request;
-    state.value = { status: 'loading', data: state.value.data };
+    if (!background) state.value = { status: 'loading', data: state.value.data };
     try {
       const data = await load();
       if (id === request) state.value = { status: 'success', data };
@@ -31,6 +43,7 @@ export function useAsyncData<T>(load: () => Promise<T>, sources: ReadonlyArray<W
     }
   }
 
-  watch([...sources], () => void reload(), { immediate: true });
-  return { state, reload };
+  watch([...sources], () => void run(false), { immediate: true });
+  if (quiet.length > 0) watch([...quiet], () => void run(true));
+  return { state, reload: () => run(false) };
 }

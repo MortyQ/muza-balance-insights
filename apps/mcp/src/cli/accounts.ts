@@ -4,7 +4,8 @@ import { getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
 import { formatDuration } from '@mono/core/format';
 import { log } from '../log.ts';
-import { createMonoClient } from '@mono/core/monoApi';
+import { ensureDefaultConnection } from '@mono/core/connections';
+import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { systemClock } from '../clock.ts';
 import { syncAccounts } from '@mono/core/sync';
 import { renderAccountsTable } from './accountsTable.ts';
@@ -12,7 +13,10 @@ import { renderAccountsTable } from './accountsTable.ts';
 async function main(): Promise<void> {
   const db = await openDb(loadConfig().dbUrl);
   try {
+    // The .env token is the database's one Monobank connection.
+    const connectionId = await ensureDefaultConnection(db, 'monobank', Math.floor(systemClock.nowMs() / 1000));
     const api = createMonoClient({
+      connectionId,
       token: getToken(),
       db,
       fetch,
@@ -20,7 +24,7 @@ async function main(): Promise<void> {
       rateLimitMode: 'wait',
       onWait: (ms) => log.info(`жду ${formatDuration(ms / 1000)} (лимит Monobank: 1 запрос в минуту)`),
     });
-    await syncAccounts({ db, api, clock: systemClock });
+    await syncAccounts({ db, api, connectionId, clock: systemClock });
     for (const line of await renderAccountsTable(db)) log.plain(line);
   } finally {
     db.close();

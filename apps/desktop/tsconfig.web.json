@@ -8,5 +8,5 @@
     "jsx": "preserve",
     "paths": { "@/*": ["./src/renderer/src/*"], "@contract/*": ["./src/shared/*"] }
   },
-  "include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.vue"]
+  "include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.vue", "tests/renderer/**/*.ts"]
 }

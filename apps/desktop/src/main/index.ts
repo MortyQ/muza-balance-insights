@@ -13,8 +13,9 @@ import { configureIdentity } from './identity.ts';
 import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
+import { PeopleService } from './people.ts';
 import { runDbSmoke } from './smoke.ts';
-import { TokenStore } from './token.ts';
+import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { windowOptions } from './window.ts';
 import { DB_FILE, deleteAllData } from './wipe.ts';
@@ -79,11 +80,21 @@ app.whenReady().then(async () => {
   });
   protocol.handle(APP_SCHEME, createAppProtocolHandler(rendererDir, PROD_CSP));
   const userData = app.getPath('userData');
-  const tokens = new TokenStore({ safeStorage, platform: process.platform, userDataDir: userData });
+  const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData });
+  const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
+  // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
+  if (vault.hasLegacy()) {
+    try {
+      process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(await data.legacyConnection())}\n`);
+    } catch (err) {
+      process.stderr.write(`[token] legacy token not moved: ${err instanceof Error ? err.name : 'error'}\n`);
+    }
+  }
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
-    tokens,
+    connections: () => data.connections(),
+    tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
     dbPath: path.join(userData, DB_FILE),
@@ -98,7 +109,6 @@ app.whenReady().then(async () => {
     send: (v) => win?.webContents.send(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
-  const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
   const confirmDelete = async () => {
     const opts = {
       type: 'warning' as const,
@@ -106,23 +116,43 @@ app.whenReady().then(async () => {
       defaultId: 1,
       cancelId: 1,
       message: 'Удалить все данные?',
-      detail: 'Будут удалены загруженные операции, сохранённый токен и незавершённый импорт. Отменить это нельзя.',
+      detail: 'Будут удалены загруженные операции, сохранённые токены и незавершённый импорт. Отменить это нельзя.',
     };
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
   };
+  const people = new PeopleService({
+    db: () => data.database(),
+    tokens: vault,
+    importRunning: () => importer.running,
+    confirmRemove: async () => {
+      const opts = {
+        type: 'warning' as const,
+        buttons: ['Удалить подключение', 'Отмена'],
+        defaultId: 1,
+        cancelId: 1,
+        message: 'Удалить подключение?',
+        detail: 'Будут удалены его токен, счета и операции в этом приложении. В банке ничего не изменится. Отменить это нельзя.',
+      };
+      const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+      return r.response === 0;
+    },
+    nowSec: () => Math.floor(Date.now() / 1000),
+  });
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
-    setToken: (token, remember) => tokens.set(token, remember),
-    clearToken: () => tokens.clear(),
-    hasToken: () => tokens.status(),
+    listPeople: () => people.list(),
+    addConnection: (input) => people.addConnection(input),
+    renameParticipant: (id, label) => people.rename(id, label),
+    setConnectionToken: (id, token, remember) => people.setToken(id, token, remember),
+    removeConnection: (id) => people.remove(id),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
     spendingSummary: (q) => data.spending(q),
-    getBalances: () => data.balances(),
+    getBalances: (...q) => data.balances(q[0]),
     getSyncStatus: () => data.status(),
     deleteAllData: () =>
-      deleteAllData({ confirm: confirmDelete, tokens, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
+      deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
     getUpdate: async () => updater.view(),
     checkForUpdates: () => updater.check(true),
     downloadUpdate: () => updater.download(),

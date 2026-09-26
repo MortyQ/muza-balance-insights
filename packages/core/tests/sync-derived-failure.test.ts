@@ -2,7 +2,7 @@
 // Separate file: vi.mock replaces src/categories.ts for every test in the file.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../src/db.ts';
-import { createMonoClient } from '../src/monoApi.ts';
+import { createMonoClient } from '../src/providers/monobank/client.ts';
 import { getSyncState, runPlan, type SyncContext, type Window } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from './helpers.ts';
 

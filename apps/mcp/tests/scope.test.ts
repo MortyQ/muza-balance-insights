@@ -5,7 +5,7 @@ import path from 'node:path';
 import { exportAnalysis } from '../src/analysis/export.ts';
 import { recategorize } from '@mono/core/categories';
 import type { Db } from '../src/db.ts';
-import { createMonoClient, type StatementItem } from '@mono/core/monoApi';
+import { createMonoClient, type StatementItem } from '@mono/core/providers/monobank/client';
 import { rederiveAll } from '../src/rederive.ts';
 import {
   ScopeOverrideError,
@@ -19,15 +19,12 @@ import {
 } from '@mono/core/scope';
 import { SettingsError, getSettings, setSetting } from '@mono/core/settings';
 import { commitWindow, type SyncContext } from '@mono/core/sync';
-import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from '@mono/core/test-helpers';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
 
 let db: Db;
 
 async function account(id: string, type: string | null, currency = 980) {
-  await db.execute({
-    sql: `INSERT INTO accounts (id, kind, type, currency_code, balance, updated_at) VALUES (?, ?, ?, ?, 0, 0)`,
-    args: [id, type === null ? 'jar' : 'card', type, currency],
-  });
+  await insertAccountRow(db, { id, kind: type === null ? 'jar' : 'card', type, currency_code: currency, balance: 0, updated_at: 0 });
 }
 
 async function tx(id: string, accountId: string, time: number, amount: number, opts: { mcc?: number; description?: string; counterName?: string } = {}) {
@@ -56,7 +53,7 @@ afterEach(() => db.close());
 
 describe('computeScope (pure)', () => {
   const on = { treasury_business: true };
-  const base = { accountType: 'black', description: 'Вигаданий Магазин', counterName: null };
+  const base = { accountType: 'black', description: 'Вигаданий Магазин', counterName: null, provider: 'monobank' as const };
 
   it('fop → business; a personal card → personal (incl. 9311/9399, which the rule never looks at)', () => {
     expect(computeScope({ ...base, accountType: 'fop' }, [], on)).toBe('business');
@@ -71,7 +68,7 @@ describe('computeScope (pure)', () => {
   });
 
   it('an override beats every rule; exact beats contains; the longest contains wins', () => {
-    const fine = { accountType: 'white', description: 'ГУК Вигадана обл/12345678', counterName: 'ГУК Вигаданий штраф' };
+    const fine = { accountType: 'white', description: 'ГУК Вигадана обл/12345678', counterName: 'ГУК Вигаданий штраф', provider: 'monobank' as const };
     expect(computeScope(fine, [{ pattern: 'штраф', matchType: 'contains', scope: 'personal' }], on)).toBe('personal');
     const fopRow = { ...base, accountType: 'fop', counterName: 'Тестова Особа' };
     expect(computeScope(fopRow, [{ pattern: 'тестова особа', matchType: 'exact', scope: 'personal' }], on)).toBe('personal');

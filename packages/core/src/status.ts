@@ -2,7 +2,9 @@
 // accounts are identified by id and a "type/CUR" label.
 import type { Db } from './db.ts';
 import { accountLabels, toKyivDate, toKyivDateTime } from './format.ts';
-import { RATE_LIMIT_MS, RESYNC_OVERLAP_SEC } from './constants.ts';
+import { RESYNC_OVERLAP_SEC } from './constants.ts';
+import { parseProviderId } from './connections.ts';
+import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
 import { transferDiagnostics, type TransferDiagnostics } from './queries.ts';
 import { scopeCounts, type Scope } from './scope.ts';
 
@@ -20,13 +22,16 @@ type AccountRow = {
   lastSyncAt: number | null;
 };
 
-async function loadAccounts(db: Db): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
-  const rs = await db.execute(
-    `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
+/** Every account, or only those of one participant. */
+async function loadAccounts(db: Db, participantId?: number): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
+  const rs = await db.execute({
+    sql: `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
             s.account_id IS NOT NULL AS synced, s.oldest_synced_time, s.newest_synced_time, s.last_sync_at
      FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
+     ${participantId === undefined ? '' : 'WHERE a.connection_id IN (SELECT id FROM connections WHERE participant_id = ?)'}
      ORDER BY a.kind = 'jar', a.currency_code, a.id`,
-  );
+    args: participantId === undefined ? [] : [participantId],
+  });
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   const rows = rs.rows.map((r) => ({
     id: String(r.id),
@@ -66,9 +71,12 @@ export type Balances = {
   totals: Array<{ currency: number; own_funds: number }>;
 };
 
-/** Cards, plus jars with a positive balance or a sync history (same rule as the sync selection). Minor units. */
-export async function getBalances(db: Db): Promise<Balances> {
-  const { rows, labels } = await loadAccounts(db);
+/**
+ * Cards, plus jars with a positive balance or a sync history (same rule as the sync selection). Minor units.
+ * With `participantId`: that participant's accounts only; without — the whole family.
+ */
+export async function getBalances(db: Db, opts: { participantId?: number } = {}): Promise<Balances> {
+  const { rows, labels } = await loadAccounts(db, opts.participantId);
   const accounts = rows
     .filter((r) => r.kind === 'card' || r.balance > 0 || r.synced)
     .map((r) => ({
@@ -107,7 +115,7 @@ export type SyncStatus = {
   /** Date up to which every imported account is covered — periods ending later are incomplete. */
   data_until: string | null;
   last_sync_at: string | null;
-  /** Kyiv date-time when Monobank allows the next request; null = now. */
+  /** Kyiv date-time when the bank allows the next request (the latest of all connections); null = now. */
   next_request_at: string | null;
   diagnostics: {
     transfer_rules: TransferDiagnostics['byRule'];
@@ -135,9 +143,16 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
   const newest = rows.filter((r) => r.newest !== null).map((r) => r.newest!);
   const lastSync = rows.filter((r) => r.lastSyncAt !== null).map((r) => r.lastSyncAt!);
 
-  const api = await db.execute('SELECT MAX(called_at) AS last FROM api_calls');
-  const lastCall = api.rows[0]?.last === null || api.rows[0]?.last === undefined ? null : Number(api.rows[0].last);
-  const nextMs = lastCall === null ? null : lastCall + RATE_LIMIT_MS;
+  // Each connection has its own slot, with its provider's interval; calls without a connection get the longest one.
+  const api = await db.execute(
+    `SELECT c.provider, MAX(k.called_at) AS last FROM api_calls k LEFT JOIN connections c ON c.id = k.connection_id
+     GROUP BY k.connection_id`,
+  );
+  const longest = Math.max(...Object.values(PROVIDER_RULES).map((p) => p.api.requestIntervalMs));
+  const frees = api.rows.map(
+    (r) => Number(r.last) + (r.provider === null ? longest : rulesFor(parseProviderId(r.provider)).api.requestIntervalMs),
+  );
+  const nextMs = frees.length === 0 ? null : Math.max(...frees);
 
   const d = await transferDiagnostics(db);
   // Only holds a sync can still update (last 3 days); older ones are final.

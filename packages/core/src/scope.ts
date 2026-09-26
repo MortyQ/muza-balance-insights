@@ -1,14 +1,17 @@
 // scope = personal | business. Priority:
 //   1. scope_overrides by counter_name, or by the description when there is no counterparty
 //      (treasury and MCC 9311/9399 payments have none) — exceptions, e.g. a personal fine paid to the treasury;
-//   2. account type fop → business;
-//   3. treasury payment («ГУК…») from any card → business, if the setting treasury_business is on (default);
+//   2. a business account (the provider's rule; Monobank: type fop) → business;
+//   3. treasury payment (the provider's rule; Monobank: «ГУК…») from any card → business, if the setting
+//      treasury_business is on (default);
 //   4. everything else → personal (incl. MCC 9311/9399 from personal cards).
 // A refund paired with its purchase (refund_pair_id, credit side) takes the purchase's scope, like the category.
 // Internal transfers get a scope too, but they never count as spending in either scope.
 import { CATEGORY, matchOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
-import { isTreasuryDescription } from './masking.ts';
+import { accountProviders, providerOf } from './connections.ts';
+import { rulesFor } from './providers/rules.ts';
+import type { ProviderId } from './providers/types.ts';
 import { getSettings, type Settings } from './settings.ts';
 import type { TimeRange } from './transfers.ts';
 
@@ -18,7 +21,13 @@ export type Scope = (typeof SCOPES)[number];
 export type MatchType = 'exact' | 'contains';
 export type ScopeOverride = { pattern: string; matchType: MatchType; scope: Scope };
 
-export type ScopeInput = { accountType: string | null; description: string; counterName: string | null };
+export type ScopeInput = {
+  accountType: string | null;
+  description: string;
+  counterName: string | null;
+  /** Whose rules apply (the account's connection's provider). */
+  provider: ProviderId;
+};
 
 export function computeScope(
   tx: ScopeInput,
@@ -27,8 +36,9 @@ export function computeScope(
 ): Scope {
   const override = matchOverride(overrideKey(tx), overrides);
   if (override) return override.scope;
-  if (tx.accountType === 'fop') return 'business';
-  if (settings.treasury_business && isTreasuryDescription(tx.description)) return 'business';
+  const rules = rulesFor(tx.provider);
+  if (rules.isBusinessAccount({ type: tx.accountType })) return 'business';
+  if (settings.treasury_business && rules.isTreasury(tx.description)) return 'business';
   return 'personal';
 }
 
@@ -52,8 +62,8 @@ export async function loadScopeOverrides(db: Db): Promise<ScopeOverride[]> {
 
 /** Recomputes scope for rows in the range (all rows if none). Writes only rows that change; returns their count. */
 export async function rescope(db: Db, range?: TimeRange | null): Promise<number> {
-  const [overrides, settings] = await Promise.all([loadScopeOverrides(db), getSettings(db)]);
-  const cols = `t.id, t.description, t.counter_name, t.amount, t.refund_pair_id, t.scope, a.type AS account_type`;
+  const [overrides, settings, providers] = await Promise.all([loadScopeOverrides(db), getSettings(db), accountProviders(db)]);
+  const cols = `t.id, t.account_id, t.description, t.counter_name, t.amount, t.refund_pair_id, t.scope, a.type AS account_type`;
   const from = 'transactions t JOIN accounts a ON a.id = t.account_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM ${from} WHERE t.time BETWEEN ? AND ?`, args: [range.from, range.to] })
@@ -68,6 +78,7 @@ export async function rescope(db: Db, range?: TimeRange | null): Promise<number>
           accountType: r.account_type === null ? null : String(r.account_type),
           description: String(r.description ?? ''),
           counterName: r.counter_name === null ? null : String(r.counter_name),
+          provider: providerOf(providers, String(r.account_id)),
         },
         overrides,
         settings,
@@ -139,18 +150,23 @@ export type ScopeCandidate = {
  * per account currency, by total.
  */
 export async function scopeOverrideCandidates(db: Db, limit = 30): Promise<ScopeCandidate[]> {
+  const [accounts, providers] = await Promise.all([db.execute('SELECT id, type FROM accounts'), accountProviders(db)]);
+  const business = accounts.rows
+    .filter((r) => rulesFor(providerOf(providers, String(r.id))).isBusinessAccount({ type: r.type === null ? null : String(r.type) }))
+    .map((r) => String(r.id));
+  const notBusiness = business.length > 0 ? `AND a.id NOT IN (${business.map(() => '?').join(', ')})` : '';
   const rs = await db.execute({
     sql: `SELECT COALESCE(NULLIF(TRIM(t.counter_name), ''), TRIM(t.description)) AS k, t.scope, t.category,
                  a.type AS account_type, a.currency_code AS currency, COUNT(*) AS n,
                  SUM(-t.amount) AS total, MAX(t.local_date) AS last_date
           FROM transactions t JOIN accounts a ON a.id = t.account_id
           WHERE t.is_cancelled = 0 AND t.is_internal_transfer = 0 AND t.amount < 0
-            AND (a.type IS NULL OR a.type <> 'fop')
+            ${notBusiness}
             AND (t.scope = 'business' OR t.category = ?)
           GROUP BY 1, 2, 3, 4, 5
           ORDER BY total DESC, k
           LIMIT ?`,
-    args: [CATEGORY.taxes, limit],
+    args: [...business, CATEGORY.taxes, limit],
   });
   return rs.rows.map((r) => ({
     key: String(r.k),
