@@ -356,6 +356,11 @@
   внутри копий, `@vueuse`, `@iconify/vue`. Иконки — `unplugin-icons` (`autoInstall: false`) из локального `@iconify-json/lucide`,
   явный реестр `ui/components/base/icons.ts`, канонические имена Lucide (не алиасы).
   Таблицу трат и формат сумм пишем свои (`VTable` и `formatCurrency` из muzakit не подходят).
+- **Элементы интерфейса — сначала `shared/ui`.** Нужен контрол (кнопка, поле, переключатель, чекбокс, список, подсказка,
+  карточка…) — сначала искать его в `shared/ui` (`index.ts`, `README.md`). Нет — скопировать из muzakit по
+  `ui-component-migration.md` отдельным шагом, потом использовать. Голый `<input type="checkbox">`, `<select>` и т. п. на
+  экране — только если в muzakit такого компонента нет; причина — в отчёте. Настройка, которая применяется сразу, —
+  `VSwitch`; вариант в форме, применяемый по кнопке, — `VCheckbox`.
 - **Сеть — список доверенных сервисов** (`apps/desktop/src/net/allowlist.ts`, `TRUSTED_SERVICES`): `github` (обновления:
   `github.com`, `release-assets.githubusercontent.com`), `monobank` (`api.monobank.ua`). Каждый потребитель ограничен своими
   сервисами (`allowlistedFetch(fetch, ['monobank'])` — X-Token не уйдёт на другой хост); https, порт по умолчанию, без
