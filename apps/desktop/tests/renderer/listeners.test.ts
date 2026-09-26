@@ -10,10 +10,12 @@ const api = vi.hoisted(() => {
   const fake = {
     getSyncStatus: vi.fn(async () => ({ hasData: true, dataUntil: null })),
     getUpdate: vi.fn(async () => ({})),
+    getLockState: vi.fn(async () => ({ locked: false })),
     listPeople: vi.fn(async () => ({ people: [], secureStorage: true })),
     onProgress: vi.fn((cb: (p: unknown) => void) => ((state.progress = cb), () => undefined)),
     onUpdate: vi.fn(() => () => undefined),
     onOpenSettings: vi.fn(() => () => undefined),
+    onLock: vi.fn(() => () => undefined),
   };
   return { state, fake };
 });
