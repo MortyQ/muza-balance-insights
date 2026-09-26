@@ -2,20 +2,29 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { LockService, type LockDeps } from '../src/main/lock/service.ts';
+import { LockService, type LockDeps, type TouchIdLike } from '../src/main/lock/service.ts';
 import { hashPin } from '../src/main/lock/pin.ts';
-import { LOCK_FILE, readLock, removeLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
+import { LOCK_FILE, readLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
 
 let dir: string;
 beforeEach(() => void (dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-svc-'))));
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-function make(o: { touchId?: boolean; prompt?: boolean } = {}) {
+/** A deferred, externally-resolvable stand-in for the Touch ID prompt — lets a test hold an op mid-flight at a
+ *  known point instead of racing against real (scrypt) timing. */
+function deferredPrompt(): { touchId: TouchIdLike; resolve: (ok: boolean) => void } {
+  let resolve: (ok: boolean) => void = () => undefined;
+  const pending = new Promise<boolean>((r) => (resolve = r));
+  return { touchId: { available: () => true, prompt: () => pending }, resolve };
+}
+
+function make(o: { touchId?: boolean; prompt?: boolean; touchIdDeps?: TouchIdLike } = {}) {
   const clock = { now: 1_000_000 };
   const events: string[] = [];
+  const touchId: TouchIdLike = o.touchIdDeps ?? { available: () => o.touchId ?? false, prompt: async () => o.prompt ?? true };
   const deps: LockDeps = {
     userDataDir: dir,
-    touchId: { available: () => o.touchId ?? false, prompt: async () => o.prompt ?? true },
+    touchId,
     importRunning: () => false,
     now: () => clock.now,
     onLocked: () => void events.push('reload'),
@@ -123,7 +132,7 @@ describe('LockService', () => {
     const { svc } = make();
     expect(svc.view()).toMatchObject({ enabled: true, locked: true, broken: true });
     expect(await svc.unlockWithPin('2580')).toEqual({ ok: false, reason: 'unavailable' });
-    svc.reset();
+    await svc.reset();
     expect(svc.view()).toMatchObject({ enabled: false, locked: false, broken: false });
   });
 
@@ -229,17 +238,35 @@ describe('LockService', () => {
     expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
   });
 
-  it('reset() during an in-flight wrong-PIN check does not resurrect a deleted lock.json', async () => {
-    const { svc } = make();
+  it('reset() while a Touch ID unlock is in flight: the unlock loses, and reset() still wins on disk', async () => {
+    const { touchId, resolve } = deferredPrompt();
+    const { svc } = make({ touchIdDeps: touchId });
     await svc.enable('2580');
     svc.lock('manual');
-    const p = svc.unlockWithPin('1111');
-    // Let checkPin start and reach the real (async) verifyPin call before the file disappears from under it.
+    const p = svc.unlockWithTouchId();
+    // Let checkTouchId start and reach the (deferred, externally-resolvable) prompt before resolving it.
     await Promise.resolve();
-    await removeLock(dir); // simulates «Удалить все данные» wiping lock.json while the check is in flight
-    svc.reset();
-    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+    resolve(true);
+    // Without awaiting the unlock: reset() bumps the epoch and clears memory synchronously, then waits out
+    // whatever is in flight (the unlock, now unblocked) and removes lock.json itself afterwards.
+    await svc.reset();
     expect(readLock(dir).kind).toBe('none');
     expect(svc.view().enabled).toBe(false);
+    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+  });
+
+  it('a trigger locking the app during a Touch ID disable prompt cancels the disable, not the lock', async () => {
+    const { touchId, resolve } = deferredPrompt();
+    const { svc } = make({ touchIdDeps: touchId });
+    await svc.enable('2580');
+    const p = svc.disable({ touchId: true });
+    // Let disable start and reach the deferred prompt before the sleep trigger fires mid-prompt.
+    await Promise.resolve();
+    svc.lock('sleep');
+    resolve(true);
+    expect(await p).toEqual({ ok: false, reason: 'unavailable' });
+    expect(readLock(dir).kind).toBe('ok');
+    expect(svc.isLocked()).toBe(true);
+    expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
   });
 });

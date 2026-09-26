@@ -47,6 +47,7 @@ export class LockService {
   }
 
   view(): LockView {
+    this.normalize();
     const f = this.file;
     const now = this.d.now();
     const retryAt = f && f.nextAttemptAt !== null && f.nextAttemptAt > now ? f.nextAttemptAt : null;
@@ -125,6 +126,8 @@ export class LockService {
       const r = await this.checkPin(current, epoch);
       if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
       if (!r.ok || !this.file) return r;
+      // A trigger may have locked the app while checkPin was verifying: settings must not change under a closed lock.
+      if (this.locked) return { ok: false, reason: 'unavailable' };
       const record = await hashPin(next);
       if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
       const nextFile: LockFile = { ...this.file, ...record };
@@ -143,6 +146,9 @@ export class LockService {
       const r = 'pin' in auth ? await this.checkPin(auth.pin, epoch) : await this.checkTouchId(epoch);
       if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
       if (!r.ok) return r;
+      // A trigger may have locked the app while the PIN/Touch ID check was in flight (e.g. mid-prompt):
+      // disabling the lock must not leave it locked with nothing left to unlock against.
+      if (this.locked) return { ok: false, reason: 'unavailable' };
       await removeLock(this.d.userDataDir);
       if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
       this.file = null;
@@ -168,13 +174,18 @@ export class LockService {
     });
   }
 
-  /** After «Удалить все данные»: lock.json went with the rest; the app opens as a fresh install. */
-  reset(): void {
+  /** After «Удалить все данные»: lock.json went with the rest; the app opens as a fresh install.
+   *  Authoritative, not just another epoch-checked op: it waits out whatever is currently in flight (the chain
+   *  promise never rejects, see serial()) and then removes lock.json itself, so a write that op made after this
+   *  memory reset — but before noticing the epoch changed — still ends up deleted from disk. */
+  async reset(): Promise<void> {
     this.epoch++;
     this.file = null;
     this.broken = false;
     this.locked = false;
     this.changed();
+    await this.chain;
+    await removeLock(this.d.userDataDir);
   }
 
   private serial<T>(fn: () => Promise<T>): Promise<T> {
@@ -219,10 +230,14 @@ export class LockService {
     if (!cur) return { ok: false, reason: 'unavailable' };
     const failedAttempts = cur.failedAttempts + 1;
     const wait = waitAfter(failedAttempts);
-    this.file = { ...cur, failedAttempts, nextAttemptAt: wait > 0 ? now + wait : null };
-    await writeLock(this.d.userDataDir, this.file);
+    const updated: LockFile = { ...cur, failedAttempts, nextAttemptAt: wait > 0 ? now + wait : null };
+    this.file = updated;
+    await writeLock(this.d.userDataDir, updated);
+    // this.file may already be null again (reset() ran while the write was in flight) — `updated` is still the
+    // record actually written, so read the result from it, never from this.file, to avoid a null dereference.
+    if (epoch !== this.epoch) return { ok: false, reason: 'unavailable' };
     this.changed();
-    return { ok: false, reason: 'wrong-pin', retryAt: this.file.nextAttemptAt };
+    return { ok: false, reason: 'wrong-pin', retryAt: updated.nextAttemptAt };
   }
 
   private async checkTouchId(epoch: number): Promise<LockResult> {
