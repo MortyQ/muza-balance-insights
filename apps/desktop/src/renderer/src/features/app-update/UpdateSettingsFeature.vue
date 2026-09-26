@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAppUpdateStore } from '@/entities/app-update';
-import { VButton, VCard, VInfoNotice, VProgressBar } from '@/shared/ui';
+import { VButton, VCard, VInfoNotice, VProgressBar, VSwitch } from '@/shared/ui';
 import UpdateActions from './components/UpdateActions.vue';
 import { useUpdate } from './composables/useUpdate.ts';
 import { updateLine } from './utils.ts';
@@ -35,10 +35,7 @@ const checksEnabled = computed({
       </div>
       <VProgressBar v-if="view.state.phase === 'downloading'" :percentage="view.state.percent" size="sm" />
       <p v-if="line" class="text-sm" :class="view.state.phase === 'error' ? 'text-danger' : 'text-foreground-secondary'">{{ line }}</p>
-      <label class="flex items-center gap-2">
-        <input v-model="checksEnabled" class="accent-primary" type="checkbox" :disabled="!view.supported" />
-        Проверять обновления автоматически
-      </label>
+      <VSwitch v-model="checksEnabled" :disabled="!view.supported">Проверять обновления автоматически</VSwitch>
       <p class="text-sm text-foreground-muted">
         <template v-if="view.supported">
           Раз в несколько часов приложение запрашивает у GitHub, вышла ли новая версия. Обновление ставится, только если оно подписано

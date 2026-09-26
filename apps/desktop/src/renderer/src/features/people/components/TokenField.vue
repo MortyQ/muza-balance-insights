@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, useId, useTemplateRef } from 'vue';
 import type { Bank } from '@/entities/bank';
-import { VInfoNotice } from '@/shared/ui';
+import { VCheckbox, VInfoNotice } from '@/shared/ui';
 
 const { bank, secureStorage, autofocus = false } = defineProps<{
   bank: Readonly<Bank>;
@@ -35,7 +35,7 @@ onMounted(() => {
       spellcheck="false"
       :placeholder="bank.tokenPlaceholder"
     />
-    <label class="flex items-center gap-2"><input v-model="remember" class="accent-primary" type="checkbox" /> Запомнить на этом компьютере</label>
+    <VCheckbox v-model="remember" label="Запомнить на этом компьютере" />
     <VInfoNotice
       v-if="!secureStorage"
       :card="false"

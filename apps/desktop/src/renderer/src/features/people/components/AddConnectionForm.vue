@@ -2,7 +2,7 @@
 import { useId } from 'vue';
 import { MONOBANK } from '@/entities/bank';
 import { useParticipantStore } from '@/entities/participant';
-import { VButton, VInfoNotice } from '@/shared/ui';
+import { VButton, VCheckbox, VInfoNotice } from '@/shared/ui';
 import { useAddConnection } from '../composables/useAddConnection.ts';
 import { CONSENT_TEXT } from '../constants.ts';
 import TokenField from './TokenField.vue';
@@ -43,9 +43,7 @@ async function onSubmit() {
           placeholder="Имя, например «Я» или «Оля»"
           :disabled="fromBank"
         />
-        <label class="flex items-center gap-2">
-          <input v-model="fromBank" class="accent-primary" type="checkbox" /> Взять имя из банка (подставится при первом импорте)
-        </label>
+        <VCheckbox v-model="fromBank" label="Взять имя из банка (подставится при первом импорте)" />
       </template>
     </div>
     <TokenField v-model:token="tokenInput" v-model:remember="remember" :bank="MONOBANK" :secure-storage="participant.secureStorage" :autofocus />
