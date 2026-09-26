@@ -30,9 +30,10 @@ export class TokenVault {
   private readonly dir: string;
   private readonly store: SecureStore;
 
-  constructor(private readonly deps: { safeStorage: SafeStorageLike; platform: NodeJS.Platform; userDataDir: string }) {
+  /** `store`: shared with the database key (one reliability probe per process); tests may leave it out. */
+  constructor(private readonly deps: { safeStorage: SafeStorageLike; platform: NodeJS.Platform; userDataDir: string; store?: SecureStore }) {
     this.dir = path.join(deps.userDataDir, TOKENS_DIR);
-    this.store = new SecureStore(deps);
+    this.store = deps.store ?? new SecureStore(deps);
   }
 
   private file(connectionId: number): string {

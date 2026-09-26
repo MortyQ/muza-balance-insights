@@ -1,6 +1,5 @@
 // Electron main. Order matters: identity, sandbox and the app:// scheme privileges are set before `ready`.
 import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import { LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
@@ -18,11 +17,14 @@ import { startLockTriggers, touchId } from './lock/electron.ts';
 import { gatedPush } from './lock/gate.ts';
 import { LockService } from './lock/service.ts';
 import { PeopleService } from './people.ts';
+import { DbAccess } from './db/access.ts';
+import { DbKeyVault } from './db/key-vault.ts';
+import { SecureStore } from './secure-store.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { windowOptions } from './window.ts';
-import { DB_FILE, deleteAllData } from './wipe.ts';
+import { deleteAllData } from './wipe.ts';
 
 // Before anything touches userData.
 const identity = configureIdentity(app);
@@ -91,10 +93,21 @@ app.whenReady().then(async () => {
   await restrictUserData(userData).catch((err: unknown) =>
     process.stderr.write(`[identity] userData mode not set: ${err instanceof Error ? err.name : 'error'}\n`),
   );
-  const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData });
-  const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
+  const secureStore = new SecureStore({ safeStorage, platform: process.platform });
+  const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData, store: secureStore });
+  // Before anything opens the database (and before the window: a Keychain prompt never lands on the lock screen's
+  // Touch ID prompt). Decides encrypted / plain / key unavailable; never deletes a database.
+  const dbAccess = new DbAccess({
+    userDataDir: userData,
+    keys: new DbKeyVault({ store: secureStore, userDataDir: userData, platform: process.platform }),
+    store: secureStore,
+    openDb: (url, opts) => openLibsql(url, opts),
+    log: (msg) => process.stderr.write(`[db] ${msg}\n`),
+  });
+  await dbAccess.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));
+  const data = new DataService({ open: () => dbAccess.open(), nowSec: () => Math.floor(Date.now() / 1000) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
-  if (vault.hasLegacy()) {
+  if (dbAccess.isReady() && vault.hasLegacy()) {
     try {
       process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(await data.legacyConnection())}\n`);
     } catch (err) {
@@ -108,7 +121,7 @@ app.whenReady().then(async () => {
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
-    dbPath: path.join(userData, DB_FILE),
+    dbPath: dbAccess.dbPath,
     nowSec: () => Math.floor(Date.now() / 1000),
     // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
     send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),
@@ -186,7 +199,10 @@ app.whenReady().then(async () => {
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
-      if (r.deleted) await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
+      if (r.deleted) {
+        await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
+        await dbAccess.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));
+      }
       return r;
     },
     getUpdate: async () => updater.view(),
@@ -210,8 +226,11 @@ app.whenReady().then(async () => {
   });
 
   if (!app.isPackaged) {
-    const smoke = await runDbSmoke(app.getPath('userData'), Math.floor(Date.now() / 1000));
-    process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, devOrigin })}\n`);
+    const st = dbAccess.state();
+    const smoke = dbAccess.isReady()
+      ? await runDbSmoke(() => dbAccess.open(), st.kind === 'ready' && st.encrypted, Math.floor(Date.now() / 1000))
+      : ({ ok: false, error: st.kind } as const);
+    process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, devOrigin })}\n`);
   }
 
   win = new BrowserWindow(windowOptions({ preloadPath, isPackaged: app.isPackaged, title: identity.name }));
@@ -231,7 +250,8 @@ app.whenReady().then(async () => {
     push(UPDATE_CHANNEL, updater.view());
     if (!resumeChecked) {
       resumeChecked = true;
-      void importer.resumeOnLaunch();
+      // Not while the database is unavailable: the import would only fail on it.
+      if (dbAccess.isReady()) void importer.resumeOnLaunch();
       scheduleChecks(updater);
     }
   });

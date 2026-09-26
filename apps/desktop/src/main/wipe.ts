@@ -6,12 +6,13 @@
 // leaves the app unlocked over data that is still (partly) there.
 import fs from 'node:fs';
 import path from 'node:path';
+import { DB_FILE } from './db/access.ts';
 import { DB_KEY_FILE } from './db/key-vault.ts';
 import { JOB_FILE } from './importer.ts';
 import { LOCK_FILE } from './lock/store.ts';
 import { LEGACY_TOKEN_FILE, TOKENS_DIR } from './token.ts';
 
-export const DB_FILE = 'monobank.db';
+export { DB_FILE };
 
 /** The database key, removed right after the tokens. */
 const KEY_FILES = [DB_KEY_FILE, `${DB_KEY_FILE}.tmp`] as const;
