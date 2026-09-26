@@ -27,6 +27,19 @@ Download from [Releases](https://github.com/MortyQ/muza-balance-insights/release
 - Updates are installed only if they are signed by the author and the file matches the signed description.
 - «Delete all data» in the app removes the database, the token and any unfinished import.
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+Windows builds will be signed this way once the project is set up with SignPath; until then the Windows installers are unsigned
+(see [Install](#install)). macOS builds are not signed with an Apple Developer ID.
+
+- Only builds made by the [release workflow](.github/workflows/release.yml) on GitHub-hosted runners from this repository's
+  source are signed, and each release is approved manually.
+- Committers and reviewers: [MortyQ](https://github.com/MortyQ)
+- Approvers: [MortyQ](https://github.com/MortyQ)
+- Privacy: see [Privacy](#privacy). The app sends nothing except your statement requests to `api.monobank.ua` (with the token
+  you enter) and update checks and downloads to GitHub, which you can switch off in Settings.
+
 ## Repository
 
 | Path | What |
