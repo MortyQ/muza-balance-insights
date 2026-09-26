@@ -2,6 +2,7 @@
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DESKTOP_PROVIDERS } from '../src/net/providers.ts';
+import { StartMessage } from '../src/shared/import-protocol.ts';
 import { abortableClock } from '../src/worker/clock.ts';
 
 const read = (p: string) => fs.readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
@@ -32,6 +33,23 @@ describe('worker entry', () => {
     const main = read('../src/main/index.ts');
     expect(main).toMatch(/utilityProcess\.fork\(workerPath, \[\], \{ serviceName: 'balance-import', env: \{\}/);
     expect(main).not.toMatch(/fork\([^)]*token/i);
+    expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker)/i);
+    expect(main).toMatch(/db: \(\) => dbAccess\.forWorker\(\)/);
+  });
+
+  it('the database key comes only in the start message and opens the file; its error is a fixed text', () => {
+    expect(code).toMatch(/openLibsql\(`file:\$\{msg\.dbPath\}`, msg\.dbKey \? \{ encryptionKey: msg\.dbKey \} : \{\}\)/);
+    expect(code).toMatch(/message: `worker: \$\{err instanceof Error \? err\.name : 'unknown'\}`/);
+    expect(code).not.toMatch(/process\.env|process\.argv/);
+  });
+
+  it('StartMessage: the key is 64 lowercase hex or null, and required', () => {
+    const base = { type: 'start', dbPath: '/x/monobank.db', connections: [{ connectionId: 1, provider: 'monobank', token: 'u'.repeat(44) }], sinceSec: 1 };
+    const key = 'c0ffee'.padEnd(64, '0');
+    expect(StartMessage.safeParse({ ...base, dbKey: key }).success).toBe(true);
+    expect(StartMessage.safeParse({ ...base, dbKey: null }).success).toBe(true);
+    for (const bad of [key.toUpperCase(), key.slice(1), `${key}0`, `x'${key}'`, '']) expect(StartMessage.safeParse({ ...base, dbKey: bad }).success).toBe(false);
+    expect(StartMessage.safeParse(base).success).toBe(false);
   });
 });
 

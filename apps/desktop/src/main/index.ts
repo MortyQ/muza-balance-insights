@@ -125,7 +125,7 @@ app.whenReady().then(async () => {
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
-    dbPath: dbAccess.dbPath,
+    db: () => dbAccess.forWorker(),
     nowSec: () => Math.floor(Date.now() / 1000),
     // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
     send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),

@@ -44,7 +44,8 @@ export type ImportProgress =
   | { phase: 'cancelled' }
   | { phase: 'error'; message: string };
 
-export type StartImportResult = { started: true } | { started: false; reason: 'running' | 'no-token' };
+/** `db-unavailable`: the database key is not readable right now (DbAccess not ready) — nothing to import into. */
+export type StartImportResult = { started: true } | { started: false; reason: 'running' | 'no-token' | 'db-unavailable' };
 
 /** True while a job is actually in flight (worker work or a scheduled retry) — the lock screen's «Идёт импорт» flag.
  *  Exhaustive over ImportProgress['phase'] so a new phase must be classified here, not left to fall through. */

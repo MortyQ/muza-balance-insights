@@ -8,7 +8,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { kyivStartOfDay, toKyivDate } from '@mono/core/format';
 import type { ProviderId } from '@mono/core/providers/types';
-import { FromWorker, type ToWorker } from '../shared/import-protocol.ts';
+import { FromWorker, StartMessage, type ToWorker } from '../shared/import-protocol.ts';
 import type { ImportDepth, ImportFailure, ImportProgress, StartImportResult } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
 
@@ -48,7 +48,8 @@ export type ImporterDeps = {
   };
   powerSaveBlocker: { start(type: 'prevent-app-suspension'): number; stop(id: number): void };
   userDataDir: string;
-  dbPath: string;
+  /** The database for the worker (DbAccess.forWorker): its path and key; null while the database is unavailable. */
+  db: () => { dbPath: string; dbKey: string | null } | null;
   nowSec: () => number;
   /** To the renderer (PROGRESS_CHANNEL). */
   send: (p: ImportProgress) => void;
@@ -97,7 +98,7 @@ export class Importer {
    */
   async resumeOnLaunch(): Promise<void> {
     const job = this.readJob();
-    if (!job || this.running) return;
+    if (!job || this.running || !this.d.db()) return;
     const all = await this.d.connections();
     const secure: number[] = [];
     for (const c of all) if ((await this.d.tokens.status(c.connectionId)).stored === 'secure') secure.push(c.connectionId);
@@ -156,6 +157,9 @@ export class Importer {
   /** `only`: the connections to take (resume on launch: those with a saved token); absent — every connection. */
   private async launch(job: Job, resumed: boolean, only?: readonly number[]): Promise<StartImportResult> {
     if (this.running) return { started: false, reason: 'running' };
+    // Read at every launch (a restart after a crash too): the state may have changed since.
+    const target = this.d.db();
+    if (!target) return { started: false, reason: 'db-unavailable' };
     const all = await this.d.connections();
     const connections: Array<{ connectionId: number; provider: ProviderId; token: string }> = [];
     for (const c of all) {
@@ -167,6 +171,12 @@ export class Importer {
     if (connections.length === 0) {
       if (resumed) this.emit({ phase: 'needs-token', connectionIds: skipped });
       return { started: false, reason: 'no-token' };
+    }
+    // Checked before anything starts: a start the worker would drop must not leave a job and a blocker behind.
+    const start = StartMessage.safeParse({ type: 'start', dbPath: target.dbPath, dbKey: target.dbKey, connections, sinceSec: job.sinceSec });
+    if (!start.success) {
+      this.d.log('import: start message rejected');
+      return { started: false, reason: 'db-unavailable' };
     }
     this.writeJob(job);
     this.cancelling = false;
@@ -231,7 +241,7 @@ export class Importer {
       this.scheduleRestart(job);
     });
     this.emit({ phase: 'starting', resumed });
-    child.postMessage({ type: 'start', dbPath: this.d.dbPath, connections, sinceSec: job.sinceSec });
+    child.postMessage(start.data);
     return { started: true };
   }
 

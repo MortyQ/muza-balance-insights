@@ -41,7 +41,7 @@ port.on('message', (event: { data: unknown }) => {
   void (async () => {
     let db: Db | null = null;
     try {
-      db = await openLibsql(`file:${msg.dbPath}`);
+      db = await openLibsql(`file:${msg.dbPath}`, msg.dbKey ? { encryptionKey: msg.dbKey } : {});
       await migrate(db, Math.floor(Date.now() / 1000));
       await runImport({
         db,
