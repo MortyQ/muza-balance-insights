@@ -1,16 +1,19 @@
 // «Удалить все данные»: after a system confirmation, everything the app keeps in userData goes — the database with its
-// WAL files, the saved tokens and the unfinished import job. Order: the tokens first (a pending restart can no longer
-// get them), then the worker is stopped and the connection closed (nothing holds the files), then the files.
+// WAL files, the saved tokens, the unfinished import job and the app lock (a forgotten PIN has no other way out).
+// Order: the tokens first (a pending restart can no longer get them), then the worker is stopped and the connection
+// closed (nothing holds the files), then the files.
 import fs from 'node:fs';
 import path from 'node:path';
 import { JOB_FILE } from './importer.ts';
+import { LOCK_FILE } from './lock/store.ts';
 import { LEGACY_TOKEN_FILE, TOKENS_DIR } from './token.ts';
 
 export const DB_FILE = 'monobank.db';
 
 /** Every file the app itself writes to userData. Electron's own service files (Preferences, caches) hold no data of ours. */
 export const APP_FILES = [
-  DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`, JOB_FILE, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,
+  DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`, JOB_FILE, LOCK_FILE, `${LOCK_FILE}.tmp`,
+  LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,
 ] as const;
 /** Folders of ours, removed with everything in them. */
 export const APP_DIRS = [TOKENS_DIR] as const;

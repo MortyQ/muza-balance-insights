@@ -48,9 +48,9 @@ describe('deleteAllData', () => {
     expect(fs.readdirSync(dir)).toEqual(['Preferences']);
   });
 
-  it('covers the database with its WAL files, the tokens of every connection (and the old single token) and the import job', () => {
+  it('covers the database with its WAL files, the tokens of every connection (and the old single token), the import job and the app lock', () => {
     expect([...APP_FILES].sort()).toEqual(
-      ['import-job.json', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
+      ['import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
     );
     expect([...APP_DIRS]).toEqual(['tokens']);
   });
