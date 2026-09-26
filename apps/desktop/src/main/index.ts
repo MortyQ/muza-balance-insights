@@ -14,7 +14,7 @@ import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
 import { runDbSmoke } from './smoke.ts';
-import { TokenStore } from './token.ts';
+import { TokenVault, type TokenStatus } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { windowOptions } from './window.ts';
 import { DB_FILE, deleteAllData } from './wipe.ts';
@@ -79,7 +79,38 @@ app.whenReady().then(async () => {
   });
   protocol.handle(APP_SCHEME, createAppProtocolHandler(rendererDir, PROD_CSP));
   const userData = app.getPath('userData');
-  const tokens = new TokenStore({ safeStorage, platform: process.platform, userDataDir: userData });
+  const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData });
+  const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
+  // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
+  if (vault.hasLegacy()) {
+    try {
+      const id = await data.monobankConnection(true);
+      if (id !== null) process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(id)}\n`);
+    } catch (err) {
+      process.stderr.write(`[token] legacy token not moved: ${err instanceof Error ? err.name : 'error'}\n`);
+    }
+  }
+  // Until the IPC knows connections (step 4d): the single-token calls act on the only Monobank connection.
+  const tokens = {
+    set: async (token: string, remember: boolean) => {
+      const id = await data.monobankConnection(true);
+      if (id === null) throw new Error('no connection');
+      return vault.set(id, 'monobank', token, remember);
+    },
+    clear: async () => {
+      const id = await data.monobankConnection(false);
+      if (id !== null) await vault.clear(id);
+    },
+    status: async (): Promise<TokenStatus> => {
+      const id = await data.monobankConnection(false);
+      if (id !== null) return vault.status(id);
+      return { present: false, stored: null, secureStorage: await vault.secureStorageAvailable(), needsReentry: false };
+    },
+    get: async () => {
+      const id = await data.monobankConnection(false);
+      return id === null ? null : vault.get(id);
+    },
+  };
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
@@ -98,7 +129,6 @@ app.whenReady().then(async () => {
     send: (v) => win?.webContents.send(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
-  const data = new DataService({ open: () => openLibsql(`file:${path.join(userData, DB_FILE)}`), nowSec: () => Math.floor(Date.now() / 1000) });
   const confirmDelete = async () => {
     const opts = {
       type: 'warning' as const,
@@ -106,7 +136,7 @@ app.whenReady().then(async () => {
       defaultId: 1,
       cancelId: 1,
       message: 'Удалить все данные?',
-      detail: 'Будут удалены загруженные операции, сохранённый токен и незавершённый импорт. Отменить это нельзя.',
+      detail: 'Будут удалены загруженные операции, сохранённые токены и незавершённый импорт. Отменить это нельзя.',
     };
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
@@ -122,7 +152,7 @@ app.whenReady().then(async () => {
     getBalances: () => data.balances(),
     getSyncStatus: () => data.status(),
     deleteAllData: () =>
-      deleteAllData({ confirm: confirmDelete, tokens, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
+      deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) }),
     getUpdate: async () => updater.view(),
     checkForUpdates: () => updater.check(true),
     downloadUpdate: () => updater.download(),

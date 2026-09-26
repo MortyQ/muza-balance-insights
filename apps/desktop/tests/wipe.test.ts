@@ -3,12 +3,17 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { APP_FILES, deleteAllData } from '../src/main/wipe.ts';
+import { APP_DIRS, APP_FILES, deleteAllData } from '../src/main/wipe.ts';
 
 let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wipe-'));
   for (const f of APP_FILES) fs.writeFileSync(path.join(dir, f), 'x');
+  for (const d of APP_DIRS) {
+    fs.mkdirSync(path.join(dir, d));
+    fs.writeFileSync(path.join(dir, d, '1.bin'), 'x');
+    fs.writeFileSync(path.join(dir, d, '2.bin'), 'x');
+  }
   fs.writeFileSync(path.join(dir, 'Preferences'), '{}'); // Electron's own file: not ours, stays
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -19,7 +24,7 @@ function deps(confirmed: boolean) {
     order,
     d: {
       confirm: async () => (order.push('confirm'), confirmed),
-      tokens: { clear: async () => void order.push('token') },
+      tokens: { clearAll: async () => void order.push('token') },
       importer: { stop: async () => void order.push('importer') },
       data: { close: async () => void order.push('db') },
       userDataDir: dir,
@@ -43,14 +48,16 @@ describe('deleteAllData', () => {
     expect(fs.readdirSync(dir)).toEqual(['Preferences']);
   });
 
-  it('covers the database with its WAL files, the token (and its temp file) and the import job', () => {
+  it('covers the database with its WAL files, the tokens of every connection (and the old single token) and the import job', () => {
     expect([...APP_FILES].sort()).toEqual(
       ['import-job.json', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
     );
+    expect([...APP_DIRS]).toEqual(['tokens']);
   });
 
   it('files already missing are fine (a fresh install)', async () => {
     for (const f of APP_FILES) fs.rmSync(path.join(dir, f));
+    for (const d of APP_DIRS) fs.rmSync(path.join(dir, d), { recursive: true });
     await expect(deleteAllData(deps(true).d)).resolves.toEqual({ deleted: true });
   });
 });

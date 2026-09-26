@@ -315,8 +315,14 @@
   `@mono/*` в devDependencies десктопа: их вшивает electron-vite, в asar они не попадают.
 - Этап 1 закрыт 25.09.2026: Electron Security Checklist 20/20 (таблица — `reports/2026-09-25-stage1-step9-security-checklist.md`,
   пункты 15 и 16 — `apps/desktop/tests/checklist.test.ts`), итоги трат месяца на экране совпали с MCP.
-- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токен → остановка worker (`Importer.stop`,
-  kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, токен, задача импорта).
+- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токены → остановка worker (`Importer.stop`,
+  kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, старый `token.bin`, задача импорта) и
+  папки `APP_DIRS` (`tokens/`).
+- Токены — `TokenVault` (`apps/desktop/src/main/token.ts`): файл на подключение `tokens/<connectionId>.bin` (safeStorage,
+  0600), статус и «ввести заново» — по подключению. Старый `token.bin` при запуске переносится к подключению Monobank
+  как есть, без расшифровки. Форма токена и сервисы сети провайдера — `apps/desktop/src/net/providers.ts`
+  (`DESKTOP_PROVIDERS`, запись на каждый провайдер ядра — `tests/providers.test.ts`). До шага 4d IPC `setToken` /
+  `hasToken` / `clearToken` работают с единственным подключением Monobank (адаптер в `main/index.ts`).
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
