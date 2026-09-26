@@ -28,8 +28,9 @@ export class LockService {
   private broken: boolean;
   private locked: boolean;
   private chain: Promise<unknown> = Promise.resolve();
-  // Bumped by reset(), which runs outside the serial chain (it must take effect at once, e.g. after a wipe).
-  // Every serialized op captures it before its first await and re-checks it after every later await, so an op
+  // Bumped by reset(): memory is cleared and the epoch moves immediately, outside the serial chain (it must take
+  // effect at once, e.g. after a wipe), but the file removal it queues still goes through serial() like any other op.
+  // Every serialized op captures the epoch before its first await and re-checks it after every later await, so an op
   // suspended mid-flight when reset() fires can't commit or write back state that reset() just cleared.
   private epoch = 0;
 

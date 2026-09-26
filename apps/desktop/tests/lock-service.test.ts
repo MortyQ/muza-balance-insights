@@ -1,13 +1,31 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LockService, type LockDeps, type TouchIdLike } from '../src/main/lock/service.ts';
 import { hashPin } from '../src/main/lock/pin.ts';
 import { LOCK_FILE, readLock, writeLock, type LockFile } from '../src/main/lock/store.ts';
 
+// A hook into removeLock so a test can run code (e.g. fire a trigger) while disable()/reset() awaits it — a
+// pass-through by default, so every other test sees the real store.ts behaviour unchanged.
+const removeLockHook = vi.hoisted(() => ({ fn: async (): Promise<void> => undefined }));
+
+vi.mock('../src/main/lock/store.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/main/lock/store.ts')>();
+  return {
+    ...actual,
+    removeLock: async (dir: string) => {
+      await removeLockHook.fn();
+      await actual.removeLock(dir);
+    },
+  };
+});
+
 let dir: string;
-beforeEach(() => void (dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-svc-'))));
+beforeEach(() => {
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lock-svc-'));
+  removeLockHook.fn = async () => undefined;
+});
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 /** A deferred, externally-resolvable stand-in for the Touch ID prompt — lets a test hold an op mid-flight at a
@@ -277,5 +295,33 @@ describe('LockService', () => {
     expect(readLock(dir).kind).toBe('ok');
     expect(svc.isLocked()).toBe(true);
     expect(await svc.unlockWithPin('2580')).toEqual({ ok: true });
+  });
+
+  it('a trigger firing while disable() awaits removeLock still leaves the lock off afterwards', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    // While disable()'s removeLock is in flight, a trigger fires: it still succeeds (this.file is untouched yet).
+    removeLockHook.fn = async () => void svc.lock('sleep');
+    expect(await svc.disable({ pin: '2580' })).toEqual({ ok: true });
+    expect(svc.isLocked()).toBe(false);
+    expect(svc.view().enabled).toBe(false);
+    expect(readLock(dir).kind).toBe('none');
+    svc.lock('manual');
+    expect(svc.isLocked()).toBe(false);
+  });
+
+  it('enable() queued right after reset(): reset’s removal runs before enable’s write', async () => {
+    const { svc } = make();
+    await svc.enable('2580');
+    const r = svc.reset();
+    const e = svc.enable('4173');
+    await Promise.all([r, e]);
+    expect(readLock(dir).kind).toBe('ok');
+    const view = svc.view();
+    expect(view.enabled).toBe(true);
+    expect(view.locked).toBe(false);
+    svc.lock('manual');
+    expect(await svc.unlockWithPin('2580')).toMatchObject({ ok: false, reason: 'wrong-pin' });
+    expect(await svc.unlockWithPin('4173')).toEqual({ ok: true });
   });
 });
