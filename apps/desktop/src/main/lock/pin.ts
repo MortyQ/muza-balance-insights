@@ -15,7 +15,7 @@ function scrypt(pin: string, salt: Buffer, len: number, o: { N: number; r: numbe
   );
 }
 
-export async function hashPin(pin: string, salt: Buffer = crypto.randomBytes(16)): Promise<PinHash> {
+export async function hashPin(pin: string, salt: Buffer = crypto.randomBytes(SALT_LEN)): Promise<PinHash> {
   const key = await scrypt(pin, salt, KEY_LEN, KDF);
   return { kdf: { ...KDF, salt: salt.toString('base64') }, hash: key.toString('base64') };
 }

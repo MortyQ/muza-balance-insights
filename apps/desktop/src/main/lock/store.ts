@@ -64,11 +64,11 @@ export async function writeLock(dir: string, file: LockFile): Promise<void> {
     } finally {
       await handle.close();
     }
+    await fs.promises.rename(tmp, target);
   } catch (err) {
     await fs.promises.rm(tmp, { force: true });
     throw err;
   }
-  await fs.promises.rename(tmp, target);
 }
 
 export async function removeLock(dir: string): Promise<void> {
