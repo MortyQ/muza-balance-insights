@@ -2,9 +2,6 @@
 // Adding a method = one line here + a zod schema in src/main/ipc.ts (typecheck enforces both) + a handler.
 
 export const METHODS = [
-  'setToken',
-  'clearToken',
-  'hasToken',
   'listPeople',
   'addConnection',
   'renameParticipant',

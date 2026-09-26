@@ -107,15 +107,9 @@ export class DataService {
     return (await listConnections(await this.conn())).map((c) => ({ connectionId: c.id, provider: c.provider }));
   }
 
-  /**
-   * The only Monobank connection, while the token IPC knows one connection (until step 4d): created with its
-   * participant on `create`, otherwise null when there is none yet.
-   */
-  async monobankConnection(create: boolean): Promise<number | null> {
-    const db = await this.conn();
-    if (create) return ensureDefaultConnection(db, 'monobank', this.d.nowSec());
-    const rs = await db.execute(`SELECT id FROM connections WHERE provider = 'monobank' ORDER BY id LIMIT 1`);
-    return rs.rows[0] ? Number(rs.rows[0].id) : null;
+  /** The only Monobank connection (created with «Я» if there is none): the owner of an older version's token.bin. */
+  async legacyConnection(): Promise<number> {
+    return ensureDefaultConnection(await this.conn(), 'monobank', this.d.nowSec());
   }
 
   /** Closes the connection (before the files are deleted). The next call opens a fresh database. */

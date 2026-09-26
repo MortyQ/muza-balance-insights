@@ -55,18 +55,17 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
   it('an untrusted sender is refused before argument parsing, the handler never runs', async () => {
     const ipc = fakeIpcMain();
     let ran = false;
-    registerIpc(ipc, { hasToken: async () => ((ran = true), true) }, { trusted: () => false });
-    await expect(ipc.handlers.get('balance:hasToken')!(good)).rejects.toThrow(FORBIDDEN);
+    registerIpc(ipc, { listPeople: async () => ((ran = true), true) }, { trusted: () => false });
+    await expect(ipc.handlers.get('balance:listPeople')!(good)).rejects.toThrow(FORBIDDEN);
     expect(ran).toBe(false);
   });
 
   const INVALID: Array<[string, unknown[]]> = [
-    ['setToken', []],
-    ['setToken', ['short', true]],
-    ['setToken', ['x'.repeat(40), 'yes']],
-    ['setToken', ['has space in the token 123456', true]],
-    ['setToken', ['x'.repeat(201), true]],
-    ['setToken', ['x'.repeat(40), true, 'extra']],
+    ['setConnectionToken', []],
+    ['setConnectionToken', [1, 'x'.repeat(40), 'yes']],
+    ['setConnectionToken', [1, 'has space in the token 123456', true]],
+    ['setConnectionToken', [1, 'x'.repeat(201), true]],
+    ['setConnectionToken', [1, 'x'.repeat(40), true, 'extra']],
     ['startImport', [2]],
     ['startImport', ['3']],
     ['startImport', []],
@@ -101,8 +100,6 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['removeConnection', [1.5]],
     ['removeConnection', [1, true]],
     ['deleteAllData', [{ confirm: true }]],
-    ['clearToken', ['x']],
-    ['hasToken', ['x']],
     ['cancelImport', [1]],
     ['getSyncStatus', [{}]],
     ['getUpdate', [1]],

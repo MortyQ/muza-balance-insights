@@ -1,25 +1,18 @@
 <script setup lang="ts">
 import { onMounted, useId, useTemplateRef } from 'vue';
 import type { Bank } from '@/entities/bank';
-import { useTokenStore } from '@/entities/token';
-import { VButton, VInfoNotice } from '@/shared/ui';
-import { useTokenForm } from '../composables/useTokenForm.ts';
+import { VInfoNotice } from '@/shared/ui';
 
-const { bank, submitText = 'Подключить', autofocus = false } = defineProps<{
+const { bank, secureStorage, autofocus = false } = defineProps<{
   bank: Readonly<Bank>;
-  submitText?: string;
+  secureStorage: boolean;
   autofocus?: boolean;
 }>();
-const emit = defineEmits<{ saved: [] }>();
+const token = defineModel<string>('token', { required: true });
+const remember = defineModel<boolean>('remember', { required: true });
 
-const token = useTokenStore();
-const { tokenInput, remember, submit, save } = useTokenForm();
 const inputId = useId();
 const input = useTemplateRef<HTMLInputElement>('input');
-
-async function onSubmit() {
-  if (await save()) emit('saved');
-}
 
 onMounted(() => {
   if (autofocus) input.value?.focus();
@@ -27,7 +20,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
+  <div class="flex flex-col gap-3">
     <ol class="flex list-decimal flex-col gap-1 pl-5 text-foreground-secondary">
       <li v-for="step in bank.tokenSteps" :key="step">{{ step }}</li>
     </ol>
@@ -35,7 +28,7 @@ onMounted(() => {
     <input
       :id="inputId"
       ref="input"
-      v-model="tokenInput"
+      v-model="token"
       class="h-(--control-h) w-full max-w-[420px] rounded-md border border-input-border bg-input-bg px-(--control-px) placeholder:text-input-placeholder focus:border-border-focus focus:outline-none"
       type="password"
       autocomplete="off"
@@ -44,15 +37,11 @@ onMounted(() => {
     />
     <label class="flex items-center gap-2"><input v-model="remember" class="accent-primary" type="checkbox" /> Запомнить на этом компьютере</label>
     <VInfoNotice
-      v-if="token.status && !token.status.secureStorage"
+      v-if="!secureStorage"
       :card="false"
       icon="lucide:triangle-alert"
       tone="warning"
       subtitle="На этом компьютере нет защищённого хранилища ключей: токен не будет сохранён, только в памяти до закрытия приложения."
     />
-    <div>
-      <VButton type="submit" :text="submitText" :loading="submit.status === 'saving'" :disabled="tokenInput.trim() === ''" />
-    </div>
-    <VInfoNotice v-if="submit.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="submit.message" />
-  </form>
+  </div>
 </template>

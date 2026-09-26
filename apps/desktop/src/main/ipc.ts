@@ -14,9 +14,6 @@ const label = z.string().min(1).max(80);
 
 /** Argument tuples. z.tuple without a rest element rejects extra arguments. */
 export const ARG_SCHEMAS = {
-  setToken: z.tuple([z.string().min(20).max(200).regex(/^\S+$/), z.boolean()]),
-  clearToken: z.tuple([]),
-  hasToken: z.tuple([]),
   listPeople: z.tuple([]),
   addConnection: z.tuple([
     z.strictObject({

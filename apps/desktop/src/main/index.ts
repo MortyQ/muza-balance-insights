@@ -15,7 +15,7 @@ import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
 import { PeopleService } from './people.ts';
 import { runDbSmoke } from './smoke.ts';
-import { TokenVault, type TokenStatus } from './token.ts';
+import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { windowOptions } from './window.ts';
 import { DB_FILE, deleteAllData } from './wipe.ts';
@@ -85,29 +85,11 @@ app.whenReady().then(async () => {
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (vault.hasLegacy()) {
     try {
-      const id = await data.monobankConnection(true);
-      if (id !== null) process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(id)}\n`);
+      process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(await data.legacyConnection())}\n`);
     } catch (err) {
       process.stderr.write(`[token] legacy token not moved: ${err instanceof Error ? err.name : 'error'}\n`);
     }
   }
-  // Until the IPC knows connections (step 4d): the single-token calls act on the only Monobank connection.
-  const singleToken = {
-    set: async (token: string, remember: boolean) => {
-      const id = await data.monobankConnection(true);
-      if (id === null) throw new Error('no connection');
-      return vault.set(id, 'monobank', token, remember);
-    },
-    clear: async () => {
-      const id = await data.monobankConnection(false);
-      if (id !== null) await vault.clear(id);
-    },
-    status: async (): Promise<TokenStatus> => {
-      const id = await data.monobankConnection(false);
-      if (id !== null) return vault.status(id);
-      return { present: false, stored: null, secureStorage: await vault.secureStorageAvailable(), needsReentry: false };
-    },
-  };
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
@@ -159,9 +141,6 @@ app.whenReady().then(async () => {
   });
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
-    setToken: (token, remember) => singleToken.set(token, remember),
-    clearToken: () => singleToken.clear(),
-    hasToken: () => singleToken.status(),
     listPeople: () => people.list(),
     addConnection: (input) => people.addConnection(input),
     renameParticipant: (id, label) => people.rename(id, label),

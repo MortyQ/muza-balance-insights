@@ -321,8 +321,7 @@
 - Токены — `TokenVault` (`apps/desktop/src/main/token.ts`): файл на подключение `tokens/<connectionId>.bin` (safeStorage,
   0600), статус и «ввести заново» — по подключению. Старый `token.bin` при запуске переносится к подключению Monobank
   как есть, без расшифровки. Форма токена провайдера — `apps/desktop/src/net/providers.ts` (`DESKTOP_PROVIDERS`, запись на
-  каждый провайдер ядра — `tests/providers.test.ts`). До шага 4d IPC `setToken` / `hasToken` / `clearToken` работают с
-  единственным подключением Monobank (адаптер в `main/index.ts`).
+  каждый провайдер ядра — `tests/providers.test.ts`).
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
   `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
   банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`); сеть — таблица `FETCH` в
@@ -362,13 +361,20 @@
   - сегменты слайса: `<Name>Feature.vue` (корень фичи), `api/`, `composables/` (логика, явный `Use<X>Return` в `types.ts`),
     `components/` (только отображение), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
     (чистые функции); страницы — тонкие оболочки над фичами и виджетами;
-  - общее состояние — Pinia в `entities`: `token` (статус токена), `sync-status` (статус данных и `version`, на который
-    перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts`;
+  - общее состояние — Pinia в `entities`: `participant` (люди, подключения, статусы токенов, выбор «Вся семья / человек» —
+    `selectedId`, запоминается в `localStorage` только для удобства), `sync-status` (статус данных и `version`, на который
+    перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts` (люди обновляются на
+    `needs-token`, в начале окон импорта и в его конце);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
-  имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): подключение — только если нет ни токена,
-  ни данных; данные без токена → главный с плашкой; настройки доступны всегда.
-  Банки — `entities/bank` (Monobank + «Скоро»), подключение в main пока только Monobank (`setToken`/`clearToken`).
+  имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
+  одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
+  Банки — `entities/bank` (Monobank + «Скоро»), подключение — `addConnection` в main (пока только Monobank).
+- Простой UI людей (шаг 4e, до редизайна): настройки → «Люди и подключения» (`features/people`: имя и «Переименовать»,
+  подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий человек или
+  новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран — `ConnectFirstFeature` той же
+  формой с человеком «Я»; на главном — `features/participant-switch` («Вся семья / имена», только если людей больше одного),
+  траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
 

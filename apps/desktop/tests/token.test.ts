@@ -128,11 +128,12 @@ describe('the token never leaves main', () => {
     const handlers = new Map<string, (e: IpcEventLike, ...a: unknown[]) => Promise<unknown>>();
     const logs: string[] = [];
     const wire = (ss: SafeStorageLike) => {
-      const s = store(ss);
+      const v = vault(ss);
       handlers.clear();
       registerIpc(
         { handle: (ch, fn) => void handlers.set(ch, fn) },
-        { setToken: (t, r) => s.set(t, r), clearToken: () => s.clear(), hasToken: () => s.status() },
+        // What reaches the vault from the renderer: a connection's new token (src/main/people.ts → TokenVault.set).
+        { setConnectionToken: (id, t, r) => v.set(id, 'monobank', t, r) },
         // The same log line as src/main/index.ts: the error's name only.
         { trusted: () => true, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
       );
@@ -142,28 +143,25 @@ describe('the token never leaves main', () => {
     const call = async (ch: string, ...a: unknown[]) => outputs.push(await handlers.get(ch)!(ev, ...a).catch((e: Error) => ({ error: e.message, name: e.name })));
 
     wire(fakeSafeStorage());
-    await call('balance:setToken', CANARY, true);
-    await call('balance:hasToken');
-    await call('balance:setToken', CANARY, false);
-    await call('balance:hasToken');
-    await call('balance:setToken', `${CANARY} with space`, true); // rejected by zod
-    await call('balance:clearToken');
-    await call('balance:hasToken');
+    await call('balance:setConnectionToken', 1, CANARY, true);
+    await call('balance:setConnectionToken', 2, CANARY, false);
+    await call('balance:setConnectionToken', 1, `${CANARY} with space`, true); // rejected by zod
     wire(fakeSafeStorage({ failEncrypt: true }));
-    await call('balance:setToken', CANARY, true); // safeStorage error message contains the token
+    await call('balance:setConnectionToken', 1, CANARY, true); // safeStorage error message contains the token
 
     const text = JSON.stringify(outputs) + logs.join('\n');
     expect(text).not.toContain(CANARY);
     expect(text).not.toContain('CANARY');
     expect(outputs).toContainEqual({ stored: 'secure' });
     expect(outputs).toContainEqual({ error: 'Не удалось выполнить операцию', name: 'Error' });
-    expect(logs).toEqual(['[ipc] setToken: Error']);
+    expect(logs).toEqual(['[ipc] setConnectionToken: Error']);
   });
 
-  it('main: IPC handlers never call tokens.get(); the log line prints only err.name', () => {
+  it('main: IPC handlers never read a token (vault.get); the log line prints only err.name', () => {
     const code = fs.readFileSync(new URL('../src/main/index.ts', import.meta.url), 'utf8');
     const ipcBlock = code.slice(code.indexOf('registerIpc(ipcMain'), code.indexOf('trusted:'));
-    expect(ipcBlock).not.toMatch(/tokens\.get\(/);
+    expect(ipcBlock).toMatch(/listPeople: \(\) => people\.list\(\)/); // control: this is the handler block
+    expect(ipcBlock).not.toMatch(/(tokens|vault)\.get\(/);
     expect(code).toMatch(/onError: \(method, err\) => process\.stderr\.write\(`\[ipc\] \$\{method\}: \$\{err instanceof Error \? err\.name : 'error'\}\\n`\)/);
   });
 

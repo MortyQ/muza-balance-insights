@@ -59,9 +59,6 @@ export type AddConnectionResult =
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
 export type BalanceApi = {
-  setToken(token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }>;
-  clearToken(): Promise<void>;
-  hasToken(): Promise<TokenStatus>;
   listPeople(): Promise<PeopleView>;
   /** Creates the participant (if new) and the connection, keeps the token. Does not start an import. */
   addConnection(input: AddConnectionInput): Promise<AddConnectionResult>;

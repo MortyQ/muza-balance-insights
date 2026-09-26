@@ -2,14 +2,12 @@
 import { ref } from 'vue';
 import { DISCLAIMER } from '@contract/about.ts';
 import { BANKS, type Bank, BankMark } from '@/entities/bank';
-import { useTokenStore } from '@/entities/token';
-import { VButton, VInfoNotice } from '@/shared/ui';
+import { VButton } from '@/shared/ui';
+import AddConnectionForm from './components/AddConnectionForm.vue';
 import BankCard from './components/BankCard.vue';
-import TokenForm from './components/TokenForm.vue';
 
 const emit = defineEmits<{ connected: [] }>();
 
-const token = useTokenStore();
 const selected = ref<Readonly<Bank> | null>(null);
 </script>
 
@@ -19,14 +17,6 @@ const selected = ref<Readonly<Bank> | null>(null);
       <h1 class="text-2xl font-semibold">Balance Insights</h1>
       <p class="text-foreground-secondary">Куда уходят деньги — по твоей выписке, на твоём компьютере.</p>
     </header>
-
-    <VInfoNotice
-      v-if="token.status?.needsReentry"
-      :card="false"
-      icon="lucide:triangle-alert"
-      tone="warning"
-      subtitle="Сохранённый токен больше не читается — подключи банк заново."
-    />
 
     <Transition name="swap" mode="out-in">
       <section v-if="!selected" key="banks" class="flex flex-col gap-3">
@@ -47,7 +37,7 @@ const selected = ref<Readonly<Bank> | null>(null);
             <span class="text-sm text-foreground-muted">Токен даёт только чтение выписки и балансов и хранится на этом компьютере.</span>
           </div>
         </div>
-        <TokenForm :bank="selected" autofocus @saved="emit('connected')" />
+        <AddConnectionForm default-label="Я" autofocus @added="emit('connected')" />
       </section>
     </Transition>
 

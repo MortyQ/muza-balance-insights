@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
 import { UpdateSettingsFeature } from '@/features/app-update';
-import { BankConnectionFeature } from '@/features/connect-bank';
 import { DeleteDataFeature } from '@/features/delete-data';
+import { PeopleFeature } from '@/features/people';
 import { ROUTE } from '@/shared/config';
 import { VButton } from '@/shared/ui';
 import { AboutApp } from '@/widgets/about-app';
 import { useEscape } from './composables/useEscape.ts';
 
 const router = useRouter();
-// Home; the router guard sends it on to the connect screen when there is neither a token nor data.
+// Home; the router guard sends it on to the connect screen when there is neither a connection nor data.
 const back = () => void router.replace({ name: ROUTE.home });
 useEscape(back);
 </script>
@@ -20,7 +20,7 @@ useEscape(back);
       <VButton variant="neutral" icon="lucide:chevron-left" title="Назад (Esc)" aria-label="Назад" @click="back" />
       <h1 class="text-xl font-semibold">Настройки</h1>
     </header>
-    <BankConnectionFeature />
+    <PeopleFeature />
     <UpdateSettingsFeature />
     <DeleteDataFeature @deleted="back" />
     <AboutApp />

@@ -19,7 +19,7 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
     case 'idle':
       return '';
     case 'needs-token':
-      return 'Есть незавершённый импорт. Подключи банк, чтобы продолжить.';
+      return 'Есть незавершённый импорт. Введи токен в «Люди и подключения», чтобы продолжить.';
     case 'starting':
       return p.resumed ? 'Продолжаю импорт…' : 'Запускаю импорт…';
     case 'accounts':
@@ -42,6 +42,11 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
       return p.message;
   }
   return '';
+}
+
+/** After an import: one line per connection that did not import (`labelOf`: «Имя · Monobank»). */
+export function failureLines(p: Readonly<ImportProgress>, labelOf: (connectionId: number) => string): string[] {
+  return p.phase === 'done' ? p.failed.map((f) => `${labelOf(f.connectionId)}: ${f.message}`) : [];
 }
 
 /** Share of windows done, or null when there is no bar to show. */

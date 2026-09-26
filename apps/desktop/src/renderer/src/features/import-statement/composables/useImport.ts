@@ -13,7 +13,7 @@ export function useImport(): UseImportReturn {
     error.value = '';
     try {
       const r = await startImport(depth.value);
-      if (!r.started) error.value = r.reason === 'no-token' ? 'Сначала подключи банк в настройках.' : 'Импорт уже идёт.';
+      if (!r.started) error.value = r.reason === 'no-token' ? 'Нет ни одного токена: введи его в настройках, «Люди и подключения».' : 'Импорт уже идёт.';
     } catch {
       error.value = FAILED_TEXT;
     }

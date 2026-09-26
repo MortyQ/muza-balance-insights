@@ -37,10 +37,10 @@ describe('preload API', () => {
   it('a method only forwards to its own channel', async () => {
     const api = exposed[0]![1];
     await api.startImport(3);
-    await api.setToken('t'.repeat(30), true);
+    await api.setConnectionToken(1, 't'.repeat(30), true);
     expect(invoked).toEqual([
       ['balance:startImport', 3],
-      ['balance:setToken', 't'.repeat(30), true],
+      ['balance:setConnectionToken', 1, 't'.repeat(30), true],
     ]);
   });
 

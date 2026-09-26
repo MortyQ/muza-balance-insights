@@ -10,7 +10,7 @@ const api = vi.hoisted(() => {
   const fake = {
     getSyncStatus: vi.fn(async () => ({ hasData: true, dataUntil: null })),
     getUpdate: vi.fn(async () => ({})),
-    hasToken: vi.fn(async () => ({ stored: null })),
+    listPeople: vi.fn(async () => ({ people: [], secureStorage: true })),
     onProgress: vi.fn((cb: (p: unknown) => void) => ((state.progress = cb), () => undefined)),
     onUpdate: vi.fn(() => () => undefined),
     onOpenSettings: vi.fn(() => () => undefined),
@@ -77,5 +77,18 @@ describe('listenToMain: live data during an import', () => {
     send(win(0));
     send(win(1));
     expect(refreshes()).toBe(2);
+  });
+
+  it('people (names from the bank, coverage, token statuses) refresh when the windows start, on the end and on needs-token', () => {
+    const people = () => api.fake.listPeople.mock.calls.length;
+    api.fake.listPeople.mockClear();
+    send({ phase: 'accounts' });
+    send(win(0));
+    send(win(1));
+    expect(people()).toBe(1);
+    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [{ connectionId: 2, message: 'x' }] });
+    expect(people()).toBe(2);
+    send({ phase: 'needs-token', connectionIds: [2] });
+    expect(people()).toBe(3);
   });
 });

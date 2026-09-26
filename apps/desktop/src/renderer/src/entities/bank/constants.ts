@@ -1,5 +1,5 @@
-// Banks on the connect screen. Only Monobank works today; the rest are shown as «Скоро». The connection itself
-// (setToken / clearToken in main) is Monobank-only until a second bank exists.
+// Banks on the connect screen. Only Monobank works today; the rest are shown as «Скоро». A connection is added through
+// addConnection in main (provider 'monobank' until a second bank exists).
 import type { Bank } from './types.ts';
 
 export const BANKS = [
