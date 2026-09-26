@@ -18,6 +18,7 @@ export const METHODS = [
   'downloadUpdate',
   'installUpdate',
   'setUpdateChecks',
+  'getTrustedServices',
 ] as const;
 
 export type Method = (typeof METHODS)[number];

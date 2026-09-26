@@ -1,3 +1,3 @@
 export { FAMILY } from './constants.ts';
 export { useParticipantStore } from './store/useParticipantStore.ts';
-export { coverageLine, tokenLine } from './utils.ts';
+export { coverageLine, tokenBadge, tokenLine, type TokenBadge } from './utils.ts';

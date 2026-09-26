@@ -56,6 +56,9 @@ export type AddConnectionResult =
   /** duplicate: this very token is already a connection. */
   | { added: false; reason: 'duplicate' };
 
+/** A service the app may reach (src/net/allowlist.ts); ids must equal its ServiceId (checked in src/main/services.ts). */
+export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
+
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
 export type BalanceApi = {
@@ -85,6 +88,8 @@ export type BalanceApi = {
   /** auto mode, `ready` only: quits and installs. Refused while an import runs. */
   installUpdate(): Promise<{ started: boolean; reason?: 'import-running' | 'not-ready' }>;
   setUpdateChecks(enabled: boolean): Promise<UpdateView>;
+  /** The hosts the app may reach, for the settings screen. */
+  getTrustedServices(): Promise<TrustedServiceView[]>;
   /** Returns an unsubscribe function. */
   onUpdate(cb: (v: UpdateView) => void): () => void;
 };

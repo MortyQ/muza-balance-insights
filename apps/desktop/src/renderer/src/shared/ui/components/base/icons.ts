@@ -1,19 +1,28 @@
 import type { Component } from "vue";
 
-import LucideCircleCheckBig from "~icons/lucide/circle-check-big";
 import LucideChevronLeft from "~icons/lucide/chevron-left";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 import LucideCircleAlert from "~icons/lucide/circle-alert";
+import LucideCircleCheckBig from "~icons/lucide/circle-check-big";
+import LucideDatabase from "~icons/lucide/database";
 import LucideDownload from "~icons/lucide/download";
+import LucideGlobe from "~icons/lucide/globe";
 import LucideInfo from "~icons/lucide/info";
+import LucideKeyRound from "~icons/lucide/key-round";
+import LucideLandmark from "~icons/lucide/landmark";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
+import LucidePalette from "~icons/lucide/palette";
 import LucidePlug from "~icons/lucide/plug";
+import LucidePlus from "~icons/lucide/plus";
 import LucideRefreshCw from "~icons/lucide/refresh-cw";
 import LucideSettings from "~icons/lucide/settings";
+import LucideShieldCheck from "~icons/lucide/shield-check";
 import LucideSparkles from "~icons/lucide/sparkles";
 import LucideSquare from "~icons/lucide/square";
 import LucideTrash from "~icons/lucide/trash";
 import LucideTriangleAlert from "~icons/lucide/triangle-alert";
+import LucideUsers from "~icons/lucide/users";
+import LucideWallet from "~icons/lucide/wallet";
 
 /**
  * Every icon the app can show, compiled into the bundle at build time by unplugin-icons
@@ -30,14 +39,23 @@ export const ICONS: Record<string, Component> = {
   "lucide:chevron-left": LucideChevronLeft,
   "lucide:chevron-right": LucideChevronRight,
   "lucide:circle-alert": LucideCircleAlert,
+  "lucide:database": LucideDatabase,
   "lucide:download": LucideDownload,
+  "lucide:globe": LucideGlobe,
   "lucide:info": LucideInfo,
+  "lucide:key-round": LucideKeyRound,
+  "lucide:landmark": LucideLandmark,
   "lucide:loader-circle": LucideLoaderCircle,
+  "lucide:palette": LucidePalette,
   "lucide:plug": LucidePlug,
+  "lucide:plus": LucidePlus,
   "lucide:refresh-cw": LucideRefreshCw,
   "lucide:settings": LucideSettings,
+  "lucide:shield-check": LucideShieldCheck,
   "lucide:sparkles": LucideSparkles,
   "lucide:square": LucideSquare,
   "lucide:trash": LucideTrash,
   "lucide:triangle-alert": LucideTriangleAlert,
+  "lucide:users": LucideUsers,
+  "lucide:wallet": LucideWallet,
 };

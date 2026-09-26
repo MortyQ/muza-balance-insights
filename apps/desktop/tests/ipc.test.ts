@@ -109,6 +109,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setUpdateChecks', []],
     ['setUpdateChecks', ['yes']],
     ['setUpdateChecks', [true, 'extra']],
+    ['getTrustedServices', [1]],
+    ['getTrustedServices', [{}]],
   ];
   it.each(INVALID)('%s(%j) → rejected, handler not called', async (m, args) => {
     const ipc = fakeIpcMain();

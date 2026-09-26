@@ -13,6 +13,7 @@ import { configureIdentity } from './identity.ts';
 import { Importer } from './importer.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
+import { trustedServicesView } from './services.ts';
 import { PeopleService } from './people.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
@@ -158,6 +159,7 @@ app.whenReady().then(async () => {
     downloadUpdate: () => updater.download(),
     installUpdate: async () => updater.install(),
     setUpdateChecks: (enabled) => updater.setChecks(enabled),
+    getTrustedServices: async () => trustedServicesView(),
   }, {
     trusted: (event) => isTrustedSender(event, win, devOrigin),
     onError: (method, err) => process.stderr.write(`[ipc] ${method}: ${err instanceof Error ? err.name : 'error'}\n`),

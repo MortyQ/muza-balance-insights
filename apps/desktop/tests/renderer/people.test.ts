@@ -18,11 +18,11 @@ const api = vi.hoisted(() => {
 });
 vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api.people) } }));
 
-const { FAMILY, coverageLine, tokenLine, useParticipantStore } = await import('@/entities/participant');
+const { FAMILY, coverageLine, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
-const { participantChoice, removeText } = await import('@/features/people/utils.ts');
+const { connectionsCount, participantChoice, removeText } = await import('@/features/people/utils.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -73,6 +73,25 @@ describe('participant store', () => {
     expect(coverageLine(conn(1))).toBe('Ещё не загружено');
     expect(coverageLine(conn(1, { coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Счетов: 2 · загружено с 01.06.2025 по 25.09.2026');
   });
+});
+
+describe('token badge in settings', () => {
+  it.each([
+    [token(), 'success', 'Токен сохранён'],
+    [token({ stored: 'memory' }), 'warning', 'Токен до закрытия'],
+    [token({ present: false, stored: null, needsReentry: true }), 'warning', 'Введите токен заново'],
+    [token({ present: false, stored: null }), 'warning', 'Нужен токен'],
+  ])('tokenBadge %#', (s, tone, text) => expect(tokenBadge(s)).toEqual({ tone, text }));
+
+  it.each([
+    [0, '0 подключений'],
+    [1, '1 подключение'],
+    [2, '2 подключения'],
+    [5, '5 подключений'],
+    [11, '11 подключений'],
+    [21, '21 подключение'],
+    [22, '22 подключения'],
+  ])('connectionsCount(%i)', (n, text) => expect(connectionsCount(n)).toBe(text));
 });
 
 describe('screens and notices', () => {

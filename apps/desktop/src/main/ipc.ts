@@ -40,6 +40,7 @@ export const ARG_SCHEMAS = {
   downloadUpdate: z.tuple([]),
   installUpdate: z.tuple([]),
   setUpdateChecks: z.tuple([z.boolean()]),
+  getTrustedServices: z.tuple([]),
 } as const satisfies Record<Method, z.ZodType<unknown[]>>;
 
 export type Args<M extends Method> = z.infer<(typeof ARG_SCHEMAS)[M]>;
