@@ -34,7 +34,7 @@ describe('watchLockTriggers', () => {
   });
 
   it('electron.ts is the only file of the lock that imports electron', () => {
-    for (const f of ['pin', 'attempts', 'store', 'service', 'triggers']) {
+    for (const f of ['pin', 'attempts', 'store', 'service', 'triggers', 'gate']) {
       const code = fs.readFileSync(new URL(`../src/main/lock/${f}.ts`, import.meta.url), 'utf8');
       expect(code, f).not.toMatch(/from 'electron'/);
     }
