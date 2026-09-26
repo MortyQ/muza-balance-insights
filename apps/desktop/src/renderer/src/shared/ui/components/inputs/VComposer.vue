@@ -80,7 +80,7 @@ const copyViaClipboardApi = async (value: string): Promise<boolean> => {
   }
 };
 
-// vueuse's own legacy fallback, from before it dropped `execCommand` support: an
+// What vueuse's useClipboard does with `legacy: true`: an
 // off-screen textarea, selected and copied via the deprecated but still-supported
 // `execCommand('copy')`. Positioned through CSSOM property setters, not `cssText` or
 // a string `style` attribute — prod CSP has no `style-src 'unsafe-inline'`.
