@@ -1,0 +1,433 @@
+/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* ============================================
+   WRAPPER
+   ============================================ */
+.v-input-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+
+  /* Hide native search input clear button */
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+/* ============================================
+   CONTAINER
+   ============================================ */
+.v-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: var(--ui-input-bg);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-xs);
+}
+
+/* ============================================
+   INPUT FIELD
+   ============================================ */
+.v-input-field {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  border-radius: var(--ui-radius-lg);
+  color: var(--ui-foreground);
+  font-family: inherit;
+  /* The same 30px / 13px / 450 chrome `VButton` and `VSelect` carry, so a filter
+     field sits in a toolbar row with them instead of towering 14px over them. */
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  position: relative;
+  z-index: 10;
+  /* Not `all`: that animates background-color, which fights the 5000s
+     transition the autofill block below relies on. */
+  transition: color 0.2s ease-out, padding 0.2s ease-out;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &::placeholder {
+    color: var(--ui-input-placeholder);
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  /* The same 28 / 32 / 40 scale `VButton` carries, and for the same reason:
+     height only, because the horizontal padding and the type scale belong to the
+     chrome rather than to the size. Left unset the field keeps its natural 30px. */
+  &--sm {
+    height: var(--ui-control-h-sm);
+  }
+
+  &--md {
+    height: var(--ui-control-h-md);
+  }
+
+  &--lg {
+    height: var(--ui-control-h-lg);
+  }
+
+  /* Textarea variant */
+  &--textarea {
+    height: auto;
+    min-height: 4.5rem;
+    padding: var(--ui-space-sm) var(--ui-control-px);
+    resize: vertical;
+    line-height: 1.4;
+  }
+
+  /* With left icon */
+  &--with-left-icon {
+    padding-left: 2rem;
+  }
+
+  /* With right icon */
+  &--with-right-icon {
+    padding-right: 2rem;
+  }
+
+  /* Date input */
+  &--date {
+    cursor: pointer;
+  }
+
+  /* Disabled state */
+  &--disabled {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+  }
+}
+
+/* ============================================
+   ICONS
+   ============================================ */
+.v-input-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+  color: var(--ui-input-placeholder);
+  transition: color 0.15s ease;
+
+  &-left {
+    left: 0.5rem;
+  }
+
+  &-right {
+    right: 0.5rem;
+    pointer-events: auto;
+  }
+
+  &-textarea {
+    top: 0.625rem;
+    transform: none;
+    align-items: flex-start;
+  }
+
+  &--active {
+    color: var(--ui-primary);
+  }
+}
+
+.v-input-icon-svg--error {
+  color: var(--ui-danger);
+}
+
+.v-input-icon-svg {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
+
+  &--sm {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+}
+
+/* ============================================
+   CLEAR BUTTON
+   ============================================ */
+.v-input-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-foreground-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--ui-danger);
+    background-color: color-mix(in oklch, var(--ui-danger) 10%, transparent);
+  }
+}
+
+/* ============================================
+   PASSWORD TOGGLE
+   ============================================ */
+.v-input-password-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--ui-radius);
+  background: transparent;
+  color: var(--ui-foreground-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--ui-foreground);
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--ui-primary) 30%, transparent);
+  }
+}
+
+/* ============================================
+   FLOATING LABEL
+   ============================================ */
+.v-label {
+  position: absolute;
+  left: var(--ui-control-px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  max-width: calc(100% - 24px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform-origin: top left;
+  font-size: var(--ui-text-base);
+  line-height: var(--ui-leading-base);
+  color: color-mix(in oklch, var(--ui-foreground) 60%, transparent);
+  transition: all 0.2s ease;
+
+  &--with-icon {
+    left: 2rem;
+  }
+
+  &--textarea {
+    top: 0.625rem;
+    transform: none;
+  }
+
+  /* Declared at 10px rather than a 13px label under `scale(0.75)`: 9.75px
+     renders blurry at subpixel sizes where a declared 10px is drawn crisp. */
+  &--active {
+    top: 0;
+    left: var(--ui-control-px);
+    font-size: var(--ui-text-2xs);
+    line-height: var(--ui-leading-2xs);
+    transform: translateY(-50%);
+    font-weight: 500;
+    color: var(--ui-primary);
+  }
+
+  &--error {
+    color: var(--ui-danger);
+  }
+}
+
+/* ============================================
+   FIELDSET BORDER
+   ============================================ */
+.v-fieldset {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  /* The legend is laid out from the fieldset's content box, so the text inside
+     it starts at `padding-left + legend padding-left` — 7px + 3px — which is
+     exactly the `left: 0.625rem` the active label sits at. */
+  padding: 0 calc(var(--ui-control-px) - 0.1875rem);
+  border-radius: var(--ui-radius-lg);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--ui-input-border);
+  pointer-events: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+
+  &--active {
+    border-width: 2px;
+    border-color: var(--ui-border-focus);
+  }
+
+  &--error {
+    border-color: var(--ui-danger);
+
+    &.v-fieldset--active {
+      border-color: var(--ui-danger);
+    }
+  }
+
+  &--disabled {
+    border-color: color-mix(in oklch, var(--ui-foreground) 20%, transparent);
+  }
+}
+
+.v-input-container:has(.v-fieldset--disabled) {
+  background-color: var(--ui-surface-sunken);
+}
+
+.v-input-container:hover .v-fieldset:not(.v-fieldset--active):not(.v-fieldset--error):not(.v-fieldset--disabled) {
+  border-color: var(--ui-border-strong);
+}
+
+/* ============================================
+   LEGEND (for fieldset notch)
+   ============================================ */
+.v-legend {
+  height: 0;
+  max-width: 0;
+  width: auto;
+  padding: 0;
+  border: none;
+  font-size: var(--ui-text-2xs);
+  line-height: var(--ui-leading-2xs);
+  /* Set in the same face as the label it makes room for. Left at 400 against a
+     500 label it measures narrower, and the border closes over the last glyph. */
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: all 0.2s ease;
+
+  span {
+    display: inline-block;
+    opacity: 0;
+  }
+
+  &--visible {
+    max-width: 100%;
+    padding-left: 0.1875rem;
+    padding-right: 0.1875rem;
+  }
+}
+
+/* ============================================
+   HELPER TEXT
+   ============================================ */
+.v-input-helper-text {
+  margin-left: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--ui-foreground-secondary);
+}
+
+/* ============================================
+   ERROR MESSAGE
+   ============================================ */
+.v-input-error-message {
+  margin-left: 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  color: var(--ui-danger);
+}
+
+/* ============================================
+   AUTOFILL OVERRIDES
+   ============================================ */
+/* Scoped to .v-input-field, not to bare `input` / `textarea`: this stylesheet is
+   loaded by a library component, and the unscoped form restyled every autofilled
+   field in the consuming app. The class carries enough specificity to drop the
+   `!important`s along with it.
+
+   The inset fill masks the browser's yellow background; the 5000s background
+   transition keeps the UA style from ever landing. Elevation is unaffected —
+   it sits on .v-input-container, whose drop shadow paints outside the box. */
+.v-input-field:-webkit-autofill,
+.v-input-field:-webkit-autofill:hover,
+.v-input-field:-webkit-autofill:focus,
+.v-input-field:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--ui-foreground);
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-input-bg) inset;
+  box-shadow: 0 0 0 1000px var(--ui-input-bg) inset;
+  caret-color: var(--ui-foreground);
+  font-family: inherit;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Firefox marks the field without forcing a background there is anything to
+   mask, so it only needs the colour and the font back. */
+.v-input-field:autofill {
+  color: var(--ui-foreground);
+  font-family: inherit;
+}
+
+/* Autofill on page load does not reliably fire `input`, so localValue stays
+   empty, `hasValue` is false and the floating label would sit on top of the
+   value the browser just filled in. Drive the raised state from CSS instead. */
+.v-input-container:has(.v-input-field:-webkit-autofill) {
+  /* The field (z-10) paints above the fieldset, so the inset fill would swallow
+     the border. Raised only here: a permanent z-index would put the border over
+     the textarea's native resize grip, which is a visible 2px regression. Still
+     below the icons and the label (z-20). */
+  .v-fieldset {
+    z-index: 15;
+  }
+
+  .v-label {
+    top: 0;
+    left: 0.75rem;
+    transform: translateY(-50%) scale(0.75);
+    font-weight: 500;
+    color: var(--ui-primary);
+
+    &.v-label--error {
+      color: var(--ui-danger);
+    }
+  }
+
+  .v-legend {
+    max-width: 100%;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+}
+
+/* ============================================
+   TRANSITIONS (Vue)
+   ============================================ */
+.error-slide-enter-active,
+.error-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.error-slide-enter-from,
+.error-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}

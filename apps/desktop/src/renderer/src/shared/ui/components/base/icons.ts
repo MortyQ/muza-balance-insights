@@ -5,15 +5,19 @@ import LucideChevronLeft from "~icons/lucide/chevron-left";
 import LucideChevronRight from "~icons/lucide/chevron-right";
 import LucideCircleAlert from "~icons/lucide/circle-alert";
 import LucideDownload from "~icons/lucide/download";
+import LucideEye from "~icons/lucide/eye";
+import LucideEyeOff from "~icons/lucide/eye-off";
 import LucideInfo from "~icons/lucide/info";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucidePlug from "~icons/lucide/plug";
 import LucideRefreshCw from "~icons/lucide/refresh-cw";
+import LucideSearch from "~icons/lucide/search";
 import LucideSettings from "~icons/lucide/settings";
 import LucideSparkles from "~icons/lucide/sparkles";
 import LucideSquare from "~icons/lucide/square";
 import LucideTrash from "~icons/lucide/trash";
 import LucideTriangleAlert from "~icons/lucide/triangle-alert";
+import LucideX from "~icons/lucide/x";
 
 /**
  * Every icon the app can show, compiled into the bundle at build time by unplugin-icons
@@ -31,13 +35,17 @@ export const ICONS: Record<string, Component> = {
   "lucide:chevron-right": LucideChevronRight,
   "lucide:circle-alert": LucideCircleAlert,
   "lucide:download": LucideDownload,
+  "lucide:eye": LucideEye,
+  "lucide:eye-off": LucideEyeOff,
   "lucide:info": LucideInfo,
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:plug": LucidePlug,
   "lucide:refresh-cw": LucideRefreshCw,
+  "lucide:search": LucideSearch,
   "lucide:settings": LucideSettings,
   "lucide:sparkles": LucideSparkles,
   "lucide:square": LucideSquare,
   "lucide:trash": LucideTrash,
   "lucide:triangle-alert": LucideTriangleAlert,
+  "lucide:x": LucideX,
 };
