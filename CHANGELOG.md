@@ -8,6 +8,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Ver
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-09-26
+
+Several people in one app: for example your own Monobank and your partner's, each with their own token.
+
+### Added
+
+- Settings → «Люди и подключения»: people and their bank connections — rename, enter a token again, remove, add a
+  connection for an existing or a new person. A new person's name can be typed or taken from the bank on the first import.
+- Home: a «Вся семья / names» switch (when there is more than one person); spending and balances follow it.
+- One import for all connections: their requests go in parallel (the bank's limit is per token). A rejected token stops
+  only its own connection; the import shows which connections did not load.
+- Transfers between people of the family: not spending for the whole family, «семье» for the sender when one person is
+  viewed.
+- Spending and balances refresh while an import runs.
+
+### Changed
+
+- Tokens are stored per connection. The token of an earlier version moves to its connection by itself on the first
+  launch (the database is upgraded too, so keep a copy of the app's data folder before updating).
+- Removing a connection deletes its accounts and operations in the app (nothing changes at the bank).
+
 ## [0.1.2] — 2026-09-25
 
 First version with automatic updates: install it by hand once, later versions come by themselves.
