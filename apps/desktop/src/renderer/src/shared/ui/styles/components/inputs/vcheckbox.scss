@@ -1,0 +1,124 @@
+/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* ============================================
+   WRAPPER
+   ============================================ */
+.v-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  width: fit-content;
+  user-select: none;
+}
+
+/* ============================================
+   INPUT
+   ============================================ */
+.v-checkbox__input {
+  width: 1rem;
+  height: 1rem;
+  border-radius: var(--ui-radius-xs);
+  border: 1.5px solid var(--ui-border-strong);
+  background: var(--ui-input-bg);
+  transition:
+    border-color 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.18s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  appearance: none;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+  position: relative;
+  box-sizing: border-box;
+  outline: none;
+  margin: 0;
+  flex-shrink: 0;
+
+  &:checked {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary);
+  }
+
+  &:checked::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 5px;
+    height: 9px;
+    border: solid var(--ui-primary-foreground);
+    border-width: 0 2px 2px 0;
+    border-radius: 1px;
+    transform: translate(-50%, -60%) rotate(45deg);
+    box-sizing: border-box;
+    display: block;
+  }
+
+  &:indeterminate {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary);
+  }
+
+  &:indeterminate::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 8px;
+    height: 2px;
+    background: var(--ui-primary-foreground);
+    border-radius: 2px;
+    transform: translate(-50%, -50%);
+    display: block;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--ui-primary) 15%, transparent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background: var(--ui-surface-sunken);
+    border-color: var(--ui-border);
+  }
+
+  &:disabled:checked {
+    background: var(--ui-primary);
+    border-color: var(--ui-primary);
+    opacity: 0.5;
+  }
+
+  &:disabled:checked::after {
+    border-color: var(--ui-primary-foreground);
+  }
+
+  &:disabled:indeterminate {
+    background: var(--ui-primary);
+    border-color: var(--ui-primary);
+    opacity: 0.5;
+  }
+
+  &:disabled:indeterminate::after {
+    background: var(--ui-primary-foreground);
+  }
+}
+
+/* ============================================
+   LABEL
+   ============================================ */
+.v-checkbox__label {
+  font-size: var(--ui-text-base);
+  line-height: var(--ui-leading-base);
+  color: var(--ui-foreground-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  cursor: pointer;
+
+  &--disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}

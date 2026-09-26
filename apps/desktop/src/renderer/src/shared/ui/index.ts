@@ -4,6 +4,7 @@ export { default as VButtonGroup } from "./components/base/VButtonGroup.vue";
 export { default as VIcon } from "./components/base/VIcon.vue";
 export { default as VLoader } from "./components/feedback/VLoader.vue";
 export { default as VProgressBar } from "./components/feedback/VProgressBar.vue";
+export { default as VCheckbox, type CheckboxModelValue, type CheckboxValue } from "./components/inputs/VCheckbox.vue";
 export { default as VSegmentedControl, type SegmentOption } from "./components/inputs/VSegmentedControl.vue";
 export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";
