@@ -119,6 +119,16 @@ describe('release workflow', () => {
     expect(r.indexOf('update-sign.mjs manifest')).toBeLessThan(r.indexOf('gh release create'));
   });
 
+  it('tests on every OS of the release; on Windows the database cipher is a hard gate, the full suite only informational', () => {
+    const t = jobs().test!;
+    expect(t).toMatch(/os: \[ubuntu-latest, macos-latest, windows-latest\]/);
+    expect(t).toMatch(/- run: pnpm test\n\s+if: runner\.os != 'Windows'/);
+    expect(t).toMatch(/if: runner\.os == 'Windows'\n\s+run: pnpm --filter @mono\/db-libsql test/);
+    // continue-on-error only on the informational full run on Windows, nowhere else in the workflow.
+    expect(code.match(/continue-on-error/g)).toHaveLength(1);
+    expect(t).toMatch(/Full test suite on Windows \(informational\)\n\s+if: runner\.os == 'Windows'\n\s+continue-on-error: true\n\s+run: pnpm test/);
+  });
+
   it('the tag must match the app version, before anything is built', () => {
     const t = jobs().test!;
     expect(t).toContain('if [ "v$version" != "$GITHUB_REF_NAME" ]; then');
