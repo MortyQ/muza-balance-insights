@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import { LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { importActive } from '../shared/progress.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
@@ -120,7 +121,10 @@ app.whenReady().then(async () => {
   lock = new LockService({
     userDataDir: userData,
     touchId,
-    importRunning: () => importer.running,
+    // Not importer.running: that stays true between a worker's final message and its exit event, and scheduleRestart
+    // emits `retry` before the restart timer is set — importActive reads the phase itself, so neither window shows
+    // «Идёт импорт» after the import is actually over.
+    importRunning: () => importActive(importer.lastProgress),
     now: () => Date.now(),
     // Whatever the renderer has shown leaves its memory with the page.
     onLocked: () => win?.webContents.reload(),
@@ -179,7 +183,7 @@ app.whenReady().then(async () => {
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
-      if (r.deleted) await appLock.reset();
+      if (r.deleted) await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
       return r;
     },
     getUpdate: async () => updater.view(),
@@ -219,7 +223,7 @@ app.whenReady().then(async () => {
   // A (re)loaded renderer gets the current import state; the first load also resumes an unfinished import.
   let resumeChecked = false;
   win.webContents.on('did-finish-load', () => {
-    win?.webContents.send(LOCK_CHANNEL, appLock.view());
+    push(LOCK_CHANNEL, appLock.view());
     push(PROGRESS_CHANNEL, importer.lastProgress);
     push(UPDATE_CHANNEL, updater.view());
     if (!resumeChecked) {
@@ -228,6 +232,7 @@ app.whenReady().then(async () => {
       scheduleChecks(updater);
     }
   });
-  if (devOrigin) await win.loadURL(`${devOrigin}/`);
-  else await win.loadURL(APP_ENTRY);
-});
+  // A lock/reload racing the first load aborts it (ERR_ABORTED) — not a real failure, just logged.
+  const load = devOrigin ? win.loadURL(`${devOrigin}/`) : win.loadURL(APP_ENTRY);
+  await load.catch((err) => process.stderr.write(`[window] initial load did not finish: ${err instanceof Error ? err.name : 'error'}\n`));
+}).catch((err) => process.stderr.write(`[main] startup failed: ${err instanceof Error ? err.name : 'error'}\n`));
