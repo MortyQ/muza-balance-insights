@@ -20,6 +20,7 @@ Download from [Releases](https://github.com/MortyQ/muza-balance-insights/release
 ## Privacy
 
 - Data stays on your computer: a local SQLite database in the app folder.
+- The database file itself is not encrypted; the app folder is readable only by your user account (macOS, Linux). Turn on disk encryption — FileVault on macOS, BitLocker or Device Encryption on Windows, LUKS on Linux — so a lost laptop or a copied disk doesn't expose it.
 - The token is kept in the system keychain (macOS Keychain, Windows DPAPI, Linux Secret Service or KWallet). If there is no secure store, it is kept in memory only and never written to disk.
 - Network only to trusted services: `api.monobank.ua` (your statement) and GitHub (update checks — every few hours the app asks
   whether a new version is out; you can switch this off in Settings). No analytics, no telemetry.
