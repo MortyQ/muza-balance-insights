@@ -54,7 +54,7 @@ describe('migration v8', () => {
       indexes: await indexes(db),
     };
 
-    expect(await migrate(db, 0)).toEqual([8]);
+    expect(await migrate(db, 0)).toEqual([8, 9]);
 
     expect(await rows(db, 'SELECT id, label, created_at FROM participants')).toEqual([{ id: 1, label: 'Я', created_at: 222 }]);
     expect(await rows(db, 'SELECT id, participant_id, provider, external_client_id FROM connections')).toEqual([

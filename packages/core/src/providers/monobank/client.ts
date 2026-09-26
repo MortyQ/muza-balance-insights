@@ -41,6 +41,7 @@ const JarSchema = z.object({
 
 export const ClientInfoSchema = z.object({
   clientId: z.string().optional(),
+  name: z.string().optional(),
   accounts: z.array(CardSchema).default([]),
   jars: z.array(JarSchema).default([]),
 });
@@ -213,7 +214,11 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
 
     async accounts() {
       const info = await client.clientInfo();
-      return { externalClientId: info.clientId ?? null, accounts: [...info.accounts.map(cardAccount), ...info.jars.map(jarAccount)] };
+      return {
+        externalClientId: info.clientId ?? null,
+        holderName: info.name?.trim() || null,
+        accounts: [...info.accounts.map(cardAccount), ...info.jars.map(jarAccount)],
+      };
     },
 
     async statementWindow(accountId, w, onPage) {

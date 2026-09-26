@@ -56,6 +56,16 @@
     подключения (тесты). `next_request_at` в статусе — самый поздний из слотов.
   - Тестовые счета — через `insertAccountRow` / `insertAccount` (`@mono/core/test-helpers`): они привязывают счёт к
     тестовому подключению Monobank.
+  - Управление людьми и подключениями — `packages/core/src/participants.ts` (`listParticipants`, `addParticipant`,
+    `renameParticipant`, `listConnections` без `external_client_id`, `addConnection`, `deleteConnection`: данные подключения
+    одной транзакцией, пустой участник удаляется, затем полный `rederiveCore`).
+  - Имя участника (миграция v9, `participants.label_source`): `user` — ввёл пользователь, банк не меняет; `bank` — имя
+    владельца из банка (`ProviderAccounts.holderName`, у Monobank `name` из `client-info`) пишется при каждом
+    `syncAccounts`, переименование → `user`. Имя — персональные данные: только в базе, не в копии, логах, отчёте recategorize.
+  - Тот же владелец во втором подключении (тот же `external_client_id` или все счета уже в одном другом подключении) —
+    `ConnectionDuplicateError` до любой записи.
+  - Несколько подключений в одном прогоне — `runPlans`: окна по кругу между подключениями, у каждого свой слот;
+    ошибка, которую вызывающий признал ошибкой подключения, выключает только его, остальное останавливает прогон.
 - `packages/db-libsql` (`@mono/db-libsql`) — Node-адаптер libsql → `Db` (PRAGMA, WAL). Не зависит от core (типы
   повторены, расхождение ловит typecheck ядра), чтобы не было цикла зависимостей. Нужен apps/mcp и main-процессу Electron.
 - `apps/mcp` (`@mono/mcp`) — MCP-сервер, CLI, скрипты, обезличенная копия (`analysis/*`), `.env`/токен (`config.ts`).

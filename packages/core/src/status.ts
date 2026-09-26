@@ -22,13 +22,16 @@ type AccountRow = {
   lastSyncAt: number | null;
 };
 
-async function loadAccounts(db: Db): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
-  const rs = await db.execute(
-    `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
+/** Every account, or only those of one participant. */
+async function loadAccounts(db: Db, participantId?: number): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
+  const rs = await db.execute({
+    sql: `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
             s.account_id IS NOT NULL AS synced, s.oldest_synced_time, s.newest_synced_time, s.last_sync_at
      FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
+     ${participantId === undefined ? '' : 'WHERE a.connection_id IN (SELECT id FROM connections WHERE participant_id = ?)'}
      ORDER BY a.kind = 'jar', a.currency_code, a.id`,
-  );
+    args: participantId === undefined ? [] : [participantId],
+  });
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   const rows = rs.rows.map((r) => ({
     id: String(r.id),
@@ -68,9 +71,12 @@ export type Balances = {
   totals: Array<{ currency: number; own_funds: number }>;
 };
 
-/** Cards, plus jars with a positive balance or a sync history (same rule as the sync selection). Minor units. */
-export async function getBalances(db: Db): Promise<Balances> {
-  const { rows, labels } = await loadAccounts(db);
+/**
+ * Cards, plus jars with a positive balance or a sync history (same rule as the sync selection). Minor units.
+ * With `participantId`: that participant's accounts only; without — the whole family.
+ */
+export async function getBalances(db: Db, opts: { participantId?: number } = {}): Promise<Balances> {
+  const { rows, labels } = await loadAccounts(db, opts.participantId);
   const accounts = rows
     .filter((r) => r.kind === 'card' || r.balance > 0 || r.synced)
     .map((r) => ({

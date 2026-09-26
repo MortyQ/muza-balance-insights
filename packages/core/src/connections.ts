@@ -4,6 +4,8 @@ import type { Db } from './db.ts';
 import { PROVIDER_IDS, type ProviderId } from './providers/types.ts';
 
 export const DEFAULT_PARTICIPANT_LABEL = 'Я';
+/** Longest participant label, typed or from the bank. */
+export const PARTICIPANT_LABEL_MAX = 80;
 
 export class ConnectionError extends Error {
   override name = 'ConnectionError';

@@ -7,7 +7,7 @@ import type { Db, Stmt } from './db.ts';
 import { RateLimitError, StatementFormatError } from './errors.ts';
 import { toKyivDate } from './format.ts';
 import type { Clock } from './platform.ts';
-import { ensureDefaultConnection } from './connections.ts';
+import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from './connections.ts';
 import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
 import type { NormalizedTx, ProviderClient, ProviderId } from './providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from './cancel.ts';
@@ -75,6 +75,11 @@ export class ConnectionMismatchError extends Error {
   override name = 'ConnectionMismatchError';
 }
 
+/** The credential's holder is already another connection of the same bank (the same token or person added twice). */
+export class ConnectionDuplicateError extends Error {
+  override name = 'ConnectionDuplicateError';
+}
+
 /** The connection this sync writes to (see SyncContext.connectionId). */
 export async function syncConnectionId(ctx: SyncContext): Promise<number> {
   return ctx.connectionId ?? ensureDefaultConnection(ctx.db, ctx.api.provider, Math.floor(ctx.clock.nowMs() / 1000));
@@ -82,23 +87,40 @@ export async function syncConnectionId(ctx: SyncContext): Promise<number> {
 
 /**
  * Writes the holder's accounts under the sync's connection. The bank's holder id is remembered on the first sync; a
- * credential of another holder is refused before anything is written (the id itself is never printed). An account
- * that already belongs to another connection is left as it is (warning).
+ * credential of another holder is refused before anything is written (the id itself is never printed), and so is a
+ * holder that is already another connection (ConnectionDuplicateError: the same holder id, or every account already
+ * there). A single account that belongs to another connection is left as it is (warning). A participant whose label
+ * comes from the bank gets the holder's name.
  */
 export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; jars: number }> {
   const connectionId = await syncConnectionId(ctx);
-  const { externalClientId, accounts: all } = await ctx.api.accounts();
+  const { externalClientId, holderName, accounts: all } = await ctx.api.accounts();
   const now = Math.floor(ctx.clock.nowMs() / 1000);
 
-  const conn = await ctx.db.execute({ sql: 'SELECT external_client_id FROM connections WHERE id = ?', args: [connectionId] });
+  const conn = await ctx.db.execute({
+    sql: `SELECT c.external_client_id, c.participant_id, p.label_source
+          FROM connections c JOIN participants p ON p.id = c.participant_id WHERE c.id = ?`,
+    args: [connectionId],
+  });
   const known = conn.rows[0]?.external_client_id;
   if (known !== null && known !== undefined && externalClientId !== null && String(known) !== externalClientId) {
     throw new ConnectionMismatchError('Токен принадлежит другому аккаунту банка, чем это подключение. Данные не изменены.');
+  }
+  const duplicate = 'Этот аккаунт банка уже подключён в другом подключении. Данные не изменены.';
+  if (externalClientId !== null) {
+    const twin = await ctx.db.execute({
+      sql: 'SELECT 1 FROM connections WHERE provider = ? AND external_client_id = ? AND id <> ?',
+      args: [ctx.api.provider, externalClientId, connectionId],
+    });
+    if (twin.rows.length > 0) throw new ConnectionDuplicateError(duplicate);
   }
 
   const owners = await ctx.db.execute('SELECT id, connection_id FROM accounts');
   const ownerOf = new Map(owners.rows.map((r) => [String(r.id), Number(r.connection_id)]));
   const foreign = all.filter((a) => ownerOf.has(a.id) && ownerOf.get(a.id) !== connectionId);
+  if (foreign.length > 0 && foreign.length === all.length && new Set(foreign.map((a) => ownerOf.get(a.id))).size === 1) {
+    throw new ConnectionDuplicateError(duplicate);
+  }
   if (foreign.length > 0) {
     ctx.warn?.(`Счетов уже в другом подключении: ${foreign.length} — оставлены как есть`);
   }
@@ -122,6 +144,17 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
   }));
   if (known === null && externalClientId !== null) {
     stmts.push({ sql: 'UPDATE connections SET external_client_id = ? WHERE id = ?', args: [externalClientId, connectionId] });
+  }
+  if (conn.rows[0]?.label_source === 'bank') {
+    const name = holderName?.replace(/\s+/g, ' ').trim().slice(0, PARTICIPANT_LABEL_MAX);
+    if (name) {
+      stmts.push({
+        sql: `UPDATE participants SET label = ? WHERE id = ? AND label_source = 'bank'`,
+        args: [name, Number(conn.rows[0].participant_id)],
+      });
+    } else {
+      ctx.warn?.('Банк не прислал имя владельца — подпись участника не изменена');
+    }
   }
   if (stmts.length > 0) await ctx.db.batch(stmts);
   const counts = { cards: accounts.filter((a) => a.kind === 'card').length, jars: accounts.filter((a) => a.kind === 'jar').length };
@@ -398,20 +431,59 @@ export function interleavePlan(plan: ReadonlyMap<string, readonly Window[]>): Pl
   return out;
 }
 
+async function runPlannedWindow(ctx: SyncContext, p: PlannedWindow): Promise<void> {
+  const { accountId, window: w, index, total, round } = p;
+  throwIfCancelled(ctx.signal);
+  ctx.onEvent?.({ type: 'window-start', accountId, window: w, index, total, round });
+  try {
+    await syncWindow(ctx, accountId, w);
+  } catch (err) {
+    if (err instanceof StatementFormatError) {
+      throw new Error(describeFormatError(err, accountId, w, index, total), { cause: err });
+    }
+    throw err;
+  }
+}
+
 export async function runPlan(ctx: SyncContext, plan: Map<string, Window[]>): Promise<void> {
   for (const [accountId, windows] of plan) ctx.onEvent?.({ type: 'plan', accountId, windows: windows.length });
-  for (const { accountId, window: w, index, total, round } of interleavePlan(plan)) {
-    throwIfCancelled(ctx.signal);
-    ctx.onEvent?.({ type: 'window-start', accountId, window: w, index, total, round });
-    try {
-      await syncWindow(ctx, accountId, w);
-    } catch (err) {
-      if (err instanceof StatementFormatError) {
-        throw new Error(describeFormatError(err, accountId, w, index, total), { cause: err });
+  for (const p of interleavePlan(plan)) await runPlannedWindow(ctx, p);
+}
+
+/** One connection's part of a multi-connection run: its own context (client, credential, events) and plan. */
+export type ConnectionRun = { connectionId: number; ctx: SyncContext; plan: ReadonlyMap<string, readonly Window[]> };
+
+export type ConnectionFailure = { connectionId: number; error: unknown };
+
+/**
+ * Several connections in one run: their windows take turns (A1, B1, A2, B2 …; within a connection the order of
+ * interleavePlan). Each credential has its own request slot, so while A waits for its bank's limit, B's window is
+ * fetched. An error for which `isConnectionFailure` says true (a rejected credential, …) stops only that connection:
+ * it is returned in the list and the others go on. Any other error (cancellation, network, …) stops the whole run.
+ */
+export async function runPlans(
+  runs: readonly ConnectionRun[],
+  isConnectionFailure: (err: unknown) => boolean = () => false,
+): Promise<ConnectionFailure[]> {
+  for (const { ctx, plan } of runs) {
+    for (const [accountId, windows] of plan) ctx.onEvent?.({ type: 'plan', accountId, windows: windows.length });
+  }
+  const queues = runs.map((r) => ({ run: r, windows: interleavePlan(r.plan) }));
+  const failed: ConnectionFailure[] = [];
+  const rounds = Math.max(0, ...queues.map((q) => q.windows.length));
+  for (let k = 0; k < rounds; k++) {
+    for (const { run, windows } of queues) {
+      const p = windows[k];
+      if (!p || failed.some((f) => f.connectionId === run.connectionId)) continue;
+      try {
+        await runPlannedWindow(run.ctx, p);
+      } catch (err) {
+        if (!isConnectionFailure(err)) throw err;
+        failed.push({ connectionId: run.connectionId, error: err });
       }
-      throw err;
     }
   }
+  return failed;
 }
 
 export type RecentStatus =

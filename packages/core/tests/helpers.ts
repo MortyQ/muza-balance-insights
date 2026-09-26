@@ -72,6 +72,8 @@ export function fakeMonobank(opts: {
   pageLimit?: number;
   /** The holder id client-info reports (default 'c1'). */
   clientId?: string;
+  /** The holder name client-info reports (default 'Test'); null = the field is absent. */
+  name?: string | null;
   /** Intercept a call (by 0-based index) — e.g. to simulate failures. */
   intercept?: (callIndex: number, url: string) => Response | Promise<Response> | 'throw' | undefined;
 }) {
@@ -89,7 +91,7 @@ export function fakeMonobank(opts: {
     if (path === '/personal/client-info') {
       return Response.json({
         clientId: opts.clientId ?? 'c1',
-        name: 'Test',
+        ...(opts.name === null ? {} : { name: opts.name ?? 'Test' }),
         accounts: (opts.accounts ?? []).map((a) => ({
           id: a.id,
           balance: 1000,

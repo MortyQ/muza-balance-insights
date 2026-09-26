@@ -123,6 +123,8 @@ export interface NormalizedTx {
 /** The account holder's accounts, and the bank's id of the holder (to catch a credential of another person). */
 export interface ProviderAccounts {
   externalClientId: string | null;
+  /** The holder's name as the bank states it (personal data: stored as the participant's label only); null = not sent. */
+  holderName: string | null;
   accounts: NormalizedAccount[];
 }
 
