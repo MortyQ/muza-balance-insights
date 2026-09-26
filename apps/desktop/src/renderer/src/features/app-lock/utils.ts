@@ -1,4 +1,4 @@
-import type { LockResult } from '@contract/lock.ts';
+import type { LockResult, LockView } from '@contract/lock.ts';
 
 export function waitText(retryAt: number | null, now: number): string {
   if (retryAt === null || retryAt <= now) return '';
@@ -22,4 +22,8 @@ export function resultText(r: LockResult): string {
 
 export function isChecked(e: Event): boolean {
   return e.target instanceof HTMLInputElement && e.target.checked;
+}
+
+export function shouldShowHint(view: LockView | null, dismissed: boolean): boolean {
+  return view !== null && !view.enabled && !dismissed;
 }

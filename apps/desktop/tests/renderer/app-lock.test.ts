@@ -77,3 +77,19 @@ describe('texts', () => {
     expect(resultText({ ok: false, reason: 'unavailable' })).toContain('недоступен');
   });
 });
+
+const { HINT_KEY } = await import('@/features/app-lock/constants.ts');
+const { shouldShowHint } = await import('@/features/app-lock/utils.ts');
+
+describe('lock hint', () => {
+  it('shown only while the lock is off and the hint was not dismissed', () => {
+    expect(shouldShowHint(null, false)).toBe(false); // view not loaded yet
+    expect(shouldShowHint(view(false), false)).toBe(false); // enabled
+    expect(shouldShowHint({ ...view(false), enabled: false }, false)).toBe(true);
+    expect(shouldShowHint({ ...view(false), enabled: false }, true)).toBe(false);
+  });
+
+  it('the key is namespaced like the participant switch', () => {
+    expect(HINT_KEY).toBe('balance.lock-hint');
+  });
+});

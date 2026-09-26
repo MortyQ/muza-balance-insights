@@ -28,6 +28,11 @@ export interface UseUnlockReturn {
   forgot: () => Promise<void>;
 }
 
+export interface UseLockHintReturn {
+  visible: ComputedRef<boolean>;
+  dismiss: () => void;
+}
+
 export interface UseLockSettingsReturn {
   view: ComputedRef<LockView | null>;
   mode: Readonly<Ref<LockSettingsMode>>;

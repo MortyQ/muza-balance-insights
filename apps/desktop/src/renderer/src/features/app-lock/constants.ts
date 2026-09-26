@@ -14,3 +14,6 @@ export const SUBMIT_TEXT = {
   change: 'Сменить PIN',
   disable: 'Выключить',
 } as const satisfies Record<LockSettingsMode, string>;
+
+/** «Не сейчас» on the home hint: a convenience of this computer only, never data. */
+export const HINT_KEY = 'balance.lock-hint';
