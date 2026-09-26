@@ -320,9 +320,16 @@
   папки `APP_DIRS` (`tokens/`).
 - Токены — `TokenVault` (`apps/desktop/src/main/token.ts`): файл на подключение `tokens/<connectionId>.bin` (safeStorage,
   0600), статус и «ввести заново» — по подключению. Старый `token.bin` при запуске переносится к подключению Monobank
-  как есть, без расшифровки. Форма токена и сервисы сети провайдера — `apps/desktop/src/net/providers.ts`
-  (`DESKTOP_PROVIDERS`, запись на каждый провайдер ядра — `tests/providers.test.ts`). До шага 4d IPC `setToken` /
-  `hasToken` / `clearToken` работают с единственным подключением Monobank (адаптер в `main/index.ts`).
+  как есть, без расшифровки. Форма токена провайдера — `apps/desktop/src/net/providers.ts` (`DESKTOP_PROVIDERS`, запись на
+  каждый провайдер ядра — `tests/providers.test.ts`). До шага 4d IPC `setToken` / `hasToken` / `clearToken` работают с
+  единственным подключением Monobank (адаптер в `main/index.ts`).
+- Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
+  `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
+  банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`); сеть — таблица `FETCH` в
+  `worker/import.ts`, у каждого провайдера `allowlistedFetch(net.fetch, [его сервисы])` буквально. Отклонённый токен
+  (`auth`) или чужой / уже подключённый владелец (`connection`) выключает только своё подключение: итог — `done` с
+  `failed`; если не прошло ни одно — `error` первого. Подключение без токена main пропускает и добавляет в `failed`.
+  При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.

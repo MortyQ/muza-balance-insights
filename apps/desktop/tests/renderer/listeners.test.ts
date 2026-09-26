@@ -64,7 +64,7 @@ describe('listenToMain: live data during an import', () => {
   it('the end of an import refreshes once and drops a pending live refresh', () => {
     send(win(1));
     send(win(2)); // pending
-    send({ phase: 'done', windowsTotal: 2, transactions: 10 });
+    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [] });
     expect(refreshes()).toBe(2);
     vi.advanceTimersByTime(LIVE_REFRESH_MS * 2);
     expect(refreshes()).toBe(2);

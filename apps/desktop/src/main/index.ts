@@ -91,7 +91,7 @@ app.whenReady().then(async () => {
     }
   }
   // Until the IPC knows connections (step 4d): the single-token calls act on the only Monobank connection.
-  const tokens = {
+  const singleToken = {
     set: async (token: string, remember: boolean) => {
       const id = await data.monobankConnection(true);
       if (id === null) throw new Error('no connection');
@@ -106,15 +106,12 @@ app.whenReady().then(async () => {
       if (id !== null) return vault.status(id);
       return { present: false, stored: null, secureStorage: await vault.secureStorageAvailable(), needsReentry: false };
     },
-    get: async () => {
-      const id = await data.monobankConnection(false);
-      return id === null ? null : vault.get(id);
-    },
   };
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
-    tokens,
+    connections: () => data.connections(),
+    tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
     dbPath: path.join(userData, DB_FILE),
@@ -143,9 +140,9 @@ app.whenReady().then(async () => {
   };
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
-    setToken: (token, remember) => tokens.set(token, remember),
-    clearToken: () => tokens.clear(),
-    hasToken: () => tokens.status(),
+    setToken: (token, remember) => singleToken.set(token, remember),
+    clearToken: () => singleToken.clear(),
+    hasToken: () => singleToken.status(),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
     spendingSummary: (q) => data.spending(q),

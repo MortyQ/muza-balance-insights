@@ -25,19 +25,22 @@ export type WindowProgress = {
   waitingSec: number | null;
 };
 
+export type ImportFailure = { connectionId: number; message: string };
+
 export type RetryReason = 'network' | 'server' | 'rate-limit' | 'crash';
 
 export type ImportProgress =
   | { phase: 'idle' }
-  /** An unfinished import exists but the token was only in memory: the UI asks for it. */
-  | { phase: 'needs-token' }
+  /** An unfinished import exists but these connections' tokens were only in memory: the UI asks for them. */
+  | { phase: 'needs-token'; connectionIds: number[] }
   | { phase: 'starting'; resumed: boolean }
   | { phase: 'accounts' }
   | WindowProgress
   /** A failure the import waits out: network / Monobank 5xx / repeated 429 (worker), or a crashed worker (main). */
   | { phase: 'retry'; reason: RetryReason; attempt: number; inSec: number }
   | { phase: 'rederive' }
-  | { phase: 'done'; windowsTotal: number; transactions: number }
+  /** `failed`: connections that did not import (a rejected or missing token …); the others did. */
+  | { phase: 'done'; windowsTotal: number; transactions: number; failed: ImportFailure[] }
   | { phase: 'cancelled' }
   | { phase: 'error'; message: string };
 

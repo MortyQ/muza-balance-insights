@@ -173,11 +173,10 @@ describe('the token never leaves main', () => {
     const imports = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
     expect(imports).toEqual(['node:fs', 'node:path', '../shared/api.ts', '../net/providers.ts']);
     expect(code).toMatch(/import type \{ TokenStatus \} from '\.\.\/shared\/api\.ts'/); // types only
-    // The providers table: credential shapes and service ids only — no network, database or logging either.
+    // The providers table: credential shapes only — no network, database or logging either.
     const providers = fs.readFileSync(new URL('../src/net/providers.ts', import.meta.url), 'utf8');
     expect([...providers.matchAll(/^import (type )?.* from '([^']+)'/gm)].map((m) => [m[1] ?? '', m[2]])).toEqual([
       ['type ', '@mono/core/providers/types'],
-      ['type ', './allowlist.ts'],
     ]);
   });
 });

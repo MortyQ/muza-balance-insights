@@ -1,6 +1,7 @@
 // The utilityProcess entry and its wiring in main, checked as source (it only runs inside Electron).
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { DESKTOP_PROVIDERS } from '../src/net/providers.ts';
 import { abortableClock } from '../src/worker/clock.ts';
 
 const read = (p: string) => fs.readFileSync(new URL(p, import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
@@ -8,9 +9,12 @@ const read = (p: string) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 describe('worker entry', () => {
   const code = read('../src/worker/import.ts');
 
-  it('network only through the allowlist, scoped to Monobank; the abortable clock; the shared importer', () => {
-    // Monobank only: the X-Token header can never reach another trusted service.
-    expect(code).toMatch(/fetch: allowlistedFetch\(net\.fetch, \['monobank'\]\)/);
+  it("network only through the allowlist, scoped to each provider's services; the abortable clock; the shared importer", () => {
+    // A provider's client reaches only its own services: a bank token can never reach another trusted service.
+    expect(code).toMatch(/monobank: allowlistedFetch\(net\.fetch, \['monobank'\]\),/);
+    expect(code).toMatch(/fetchFor: \(provider\) => FETCH\[provider\]/);
+    // One scoped fetch per provider, nothing else.
+    expect(code.match(/allowlistedFetch\(/g)).toHaveLength(Object.keys(DESKTOP_PROVIDERS).length);
     expect(code).toMatch(/clock: abortableClock/);
     expect(code).toMatch(/await runImport\(/);
   });

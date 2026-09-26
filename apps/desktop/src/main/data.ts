@@ -3,6 +3,8 @@
 // never names, descriptions, card numbers or IBANs. The import worker writes the same file; WAL lets both work.
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { migrate, type Db } from '@mono/core/db';
+import { listConnections } from '@mono/core/participants';
+import type { ProviderId } from '@mono/core/providers/types';
 import { toKyivDateTime } from '@mono/core/format';
 import { getBalances } from '@mono/core/status';
 import { spendingSummary } from '@mono/core/summaries';
@@ -83,6 +85,11 @@ export class DataService {
       dataUntil: newest === null ? null : toKyivDateTime(newest),
       lastSyncAt: last === null ? null : toKyivDateTime(last),
     };
+  }
+
+  /** Every connection (the import takes them all). */
+  async connections(): Promise<Array<{ connectionId: number; provider: ProviderId }>> {
+    return (await listConnections(await this.conn())).map((c) => ({ connectionId: c.id, provider: c.provider }));
   }
 
   /**
