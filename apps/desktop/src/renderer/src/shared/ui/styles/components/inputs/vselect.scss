@@ -32,22 +32,30 @@
   font-weight: 450;
   letter-spacing: -0.005em;
   cursor: pointer;
-  transition: border-color 200ms ease, border-width 200ms ease;
+  /* VButton's elevation and timing (vbutton.scss): shadow-xs at rest, none when disabled, 120ms. */
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--ui-border-strong);
   }
 
+  /* The 2px focus border VInput's fieldset draws, as a 1px border + a 1px inset ring: a real 2px border
+     would shift the value and the caret by a pixel. The resting shadow stays under it. */
   &[data-state="open"],
   &:focus-visible {
     border-color: var(--ui-border-focus);
-    border-width: 2px;
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
     outline: none;
   }
 
   &[data-disabled] {
     cursor: not-allowed;
     background-color: var(--ui-surface-sunken);
+    box-shadow: none;
     color: var(--ui-foreground-disabled);
   }
 }
@@ -55,6 +63,7 @@
 .v-select--disabled .v-select__trigger {
   cursor: not-allowed;
   background-color: var(--ui-surface-sunken);
+  box-shadow: none;
 }
 
 .v-select__value {
@@ -101,8 +110,9 @@
   min-width: var(--reka-popper-anchor-width, 10rem);
   max-height: var(--reka-popper-available-height, 20rem);
   overflow: hidden;
-  background-color: var(--ui-input-bg);
-  border: 1px solid var(--ui-border-subtle);
+  /* One popover elevation for VSelect, VDatepicker and VMonthPicker: same surface, border, radius and shadow. */
+  background-color: var(--ui-surface-overlay);
+  border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-lg);
   padding: 0.1875rem;

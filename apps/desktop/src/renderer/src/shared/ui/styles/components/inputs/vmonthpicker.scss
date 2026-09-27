@@ -9,19 +9,26 @@
   background: var(--ui-surface);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-full);
+  /* VButton's elevation, timing and focus ring (vbutton.scss). */
+  box-shadow: var(--ui-shadow-xs);
   color: var(--ui-foreground);
   font-size: var(--ui-text-base);
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background-color: var(--ui-surface-hover);
+    border-color: var(--ui-border-strong);
   }
 
   &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
   }
 }
 
@@ -43,8 +50,10 @@
   z-index: 10000;
   width: 17rem;
   padding: var(--ui-space-lg);
+  /* The popover elevation of vselect.scss `.v-select__content`. */
   background-color: var(--ui-surface-overlay);
-  border-radius: var(--ui-radius-xl);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-lg);
   animation: v-month-picker-in 160ms ease-out;
 

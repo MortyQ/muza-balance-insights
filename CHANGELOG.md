@@ -30,7 +30,7 @@ are quoted as they appear in it.
 ### Fixes
 
 - Drop-down lists and the month and date pickers are no longer see-through, so their text is easy to read. The date
-  field now looks the same as the other fields next to it.
+  field now looks the same as the other fields next to it. Fields, drop-downs and buttons now share the same shadows.
 
 ## 0.1.4 — 2026-09-27
 

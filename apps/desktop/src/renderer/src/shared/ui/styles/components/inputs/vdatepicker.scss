@@ -27,7 +27,11 @@
   font-size: var(--ui-text-base);
   font-weight: 450;
   letter-spacing: -0.005em;
-  transition: border-color 200ms ease, border-width 200ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--ui-border-strong);
@@ -37,13 +41,14 @@
   &:focus-within,
   &:has(.v-datepicker__trigger[data-state="open"]) {
     border-color: var(--ui-border-focus);
-    border-width: 2px;
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
   }
 }
 
 .v-datepicker--disabled .v-datepicker__field-row {
   cursor: not-allowed;
   background-color: var(--ui-surface-sunken);
+  box-shadow: none;
   color: var(--ui-foreground-disabled);
 }
 
@@ -125,7 +130,8 @@
 .v-datepicker__calendar {
   z-index: 10000;
   padding: var(--ui-space-md);
-  background-color: var(--ui-surface-raised);
+  /* The popover elevation of vselect.scss `.v-select__content`. */
+  background-color: var(--ui-surface-overlay);
   border: 1px solid var(--ui-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-lg);

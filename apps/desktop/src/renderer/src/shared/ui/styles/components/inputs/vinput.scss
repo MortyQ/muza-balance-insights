@@ -1,4 +1,4 @@
-/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* copied from muzakit/libs/ui/src (2026-09-26); changes: ui/README.md */
 /* ============================================
    WRAPPER
    ============================================ */
@@ -300,6 +300,7 @@
 
 .v-input-container:has(.v-fieldset--disabled) {
   background-color: var(--ui-surface-sunken);
+  box-shadow: none;
 }
 
 .v-input-container:hover .v-fieldset:not(.v-fieldset--active):not(.v-fieldset--error):not(.v-fieldset--disabled) {

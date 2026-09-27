@@ -120,6 +120,38 @@ describe('ui components copied from muzakit', () => {
     expect(tags.length).toBeGreaterThanOrEqual(4);
   });
 
+  it('shadows: fields rest on the button\'s shadow; the three popover panels share one elevation', () => {
+    const scss = (name: string) => read(path.join(uiDir, `styles/components/${name}.scss`));
+    const rule = (src: string, selector: string) => {
+      const m = src.match(new RegExp(`^${selector.replace(/[.]/g, '\\.')} \\{([\\s\\S]*?)^\\}`, 'm'));
+      expect(m, selector).not.toBeNull();
+      return m?.[1] ?? '';
+    };
+    const decl = (body: string, prop: string) => body.match(new RegExp(`^  ${prop}:\\s*([^;]+);`, 'm'))?.[1];
+
+    const resting = decl(rule(scss('base/vbutton'), '.v-button'), 'box-shadow');
+    expect(resting).toBe('var(--ui-shadow-xs)');
+    for (const [file, selector] of [
+      ['inputs/vselect', '.v-select__trigger'],
+      ['inputs/vdatepicker', '.v-datepicker__field-row'],
+      ['inputs/vmonthpicker', '.v-month-picker__trigger'],
+      ['inputs/vinput', '.v-input-container'],
+    ] as const) {
+      expect(decl(rule(scss(file), selector), 'box-shadow'), selector).toBe(resting);
+    }
+
+    const panels = [
+      rule(scss('inputs/vselect'), '.v-select__content'),
+      rule(scss('inputs/vdatepicker'), '.v-datepicker__calendar'),
+      rule(scss('inputs/vmonthpicker'), '.v-month-picker__content'),
+    ];
+    for (const prop of ['background-color', 'border', 'border-radius', 'box-shadow']) {
+      const values = panels.map((p) => decl(p, prop));
+      expect(values[0], prop).toBeDefined();
+      expect(new Set(values).size, prop).toBe(1);
+    }
+  });
+
   it('every exported component has a row in ui/README.md', () => {
     const readme = read(path.join(uiDir, 'README.md'));
     const exported = [...read(path.join(uiDir, 'index.ts')).matchAll(/export \{ default as (V\w+)/g)].map((m) => m[1] ?? '');
