@@ -11,4 +11,6 @@ export interface UseSpendingReturn {
   periodNote: ComputedRef<string | null>;
   /** An import is running: the numbers grow window by window. */
   importing: ComputedRef<boolean>;
+  /** The first month with data (Kyiv), or null while unknown. */
+  firstMonth: ComputedRef<YearMonth | null>;
 }
