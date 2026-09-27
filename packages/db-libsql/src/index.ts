@@ -18,11 +18,21 @@ export type LibsqlDb = {
   close(): void;
 };
 
+export type OpenOptions = {
+  /**
+   * The whole file (and its WAL) encrypted: libsql's SQLite3 Multiple Ciphers, AES-256-CBC, no HMAC — hides the content,
+   * does not detect tampering. The key as is (the desktop passes 64 hex characters), never `x'…'`. A wrong or missing
+   * key fails on the first statement with SQLITE_NOTADB; so does a key for a plain file (the file is left unchanged).
+   */
+  encryptionKey?: string;
+};
+
 /**
  * Opens a libsql database. No migrations here — the caller runs core's migrate().
  * `url` is `file:/abs/path.db` or `:memory:` (tests).
  */
-export async function openLibsql(url: string): Promise<LibsqlDb> {
+export async function openLibsql(url: string, opts: OpenOptions = {}): Promise<LibsqlDb> {
+  if (opts.encryptionKey === '') throw new Error('empty encryption key');
   const isFile = url.startsWith('file:');
   if (isFile) {
     fs.mkdirSync(path.dirname(url.slice('file:'.length)), { recursive: true });
@@ -33,6 +43,7 @@ export async function openLibsql(url: string): Promise<LibsqlDb> {
     // and there is no intra-process write contention. Cross-process (CLI + MCP) is handled by WAL + busy timeout.
     concurrency: 1,
     timeout: 5_000,
+    ...(opts.encryptionKey ? { encryptionKey: opts.encryptionKey } : {}),
   });
   if (isFile) {
     await client.execute('PRAGMA journal_mode = WAL');

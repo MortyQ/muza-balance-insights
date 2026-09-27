@@ -1,5 +1,6 @@
 // Messages between main and the import worker (utilityProcess). Validated with zod on both sides.
-// Tokens appear in exactly one message: `start`, main → worker (one per connection). Nothing the worker sends back can
+// Tokens and the database key appear in exactly one message: `start`, main → worker (a token per connection, the key
+// once — null for a plain database). Nothing the worker sends back can
 // hold them: progress is typed data, errors are fixed texts or already-redacted bank messages; connections appear by
 // their numeric id only, never by a participant's name.
 import { z } from 'zod';
@@ -7,6 +8,9 @@ import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 
 export const MAX_CONNECTIONS = 10;
+
+/** The database key as main keeps it (src/main/db/key-vault.ts): 32 random bytes in lowercase hex. */
+export const DB_KEY_RE = /^[0-9a-f]{64}$/;
 
 const connectionId = z.number().int().positive();
 
@@ -17,6 +21,7 @@ export const StartConnection = z
 export const StartMessage = z.strictObject({
   type: z.literal('start'),
   dbPath: z.string().min(1),
+  dbKey: z.string().regex(DB_KEY_RE).nullable(),
   connections: z
     .array(StartConnection)
     .min(1)

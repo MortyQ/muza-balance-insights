@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SCHEMA_VERSION } from '@mono/core/db';
+import { openLibsql } from '@mono/db-libsql';
 import { runDbSmoke } from '../src/main/smoke.ts';
+
+const KEY = 'c0ffee'.padEnd(64, '0');
 
 let dir: string | undefined;
 afterEach(() => {
@@ -13,20 +16,19 @@ afterEach(() => {
 });
 
 describe('libsql smoke', () => {
-  it('opens :memory: and a file in userData, applies migrations', async () => {
+  it('opens :memory: and the database through the given opener (encrypted here), applies migrations', async () => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'desktop-smoke-'));
-    const r = await runDbSmoke(path.join(dir, 'userData'), 1_700_000_000);
-    expect(r).toMatchObject({ ok: true, memory: 42, fileSchema: SCHEMA_VERSION, expectedSchema: SCHEMA_VERSION, dbFile: 'monobank.db' });
-    expect(fs.existsSync(path.join(dir, 'userData', 'monobank.db'))).toBe(true);
+    const file = path.join(dir, 'monobank.db');
+    const r = await runDbSmoke(() => openLibsql(`file:${file}`, { encryptionKey: KEY }), true, 1_700_000_000);
+    expect(r).toMatchObject({ ok: true, memory: 42, fileSchema: SCHEMA_VERSION, expectedSchema: SCHEMA_VERSION, encrypted: true });
+    expect(fs.readFileSync(file).subarray(0, 15).toString('latin1')).not.toBe('SQLite format 3');
   });
 
-  it('reports a failure instead of throwing, without a stack', async () => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'desktop-smoke-'));
-    const blocker = path.join(dir, 'file-not-dir');
-    fs.writeFileSync(blocker, '');
-    const r = await runDbSmoke(blocker, 0); // userData is a file → mkdir fails
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error).not.toMatch(/\n\s+at /);
+  it('reports a failure by the error name only — no message, no stack', async () => {
+    const r = await runDbSmoke(async () => {
+      throw new Error(`secret ${KEY}\n    at somewhere`);
+    }, false, 0);
+    expect(r).toEqual({ ok: false, error: 'Error' });
   });
 });
 

@@ -17,6 +17,7 @@ import {
   expectAsarContents,
   expectAsarOnly,
   expectBundleId,
+  expectCipherInNatives,
   expectFuses,
   expectOwnIcon,
   expectValidSignature,
@@ -106,6 +107,10 @@ describe.skipIf(present.length === 0)('.dmg images', () => {
 
     it('the native libsql for this architecture is unpacked next to the asar', () => {
       expect(unpackedNatives(app).some((f) => f.includes(image.libsql))).toBe(true);
+    });
+
+    it('every libsql native in the image has the database cipher built in', () => {
+      expectCipherInNatives(app);
     });
 
     it('fuses, asar only, bundle id, asar contents, signature — as in dist/', async () => {

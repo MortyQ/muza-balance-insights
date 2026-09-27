@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALLOWED_WHEN_DB_UNAVAILABLE,
   ALLOWED_WHEN_LOCKED,
+  DB_UNAVAILABLE,
   ARG_SCHEMAS,
   FAILED,
   FORBIDDEN,
@@ -56,18 +58,18 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
 
   it('registers exactly the contract methods it is given, under balance:*', () => {
     const ipc = fakeIpcMain();
-    const reg = registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => false });
+    const reg = registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => false });
     expect(reg).toEqual(METHODS.map(channel));
     expect([...ipc.handlers.keys()].every((k) => k.startsWith(CHANNEL_PREFIX))).toBe(true);
     // Unknown handler names are ignored — nothing outside the contract can be registered.
     const ipc2 = fakeIpcMain();
-    expect(registerIpc(ipc2, { runSql: async () => 1, fetch: async () => 1 } as any, { trusted: () => true, locked: () => false })).toEqual([]);
+    expect(registerIpc(ipc2, { runSql: async () => 1, fetch: async () => 1 } as any, { trusted: () => true, dbReady: () => true, locked: () => false })).toEqual([]);
   });
 
   it('an untrusted sender is refused before argument parsing, the handler never runs', async () => {
     const ipc = fakeIpcMain();
     let ran = false;
-    registerIpc(ipc, { listPeople: async () => ((ran = true), true) }, { trusted: () => false, locked: () => false });
+    registerIpc(ipc, { listPeople: async () => ((ran = true), true) }, { trusted: () => false, dbReady: () => true, locked: () => false });
     await expect(ipc.handlers.get('balance:listPeople')!(good)).rejects.toThrow(FORBIDDEN);
     expect(ran).toBe(false);
   });
@@ -141,11 +143,15 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setLockTriggers', [{ startup: 'yes', idle: true, screenLock: true, sleep: true }]],
     ['setTouchId', []],
     ['setTouchId', ['on']],
+    ['getDbState', [1]],
+    ['relaunchApp', ['now']],
+    ['startOver', [true]],
+    ['quitApp', [{}]],
   ];
   it.each(INVALID)('%s(%j) → rejected, handler not called', async (m, args) => {
     const ipc = fakeIpcMain();
     let ran = false;
-    registerIpc(ipc, { [m]: async () => ((ran = true), 1) } as any, { trusted: () => true, locked: () => false });
+    registerIpc(ipc, { [m]: async () => ((ran = true), 1) } as any, { trusted: () => true, dbReady: () => true, locked: () => false });
     await expect(ipc.handlers.get(`balance:${m}`)!(good, ...args)).rejects.toThrow(INVALID_ARGS);
     expect(ran).toBe(false);
   });
@@ -162,7 +168,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
 
   it('valid calls reach the handler with parsed arguments', async () => {
     const ipc = fakeIpcMain();
-    registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => false });
+    registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => false });
     await expect(ipc.handlers.get('balance:startImport')!(good, 12)).resolves.toEqual({ m: 'startImport', a: [12] });
     await expect(ipc.handlers.get('balance:spendingSummary')!(good, { from: '2026-09-01', to: '2026-09-30' })).resolves.toEqual({
       m: 'spendingSummary',
@@ -186,7 +192,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
           throw new Error('SECRET internal path /Users/x/db token=abc');
         },
       },
-      { trusted: () => true, locked: () => false, onError: (m, e) => seen.push(`${m}:${(e as Error).message}`) },
+      { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, e) => seen.push(`${m}:${(e as Error).message}`) },
     );
     const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
     expect((err as Error).message).toBe(FAILED);
@@ -204,7 +210,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       const ran: string[] = [];
       // Test-only map built from METHODS: every handler has the same shape, so the cast is safe here.
       const handlers = Object.fromEntries(METHODS.map((m) => [m, async () => void ran.push(m)])) as unknown as Handlers;
-      registerIpc(ipc, handlers, { trusted: () => true, locked: () => true });
+      registerIpc(ipc, handlers, { trusted: () => true, dbReady: () => true, locked: () => true });
       for (const m of METHODS) {
         const call = ipc.handlers.get(channel(m))!(good, 'not', 'valid', 'args');
         if (new Set<string>(ALLOWED_WHEN_LOCKED).has(m)) await expect(call, m).rejects.toThrow(INVALID_ARGS);
@@ -215,7 +221,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
 
     it('locked: the allowed methods still run', async () => {
       const ipc = fakeIpcMain();
-      registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => true });
+      registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => true });
       await expect(ipc.handlers.get('balance:unlockWithPin')!(good, '2580')).resolves.toEqual({ m: 'unlockWithPin', a: ['2580'] });
       await expect(ipc.handlers.get('balance:getLockState')!(good)).resolves.toEqual({ m: 'getLockState', a: [] });
       await expect(ipc.handlers.get('balance:unlockWithTouchId')!(good)).resolves.toEqual({ m: 'unlockWithTouchId', a: [] });
@@ -229,7 +235,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     it('an untrusted sender is refused before the lock is even looked at', async () => {
       const ipc = fakeIpcMain();
       let asked = false;
-      registerIpc(ipc, allHandlers, { trusted: () => false, locked: () => ((asked = true), true) });
+      registerIpc(ipc, allHandlers, { trusted: () => false, dbReady: () => true, locked: () => ((asked = true), true) });
       await expect(ipc.handlers.get('balance:getLockState')!(good)).rejects.toThrow(FORBIDDEN);
       expect(asked).toBe(false);
     });
@@ -237,7 +243,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     it('unlocks and locks back per call: the same registration reacts to a changing lock', async () => {
       const ipc = fakeIpcMain();
       let isLocked = false;
-      registerIpc(ipc, allHandlers, { trusted: () => true, locked: () => isLocked });
+      registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => isLocked });
       await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
       isLocked = true;
       await expect(ipc.handlers.get('balance:getBalances')!(good)).rejects.toThrow(LOCKED);
@@ -253,7 +259,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
         ipc,
         { getBalances: async () => ((ran = true), { m: 'getBalances', a: [] }) },
         {
-          trusted: () => true,
+          trusted: () => true, dbReady: () => true,
           locked: () => {
             throw new Error('secret path');
           },
@@ -265,5 +271,77 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       expect(seen).toEqual(['getBalances:secret path']);
       expect(ran).toBe(false);
     });
+  });
+});
+
+describe('the database gate', () => {
+  const noop = Object.fromEntries(METHODS.map((m) => [m, async (...a: unknown[]) => ({ m, a })])) as unknown as Handlers;
+
+  it('database not ready: every method outside ALLOWED_WHEN_DB_UNAVAILABLE is refused before its arguments are parsed', async () => {
+    const ipc = fakeIpcMain();
+    const ran: string[] = [];
+    const handlers = Object.fromEntries(METHODS.map((m) => [m, async () => void ran.push(m)])) as unknown as Handlers;
+    registerIpc(ipc, handlers, { trusted: () => true, locked: () => false, dbReady: () => false });
+    for (const m of METHODS) {
+      const call = ipc.handlers.get(channel(m))!(good, 'not', 'valid', 'args');
+      if (new Set<string>(ALLOWED_WHEN_DB_UNAVAILABLE).has(m)) await expect(call, m).rejects.toThrow(INVALID_ARGS);
+      else await expect(call, m).rejects.toThrow(DB_UNAVAILABLE);
+    }
+    expect(ran).toEqual([]);
+  });
+
+  it('exactly the recovery screen and the lock pass a database that is not ready', () => {
+    expect([...ALLOWED_WHEN_DB_UNAVAILABLE].sort()).toEqual(
+      ['deleteAllData', 'getDbState', 'getLockState', 'lockNow', 'quitApp', 'relaunchApp', 'startOver', 'unlockWithPin', 'unlockWithTouchId'],
+    );
+  });
+
+  it('the lock comes first: locked + database not ready → getDbState and startOver are refused as locked', async () => {
+    const ipc = fakeIpcMain();
+    registerIpc(ipc, noop, { trusted: () => true, locked: () => true, dbReady: () => false });
+    for (const m of ['getDbState', 'startOver', 'relaunchApp', 'quitApp', 'lockNow', 'listPeople'] as const) {
+      await expect(ipc.handlers.get(channel(m))!(good), m).rejects.toThrow(LOCKED);
+    }
+    await expect(ipc.handlers.get('balance:getLockState')!(good)).resolves.toEqual({ m: 'getLockState', a: [] });
+  });
+
+  it('order: sender → lock → database → arguments', async () => {
+    const ipc = fakeIpcMain();
+    const asked: string[] = [];
+    registerIpc(ipc, noop, {
+      trusted: () => (asked.push('sender'), true),
+      locked: () => (asked.push('lock'), false),
+      dbReady: () => (asked.push('db'), false),
+    });
+    await expect(ipc.handlers.get('balance:getBalances')!(good, 'bad')).rejects.toThrow(DB_UNAVAILABLE);
+    expect(asked).toEqual(['sender', 'lock', 'db']);
+  });
+
+  it('the database is looked at per call; the allowed methods never ask it', async () => {
+    const ipc = fakeIpcMain();
+    let ready = false;
+    let asked = 0;
+    registerIpc(ipc, noop, { trusted: () => true, locked: () => false, dbReady: () => (asked++, ready) });
+    await expect(ipc.handlers.get('balance:getDbState')!(good)).resolves.toEqual({ m: 'getDbState', a: [] });
+    expect(asked).toBe(0);
+    await expect(ipc.handlers.get('balance:getSyncStatus')!(good)).rejects.toThrow(DB_UNAVAILABLE);
+    ready = true;
+    await expect(ipc.handlers.get('balance:getSyncStatus')!(good)).resolves.toEqual({ m: 'getSyncStatus', a: [] });
+  });
+
+  it('dbReady() throwing fails closed; details to onError only', async () => {
+    const ipc = fakeIpcMain();
+    const seen: string[] = [];
+    registerIpc(ipc, noop, {
+      trusted: () => true,
+      locked: () => false,
+      dbReady: () => {
+        throw new Error('secret path');
+      },
+      onError: (m, err) => void seen.push(`${m}:${(err as Error).message}`),
+    });
+    const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
+    expect((err as Error).message).toBe(DB_UNAVAILABLE);
+    expect(seen).toEqual(['getBalances:secret path']);
   });
 });

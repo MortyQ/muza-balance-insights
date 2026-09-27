@@ -16,7 +16,8 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 /** Reversible, and the ciphertext never contains the plain text (reversed + base64). */
-function fakeSafeStorage(opts: { available?: boolean; backend?: string; key?: string; failEncrypt?: boolean } = {}): SafeStorageLike {
+/** `key` is also the blob's prefix: on Linux 'v10' is the built-in fallback key, 'v11' / 'v12' a real keyring. */
+function fakeSafeStorage(opts: { available?: boolean; key?: string; failEncrypt?: boolean } = {}): SafeStorageLike {
   const key = opts.key ?? 'k1';
   return {
     isAsyncEncryptionAvailable: async () => opts.available ?? true,
@@ -29,7 +30,6 @@ function fakeSafeStorage(opts: { available?: boolean; backend?: string; key?: st
       if (k !== key) throw new Error('Error while decrypting the ciphertext provided to safeStorage.decryptString.');
       return { result: [...Buffer.from(body!, 'base64').toString()].reverse().join(''), shouldReEncrypt: false };
     },
-    ...(opts.backend ? { getSelectedStorageBackend: () => opts.backend! } : {}),
   };
 }
 
@@ -82,23 +82,58 @@ describe('secure store available (Keychain / DPAPI / libsecret)', () => {
     expect(await s.status()).toMatchObject({ present: false, stored: null });
   });
 
-  it('an undecryptable blob (rebuilt unsigned app, other machine) is removed and the UI is told to ask again', async () => {
+  it('an undecryptable blob (keychain denied, rebuilt unsigned app) is kept on disk and the UI is told to ask again', async () => {
     await store(fakeSafeStorage({ key: 'old' })).set(CANARY, true);
     const s = store(fakeSafeStorage({ key: 'new' }));
     expect(await s.get()).toBeNull();
-    expect(fs.existsSync(file())).toBe(false);
-    expect(await s.status()).toMatchObject({ present: false, needsReentry: true });
+    expect(fs.existsSync(file())).toBe(true);
+    expect(await s.status()).toMatchObject({ present: false, stored: null, needsReentry: true });
     await s.set(CANARY, true);
     expect((await s.status()).needsReentry).toBe(false);
+    expect(await s.get()).toBe(CANARY);
+  });
+
+  it('keychain denied once, allowed after a restart: the same file opens again', async () => {
+    await store(fakeSafeStorage({ key: 'k' })).set(CANARY, true);
+    const denied = store(fakeSafeStorage({ key: 'other' }));
+    expect(await denied.get()).toBeNull();
+    const restarted = store(fakeSafeStorage({ key: 'k' }));
+    expect(await restarted.get()).toBe(CANARY);
+    expect(await restarted.status()).toMatchObject({ present: true, stored: 'secure', needsReentry: false });
+  });
+
+  it('shouldReEncrypt: the file is rewritten with the fresh blob (0600, no .tmp left)', async () => {
+    await store(fakeSafeStorage({ key: 'old' })).set(CANARY, true);
+    const fresh = fakeSafeStorage({ key: 'new' });
+    const rotating: SafeStorageLike = {
+      ...fresh,
+      // The provider still reads the old key but asks for the new one.
+      decryptStringAsync: async (b) => ({ ...(await fakeSafeStorage({ key: 'old' }).decryptStringAsync(b)), shouldReEncrypt: true }),
+    };
+    expect(await store(rotating).get()).toBe(CANARY);
+    expect(fs.readFileSync(file()).toString().startsWith('new:')).toBe(true);
+    expect(fs.statSync(file()).mode & 0o777).toBe(0o600);
+    expect(fs.existsSync(`${file()}.tmp`)).toBe(false);
+    expect(await store(fresh).get()).toBe(CANARY);
+  });
+
+  it('a file that decrypts to something that is not a token is damaged and removed', async () => {
+    const ss = fakeSafeStorage({ key: 'k' });
+    await store(ss).set(CANARY, true);
+    fs.writeFileSync(file(), await ss.encryptStringAsync('not a token'));
+    const s = store(ss);
+    expect(await s.get()).toBeNull();
+    expect(fs.existsSync(file())).toBe(false);
+    expect(await s.status()).toMatchObject({ present: false, needsReentry: true });
   });
 });
 
 describe('no secure store → memory only, and the UI knows', () => {
   it.each([
     ['encryption unavailable (macOS/Windows)', fakeSafeStorage({ available: false }), 'darwin'],
-    ['Linux basic_text (hard-coded key)', fakeSafeStorage({ backend: 'basic_text' }), 'linux'],
-    ['Linux unknown backend', fakeSafeStorage({ backend: 'unknown' }), 'linux'],
-    ['Linux, backend not reported', fakeSafeStorage(), 'linux'],
+    ['Linux, no keyring answered: built-in key (v10)', fakeSafeStorage({ key: 'v10' }), 'linux'],
+    ['Linux, a blob of unknown form', fakeSafeStorage(), 'linux'],
+    ['Linux, the keyring probe throws', fakeSafeStorage({ key: 'v11', failEncrypt: true }), 'linux'],
   ] as const)('%s', async (_, ss, platform) => {
     const s = store(ss, platform);
     expect(await s.set(CANARY, true)).toEqual({ stored: 'memory' });
@@ -107,9 +142,9 @@ describe('no secure store → memory only, and the UI knows', () => {
     expect(await s.get()).toBe(CANARY);
   });
 
-  it('Linux with a real secret store (gnome_libsecret, kwallet6) is secure', async () => {
-    for (const backend of ['gnome_libsecret', 'kwallet6']) {
-      const s = store(fakeSafeStorage({ backend }), 'linux');
+  it('Linux with a real secret store (v11 Secret Service / KWallet, v12 Secret Portal) is secure', async () => {
+    for (const key of ['v11', 'v12']) {
+      const s = store(fakeSafeStorage({ key }), 'linux');
       expect(await s.set(CANARY, true)).toEqual({ stored: 'secure' });
       await s.clear();
     }
@@ -135,7 +170,7 @@ describe('the token never leaves main', () => {
         // What reaches the vault from the renderer: a connection's new token (src/main/people.ts → TokenVault.set).
         { setConnectionToken: (id, t, r) => v.set(id, 'monobank', t, r) },
         // The same log line as src/main/index.ts: the error's name only.
-        { trusted: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
+        { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
       );
     };
     const ev = { sender: {}, senderFrame: { url: 'app://renderer/', parent: null } };
@@ -169,8 +204,12 @@ describe('the token never leaves main', () => {
     const code = fs.readFileSync(new URL('../src/main/token.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     expect(code).not.toMatch(/@mono\/|db-libsql|console\.|process\.std(out|err)/);
     const imports = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-    expect(imports).toEqual(['node:fs', 'node:path', '../shared/api.ts', '../net/providers.ts']);
+    expect(imports).toEqual(['node:fs', 'node:path', '../shared/api.ts', '../net/providers.ts', './secure-store.ts']);
     expect(code).toMatch(/import type \{ TokenStatus \} from '\.\.\/shared\/api\.ts'/); // types only
+    // The safeStorage wrapper: no imports at all — nothing it could write to or log with.
+    const store = fs.readFileSync(new URL('../src/main/secure-store.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    expect([...store.matchAll(/from '([^']+)'/g)]).toEqual([]);
+    expect(store).not.toMatch(/console\.|process\.std(out|err)/);
     // The providers table: credential shapes only — no network, database or logging either.
     const providers = fs.readFileSync(new URL('../src/net/providers.ts', import.meta.url), 'utf8');
     expect([...providers.matchAll(/^import (type )?.* from '([^']+)'/gm)].map((m) => [m[1] ?? '', m[2]])).toEqual([

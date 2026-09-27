@@ -52,6 +52,10 @@ export const ARG_SCHEMAS = {
   disableLock: z.tuple([z.union([z.strictObject({ pin }), z.strictObject({ touchId: z.literal(true) })])]),
   setLockTriggers: z.tuple([triggers]),
   setTouchId: z.tuple([z.boolean()]),
+  getDbState: z.tuple([]),
+  relaunchApp: z.tuple([]),
+  startOver: z.tuple([]),
+  quitApp: z.tuple([]),
 } as const satisfies Record<Method, z.ZodType<unknown[]>>;
 
 export type Args<M extends Method> = z.infer<(typeof ARG_SCHEMAS)[M]>;
@@ -62,10 +66,22 @@ export const FORBIDDEN = 'Запрещено';
 export const INVALID_ARGS = 'Недопустимые аргументы';
 export const FAILED = 'Не удалось выполнить операцию';
 export const LOCKED = 'Приложение заблокировано';
+export const DB_UNAVAILABLE = 'База недоступна';
 
 /** What a locked app answers: its own state, the two ways in, and «Забыли PIN?» → «Удалить все данные». */
 export const ALLOWED_WHEN_LOCKED = ['getLockState', 'unlockWithPin', 'unlockWithTouchId', 'deleteAllData'] as const satisfies ReadonlyArray<Method>;
 const allowedWhenLocked: ReadonlySet<Method> = new Set(ALLOWED_WHEN_LOCKED);
+
+/** What an open app answers while its database is not ready: the recovery screen's buttons and the lock. */
+export const ALLOWED_WHEN_DB_UNAVAILABLE = [
+  ...ALLOWED_WHEN_LOCKED,
+  'lockNow',
+  'getDbState',
+  'relaunchApp',
+  'startOver',
+  'quitApp',
+] as const satisfies ReadonlyArray<Method>;
+const allowedWhenDbUnavailable: ReadonlySet<Method> = new Set(ALLOWED_WHEN_DB_UNAVAILABLE);
 
 export type IpcEventLike = {
   sender: unknown;
@@ -94,13 +110,18 @@ export type IpcMainLike = { handle(channel: string, listener: (event: IpcEventLi
 
 /**
  * Registers handlers for the given methods; returns the registered channels.
- * Order per call: sender → lock → arguments → handler. Handler errors reach the renderer as a fixed message;
+ * Order per call: sender → lock → database → arguments → handler. A gate whose check throws refuses (fails closed). Handler errors reach the renderer as a fixed message;
  * details go to `onError` (main log), never to the renderer.
  */
 export function registerIpc(
   ipcMain: IpcMainLike,
   handlers: Partial<Handlers>,
-  opts: { trusted: (event: IpcEventLike) => boolean; locked: () => boolean; onError?: (method: Method, err: unknown) => void },
+  opts: {
+    trusted: (event: IpcEventLike) => boolean;
+    locked: () => boolean;
+    dbReady: () => boolean;
+    onError?: (method: Method, err: unknown) => void;
+  },
 ): string[] {
   const registered: string[] = [];
   for (const method of METHODS) {
@@ -116,6 +137,16 @@ export function registerIpc(
         throw new Error(LOCKED);
       }
       if (isLocked && !allowedWhenLocked.has(method)) throw new Error(LOCKED);
+      if (!allowedWhenDbUnavailable.has(method)) {
+        let ready: boolean;
+        try {
+          ready = opts.dbReady();
+        } catch (err) {
+          opts.onError?.(method, err);
+          throw new Error(DB_UNAVAILABLE);
+        }
+        if (!ready) throw new Error(DB_UNAVAILABLE);
+      }
       const parsed = ARG_SCHEMAS[method].safeParse(args);
       if (!parsed.success) throw new Error(INVALID_ARGS);
       try {

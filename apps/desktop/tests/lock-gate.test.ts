@@ -1,21 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../src/shared/channels.ts';
+import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../src/shared/channels.ts';
 import { gatedPush } from '../src/main/lock/gate.ts';
 
+const CHANNELS = [LOCK_CHANNEL, DB_STATE_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL, OPEN_SETTINGS_CHANNEL];
+
 describe('gatedPush', () => {
-  it('open: everything goes through', () => {
+  it('open, database ready: everything goes through, payload as is', () => {
     const sent: unknown[][] = [];
-    const push = gatedPush(() => false, (ch, p) => void sent.push([ch, p]));
+    const push = gatedPush(() => false, () => true, (ch, p) => void sent.push([ch, p]));
     expect(push(PROGRESS_CHANNEL, { phase: 'idle' })).toBe(true);
     expect(push(OPEN_SETTINGS_CHANNEL)).toBe(true);
     expect(sent).toEqual([[PROGRESS_CHANNEL, { phase: 'idle' }], [OPEN_SETTINGS_CHANNEL, undefined]]);
   });
 
-  it('locked: only the lock view; progress, the update view and «Настройки…» are dropped', () => {
+  // channel × lock × database: which pushes reach the renderer.
+  it.each([
+    [false, true, CHANNELS],
+    [false, false, [LOCK_CHANNEL, DB_STATE_CHANNEL]],
+    [true, true, [LOCK_CHANNEL]],
+    [true, false, [LOCK_CHANNEL]],
+  ] as const)('locked=%s dbReady=%s → only %j', (locked, dbReady, allowed) => {
     const sent: string[] = [];
-    const push = gatedPush(() => true, (ch) => void sent.push(ch));
-    expect([PROGRESS_CHANNEL, UPDATE_CHANNEL, OPEN_SETTINGS_CHANNEL].map((ch) => push(ch, {}))).toEqual([false, false, false]);
-    expect(push(LOCK_CHANNEL, { locked: true })).toBe(true);
-    expect(sent).toEqual([LOCK_CHANNEL]);
+    const push = gatedPush(() => locked, () => dbReady, (ch) => void sent.push(ch));
+    expect(CHANNELS.map((ch) => push(ch, {}))).toEqual(CHANNELS.map((ch) => (allowed as readonly string[]).includes(ch)));
+    expect(sent).toEqual(allowed);
   });
 });

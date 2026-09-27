@@ -28,7 +28,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Windows: the database cipher must exist in the libsql build the Windows installer ships.
+        os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -52,6 +53,15 @@ jobs:
           fi
       - run: pnpm typecheck
       - run: pnpm test
+        if: runner.os != 'Windows'
+      - name: Database encryption on Windows (the cipher detector and encrypted files)
+        if: runner.os == 'Windows'
+        run: pnpm --filter @mono/db-libsql test
+      # The whole suite has never run on Windows (POSIX modes, hdiutil, real pnpm): shown, not yet a gate.
+      - name: Full test suite on Windows (informational)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: pnpm test
 
   build:
     name: Installers (${{ matrix.target }})

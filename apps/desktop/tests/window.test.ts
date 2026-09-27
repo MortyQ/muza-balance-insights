@@ -51,10 +51,12 @@ describe('BrowserWindow options (Checklist #2–4, #6, #8–10)', () => {
     expect(code).not.toMatch(/loadFile\(/);
   });
 
-  it('main: webContents.send only inside the gatedPush callback, and registerIpc carries the lock gate', () => {
+  it('main: webContents.send only inside the gatedPush callback, and registerIpc carries the lock and database gates', () => {
     const code = fs.readFileSync(new URL('../src/main/index.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     expect(code.match(/webContents\.send\(/g)).toHaveLength(1);
     expect(code).toMatch(/gatedPush\([\s\S]*?\(ch, payload\) => win\?\.webContents\.send\(ch, payload\)/);
     expect(code).toMatch(/registerIpc\([\s\S]*?locked:\s*\(\)\s*=>\s*appLock\.isLocked\(\)/);
+    expect(code).toMatch(/registerIpc\([\s\S]*?dbReady:\s*\(\)\s*=>\s*access\.isReady\(\)/);
+    expect(code).toMatch(/gatedPush\(\s*\(\) => lock\?\.isLocked\(\) \?\? true,\s*\(\) => dbAccess\?\.isReady\(\) \?\? false,/);
   });
 });

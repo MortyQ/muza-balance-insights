@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import type { ImportDepth } from '@contract/progress.ts';
 import { FAILED_TEXT } from '@/shared/lib';
 import { useImportRequest } from '../api/useImportRequest.ts';
+import { START_ERRORS } from '../constants.ts';
 import type { UseImportReturn } from '../types.ts';
 
 export function useImport(): UseImportReturn {
@@ -13,7 +14,7 @@ export function useImport(): UseImportReturn {
     error.value = '';
     try {
       const r = await startImport(depth.value);
-      if (!r.started) error.value = r.reason === 'no-token' ? 'Нет ни одного токена: введи его в настройках, «Люди и подключения».' : 'Импорт уже идёт.';
+      if (!r.started) error.value = START_ERRORS[r.reason];
     } catch {
       error.value = FAILED_TEXT;
     }

@@ -286,8 +286,8 @@
   всегда с `--publish never` (иначе electron-builder на теге в CI публикует сам). Кэш загрузок Electron —
   `apps/desktop/node_modules/.cache/electron` (`electronDownload.cache`, `electron_config_cache`).
   libsql для обеих архитектур Mac — `supportedArchitectures` в `pnpm-workspace.yaml`.
-- Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux и
-  macOS → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
+- Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux,
+  macOS и Windows (на Windows обязательны только тесты `db-libsql` — шифр базы; полный набор пока информационно) → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
   `SHA256SUMS.txt` и attestations. Публикует draft пользователь руками. Ручной запуск — только артефакты, без релиза.
 - Обновление без Developer ID (проверено 25.09.2026): macOS один раз спрашивает пароль к Keychain, токен сохраняется.
 - Прежнее имя до 25.09.2026 — «Balans Insights». Его пути остаются в deny и sandbox `.claude/settings.json`, пока
@@ -315,9 +315,9 @@
   `@mono/*` в devDependencies десктопа: их вшивает electron-vite, в asar они не попадают.
 - Этап 1 закрыт 25.09.2026: Electron Security Checklist 20/20 (таблица — `reports/2026-09-25-stage1-step9-security-checklist.md`,
   пункты 15 и 16 — `apps/desktop/tests/checklist.test.ts`), итоги трат месяца на экране совпали с MCP.
-- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токены → остановка worker (`Importer.stop`,
-  kill + ожидание выхода) → закрытие соединения → файлы `APP_FILES` (база с WAL, старый `token.bin`, задача импорта) и
-  папки `APP_DIRS` (`tokens/`). Файлы блокировки (`lock.json`) удаляются последними: сбой посередине не оставит данные без замка.
+- «Удалить все данные» (`apps/desktop/src/main/wipe.ts`): системный диалог → токены → ключ базы (`db-key.bin`: база, которая
+  не удалится, уже нечитаема) → остановка worker (`Importer.stop`, kill + ожидание выхода) → закрытие соединения → файлы
+  `APP_FILES` (база с WAL, копия `.encrypting`, старый `token.bin`, задача импорта) и папки `APP_DIRS` (`tokens/`). Файлы блокировки (`lock.json`) удаляются последними: сбой посередине не оставит данные без замка.
 - **Блокировка приложения** (0.1.4, спека `docs/superpowers/specs/2026-09-26-app-lock-design.md`): выкл. по умолчанию;
   PIN 4–8 цифр (без одинаковых и подряд, `pinProblem` в `src/shared/lock.ts`) на всех ОС + Touch ID на macOS
   (`promptTouchID`, системный диалог сам предлагает пароль Mac). Windows Hello нет (нужен нативный модуль). Замок — UI,
@@ -395,24 +395,45 @@
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
 
+- **Шифрование базы** (0.1.4 вместе с блокировкой, спека `docs/superpowers/specs/2026-09-26-db-encryption-design.md`):
+  - вся база — AES-256-CBC (sqlite3mc в `@libsql/client`, `openLibsql(url, { encryptionKey })`); ключ — случайные 32 байта
+    hex в `userData/db-key.bin` через `safeStorage` (как токены), для всех, независимо от PIN (из PIN не берём: импорт под
+    замком после перезапуска не открыл бы базу). Защищает копию файлов (другой компьютер / учётная запись, бэкап, облако);
+    от программ той же учётной записи не защищает; изменения файла не обнаруживаются — «защищена от изменений» нигде не
+    писать (`tests/db-encryption-texts.test.ts`);
+  - `main/secure-store.ts` (`SecureStore`) — общий для токенов и ключа: на Linux надёжность по префиксу blob (`v11`/`v12` —
+    keyring, `v10` — нет), ошибка расшифровки «temporarily unavailable» → `unavailable`, иначе `failed`; `reencrypted` →
+    перезапись. `TokenVault.get` файл, который не расшифровался, **не удаляет** («Запретить» после неподписанного
+    обновления — не потеря токенов);
+  - `main/db/access.ts` (`DbAccess`) решает состояние при запуске до окна и до всего, что открывает базу:
+    `ready` (зашифрована / открыта с `notice`: `no-secure-storage` — нет keyring, `encrypt-pending` — повтор при
+    следующем запуске), `key-unavailable`, `key-lost`, `db-unreadable`. Базу сам **никогда не удаляет**; новый ключ
+    записывается и читается обратно до того, как от него начнёт зависеть файл;
+  - существующая открытая база шифруется при запуске (`main/db/encrypt.ts`): новый файл с ключом + `ATTACH старый KEY ''`,
+    схема копируется как есть, сверка (integrity, FK, схема, число строк, `sqlite_sequence`, `user_version`), fsync, rename
+    (на Windows с повторами). До rename старый файл не пишется; сбой — копия удаляется, база остаётся открытой;
+  - ключ в worker — только в сообщении `start` (`dbKey`, `DB_KEY_RE`), не в argv и env; `Importer` проверяет `StartMessage`
+    до `postMessage`, не-ready база → `db-unavailable`;
+  - IPC: отправитель → замок → **база** → аргументы; не-ready база пропускает только `ALLOWED_WHEN_DB_UNAVAILABLE`
+    (методы замка, `lockNow`, `getDbState`, `relaunchApp`, `startOver`, `quitApp`). Push при не-ready базе — только
+    `balance:lock` и `balance:db-state`. `DbStateView` — только перечисления и boolean;
+  - экран «База недоступна» (`features/db-recovery`) — после замка (замок главнее: «Начать заново» не для того, кто сел за
+    чужой компьютер), любой маршрут туда; кнопки при любом статусе: «Перезапустить» (`app.relaunch`, в том же процессе
+    повтор бесполезен), «Начать заново», «Удалить все данные», «Выйти»;
+  - «Начать заново» (`main/db/start-over.ts`): диалог → токены, которые расшифровываются, в память → токены, задача, ключ,
+    база удаляются → новая база → токены становятся подключениями с именем из банка. Имена, оверрайды, настройки
+    пропадают; `lock.json` не трогается; при ready-базе — отказ. Push состояния — один раз, в конце;
+  - настройки — карточка «Шифрование базы» (`features/db-encryption`);
+  - релиз: на `windows-latest` обязательны тесты `db-libsql` (детектор шифра `sqlite3mc_version`, `PRAGMA cipher`).
+
 ## Бэклог
 
-- **Шифрование базы — следующая фича после блокировки (0.1.5).** Вся база шифруется ключом libsql; ключ — случайные
-  32 байта в `safeStorage` (как токены), для всех пользователей, независимо от PIN. Ключ из PIN не берём: импорт под
-  замком после перезапуска не открыл бы базу, а без блокировки шифрования не было бы вовсе. Защищает копию файлов на
-  другой компьютер или учётную запись, бэкапы и облако; на Windows (DPAPI) не защищает от программ той же учётной записи;
-  Linux без keyring — предупреждение. Сначала короткое исследование (отчёт в `reports/`): 1) шифрование в `@libsql/client`
-  для локальных файлов во всех сборках (mac arm64/x64, win, linux); 2) миграция существующей незашифрованной базы без потерь;
-  3) потеря ключа (пересобранное неподписанное приложение на Mac) → экран «ключ базы недоступен → начать заново»
-  (операции загрузятся из банка заново, имена людей и настройки пропадут); 4) скорость. Потом спека → план → реализация.
-  Исследование — `reports/2026-09-26-db-encryption-research.md`, инструкция для реализации —
-  `docs/superpowers/briefs/2026-09-26-db-encryption.md`.
-- **Проверка токенов на Linux (до шифрования базы).** По коду Electron 44 / Chromium (не проверено на живой системе):
-  `safeStorage.getSelectedStorageBackend()` показывает бэкенд старого синхронного API, а async API без keyring молча
-  шифрует встроенным ключом (префикс `v10`), и `isAsyncEncryptionAvailable()` всё равно `true`. Тогда проверка
-  `INSECURE_BACKENDS` в `TokenVault` (`apps/desktop/src/main/token.ts`) может не сработать, и UI скажет «сохранён
-  безопасно» про слабо защищённый токен. Проверить на Linux без keyring (например, в CI или VM); если подтвердится —
-  определять надёжность по префиксу шифротекста (`v11`/`v12` — keyring, `v10` — нет).
+- **Шифрование базы: не проверено вживую** — шифр в бинарниках libsql win32/linux (первый прогон release на Windows),
+  darwin-x64; тексты ошибок `decryptStringAsync` и что «Запретить» даёт «temporarily unavailable»; «Всегда разрешать» на
+  ad-hoc-сборке; префиксы `v10`/`v11` на живом Linux. Смоук-чек-лист — `reports/2026-09-27-db-encryption-smoke.md`.
+- **Токены и ключ базы на Linux без keyring — проверить вживую** (VM или `--password-store=basic`): по коду async API без
+  keyring шифрует встроенным ключом (`v10`), и `SecureStore` должен счесть это `insecure` (токены в памяти, база открыта с
+  `no-secure-storage`).
 - Когда приложение станет MCP-сервером — замок должен закрывать и MCP-доступ. Windows Hello — отдельным шагом (нативный модуль).
 - Веб-версия (Nuxt SPA) снята с плана: вместо неё десктоп на Electron (этап 1). Веб — возможная будущая версия.
 - **Приложение как MCP-сервер для Claude Desktop**: данные в приложении, вопросы в Claude по подписке пользователя,

@@ -1,7 +1,7 @@
 // The preload with a fake Electron module: what exactly reaches window.balance (Checklist #20).
 import fs from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { API_KEY, LOCK_CHANNEL, METHODS, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL } from '../src/shared/channels.ts';
+import { API_KEY, DB_STATE_CHANNEL, LOCK_CHANNEL, METHODS, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL } from '../src/shared/channels.ts';
 
 const exposed: Array<[string, any]> = [];
 const invoked: unknown[][] = [];
@@ -25,11 +25,11 @@ beforeEach(async () => {
 });
 
 describe('preload API', () => {
-  it('exposes exactly one object under window.balance: the contract methods + four subscriptions, all functions, frozen', () => {
+  it('exposes exactly one object under window.balance: the contract methods + five subscriptions, all functions, frozen', () => {
     expect(exposed).toHaveLength(1);
     const [key, api] = exposed[0]!;
     expect(key).toBe(API_KEY);
-    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onLock', 'onOpenSettings', 'onProgress', 'onUpdate'].sort());
+    expect(Object.keys(api).sort()).toEqual([...METHODS, 'onDbState', 'onLock', 'onOpenSettings', 'onProgress', 'onUpdate'].sort());
     expect(Object.values(api).every((v) => typeof v === 'function')).toBe(true);
     expect(Object.isFrozen(api)).toBe(true);
   });
@@ -74,6 +74,16 @@ describe('preload API', () => {
     expect(got).toEqual([[{ locked: true }]]);
     off();
     expect(listeners.has(LOCK_CHANNEL)).toBe(false);
+  });
+
+  it('onDbState: its own channel, the payload only, unsubscribes', () => {
+    const api = exposed[0]![1];
+    const got: unknown[][] = [];
+    const off = api.onDbState((...a: unknown[]) => got.push(a));
+    listeners.get(DB_STATE_CHANNEL)!({ sender: { secret: true } }, { status: 'key-lost' });
+    expect(got).toEqual([[{ status: 'key-lost' }]]);
+    off();
+    expect(listeners.has(DB_STATE_CHANNEL)).toBe(false);
   });
 
   it('the preload source imports only the Electron module and the channel list (bundles into one CJS file)', () => {

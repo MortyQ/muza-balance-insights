@@ -17,6 +17,8 @@ const api = vi.hoisted(() => {
     onUpdate: vi.fn(() => () => undefined),
     onOpenSettings: vi.fn(() => () => undefined),
     onLock: vi.fn(() => () => undefined),
+    getDbState: vi.fn(async () => ({ status: 'ready', encrypted: true, notice: null, platform: 'darwin' })),
+    onDbState: vi.fn(() => () => undefined),
   };
   return { state, fake };
 });

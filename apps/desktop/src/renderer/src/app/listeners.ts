@@ -1,6 +1,7 @@
 import type { Router } from 'vue-router';
 import { useAppLockStore } from '@/entities/app-lock';
 import { useAppUpdateStore } from '@/entities/app-update';
+import { useDbStateStore } from '@/entities/db-state';
 import { FINISHED_PHASES, useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
@@ -24,6 +25,7 @@ export function listenToMain(router: Router): () => void {
   const syncStatus = useSyncStatusStore();
   const appUpdate = useAppUpdateStore();
   const appLock = useAppLockStore();
+  const dbState = useDbStateStore();
 
   const live = throttle(() => void syncStatus.refresh(), LIVE_REFRESH_MS);
   // windowsDone of the last refresh; any change (a new window, or a restarted worker counting from 0) is new data.
@@ -56,11 +58,25 @@ export function listenToMain(router: Router): () => void {
     if (v.locked && !onLockScreen) void router.replace({ name: ROUTE.lock });
     if (!v.locked && onLockScreen) void router.replace({ name: ROUTE.home });
   });
+  // Not ready → the recovery screen (never over the lock screen: the lock comes first). Ready again («Начать заново»,
+  // «Удалить все данные») → a new, different database: people and data are fetched afresh before home picks its screen.
+  const offDbState = balanceApi.onDbState((v) => {
+    dbState.set(v);
+    const route = router.currentRoute.value.name;
+    if (route === ROUTE.lock) return;
+    if (!dbState.ready && route !== ROUTE.dbRecovery) void router.replace({ name: ROUTE.dbRecovery });
+    if (dbState.ready && route === ROUTE.dbRecovery) {
+      void Promise.all([participant.refresh(), syncStatus.refresh()])
+        .catch(() => undefined)
+        .then(() => router.replace({ name: ROUTE.home }));
+    }
+  });
   return () => {
     live.cancel();
     offProgress();
     offUpdate();
     offSettings();
     offLock();
+    offDbState();
   };
 }

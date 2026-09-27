@@ -8,6 +8,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/', name: ROUTE.home, component: () => import('@/pages/home').then((m) => m.HomePage) },
   { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage) },
   { path: '/settings', name: ROUTE.settings, component: () => import('@/pages/settings').then((m) => m.SettingsPage) },
+  { path: '/db-recovery', name: ROUTE.dbRecovery, component: () => import('@/pages/db-recovery').then((m) => m.DbRecoveryPage) },
   { path: '/lock', name: ROUTE.lock, component: () => import('@/pages/lock').then((m) => m.LockPage) },
   { path: '/:rest(.*)*', redirect: { name: ROUTE.home } },
 ];

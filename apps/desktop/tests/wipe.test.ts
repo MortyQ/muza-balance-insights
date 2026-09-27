@@ -50,7 +50,7 @@ describe('deleteAllData', () => {
 
   it('covers the database with its WAL files, the tokens of every connection (and the old single token), the import job and the app lock', () => {
     expect([...APP_FILES].sort()).toEqual(
-      ['import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
+      ['db-key.bin', 'db-key.bin.tmp', 'import-job.json', 'lock.json', 'lock.json.tmp', 'monobank.db', 'monobank.db-journal', 'monobank.db.encrypting', 'monobank.db.encrypting-journal', 'monobank.db.encrypting-shm', 'monobank.db.encrypting-wal', 'monobank.db-shm', 'monobank.db-wal', 'token.bin', 'token.bin.tmp'].sort(),
     );
     expect([...APP_DIRS]).toEqual(['tokens']);
   });
@@ -59,6 +59,18 @@ describe('deleteAllData', () => {
     for (const f of APP_FILES) fs.rmSync(path.join(dir, f));
     for (const d of APP_DIRS) fs.rmSync(path.join(dir, d), { recursive: true });
     await expect(deleteAllData(deps(true).d)).resolves.toEqual({ deleted: true });
+  });
+
+  it('the database key goes right after the tokens, before the worker is stopped and the database removed', async () => {
+    const { d, order } = deps(true);
+    const rm = vi.spyOn(fs.promises, 'rm').mockImplementation(async (p) => void order.push(`rm:${path.basename(p as string)}`));
+    try {
+      await deleteAllData(d).catch(() => undefined); // files stay (rm is mocked): only the order matters here
+      expect(order.slice(0, 5)).toEqual(['confirm', 'token', 'rm:db-key.bin', 'rm:db-key.bin.tmp', 'importer']);
+      expect(order.indexOf('rm:monobank.db')).toBeGreaterThan(order.indexOf('db'));
+    } finally {
+      rm.mockRestore();
+    }
   });
 
   it('the lock file is removed last of all — a failure partway through never leaves data unlocked', async () => {

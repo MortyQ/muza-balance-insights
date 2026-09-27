@@ -12,6 +12,7 @@ import type { ImportProgress } from '../src/shared/progress.ts';
 
 const TOKEN = 'uCANARY-importer-token-0123456789';
 const NOW = kyivStartOfDay('2026-03-31') + 15 * 3600; // 31 March, 15:00 Kyiv
+const DB_KEY = 'c0ffee'.padEnd(64, '0');
 
 let dir: string;
 beforeEach(() => {
@@ -41,7 +42,8 @@ class FakeChild extends EventEmitter implements ChildLike {
 type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null };
 
 /** Default: one Monobank connection (id 1) whose token is in secure storage. `connections` replaces it. */
-function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null; connections?: Conn[] } = {}) {
+/** `db`: what DbAccess.forWorker() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
+function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null; connections?: Conn[]; db?: { dbPath: string; dbKey: string | null } | null } = {}) {
   const children: FakeChild[] = [];
   const sent: ImportProgress[] = [];
   const logs: string[] = [];
@@ -51,6 +53,7 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
   const token = opts.token === undefined ? TOKEN : opts.token;
   const conns: Conn[] = opts.connections ?? [{ connectionId: 1, token, stored: opts.stored ?? (token ? 'secure' : null) }];
   const byId = (id: number) => conns.find((c) => c.connectionId === id);
+  const target = opts.db === undefined ? { dbPath: path.join(dir, 'monobank.db'), dbKey: DB_KEY } : opts.db;
   const importer = new Importer({
     fork: () => {
       const c = new FakeChild();
@@ -64,7 +67,7 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
       stop: (id) => void blocker.stopped.push(id),
     },
     userDataDir: dir,
-    dbPath: path.join(dir, 'monobank.db'),
+    db: () => target,
     nowSec: () => clock.now,
     send: (p) => sent.push(p),
     log: (m) => logs.push(m),
@@ -98,12 +101,33 @@ describe('Importer', () => {
       {
         type: 'start',
         dbPath: path.join(dir, 'monobank.db'),
+        dbKey: DB_KEY,
         connections: [{ connectionId: 1, provider: 'monobank', token: TOKEN }],
         sinceSec: kyivStartOfDay('2025-12-31'),
       },
     ]);
     expect(sent).toEqual([{ phase: 'starting', resumed: false }]);
     expect(JSON.stringify({ sent, logs, job: fs.readFileSync(job(), 'utf8') })).not.toContain(TOKEN);
+    expect(JSON.stringify({ sent, logs, job: fs.readFileSync(job(), 'utf8') })).not.toContain(DB_KEY);
+  });
+
+  it('database unavailable: nothing starts — no worker, no job, no blocker; resume on launch does nothing', async () => {
+    fs.writeFileSync(job(), JSON.stringify({ sinceSec: 1_700_000_000, depth: 3, startedAt: NOW }));
+    const { importer, children, sent, blocker } = setup({ db: null });
+    await importer.resumeOnLaunch();
+    expect(await importer.start(3)).toEqual({ started: false, reason: 'db-unavailable' });
+    expect([children.length, blocker.started.length, sent.length]).toEqual([0, 0, 0]);
+    expect(JSON.parse(fs.readFileSync(job(), 'utf8')).startedAt).toBe(NOW); // the old job is kept for later
+  });
+
+  it('a plain database: the key is null in the start message; a malformed key never reaches a worker', async () => {
+    const plain = setup({ db: { dbPath: path.join(dir, 'monobank.db'), dbKey: null } });
+    expect(await plain.importer.start(3)).toEqual({ started: true });
+    expect(plain.children[0]!.sent[0]).toMatchObject({ type: 'start', dbKey: null });
+    const bad = setup({ db: { dbPath: path.join(dir, 'monobank.db'), dbKey: 'NOT-HEX' } });
+    expect(await bad.importer.start(3)).toEqual({ started: false, reason: 'db-unavailable' });
+    expect(bad.children).toHaveLength(0);
+    expect(bad.logs).toEqual(['import: start message rejected']);
   });
 
   it('forwards valid progress, drops malformed messages (logged, not forwarded)', async () => {

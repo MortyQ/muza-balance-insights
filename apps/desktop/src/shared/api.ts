@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
 import type { UpdateView } from './update.ts';
@@ -104,6 +105,15 @@ export type BalanceApi = {
   setTouchId(enabled: boolean): Promise<LockView>;
   /** Returns an unsubscribe function. */
   onLock(cb: (v: LockView) => void): () => void;
+  /** Allowed while the database is not ready (not while locked). */
+  getDbState(): Promise<DbStateView>;
+  /** Database not ready only: a new process asks the keychain again. */
+  relaunchApp(): Promise<void>;
+  /** Database not ready only; system dialog first. A new empty database; tokens that still decrypt become connections. */
+  startOver(): Promise<StartOverResult>;
+  quitApp(): Promise<void>;
+  /** Returns an unsubscribe function. */
+  onDbState(cb: (v: DbStateView) => void): () => void;
 };
 
 // ---------- data for the screen ----------

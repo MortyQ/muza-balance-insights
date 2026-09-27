@@ -6,16 +6,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { TokenStatus } from '../shared/api.ts';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { SecureStore, type SafeStorageLike } from './secure-store.ts';
 
-export type { TokenStatus };
-
-export type SafeStorageLike = {
-  isAsyncEncryptionAvailable(): Promise<boolean>;
-  encryptStringAsync(plainText: string): Promise<Buffer>;
-  decryptStringAsync(encrypted: Buffer): Promise<{ result: string; shouldReEncrypt: boolean }>;
-  /** Linux only. */
-  getSelectedStorageBackend?(): string;
-};
+export type { SafeStorageLike, TokenStatus };
 
 /** tokens/<connectionId>.bin */
 export const TOKENS_DIR = 'tokens';
@@ -27,9 +20,6 @@ type Provider = keyof typeof DESKTOP_PROVIDERS;
 /** A decrypted file must look like some provider's credential. */
 const ANY_CREDENTIAL = (s: string) => Object.values(DESKTOP_PROVIDERS).some((p) => p.credential.test(s));
 
-/** Linux backends that are not a secret store: safeStorage "encrypts" with a hard-coded key there. */
-const INSECURE_BACKENDS = new Set(['basic_text', 'unknown']);
-
 export class TokenError extends Error {
   override name = 'TokenError';
 }
@@ -38,9 +28,12 @@ export class TokenVault {
   private readonly memory = new Map<number, string>();
   private readonly needsReentry = new Set<number>();
   private readonly dir: string;
+  private readonly store: SecureStore;
 
-  constructor(private readonly deps: { safeStorage: SafeStorageLike; platform: NodeJS.Platform; userDataDir: string }) {
+  /** `store`: shared with the database key (one reliability probe per process); tests may leave it out. */
+  constructor(private readonly deps: { safeStorage: SafeStorageLike; platform: NodeJS.Platform; userDataDir: string; store?: SecureStore }) {
     this.dir = path.join(deps.userDataDir, TOKENS_DIR);
+    this.store = deps.store ?? new SecureStore(deps);
   }
 
   private file(connectionId: number): string {
@@ -48,19 +41,14 @@ export class TokenVault {
     return path.join(this.dir, `${connectionId}.bin`);
   }
 
-  /** True only for a real OS secret store. */
+  /** True only for a real OS secret store (on Linux: judged by the blob, see secure-store.ts). */
   async secureStorageAvailable(): Promise<boolean> {
-    const { safeStorage, platform } = this.deps;
-    if (!(await safeStorage.isAsyncEncryptionAvailable())) return false;
-    if (platform === 'linux') {
-      const backend = safeStorage.getSelectedStorageBackend?.() ?? 'unknown';
-      if (INSECURE_BACKENDS.has(backend)) return false;
-    }
-    return true;
+    return (await this.store.reliability()) === 'secure';
   }
 
   async status(connectionId: number): Promise<TokenStatus> {
-    const onDisk = fs.existsSync(this.file(connectionId));
+    // A file that did not decrypt stays on disk (it may open after a restart) but counts as missing.
+    const onDisk = fs.existsSync(this.file(connectionId)) && !this.needsReentry.has(connectionId);
     const inMemory = this.memory.has(connectionId);
     return {
       present: inMemory || onDisk,
@@ -78,12 +66,11 @@ export class TokenVault {
     this.memory.set(connectionId, token);
     this.needsReentry.delete(connectionId);
     if (remember && (await this.secureStorageAvailable())) {
-      const blob = await this.deps.safeStorage.encryptStringAsync(token);
-      await fs.promises.mkdir(this.dir, { recursive: true, mode: 0o700 });
-      const tmp = `${file}.tmp`;
-      await fs.promises.writeFile(tmp, blob, { mode: 0o600 });
-      await fs.promises.rename(tmp, file);
-      return { stored: 'secure' };
+      const blob = await this.store.encrypt(token);
+      if (blob) {
+        await this.write(file, blob);
+        return { stored: 'secure' };
+      }
     }
     // Not remembered (or no secure store): an older saved token must not outlive this choice.
     await fs.promises.rm(file, { force: true });
@@ -112,17 +99,32 @@ export class TokenVault {
     if (cached !== undefined) return cached;
     const file = this.file(connectionId);
     if (!fs.existsSync(file)) return null;
-    try {
-      const { result } = await this.deps.safeStorage.decryptStringAsync(await fs.promises.readFile(file));
-      if (!ANY_CREDENTIAL(result)) throw new TokenError('bad token');
-      this.memory.set(connectionId, result);
-      return result;
-    } catch {
-      // Undecryptable (other machine, rebuilt unsigned app, corrupted): drop it and ask again.
+    const r = await this.store.decrypt(await fs.promises.readFile(file));
+    if (r.kind !== 'ok') {
+      // Not decrypted: keychain access denied («Запретить» after an unsigned update), keychain locked, other machine.
+      // The file stays — after a restart and «Разрешить» it opens again; a new token entered meanwhile overwrites it.
+      this.needsReentry.add(connectionId);
+      return null;
+    }
+    const result = r.value;
+    if (!ANY_CREDENTIAL(result)) {
+      // Decrypted, but not a token: the file is damaged, nothing to wait for.
       await fs.promises.rm(file, { force: true });
       this.needsReentry.add(connectionId);
       return null;
     }
+    this.needsReentry.delete(connectionId);
+    this.memory.set(connectionId, result);
+    // The store asked for a fresh blob (its key changed): best effort, the old file still decrypts.
+    if (r.reencrypted) await this.write(file, r.reencrypted).catch(() => undefined);
+    return result;
+  }
+
+  private async write(file: string, blob: Buffer): Promise<void> {
+    await fs.promises.mkdir(this.dir, { recursive: true, mode: 0o700 });
+    const tmp = `${file}.tmp`;
+    await fs.promises.writeFile(tmp, blob, { mode: 0o600 });
+    await fs.promises.rename(tmp, file);
   }
 
   /** Connections with a token saved on disk (an import can resume without asking). */
