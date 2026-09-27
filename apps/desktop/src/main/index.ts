@@ -8,7 +8,7 @@ import { importActive } from '../shared/progress.ts';
 import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
-import { openLibsql } from '@mono/db-libsql';
+import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { DataService } from './data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
@@ -112,20 +112,24 @@ app.whenReady().then(async () => {
   // «Начать заново» pushes once, at its end: a push from its reset would send the renderer home before the connections
   // are back (home would then pick the connect screen).
   let dbStateQuiet = false;
+  // Windows cannot delete or rename a closed database's files until its statements are collected (releaseClosedFiles).
+  const forcedGc = canReleaseClosedFiles();
+  if (!forcedGc) process.stderr.write('[db] forced gc unavailable: closed database files are released only when V8 collects\n');
   const access = new DbAccess({
     userDataDir: userData,
     keys: new DbKeyVault({ store: secureStore, userDataDir: userData, platform: process.platform }),
     store: secureStore,
     openDb: (url, opts) => openLibsql(url, opts),
+    release: releaseClosedFiles,
     // An existing plain database (before 0.1.4) is encrypted here, once; a failure keeps it plain until next launch.
     encrypt: (file, key) =>
-      encryptDatabase({ file, key, openDb: (url, opts) => openLibsql(url, opts), platform: process.platform, log: (msg) => process.stderr.write(`[db] ${msg}\n`) }),
+      encryptDatabase({ file, key, openDb: (url, opts) => openLibsql(url, opts), release: releaseClosedFiles, platform: process.platform, log: (msg) => process.stderr.write(`[db] ${msg}\n`) }),
     onChange: () => void (dbStateQuiet || push(DB_STATE_CHANNEL, access.view(process.platform))),
     log: (msg) => process.stderr.write(`[db] ${msg}\n`),
   });
   dbAccess = access;
   await access.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));
-  const data = new DataService({ open: () => access.open(), nowSec: () => Math.floor(Date.now() / 1000) });
+  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {
@@ -325,7 +329,7 @@ app.whenReady().then(async () => {
     const smoke = access.isReady()
       ? await runDbSmoke(() => access.open(), st.kind === 'ready' && st.encrypted, Math.floor(Date.now() / 1000))
       : ({ ok: false, error: st.kind } as const);
-    process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, devOrigin })}\n`);
+    process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, forcedGc, devOrigin })}\n`);
   }
 
   // The saved theme before the window exists: its frame colours and the first paint already follow it.

@@ -12,6 +12,8 @@ import type { BalanceLine, BalancesQuery, BalancesView, DataStatus, SpendingQuer
 
 export type DataServiceDeps = {
   open: () => Promise<Db>;
+  /** After close: the files are deleted next (releaseClosedFiles — Windows holds them until collected). */
+  release: () => Promise<unknown>;
   nowSec: () => number;
 };
 
@@ -123,11 +125,14 @@ export class DataService {
   async close(): Promise<void> {
     const db = this.db;
     this.db = null;
-    if (!db) return;
-    try {
-      (await db).close();
-    } catch {
-      // Never opened: nothing to close.
+    if (db) {
+      try {
+        (await db).close();
+      } catch {
+        // Never opened: nothing to close.
+      }
     }
+    // Also when nothing was open here: the database may have been opened and closed elsewhere (DbAccess checks).
+    await this.d.release();
   }
 }

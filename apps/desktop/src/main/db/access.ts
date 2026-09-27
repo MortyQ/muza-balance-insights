@@ -39,6 +39,8 @@ export type DbAccessDeps = {
   keys: Pick<DbKeyVault, 'load' | 'create' | 'clear'>;
   store: Pick<SecureStore, 'reliability'>;
   openDb: (url: string, opts?: { encryptionKey?: string }) => Promise<Db>;
+  /** After close, before a delete: closed databases hold their files until collected (releaseClosedFiles). */
+  release: () => Promise<unknown>;
   /** Plain → encrypted, in place (encrypt.ts). Absent: a plain database stays plain (`encrypt-pending`). */
   encrypt?: (file: string, key: string) => Promise<EncryptResult>;
   onChange?: (state: DbState) => void;
@@ -117,6 +119,7 @@ export class DbAccess {
   async reset(): Promise<DbState> {
     this.key = null;
     await this.d.keys.clear();
+    await this.d.release();
     for (const f of [...DB_FILES.map((n) => path.join(this.d.userDataDir, n)), ...encryptingFiles(this.file)]) {
       await fs.promises.rm(f, { force: true });
     }

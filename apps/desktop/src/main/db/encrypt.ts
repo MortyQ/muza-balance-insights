@@ -17,6 +17,8 @@ export type EncryptDeps = {
   file: string;
   key: string;
   openDb: (url: string, opts?: { encryptionKey?: string }) => Promise<Db>;
+  /** After close, before a rename or delete: closed databases hold their files until collected (releaseClosedFiles). */
+  release: () => Promise<unknown>;
   platform: NodeJS.Platform;
   rename?: (from: string, to: string) => Promise<void>;
   /** Tests: throws at the start of the given step. */
@@ -67,6 +69,7 @@ export async function encryptDatabase(d: EncryptDeps): Promise<MigrationResult> 
     d.fault?.(s);
   };
   const removeCopy = async () => {
+    await d.release();
     for (const f of encryptingFiles(d.file)) await fs.promises.rm(f, { force: true });
   };
   let conn: Db | null = null;
@@ -124,6 +127,8 @@ export async function encryptDatabase(d: EncryptDeps): Promise<MigrationResult> 
     }
 
     enter('swap');
+    // Windows: the connections above are closed but still hold both files until collected.
+    await d.release();
     await fs.promises.rm(`${d.file}-shm`, { force: true });
     await fs.promises.rm(oldWal, { force: true });
     // Windows: an antivirus or the indexer may hold the file for a moment.

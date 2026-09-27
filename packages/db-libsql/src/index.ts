@@ -4,6 +4,8 @@
 // so any drift between the two fails there.
 import fs from 'node:fs';
 import path from 'node:path';
+import v8 from 'node:v8';
+import vm from 'node:vm';
 import { createClient, type InStatement } from '@libsql/client';
 
 export type SqlValue = null | string | number | bigint | ArrayBuffer | Uint8Array;
@@ -67,4 +69,41 @@ export async function openLibsql(url: string, opts: OpenOptions = {}): Promise<L
     },
     close: () => client.close(),
   };
+}
+
+let gc: (() => void) | null | undefined;
+function forcedGc(): (() => void) | null {
+  if (gc === undefined) {
+    try {
+      v8.setFlagsFromString('--expose-gc');
+      gc = vm.runInNewContext('gc') as () => void;
+    } catch {
+      gc = null;
+    }
+  }
+  return gc;
+}
+
+/** Whether this runtime can force a collection (checked once; Node and Electron's main process expose it on request). */
+export function canReleaseClosedFiles(): boolean {
+  return forcedGc() !== null;
+}
+
+/**
+ * Lets the files of closed databases go. A closed connection still holds its files while its prepared statements are
+ * alive: libsql-js has no Statement.close, and @libsql/client prepares one per execute — they go only when garbage-collected.
+ * On macOS and Linux that is invisible; on Windows the files cannot be renamed or deleted until then (EBUSY), and waiting
+ * does not help (measured on the Windows CI runner: held after 1 s, free right after a forced gc). Call it after close()
+ * and before renaming or deleting database files. Global: one call covers every database closed before it.
+ * false: no forced gc in this runtime — the files are released whenever V8 collects on its own.
+ */
+export async function releaseClosedFiles(): Promise<boolean> {
+  const collect = forcedGc();
+  if (!collect) return false;
+  collect();
+  // Native finalizers run after the collection: give them a turn, then collect again.
+  await new Promise((r) => setImmediate(r));
+  collect();
+  await new Promise((r) => setTimeout(r, 50));
+  return true;
 }

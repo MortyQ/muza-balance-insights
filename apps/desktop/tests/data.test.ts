@@ -40,7 +40,7 @@ async function synced(accountId: string) {
 beforeEach(async () => {
   seq = 0;
   db = await memoryDb();
-  svc = new DataService({ open: async () => db, nowSec: () => NOW });
+  svc = new DataService({ open: async () => db, release: async () => undefined, nowSec: () => NOW });
 });
 afterEach(() => db.close());
 
@@ -137,11 +137,27 @@ describe('DataService (main → renderer view types)', () => {
         if (opens === 1) throw new Error('locked');
         return db;
       },
+      release: async () => undefined,
       nowSec: () => NOW,
     });
     await expect(flaky.status()).rejects.toThrow('locked');
     await expect(flaky.status()).resolves.toMatchObject({ hasData: false });
     expect(opens).toBe(2);
+  });
+
+  it('close() releases the closed files (Windows holds them until collected), after closing — also when nothing was open', async () => {
+    const order: string[] = [];
+    const conn = await memoryDb();
+    const closing = new DataService({
+      open: async () => ({ ...conn, close: () => (order.push('close'), conn.close()) }),
+      release: async () => void order.push('release'),
+      nowSec: () => NOW,
+    });
+    await closing.status();
+    await closing.close();
+    expect(order).toEqual(['close', 'release']);
+    await closing.close();
+    expect(order).toEqual(['close', 'release', 'release']);
   });
 });
 
