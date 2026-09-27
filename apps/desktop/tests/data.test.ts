@@ -2,7 +2,7 @@
 // names, descriptions, card numbers, IBANs and jar titles never reach the renderer.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
-import { kyivStartOfDay } from '@mono/core/format';
+import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { DataService } from '../src/main/data.ts';
 
@@ -108,6 +108,15 @@ describe('DataService (main → renderer view types)', () => {
     await account('uah', 'black', 980, 0);
     await synced('uah');
     expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', lastSyncAt: '2026-03-10 23:01' });
+  });
+
+  it('lastSyncSec: null before any import, then the epoch seconds of the latest sync', async () => {
+    expect(await svc.lastSyncSec()).toBeNull();
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const at = await svc.lastSyncSec();
+    expect(at).not.toBeNull();
+    expect(toKyivDateTime(at!)).toBe((await svc.status()).lastSyncAt);
   });
 
   it('nothing the renderer gets contains a name, description, card number, IBAN or jar title', async () => {

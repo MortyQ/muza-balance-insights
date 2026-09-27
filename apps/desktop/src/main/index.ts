@@ -1,9 +1,10 @@
 // Electron main. Order matters: identity, sandbox and the app:// scheme privileges are set before `ready`.
-import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, powerMonitor, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { importActive } from '../shared/progress.ts';
+import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
@@ -21,6 +22,7 @@ import { DbAccess } from './db/access.ts';
 import { encryptDatabase } from './db/encrypt.ts';
 import { startOver } from './db/start-over.ts';
 import { DbKeyVault } from './db/key-vault.ts';
+import { readPrefs } from './prefs.ts';
 import { SecureStore } from './secure-store.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
@@ -144,6 +146,25 @@ app.whenReady().then(async () => {
     log: (msg) => process.stderr.write(`[import] ${msg}\n`),
   });
   app.on('before-quit', () => importer.shutdown());
+  const autoSync = new AutoSync({
+    settings: () => readPrefs(userData).autoSync,
+    ready: () => access.isReady(),
+    lastSyncSec: () => data.lastSyncSec(),
+    start: () => importer.startAuto(),
+    nowMs: () => Date.now(),
+    log: (msg) => process.stderr.write(`[import] ${msg}\n`),
+  });
+  const stopAutoSync = watchAutoSync(autoSync, (l) => void powerMonitor.on('resume', l), {
+    after: (fn, ms) => {
+      const id = setTimeout(fn, ms);
+      return () => clearTimeout(id);
+    },
+    every: (fn, ms) => {
+      const id = setInterval(fn, ms);
+      return () => clearInterval(id);
+    },
+  });
+  app.on('will-quit', () => stopAutoSync());
   const updater = createUpdater({
     userDataDir: userData,
     importRunning: () => importer.running,
@@ -310,7 +331,8 @@ app.whenReady().then(async () => {
     if (!resumeChecked) {
       resumeChecked = true;
       // Not while the database is unavailable: the import would only fail on it.
-      if (access.isReady()) void importer.resumeOnLaunch();
+      // «Автообновление» after it: an unfinished import that resumed takes precedence.
+      if (access.isReady()) void importer.resumeOnLaunch().then(() => autoSync.maybeRun('launch')).catch(() => undefined);
       scheduleChecks(updater);
     }
   });
