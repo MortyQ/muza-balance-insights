@@ -71,10 +71,10 @@
     `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка в `constants.ts`: `CONSENT_TEXT`,
     `TOKEN_STEPS`, `TOKEN_PLACEHOLDER`, `ACCESS_NOTE`) и
     `shared/` для общего между банками (`components/ConnectionRow.vue`, `components/BankPicker.vue` — выбор банка на первом
-    экране; `composables/useConnectionActions.ts` — удалить, цвет подключения, «Ввести токен заново»;
-    `composables/useConnectionOwner.ts` — чьё подключение и цвета; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
+    экране; `composables/useConnectionActions.ts` — удалить, «Ввести токен заново»;
+    `composables/useConnectionOwner.ts` — чьё подключение и цвет нового человека; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
     `participantChoice`, `removeText`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
-    «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвета — в слот
+    «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвет нового человека — в слот
     формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField, accessNote }`,
     `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
     пропсы; пропсы в месте `<component :is>` не проверяются) и `DEFAULT_PROVIDER` (банк «Добавить подключение»);
@@ -92,14 +92,14 @@
   Monobank); как подключать — в папке банка в `features/integrations`. Подключение — `addConnection` в main (пока только Monobank).
 - Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «Люди» — `features/settings/people`
   (имя и «Переименовать», «Взять имя из банка», цвет человека); раздел «Подключения» — `features/integrations`
-  (подключения со статусом токена, «Ввести токен заново», «Изменить цвет», «Удалить», «Добавить подключение» — существующий
+  (подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий
   человек или новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран —
   `ConnectFirstFeature` той же формой с человеком «Я»; на главном — фильтр людей `ParticipantFilter` из `entities/participant` («Вся семья / имена», только если людей больше одного;
   у имени точка цвета человека, у «Вся семья» — точки всех: `filterOptions`, `SegmentOption.colors` в `VSegmentedControl`),
   траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
-  Цвета людей и подключений: оттенки `--series-<key>` в `theme.css` (обе темы), выбор — `ColorSwatches` из
+  Цвета людей (у подключений цвета нет): оттенки `--series-<key>` в `theme.css` (обе темы), выбор — `ColorSwatches` из
   `entities/participant` (radiogroup, занятые видны, но недоступны; своего компонента в muzakit нет), в форме добавления
-  по умолчанию — первый свободный; «Изменить цвет» в «Люди» и «Подключения» применяется сразу; «Взять имя из банка»
+  по умолчанию — первый свободный; «Изменить цвет» в «Люди» применяется сразу; «Взять имя из банка»
   в «Переименовать».
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.

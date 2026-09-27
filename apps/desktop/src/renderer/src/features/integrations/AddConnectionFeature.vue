@@ -20,9 +20,7 @@ const {
 const emit = defineEmits<{ added: [] }>();
 
 const participant = useParticipantStore();
-const { person, newLabel, fromBank, personColor, connectionColor, takenPersonColors, takenConnectionColors, owner, reset } = useConnectionOwner(
-  () => defaultLabel,
-);
+const { person, newLabel, fromBank, personColor, takenPersonColors, owner, reset } = useConnectionOwner(() => defaultLabel);
 const personId = useId();
 
 const personOptions = computed<VSelectOption[]>(() => [
@@ -37,8 +35,8 @@ function onAdded() {
 </script>
 
 <template>
-  <!-- The bank's form holds the <form>, its credential fields and the submit; whose it is and the colours come first. -->
-  <component :is="PROVIDER_FORMS[provider].connect" :owner :connection-color :submit-text :autofocus @added="onAdded">
+  <!-- The bank's form holds the <form>, its credential fields and the submit; whose it is and a new person's colour come first. -->
+  <component :is="PROVIDER_FORMS[provider].connect" :owner :submit-text :autofocus @added="onAdded">
     <div class="flex flex-col gap-2">
       <VSelect :id="personId" v-model="person" label="Чьи это счета" :options="personOptions" class="w-full max-w-[420px]" />
       <template v-if="person === 'new'">
@@ -53,16 +51,12 @@ function onAdded() {
         <VCheckbox v-model="fromBank" label="Взять имя из банка (подставится при первом импорте)" />
       </template>
     </div>
-    <div class="flex flex-wrap gap-x-10 gap-y-4">
-      <div v-if="person === 'new'" class="flex flex-col gap-2">
+    <template v-if="person === 'new'">
+      <div class="flex flex-col gap-2">
         <span class="text-sm font-medium text-foreground-secondary">Цвет человека</span>
         <ColorSwatches v-model="personColor" label="Цвет человека" :taken="takenPersonColors" />
       </div>
-      <div class="flex flex-col gap-2">
-        <span class="text-sm font-medium text-foreground-secondary">Цвет подключения</span>
-        <ColorSwatches v-model="connectionColor" label="Цвет подключения" :taken="takenConnectionColors" />
-      </div>
-    </div>
-    <p class="-mt-2 text-sm text-foreground-muted">По цвету человека и подключения их будет легко различать на графиках. Цвет можно сменить позже.</p>
+      <p class="-mt-2 text-sm text-foreground-muted">По цвету человека будет легко различать на графиках. Цвет можно сменить позже.</p>
+    </template>
   </component>
 </template>

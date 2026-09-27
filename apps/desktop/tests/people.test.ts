@@ -30,22 +30,22 @@ describe('PeopleService', () => {
     expect((await people.list()).people[0]).toMatchObject({ label: 'Мама', labelFromBank: false });
   });
 
-  it('colours: the first free by default, or the one chosen; changing to a taken one → taken, nothing changes', async () => {
+  it('colours: people only — the first free by default, or the one chosen; changing to a taken one → taken, nothing changes', async () => {
     const { people, integrations } = service();
     const a = await integrations.addConnection({ participant: { label: 'Вигаданий Я' }, provider: 'monobank', token: TOKEN, remember: true });
-    const b = await integrations.addConnection({ participant: { fromBank: true, color: 'violet' }, provider: 'monobank', token: TOKEN_B, remember: true, color: 'red' });
+    const b = await integrations.addConnection({ participant: { fromBank: true, color: 'violet' }, provider: 'monobank', token: TOKEN_B, remember: true });
     if (!a.added || !b.added) throw new Error('not added');
     let view = await people.list();
-    // A new connection has no colour (core: only people have one); its colour goes away completely in the next step.
-    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['blue', [null]], ['violet', [null]]]);
+    expect(view.people.map((p) => p.color)).toEqual(['blue', 'violet']);
+    // A connection has no colour at all (the column stays in the database, nothing reads it).
+    await db.execute({ sql: `UPDATE connections SET color = 'red' WHERE id = ?`, args: [a.connectionId] });
+    view = await people.list();
+    for (const c of view.people.flatMap((p) => p.connections)) expect(c).not.toHaveProperty('color');
 
     expect(await people.setParticipantColor(a.participantId, 'violet')).toEqual({ changed: false, reason: 'taken' });
-    expect(await integrations.setConnectionColor(b.connectionId, 'red')).toEqual({ changed: true });
-    expect(await integrations.setConnectionColor(a.connectionId, 'red')).toEqual({ changed: false, reason: 'taken' });
     expect(await people.setParticipantColor(a.participantId, 'green')).toEqual({ changed: true });
-    expect(await integrations.setConnectionColor(a.connectionId, 'aqua')).toEqual({ changed: true });
     view = await people.list();
-    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['green', ['aqua']], ['violet', ['red']]]);
+    expect(view.people.map((p) => p.color)).toEqual(['green', 'violet']);
     await expect(people.setParticipantColor(999, 'yellow')).rejects.toThrow();
   });
 

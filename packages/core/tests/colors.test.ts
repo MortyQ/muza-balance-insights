@@ -12,7 +12,6 @@ import {
   listParticipants,
   renameParticipant,
   restoreBankLabel,
-  setConnectionColor,
   setParticipantColor,
 } from '../src/participants.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
@@ -73,19 +72,15 @@ describe('colours', () => {
     expect((await listParticipants(db)).find((p) => p.id === last)?.color).toBeNull();
   });
 
-  it('changing: to a free colour or its own; another row’s → ColorTakenError; unknown id → ConnectionError', async () => {
+  it('changing a person\'s: to a free colour or its own; another person\'s → ColorTakenError; unknown id → ConnectionError', async () => {
     db = await memoryDb();
     const a = await addParticipant(db, { label: 'Перша' }, 0);
     const b = await addParticipant(db, { label: 'Друга' }, 0);
-    const conn = await addConnection(db, a, 'monobank', 0);
     await setParticipantColor(db, a, 'green');
     await setParticipantColor(db, a, 'green');
     await expect(setParticipantColor(db, b, 'green')).rejects.toBeInstanceOf(ColorTakenError);
-    await setConnectionColor(db, conn, 'green');
     expect((await listParticipants(db)).map((p) => p.color)).toEqual(['green', 'orange']);
-    expect((await listConnections(db))[0]?.color).toBe('green');
     await expect(setParticipantColor(db, 999, 'aqua')).rejects.toBeInstanceOf(ConnectionError);
-    await expect(setConnectionColor(db, 999, 'aqua')).rejects.toBeInstanceOf(ConnectionError);
   });
 });
 

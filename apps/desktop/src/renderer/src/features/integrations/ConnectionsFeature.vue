@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { bankOf } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
-import { colorHolders, useParticipantStore } from '@/entities/participant';
+import { useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
 import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
@@ -14,7 +14,7 @@ import { formsOf, newConnectionTitle } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
-const { error, setToken, setConnectionColor, remove } = useConnectionActions();
+const { error, setToken, remove } = useConnectionActions();
 const newTitle = newConnectionTitle(bankOf(DEFAULT_PROVIDER).name);
 const adding = ref(false);
 const added = ref(false);
@@ -50,10 +50,8 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :key="c.id"
           :connection="c"
           :secure-storage="participant.secureStorage"
-          :taken-colors="colorHolders(participant.people, 'connections', c.id)"
           :token-field="formsOf(c.provider).tokenField"
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
-          @color="(color) => void setConnectionColor(c.id, color)"
           @remove="remove(c.id)"
         />
       </SettingsList>

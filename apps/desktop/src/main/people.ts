@@ -33,7 +33,6 @@ export class PeopleService {
           id: c.id,
           provider: c.provider,
           bank: DESKTOP_PROVIDERS[c.provider].bank,
-          color: c.color,
           accounts: c.accounts,
           coveredFrom: c.coveredFrom,
           coveredTo: c.coveredTo,
@@ -59,8 +58,8 @@ export class PeopleService {
   }
 }
 
-/** A colour change for a participant or a connection: a taken colour is an answer, not an error. */
-export async function colorChange(set: () => Promise<void>): Promise<ColorChangeResult> {
+/** A colour change for a participant: a taken colour is an answer, not an error. */
+async function colorChange(set: () => Promise<void>): Promise<ColorChangeResult> {
   try {
     await set();
     return { changed: true };

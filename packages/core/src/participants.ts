@@ -100,11 +100,6 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
   return setColor(db, 'participants', id, color, 'Такого участника нет');
 }
 
-/** Another connection's colour → ColorTakenError. */
-export function setConnectionColor(db: Db, id: number, color: ColorKey): Promise<void> {
-  return setColor(db, 'connections', id, color, 'Такого подключения нет');
-}
-
 /** Every connection with what the UI shows about it. The bank's holder id is not part of it. */
 export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
   const rs = await db.execute(

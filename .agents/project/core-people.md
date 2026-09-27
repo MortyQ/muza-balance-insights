@@ -25,10 +25,10 @@
     подключения человека, где оно есть.
   - Цвета (миграция v10, `packages/core/src/colors.ts`): `participants.color` и `connections.color` — ключ палитры
     `COLOR_KEYS` (8, категориальная палитра dataviz), уникален отдельно среди людей и среди подключений, NULL = нет
-    (палитра кончилась). Новый ряд — выбранный (занят → `ColorTakenError`) или первый свободный; `setParticipantColor` /
-    `setConnectionColor`. В копию не идёт. С 27.09.2026 цвет только у людей: новое подключение пишет `color = NULL`
-    (`addConnection`, `ensureDefaultConnection`), колонка и индекс остаются; `setConnectionColor` живёт, пока его зовёт
-    десктоп.
+    (палитра кончилась). Новый ряд — выбранный (занят → `ColorTakenError`) или первый свободный; `setParticipantColor`.
+    В копию не идёт. С 27.09.2026 цвет только у людей: новое подключение пишет `color = NULL`
+    (`addConnection`, `ensureDefaultConnection`), колонка и индекс остаются; `setConnectionColor` удалён вместе с
+    выбором цвета подключения в десктопе.
   - Выбор счетов (миграция v11, `accounts.sync_choice`: NULL — авто, 1 — вкл, 0 — выкл; `packages/core/src/accounts.ts`).
     Действующее значение — `accountEnabledSql(alias)`, одно выражение на ядро: выбор, иначе авто (карта всегда; банка —
     баланс > 0 или есть `sync_state`). `syncAccounts` выбор не трогает. План (`defaultAccountSelection`) берёт только

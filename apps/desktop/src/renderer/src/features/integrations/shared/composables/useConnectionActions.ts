@@ -1,6 +1,5 @@
 import { ref } from 'vue';
-import type { ColorKey } from '@contract/api.ts';
-import { COLOR_TAKEN_TEXT, useParticipantStore } from '@/entities/participant';
+import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { FAILED_TEXT } from '@/shared/lib';
 import { useConnectionsRequest } from '../api/useConnectionsRequest.ts';
@@ -14,19 +13,6 @@ export function useConnectionActions(): UseConnectionActionsReturn {
   const participant = useParticipantStore();
   const syncStatus = useSyncStatusStore();
   const error = ref('');
-
-  async function setConnectionColor(connectionId: number, color: ColorKey): Promise<boolean> {
-    error.value = '';
-    try {
-      const r = await request.setConnectionColor(connectionId, color);
-      await participant.refresh();
-      if (!r.changed) error.value = COLOR_TAKEN_TEXT;
-      return r.changed;
-    } catch {
-      error.value = FAILED_TEXT;
-      return false;
-    }
-  }
 
   async function setToken(connectionId: number, token: string, remember: boolean): Promise<boolean> {
     error.value = '';
@@ -53,5 +39,5 @@ export function useConnectionActions(): UseConnectionActionsReturn {
     }
   }
 
-  return { error, setConnectionColor, setToken, remove };
+  return { error, setToken, remove };
 }

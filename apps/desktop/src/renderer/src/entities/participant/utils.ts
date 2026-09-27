@@ -30,26 +30,16 @@ export function colorVar(color: ColorKey | null): string {
 }
 
 /**
- * Who holds each colour among people or among connections, for «занят: …» — except the row being edited (its own colour
- * stays selectable).
+ * Who holds each colour among people, for «занят: …» — except the person being edited (their own colour stays
+ * selectable). Connections have no colour.
  */
-export function colorHolders(
-  people: ReadonlyArray<Readonly<PersonView>>,
-  kind: 'people' | 'connections',
-  exceptId?: number,
-): Map<ColorKey, string> {
+export function colorHolders(people: ReadonlyArray<Readonly<PersonView>>, exceptId?: number): Map<ColorKey, string> {
   const held = new Map<ColorKey, string>();
-  for (const p of people) {
-    if (kind === 'people') {
-      if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
-      continue;
-    }
-    for (const c of p.connections) if (c.color !== null && c.id !== exceptId) held.set(c.color, `${p.label} · ${c.bank}`);
-  }
+  for (const p of people) if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
   return held;
 }
 
-/** The colour a new person or connection gets unless one is picked; null = all taken. */
+/** The colour a new person gets unless one is picked; null = all taken. */
 export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey | null {
   return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
 }

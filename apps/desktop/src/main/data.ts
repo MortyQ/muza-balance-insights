@@ -1,6 +1,7 @@
 // Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, balancesAt), mapped
 // to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and «black/UAH» labels leave main —
 // never names, descriptions, card numbers or IBANs. The import worker writes the same file; WAL lets both work.
+import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
@@ -30,6 +31,9 @@ function nextMonthStart(month: string): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
   return new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
 }
+
+/** sync_state rows of imported, enabled accounts. */
+const IMPORTED_ENABLED = `WHERE newest_synced_time IS NOT NULL AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`;
 
 export type DataServiceDeps = {
   open: () => Promise<Db>;
@@ -173,10 +177,11 @@ export class DataService {
     return { ...base, people: [], accounts };
   }
 
+  /** Enabled accounts only (a disabled one is in no statistic): `dataUntil` agrees with `dataFrom`. */
   async status(): Promise<DataStatus> {
     const db = await this.conn();
     const rs = await db.execute(
-      'SELECT COUNT(*) AS n, MIN(newest_synced_time) AS newest, MAX(last_sync_at) AS last FROM sync_state WHERE newest_synced_time IS NOT NULL',
+      `SELECT COUNT(*) AS n, MIN(newest_synced_time) AS newest, MAX(last_sync_at) AS last FROM sync_state ${IMPORTED_ENABLED}`,
     );
     const r = rs.rows[0];
     const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
@@ -190,9 +195,9 @@ export class DataService {
     };
   }
 
-  /** Epoch seconds of the latest sync of any account; null — nothing imported yet (the «Автосинхронизация» gap). */
+  /** Epoch seconds of the latest sync of any enabled account; null — nothing imported yet (the «Автосинхронизация» gap). */
   async lastSyncSec(): Promise<number | null> {
-    const rs = await (await this.conn()).execute('SELECT MAX(last_sync_at) AS last FROM sync_state WHERE newest_synced_time IS NOT NULL');
+    const rs = await (await this.conn()).execute(`SELECT MAX(last_sync_at) AS last FROM sync_state ${IMPORTED_ENABLED}`);
     const last = rs.rows[0]?.last;
     return last === null || last === undefined ? null : Number(last);
   }

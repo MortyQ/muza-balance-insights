@@ -26,7 +26,7 @@ const { connectionsCount } = await import('@/features/settings/people/utils.ts')
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', color: null, accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
+  id, provider: 'monobank', bank: 'Monobank', accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
 const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, color: null, connections });
 
@@ -119,15 +119,15 @@ describe('screens and notices', () => {
 });
 
 describe('colours', () => {
-  it('who holds each colour, except the row being edited; the first free one; the CSS colour', () => {
+  it('who holds each colour among people, except the person being edited; the first free one; the CSS colour', () => {
     const people = [
-      { ...person(1, 'Я', [conn(1, { color: 'blue' }), conn(2, { color: null })]), color: 'violet' as const },
-      { ...person(2, 'Вигадана', [conn(3, { color: 'orange' })]), color: 'blue' as const },
+      { ...person(1, 'Я', [conn(1), conn(2)]), color: 'violet' as const },
+      { ...person(2, 'Вигадана', [conn(3)]), color: 'blue' as const },
+      { ...person(3, 'Без кольору', []), color: null },
     ];
-    expect([...colorHolders(people, 'people')]).toEqual([['violet', 'Я'], ['blue', 'Вигадана']]);
-    expect([...colorHolders(people, 'people', 2)]).toEqual([['violet', 'Я']]);
-    expect([...colorHolders(people, 'connections', 3)]).toEqual([['blue', 'Я · Monobank']]);
-    expect(firstFreeColor(colorHolders(people, 'connections'))).toBe('aqua');
+    expect([...colorHolders(people)]).toEqual([['violet', 'Я'], ['blue', 'Вигадана']]);
+    expect([...colorHolders(people, 2)]).toEqual([['violet', 'Я']]);
+    expect(firstFreeColor(colorHolders(people))).toBe('orange');
     expect(firstFreeColor(new Map())).toBe('blue');
     expect(colorVar('aqua')).toBe('var(--series-aqua)');
     expect(colorVar(null)).toBe('var(--border-strong)');

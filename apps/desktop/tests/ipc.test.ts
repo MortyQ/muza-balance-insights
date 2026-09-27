@@ -113,8 +113,19 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setParticipantColor', [1]],
     ['setParticipantColor', [1, 'pink']],
     ['setParticipantColor', [1, '#ff0000']],
-    ['setConnectionColor', [0, 'blue']],
-    ['setConnectionColor', [1, 'blue', 'extra']],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'x'.repeat(40), remember: true, color: 'green' }]],
+    ['listConnectionAccounts', []],
+    ['listConnectionAccounts', [0]],
+    ['listConnectionAccounts', ['1']],
+    ['listConnectionAccounts', [1, 'extra']],
+    ['setAccountEnabled', []],
+    ['setAccountEnabled', ['acc-1']],
+    ['setAccountEnabled', ['acc-1', 'yes']],
+    ['setAccountEnabled', [1, true]],
+    ['setAccountEnabled', ['', true]],
+    ['setAccountEnabled', ['has space', true]],
+    ['setAccountEnabled', ['x'.repeat(101), true]],
+    ['setAccountEnabled', ['acc-1', true, 'extra']],
     ['renameParticipant', [1]],
     ['renameParticipant', [1, '']],
     ['renameParticipant', [1, 'x'.repeat(81)]],
@@ -213,9 +224,14 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       a: [{ month: '2026-09', participantId: 2 }],
     });
     for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }, { label: 'Вигадана', color: 'aqua' }, { fromBank: true, color: 'red' }]) {
-      const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false, color: 'green' };
+      const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
     }
+    await expect(ipc.handlers.get('balance:listConnectionAccounts')!(good, 4)).resolves.toEqual({ m: 'listConnectionAccounts', a: [4] });
+    await expect(ipc.handlers.get('balance:setAccountEnabled')!(good, 'kKGVoZuHWzqVoZuH', false)).resolves.toEqual({
+      m: 'setAccountEnabled',
+      a: ['kKGVoZuHWzqVoZuH', false],
+    });
     for (const theme of ['system', 'light', 'dark']) {
       await expect(ipc.handlers.get('balance:setTheme')!(good, theme)).resolves.toEqual({ m: 'setTheme', a: [theme] });
     }
@@ -244,6 +260,19 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
 
   it('schemas cover exactly the contract', () => {
     expect(Object.keys(ARG_SCHEMAS).sort()).toEqual([...METHODS].sort());
+  });
+
+  it('connections have no colour: there is no method to set one', () => {
+    expect(METHODS).not.toContain('setConnectionColor');
+    expect(Object.keys(ARG_SCHEMAS)).not.toContain('setConnectionColor');
+  });
+
+  it('the account toggle is neither allowed while locked nor while the database is not ready', () => {
+    for (const m of ['listConnectionAccounts', 'setAccountEnabled']) {
+      expect(METHODS).toContain(m);
+      expect(ALLOWED_WHEN_LOCKED as readonly string[]).not.toContain(m);
+      expect(ALLOWED_WHEN_DB_UNAVAILABLE as readonly string[]).not.toContain(m);
+    }
   });
 
   describe('the lock gate', () => {

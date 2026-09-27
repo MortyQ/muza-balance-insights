@@ -16,6 +16,8 @@ const id = z.number().int().positive();
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
 const token = z.string().min(20).max(200).regex(/^\S+$/);
 const label = z.string().min(1).max(80);
+// A bank's account id: opaque, no whitespace, bounded.
+const accountId = z.string().min(1).max(100).regex(/^\S+$/);
 const color = z.enum(COLOR_KEYS);
 const pin = z.string().regex(PIN_RE);
 const triggers = z.strictObject({ startup: z.boolean(), idle: z.boolean(), screenLock: z.boolean(), sleep: z.boolean() });
@@ -37,15 +39,15 @@ export const ARG_SCHEMAS = {
       provider: z.enum(PROVIDER_IDS),
       token,
       remember: z.boolean(),
-      color: color.optional(),
     }),
   ]),
   renameParticipant: z.tuple([id, label]),
   restoreBankName: z.tuple([id]),
   setParticipantColor: z.tuple([id, color]),
-  setConnectionColor: z.tuple([id, color]),
   setConnectionToken: z.tuple([id, token, z.boolean()]),
   removeConnection: z.tuple([id]),
+  listConnectionAccounts: z.tuple([id]),
+  setAccountEnabled: z.tuple([accountId, z.boolean()]),
   // Exactly the depths the screen offers: one list, so the two can't drift apart.
   startImport: z.tuple([z.literal(IMPORT_DEPTHS)]),
   cancelImport: z.tuple([]),

@@ -97,6 +97,43 @@ describe('IntegrationsService', () => {
     expect(await yes.vault.saved()).toEqual([]);
   });
 
+  it('accounts of a connection: cards first, the label parts only — never the IBAN or the full card number', async () => {
+    const { integrations } = service();
+    const r = await integrations.addConnection({ participant: { label: 'Вигаданий Я' }, provider: 'monobank', token: TOKEN, remember: true });
+    if (!r.added) throw new Error('not added');
+    await insertAccountRow(db, { id: 'jar-1', connection_id: r.connectionId, kind: 'jar', currency_code: 980, balance: 0, title: 'CANARY-JAR Мрія', iban: 'UA00CANARY0001', updated_at: 0 });
+    await insertAccountRow(db, {
+      id: 'card-1', connection_id: r.connectionId, kind: 'card', type: 'black', currency_code: 980, balance: 0,
+      iban: 'UA00CANARY0000', masked_pan: JSON.stringify(['444411******1234']), updated_at: 0,
+    });
+    const list = await integrations.listConnectionAccounts(r.connectionId);
+    expect(list).toEqual([
+      { id: 'card-1', kind: 'card', type: 'black', currencyCode: 980, maskedPanTail: '1234', jarTitle: null, enabled: true, auto: true },
+      { id: 'jar-1', kind: 'jar', type: null, currencyCode: 980, maskedPanTail: null, jarTitle: 'CANARY-JAR Мрія', enabled: false, auto: true },
+    ]);
+    const text = JSON.stringify(list);
+    for (const secret of ['UA00CANARY', '444411', TOKEN]) expect(text).not.toContain(secret);
+    await expect(integrations.listConnectionAccounts(999)).rejects.toThrow();
+  });
+
+  it('switching an account: saved and read back; refused while an import runs; an unknown account is an error', async () => {
+    const { integrations } = service();
+    const r = await integrations.addConnection({ participant: { label: 'Вигаданий Я' }, provider: 'monobank', token: TOKEN, remember: true });
+    if (!r.added) throw new Error('not added');
+    await insertAccountRow(db, { id: 'card-1', connection_id: r.connectionId, kind: 'card', currency_code: 980, balance: 0, updated_at: 0 });
+
+    expect(await integrations.setAccountEnabled('card-1', false)).toEqual({ changed: true });
+    expect(await integrations.listConnectionAccounts(r.connectionId)).toMatchObject([{ id: 'card-1', enabled: false, auto: false }]);
+    expect(await integrations.setAccountEnabled('card-1', true)).toEqual({ changed: true });
+    expect(await integrations.listConnectionAccounts(r.connectionId)).toMatchObject([{ id: 'card-1', enabled: true, auto: false }]);
+
+    const busy = service({ running: true });
+    expect(await busy.integrations.setAccountEnabled('card-1', false)).toEqual({ changed: false, reason: 'import-running' });
+    expect(await integrations.listConnectionAccounts(r.connectionId)).toMatchObject([{ id: 'card-1', enabled: true }]);
+
+    await expect(integrations.setAccountEnabled('no-such', false)).rejects.toThrow();
+  });
+
   it('through IPC: no reply or error of the people and connection methods contains a token — even when safeStorage throws with it', async () => {
     const handlers = new Map<string, (e: IpcEventLike, ...a: unknown[]) => Promise<unknown>>();
     const logs: string[] = [];

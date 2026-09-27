@@ -27,16 +27,23 @@
   При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
 - IPC людей и подключений: люди — `PeopleService` (`apps/desktop/src/main/people.ts`: `listPeople`, `renameParticipant`,
   `restoreBankName`, `setParticipantColor`), подключения и их токены — `IntegrationsService` (`main/integrations.ts`:
-  `addConnection`, `setConnectionToken`, `setConnectionColor`, `removeConnection`; людей берёт из ядра, не из
+  `addConnection`, `setConnectionToken`, `removeConnection`, `listConnectionAccounts`, `setAccountEnabled`; людей берёт из ядра, не из
   `PeopleService`); `ipc.ts` только направляет вызовы. `listPeople` (подпись участника — единственное
   имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
-  { fromBank: true }, provider, token, remember, color? })` (у нового человека — свой `color?`) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
-  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` / `setConnectionColor` (занятый цвет →
+  { fromBank: true }, provider, token, remember })` (у нового человека — свой `color?`; у подключения цвета нет) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
+  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` (занятый цвет →
   `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром — только в `people.ts`), `setConnectionToken`,
-  `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
+  `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные),
+  `listConnectionAccounts(connectionId)` → `ConnectionAccountView[]` (`id`, `kind`, `type`, `currencyCode`,
+  `maskedPanTail`, `jarTitle`, `enabled`, `auto` — поле за полем из ядра, без iban и полного номера; неизвестное
+  подключение — ошибка), `setAccountEnabled(accountId, enabled)` → `{ changed: true } | { changed: false, reason:
+  'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
+  ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
+  Под замком и при не-ready базе оба канала закрыты.
   `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
-  `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по всем счетам (`firstDataDate` в `packages/core/src/status.ts`),
-  пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`.
+  `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
+  пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`
+  (порог автосинхронизации) — тоже только по включённым (`ENABLED_ACCOUNT_IDS_SQL` ядра).
 - **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`
   не чаще раза в `LIVE_REFRESH_MS` (3 с, `throttle` из `shared/lib`, последний тик не теряется), конец импорта — ещё раз.
   Экраны перезагружаются по `version` «тихо» (`useAsyncData(…, { quiet })`: без `loading`, старые цифры до прихода новых);
