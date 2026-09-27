@@ -22,7 +22,7 @@ export type TokenStatus = {
 // A participant's label is the one name that reaches the renderer (typed by the user, or the holder's name from the
 // bank): the screen shows it. Nothing else of a connection — no holder id, no token.
 
-/** Must equal the core's ProviderId (checked in src/main/people.ts). */
+/** Must equal the core's ProviderId (checked in src/main/integrations.ts). */
 export type ProviderKey = 'monobank';
 
 export type { ColorKey };

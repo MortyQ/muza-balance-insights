@@ -15,7 +15,7 @@ import { TOKEN, TOKEN_B, services } from './helpers/people.ts';
 let dir: string;
 let db: Db;
 beforeEach(async () => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'people-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'integrations-'));
   db = await memoryDb();
 });
 afterEach(() => {
@@ -66,6 +66,15 @@ describe('IntegrationsService', () => {
     expect(fs.existsSync(path.join(dir, 'tokens'))).toBe(false);
   });
 
+  it('a new token for a connection; an unknown connection is refused', async () => {
+    const { integrations, vault } = service();
+    const r = await integrations.addConnection({ participant: { fromBank: true }, provider: 'monobank', token: TOKEN, remember: false });
+    if (!r.added) throw new Error('not added');
+    expect(await integrations.setToken(r.connectionId, TOKEN_B, true)).toEqual({ stored: 'secure' });
+    expect(await vault.get(r.connectionId)).toBe(TOKEN_B);
+    await expect(integrations.setToken(999, TOKEN, true)).rejects.toBeInstanceOf(TokenError);
+  });
+
   it('remove: refused while an import runs (no dialog), cancelled in the dialog, otherwise token and data go', async () => {
     const add = async (p: IntegrationsService) => {
       const r = await p.addConnection({ participant: { label: 'Вигадана Вона' }, provider: 'monobank', token: TOKEN, remember: true });
@@ -88,7 +97,7 @@ describe('IntegrationsService', () => {
     expect(await yes.vault.saved()).toEqual([]);
   });
 
-  it('through IPC: no reply or error of the people methods contains a token — even when safeStorage throws with it', async () => {
+  it('through IPC: no reply or error of the people and connection methods contains a token — even when safeStorage throws with it', async () => {
     const handlers = new Map<string, (e: IpcEventLike, ...a: unknown[]) => Promise<unknown>>();
     const logs: string[] = [];
     const wire = ({ people, integrations }: ReturnType<typeof service>) =>

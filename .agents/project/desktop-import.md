@@ -32,7 +32,7 @@
   имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
   { fromBank: true }, provider, token, remember, color? })` (у нового человека — свой `color?`) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
   сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` / `setConnectionColor` (занятый цвет →
-  `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром в `people.ts` / `integrations.ts`), `setConnectionToken`,
+  `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром — только в `people.ts`), `setConnectionToken`,
   `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
   `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по всем счетам (`firstDataDate` в `packages/core/src/status.ts`),

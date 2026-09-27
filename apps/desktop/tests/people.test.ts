@@ -6,7 +6,6 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
 import { memoryDb } from '@mono/core/test-helpers';
-import { TokenError } from '../src/main/token.ts';
 import { TOKEN, TOKEN_B, services } from './helpers/people.ts';
 
 let dir: string;
@@ -23,15 +22,12 @@ afterEach(() => {
 const service = (opts: Parameters<typeof services>[2] = {}) => services(db, dir, opts);
 
 describe('PeopleService', () => {
-  it('rename: the user\'s name, and the bank no longer changes it; a new token for a connection', async () => {
-    const { people, integrations, vault } = service();
+  it('rename: the user\'s name, and the bank no longer changes it', async () => {
+    const { people, integrations } = service();
     const r = await integrations.addConnection({ participant: { fromBank: true }, provider: 'monobank', token: TOKEN, remember: false });
     if (!r.added) throw new Error('not added');
     await people.rename(r.participantId, 'Мама');
     expect((await people.list()).people[0]).toMatchObject({ label: 'Мама', labelFromBank: false });
-    expect(await integrations.setToken(r.connectionId, TOKEN_B, true)).toEqual({ stored: 'secure' });
-    expect(await vault.get(r.connectionId)).toBe(TOKEN_B);
-    await expect(integrations.setToken(999, TOKEN, true)).rejects.toBeInstanceOf(TokenError);
   });
 
   it('colours: the first free by default, or the one chosen; changing to a taken one → taken, nothing changes', async () => {
