@@ -51,6 +51,10 @@ jobs:
             echo "::error::tag $GITHUB_REF_NAME does not match apps/desktop/package.json version $version"
             exit 1
           fi
+      # The release description is this section (in English, for users): no dated section — no release.
+      - name: The changelog has a dated section for this version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node apps/desktop/scripts/release-notes.mjs check "${GITHUB_REF_NAME#v}"
       - run: pnpm typecheck
       - run: pnpm test
         if: runner.os != 'Windows'
@@ -168,6 +172,12 @@ jobs:
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/Balance-Insights-*
+      # The version's section of CHANGELOG.md, then the fixed text about verifying and installing. Outside dist/, so it
+      # is not uploaded as a release file.
+      - name: Release notes
+        run: |
+          node apps/desktop/scripts/release-notes.mjs notes "${GITHUB_REF_NAME#v}" > notes.md
+          printf '\n---\n\n%s\n' "Unofficial app, not affiliated with Monobank. Check the files against SHA256SUMS.txt and the build provenance attestation (gh attestation verify <file> --repo $GITHUB_REPOSITORY). The installers are not signed: install steps for macOS Gatekeeper and Windows SmartScreen are at https://github.com/$GITHUB_REPOSITORY/blob/main/docs/INSTALL.md" >> notes.md
       - name: Draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -177,4 +187,4 @@ jobs:
             --verify-tag \
             --draft \
             --title "Balance Insights ${GITHUB_REF_NAME#v}" \
-            --notes "Unofficial app, not affiliated with Monobank. Check the files against SHA256SUMS.txt and the build provenance attestation (gh attestation verify <file> --repo $GITHUB_REPOSITORY). The installers are not signed: install steps for macOS Gatekeeper and Windows SmartScreen are at https://github.com/$GITHUB_REPOSITORY/blob/main/docs/INSTALL.md"
+            --notes-file notes.md

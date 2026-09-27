@@ -2,7 +2,7 @@
 // Its guarantees as text checks, so an edit that drops one fails here: actions pinned by commit SHA, no permissions
 // by default and writes only in the release job, no pull-request triggers, one secret (the update signing key) only in
 // the GitHub Environment "release" and only in the signing steps, no ${{ github.event.* }} inside shell code, a draft
-// release only, installers that never publish by themselves.
+// release only, installers that never publish by themselves, the description from the version's CHANGELOG.md section.
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -127,6 +127,28 @@ describe('release workflow', () => {
     // continue-on-error only on the informational full run on Windows, nowhere else in the workflow.
     expect(code.match(/continue-on-error/g)).toHaveLength(1);
     expect(t).toMatch(/Full test suite on Windows \(informational\)\n\s+if: runner\.os == 'Windows'\n\s+continue-on-error: true\n\s+run: pnpm test/);
+  });
+
+  it('a tag needs a dated section of CHANGELOG.md for its version, checked before anything is built', () => {
+    const t = jobs().test!;
+    const check = 'run: node apps/desktop/scripts/release-notes.mjs check "${GITHUB_REF_NAME#v}"';
+    expect(t).toMatch(/The changelog has a dated section for this version\n\s+if: startsWith\(github\.ref, 'refs\/tags\/v'\)\n\s+run: node apps\/desktop/);
+    expect(t).toContain(check);
+    expect(t.indexOf('if [ "v$version" != "$GITHUB_REF_NAME" ]; then')).toBeLessThan(t.indexOf(check));
+    expect(t.indexOf(check)).toBeLessThan(t.indexOf('- run: pnpm typecheck'));
+  });
+
+  it('the release description is the version’s CHANGELOG.md section plus the fixed verify-and-install text', () => {
+    const r = jobs().release!;
+    expect(r).toContain('node apps/desktop/scripts/release-notes.mjs notes "${GITHUB_REF_NAME#v}" > notes.md');
+    expect(r).toContain('Unofficial app, not affiliated with Monobank.');
+    expect(r).toContain('gh attestation verify <file> --repo $GITHUB_REPOSITORY');
+    expect(r).toContain('https://github.com/$GITHUB_REPOSITORY/blob/main/docs/INSTALL.md" >> notes.md');
+    expect(r).toMatch(/--notes-file notes\.md\n/);
+    expect(r).not.toMatch(/--notes /);
+    expect(r.indexOf('> notes.md')).toBeLessThan(r.indexOf('gh release create'));
+    // Written next to the checkout, not into dist/ — dist/* is what gets uploaded.
+    expect(r).not.toMatch(/dist\/notes/);
   });
 
   it('the tag must match the app version, before anything is built', () => {

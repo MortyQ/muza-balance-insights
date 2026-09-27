@@ -33,7 +33,7 @@ The files that hold the guarantee "the agent sees neither real data nor the toke
 - `apps/mcp/tests/recategorize-safety.test.ts`: the test `recategorize` runs as its first step;
 - `.claude/settings.json`: allow/deny, sandbox and `excludedCommands` (edited by the user only);
 - `.github/workflows/release.yml`: what is built and published under the author's name. Its guarantees are checked by
-  `apps/desktop/tests/release-workflow.test.ts` (actions pinned by SHA, permissions, triggers, draft only; one secret —
+  `apps/desktop/tests/release-workflow.test.ts` (actions pinned by SHA, permissions, triggers, draft only; the description from the version's `CHANGELOG.md` section; one secret —
   `UPDATE_SIGNING_KEY`, only in the `release` Environment with manual approval and only in the `update-sign.mjs` steps).
   The public half of the key is `apps/desktop/src/main/update/public-key.ts`: changing it = installed copies reject updates.
 

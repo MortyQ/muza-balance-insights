@@ -35,9 +35,11 @@
 - Релиз — `.github/workflows/release.yml`: тег `vX.Y.Z` (= версия `apps/desktop/package.json`) → тесты на Linux,
   macOS и Windows (на Windows обязательны только тесты `db-libsql` — шифр базы; полный набор пока информационно) → сборка на своём раннере каждой ОС + проверки бинарника (`PACKAGE_CHECK`, `DMG_CHECK`) → draft-релиз с
   `SHA256SUMS.txt` и attestations. Публикует draft пользователь руками. Ручной запуск — только артефакты, без релиза.
-- Описание релиза — раздел этой версии из `CHANGELOG.md` (по-английски, для пользователей; пока `release.yml` пишет в
-  draft постоянный текст, раздел вставляет пользователь, публикуя draft). Как его пополнять и когда `unreleased`
-  меняется на дату — правило в корневом `CLAUDE.md`, раздел «Process».
+- Описание релиза — раздел этой версии из `CHANGELOG.md` (по-английски, для пользователей) плюс постоянный текст про
+  проверку файлов и установку: `apps/desktop/scripts/release-notes.mjs` (`check` в job тестов — тег без раздела с датой
+  не собирается; `notes` → `notes.md` → `gh release create --notes-file`). Как пополнять и когда `unreleased` меняется
+  на дату — правило в корневом `CLAUDE.md`, раздел «Process»; `tests/release-notes.test.ts` проверяет, что верхний
+  раздел — следующая версия (`unreleased`) или версия `package.json` с датой.
 - Обновление без Developer ID (проверено 25.09.2026): macOS один раз спрашивает пароль к Keychain, токен сохраняется.
 - Прежнее имя до 25.09.2026 — «Balans Insights». Его пути остаются в deny и sandbox `.claude/settings.json`, пока
   пользователь не удалит старые папки (Application Support, Caches, Logs, в том числе Dev).
