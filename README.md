@@ -21,9 +21,7 @@ Download from [Releases](https://github.com/MortyQ/muza-balance-insights/release
 
 - Data stays on your computer: a local SQLite database in the app folder.
 - The database is encrypted (AES-256) with a random key kept in the system keychain, like the token. A copy of the files — on
-  another computer or user account, in a backup or a cloud folder — can't be opened. Programs running under your own
-  account can get the key (on Windows, DPAPI opens it for any program of the same user). On Linux without a keyring the
-  database stays unencrypted until one appears, and the app says so in Settings.
+  another computer or user account, in a backup or a cloud folder — can't be opened.
 - The app folder is readable only by your user account (macOS, Linux). Disk encryption — FileVault on macOS, BitLocker or
   Device Encryption on Windows, LUKS on Linux — is still worth turning on.
 - The token is kept in the system keychain (macOS Keychain, Windows DPAPI, Linux Secret Service or KWallet). If there is no secure store, it is kept in memory only and never written to disk.
