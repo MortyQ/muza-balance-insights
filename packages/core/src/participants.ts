@@ -1,5 +1,6 @@
 // Managing people and their connections (the desktop app's «Люди и подключения»). A participant's label is personal
 // data: it lives in this database only — never in the analysis copy, logs or the recategorize report.
+import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
 import { ConnectionError, PARTICIPANT_LABEL_MAX, parseProviderId } from './connections.ts';
 import type { Db } from './db.ts';
@@ -18,9 +19,10 @@ export type ConnectionInfo = {
   id: number;
   participantId: number;
   provider: ProviderId;
-  color: ColorKey | null;
   accounts: number;
-  /** Kyiv dates of the range covered by all its imported accounts; null = nothing imported yet. */
+  /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
+  enabledAccounts: number;
+  /** Kyiv dates of the range covered by all its imported enabled accounts; null = nothing imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
@@ -99,19 +101,15 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
   return setColor(db, 'participants', id, color, 'Такого участника нет');
 }
 
-/** Another connection's colour → ColorTakenError. */
-export function setConnectionColor(db: Db, id: number, color: ColorKey): Promise<void> {
-  return setColor(db, 'connections', id, color, 'Такого подключения нет');
-}
-
 /** Every connection with what the UI shows about it. The bank's holder id is not part of it. */
 export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
   const rs = await db.execute(
-    `SELECT c.id, c.participant_id, c.provider, c.color, COUNT(a.id) AS accounts,
+    `SELECT c.id, c.participant_id, c.provider, COUNT(a.id) AS accounts,
+            SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
             MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
      FROM connections c
      LEFT JOIN accounts a ON a.connection_id = c.id
-     LEFT JOIN sync_state s ON s.account_id = a.id
+     LEFT JOIN sync_state s ON s.account_id = a.id AND ${accountEnabledSql('a')}
      GROUP BY c.id ORDER BY c.id`,
   );
   const date = (v: unknown) => (v === null || v === undefined ? null : toKyivDate(Number(v)));
@@ -119,27 +117,21 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
     id: Number(r.id),
     participantId: Number(r.participant_id),
     provider: parseProviderId(r.provider),
-    color: parseColor(r.color),
     accounts: Number(r.accounts),
+    enabledAccounts: Number(r.enabled_accounts ?? 0),
     coveredFrom: date(r.oldest),
     coveredTo: date(r.newest),
     lastSyncAt: r.last_sync === null ? null : toKyivDateTime(Number(r.last_sync)),
   }));
 }
 
-/** Its colour: the one asked for (taken → ColorTakenError) or the first free one. */
-export async function addConnection(
-  db: Db,
-  participantId: number,
-  provider: ProviderId,
-  nowSec: number,
-  color?: ColorKey,
-): Promise<number> {
+/** A new connection has no colour (only people have one; the column stays for older rows). */
+export async function addConnection(db: Db, participantId: number, provider: ProviderId, nowSec: number): Promise<number> {
   const p = await db.execute({ sql: 'SELECT 1 FROM participants WHERE id = ?', args: [participantId] });
   if (p.rows.length === 0) throw new ConnectionError('Такого участника нет');
   const rs = await db.execute({
-    sql: 'INSERT INTO connections (participant_id, provider, color, created_at) VALUES (?, ?, ?, ?) RETURNING id',
-    args: [participantId, parseProviderId(provider), await colorForNew(db, 'connections', color), nowSec],
+    sql: 'INSERT INTO connections (participant_id, provider, created_at) VALUES (?, ?, ?) RETURNING id',
+    args: [participantId, parseProviderId(provider), nowSec],
   });
   return Number(rs.rows[0]?.id);
 }

@@ -409,6 +409,7 @@ describe('default account selection', () => {
     expect(await defaultAccountSelection(db)).toEqual({
       selected: ['card1', 'jarEmptied', 'jarFull'],
       skippedJars: [{ id: 'jarEmpty', title: 'Стара' }],
+      disabled: [],
     });
     const now = Math.floor(ctx.clock.nowMs() / 1000);
     expect([...(await planHistory(ctx, { sinceSec: now - DAY })).keys()]).toEqual(['card1', 'jarEmptied', 'jarFull']);

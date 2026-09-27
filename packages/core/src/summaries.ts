@@ -1,6 +1,7 @@
 // Spending / income aggregates over the real database — the core of the phase 5 MCP tools.
 // All amounts are minor units of the ACCOUNT currency; different currencies are never summed.
 // Periods are local_date ranges [from, to], inclusive. No counterparty names or descriptions in any output.
+import { CROSSING_CTE, CROSSING_JOIN, ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
 import { CATEGORY } from './categories.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
@@ -63,7 +64,7 @@ export function validatePeriod(p: Period): Period {
 
 export async function periodInfo(db: Db, period: Period, nowSec: number): Promise<PeriodInfo> {
   const { from, to } = validatePeriod(period);
-  const rs = await db.execute('SELECT MIN(newest_synced_time) AS newest FROM sync_state');
+  const rs = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
   const newest = rs.rows[0]?.newest === null || rs.rows[0]?.newest === undefined ? null : Number(rs.rows[0].newest);
   const endSec = kyivStartOfDay(addDays(to, 1)); // exclusive end of the period
   const dataUntil = newest === null ? null : toKyivDate(newest);
@@ -72,7 +73,8 @@ export async function periodInfo(db: Db, period: Period, nowSec: number): Promis
   const lastCovered = lastFullDay === null ? null : lastFullDay < to ? lastFullDay : to;
   const holds = await db.execute({
     sql: `SELECT COUNT(*) AS n FROM transactions
-          WHERE is_cancelled = 0 AND hold = 1 AND local_date BETWEEN ? AND ? AND time >= ?`,
+          WHERE is_cancelled = 0 AND hold = 1 AND local_date BETWEEN ? AND ? AND time >= ?
+            AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
     args: [from, to, nowSec - RESYNC_OVERLAP_SEC],
   });
   return {
@@ -97,17 +99,24 @@ function perDay(amount: number, info: PeriodInfo): number | null {
  */
 type Filters = { scope?: Scope; accountId?: string; participantId?: number };
 
-/** WHERE parts for the participant filter (rows of t). */
-function participantWhere(f: Filters, where: string[], args: Array<string | number>): void {
+/** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant if one is asked for. */
+function accountWhere(f: Filters, where: string[], args: Array<string | number>): void {
+  where.push(`t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
   if (f.participantId === undefined) return;
   where.push('t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE pc.participant_id = ?)');
   args.push(f.participantId);
 }
 
-/** SQL: this row is not spending / income in the view — internal always, family only for the whole family. */
+/**
+ * SQL: this row is not spending / income in the view — internal always, family only for the whole family; never a row
+ * that crosses to a disabled account (x = the crossingCategories join: such a row is an ordinary operation).
+ */
 // COALESCE: transfer_rule is NULL for most rows, and «0 OR NULL» is NULL, not 0.
 const excludedTransferSql = (f: Filters) =>
-  f.participantId === undefined ? `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')` : '(t.is_internal_transfer = 1)';
+  `(x.key IS NULL AND ${f.participantId === undefined ? `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')` : '(t.is_internal_transfer = 1)'})`;
+
+/** Rows crossing to a disabled account get their ordinary category (accounts.ts crossingCategories). */
+const CATEGORY_SQL = 'COALESCE(x.value, t.category)';
 
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
 type SpendingFilters = Filters & { operationCurrency?: number };
@@ -191,7 +200,8 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
  *   the commission is a separate «комиссии банка» line;
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays
  *   spending;
- * - refunds are positive lines in a spending category; «поступления» and «свои переводы» are excluded.
+ * - refunds are positive lines in a spending category; «поступления» and «свои переводы» are excluded;
+ * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
  * Filters: scope, accountId, participantId, category (applies to lines, so «комиссии банка» works too).
  */
 export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number): Promise<SpendingSummary> {
@@ -205,18 +215,19 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
-  participantWhere(q, where, args);
+  accountWhere(q, where, args);
   const outer = ['category NOT IN (?, ?)', 'amount <> 0'];
   const outerArgs: string[] = [CATEGORY.income, CATEGORY.ownTransfers];
   if (q.category) (outer.push('category = ?'), outerArgs.push(q.category));
 
   const rs = await db.execute({
-    sql: `WITH base AS (
-            SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.category,
+    sql: `WITH ${CROSSING_CTE},
+          base AS (
+            SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
                    ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
-            FROM transactions t JOIN accounts a ON a.id = t.account_id
+            FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
             WHERE ${where.join(' AND ')}
           ),
           lines AS (
@@ -237,7 +248,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
           WHERE ${outer.join(' AND ')}
           GROUP BY currency, k
           ORDER BY currency, gross DESC, k`,
-    args: [...args, CATEGORY.fees, ...outerArgs],
+    args: [await crossingCategories(db, q), ...args, CATEGORY.fees, ...outerArgs],
   });
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;
@@ -398,6 +409,7 @@ export type IncomeSummary = {
  * Income = non-internal rows in «поступления» for local_date in [from, to]. Refunds are not income
  * (they sit in the purchase's category), internal transfers neither. Cashback is not included.
  * A family transfer is income of the receiver (source `family`) in a participant's view, and not income of the family.
+ * Only enabled accounts (accounts.ts); a credit from a disabled one is ordinary income (its own source).
  */
 export async function incomeSummary(
   db: Db,
@@ -409,14 +421,16 @@ export async function incomeSummary(
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, 't.category = ?', 't.local_date BETWEEN ? AND ?'];
-  const args: Array<string | number> = [CATEGORY.income, q.from, q.to];
+  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, 't.local_date BETWEEN ? AND ?'];
+  const args: Array<string | number> = [await crossingCategories(db, q), CATEGORY.income, q.from, q.to];
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
-  participantWhere(q, where, args);
+  accountWhere(q, where, args);
   const rs = await db.execute({
-    sql: `SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount, t.transfer_rule
-          FROM transactions t JOIN accounts a ON a.id = t.account_id
+    sql: `WITH ${CROSSING_CTE}
+          SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount,
+                 CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
+          FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
           WHERE ${where.join(' AND ')}`,
     args,
   });

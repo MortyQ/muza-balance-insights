@@ -1,5 +1,5 @@
 import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue';
-import type { ColorKey, ParticipantChoice } from '@contract/api.ts';
+import type { ParticipantChoice } from '@contract/api.ts';
 import { useParticipantStore } from '@/entities/participant';
 import { useConnectionsRequest } from '../../shared/api/useConnectionsRequest.ts';
 import { TOKEN_ERROR_TEXT } from '../../shared/constants.ts';
@@ -8,10 +8,7 @@ import { DUPLICATE_TOKEN_TEXT } from '../constants.ts';
 import type { UseMonobankConnectReturn } from '../types.ts';
 
 /** A new Monobank connection by a personal token, for the owner chosen in the add form. */
-export function useMonobankConnect(
-  owner: MaybeRefOrGetter<ParticipantChoice | null>,
-  connectionColor: MaybeRefOrGetter<ColorKey | null>,
-): UseMonobankConnectReturn {
+export function useMonobankConnect(owner: MaybeRefOrGetter<ParticipantChoice | null>): UseMonobankConnectReturn {
   const { addConnection } = useConnectionsRequest();
   const participant = useParticipantStore();
   const tokenInput = ref('');
@@ -22,10 +19,9 @@ export function useMonobankConnect(
   async function save(): Promise<boolean> {
     const choice = toValue(owner);
     if (!choice) return false;
-    const color = toValue(connectionColor);
     submit.value = { status: 'saving' };
     try {
-      const r = await addConnection({ participant: choice, provider: 'monobank', token: tokenInput.value.trim(), remember: remember.value, ...(color === null ? {} : { color }) });
+      const r = await addConnection({ participant: choice, provider: 'monobank', token: tokenInput.value.trim(), remember: remember.value });
       if (!r.added) {
         submit.value = { status: 'error', message: DUPLICATE_TOKEN_TEXT };
         return false;

@@ -17,11 +17,21 @@ export function tokenBadge(s: Readonly<TokenStatus>): TokenBadge {
   return s.stored === 'secure' ? { tone: 'success', text: 'Токен сохранён' } : { tone: 'warning', text: 'Токен до закрытия' };
 }
 
-/** What has been imported for a connection. */
+/** What has been imported for a connection; with some accounts off — how many count, of all. */
 export function coverageLine(c: Readonly<ConnectionView>): string {
+  if (c.accounts > 0 && c.enabledAccounts === 0) return 'Все счета выключены';
   if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
   const d = (iso: string) => iso.split('-').reverse().join('.');
-  return `Счетов: ${c.accounts} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+  const count = c.enabledAccounts === c.accounts ? `${c.accounts}` : `${c.enabledAccounts} из ${c.accounts}`;
+  return `Счетов: ${count} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+}
+
+/**
+ * Every account of every connection is turned off in «Счета»: nothing to import or count. A connection with no accounts
+ * yet (not imported) does not count as off — its first import brings them.
+ */
+export function allAccountsOff(connections: ReadonlyArray<Readonly<ConnectionView>>): boolean {
+  return connections.length > 0 && connections.every((c) => c.accounts > 0 && c.enabledAccounts === 0);
 }
 
 /** The CSS colour of a palette key in the current theme; no colour → the strong border grey. */
@@ -30,26 +40,16 @@ export function colorVar(color: ColorKey | null): string {
 }
 
 /**
- * Who holds each colour among people or among connections, for «занят: …» — except the row being edited (its own colour
- * stays selectable).
+ * Who holds each colour among people, for «занят: …» — except the person being edited (their own colour stays
+ * selectable). Connections have no colour.
  */
-export function colorHolders(
-  people: ReadonlyArray<Readonly<PersonView>>,
-  kind: 'people' | 'connections',
-  exceptId?: number,
-): Map<ColorKey, string> {
+export function colorHolders(people: ReadonlyArray<Readonly<PersonView>>, exceptId?: number): Map<ColorKey, string> {
   const held = new Map<ColorKey, string>();
-  for (const p of people) {
-    if (kind === 'people') {
-      if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
-      continue;
-    }
-    for (const c of p.connections) if (c.color !== null && c.id !== exceptId) held.set(c.color, `${p.label} · ${c.bank}`);
-  }
+  for (const p of people) if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
   return held;
 }
 
-/** The colour a new person or connection gets unless one is picked; null = all taken. */
+/** The colour a new person gets unless one is picked; null = all taken. */
 export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey | null {
   return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
 }

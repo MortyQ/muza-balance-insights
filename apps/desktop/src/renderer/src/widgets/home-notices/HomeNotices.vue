@@ -6,6 +6,7 @@ import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { ROUTE } from '@/shared/config';
 import { VButton, VInfoNotice } from '@/shared/ui';
+import { ALL_ACCOUNTS_OFF_TEXT } from './constants.ts';
 import { noTokenText } from './utils.ts';
 
 const router = useRouter();
@@ -13,6 +14,9 @@ const participant = useParticipantStore();
 const syncStatus = useSyncStatusStore();
 const importProgress = useImportProgressStore();
 
+function openConnections() {
+  void router.push({ name: ROUTE.settings, query: { section: 'connections' } });
+}
 const showNoToken = computed(() => participant.withoutToken.length > 0);
 const text = computed(() =>
   noTokenText(participant.withoutToken, participant.connections.length, importProgress.progress.phase, participant.labelOf),
@@ -29,6 +33,13 @@ const text = computed(() =>
   />
   <div v-if="showNoToken" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice :card="false" icon="lucide:plug" tone="warning" :subtitle="text" />
-    <VButton text="Ввести токен" @click="router.push({ name: ROUTE.settings, query: { section: 'connections' } })" />
+    <VButton text="Ввести токен" @click="openConnections" />
+  </div>
+  <div
+    v-if="participant.accountsOff"
+    class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3"
+  >
+    <VInfoNotice :card="false" icon="lucide:eye-off" tone="warning" :subtitle="ALL_ACCOUNTS_OFF_TEXT" />
+    <VButton text="Открыть «Подключения»" @click="openConnections" />
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { bankOf } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
-import { colorHolders, useParticipantStore } from '@/entities/participant';
+import { useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
 import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
@@ -14,7 +14,7 @@ import { formsOf, newConnectionTitle } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
-const { error, setToken, setConnectionColor, remove } = useConnectionActions();
+const { error, setToken, remove, accounts, loadAccounts, savingAccount, setAccountEnabled } = useConnectionActions();
 const newTitle = newConnectionTitle(bankOf(DEFAULT_PROVIDER).name);
 const adding = ref(false);
 const added = ref(false);
@@ -31,6 +31,10 @@ function onAdded() {
   added.value = true;
 }
 
+async function onSetAccountEnabled(connectionId: number, accountId: string, enabled: boolean, done: (changed: boolean) => void) {
+  done(await setAccountEnabled(connectionId, accountId, enabled));
+}
+
 async function onSetToken(connectionId: number, token: string, remember: boolean, done: (saved: boolean) => void) {
   done(await setToken(connectionId, token, remember));
 }
@@ -39,7 +43,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
 <template>
   <SettingsSection
     title="Подключения"
-    description="Банк и токен, по которому приложение читает выписку. Токен даёт только чтение: переводить деньги с ним нельзя."
+    description="Банк и токен, по которому приложение читает выписку. Токен даёт только чтение: переводить деньги с ним нельзя. В «Счета» можно выключить счёт: он не загружается и не входит в статистику."
     note="Подключай чужой счёт только с согласия владельца токена. «Удалить» стирает подключение, его токен и загруженные операции в этом приложении; в банке ничего не меняется."
   >
     <p v-if="!participant.hasConnections" class="text-foreground-secondary">Подключений пока нет.</p>
@@ -50,11 +54,15 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :key="c.id"
           :connection="c"
           :secure-storage="participant.secureStorage"
-          :taken-colors="colorHolders(participant.people, 'connections', c.id)"
           :token-field="formsOf(c.provider).tokenField"
+          :accounts="accounts.get(c.id)"
+          :card-types="formsOf(c.provider).cardTypes"
+          :import-running="importProgress.running"
+          :saving-account
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
-          @color="(color) => void setConnectionColor(c.id, color)"
           @remove="remove(c.id)"
+          @open-accounts="loadAccounts(c.id)"
+          @set-account-enabled="(accountId, enabled, done) => onSetAccountEnabled(c.id, accountId, enabled, done)"
         />
       </SettingsList>
     </template>

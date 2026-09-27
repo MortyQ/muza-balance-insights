@@ -32,9 +32,9 @@ export type ConnectionView = {
   provider: ProviderKey;
   /** «Monobank». */
   bank: string;
-  /** null = none (the palette ran out). */
-  color: ColorKey | null;
   accounts: number;
+  /** Of `accounts`, the ones imported and counted («Счета» toggles). */
+  enabledAccounts: number;
   /** Kyiv dates covered by all its imported accounts; null = not imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
@@ -64,10 +64,9 @@ export type PeopleView = {
  */
 export type ParticipantChoice = { id: number } | { label: string; color?: ColorKey } | { fromBank: true; color?: ColorKey };
 
-/** color: the connection's own (must be free), else the first free one. */
-export type AddConnectionInput = { participant: ParticipantChoice; provider: ProviderKey; token: string; remember: boolean; color?: ColorKey };
+export type AddConnectionInput = { participant: ParticipantChoice; provider: ProviderKey; token: string; remember: boolean };
 
-/** taken: another person (or connection) has this colour. */
+/** taken: another person has this colour. */
 export type ColorChangeResult = { changed: true } | { changed: false; reason: 'taken' };
 
 export type AddConnectionResult =
@@ -80,6 +79,28 @@ export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
 
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
+/**
+ * One account of a connection for its toggle (core listConnectionAccounts): the parts of its label only — never the
+ * IBAN or the full card number.
+ */
+export type ConnectionAccountView = {
+  id: string;
+  kind: 'card' | 'jar';
+  /** The bank's account type (Monobank: black / white / fop …); null for jars. */
+  type: string | null;
+  currencyCode: number;
+  /** Last 4 digits of the card number; null for jars or when the bank sent none. */
+  maskedPanTail: string | null;
+  /** A jar's title; null for cards. */
+  jarTitle: string | null;
+  /** Imported and counted in every statistic. */
+  enabled: boolean;
+  /** No choice made yet: `enabled` follows the default rule (a card always; a jar with money or already imported). */
+  auto: boolean;
+};
+
+export type SetAccountEnabledResult = { changed: true } | { changed: false; reason: 'import-running' };
+
 export type BalanceApi = {
   listPeople(): Promise<PeopleView>;
   /** Creates the participant (if new) and the connection, keeps the token. Does not start an import. */
@@ -89,10 +110,16 @@ export type BalanceApi = {
   /** «Взять имя из банка»: the bank names the person again; its last holder's name applies at once, if it sent one. */
   restoreBankName(id: number): Promise<void>;
   setParticipantColor(id: number, color: ColorKey): Promise<ColorChangeResult>;
-  setConnectionColor(connectionId: number, color: ColorKey): Promise<ColorChangeResult>;
   setConnectionToken(connectionId: number, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }>;
   /** System dialog first; deletes the connection's accounts and operations (a participant left without one goes too). */
   removeConnection(connectionId: number): Promise<RemoveConnectionResult>;
+  /** Cards first. Unknown connection → error. */
+  listConnectionAccounts(connectionId: number): Promise<ConnectionAccountView[]>;
+  /**
+   * The user's choice, kept until changed. A disabled account is not imported and is in no statistic; its data stays
+   * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
+   */
+  setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
   startImport(depth: ImportDepth): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
   /** Returns an unsubscribe function. */

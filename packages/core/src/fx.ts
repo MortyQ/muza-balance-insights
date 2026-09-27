@@ -1,4 +1,5 @@
 // Rates of foreign currencies from the user's own exchanges: the hryvnia side of a pair_fx row holds both amounts.
+import { ENABLED_ACCOUNT_IDS_SQL, crossesDisabledSql } from './accounts.ts';
 import type { Db } from './db.ts';
 import { kyivStartOfDay, parseLocalDate } from './format.ts';
 
@@ -12,13 +13,15 @@ type Ex = { currency: number; time: number; date: string; uah: number; minor: nu
  * Hryvnia kopecks per minor unit of each currency for the month [from, to] (Kyiv local_date). Sales (hryvnia in) are
  * the source; purchases only for a currency that was never sold. The month's sales weighted by amount, else the one
  * nearest in time — distance in seconds to the month's Kyiv bounds, a tie → the earlier `time` —, nearest = true.
+ * Enabled accounts only, and not an exchange with a disabled account (accounts.ts: that is no longer an own exchange).
  */
 export async function exchangeRates(db: Db, q: { from: string; to: string }): Promise<Map<number, FxRate>> {
   const rs = await db.execute({
     sql: `SELECT t.currency_code AS currency, t.time, t.local_date, t.amount, t.operation_amount
           FROM transactions t JOIN accounts a ON a.id = t.account_id
           WHERE t.is_cancelled = 0 AND t.transfer_rule = 'pair_fx' AND a.currency_code = ?
-            AND t.currency_code <> ? AND t.operation_amount <> 0 AND t.amount <> 0`,
+            AND t.currency_code <> ? AND t.operation_amount <> 0 AND t.amount <> 0
+            AND t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL}) AND NOT ${crossesDisabledSql('t')}`,
     args: [UAH, UAH],
   });
   const byCurrency = new Map<number, Ex[]>();

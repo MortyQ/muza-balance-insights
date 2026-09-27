@@ -7,14 +7,11 @@ import { CONSENT_TEXT } from './constants.ts';
 import type { ConnectFormProps } from '../shared/types.ts';
 
 // The owner fields come in the default slot, at the top of the form.
-const { owner, connectionColor, submitText, autofocus } = defineProps<ConnectFormProps>();
+const { owner, submitText, autofocus } = defineProps<ConnectFormProps>();
 const emit = defineEmits<{ added: [] }>();
 
 const participant = useParticipantStore();
-const { tokenInput, remember, canSubmit, submit, save } = useMonobankConnect(
-  () => owner,
-  () => connectionColor,
-);
+const { tokenInput, remember, canSubmit, submit, save } = useMonobankConnect(() => owner);
 
 async function onSubmit() {
   if (await save()) emit('added');

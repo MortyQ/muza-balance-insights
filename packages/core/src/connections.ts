@@ -38,8 +38,9 @@ export async function ensureDefaultConnection(db: Db, provider: ProviderId, nowS
     participantId = Number(p.rows[0]?.id);
   }
   const c = await db.execute({
-    sql: 'INSERT INTO connections (participant_id, provider, color, created_at) VALUES (?, ?, ?, ?) RETURNING id',
-    args: [participantId, provider, await firstFreeColor(db, 'connections'), nowSec],
+    // No colour: only people have one.
+    sql: 'INSERT INTO connections (participant_id, provider, created_at) VALUES (?, ?, ?) RETURNING id',
+    args: [participantId, provider, nowSec],
   });
   return Number(c.rows[0]?.id);
 }

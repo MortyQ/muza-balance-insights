@@ -1,12 +1,20 @@
 // «Подключения» in main: a participant's bank connections (core participants.ts) together with their tokens
-// (TokenVault) — add, a new token, colour, remove. Replies carry numbers only — never a token or the bank's holder id.
+// (TokenVault) — add, a new token, its accounts on / off, remove. Replies carry numbers only — never a token or the bank's holder id.
 // The list of people with their connections is PeopleService's (people.ts); this service does not use it.
+import { listConnectionAccounts, setAccountEnabled } from '@mono/core/accounts';
+import { ConnectionError } from '@mono/core/connections';
 import type { Db } from '@mono/core/db';
-import { addConnection, addParticipant, deleteConnection, listConnections, setConnectionColor } from '@mono/core/participants';
+import { addConnection, addParticipant, deleteConnection, listConnections } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
-import type { AddConnectionInput, AddConnectionResult, ColorChangeResult, ColorKey, ProviderKey, RemoveConnectionResult } from '../shared/api.ts';
-import { colorChange } from './people.ts';
+import type {
+  AddConnectionInput,
+  AddConnectionResult,
+  ConnectionAccountView,
+  ProviderKey,
+  RemoveConnectionResult,
+  SetAccountEnabledResult,
+} from '../shared/api.ts';
 import { TokenError } from './token.ts';
 
 // The renderer's provider key is exactly the core's provider id.
@@ -45,7 +53,7 @@ export class IntegrationsService {
     const participantId = 'id' in input.participant ? input.participant.id : await addParticipant(db, input.participant, now);
     let connectionId: number;
     try {
-      connectionId = await addConnection(db, participantId, input.provider, now, input.color);
+      connectionId = await addConnection(db, participantId, input.provider, now);
     } catch (err) {
       if (!('id' in input.participant)) await db.execute({ sql: 'DELETE FROM participants WHERE id = ?', args: [participantId] });
       throw err;
@@ -60,14 +68,33 @@ export class IntegrationsService {
     }
   }
 
-  setConnectionColor(connectionId: number, color: ColorKey): Promise<ColorChangeResult> {
-    return colorChange(async () => setConnectionColor(await this.d.db(), connectionId, color));
-  }
-
   async setToken(connectionId: number, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
     const c = (await listConnections(await this.d.db())).find((x) => x.id === connectionId);
     if (!c) throw new TokenError('Такого подключения нет');
     return this.d.tokens.set(connectionId, c.provider, token, remember);
+  }
+
+  /** Field by field: nothing of an account beyond the label parts reaches the renderer. */
+  async listConnectionAccounts(connectionId: number): Promise<ConnectionAccountView[]> {
+    const db = await this.d.db();
+    if (!(await listConnections(db)).some((c) => c.id === connectionId)) throw new ConnectionError('Такого подключения нет');
+    return (await listConnectionAccounts(db, connectionId)).map((a) => ({
+      id: a.id,
+      kind: a.kind,
+      type: a.type,
+      currencyCode: a.currencyCode,
+      maskedPanTail: a.maskedPanTail,
+      jarTitle: a.jarTitle,
+      enabled: a.enabled,
+      auto: a.auto,
+    }));
+  }
+
+  /** Refused while an import runs (its plan was made from the old choice). Unknown account → ConnectionError. */
+  async setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult> {
+    if (this.d.importRunning()) return { changed: false, reason: 'import-running' };
+    await setAccountEnabled(await this.d.db(), accountId, enabled);
+    return { changed: true };
   }
 
   /** Refused while an import runs (it writes these accounts). The token goes first, then the data. */

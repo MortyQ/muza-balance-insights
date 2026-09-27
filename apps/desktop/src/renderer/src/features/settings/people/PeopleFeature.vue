@@ -38,7 +38,7 @@ function onColor(id: number, color: ColorKey) {
         v-for="p in participant.people"
         :key="p.id"
         :person="p"
-        :taken-colors="colorHolders(participant.people, 'people', p.id)"
+        :taken-colors="colorHolders(participant.people, p.id)"
         @rename="(label, done) => onRename(p.id, label, done)"
         @restore-bank-name="(done) => onRestoreBankName(p.id, done)"
         @color="(color) => onColor(p.id, color)"

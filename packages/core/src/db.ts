@@ -387,6 +387,12 @@ export const MIGRATIONS: ReadonlyArray<{ version: number; name: string; statemen
         SELECT k FROM palette WHERE i = (SELECT COUNT(*) FROM connections o WHERE o.id < connections.id))`,
     ],
   },
+  {
+    version: 11,
+    name: 'account_sync_choice',
+    // The user's toggle for an account: NULL = auto (accounts.ts), 1 = on, 0 = off. The bank's upsert never touches it.
+    statements: [`ALTER TABLE accounts ADD COLUMN sync_choice INTEGER CHECK (sync_choice IN (0, 1))`],
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? 0;

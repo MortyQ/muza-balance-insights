@@ -4,16 +4,21 @@
 /** Jar-side auto top-ups triggered by a purchase (percentage / rounding rules). */
 export const AUTO_TOPUP_DESCRIPTIONS: ReadonlySet<string> = new Set(['10%', 'До 10₴', 'До 100₴']);
 
-/** Transfers between the user's own cards, FOP accounts and jars, as each side describes them. */
-export const OWN_TRANSFER_DESCRIPTIONS: ReadonlySet<string> = new Set([
-  'З Чорної картки',
-  'З Білої картки',
-  'На білу картку',
-  'На чорну картку',
-  'З гривневого рахунку ФОП',
-  'З доларового рахунку ФОП для переказу на картку',
-  'На гривневий рахунок ФОП для переказу на картку',
+/**
+ * Transfers between the user's own cards, FOP accounts and jars, as each side describes them, with the other side each
+ * text names: the account type and, where the text says it, the currency.
+ */
+export const OWN_TRANSFER_COUNTERPART: ReadonlyMap<string, { type: string; currencyCode: number | null }> = new Map([
+  ['З Чорної картки', { type: 'black', currencyCode: null }],
+  ['На чорну картку', { type: 'black', currencyCode: null }],
+  ['З Білої картки', { type: 'white', currencyCode: null }],
+  ['На білу картку', { type: 'white', currencyCode: null }],
+  ['З гривневого рахунку ФОП', { type: 'fop', currencyCode: 980 }],
+  ['З доларового рахунку ФОП для переказу на картку', { type: 'fop', currencyCode: 840 }],
+  ['На гривневий рахунок ФОП для переказу на картку', { type: 'fop', currencyCode: 980 }],
 ]);
+
+export const OWN_TRANSFER_DESCRIPTIONS: ReadonlySet<string> = new Set(OWN_TRANSFER_COUNTERPART.keys());
 
 /** White card's outgoing transfer text: used for own cards AND possibly for other people's — never text-matched. */
 export const GENERIC_TRANSFER_DESCRIPTION = 'Переказ на картку';
@@ -35,6 +40,11 @@ const JAR_TEMPLATE_PREFIXES: readonly string[] = [
   'Часткове зняття банки',
 ];
 export const JAR_TEMPLATE = new RegExp(`^(${JAR_TEMPLATE_PREFIXES.join('|')}) «.*»$`, 's');
+/** The jar title inside a card-side jar template, or null. */
+export function jarTemplateTitle(raw: string): string | null {
+  const m = new RegExp(`^(?:${JAR_TEMPLATE_PREFIXES.join('|')}) «(.*)»$`, 's').exec(raw.trim());
+  return m?.[1]?.trim() || null;
+}
 
 /**
  * A bank-generated description of money moving between the user's own accounts.

@@ -5,10 +5,12 @@ import {
   AUTO_TOPUP_DESCRIPTIONS,
   INSTALLMENT_DESCRIPTION,
   JAR_TEMPLATE,
+  OWN_TRANSFER_COUNTERPART,
   SERVICE_EXACT,
   isFromPrefixDescription,
   isTransferServiceDescription,
   isTreasuryDescription,
+  jarTemplateTitle,
 } from './descriptions.ts';
 import { MAX_STATEMENT_WINDOW_SEC, RATE_LIMIT_MS } from './constants.ts';
 
@@ -27,6 +29,16 @@ export const monobankRules: ProviderRules = {
 
   isOwnTransferText: (tx, ctx) =>
     isTransfer(tx) && isTransferServiceDescription(tx.description, ctx.jarTitles, { includeGeneric: false }),
+
+  // Auto top-ups (jar side) name no card; «Переказ на картку» is never an own-transfer text.
+  ownTransferCounterpart(tx, ctx) {
+    if (!isTransfer(tx)) return null;
+    const text = tx.description.trim();
+    const card = OWN_TRANSFER_COUNTERPART.get(text);
+    if (card) return { kind: 'card', ...card };
+    const title = jarTemplateTitle(text) ?? (ctx.jarTitles.has(text) ? text : null);
+    return title === null ? null : { kind: 'jar', title };
+  },
 
   isServiceTransferText: (tx, ctx) =>
     isTransfer(tx) && isTransferServiceDescription(tx.description, ctx.jarTitles, { includeGeneric: true }),

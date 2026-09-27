@@ -111,6 +111,24 @@ describe('DataService (main → renderer view types)', () => {
     expect(toKyivDateTime(at!)).toBe((await svc.status()).lastSyncAt);
   });
 
+  it('status and lastSyncSec count enabled accounts only: a disabled one with older coverage moves nothing', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('old', 'white', 980, 0);
+    await synced('uah');
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['old', kyivStartOfDay('2025-06-01'), kyivStartOfDay('2025-07-01'), kyivStartOfDay('2025-07-01') + 60] });
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'old'`);
+    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01' });
+    expect(await svc.lastSyncSec()).toBe(SYNCED_TO + 60);
+
+    // The last sync is only the disabled account's: auto-sync's gap reads from enabled ones.
+    await db.execute(`UPDATE sync_state SET last_sync_at = ${SYNCED_TO + 3600} WHERE account_id = 'old'`);
+    expect(await svc.lastSyncSec()).toBe(SYNCED_TO + 60);
+
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'uah'`);
+    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
+    expect(await svc.lastSyncSec()).toBeNull();
+  });
+
   it('a failed open is not cached; close() lets the next call open a fresh connection', async () => {
     let opens = 0;
     const flaky = new DataService({

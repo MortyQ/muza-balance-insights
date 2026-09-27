@@ -18,7 +18,7 @@ const api = vi.hoisted(() => {
 });
 vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api.people) } }));
 
-const { FAMILY, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
+const { FAMILY, allAccountsOff, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
@@ -26,7 +26,7 @@ const { connectionsCount } = await import('@/features/settings/people/utils.ts')
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', color: null, accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
+  id, provider: 'monobank', bank: 'Monobank', accounts: 2, enabledAccounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
 const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, color: null, connections });
 
@@ -72,6 +72,12 @@ describe('participant store', () => {
     expect(tokenLine(token({ present: false, stored: null, needsReentry: true }))).toMatch(/больше не читается/);
     expect(coverageLine(conn(1))).toBe('Ещё не загружено');
     expect(coverageLine(conn(1, { coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Счетов: 2 · загружено с 01.06.2025 по 25.09.2026');
+    // Some accounts off: how many count, of all.
+    expect(coverageLine(conn(1, { accounts: 3, coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Счетов: 2 из 3 · загружено с 01.06.2025 по 25.09.2026');
+    // All off: no coverage of enabled accounts, but it is not «not imported».
+    expect(coverageLine(conn(1, { enabledAccounts: 0 }))).toBe('Все счета выключены');
+    expect(coverageLine(conn(1, { enabledAccounts: 0, coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Все счета выключены');
+    expect(coverageLine(conn(1, { accounts: 0, enabledAccounts: 0 }))).toBe('Ещё не загружено');
   });
 });
 
@@ -101,6 +107,20 @@ describe('screens and notices', () => {
     expect(startRoute(false, true)).toBe('home');
   });
 
+  it('every account turned off: home with a notice, not the connect screen', async () => {
+    // Off accounts leave no data (hasData false), but there are connections: home, where the notice leads to «Подключения».
+    expect(startRoute(true, false)).toBe('home');
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { accounts: 1, enabledAccounts: 0 })])).toBe(true);
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { enabledAccounts: 1 })])).toBe(false);
+    // Not imported yet: the first import brings its accounts, nothing is off.
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { accounts: 0, enabledAccounts: 0 })])).toBe(false);
+    expect(allAccountsOff([])).toBe(false);
+    api.people = { people: [person(1, 'Я', [conn(1, { enabledAccounts: 0 })])], secureStorage: true };
+    const s = useParticipantStore();
+    await s.refresh();
+    expect(s.accountsOff).toBe(true);
+  });
+
   it('missing tokens: all, some (named), unreadable, or an unfinished import', () => {
     const labelOf = (id: number) => (id === 2 ? 'Вигадана · Monobank' : 'Я · Monobank');
     const missing = [conn(2, { token: token({ present: false, stored: null }) })];
@@ -119,15 +139,15 @@ describe('screens and notices', () => {
 });
 
 describe('colours', () => {
-  it('who holds each colour, except the row being edited; the first free one; the CSS colour', () => {
+  it('who holds each colour among people, except the person being edited; the first free one; the CSS colour', () => {
     const people = [
-      { ...person(1, 'Я', [conn(1, { color: 'blue' }), conn(2, { color: null })]), color: 'violet' as const },
-      { ...person(2, 'Вигадана', [conn(3, { color: 'orange' })]), color: 'blue' as const },
+      { ...person(1, 'Я', [conn(1), conn(2)]), color: 'violet' as const },
+      { ...person(2, 'Вигадана', [conn(3)]), color: 'blue' as const },
+      { ...person(3, 'Без кольору', []), color: null },
     ];
-    expect([...colorHolders(people, 'people')]).toEqual([['violet', 'Я'], ['blue', 'Вигадана']]);
-    expect([...colorHolders(people, 'people', 2)]).toEqual([['violet', 'Я']]);
-    expect([...colorHolders(people, 'connections', 3)]).toEqual([['blue', 'Я · Monobank']]);
-    expect(firstFreeColor(colorHolders(people, 'connections'))).toBe('aqua');
+    expect([...colorHolders(people)]).toEqual([['violet', 'Я'], ['blue', 'Вигадана']]);
+    expect([...colorHolders(people, 2)]).toEqual([['violet', 'Я']]);
+    expect(firstFreeColor(colorHolders(people))).toBe('orange');
     expect(firstFreeColor(new Map())).toBe('blue');
     expect(colorVar('aqua')).toBe('var(--series-aqua)');
     expect(colorVar(null)).toBe('var(--border-strong)');
