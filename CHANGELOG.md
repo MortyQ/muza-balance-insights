@@ -21,6 +21,9 @@ are quoted as they appear in it.
   every person (or, for one person, every account).
 - Pick a month: the cards show the balance at the end of that month, and income and spending for it. The spending
   block below follows the same month.
+- Income and spending in other currencies — for example, dollars on a sole-proprietor account or cash withdrawn in
+  euros — now count in «Пришло» and «Ушло» in hryvnia, at the rate of your own currency exchanges that month. Such
+  sums are marked «≈», and the rate is shown under the bars.
 
 ## 0.1.4 — 2026-09-27
 
