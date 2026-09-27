@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { COLOR_KEYS } from '../shared/colors.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
 import { IMPORT_DEPTHS } from '../shared/progress.ts';
@@ -14,6 +15,7 @@ const id = z.number().int().positive();
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
 const token = z.string().min(20).max(200).regex(/^\S+$/);
 const label = z.string().min(1).max(80);
+const color = z.enum(COLOR_KEYS);
 const pin = z.string().regex(PIN_RE);
 const triggers = z.strictObject({ startup: z.boolean(), idle: z.boolean(), screenLock: z.boolean(), sleep: z.boolean() });
 const autoSync = z.strictObject({
@@ -26,13 +28,21 @@ export const ARG_SCHEMAS = {
   listPeople: z.tuple([]),
   addConnection: z.tuple([
     z.strictObject({
-      participant: z.union([z.strictObject({ id }), z.strictObject({ label }), z.strictObject({ fromBank: z.literal(true) })]),
+      participant: z.union([
+        z.strictObject({ id }),
+        z.strictObject({ label, color: color.optional() }),
+        z.strictObject({ fromBank: z.literal(true), color: color.optional() }),
+      ]),
       provider: z.enum(PROVIDER_IDS),
       token,
       remember: z.boolean(),
+      color: color.optional(),
     }),
   ]),
   renameParticipant: z.tuple([id, label]),
+  restoreBankName: z.tuple([id]),
+  setParticipantColor: z.tuple([id, color]),
+  setConnectionColor: z.tuple([id, color]),
   setConnectionToken: z.tuple([id, token, z.boolean()]),
   removeConnection: z.tuple([id]),
   // Exactly the depths the screen offers: one list, so the two can't drift apart.

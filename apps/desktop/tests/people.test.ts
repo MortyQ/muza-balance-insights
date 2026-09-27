@@ -101,6 +101,32 @@ describe('PeopleService', () => {
     await expect(people.setToken(999, TOKEN, true)).rejects.toBeInstanceOf(TokenError);
   });
 
+  it('colours: the first free by default, or the one chosen; changing to a taken one → taken, nothing changes', async () => {
+    const { people } = service();
+    const a = await people.addConnection({ participant: { label: 'Вигаданий Я' }, provider: 'monobank', token: TOKEN, remember: true });
+    const b = await people.addConnection({ participant: { fromBank: true, color: 'violet' }, provider: 'monobank', token: TOKEN_B, remember: true, color: 'red' });
+    if (!a.added || !b.added) throw new Error('not added');
+    let view = await people.list();
+    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['blue', ['blue']], ['violet', ['red']]]);
+
+    expect(await people.setParticipantColor(a.participantId, 'violet')).toEqual({ changed: false, reason: 'taken' });
+    expect(await people.setConnectionColor(a.connectionId, 'red')).toEqual({ changed: false, reason: 'taken' });
+    expect(await people.setParticipantColor(a.participantId, 'green')).toEqual({ changed: true });
+    expect(await people.setConnectionColor(a.connectionId, 'aqua')).toEqual({ changed: true });
+    view = await people.list();
+    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['green', ['aqua']], ['violet', ['red']]]);
+    await expect(people.setParticipantColor(999, 'yellow')).rejects.toThrow();
+  });
+
+  it('«взять имя из банка» after a rename: the bank names the person again', async () => {
+    const { people } = service();
+    const r = await people.addConnection({ participant: { label: 'Своя' }, provider: 'monobank', token: TOKEN, remember: true });
+    if (!r.added) throw new Error('not added');
+    await db.execute({ sql: 'UPDATE connections SET holder_name = ? WHERE id = ?', args: ['Вигадана Банківська', r.connectionId] });
+    await people.restoreBankName(r.participantId);
+    expect((await people.list()).people[0]).toMatchObject({ label: 'Вигадана Банківська', labelFromBank: true });
+  });
+
   it('remove: refused while an import runs (no dialog), cancelled in the dialog, otherwise token and data go', async () => {
     const add = async (p: PeopleService) => {
       const r = await p.addConnection({ participant: { label: 'Вигадана Вона' }, provider: 'monobank', token: TOKEN, remember: true });

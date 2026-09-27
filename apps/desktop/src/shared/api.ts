@@ -1,5 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { AutoSyncSettings } from './auto-sync.ts';
+import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
@@ -24,11 +25,15 @@ export type TokenStatus = {
 /** Must equal the core's ProviderId (checked in src/main/people.ts). */
 export type ProviderKey = 'monobank';
 
+export type { ColorKey };
+
 export type ConnectionView = {
   id: number;
   provider: ProviderKey;
   /** «Monobank». */
   bank: string;
+  /** null = none (the palette ran out). */
+  color: ColorKey | null;
   accounts: number;
   /** Kyiv dates covered by all its imported accounts; null = not imported yet. */
   coveredFrom: string | null;
@@ -42,6 +47,8 @@ export type PersonView = {
   label: string;
   /** The label is the holder's name from the bank (until the user renames). */
   labelFromBank: boolean;
+  /** null = none (the palette ran out). */
+  color: ColorKey | null;
   connections: ConnectionView[];
 };
 
@@ -51,10 +58,17 @@ export type PeopleView = {
   secureStorage: boolean;
 };
 
-/** Who the new connection belongs to: an existing participant, a new one with a name, or a new one named by the bank. */
-export type ParticipantChoice = { id: number } | { label: string } | { fromBank: true };
+/**
+ * Who the new connection belongs to: an existing participant, a new one with a name, or a new one named by the bank.
+ * A new one's colour: the one given (must be free), else the first free one.
+ */
+export type ParticipantChoice = { id: number } | { label: string; color?: ColorKey } | { fromBank: true; color?: ColorKey };
 
-export type AddConnectionInput = { participant: ParticipantChoice; provider: ProviderKey; token: string; remember: boolean };
+/** color: the connection's own (must be free), else the first free one. */
+export type AddConnectionInput = { participant: ParticipantChoice; provider: ProviderKey; token: string; remember: boolean; color?: ColorKey };
+
+/** taken: another person (or connection) has this colour. */
+export type ColorChangeResult = { changed: true } | { changed: false; reason: 'taken' };
 
 export type AddConnectionResult =
   | { added: true; connectionId: number; participantId: number; stored: 'secure' | 'memory' }
@@ -72,6 +86,10 @@ export type BalanceApi = {
   addConnection(input: AddConnectionInput): Promise<AddConnectionResult>;
   /** The user's name wins from now on: the bank no longer changes it. */
   renameParticipant(id: number, label: string): Promise<void>;
+  /** «Взять имя из банка»: the bank names the person again; its last holder's name applies at once, if it sent one. */
+  restoreBankName(id: number): Promise<void>;
+  setParticipantColor(id: number, color: ColorKey): Promise<ColorChangeResult>;
+  setConnectionColor(connectionId: number, color: ColorKey): Promise<ColorChangeResult>;
   setConnectionToken(connectionId: number, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }>;
   /** System dialog first; deletes the connection's accounts and operations (a participant left without one goes too). */
   removeConnection(connectionId: number): Promise<RemoveConnectionResult>;
