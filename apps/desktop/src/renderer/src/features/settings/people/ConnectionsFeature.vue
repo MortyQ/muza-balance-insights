@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useImportProgressStore } from '@/entities/import-progress';
-import { useParticipantStore } from '@/entities/participant';
+import { colorHolders, useParticipantStore } from '@/entities/participant';
 import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import AddConnectionForm from './components/AddConnectionForm.vue';
@@ -12,7 +12,7 @@ import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
-const { error, setToken, remove } = usePeopleActions();
+const { error, setToken, setConnectionColor, remove } = usePeopleActions();
 const adding = ref(false);
 const added = ref(false);
 
@@ -47,7 +47,9 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :key="c.id"
           :connection="c"
           :secure-storage="participant.secureStorage"
+          :taken-colors="colorHolders(participant.people, 'connections', c.id)"
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
+          @color="(color) => void setConnectionColor(c.id, color)"
           @remove="remove(c.id)"
         />
       </SettingsList>

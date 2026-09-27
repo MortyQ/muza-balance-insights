@@ -1,12 +1,16 @@
-import type { ParticipantChoice, RemoveConnectionResult } from '@contract/api.ts';
+import type { ColorKey, ParticipantChoice, RemoveConnectionResult } from '@contract/api.ts';
 import type { PersonChoice } from './types.ts';
 
-/** Who the new connection is for, or null while a new person has neither a name nor «взять имя из банка». */
-export function participantChoice(person: PersonChoice, newLabel: string, fromBank: boolean): ParticipantChoice | null {
+/**
+ * Who the new connection is for, or null while a new person has neither a name nor «взять имя из банка». A new person
+ * carries its colour (none left → main leaves it without one).
+ */
+export function participantChoice(person: PersonChoice, newLabel: string, fromBank: boolean, color: ColorKey | null = null): ParticipantChoice | null {
   if (person !== 'new') return { id: person };
-  if (fromBank) return { fromBank: true };
+  const withColor = color === null ? {} : { color };
+  if (fromBank) return { fromBank: true, ...withColor };
   const label = newLabel.trim();
-  return label === '' ? null : { label };
+  return label === '' ? null : { label, ...withColor };
 }
 
 /** «1 подключение», «2 подключения», «5 подключений». */

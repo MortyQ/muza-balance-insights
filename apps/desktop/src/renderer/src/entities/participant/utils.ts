@@ -1,4 +1,5 @@
-import type { ConnectionView, TokenStatus } from '@contract/api.ts';
+import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
+import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
 
 /** One line about a connection's token, for its row. */
 export function tokenLine(s: Readonly<TokenStatus>): string {
@@ -19,4 +20,34 @@ export function coverageLine(c: Readonly<ConnectionView>): string {
   if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
   const d = (iso: string) => iso.split('-').reverse().join('.');
   return `Счетов: ${c.accounts} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+}
+
+/** The CSS colour of a palette key in the current theme; no colour → the strong border grey. */
+export function colorVar(color: ColorKey | null): string {
+  return color === null ? 'var(--border-strong)' : `var(--series-${color})`;
+}
+
+/**
+ * Who holds each colour among people or among connections, for «занят: …» — except the row being edited (its own colour
+ * stays selectable).
+ */
+export function colorHolders(
+  people: ReadonlyArray<Readonly<PersonView>>,
+  kind: 'people' | 'connections',
+  exceptId?: number,
+): Map<ColorKey, string> {
+  const held = new Map<ColorKey, string>();
+  for (const p of people) {
+    if (kind === 'people') {
+      if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
+      continue;
+    }
+    for (const c of p.connections) if (c.color !== null && c.id !== exceptId) held.set(c.color, `${p.label} · ${c.bank}`);
+  }
+  return held;
+}
+
+/** The colour a new person or connection gets unless one is picked; null = all taken. */
+export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey | null {
+  return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
 }

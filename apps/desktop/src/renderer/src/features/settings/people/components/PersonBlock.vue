@@ -1,34 +1,56 @@
 <script setup lang="ts">
 import { nextTick, ref, useTemplateRef } from 'vue';
-import type { PersonView } from '@contract/api.ts';
+import type { ColorKey, PersonView } from '@contract/api.ts';
+import { ColorSwatches, colorVar } from '@/entities/participant';
 import { EXPAND_TRANSITION } from '@/shared/lib';
-import { VButton, VInput } from '@/shared/ui';
+import { VButton, VCheckbox, VInput } from '@/shared/ui';
 import { connectionsCount } from '../utils.ts';
 
-const { person } = defineProps<{ person: Readonly<PersonView> }>();
-const emit = defineEmits<{ rename: [label: string, done: (saved: boolean) => void] }>();
+const { person, takenColors } = defineProps<{
+  person: Readonly<PersonView>;
+  /** Colours of the other people → who has them. */
+  takenColors: ReadonlyMap<ColorKey, string>;
+}>();
+const emit = defineEmits<{
+  rename: [label: string, done: (saved: boolean) => void];
+  restoreBankName: [done: (saved: boolean) => void];
+  color: [color: ColorKey];
+}>();
 
-const renaming = ref(false);
+const panel = ref<'rename' | 'color' | null>(null);
 const label = ref('');
+const fromBank = ref(false);
 const form = useTemplateRef<HTMLFormElement>('form');
 
 async function toggleRename() {
-  if (renaming.value) {
-    renaming.value = false;
+  if (panel.value === 'rename') {
+    panel.value = null;
     return;
   }
   label.value = person.label;
-  renaming.value = true;
+  fromBank.value = person.labelFromBank;
+  panel.value = 'rename';
   await nextTick();
-  const input = form.value?.querySelector('input');
-  input?.focus();
-  input?.select();
+  const input = form.value?.querySelector('input[type="text"]');
+  if (!(input instanceof HTMLInputElement) || fromBank.value) return;
+  input.focus();
+  input.select();
+}
+
+function toggleColor() {
+  panel.value = panel.value === 'color' ? null : 'color';
 }
 
 function saveName() {
-  emit('rename', label.value, (saved) => {
-    if (saved) renaming.value = false;
-  });
+  const done = (saved: boolean) => {
+    if (saved) panel.value = null;
+  };
+  if (fromBank.value) emit('restoreBankName', done);
+  else emit('rename', label.value, done);
+}
+
+function pick(color: ColorKey | null) {
+  if (color !== null && color !== person.color) emit('color', color);
 }
 </script>
 
@@ -36,7 +58,11 @@ function saveName() {
   <div class="flex flex-col px-4 py-3">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div class="flex min-w-0 items-center gap-3">
-        <span class="grid size-8 shrink-0 place-items-center rounded-full bg-primary-subtle text-sm font-bold text-primary" aria-hidden="true">
+        <span
+          class="grid size-8 shrink-0 place-items-center rounded-full bg-(--person) text-sm font-bold text-white"
+          :style="{ '--person': colorVar(person.color) }"
+          aria-hidden="true"
+        >
           {{ person.label.slice(0, 1).toUpperCase() }}
         </span>
         <div class="flex min-w-0 flex-col gap-0.5">
@@ -47,16 +73,39 @@ function saveName() {
           </span>
         </div>
       </div>
-      <VButton variant="link" :text="renaming ? 'Отмена' : 'Переименовать'" :aria-expanded="renaming" @click="toggleRename" />
+      <div class="flex items-center gap-4">
+        <VButton variant="link" :text="panel === 'color' ? 'Готово' : 'Изменить цвет'" :aria-expanded="panel === 'color'" @click="toggleColor" />
+        <VButton variant="link" :text="panel === 'rename' ? 'Отмена' : 'Переименовать'" :aria-expanded="panel === 'rename'" @click="toggleRename" />
+      </div>
     </div>
     <!-- The gap lives inside the expanding box (pt-3), so nothing jumps when it opens or closes. -->
     <Transition v-bind="EXPAND_TRANSITION">
-      <div v-if="renaming" class="grid">
+      <div v-if="panel === 'rename'" class="grid">
         <div class="-mx-1 min-h-0 overflow-hidden px-1">
-          <form ref="form" class="flex flex-wrap items-center gap-2 pt-3 pb-1" @submit.prevent="saveName">
-            <VInput v-model="label" class="w-56 max-w-full" maxlength="80" name="Новое имя" type="text" @keydown.esc.prevent="renaming = false" />
-            <VButton type="submit" text="Сохранить" :disabled="label.trim() === ''" />
+          <form ref="form" class="flex flex-col gap-2 pt-3 pb-1" @submit.prevent="saveName">
+            <div class="flex flex-wrap items-center gap-2">
+              <VInput
+                v-model="label"
+                class="w-56 max-w-full"
+                :disabled="fromBank"
+                maxlength="80"
+                name="Новое имя"
+                type="text"
+                @keydown.esc.prevent="panel = null"
+              />
+              <VButton type="submit" text="Сохранить" :disabled="!fromBank && label.trim() === ''" />
+            </div>
+            <VCheckbox v-model="fromBank" label="Взять имя из банка (обновляется при каждом импорте)" />
           </form>
+        </div>
+      </div>
+    </Transition>
+    <Transition v-bind="EXPAND_TRANSITION">
+      <div v-if="panel === 'color'" class="grid">
+        <div class="-mx-1 min-h-0 overflow-hidden px-1">
+          <div class="pt-3 pb-1">
+            <ColorSwatches :model-value="person.color" label="Цвет человека" :taken="takenColors" @update:model-value="pick" />
+          </div>
         </div>
       </div>
     </Transition>
