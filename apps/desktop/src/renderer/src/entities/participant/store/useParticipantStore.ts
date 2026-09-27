@@ -38,10 +38,14 @@ export const useParticipantStore = defineStore('participant', () => {
   const accountsOff = computed(() => allAccountsOff(connections.value));
   const secureStorage = computed(() => view.value?.secureStorage ?? true);
   const multiple = computed(() => people.value.length > 1);
-  /** The participant the data screens show; null = the whole family (also when there is only one person). */
-  const selectedId = computed<number | null>(() =>
-    multiple.value && people.value.some((p) => p.id === chosen.value) ? chosen.value : null,
-  );
+  /**
+   * The participant the data screens show; null = the whole family. The only person is always shown as themself: a
+   * family of one would repeat their card (and hide their accounts).
+   */
+  const selectedId = computed<number | null>(() => {
+    if (!multiple.value) return people.value[0]?.id ?? null;
+    return people.value.some((p) => p.id === chosen.value) ? chosen.value : null;
+  });
 
   function select(id: number): void {
     chosen.value = id;
