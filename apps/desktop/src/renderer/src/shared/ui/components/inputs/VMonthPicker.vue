@@ -53,7 +53,7 @@ function toMax() {
     <PopoverTrigger class="v-month-picker__trigger" :aria-label="triggerAriaLabel">
       <VIcon icon="lucide:calendar" class="v-month-picker__icon" />
       <span>{{ triggerText }}</span>
-      <VIcon icon="lucide:chevron-down" class="v-month-picker__icon" />
+      <VIcon icon="lucide:chevron-down" class="v-month-picker__caret-icon" />
     </PopoverTrigger>
     <PopoverPortal>
       <!-- as-child: the panel is our own <div>, so it carries this component's scope attribute (see vmonthpicker.scss). -->

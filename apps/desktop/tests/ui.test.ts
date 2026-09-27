@@ -140,6 +140,15 @@ describe('ui components copied from muzakit', () => {
       expect(decl(rule(scss(file), selector), 'box-shadow'), selector).toBe(resting);
     }
 
+    // VMonthPicker's trigger must read exactly like VSelect's closed trigger, not as a pill of its own.
+    const selectTrigger = rule(scss('inputs/vselect'), '.v-select__trigger');
+    const monthTrigger = rule(scss('inputs/vmonthpicker'), '.v-month-picker__trigger');
+    for (const prop of ['border-radius', 'background', 'border', 'height']) {
+      const expected = decl(selectTrigger, prop);
+      expect(expected, prop).toBeDefined();
+      expect(decl(monthTrigger, prop), prop).toBe(expected);
+    }
+
     const panels = [
       rule(scss('inputs/vselect'), '.v-select__content'),
       rule(scss('inputs/vdatepicker'), '.v-datepicker__calendar'),

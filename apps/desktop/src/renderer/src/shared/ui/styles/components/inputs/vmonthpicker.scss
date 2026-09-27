@@ -1,19 +1,21 @@
 /* Ours, not copied — VMonthPicker is built on reka-ui, not on any muzakit component (see VMonthPicker.vue header). */
 
+/* Reads exactly like VSelect's closed trigger (vselect.scss `.v-select__trigger`): same box, type, hover,
+   focus/open and disabled — see ui/README.md. */
 .v-month-picker__trigger {
   display: inline-flex;
   align-items: center;
   gap: var(--ui-control-gap);
   height: var(--ui-control-h);
   padding: 0 var(--ui-control-px);
-  background: var(--ui-surface);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--ui-radius-full);
-  /* VButton's elevation, timing and focus ring (vbutton.scss). */
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-xs);
   color: var(--ui-foreground);
   font-size: var(--ui-text-base);
-  font-weight: 600;
+  font-weight: 450;
+  letter-spacing: -0.005em;
   cursor: pointer;
   transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 
@@ -22,13 +24,22 @@
   }
 
   &:hover {
-    background-color: var(--ui-surface-hover);
     border-color: var(--ui-border-strong);
   }
 
+  /* Same 1px border + 1px inset ring as VSelect's open/focus state (vselect.scss), not a 2px border. */
+  &[data-state="open"],
   &:focus-visible {
-    outline: 2px solid var(--ui-ring);
-    outline-offset: 2px;
+    border-color: var(--ui-border-focus);
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
+    outline: none;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    background-color: var(--ui-surface-sunken);
+    box-shadow: none;
+    color: var(--ui-foreground-disabled);
   }
 }
 
@@ -37,6 +48,24 @@
   height: 0.9375rem;
   flex-shrink: 0;
   color: var(--ui-foreground-muted);
+}
+
+/* VSelect's caret (vselect.scss `.v-select__caret-icon`): same size, colour, rotation and colour-on-open. */
+.v-month-picker__caret-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: var(--ui-foreground-muted);
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+.v-month-picker__trigger[data-state="open"] .v-month-picker__caret-icon {
+  transform: rotate(180deg);
+  color: var(--ui-primary);
+}
+
+.v-month-picker__trigger[data-disabled] .v-month-picker__caret-icon {
+  color: var(--ui-foreground-disabled);
 }
 
 /* ============================================

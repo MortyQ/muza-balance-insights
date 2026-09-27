@@ -47,12 +47,13 @@ never gets the component's scope attribute and a scoped rule on it matches nothi
 `tests/ui.test.ts` checks it. `VDatepicker`'s closed field uses the same box, type, hover, focus (also while open) and
 disabled styles as `VSelect`'s trigger.
 
-Shadows follow `VButton` (`vbutton.scss`): `VSelect`'s trigger, `VDatepicker`'s field, `VMonthPicker`'s pill and
+Shadows follow `VButton` (`vbutton.scss`): `VSelect`'s trigger, `VDatepicker`'s field, `VMonthPicker`'s trigger and
 `VInput` rest on `--ui-shadow-xs` and drop it when disabled, with the same 120 ms transitions (off under
-`prefers-reduced-motion`). The focus/open border of `VSelect` and `VDatepicker` is 1px + a 1px inset ring rather than a
-2px border, so the value does not shift; `VMonthPicker` takes `VButton`'s outline focus ring. The three popover panels
-share one elevation: `--ui-surface-overlay`, a 1px `--ui-border`, `--ui-radius-lg`, `--ui-shadow-lg`. `tests/ui.test.ts`
-checks both.
+`prefers-reduced-motion`). `VMonthPicker`'s trigger reads exactly like `VSelect`'s closed trigger, not as a pill: same
+radius (`--ui-radius-lg`), background (`--ui-input-bg`), border (`--ui-input-border`), height, padding and type. The
+focus/open border of `VSelect`, `VDatepicker` and `VMonthPicker` is 1px + a 1px inset ring rather than a 2px border, so
+the value does not shift. The three popover panels share one elevation: `--ui-surface-overlay`, a 1px `--ui-border`,
+`--ui-radius-lg`, `--ui-shadow-lg`. `tests/ui.test.ts` checks both.
 
 `table/VSimpleTable` — a plain data table (columns as data, `cell-<key>` slots, an optional total row), written in the same
 BEM + SCSS + `--ui-*` token style. Not muzakit's `VTable` (virtualised, TanStack), which this app does not need.
