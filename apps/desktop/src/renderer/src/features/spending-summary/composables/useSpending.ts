@@ -31,7 +31,7 @@ export function useSpending(): UseSpendingReturn {
   });
   const view = computed(() => state.value.data);
   const note = computed(() => (view.value ? periodNote(view.value.period) : null));
-  const importing = computed(() => importProgress.running);
+  const importing = computed(() => importProgress.running && !importProgress.auto);
 
   return { thisMonth, month, scope, state, view, periodNote: note, importing };
 }

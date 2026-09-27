@@ -14,6 +14,10 @@ const token = z.string().min(20).max(200).regex(/^\S+$/);
 const label = z.string().min(1).max(80);
 const pin = z.string().regex(PIN_RE);
 const triggers = z.strictObject({ startup: z.boolean(), idle: z.boolean(), screenLock: z.boolean(), sleep: z.boolean() });
+const autoSync = z.strictObject({
+  enabled: z.boolean(),
+  triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
+});
 
 /** Argument tuples. z.tuple without a rest element rejects extra arguments. */
 export const ARG_SCHEMAS = {
@@ -52,6 +56,8 @@ export const ARG_SCHEMAS = {
   disableLock: z.tuple([z.union([z.strictObject({ pin }), z.strictObject({ touchId: z.literal(true) })])]),
   setLockTriggers: z.tuple([triggers]),
   setTouchId: z.tuple([z.boolean()]),
+  getAutoSync: z.tuple([]),
+  setAutoSync: z.tuple([autoSync]),
   getDbState: z.tuple([]),
   relaunchApp: z.tuple([]),
   startOver: z.tuple([]),

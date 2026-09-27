@@ -22,7 +22,7 @@ import { DbAccess } from './db/access.ts';
 import { encryptDatabase } from './db/encrypt.ts';
 import { startOver } from './db/start-over.ts';
 import { DbKeyVault } from './db/key-vault.ts';
-import { readPrefs } from './prefs.ts';
+import { readPrefs, updatePrefs } from './prefs.ts';
 import { SecureStore } from './secure-store.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
@@ -270,6 +270,8 @@ app.whenReady().then(async () => {
     changePin: (current, next) => appLock.changePin(current, next),
     disableLock: (auth) => appLock.disable(auth),
     setLockTriggers: async (t) => (await appLock.setTriggers(t), appLock.view()),
+    getAutoSync: async () => readPrefs(userData).autoSync,
+    setAutoSync: async (s) => (await updatePrefs(userData, (p) => ({ ...p, autoSync: s })), readPrefs(userData).autoSync),
     setTouchId: async (enabled) => (await appLock.setTouchId(enabled), appLock.view()),
     getDbState: async () => access.view(process.platform),
     // A retry in this process would not help (the cipher state is cached): a new process asks the keychain again.

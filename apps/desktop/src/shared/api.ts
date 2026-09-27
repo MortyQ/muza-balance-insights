@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { AutoSyncSettings } from './auto-sync.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
@@ -105,6 +106,10 @@ export type BalanceApi = {
   setTouchId(enabled: boolean): Promise<LockView>;
   /** Returns an unsubscribe function. */
   onLock(cb: (v: LockView) => void): () => void;
+  /** «Автообновление»: the main switch and its triggers (userData/preferences.json). */
+  getAutoSync(): Promise<AutoSyncSettings>;
+  /** Applies from the next trigger; returns what was saved. */
+  setAutoSync(settings: AutoSyncSettings): Promise<AutoSyncSettings>;
   /** Allowed while the database is not ready (not while locked). */
   getDbState(): Promise<DbStateView>;
   /** Database not ready only: a new process asks the keychain again. */

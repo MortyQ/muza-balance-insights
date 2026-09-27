@@ -7,10 +7,12 @@ import { RUNNING_PHASES } from '../constants.ts';
 export const useImportProgressStore = defineStore('import-progress', () => {
   const progress = ref<ImportProgress>({ phase: 'idle' });
   const running = computed(() => RUNNING_PHASES.includes(progress.value.phase));
+  /** The state belongs to «Автообновление», not to a user's import: shown quietly. */
+  const auto = computed(() => progress.value.auto === true);
 
   function set(p: ImportProgress): void {
     progress.value = p;
   }
 
-  return { progress, running, set };
+  return { progress, running, auto, set };
 });
