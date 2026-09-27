@@ -167,7 +167,7 @@ describe('the token never leaves main', () => {
       handlers.clear();
       registerIpc(
         { handle: (ch, fn) => void handlers.set(ch, fn) },
-        // What reaches the vault from the renderer: a connection's new token (src/main/people.ts → TokenVault.set).
+        // What reaches the vault from the renderer: a connection's new token (src/main/integrations.ts → TokenVault.set).
         { setConnectionToken: (id, t, r) => v.set(id, 'monobank', t, r) },
         // The same log line as src/main/index.ts: the error's name only.
         { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },

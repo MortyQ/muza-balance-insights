@@ -62,7 +62,7 @@ export class DataService {
     return opening;
   }
 
-  /** The migrated connection, for the other services of main (people.ts). */
+  /** The migrated connection, for the other services of main (people.ts, integrations.ts). */
   database(): Promise<Db> {
     return this.conn();
   }

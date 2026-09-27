@@ -37,7 +37,7 @@ function deps(o: { ready?: boolean; confirm?: boolean; tokens?: Record<number, s
     },
     importer: { stop: async () => void calls.push('stop') },
     data: { close: async () => void calls.push('close') },
-    people: {
+    integrations: {
       addConnection: async (input) => (calls.push('add'), added.push(input), { added: true }),
     },
     userDataDir: dir,
@@ -84,7 +84,7 @@ describe('startOver', () => {
   it('a connection that fails to be added is skipped, the error name logged, never the token', async () => {
     const { d, logs } = deps({ tokens: { 1: TOKEN_A, 2: TOKEN_B } });
     let n = 0;
-    d.people.addConnection = async () => {
+    d.integrations.addConnection = async () => {
       if (n++ === 0) throw new TypeError(`bad ${TOKEN_A}`);
       return { added: true };
     };
