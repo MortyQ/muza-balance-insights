@@ -142,7 +142,7 @@ export async function balancesAt(db: Db, opts: { endSec: number; participantId?:
 
 async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number | null> {
   if (endSec > r.updatedAt) return r.balance;
-  if (r.oldest === null || r.oldest >= endSec) return null;
+  if (r.oldest === null || r.oldest > endSec) return null;
   const last = await db.execute({
     sql: 'SELECT time, balance FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time < ? ORDER BY time DESC LIMIT 2',
     args: [r.id, endSec],

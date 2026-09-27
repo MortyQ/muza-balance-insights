@@ -45,9 +45,11 @@ describe('balancesAt', () => {
     await account('a', 50_000);
     await account('b', 50_000);
     await tx('a', END_JULY - 100, -1_000, null);
+    await tx('a', END_JULY + 50, -9_000, null, 1); // cancelled: excluded from the fallback's sum after the end
     await tx('a', END_JULY + 100, -20_000, 50_000);
-    await tx('b', END_JULY - 5, -1_000, 71_000);
-    await tx('b', END_JULY - 5, 1_000, 70_000);
+    // Tied second: both stored balances are wrong (neither is 70_000), so only the backward calculation is exact.
+    await tx('b', END_JULY - 5, -1_000, 99_000);
+    await tx('b', END_JULY - 5, 1_000, 98_000);
     await tx('b', END_JULY + 100, -20_000, 50_000);
     expect(await own(END_JULY)).toEqual({ a: 70_000, b: 70_000 });
   });
@@ -65,6 +67,12 @@ describe('balancesAt', () => {
     await tx('a', END_JULY - 100, -1_000, 50_000);
     expect(await own(END_JULY)).toEqual({ a: 50_000 });
     expect(await own(SYNCED + 1)).toEqual({ a: 50_000 });
+  });
+
+  it('coverage starting exactly at the end → every op from the end on is covered, the fallback is exact', async () => {
+    await account('a', 50_000, { oldest: END_JULY });
+    await tx('a', END_JULY + 100, -20_000, 50_000);
+    expect(await own(END_JULY)).toEqual({ a: 70_000 });
   });
 
   it('coverage starting after the end, or no sync state → null, counted in missing and left out of totals', async () => {
