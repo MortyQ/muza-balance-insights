@@ -45,10 +45,16 @@ export async function openLibsql(url: string, opts: OpenOptions = {}): Promise<L
     timeout: 5_000,
     ...(opts.encryptionKey ? { encryptionKey: opts.encryptionKey } : {}),
   });
-  if (isFile) {
-    await client.execute('PRAGMA journal_mode = WAL');
+  try {
+    if (isFile) {
+      await client.execute('PRAGMA journal_mode = WAL');
+    }
+    await client.execute('PRAGMA foreign_keys = ON');
+  } catch (err) {
+    // A wrong or missing key fails here. Close, or the file stays open — on Windows locked (EBUSY for a later delete).
+    client.close();
+    throw err;
   }
-  await client.execute('PRAGMA foreign_keys = ON');
 
   return {
     async execute(stmt) {
