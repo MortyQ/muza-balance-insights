@@ -1,7 +1,7 @@
 // Spending / income aggregates over the real database — the core of the phase 5 MCP tools.
 // All amounts are minor units of the ACCOUNT currency; different currencies are never summed.
 // Periods are local_date ranges [from, to], inclusive. No counterparty names or descriptions in any output.
-import { ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
+import { CROSSING_CTE, CROSSING_JOIN, ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
 import { CATEGORY } from './categories.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
@@ -115,8 +115,7 @@ function accountWhere(f: Filters, where: string[], args: Array<string | number>)
 const excludedTransferSql = (f: Filters) =>
   `(x.key IS NULL AND ${f.participantId === undefined ? `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')` : '(t.is_internal_transfer = 1)'})`;
 
-/** Rows crossing to a disabled account get their ordinary category (accounts.ts crossingCategories); one `?`. */
-const CROSSING_JOIN = 'LEFT JOIN json_each(?) x ON x.key = t.id';
+/** Rows crossing to a disabled account get their ordinary category (accounts.ts crossingCategories). */
 const CATEGORY_SQL = 'COALESCE(x.value, t.category)';
 
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
@@ -222,7 +221,8 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   if (q.category) (outer.push('category = ?'), outerArgs.push(q.category));
 
   const rs = await db.execute({
-    sql: `WITH base AS (
+    sql: `WITH ${CROSSING_CTE},
+          base AS (
             SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
                    ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
@@ -427,7 +427,8 @@ export async function incomeSummary(
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   accountWhere(q, where, args);
   const rs = await db.execute({
-    sql: `SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount,
+    sql: `WITH ${CROSSING_CTE}
+          SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount,
                  CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
           FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
           WHERE ${where.join(' AND ')}`,

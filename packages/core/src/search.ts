@@ -2,7 +2,7 @@
 // Text matching runs in JS (SQLite LOWER/LIKE do not fold Cyrillic case) over description + counter_name,
 // so a full name in the query still matches; the answer shows names only as initials (displayCounterName),
 // unless the user turned on settings.reveal_full_names.
-import { ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
+import { CROSSING_CTE, CROSSING_JOIN, ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
 import type { Db } from './db.ts';
 import { toMajor } from './currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
@@ -129,10 +129,11 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   const rs = await db.execute({
-    sql: `SELECT t.id, t.account_id, t.time, t.description, t.counter_name, t.mcc, t.amount, t.operation_amount,
+    sql: `WITH ${CROSSING_CTE}
+          SELECT t.id, t.account_id, t.time, t.description, t.counter_name, t.mcc, t.amount, t.operation_amount,
                  t.currency_code AS op_currency, a.currency_code AS currency, COALESCE(x.value, t.category) AS category, t.scope,
                  t.is_internal_transfer = 1 AND x.key IS NULL AS internal, t.hold
-          FROM transactions t JOIN accounts a ON a.id = t.account_id LEFT JOIN json_each(?) x ON x.key = t.id
+          FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
           WHERE ${where.join(' AND ')}
           ORDER BY t.time DESC, t.id`,
     args,

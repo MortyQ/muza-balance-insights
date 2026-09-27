@@ -105,6 +105,11 @@ async function main(): Promise<void> {
       log.info(`Пропущены банки с нулевым балансом, ещё не импортированные (${defaults.skippedJars.length}) — синк только через --account <id>:`);
       for (const j of defaults.skippedJars) log.info(`  ${labels.get(j.id) ?? 'банка'} — --account ${j.id}`);
     }
+    if (!values.account && defaults.disabled.length > 0) {
+      // Labels only (type/currency): never a name, IBAN or card number.
+      log.info(`Выключены в приложении, не загружаются (${defaults.disabled.length}) — синк только через --account <id>:`);
+      for (const id of defaults.disabled) log.info(`  ${labels.get(id) ?? 'счёт'} — --account ${id}`);
+    }
 
     const plan = await planHistory(ctx, { sinceSec, accountIds });
     const notImported = [...plan].filter(([, w]) => w.length === 0 && sinceSec === null).map(([id]) => id);

@@ -10,6 +10,8 @@ import { kyivStartOfDay, toKyivDate } from '../src/format.ts';
 import { exchangeRates } from '../src/fx.ts';
 import { listConnections } from '../src/participants.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
+import { AUTO_TOPUP_DESCRIPTIONS, GENERIC_TRANSFER_DESCRIPTION, OWN_TRANSFER_DESCRIPTIONS } from '../src/providers/monobank/descriptions.ts';
+import { monobankRules } from '../src/providers/monobank/rules.ts';
 import { rederiveCore } from '../src/rederive.ts';
 import { searchTransactions } from '../src/search.ts';
 import { balancesAt, firstDataDate, getBalances, getSyncStatus } from '../src/status.ts';
@@ -256,6 +258,114 @@ describe('statistics without disabled accounts (variant A for transfers)', () =>
     const p2p = await searchTransactions(db, { ...q, category: 'переводы людям' }, NOW);
     expect(p2p.transactions.map((t) => t.id)).toEqual(['to-white']);
     expect((await searchTransactions(db, { ...q, category: 'свои переводы' }, NOW)).total).toBe(0);
+  });
+
+  it('both sides disabled: the pair vanishes; her side of a transfer from them is an ordinary credit', async () => {
+    await setAccountEnabled(db, 'white', false);
+    await setAccountEnabled(db, 'black', false);
+    expect(net(await spendingSummary(db, q, NOW))).toEqual({});
+    expect(income(await incomeSummary(db, q, NOW))).toEqual({ named_sender: 4_000 });
+    expect((await searchTransactions(db, q, NOW)).transactions.map((t) => t.id).sort()).toEqual(['her-in', 'her-in2']);
+  });
+
+  it('a cancelled crossing row counts nowhere; a crossing hold counts like any hold', async () => {
+    await insertTx('hold-out', 'black', T + 6000, -7_000, 4829, 'Вигаданий переказ', { hold: 1 });
+    await insertTx('hold-in', 'white', T + 6002, 7_000, 4829, 'Вигаданий переказ', { hold: 1 });
+    await rederiveCore(db);
+    expect((await rows(`SELECT transfer_pair_id FROM transactions WHERE id = 'hold-out'`))[0]?.transfer_pair_id).toBe('hold-in');
+    // Cancelled after the marks were made: the stored pair stays, the row must still count nowhere.
+    await db.execute(`UPDATE transactions SET is_cancelled = 1 WHERE id = 'to-white'`);
+    await setAccountEnabled(db, 'white', false);
+    expect(net(await spendingSummary(db, q, NOW))).toEqual({ продукты: 50_000, 'переводы людям': 7_000 });
+    expect((await searchTransactions(db, q, NOW)).transactions.map((t) => t.id)).not.toContain('to-white');
+  });
+
+  it('a category override applies to a crossing row as to any ordinary operation', async () => {
+    await db.execute(`UPDATE transactions SET counter_name = 'Вигаданий Отримувач' WHERE id = 'to-white'`);
+    await db.execute(`INSERT INTO category_overrides (pattern, match_type, category) VALUES ('Вигаданий Отримувач', 'exact', 'цветы и подарки')`);
+    await rederiveCore(db);
+    expect((await rows(`SELECT category FROM transactions WHERE id = 'to-white'`))[0]?.category).toBe('свои переводы');
+    await setAccountEnabled(db, 'white', false);
+    expect(net(await spendingSummary(db, q, NOW))).toEqual({ продукты: 50_000, 'цветы и подарки': 10_000 });
+  });
+});
+
+describe('transfers made after the toggle: no pair, marked `text` by the provider rule', () => {
+  const q = { from: '2026-02-01', to: '2026-02-28' };
+  const NOW = kyivStartOfDay('2026-03-15');
+  const T = kyivStartOfDay('2026-02-10') + 12 * 3600;
+  let seq = 0;
+  const tx = (id: string, accountId: string, amount: number, description: string) =>
+    db.execute({
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, raw_json, synced_at)
+            VALUES (?, ?, ?, '2026-02-10', ?, 4829, 0, ?, 980, '{}', 0)`,
+      args: [id, accountId, T + 1000 * ++seq, description, amount],
+    });
+  const net = (s: { groups: Array<{ key: string; net: number }> }) => Object.fromEntries(s.groups.map((g) => [g.key, g.net]));
+
+  beforeEach(async () => {
+    seq = 0;
+    db = await memoryDb();
+    const card = (id: string, type: string, currency: number) =>
+      insertAccountRow(db, { id, kind: 'card', type, currency_code: currency, balance: 0, credit_limit: 0, updated_at: 0 });
+    await card('black', 'black', 980);
+    await card('usdblack', 'black', 840);
+    await card('white', 'white', 980);
+    await card('fop', 'fop', 980);
+    await insertAccountRow(db, { id: 'jarOff', kind: 'jar', currency_code: 980, title: 'Вигадана мрія', balance: 100, updated_at: 0 });
+    await insertAccountRow(db, { id: 'jarOn', kind: 'jar', currency_code: 980, title: 'Вигадана друга', balance: 100, updated_at: 0 });
+    await tx('r-jar-tpl', 'black', -1_000, 'Регулярне поповнення «Вигадана мрія»');
+    await tx('r-jar-title', 'black', -2_000, 'Вигадана мрія');
+    await tx('r-jar-on', 'black', -4_000, 'Регулярне поповнення «Вигадана друга»');
+    await tx('r-white', 'black', -8_000, 'На білу картку');
+    await tx('r-fop', 'black', 16_000, 'З гривневого рахунку ФОП');
+    await tx('r-black-amb', 'jarOn', 32_000, 'З Чорної картки');
+    await tx('r-topup', 'jarOn', 64_000, '10%');
+    await rederiveCore(db);
+    for (const id of ['white', 'fop', 'usdblack', 'jarOff']) await setAccountEnabled(db, id, false);
+  });
+
+  it('the fixture: every row is a single-row own transfer (text)', async () => {
+    const marks = await rows(`SELECT DISTINCT transfer_rule, transfer_pair_id, is_internal_transfer FROM transactions`);
+    expect(marks).toEqual([{ transfer_rule: 'text', transfer_pair_id: null, is_internal_transfer: 1 }]);
+  });
+
+  it('a text that names a disabled jar (template or title), card type or FOP account: an ordinary operation', async () => {
+    expect(net(await spendingSummary(db, q, NOW))).toEqual({ 'переводы людям': 11_000 });
+    const inc = await incomeSummary(db, q, NOW);
+    expect(inc.groups.map((g) => [g.key, g.total])).toEqual([['transfer', 16_000]]);
+    const found = await searchTransactions(db, { ...q, category: 'свои переводы' }, NOW);
+    expect(found.transactions.map((t) => t.id).sort()).toEqual(['r-black-amb', 'r-jar-on', 'r-topup']);
+  });
+
+  it('documented limits: an enabled counterpart, an ambiguous one (a black card enabled, another not) or none named stay internal', async () => {
+    // r-jar-on: the jar is enabled. r-black-amb: «З Чорної картки» fits black (on) and usdblack (off). r-topup: «10%» names no card.
+    const s = await searchTransactions(db, q, NOW);
+    expect(Object.fromEntries(s.transactions.map((t) => [t.id, t.internal]))).toEqual({
+      'r-jar-tpl': false, 'r-jar-title': false, 'r-jar-on': true, 'r-white': false, 'r-fop': false, 'r-black-amb': true, 'r-topup': true,
+    });
+    // Once no enabled black card is left, the black text is unambiguous too.
+    await setAccountEnabled(db, 'black', false);
+    const after = await searchTransactions(db, q, NOW);
+    expect(after.transactions.find((t) => t.id === 'r-black-amb')).toMatchObject({ internal: false, category: 'поступления' });
+  });
+});
+
+describe('monobank ownTransferCounterpart (pure)', () => {
+  const ctx = { jarTitles: new Set(['Вигадана мрія']) };
+  const of = (description: string) => monobankRules.ownTransferCounterpart({ description, mcc: 4829, amount: -1 }, ctx);
+
+  it('every own-transfer text names the other side; jar templates and titles name the jar', () => {
+    for (const d of OWN_TRANSFER_DESCRIPTIONS) expect(of(d)).toMatchObject({ kind: 'card' });
+    expect(of('На білу картку')).toEqual({ kind: 'card', type: 'white', currencyCode: null });
+    expect(of('З доларового рахунку ФОП для переказу на картку')).toEqual({ kind: 'card', type: 'fop', currencyCode: 840 });
+    expect(of('Часткове зняття банки «Інша назва»')).toEqual({ kind: 'jar', title: 'Інша назва' });
+    expect(of(' Вигадана мрія ')).toEqual({ kind: 'jar', title: 'Вигадана мрія' });
+  });
+
+  it('auto top-ups, the generic text and anything else name nothing', () => {
+    for (const d of [...AUTO_TOPUP_DESCRIPTIONS, GENERIC_TRANSFER_DESCRIPTION, 'Вигаданий Магазин']) expect(of(d)).toBeNull();
+    expect(monobankRules.ownTransferCounterpart({ description: 'На білу картку', mcc: 5411, amount: -1 }, ctx)).toBeNull();
   });
 });
 

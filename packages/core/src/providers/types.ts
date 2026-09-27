@@ -22,6 +22,12 @@ export interface RuleContext {
   jarTitles: ReadonlySet<string>;
 }
 
+/**
+ * The other side of a single-row own transfer, as its text names it: a jar by title, or a card / account by the
+ * provider's type (and currency, when the text says it; null = any).
+ */
+export type OwnTransferCounterpart = { kind: 'jar'; title: string } | { kind: 'card'; type: string; currencyCode: number | null };
+
 /** Categories a provider may suggest from the shape of an operation; the domain maps them to its names. */
 export type CategoryHint = 'installments' | 'taxes' | 'income' | 'p2p';
 
@@ -57,6 +63,8 @@ export interface ProviderRules {
   isTransferLike(tx: RuleTx): boolean;
   /** A bank-generated text of a transfer between the owner's own accounts (the single-row `text` rule). */
   isOwnTransferText(tx: RuleTx, ctx: RuleContext): boolean;
+  /** What an own-transfer text says about the other side; null = it names none (e.g. a jar's auto top-up). */
+  ownTransferCounterpart(tx: RuleTx, ctx: RuleContext): OwnTransferCounterpart | null;
   /** Like isOwnTransferText, plus generic transfer texts that may also be used for other people (diagnostics only). */
   isServiceTransferText(tx: RuleTx, ctx: RuleContext): boolean;
   /** A jar-side automatic top-up (both halves of a `jar_reversal`). */
