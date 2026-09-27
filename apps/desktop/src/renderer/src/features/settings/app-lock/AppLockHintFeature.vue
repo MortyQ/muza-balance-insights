@@ -18,7 +18,7 @@ const { visible, dismiss } = useLockHint();
       subtitle="Закроет приложение, когда ты отошёл от компьютера. Включается в настройках."
     />
     <div class="flex gap-2">
-      <VButton text="Включить" @click="router.push({ name: ROUTE.settings })" />
+      <VButton text="Включить" @click="router.push({ name: ROUTE.settings, query: { section: 'lock' } })" />
       <VButton variant="neutral" text="Не сейчас" @click="dismiss" />
     </div>
   </div>

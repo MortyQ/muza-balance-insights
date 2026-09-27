@@ -91,9 +91,17 @@ describe('About', () => {
     for (const s of [DISCLAIMER, COPYRIGHT, REPO]) expect(t.detail).toContain(s);
   });
 
+  it('settings «О программе» shows license, source and author from about.ts', async () => {
+    const about = await import('../src/shared/about.ts');
+    expect(about.LICENSE).toBe('MIT');
+    expect(about.AUTHOR).toBe('MortyQ');
+    const src = fs.readFileSync(fileURLToPath(new URL('../src/renderer/src/widgets/settings/components/AboutApp.vue', import.meta.url)), 'utf8');
+    for (const name of ['LICENSE', 'REPO', 'AUTHOR']) expect(src, name).toContain(`{{ ${name} }}`);
+  });
+
   it('the disclaimer is the agreed text, and the renderer shows the same constant (connect screen and settings)', () => {
     expect(DISCLAIMER).toBe('Неофициальное приложение, не связано с Monobank.');
-    for (const file of ['features/settings/people/ConnectFirstFeature.vue', 'widgets/about-app/AboutApp.vue']) {
+    for (const file of ['features/settings/people/ConnectFirstFeature.vue', 'widgets/settings/components/AboutApp.vue']) {
       const src = fs.readFileSync(fileURLToPath(new URL(`../src/renderer/src/${file}`, import.meta.url)), 'utf8');
       expect(src, file).toMatch(/import \{[^}]*\bDISCLAIMER\b[^}]*\} from '@contract\/about\.ts'/);
       expect(src, file).toMatch(/\{\{ DISCLAIMER \}\}/);

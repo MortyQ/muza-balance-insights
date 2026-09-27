@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { useId } from 'vue';
 import { LOCK_TRIGGERS, type LockTrigger } from '@contract/lock.ts';
-import { VButton, VCard, VInfoNotice, VSwitch } from '@/shared/ui';
+import { VButton, VInfoNotice, VSwitch } from '@/shared/ui';
 import PinField from './components/PinField.vue';
 import { useLockSettings } from './composables/useLockSettings.ts';
 import { SUBMIT_TEXT, TRIGGER_LABELS } from './constants.ts';
+import SettingsList from '../shared/components/SettingsList.vue';
+import SettingsRow from '../shared/components/SettingsRow.vue';
+import SettingsSection from '../shared/components/SettingsSection.vue';
 import { isChecked, restoreSwitch } from '../shared/utils.ts';
 
+const id = useId();
 const { view, mode, current, next, repeat, busy, error, open, submit, disableWithTouchId, setTrigger, setTouchId, lockNow } = useLockSettings();
 
 async function onTrigger(trigger: LockTrigger, e: Event): Promise<void> {
@@ -22,28 +27,35 @@ async function onTouchId(e: Event): Promise<void> {
 </script>
 
 <template>
-  <VCard title="Блокировка" padding="md">
-    <div v-if="view" class="flex flex-col gap-4">
-      <p class="text-sm text-foreground-muted">
-        PIN закрывает приложение от тех, кто сядет за твой незаблокированный компьютер. Это замок на входе, а не шифрование: база
-        шифруется отдельно, ключом из системного хранилища, и её ключ доступен твоей учётной записи и без PIN. Забытый PIN не
-        восстановить — только удалить все данные.
-      </p>
-
-      <div v-if="!view.enabled && mode === 'idle'">
-        <VButton text="Включить блокировку" icon="lucide:lock" @click="open('enable')" />
-      </div>
+  <SettingsSection
+    title="Блокировка"
+    description="PIN закрывает приложение от тех, кто сядет за твой незаблокированный компьютер. Это замок на входе, а не шифрование: база шифруется отдельно, ключом из системного хранилища, и её ключ доступен твоей учётной записи и без PIN."
+    note="Забытый PIN не восстановить — только удалить все данные."
+  >
+    <template v-if="view">
+      <SettingsList v-if="!view.enabled && mode === 'idle'">
+        <SettingsRow title="Блокировка выключена" hint="Приложение открывается без PIN.">
+          <VButton text="Включить блокировку" icon="lucide:lock" @click="open('enable')" />
+        </SettingsRow>
+      </SettingsList>
 
       <template v-if="view.enabled && mode === 'idle'">
-        <fieldset class="flex flex-col gap-2">
-          <legend class="mb-1 font-semibold">Когда блокировать</legend>
-          <VSwitch v-for="t in LOCK_TRIGGERS" :key="t" :model-value="view.triggers[t]" :disabled="busy" @change="onTrigger(t, $event)">
-            {{ TRIGGER_LABELS[t] }}
-          </VSwitch>
-        </fieldset>
-        <VSwitch v-if="view.touchIdAvailable" :model-value="view.touchId" :disabled="busy" @change="onTouchId($event)">
-          Разблокировать по Touch ID
-        </VSwitch>
+        <SettingsList heading="Когда блокировать">
+          <SettingsRow v-for="t in LOCK_TRIGGERS" :key="t" :title="TRIGGER_LABELS[t]" :label-for="`${id}-${t}`">
+            <VSwitch
+              :id="`${id}-${t}`"
+              :model-value="view.triggers[t]"
+              :disabled="busy"
+              role="switch"
+              @change="onTrigger(t, $event)"
+            />
+          </SettingsRow>
+        </SettingsList>
+        <SettingsList v-if="view.touchIdAvailable">
+          <SettingsRow title="Разблокировать по Touch ID" hint="Системный диалог сам предложит пароль Mac." :label-for="`${id}-touch-id`">
+            <VSwitch :id="`${id}-touch-id`" :model-value="view.touchId" :disabled="busy" role="switch" @change="onTouchId($event)" />
+          </SettingsRow>
+        </SettingsList>
         <div class="flex flex-wrap gap-2">
           <VButton variant="neutral" icon="lucide:lock" text="Заблокировать сейчас" @click="lockNow" />
           <VButton variant="neutral" text="Сменить PIN" @click="open('change')" />
@@ -51,7 +63,11 @@ async function onTouchId(e: Event): Promise<void> {
         </div>
       </template>
 
-      <form v-if="mode !== 'idle'" class="flex flex-col gap-3 rounded-lg border border-border-subtle p-4" @submit.prevent="submit">
+      <form
+        v-if="mode !== 'idle'"
+        class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
+        @submit.prevent="submit"
+      >
         <PinField v-if="mode !== 'enable'" v-model="current" label="Текущий PIN" autofocus />
         <template v-if="mode !== 'disable'">
           <PinField v-model="next" label="Новый PIN — от 4 до 8 цифр" :autofocus="mode === 'enable'" />
@@ -72,6 +88,6 @@ async function onTouchId(e: Event): Promise<void> {
       </form>
 
       <VInfoNotice v-if="error" role="alert" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
-    </div>
-  </VCard>
+    </template>
+  </SettingsSection>
 </template>

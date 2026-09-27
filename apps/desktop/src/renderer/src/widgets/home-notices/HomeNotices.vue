@@ -29,6 +29,6 @@ const text = computed(() =>
   />
   <div v-if="showNoToken" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice :card="false" icon="lucide:plug" tone="warning" :subtitle="text" />
-    <VButton text="Ввести токен" @click="router.push({ name: ROUTE.settings })" />
+    <VButton text="Ввести токен" @click="router.push({ name: ROUTE.settings, query: { section: 'connections' } })" />
   </div>
 </template>

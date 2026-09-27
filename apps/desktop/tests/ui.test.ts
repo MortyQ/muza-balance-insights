@@ -61,4 +61,16 @@ describe('ui components copied from muzakit', () => {
       expect((read(f).split('\n', 1)[0] ?? '').includes('copied from muzakit'), f).toBe(!own);
     }
   });
+
+  it('VSwitch shows keyboard focus on its track (the real input is visually hidden)', () => {
+    const scss = read(path.join(uiDir, 'styles/components/inputs/vswitch.scss'));
+    expect(scss).toMatch(/\.v-switch__input:focus-visible\s*\+\s*\.v-switch__track\s*\{[^}]*outline:/);
+  });
+
+  it('every exported component has a row in ui/README.md', () => {
+    const readme = read(path.join(uiDir, 'README.md'));
+    const exported = [...read(path.join(uiDir, 'index.ts')).matchAll(/export \{ default as (V\w+)/g)].map((m) => m[1] ?? '');
+    expect(exported).toContain('VSwitch');
+    for (const name of exported) expect(readme, name).toMatch(new RegExp(`\`[\\w/]*${name}\``));
+  });
 });

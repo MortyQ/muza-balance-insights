@@ -1,4 +1,4 @@
-/* copied from muzakit/libs/ui/src (2026-09-26); no changes */
+/* copied from muzakit/libs/ui/src (2026-09-26); changes: ui/README.md */
 /* ============================================
    SWITCH WRAPPER (root label element)
    ============================================ */
@@ -36,6 +36,12 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Ours: the input above is clipped, so keyboard focus shows on the track. */
+.v-switch__input:focus-visible + .v-switch__track {
+  outline: 2px solid var(--ui-ring);
+  outline-offset: 2px;
 }
 
 /* ============================================
