@@ -57,7 +57,7 @@
     «Пришло» обычно около нуля — пополнение с карты не приход.
 - Итоговая карта показывает гривны: сумма и полосы. Остальные валюты — одной строкой под суммой («+ 1 250,00 $ ·
   320,00 €»); у валютного счёта своя карта в своей валюте.
-- **Доступные месяцы**: от месяца `MIN(oldest_synced_time)` по всем счетам до текущего месяца по Киеву (одинаково для
+- **Доступные месяцы**: от месяца `DataStatus.dataFrom` (`MIN(oldest_synced_time)`) по всем счетам до текущего месяца по Киеву (одинаково для
   семьи и для человека). Начало и конец могут быть неполными; под названием месяца — «с 14 июня» / «по 27 сен» /
   «весь месяц».
 
@@ -70,7 +70,7 @@
   - `totals` — только по счетам с данными, плюс `missing` — сколько счетов без данных.
 - `getBalances` не меняется (им пользуется MCP).
 - Отдельных функций прихода и трат не нужно: main вызывает `incomeSummary` и `spendingSummary`.
-- Новая функция `firstDataMonth(db)` в `status.ts`: `'YYYY-MM'` по Киеву от `MIN(oldest_synced_time)` или `null`.
+- Новая функция `firstDataDate(db)` в `status.ts`: дата по Киеву (`YYYY-MM-DD`) от `MIN(oldest_synced_time)` или `null`.
 - Тесты ядра (`packages/core/tests/balances-at.test.ts`):
   - остаток из последней операции месяца;
   - обратный расчёт при пустом `balance` и при двух операциях в одну секунду; оба способа совпадают на согласованных
@@ -79,7 +79,7 @@
   - нет операций после конца месяца → текущий остаток; нет покрытия → `null`, `missing` считает его;
   - кредитка: текущий лимит;
   - `participantId` фильтрует счета;
-  - `firstDataMonth`: граница месяца по Киеву (операция 31-го в 23:30 UTC — уже следующий месяц по Киеву).
+  - `firstDataDate`: дата по Киеву (31-е, 23:30 UTC — уже 1-е следующего месяца по Киеву).
 
 ## Main и IPC (`apps/desktop`)
 
@@ -119,10 +119,11 @@
   - стили в `styles/components/inputs/vmonthpicker.scss` на `--ui-*`, строка в `shared/ui/README.md` («Ours, not
     copied»), экспорт в `index.ts`;
   - тест чистых преобразований `'YYYY-MM'` ⇄ `CalendarDate` рядом с `calendarDate.test.ts`.
-- **`entities/period`** (новая сущность): Pinia-store `useMonthStore` — `month` (по умолчанию текущий месяц по Киеву),
-  `thisMonth`, `firstMonth` (из `DataStatus`). `SpendingFeature` берёт месяц отсюда вместо своего `ref`; его стрелки
-  блокируются на `firstMonth` и `thisMonth`.
-- `DataStatus` получает `firstMonth: string | null` (main, `firstDataMonth`).
+- **`entities/period`** (новая сущность): Pinia-store `useMonthStore` — `month` (по умолчанию текущий месяц по Киеву) и
+  `thisMonth`. Слайсы сущностей друг друга не импортируют, поэтому нижнюю границу фичи берут сами из
+  `syncStatus.status.dataFrom`. `SpendingFeature` берёт месяц отсюда вместо своего `ref`; его стрелки блокируются на
+  первом месяце данных и на текущем.
+- `DataStatus` получает `dataFrom: string | null` (main, `firstDataDate`) — пара к `dataUntil`.
 - **`entities/account`** (новая сущность), `components/BalanceCard.vue` — только отображение:
   - свойства: `title`, `caption`, `amount` (строка), `bottom`, `net` (число | null) + `netText`, `accents` (цвета для
     кругов в углу), `dim`;
