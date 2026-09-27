@@ -104,6 +104,7 @@ describe('Importer', () => {
         dbKey: DB_KEY,
         connections: [{ connectionId: 1, provider: 'monobank', token: TOKEN }],
         sinceSec: kyivStartOfDay('2025-12-31'),
+        rereadWindow: false,
       },
     ]);
     expect(sent).toEqual([{ phase: 'starting', resumed: false }]);
@@ -435,6 +436,120 @@ describe('Importer', () => {
     await importer.start(1);
     importer.shutdown();
     expect(children[0]!.killed).toBe(true);
+    expect(fs.existsSync(job())).toBe(true);
+  });
+});
+
+describe('Importer: «Автообновление»', () => {
+  const MONTH_START = kyivStartOfDay('2026-03-01');
+
+  it('from the start of this Kyiv month, one whole window re-read; no job file; every state marked auto', async () => {
+    const { importer, children, sent } = setup();
+    expect(await importer.startAuto()).toEqual({ started: true });
+    expect(children[0]!.sent[0]).toMatchObject({ type: 'start', sinceSec: MONTH_START, rereadWindow: true });
+    expect(fs.existsSync(job())).toBe(false);
+    expect(importer.autoRunning).toBe(true);
+    children[0]!.reply({ type: 'progress', progress: { phase: 'accounts' } });
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 3, failed: [] });
+    expect(sent).toEqual([
+      { phase: 'starting', resumed: false, auto: true },
+      { phase: 'accounts', auto: true },
+      { phase: 'done', windowsTotal: 1, transactions: 3, failed: [], auto: true },
+    ]);
+    expect(importer.lastProgress).toEqual(sent.at(-1));
+    expect(importer.autoRunning).toBe(false);
+  });
+
+  it('a user import is not marked auto and keeps rereadWindow off', async () => {
+    const { importer, children, sent } = setup();
+    await importer.start(1);
+    expect(children[0]!.sent[0]).toMatchObject({ rereadWindow: false });
+    expect(importer.autoRunning).toBe(false);
+    expect(sent).toEqual([{ phase: 'starting', resumed: false }]);
+  });
+
+  it('not while an import runs, and not while an unfinished one waits to resume — its job file is untouched', async () => {
+    const a = setup();
+    await a.importer.start(1);
+    expect(await a.importer.startAuto()).toEqual({ started: false, reason: 'running' });
+    expect(a.children).toHaveLength(1);
+
+    const b = setup({ stored: 'memory' });
+    const saved = JSON.stringify({ sinceSec: 1_700_000_000, depth: 3, startedAt: 1 });
+    fs.writeFileSync(job(), saved);
+    expect(await b.importer.startAuto()).toEqual({ started: false, reason: 'running' });
+    expect(b.children).toHaveLength(0);
+    expect(fs.readFileSync(job(), 'utf8')).toBe(saved);
+  });
+
+  it('connections without a token are skipped silently: no prompt, nothing in done; none at all → nothing starts', async () => {
+    const { importer, children, sent } = setup({
+      connections: [
+        { connectionId: 1, token: TOKEN, stored: 'secure' },
+        { connectionId: 2, token: null },
+      ],
+    });
+    await importer.startAuto();
+    expect(children[0]!.sent[0]).toMatchObject({ connections: [{ connectionId: 1 }] });
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, kind: 'auth', message: 'Токен не принят' }] });
+    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, message: 'Токен не принят' }], auto: true });
+
+    const none = setup({ token: null });
+    expect(await none.importer.startAuto()).toEqual({ started: false, reason: 'no-token' });
+    expect(none.sent).toEqual([]);
+    expect(none.children).toHaveLength(0);
+  });
+
+  it('database unavailable → nothing starts', async () => {
+    const { importer, children } = setup({ db: null });
+    expect(await importer.startAuto()).toEqual({ started: false, reason: 'db-unavailable' });
+    expect(children).toHaveLength(0);
+  });
+
+  it('a user start replaces it: the auto worker is killed, the user import starts and writes its job', async () => {
+    const { importer, children, sent, logs } = setup();
+    await importer.startAuto();
+    expect(await importer.start(3)).toEqual({ started: true });
+    expect(children[0]!.killed).toBe(true);
+    expect(children).toHaveLength(2);
+    expect(children[1]!.sent[0]).toMatchObject({ sinceSec: sinceForDepth(3, NOW), rereadWindow: false });
+    expect(fs.existsSync(job())).toBe(true);
+    expect(sent.at(-1)).toEqual({ phase: 'starting', resumed: false });
+    expect(importer.autoRunning).toBe(false);
+    expect(logs).toContain('import: auto refresh replaced by a user import');
+  });
+
+  it('a user start replaces a pending auto restart too; no restart happens afterwards', async () => {
+    const { importer, children, timers } = setup();
+    await importer.startAuto();
+    children[0]!.exit(); // crash → restart pending
+    expect(importer.autoRunning).toBe(true);
+    expect(await importer.start(1)).toEqual({ started: true });
+    expect(children).toHaveLength(2);
+    children[1]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [] });
+    children[1]!.exit();
+    expect(timers).toHaveLength(1); // only the auto restart that was dropped
+    expect(fs.existsSync(job())).toBe(false);
+  });
+
+  it('a crashed auto run restarts as auto, still without a job file', async () => {
+    const { importer, children, sent, timers } = setup();
+    await importer.startAuto();
+    children[0]!.exit();
+    expect(sent.at(-1)).toEqual({ phase: 'retry', reason: 'crash', attempt: 1, inSec: 60, auto: true });
+    timers.at(-1)!();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(children[1]!.sent[0]).toMatchObject({ rereadWindow: true, sinceSec: MONTH_START });
+    expect(sent.at(-1)).toEqual({ phase: 'starting', resumed: true, auto: true });
+    expect(fs.existsSync(job())).toBe(false);
+  });
+
+  it('cancel of an auto run → cancelled (auto); a user job file written before is not removed', async () => {
+    const { importer, children, sent } = setup();
+    await importer.startAuto();
+    fs.writeFileSync(job(), '{}'); // not the auto run's: it must stay
+    children[0]!.reply({ type: 'error', kind: 'cancelled', message: 'x' });
+    expect(sent.at(-1)).toEqual({ phase: 'cancelled', auto: true });
     expect(fs.existsSync(job())).toBe(true);
   });
 });

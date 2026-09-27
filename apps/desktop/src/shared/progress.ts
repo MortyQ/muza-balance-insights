@@ -29,7 +29,7 @@ export type ImportFailure = { connectionId: number; message: string };
 
 export type RetryReason = 'network' | 'server' | 'rate-limit' | 'crash';
 
-export type ImportProgress =
+export type ImportProgress = (
   | { phase: 'idle' }
   /** An unfinished import exists but these connections' tokens were only in memory: the UI asks for them. */
   | { phase: 'needs-token'; connectionIds: number[] }
@@ -42,7 +42,11 @@ export type ImportProgress =
   /** `failed`: connections that did not import (a rejected or missing token …); the others did. */
   | { phase: 'done'; windowsTotal: number; transactions: number; failed: ImportFailure[] }
   | { phase: 'cancelled' }
-  | { phase: 'error'; message: string };
+  | { phase: 'error'; message: string }
+) & {
+  /** Started by «Автообновление», not by the user: the UI shows it quietly. On every state of that run. */
+  auto?: true;
+};
 
 /** `db-unavailable`: the database key is not readable right now (DbAccess not ready) — nothing to import into. */
 export type StartImportResult = { started: true } | { started: false; reason: 'running' | 'no-token' | 'db-unavailable' };

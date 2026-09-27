@@ -3,6 +3,8 @@
 // final message arrives; a worker that dies without one is restarted on the shared retry policy (src/shared/retry.ts).
 // All connections import in one job (one worker, one job file). Tokens go to the worker in the `start` message only;
 // nothing sent to the renderer or logged can contain them. A connection without a token is skipped and reported.
+// «Автообновление» (startAuto) is the same run, quieter: no job file, no token prompts, every state marked `auto`, and a
+// user's start replaces it.
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
@@ -29,7 +31,7 @@ export function sinceForDepth(depth: ImportDepth, nowSec: number): number {
 }
 
 const JobSchema = z.strictObject({ sinceSec: z.number().int().positive(), depth: z.number().int(), startedAt: z.number().int() });
-type Job = z.infer<typeof JobSchema>;
+type Job = z.infer<typeof JobSchema> & { auto?: true };
 
 export type ChildLike = {
   postMessage(msg: ToWorker): void;
@@ -72,6 +74,8 @@ export class Importer {
   private crashSince: number | null = null;
   private crashAttempt = 0;
   private last: ImportProgress = { phase: 'idle' };
+  // The job of the latest launch (a restart keeps it).
+  private current: Job | null = null;
   private readonly jobFile: string;
 
   constructor(private readonly d: ImporterDeps) {
@@ -88,8 +92,30 @@ export class Importer {
     return this.last;
   }
 
+  /** An automatic refresh is at work (or due to restart). */
+  get autoRunning(): boolean {
+    return this.running && this.current?.auto === true;
+  }
+
+  /** A user's import. An automatic refresh in progress is stopped first: this plan covers its windows too. */
   async start(depth: ImportDepth): Promise<StartImportResult> {
+    if (this.autoRunning) {
+      this.d.log('import: auto refresh replaced by a user import');
+      await this.halt();
+    }
     return this.launch({ sinceSec: sinceForDepth(depth, this.d.nowSec()), depth, startedAt: this.d.nowSec() }, false);
+  }
+
+  /**
+   * «Автообновление»: every connection with a token, from the start of this Kyiv month, each covered account re-reading
+   * one whole window up to now. Not while an import runs or an unfinished one waits to resume. Writes no job file
+   * (the next launch refreshes again) and asks for no token: a connection without one is left to the home notice.
+   */
+  async startAuto(): Promise<StartImportResult> {
+    if (this.running) return { started: false, reason: 'running' };
+    if (this.readJob()) return { started: false, reason: 'running' };
+    const now = this.d.nowSec();
+    return this.launch({ sinceSec: kyivStartOfDay(`${toKyivDate(now).slice(0, 8)}01`), depth: 0, startedAt: now, auto: true }, false);
   }
 
   /**
@@ -115,7 +141,7 @@ export class Importer {
       this.clearRestart();
       this.resetCrashes();
       this.removeJob();
-      this.emit({ phase: 'cancelled' });
+      this.emit({ phase: 'cancelled' }, this.current);
       return;
     }
     if (!this.child || this.cancelling) return;
@@ -133,6 +159,21 @@ export class Importer {
    * so nothing holds the database open. The job is dropped.
    */
   async stop(): Promise<void> {
+    await this.halt();
+    this.current = null;
+    this.removeJob();
+    this.emit({ phase: 'idle' });
+  }
+
+  /** App quit: stop the worker, keep the job file (the import resumes next launch). */
+  shutdown(): void {
+    this.shuttingDown = true;
+    this.clearRestart();
+    this.child?.kill();
+  }
+
+  /** Kill the worker (no cooperative cancel, no restart) and wait for its exit; the job file stays as it is. */
+  private async halt(): Promise<void> {
     this.clearRestart();
     this.resetCrashes();
     const child = this.child;
@@ -143,15 +184,6 @@ export class Importer {
       await exit;
       this.stopping = false;
     }
-    this.removeJob();
-    this.emit({ phase: 'idle' });
-  }
-
-  /** App quit: stop the worker, keep the job file (the import resumes next launch). */
-  shutdown(): void {
-    this.shuttingDown = true;
-    this.clearRestart();
-    this.child?.kill();
   }
 
   /** `only`: the connections to take (resume on launch: those with a saved token); absent — every connection. */
@@ -169,16 +201,20 @@ export class Importer {
     }
     const skipped = all.filter((c) => !connections.some((x) => x.connectionId === c.connectionId)).map((c) => c.connectionId);
     if (connections.length === 0) {
-      if (resumed) this.emit({ phase: 'needs-token', connectionIds: skipped });
+      if (resumed && !job.auto) this.emit({ phase: 'needs-token', connectionIds: skipped });
       return { started: false, reason: 'no-token' };
     }
     // Checked before anything starts: a start the worker would drop must not leave a job and a blocker behind.
-    const start = StartMessage.safeParse({ type: 'start', dbPath: target.dbPath, dbKey: target.dbKey, connections, sinceSec: job.sinceSec });
+    const start = StartMessage.safeParse({ type: 'start', dbPath: target.dbPath, dbKey: target.dbKey, connections,
+      sinceSec: job.sinceSec,
+      rereadWindow: job.auto === true,
+    });
     if (!start.success) {
       this.d.log('import: start message rejected');
       return { started: false, reason: 'db-unavailable' };
     }
-    this.writeJob(job);
+    this.current = job;
+    if (!job.auto) this.writeJob(job);
     this.cancelling = false;
     this.blocker = this.d.powerSaveBlocker.start('prevent-app-suspension');
     const child = this.d.fork();
@@ -197,7 +233,7 @@ export class Importer {
       const msg = parsed.data;
       if (msg.type === 'progress') {
         if (msg.progress.phase === 'windows' && msg.progress.windowsDone > 0) this.resetCrashes();
-        this.emit(msg.progress);
+        this.emit(msg.progress, job);
         return;
       }
       if (msg.type === 'log') {
@@ -210,15 +246,15 @@ export class Importer {
         this.removeJob();
         const failed: ImportFailure[] = [
           ...msg.failed.map(({ connectionId, message }) => ({ connectionId, message })),
-          ...skipped.map((connectionId) => ({ connectionId, message: NO_TOKEN_MESSAGE })),
+          ...(job.auto ? [] : skipped.map((connectionId) => ({ connectionId, message: NO_TOKEN_MESSAGE }))),
         ];
-        this.emit({ phase: 'done', windowsTotal: msg.windowsTotal, transactions: msg.transactions, failed });
+        this.emit({ phase: 'done', windowsTotal: msg.windowsTotal, transactions: msg.transactions, failed }, job);
       } else if (msg.kind === 'cancelled') {
         // A user cancel ends the job; any other error keeps it for the next launch.
         this.removeJob();
-        this.emit({ phase: 'cancelled' });
+        this.emit({ phase: 'cancelled' }, job);
       } else {
-        this.emit({ phase: 'error', message: msg.message });
+        this.emit({ phase: 'error', message: msg.message }, job);
       }
       // The final message is in: nothing else is expected, so main closes the worker itself.
       child.kill();
@@ -235,12 +271,12 @@ export class Importer {
       if (finished || this.shuttingDown || this.stopping) return;
       if (this.cancelling) {
         this.removeJob();
-        this.emit({ phase: 'cancelled' });
+        this.emit({ phase: 'cancelled' }, job);
         return;
       }
       this.scheduleRestart(job);
     });
-    this.emit({ phase: 'starting', resumed });
+    this.emit({ phase: 'starting', resumed }, job);
     child.postMessage(start.data);
     return { started: true };
   }
@@ -253,11 +289,11 @@ export class Importer {
     const delay = nextRetryDelay(this.crashSince, now, this.crashAttempt);
     if (delay === null) {
       this.resetCrashes();
-      this.emit({ phase: 'error', message: CRASH_GIVE_UP_MESSAGE });
+      this.emit({ phase: 'error', message: CRASH_GIVE_UP_MESSAGE }, job);
       return;
     }
     this.d.log(`import: worker died, restart ${this.crashAttempt} in ${delay / 1000} s`);
-    this.emit({ phase: 'retry', reason: 'crash', attempt: this.crashAttempt, inSec: delay / 1000 });
+    this.emit({ phase: 'retry', reason: 'crash', attempt: this.crashAttempt, inSec: delay / 1000 }, job);
     const pauseStart = this.d.nowSec() * 1000;
     this.restartTimer = (this.d.setTimeout ?? setTimeout)(() => {
       this.restartTimer = null;
@@ -278,9 +314,11 @@ export class Importer {
     this.crashAttempt = 0;
   }
 
-  private emit(p: ImportProgress): void {
-    this.last = p;
-    this.d.send(p);
+  /** `job`: the run this state belongs to — an automatic one marks it `auto`. */
+  private emit(p: ImportProgress, job?: Job | null): void {
+    const view: ImportProgress = job?.auto ? { ...p, auto: true } : p;
+    this.last = view;
+    this.d.send(view);
   }
 
   private stopBlocker(): void {
@@ -302,7 +340,9 @@ export class Importer {
     fs.writeFileSync(this.jobFile, JSON.stringify(job));
   }
 
+  /** An automatic run never wrote the file: whatever is there belongs to a user's import. */
   private removeJob(): void {
+    if (this.current?.auto) return;
     fs.rmSync(this.jobFile, { force: true });
   }
 }
