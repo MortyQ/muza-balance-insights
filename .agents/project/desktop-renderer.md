@@ -30,7 +30,7 @@
   - `window.balance` читает только `shared/api/balance.ts`; `balanceApi` вызывают только сегменты `api/` слайсов
     (`api/use<X>Request.ts`, возвращают объект функций) и подписки в `app/listeners.ts`;
   - сегменты слайса: `<Name>Feature.vue` (корень фичи), `api/`, `composables/` (логика, явный `Use<X>Return` в `types.ts`),
-    `components/` (только отображение), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
+    `components/` (только отображение; у сущности компонент может читать и менять свой стор — так `ParticipantFilter`), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
     (чистые функции); страницы — тонкие оболочки над фичами и виджетами;
   - общее состояние — Pinia в `entities`: `participant` (люди, подключения, статусы токенов, выбор «Вся семья / человек» —
     `selectedId`, запоминается в `localStorage` только для удобства), `sync-status` (статус данных и `version`, на который
@@ -51,7 +51,7 @@
 - Простой UI людей (шаг 4e, до редизайна): настройки → «Люди и подключения» (`features/settings/people`: имя и «Переименовать»,
   подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий человек или
   новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран — `ConnectFirstFeature` той же
-  формой с человеком «Я»; на главном — `features/participant-switch` («Вся семья / имена», только если людей больше одного),
+  формой с человеком «Я»; на главном — фильтр «Чьи деньги» `ParticipantFilter` из `entities/participant` («Вся семья / имена», только если людей больше одного),
   траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
