@@ -20,6 +20,13 @@
   - Имя участника (миграция v9, `participants.label_source`): `user` — ввёл пользователь, банк не меняет; `bank` — имя
     владельца из банка (`ProviderAccounts.holderName`, у Monobank `name` из `client-info`) пишется при каждом
     `syncAccounts`, переименование → `user`. Имя — персональные данные: только в базе, не в копии, логах, отчёте recategorize.
+  - Имя владельца от банка хранится и при `user` (миграция v10, `connections.holder_name`, только в базе):
+    `restoreBankLabel` («Взять имя из банка» после переименования) ставит `bank` и сразу берёт `holder_name` первого
+    подключения человека, где оно есть.
+  - Цвета (миграция v10, `packages/core/src/colors.ts`): `participants.color` и `connections.color` — ключ палитры
+    `COLOR_KEYS` (8, категориальная палитра dataviz), уникален отдельно среди людей и среди подключений, NULL = нет
+    (палитра кончилась). Новый ряд — выбранный (занят → `ColorTakenError`) или первый свободный; `setParticipantColor` /
+    `setConnectionColor`. В копию не идёт.
   - Тот же владелец во втором подключении (тот же `external_client_id` или все счета уже в одном другом подключении) —
     `ConnectionDuplicateError` до любой записи.
   - Несколько подключений в одном прогоне — `runPlans`: окна по кругу между подключениями, у каждого свой слот;

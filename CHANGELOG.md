@@ -3,6 +3,16 @@
 What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
 are quoted as they appear in it.
 
+## 0.1.5 — unreleased
+
+### People and connections
+
+- Every person and every connection now has its own colour, so they are easy to tell apart (and, later, on charts).
+  Pick the colours when you add a connection, or change them any time with «Изменить цвет» (change colour) in Settings →
+  «Люди» (people) and «Подключения» (connections). No two people, and no two connections, can share a colour.
+- «Взять имя из банка» (use the name from the bank) now also works after you have renamed someone: tick it in
+  «Переименовать» (rename) and the name from the bank comes back at once.
+
 ## 0.1.4 — 2026-09-27
 
 Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in
