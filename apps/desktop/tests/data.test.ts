@@ -168,12 +168,28 @@ describe('DataService.monthOverview', () => {
     expect(v.total).toMatchObject({ ownFunds: 60_000, missing: 0, income: 0, spending: 5_000 });
   });
 
-  it('a month before coverage: accounts have no data, missing counts them, the total excludes them', async () => {
+  it('a month before coverage: accounts have no data, missing counts them, the total excludes them; coverage never inverts', async () => {
     await account('uah', 'black', 980, 100_000);
     await synced('uah'); // covered from 2026-01-01 on only
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
 
     const v = await svc.monthOverview({ month: '2025-11' });
     expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, income: 0, spending: 0 });
+    // Coverage starts in 2026-01 but the month asked for ends in 2025-11: from > to before clamping — clamp to = from.
+    expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
+
+    const person = await svc.monthOverview({ month: '2025-11', participantId: me });
+    expect(person.accounts).toEqual([{ id: 'uah', label: 'black/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
+  });
+
+  it('a month straddling the account\'s coverage start: balanceAt its last day, own funds from the backward calculation', async () => {
+    await account('uah', 'black', 980, 70_000);
+    await synced('uah'); // oldest = 2026-01-01: coverage starts exactly at December's end
+    await tx('uah', '2026-01-05', -20_000, 'продукты'); // after December: reversed out of the current balance
+
+    const v = await svc.monthOverview({ month: '2025-12' });
+    expect(v.balanceAt).toBe('2025-12-31');
+    expect(v.total).toMatchObject({ ownFunds: 90_000, missing: 0 });
   });
 
   it('the family: each person in the list with label and color, no accounts; a person: their accounts with income/spending', async () => {
@@ -188,6 +204,7 @@ describe('DataService.monthOverview', () => {
 
     const family = await svc.monthOverview({ month: '2026-03' });
     expect(family.accounts).toEqual([]);
+    expect(family.total).toMatchObject({ ownFunds: 70_000, spending: 1_400 });
     expect(family.people).toHaveLength(2);
     const hersView = family.people.find((p) => p.participantId === her)!;
     expect(hersView).toMatchObject({ label: 'Вигадана', color: 'aqua', total: { ownFunds: 20_000, spending: 400 } });
@@ -206,9 +223,12 @@ describe('DataService.monthOverview', () => {
     await account('jar1', null, 980, 1_000);
     await synced('uah');
     await tx('uah', '2026-03-02', -10_000, 'переводы людям');
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
     const out = JSON.stringify([
       await svc.spending({ from: '2026-03-01', to: '2026-03-31' }),
       await svc.monthOverview({ month: '2026-03' }),
+      // The person view too: account labels (jar labels included) go through the same canary check.
+      await svc.monthOverview({ month: '2026-03', participantId: me }),
       await svc.status(),
     ]);
     for (const c of CANARIES) expect(out).not.toContain(c);

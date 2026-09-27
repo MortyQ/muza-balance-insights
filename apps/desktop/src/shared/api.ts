@@ -214,7 +214,7 @@ export type MonthOverview = {
   month: string;
   /** 'now' for the current month, else the month's last day YYYY-MM-DD. */
   balanceAt: 'now' | string;
-  /** Kyiv dates of the month actually covered by data. */
+  /** Kyiv dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
   coverage: { from: string; to: string };
   total: CardTotal;
   /** The whole family only: each person in their own view of transfers. */

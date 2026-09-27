@@ -103,13 +103,14 @@ export class DataService {
     const { from, to } = monthBounds(q.month);
     const endSec = kyivStartOfDay(nextMonthStart(q.month));
     const current = endSec > now;
-    const first = await firstDataDate(db);
+    const status = await this.status();
+    const first = status.dataFrom;
     const period = { from, to };
 
     const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
       const f = participantId === undefined ? {} : { participantId };
       const balances = await balancesAt(db, { endSec, ...f });
-      const income = await incomeSummary(db, { ...period, ...f }, now);
+      const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
       const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
       return {
         balances,
@@ -124,11 +125,10 @@ export class DataService {
     };
 
     const head = await cardTotal(q.participantId);
-    const status = await this.status();
-    const coverage = {
-      from: first !== null && first > from ? first : from,
-      to: status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to,
-    };
+    const coverageFrom = first !== null && first > from ? first : from;
+    const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
+    // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
+    const coverage = { from: coverageFrom, to: coverageTo < coverageFrom ? coverageFrom : coverageTo };
     const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total };
     if (q.participantId === undefined) {
       const people: MonthOverview['people'] = [];
@@ -154,7 +154,8 @@ export class DataService {
   }
 
   async status(): Promise<DataStatus> {
-    const rs = await (await this.conn()).execute(
+    const db = await this.conn();
+    const rs = await db.execute(
       'SELECT COUNT(*) AS n, MIN(newest_synced_time) AS newest, MAX(last_sync_at) AS last FROM sync_state WHERE newest_synced_time IS NOT NULL',
     );
     const r = rs.rows[0];
@@ -164,7 +165,7 @@ export class DataService {
     return {
       hasData: Number(r?.n ?? 0) > 0,
       dataUntil: newest === null ? null : toKyivDateTime(newest),
-      dataFrom: await firstDataDate(await this.conn()),
+      dataFrom: await firstDataDate(db),
       lastSyncAt: last === null ? null : toKyivDateTime(last),
     };
   }
