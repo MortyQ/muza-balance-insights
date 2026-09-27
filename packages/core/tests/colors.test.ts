@@ -42,7 +42,7 @@ describe('migration v10', () => {
       await db.execute(`INSERT INTO connections (id, participant_id, provider, created_at) VALUES (${i * 2}, ${i * 3}, 'monobank', 0)`);
     }
 
-    expect(await migrate(db, 0)).toEqual([10]);
+    expect(await migrate(db, 0)).toEqual([10, 11]);
     const expected = [...COLOR_KEYS, null, null];
     expect((await rows('SELECT color FROM participants ORDER BY id')).map((r) => r.color)).toEqual(expected);
     expect((await rows('SELECT color FROM connections ORDER BY id')).map((r) => r.color)).toEqual(expected);
@@ -54,7 +54,7 @@ describe('migration v10', () => {
 });
 
 describe('colours', () => {
-  it('a new row takes the first free colour; one asked for must be free; none left → no colour', async () => {
+  it('a new participant takes the first free colour; one asked for must be free; none left → no colour; a connection none', async () => {
     db = await memoryDb();
     const a = await addParticipant(db, { label: 'Перша' }, 0);
     const b = await addParticipant(db, { label: 'Друга', color: 'red' }, 0);
@@ -62,10 +62,10 @@ describe('colours', () => {
     expect((await listParticipants(db)).map((p) => [p.id, p.color])).toEqual([[a, 'blue'], [b, 'red'], [c, 'orange']]);
     await expect(addParticipant(db, { label: 'Третя', color: 'red' }, 0)).rejects.toBeInstanceOf(ColorTakenError);
 
-    const x = await addConnection(db, a, 'monobank', 0, 'violet');
+    // A new connection has no colour (only people have one).
+    const x = await addConnection(db, a, 'monobank', 0);
     const y = await addConnection(db, b, 'monobank', 0);
-    expect((await listConnections(db)).map((k) => [k.id, k.color])).toEqual([[x, 'violet'], [y, 'blue']]);
-    await expect(addConnection(db, c, 'monobank', 0, 'violet')).rejects.toBeInstanceOf(ColorTakenError);
+    expect((await listConnections(db)).map((k) => [k.id, k.color])).toEqual([[x, null], [y, null]]);
 
     for (let i = 0; i < COLOR_KEYS.length - 3; i++) await addParticipant(db, { label: `Ще ${i}` }, 0);
     expect(await firstFreeColor(db, 'participants')).toBeNull();

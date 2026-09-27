@@ -36,9 +36,11 @@ describe('PeopleService', () => {
     const b = await integrations.addConnection({ participant: { fromBank: true, color: 'violet' }, provider: 'monobank', token: TOKEN_B, remember: true, color: 'red' });
     if (!a.added || !b.added) throw new Error('not added');
     let view = await people.list();
-    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['blue', ['blue']], ['violet', ['red']]]);
+    // A new connection has no colour (core: only people have one); its colour goes away completely in the next step.
+    expect(view.people.map((p) => [p.color, p.connections.map((c) => c.color)])).toEqual([['blue', [null]], ['violet', [null]]]);
 
     expect(await people.setParticipantColor(a.participantId, 'violet')).toEqual({ changed: false, reason: 'taken' });
+    expect(await integrations.setConnectionColor(b.connectionId, 'red')).toEqual({ changed: true });
     expect(await integrations.setConnectionColor(a.connectionId, 'red')).toEqual({ changed: false, reason: 'taken' });
     expect(await people.setParticipantColor(a.participantId, 'green')).toEqual({ changed: true });
     expect(await integrations.setConnectionColor(a.connectionId, 'aqua')).toEqual({ changed: true });

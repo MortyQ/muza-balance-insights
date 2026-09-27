@@ -54,13 +54,13 @@ describe('migration v8', () => {
       indexes: await indexes(db),
     };
 
-    expect(await migrate(db, 0)).toEqual([8, 9, 10]);
+    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11]);
 
     expect(await rows(db, 'SELECT id, label, created_at FROM participants')).toEqual([{ id: 1, label: 'Я', created_at: 222 }]);
     expect(await rows(db, 'SELECT id, participant_id, provider, external_client_id FROM connections')).toEqual([
       { id: 1, participant_id: 1, provider: 'monobank', external_client_id: null },
     ]);
-    expect(await rows(db, 'SELECT * FROM accounts ORDER BY id')).toEqual(before.accounts.map((a) => ({ ...a, connection_id: 1 })));
+    expect(await rows(db, 'SELECT * FROM accounts ORDER BY id')).toEqual(before.accounts.map((a) => ({ ...a, connection_id: 1, sync_choice: null })));
     expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(before.transactions);
     expect(await rows(db, 'SELECT * FROM sync_state ORDER BY account_id')).toEqual(before.sync);
     expect(await rows(db, 'SELECT connection_id FROM api_calls')).toEqual([{ connection_id: 1 }]);

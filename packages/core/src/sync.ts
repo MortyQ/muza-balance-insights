@@ -1,6 +1,7 @@
 // The sync loop, for any provider: plan windows, fetch one window through the provider's client, write it with
 // sync_state in one transaction, then the derivation passes. What a request, a page or an account looks like at the
 // bank is the client's (providers/<id>/client.ts).
+import { accountEnabledSql } from './accounts.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import { categorize, loadOverrides, recategorize, type CategoryOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
@@ -172,28 +173,32 @@ export async function listAccountIds(db: Db): Promise<string[]> {
 
 export type AccountSelection = {
   selected: string[];
-  /** Untracked jars with balance ≤ 0. Sync them only via an explicit --account. */
+  /** Jars the auto rule leaves out (untracked, balance ≤ 0). Sync them only via an explicit --account or by enabling them. */
   skippedJars: Array<{ id: string; title: string | null }>;
+  /** Accounts the user turned off (accounts.sync_choice = 0): not imported until enabled; an explicit id still imports them. */
+  disabled: string[];
 };
 
 /**
- * Default sync scope: every card + jars that have balance > 0 OR are already tracked (have sync_state).
- * A tracked jar stays in scope after it is emptied — otherwise its final withdrawal would never sync.
+ * Default sync scope: the enabled accounts (accounts.ts) — the user's choice, else every card + jars that have
+ * balance > 0 OR are already tracked (have sync_state). A tracked jar stays in scope after it is emptied — otherwise its
+ * final withdrawal would never sync.
  * With `connectionId`: only that connection's accounts (a credential can fetch only its own holder's statements).
  */
 export async function defaultAccountSelection(db: Db, connectionId?: number): Promise<AccountSelection> {
   const rs = await db.execute({
-    sql: `SELECT a.id, a.kind, a.title, a.balance, s.account_id IS NOT NULL AS tracked
-          FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
+    sql: `SELECT a.id, a.title, a.sync_choice, ${accountEnabledSql('a')} AS enabled
+          FROM accounts a
           ${connectionId === undefined ? '' : 'WHERE a.connection_id = ?'}
           ORDER BY a.kind = 'jar', a.id`,
     args: connectionId === undefined ? [] : [connectionId],
   });
-  const out: AccountSelection = { selected: [], skippedJars: [] };
+  const out: AccountSelection = { selected: [], skippedJars: [], disabled: [] };
   for (const r of rs.rows) {
     const id = String(r.id);
-    if (r.kind === 'card' || Number(r.balance) > 0 || Number(r.tracked) === 1) out.selected.push(id);
-    else out.skippedJars.push({ id, title: r.title === null ? null : String(r.title) });
+    if (Number(r.enabled) === 1) out.selected.push(id);
+    else if (r.sync_choice === null) out.skippedJars.push({ id, title: r.title === null ? null : String(r.title) });
+    else out.disabled.push(id);
   }
   return out;
 }

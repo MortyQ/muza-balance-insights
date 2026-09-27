@@ -2,6 +2,7 @@
 // Text matching runs in JS (SQLite LOWER/LIKE do not fold Cyrillic case) over description + counter_name,
 // so a full name in the query still matches; the answer shows names only as initials (displayCounterName),
 // unless the user turned on settings.reveal_full_names.
+import { ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
 import type { Db } from './db.ts';
 import { toMajor } from './currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
@@ -120,17 +121,18 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
   }
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', 't.local_date BETWEEN ? AND ?'];
-  const args: Array<string | number> = [q.from, q.to];
+  // Enabled accounts only; a row crossing to a disabled account is an ordinary operation (accounts.ts).
+  const where = ['t.is_cancelled = 0', 't.local_date BETWEEN ? AND ?', `t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`];
+  const args: Array<string | number> = [await crossingCategories(db, q), q.from, q.to];
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
-  if (q.category) (where.push('t.category = ?'), args.push(q.category));
+  if (q.category) (where.push('COALESCE(x.value, t.category) = ?'), args.push(q.category));
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   const rs = await db.execute({
     sql: `SELECT t.id, t.account_id, t.time, t.description, t.counter_name, t.mcc, t.amount, t.operation_amount,
-                 t.currency_code AS op_currency, a.currency_code AS currency, t.category, t.scope,
-                 t.is_internal_transfer, t.hold
-          FROM transactions t JOIN accounts a ON a.id = t.account_id
+                 t.currency_code AS op_currency, a.currency_code AS currency, COALESCE(x.value, t.category) AS category, t.scope,
+                 t.is_internal_transfer = 1 AND x.key IS NULL AS internal, t.hold
+          FROM transactions t JOIN accounts a ON a.id = t.account_id LEFT JOIN json_each(?) x ON x.key = t.id
           WHERE ${where.join(' AND ')}
           ORDER BY t.time DESC, t.id`,
     args,
@@ -187,7 +189,7 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
         mcc: Number(r.mcc),
         account: labels.get(String(r.account_id)) ?? String(r.account_id),
         scope: String(r.scope),
-        internal: Number(r.is_internal_transfer) === 1,
+        internal: Number(r.internal) === 1,
         hold: Number(r.hold) === 1,
       };
     }),

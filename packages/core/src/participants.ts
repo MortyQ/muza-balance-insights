@@ -1,5 +1,6 @@
 // Managing people and their connections (the desktop app's «Люди и подключения»). A participant's label is personal
 // data: it lives in this database only — never in the analysis copy, logs or the recategorize report.
+import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
 import { ConnectionError, PARTICIPANT_LABEL_MAX, parseProviderId } from './connections.ts';
 import type { Db } from './db.ts';
@@ -20,7 +21,7 @@ export type ConnectionInfo = {
   provider: ProviderId;
   color: ColorKey | null;
   accounts: number;
-  /** Kyiv dates of the range covered by all its imported accounts; null = nothing imported yet. */
+  /** Kyiv dates of the range covered by all its imported enabled accounts; null = nothing imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
@@ -111,7 +112,7 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
             MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
      FROM connections c
      LEFT JOIN accounts a ON a.connection_id = c.id
-     LEFT JOIN sync_state s ON s.account_id = a.id
+     LEFT JOIN sync_state s ON s.account_id = a.id AND ${accountEnabledSql('a')}
      GROUP BY c.id ORDER BY c.id`,
   );
   const date = (v: unknown) => (v === null || v === undefined ? null : toKyivDate(Number(v)));
@@ -127,19 +128,13 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
   }));
 }
 
-/** Its colour: the one asked for (taken → ColorTakenError) or the first free one. */
-export async function addConnection(
-  db: Db,
-  participantId: number,
-  provider: ProviderId,
-  nowSec: number,
-  color?: ColorKey,
-): Promise<number> {
+/** A new connection has no colour (only people have one; the column stays for older rows). */
+export async function addConnection(db: Db, participantId: number, provider: ProviderId, nowSec: number): Promise<number> {
   const p = await db.execute({ sql: 'SELECT 1 FROM participants WHERE id = ?', args: [participantId] });
   if (p.rows.length === 0) throw new ConnectionError('Такого участника нет');
   const rs = await db.execute({
-    sql: 'INSERT INTO connections (participant_id, provider, color, created_at) VALUES (?, ?, ?, ?) RETURNING id',
-    args: [participantId, parseProviderId(provider), await colorForNew(db, 'connections', color), nowSec],
+    sql: 'INSERT INTO connections (participant_id, provider, created_at) VALUES (?, ?, ?) RETURNING id',
+    args: [participantId, parseProviderId(provider), nowSec],
   });
   return Number(rs.rows[0]?.id);
 }

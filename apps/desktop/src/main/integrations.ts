@@ -45,7 +45,7 @@ export class IntegrationsService {
     const participantId = 'id' in input.participant ? input.participant.id : await addParticipant(db, input.participant, now);
     let connectionId: number;
     try {
-      connectionId = await addConnection(db, participantId, input.provider, now, input.color);
+      connectionId = await addConnection(db, participantId, input.provider, now);
     } catch (err) {
       if (!('id' in input.participant)) await db.execute({ sql: 'DELETE FROM participants WHERE id = ?', args: [participantId] });
       throw err;

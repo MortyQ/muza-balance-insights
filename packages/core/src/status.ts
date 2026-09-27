@@ -1,5 +1,6 @@
 // Balances and sync status — the phase 5 getBalances / getSyncStatus tools. No card numbers, IBANs or jar titles:
 // accounts are identified by id and a "type/CUR" label.
+import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from './accounts.ts';
 import type { Db } from './db.ts';
 import { accountLabels, toKyivDate, toKyivDateTime } from './format.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
@@ -22,11 +23,15 @@ type AccountRow = {
   lastSyncAt: number | null;
 };
 
-/** Every account, or only those of one participant. */
+/**
+ * The enabled accounts (accounts.ts), or only those of one participant. Labels are made over all of them, enabled or
+ * not, so a label does not change when another account is toggled.
+ */
 async function loadAccounts(db: Db, participantId?: number): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
   const rs = await db.execute({
     sql: `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
-            s.account_id IS NOT NULL AS synced, s.oldest_synced_time, s.newest_synced_time, s.last_sync_at
+            s.account_id IS NOT NULL AS synced, s.oldest_synced_time, s.newest_synced_time, s.last_sync_at,
+            ${accountEnabledSql('a')} AS enabled
      FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
      ${participantId === undefined ? '' : 'WHERE a.connection_id IN (SELECT id FROM connections WHERE participant_id = ?)'}
      ORDER BY a.kind = 'jar', a.currency_code, a.id`,
@@ -45,8 +50,10 @@ async function loadAccounts(db: Db, participantId?: number): Promise<{ rows: Acc
     oldest: num(r.oldest_synced_time),
     newest: num(r.newest_synced_time),
     lastSyncAt: num(r.last_sync_at),
+    enabled: Number(r.enabled) === 1,
   }));
-  return { rows, labels: accountLabels(rows.map((r) => ({ id: r.id, kind: r.kind, type: r.type, currencyCode: r.currency }))) };
+  const labels = accountLabels(rows.map((r) => ({ id: r.id, kind: r.kind, type: r.type, currencyCode: r.currency })));
+  return { rows: rows.filter((r) => r.enabled), labels };
 }
 
 // ---------- getBalances ----------
@@ -72,13 +79,13 @@ export type Balances = {
 };
 
 /**
- * Cards, plus jars with a positive balance or a sync history (same rule as the sync selection). Minor units.
+ * The enabled accounts (same rule as the sync selection: the user's choice, else cards plus jars with a positive
+ * balance or a sync history). Minor units.
  * With `participantId`: that participant's accounts only; without — the whole family.
  */
 export async function getBalances(db: Db, opts: { participantId?: number } = {}): Promise<Balances> {
   const { rows, labels } = await loadAccounts(db, opts.participantId);
   const accounts = rows
-    .filter((r) => r.kind === 'card' || r.balance > 0 || r.synced)
     .map((r) => ({
       id: r.id,
       label: labels.get(r.id) ?? r.id,
@@ -120,7 +127,7 @@ export type BalancesAt = {
 export async function balancesAt(db: Db, opts: { endSec: number; participantId?: number }): Promise<BalancesAt> {
   const { rows, labels } = await loadAccounts(db, opts.participantId);
   const accounts: AccountBalanceAt[] = [];
-  for (const r of rows.filter((x) => x.kind === 'card' || x.balance > 0 || x.synced)) {
+  for (const r of rows) {
     const balance = await balanceAt(db, r, opts.endSec);
     accounts.push({
       id: r.id,
@@ -156,9 +163,9 @@ async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number 
   return r.balance - Number(after.rows[0]?.s ?? 0);
 }
 
-/** Kyiv date of the oldest covered second over every account; null — nothing imported. */
+/** Kyiv date of the oldest covered second over every enabled account; null — nothing imported. */
 export async function firstDataDate(db: Db): Promise<string | null> {
-  const rs = await db.execute('SELECT MIN(oldest_synced_time) AS t FROM sync_state');
+  const rs = await db.execute(`SELECT MIN(oldest_synced_time) AS t FROM sync_state WHERE account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
   const t = rs.rows[0]?.t;
   return t === null || t === undefined ? null : toKyivDate(Number(t));
 }
@@ -196,7 +203,6 @@ export type SyncStatus = {
 export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> {
   const { rows, labels } = await loadAccounts(db);
   const accounts = rows
-    .filter((r) => r.kind === 'card' || r.balance > 0 || r.synced)
     .map((r) => ({
       id: r.id,
       label: labels.get(r.id) ?? r.id,
@@ -223,7 +229,7 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
   const d = await transferDiagnostics(db);
   // Only holds a sync can still update (last 3 days); older ones are final.
   const holds = await db.execute({
-    sql: 'SELECT COUNT(*) AS n FROM transactions WHERE is_cancelled = 0 AND hold = 1 AND time >= ?',
+    sql: `SELECT COUNT(*) AS n FROM transactions WHERE is_cancelled = 0 AND hold = 1 AND time >= ? AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
     args: [Math.floor(nowMs / 1000) - RESYNC_OVERLAP_SEC],
   });
   return {
