@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { useMonthStore } from '@/entities/period';
+import { firstMonthOf, useMonthStore } from '@/entities/period';
 
 describe('month store', () => {
   beforeEach(() => setActivePinia(createPinia()));
@@ -31,5 +31,11 @@ describe('month store', () => {
       expect(s.thisMonth).toBe('2026-10');
       expect(s.month).toBe('2026-06');
     });
+  });
+
+  it('firstMonthOf: the Kyiv month of the first data date; null while unknown', () => {
+    expect(firstMonthOf('2025-06-14')).toBe('2025-06');
+    expect(firstMonthOf(null)).toBeNull();
+    expect(firstMonthOf(undefined)).toBeNull();
   });
 });

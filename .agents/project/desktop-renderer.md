@@ -17,9 +17,12 @@
   `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
   (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
-  `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, им же пользуется `spending-summary`
-  (нижнюю границу `firstMonth` каждая фича берёт сама из `syncStatus.status.dataFrom`, сущности друг друга не
-  импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
+  `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
+  (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
+  `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
+  Виджет `widgets/global-filters` (`GlobalFilters`, над блоками главной) — фильтры, которые читают все блоки:
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
+  из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).

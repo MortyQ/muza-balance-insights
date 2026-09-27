@@ -1,32 +1,19 @@
 <script setup lang="ts">
 import { currencyAlpha } from '@mono/core/currency';
-import { formatMoney, monthTitle, shiftMonth } from '@/shared/lib';
-import { VButton, VButtonGroup, VCard, VInfoNotice, VSegmentedControl, VSimpleTable } from '@/shared/ui';
+import { formatMoney, monthTitle } from '@/shared/lib';
+import { VCard, VInfoNotice, VSegmentedControl, VSimpleTable } from '@/shared/ui';
 import { useSpending } from './composables/useSpending.ts';
 import { SCOPES } from './constants.ts';
 import { share, spendingColumns, spendingFooter } from './utils.ts';
 
-const { thisMonth, month, scope, state, view, periodNote, importing, firstMonth } = useSpending();
+const { month, scope, state, view, periodNote, importing } = useSpending();
 </script>
 
 <template>
   <VCard title="Траты" padding="md">
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <VButtonGroup aria-label="Месяц">
-            <VButton
-              variant="neutral"
-              icon="lucide:chevron-left"
-              aria-label="Предыдущий месяц"
-              :disabled="firstMonth !== null && month <= firstMonth"
-              @click="month = shiftMonth(month, -1)"
-            />
-            <VButton variant="neutral" icon="lucide:chevron-right" aria-label="Следующий месяц" :disabled="month >= thisMonth" @click="month = shiftMonth(month, 1)" />
-          </VButtonGroup>
-          <span class="inline-block text-lg font-semibold first-letter:uppercase">{{ monthTitle(month) }}</span>
-          <VButton v-if="month !== thisMonth" variant="link" text="Текущий месяц" @click="month = thisMonth" />
-        </div>
+        <span class="inline-block text-lg font-semibold first-letter:uppercase">{{ monthTitle(month) }}</span>
         <VSegmentedControl v-model="scope" :options="SCOPES" />
       </div>
 

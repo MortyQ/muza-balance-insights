@@ -1,7 +1,7 @@
-import type { ComputedRef, Ref, WritableComputedRef } from 'vue';
+import type { ComputedRef, Ref } from 'vue';
 import type { MonthOverview } from '@contract/api.ts';
 import type { BalanceCardProps } from '@/entities/account';
-import type { Loadable, YearMonth } from '@/shared/lib';
+import type { Loadable } from '@/shared/lib';
 
 /** One part of a bar: a person's income and spending, in the bar's currency. */
 export interface FlowSegment {
@@ -52,14 +52,8 @@ export interface UseMonthOverviewReturn {
   isFamily: ComputedRef<boolean>;
   /** People of the family view with their colours; empty for a person. */
   legend: ComputedRef<LegendItem[]>;
-  /** The selected month; setting it keeps it inside [first month with data, this month]. */
-  month: WritableComputedRef<string>;
   /** The shown answer's month: «Сентябрь», «Декабрь 2025». */
   monthName: ComputedRef<string>;
-  thisMonth: ComputedRef<YearMonth>;
-  currentYear: ComputedRef<number>;
-  /** The first month with data (Kyiv), or null while unknown. */
-  firstMonth: ComputedRef<YearMonth | null>;
 }
 
 export interface UseCardStackReturn {

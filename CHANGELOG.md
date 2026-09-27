@@ -24,6 +24,8 @@ are quoted as they appear in it.
 - Income and spending in other currencies — for example, dollars on a sole-proprietor account or cash withdrawn in
   euros — now count in «Пришло» and «Ушло» in hryvnia, at the rate of your own currency exchanges that month. Such
   sums are marked «≈», and the rate is shown under the bars.
+- The month is now chosen once, at the top of the home screen, next to the people switch; it applies to both
+  balances and spending.
 
 ### Fixes
 

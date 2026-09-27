@@ -119,8 +119,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   (`src/shared/titlebar.ts`, 36 px). The strip is `widgets/app-header` (`AppHeader`) over every screen (`App.vue`; only the
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
-  stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — `ParticipantFilter`
-  and «Обновлено…».
+  stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…».
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
