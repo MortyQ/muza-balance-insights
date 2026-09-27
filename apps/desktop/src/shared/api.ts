@@ -187,10 +187,25 @@ export type SpendingView = {
 
 export type MonthOverviewQuery = { month: string; participantId?: number };
 
-/** Hryvnia, minor units: income and spending of the month (the core aggregates, all scopes). */
+/** Minor units: income and spending of the month (the core aggregates, all scopes). */
 export type FlowView = { income: number; spending: number };
 
+/** A foreign-currency part of a card's income / spending, converted to hryvnia by the user's own exchanges. */
+export type FxPart = {
+  currency: number;
+  /** Minor units of `currency`. */
+  income: number;
+  spending: number;
+  /** Hryvnia kopecks per minor unit; null — no exchange of this currency at all, the part is left out of the sums. */
+  rate: number | null;
+  /** The rate is from the nearest exchange, not from this month's. */
+  nearest: boolean;
+};
+
+/** Income / spending: hryvnia, foreign parts converted by `fx`. */
 export type CardTotal = FlowView & {
+  /** Foreign-currency parts of income / spending (never hryvnia; parts with nothing in either are left out). */
+  fx: FxPart[];
   /** Own funds in hryvnia at the end of the month (accounts with data only). */
   ownFunds: number;
   /** Other currencies — never summed with hryvnia. */

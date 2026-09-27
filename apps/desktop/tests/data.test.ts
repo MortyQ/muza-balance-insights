@@ -21,14 +21,22 @@ async function account(id: string, type: string | null, currency: number, balanc
   });
 }
 
-async function tx(accountId: string, date: string, amount: number, category: string, o: { scope?: string; commission?: number; balance?: number } = {}) {
+type TxOpts = {
+  scope?: string; commission?: number; balance?: number; mcc?: number;
+  /** The other side of an exchange: operation currency and amount (default — the account's own, = amount). */
+  op?: { currency: number; amount: number };
+  /** An own transfer: is_internal_transfer = 1 with this transfer_rule. */
+  rule?: 'pair' | 'pair_fx';
+};
+
+async function tx(accountId: string, date: string, amount: number, category: string, o: TxOpts = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, counter_name, mcc, hold, amount, operation_amount,
-            currency_code, commission_rate, balance, category, is_internal_transfer, scope, is_cancelled, raw_json, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, 5411, 0, ?, ?, (SELECT currency_code FROM accounts WHERE id = ?), ?, ?, ?, 0, ?, 0, '{}', 0)`,
+            currency_code, commission_rate, balance, category, is_internal_transfer, transfer_rule, scope, is_cancelled, raw_json, synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, '{}', 0)`,
     args: [
-      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, amount, amount, accountId,
-      o.commission ?? 0, o.balance ?? null, category, o.scope ?? 'personal',
+      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
+      o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? null, o.scope ?? 'personal',
     ],
   });
 }
@@ -149,7 +157,11 @@ describe('DataService.monthOverview', () => {
     expect(v.month).toBe('2026-03');
     expect(v.balanceAt).toBe('now');
     expect(v.coverage).toEqual({ from: '2026-03-01', to: '2026-03-10' });
-    expect(v.total).toEqual({ ownFunds: 100_000, others: [{ currency: 840, ownFunds: 5_000 }], missing: 0, accounts: 2, income: 20_000, spending: 30_000 });
+    // No exchange of dollars at all: the dollar spending is listed apart and left out of the hryvnia sum.
+    expect(v.total).toEqual({
+      ownFunds: 100_000, others: [{ currency: 840, ownFunds: 5_000 }], missing: 0, accounts: 2, income: 20_000, spending: 30_000,
+      fx: [{ currency: 840, income: 0, spending: 1_000, rate: null, nearest: false }],
+    });
     expect(v.accounts).toEqual([]);
     // Only one participant exists (the default "Я"): its own view matches the family total (no family transfers).
     expect(v.people).toHaveLength(1);
@@ -174,7 +186,7 @@ describe('DataService.monthOverview', () => {
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
 
     const v = await svc.monthOverview({ month: '2025-11' });
-    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, accounts: 1, income: 0, spending: 0 });
+    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, accounts: 1, income: 0, spending: 0, fx: [] });
     // Coverage starts in 2026-01 but the month asked for ends in 2025-11: from > to before clamping — clamp to = from.
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
@@ -215,6 +227,92 @@ describe('DataService.monthOverview', () => {
     expect(person.people).toEqual([]);
     expect(person.accounts).toEqual([
       { id: 'hers', label: 'white/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
+    ]);
+  });
+
+  /** FOP: $1 000.00 of income on the dollar account, sold for ₴ on `saleDate` at `saleUah` kopecks, ₴ sent on to the card. */
+  async function fop(saleDate: string, saleUah: number) {
+    await account('fopusd', 'fop', 840, 0);
+    await account('fopuah', 'fop', 980, 0);
+    await account('card', 'black', 980, 0);
+    for (const a of ['fopusd', 'fopuah', 'card']) await synced(a);
+    await tx('fopusd', '2026-03-03', 100_000, 'поступления', { scope: 'business' });
+    await tx('fopusd', saleDate, -100_000, 'свои переводы', { scope: 'business', rule: 'pair_fx', op: { currency: 980, amount: -saleUah } });
+    await tx('fopuah', saleDate, saleUah, 'свои переводы', { scope: 'business', rule: 'pair_fx', op: { currency: 840, amount: 100_000 } });
+    await tx('fopuah', '2026-03-05', -saleUah, 'свои переводы', { scope: 'business', rule: 'pair' });
+    await tx('card', '2026-03-05', saleUah, 'свои переводы', { rule: 'pair' });
+    await tx('card', '2026-03-06', 20_000, 'поступления');
+  }
+
+  it('income in dollars counts in hryvnia at the month\'s own sale rate; the ₴ sent on to the card is not income', async () => {
+    await fop('2026-03-04', 4_100_000); // 41.00
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total).toMatchObject({ income: 100_000 * 41 + 20_000, spending: 0 });
+    expect(v.total.fx).toEqual([{ currency: 840, income: 100_000, spending: 0, rate: 41, nearest: false }]);
+  });
+
+  it('no sale in the month → the nearest one\'s rate, flagged nearest', async () => {
+    await fop('2026-02-20', 4_000_000); // 40.00, in February
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.income).toBe(100_000 * 40 + 20_000);
+    expect(v.total.fx).toEqual([{ currency: 840, income: 100_000, spending: 0, rate: 40, nearest: true }]);
+  });
+
+  it('spending in dollars counts in hryvnia at the same rate', async () => {
+    await fop('2026-03-04', 4_100_000);
+    await tx('fopusd', '2026-03-07', -1_000, 'связь и цифровые сервисы', { scope: 'business' });
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.spending).toBe(1_000 * 41);
+    expect(v.total.fx).toEqual([{ currency: 840, income: 100_000, spending: 1_000, rate: 41, nearest: false }]);
+  });
+
+  it('income in euros with no exchange of euros at all: rate null, left out of the hryvnia income', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('eur', 'black', 978, 0);
+    for (const a of ['uah', 'eur']) await synced(a);
+    await tx('uah', '2026-03-02', 20_000, 'поступления');
+    await tx('eur', '2026-03-03', 50_000, 'поступления');
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.income).toBe(20_000);
+    expect(v.total.fx).toEqual([{ currency: 978, income: 50_000, spending: 0, rate: null, nearest: false }]);
+  });
+
+  it('cash in euros with a commission: both count at the purchase rate when euros were only ever bought', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('eur', 'black', 978, 0);
+    for (const a of ['uah', 'eur']) await synced(a);
+    // €1 000.00 bought with hryvnia at 52.00: the only exchange of euros.
+    await tx('uah', '2026-03-02', -5_200_000, 'свои переводы', { rule: 'pair_fx', op: { currency: 978, amount: -100_000 } });
+    await tx('eur', '2026-03-02', 100_000, 'свои переводы', { rule: 'pair_fx', op: { currency: 980, amount: 5_200_000 } });
+    // Withdrawn €1 000.00 + €9.00 commission (the amount includes it).
+    await tx('eur', '2026-03-04', -100_900, 'наличные', { mcc: 6011, commission: 900 });
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.spending).toBe(100_900 * 52);
+    expect(v.total.fx).toEqual([{ currency: 978, income: 0, spending: 100_900, rate: 52, nearest: false }]);
+  });
+
+  it('family and person: each person\'s card has its own fx at the family\'s rate; account cards stay in their currency', async () => {
+    await account('mine', 'black', 980, 0);
+    await synced('mine');
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'herusd', connection_id: conn, kind: 'card', type: 'white', currency_code: 840, balance: 0, updated_at: SYNCED_TO });
+    await synced('herusd');
+    // My sale of $100.00 at 41.00 sets the rate for everyone.
+    await tx('mine', '2026-03-02', 410_000, 'свои переводы', { rule: 'pair_fx', op: { currency: 840, amount: 10_000 } });
+    await tx('mine', '2026-03-03', -1_000, 'продукты');
+    await tx('herusd', '2026-03-04', -500, 'продукты');
+
+    const family = await svc.monthOverview({ month: '2026-03' });
+    expect(family.total).toMatchObject({ spending: 1_000 + 500 * 41, fx: [{ currency: 840, income: 0, spending: 500, rate: 41, nearest: false }] });
+    const hersView = family.people.find((p) => p.participantId === her)!;
+    expect(hersView.total).toMatchObject({ spending: 500 * 41, fx: [{ currency: 840, income: 0, spending: 500, rate: 41, nearest: false }] });
+    expect(family.people.find((p) => p.participantId !== her)!.total).toMatchObject({ spending: 1_000, fx: [] });
+
+    const person = await svc.monthOverview({ month: '2026-03', participantId: her });
+    expect(person.total.fx).toEqual([{ currency: 840, income: 0, spending: 500, rate: 41, nearest: false }]);
+    expect(person.accounts).toEqual([
+      { id: 'herusd', label: 'white/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
   });
 

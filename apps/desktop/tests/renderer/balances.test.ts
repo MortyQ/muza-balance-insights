@@ -20,7 +20,7 @@ import {
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
-const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], missing, accounts, income, spending });
+const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], missing, accounts, income, spending, fx: [] });
 
 describe('balances utils', () => {
   it('slidePosition: a stack of at most 4 visible cards; a row with the offset applied', () => {

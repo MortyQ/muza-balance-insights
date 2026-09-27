@@ -6,9 +6,10 @@ import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
+import { exchangeRates, toUah } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
-import { incomeSummary, spendingSummary } from '@mono/core/summaries';
-import type { CardTotal, DataStatus, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
+import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
+import type { CardTotal, DataStatus, FlowView, FxPart, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -106,6 +107,25 @@ export class DataService {
     const status = await this.status();
     const first = status.dataFrom;
     const period = { from, to };
+    // The month's rates are the family's (a market fact, not a person's): one lookup for every card.
+    const rates = await exchangeRates(db, period);
+    // Every currency folded into hryvnia; a currency without a rate stays out of the sums, listed in fx.
+    const flowOf = (inc: IncomeSummary, sp: SpendingSummary): FlowView & { fx: FxPart[] } => {
+      const currencies = [...new Set([...inc.totals.map((t) => t.currency), ...sp.totals.map((t) => t.currency)])].sort((a, b) => a - b);
+      let income = 0;
+      let spending = 0;
+      const fx: FxPart[] = [];
+      for (const c of currencies) {
+        const i = inc.totals.find((t) => t.currency === c)?.total ?? 0;
+        const s = sp.totals.find((t) => t.currency === c)?.net ?? 0;
+        const iu = toUah(i, c, rates);
+        const su = toUah(s, c, rates);
+        if (iu !== null && su !== null) (income += iu), (spending += su);
+        const r = rates.get(c);
+        if (c !== UAH && (i !== 0 || s !== 0)) fx.push({ currency: c, income: i, spending: s, rate: r?.rate ?? null, nearest: r?.nearest ?? false });
+      }
+      return { income, spending, fx };
+    };
 
     const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
       const f = participantId === undefined ? {} : { participantId };
@@ -119,8 +139,7 @@ export class DataService {
           others: balances.totals.filter((t) => t.currency !== UAH).map((t) => ({ currency: t.currency, ownFunds: t.own_funds })),
           missing: balances.missing,
           accounts: balances.accounts.length,
-          income: income.totals.find((t) => t.currency === UAH)?.total ?? 0,
-          spending: spending.totals.find((t) => t.currency === UAH)?.net ?? 0,
+          ...flowOf(income, spending),
         },
       };
     };
