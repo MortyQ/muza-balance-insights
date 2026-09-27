@@ -33,7 +33,11 @@
 }
 
 /* ============================================
-   POPOVER (teleported to body by PopoverPortal — Vue's scope attribute travels with the vnode through Teleport)
+   POPOVER (teleported to body by PopoverPortal).
+   The class sits on our own <div> under `as-child`, not on the reka-ui component: PopperContent
+   (inheritAttrs: false) puts attrs on an inner element that is not its root, so that element never
+   gets this component's scope attribute and a scoped rule on it matches nothing — the panel was
+   see-through. An element written in our template carries the attribute through Teleport.
    ============================================ */
 .v-month-picker__content {
   z-index: 10000;

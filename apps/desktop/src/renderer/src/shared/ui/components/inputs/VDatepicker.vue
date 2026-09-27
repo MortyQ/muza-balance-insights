@@ -114,39 +114,42 @@ const WEEK_STARTS_ON_MONDAY = 1;
         </DateRangePickerTrigger>
       </div>
 
-      <DateRangePickerContent class="v-datepicker__calendar" :side-offset="4">
-        <DateRangePickerCalendar v-slot="{ weekDays, grid }">
-          <DateRangePickerHeader class="v-datepicker__calendar-header">
-            <DateRangePickerPrev class="v-datepicker__calendar-nav">
-              <VIcon icon="lucide:chevron-left" class="v-datepicker__calendar-nav-icon" />
-            </DateRangePickerPrev>
-            <DateRangePickerHeading class="v-datepicker__calendar-heading" />
-            <DateRangePickerNext class="v-datepicker__calendar-nav">
-              <VIcon icon="lucide:chevron-right" class="v-datepicker__calendar-nav-icon" />
-            </DateRangePickerNext>
-          </DateRangePickerHeader>
+      <!-- as-child: the panel is our own <div>, so it carries this component's scope attribute (see vdatepicker.scss). -->
+      <DateRangePickerContent as-child :side-offset="4">
+        <div class="v-datepicker__calendar">
+          <DateRangePickerCalendar v-slot="{ weekDays, grid }">
+            <DateRangePickerHeader class="v-datepicker__calendar-header">
+              <DateRangePickerPrev class="v-datepicker__calendar-nav">
+                <VIcon icon="lucide:chevron-left" class="v-datepicker__calendar-nav-icon" />
+              </DateRangePickerPrev>
+              <DateRangePickerHeading class="v-datepicker__calendar-heading" />
+              <DateRangePickerNext class="v-datepicker__calendar-nav">
+                <VIcon icon="lucide:chevron-right" class="v-datepicker__calendar-nav-icon" />
+              </DateRangePickerNext>
+            </DateRangePickerHeader>
 
-          <DateRangePickerGrid v-for="month in grid" :key="month.value.toString()" class="v-datepicker__grid">
-            <DateRangePickerGridHead>
-              <DateRangePickerGridRow class="v-datepicker__grid-row">
-                <DateRangePickerHeadCell v-for="day in weekDays" :key="day" class="v-datepicker__head-cell">
-                  {{ day }}
-                </DateRangePickerHeadCell>
-              </DateRangePickerGridRow>
-            </DateRangePickerGridHead>
-            <DateRangePickerGridBody>
-              <DateRangePickerGridRow v-for="(weekDates, index) in month.rows" :key="`week-${index}`" class="v-datepicker__grid-row">
-                <DateRangePickerCellTrigger
-                  v-for="weekDate in weekDates"
-                  :key="weekDate.toString()"
-                  :day="weekDate"
-                  :month="month.value"
-                  class="v-datepicker__cell"
-                />
-              </DateRangePickerGridRow>
-            </DateRangePickerGridBody>
-          </DateRangePickerGrid>
-        </DateRangePickerCalendar>
+            <DateRangePickerGrid v-for="month in grid" :key="month.value.toString()" class="v-datepicker__grid">
+              <DateRangePickerGridHead>
+                <DateRangePickerGridRow class="v-datepicker__grid-row">
+                  <DateRangePickerHeadCell v-for="day in weekDays" :key="day" class="v-datepicker__head-cell">
+                    {{ day }}
+                  </DateRangePickerHeadCell>
+                </DateRangePickerGridRow>
+              </DateRangePickerGridHead>
+              <DateRangePickerGridBody>
+                <DateRangePickerGridRow v-for="(weekDates, index) in month.rows" :key="`week-${index}`" class="v-datepicker__grid-row">
+                  <DateRangePickerCellTrigger
+                    v-for="weekDate in weekDates"
+                    :key="weekDate.toString()"
+                    :day="weekDate"
+                    :month="month.value"
+                    class="v-datepicker__cell"
+                  />
+                </DateRangePickerGridRow>
+              </DateRangePickerGridBody>
+            </DateRangePickerGrid>
+          </DateRangePickerCalendar>
+        </div>
       </DateRangePickerContent>
     </DateRangePickerRoot>
 
@@ -173,39 +176,42 @@ const WEEK_STARTS_ON_MONDAY = 1;
         </DatePickerTrigger>
       </div>
 
-      <DatePickerContent class="v-datepicker__calendar" :side-offset="4">
-        <DatePickerCalendar v-slot="{ weekDays, grid }">
-          <DatePickerHeader class="v-datepicker__calendar-header">
-            <DatePickerPrev class="v-datepicker__calendar-nav">
-              <VIcon icon="lucide:chevron-left" class="v-datepicker__calendar-nav-icon" />
-            </DatePickerPrev>
-            <DatePickerHeading class="v-datepicker__calendar-heading" />
-            <DatePickerNext class="v-datepicker__calendar-nav">
-              <VIcon icon="lucide:chevron-right" class="v-datepicker__calendar-nav-icon" />
-            </DatePickerNext>
-          </DatePickerHeader>
+      <!-- as-child: the panel is our own <div>, so it carries this component's scope attribute (see vdatepicker.scss). -->
+      <DatePickerContent as-child :side-offset="4">
+        <div class="v-datepicker__calendar">
+          <DatePickerCalendar v-slot="{ weekDays, grid }">
+            <DatePickerHeader class="v-datepicker__calendar-header">
+              <DatePickerPrev class="v-datepicker__calendar-nav">
+                <VIcon icon="lucide:chevron-left" class="v-datepicker__calendar-nav-icon" />
+              </DatePickerPrev>
+              <DatePickerHeading class="v-datepicker__calendar-heading" />
+              <DatePickerNext class="v-datepicker__calendar-nav">
+                <VIcon icon="lucide:chevron-right" class="v-datepicker__calendar-nav-icon" />
+              </DatePickerNext>
+            </DatePickerHeader>
 
-          <DatePickerGrid v-for="month in grid" :key="month.value.toString()" class="v-datepicker__grid">
-            <DatePickerGridHead>
-              <DatePickerGridRow class="v-datepicker__grid-row">
-                <DatePickerHeadCell v-for="day in weekDays" :key="day" class="v-datepicker__head-cell">
-                  {{ day }}
-                </DatePickerHeadCell>
-              </DatePickerGridRow>
-            </DatePickerGridHead>
-            <DatePickerGridBody>
-              <DatePickerGridRow v-for="(weekDates, index) in month.rows" :key="`week-${index}`" class="v-datepicker__grid-row">
-                <DatePickerCellTrigger
-                  v-for="weekDate in weekDates"
-                  :key="weekDate.toString()"
-                  :day="weekDate"
-                  :month="month.value"
-                  class="v-datepicker__cell"
-                />
-              </DatePickerGridRow>
-            </DatePickerGridBody>
-          </DatePickerGrid>
-        </DatePickerCalendar>
+            <DatePickerGrid v-for="month in grid" :key="month.value.toString()" class="v-datepicker__grid">
+              <DatePickerGridHead>
+                <DatePickerGridRow class="v-datepicker__grid-row">
+                  <DatePickerHeadCell v-for="day in weekDays" :key="day" class="v-datepicker__head-cell">
+                    {{ day }}
+                  </DatePickerHeadCell>
+                </DatePickerGridRow>
+              </DatePickerGridHead>
+              <DatePickerGridBody>
+                <DatePickerGridRow v-for="(weekDates, index) in month.rows" :key="`week-${index}`" class="v-datepicker__grid-row">
+                  <DatePickerCellTrigger
+                    v-for="weekDate in weekDates"
+                    :key="weekDate.toString()"
+                    :day="weekDate"
+                    :month="month.value"
+                    class="v-datepicker__cell"
+                  />
+                </DatePickerGridRow>
+              </DatePickerGridBody>
+            </DatePickerGrid>
+          </DatePickerCalendar>
+        </div>
       </DatePickerContent>
     </DatePickerRoot>
   </div>

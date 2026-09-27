@@ -90,9 +90,11 @@
 }
 
 /* ============================================
-   CONTENT (teleported to body by SelectPortal — Vue's scope attribute still
-   applies, because it travels with the vnode through Teleport, not with its
-   final DOM parent)
+   CONTENT (teleported to body by SelectPortal).
+   The class sits on our own <div> under `as-child`, not on the reka-ui component: PopperContent
+   (inheritAttrs: false) puts attrs on an inner element that is not its root, so that element never
+   gets this component's scope attribute and a scoped rule on it matches nothing — the panel was
+   see-through. An element written in our template carries the attribute through Teleport.
    ============================================ */
 .v-select__content {
   z-index: 10000;
@@ -151,7 +153,7 @@
 
   &[data-state="checked"] {
     background-color: var(--ui-primary);
-    color: white;
+    color: var(--ui-primary-foreground);
     font-weight: 500;
   }
 

@@ -12,6 +12,7 @@
   font-weight: 500;
 }
 
+/* The closed field reads exactly like VSelect's trigger (vselect.scss): same box, type, hover, focus and disabled. */
 .v-datepicker__field-row {
   display: flex;
   align-items: center;
@@ -22,13 +23,19 @@
   border: 1px solid var(--ui-input-border);
   border-radius: var(--ui-radius-lg);
   box-shadow: var(--ui-shadow-xs);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
   transition: border-color 200ms ease, border-width 200ms ease;
 
   &:hover {
     border-color: var(--ui-border-strong);
   }
 
-  &:focus-within {
+  /* Open: focus has moved into the calendar, so :focus-within alone would drop the ring VSelect keeps while open. */
+  &:focus-within,
+  &:has(.v-datepicker__trigger[data-state="open"]) {
     border-color: var(--ui-border-focus);
     border-width: 2px;
   }
@@ -37,6 +44,7 @@
 .v-datepicker--disabled .v-datepicker__field-row {
   cursor: not-allowed;
   background-color: var(--ui-surface-sunken);
+  color: var(--ui-foreground-disabled);
 }
 
 .v-datepicker__field {
@@ -48,10 +56,6 @@
 
 .v-datepicker__segment {
   padding: 0 0.0625rem;
-  color: var(--ui-foreground);
-  font-size: var(--ui-text-base);
-  font-weight: 450;
-  letter-spacing: -0.005em;
   border-radius: var(--ui-radius-xs);
   caret-color: transparent;
 
@@ -72,6 +76,7 @@
   color: var(--ui-foreground-muted);
 }
 
+/* A 1.375rem hit target whose icon sits where VSelect's caret does: flush with the field's right padding. */
 .v-datepicker__trigger {
   display: flex;
   align-items: center;
@@ -79,6 +84,7 @@
   flex-shrink: 0;
   width: 1.375rem;
   height: 1.375rem;
+  margin-right: calc((1.375rem - 0.875rem) / -2);
   padding: 0;
   background: transparent;
   border: none;
@@ -87,8 +93,12 @@
   cursor: pointer;
   transition: color 150ms ease, background-color 150ms ease;
 
-  &:hover {
+  &:hover,
+  &[data-state="open"] {
     color: var(--ui-primary);
+  }
+
+  &:hover {
     background-color: var(--ui-surface-hover);
   }
 
@@ -99,14 +109,18 @@
   }
 }
 
+/* Same size as VSelect's caret icon. */
 .v-datepicker__trigger-icon {
-  width: 0.9375rem;
-  height: 0.9375rem;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 /* ============================================
-   CALENDAR POPOVER (teleported to body by PopoverPortal inside DatePickerContent —
-   Vue's scope attribute travels with the vnode through Teleport)
+   CALENDAR POPOVER (teleported to body by PopoverPortal inside DatePickerContent).
+   The class sits on our own <div> under `as-child`, not on the reka-ui component: PopperContent
+   (inheritAttrs: false) puts attrs on an inner element that is not its root, so that element never
+   gets this component's scope attribute and a scoped rule on it matches nothing — the panel was
+   see-through. An element written in our template carries the attribute through Teleport.
    ============================================ */
 .v-datepicker__calendar {
   z-index: 10000;

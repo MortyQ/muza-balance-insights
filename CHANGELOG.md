@@ -25,6 +25,11 @@ are quoted as they appear in it.
   euros — now count in «Пришло» and «Ушло» in hryvnia, at the rate of your own currency exchanges that month. Such
   sums are marked «≈», and the rate is shown under the bars.
 
+### Fixes
+
+- Drop-down lists and the month and date pickers are no longer see-through, so their text is easy to read. The date
+  field now looks the same as the other fields next to it.
+
 ## 0.1.4 — 2026-09-27
 
 Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in

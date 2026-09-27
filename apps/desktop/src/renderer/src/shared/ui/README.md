@@ -41,6 +41,12 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
 
+All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
+reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element
+never gets the component's scope attribute and a scoped rule on it matches nothing (the panel was see-through).
+`tests/ui.test.ts` checks it. `VDatepicker`'s closed field uses the same box, type, hover, focus (also while open) and
+disabled styles as `VSelect`'s trigger.
+
 `table/VSimpleTable` — a plain data table (columns as data, `cell-<key>` slots, an optional total row), written in the same
 BEM + SCSS + `--ui-*` token style. Not muzakit's `VTable` (virtualised, TanStack), which this app does not need.
 
