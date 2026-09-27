@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
-import { openLibsql } from '@mono/db-libsql';
+import { openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { DB_FILE, DbAccess, DbOpenError, ENCRYPTING_FILE, type DbAccessDeps, type DbState, type EncryptResult } from '../src/main/db/access.ts';
 import { encryptDatabase } from '../src/main/db/encrypt.ts';
 import type { KeyCreate, KeyLoad } from '../src/main/db/key-vault.ts';
@@ -37,7 +37,7 @@ async function makeDb(key?: string) {
 }
 
 function access(o: { load?: KeyLoad; create?: KeyCreate; reliability?: Reliability; encrypt?: DbAccessDeps['encrypt'] } = {}) {
-  const calls = { create: 0, encrypt: 0, clear: 0 };
+  const calls = { create: 0, encrypt: 0, clear: 0, release: 0 };
   const logs: string[] = [];
   const changes: DbState[] = [];
   let load = o.load;
@@ -54,6 +54,7 @@ function access(o: { load?: KeyLoad; create?: KeyCreate; reliability?: Reliabili
       opened.push(db);
       return db;
     },
+    release: async () => (calls.release++, releaseClosedFiles()),
     ...(o.encrypt ? { encrypt: async (f: string, k: string) => (calls.encrypt++, o.encrypt!(f, k)) } : {}),
     onChange: (s) => void changes.push(s),
     log: (m) => void logs.push(m),
@@ -124,7 +125,7 @@ describe('DbAccess.init — a plain database', () => {
   it('with the real migration: the plain database opens encrypted afterwards, rows kept', async () => {
     await makeDb();
     const { a } = access({
-      encrypt: (f, k) => encryptDatabase({ file: f, key: k, openDb: (u, o) => openLibsql(u, o), platform: process.platform, log: () => undefined }),
+      encrypt: (f, k) => encryptDatabase({ file: f, key: k, openDb: (u, o) => openLibsql(u, o), release: releaseClosedFiles, platform: process.platform, log: () => undefined }),
     });
     expect(await a.init()).toEqual(ready(true));
     expect(fs.readFileSync(file()).subarray(0, 15).toString('latin1')).not.toBe('SQLite format 3');
@@ -254,7 +255,10 @@ describe('DbAccess.reset («Начать заново»)', () => {
     for (const f of [`${DB_FILE}-wal`, `${DB_FILE}-journal`, ENCRYPTING_FILE]) fs.writeFileSync(path.join(dir, f), 'x');
     const { a, calls } = access({ load: { kind: 'lost' } });
     expect(await a.init()).toEqual({ kind: 'key-lost' });
+    const releasedBefore = calls.release;
     expect(await a.reset()).toEqual(ready(true));
+    // The files of the connections init() closed are released before they are deleted (Windows holds them).
+    expect(calls.release).toBe(releasedBefore + 1);
     expect(calls.clear).toBe(1);
     expect(calls.create).toBe(1);
     expect(a.forWorker()).toEqual({ dbPath: file(), dbKey: NEW_KEY });

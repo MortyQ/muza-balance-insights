@@ -55,3 +55,11 @@
     пропадают; `lock.json` не трогается; при ready-базе — отказ. Push состояния — один раз, в конце;
   - настройки — строка «Шифрование базы» в разделе «Хранение и токены» (`features/settings/db-encryption`);
   - релиз: на `windows-latest` обязательны тесты `db-libsql` (детектор шифра `sqlite3mc_version`, `PRAGMA cipher`).
+  - **Windows держит файлы закрытой базы**, пока живы её prepared statements (у libsql-js нет `Statement.close`,
+    `@libsql/client` готовит statement на каждый `execute`): после `close()` rename / unlink дают `EBUSY`, ожидание не
+    помогает, помогает только сборка мусора (замерено в CI на `windows-latest`, 27.09.2026). Поэтому после `close()` и
+    перед переименованием или удалением файлов базы — `releaseClosedFiles()` из `@mono/db-libsql` (принудительный gc через
+    `v8.setFlagsFromString('--expose-gc')`): зависимость `release` у `encryptDatabase` (перед swap и удалением копии),
+    `DbAccess.reset`, `DataService.close` («Удалить все данные», «Начать заново»). Недоступный gc — строка `[db] forced gc
+    unavailable` при запуске и `forcedGc` в `[smoke]`. Проверка — `packages/db-libsql/tests/release-files.test.ts`
+    (обязательна на Windows вместе с тестами шифрования). В main-процессе Electron gc вживую на Windows ещё не проверен.

@@ -8,7 +8,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { migrate, SCHEMA_VERSION } from '@mono/core/db';
 import { insertAccount } from '@mono/core/test-helpers';
-import { openLibsql } from '@mono/db-libsql';
+import { openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { encryptDatabase, encryptingFiles, MIGRATION_STEPS, type EncryptDeps } from '../src/main/db/encrypt.ts';
 
 const KEY = 'c0ffee'.padEnd(64, '0');
@@ -50,7 +50,7 @@ async function snapshot(key?: string) {
 
 const deps = (extra: Partial<EncryptDeps> = {}): EncryptDeps & { logs: string[] } => {
   const logs: string[] = [];
-  return { file, key: KEY, openDb: (u, o) => openLibsql(u, o), platform: process.platform, log: (m) => void logs.push(m), logs, ...extra };
+  return { file, key: KEY, openDb: (u, o) => openLibsql(u, o), release: releaseClosedFiles, platform: process.platform, log: (m) => void logs.push(m), logs, ...extra };
 };
 const leftovers = () => encryptingFiles(file).filter((f) => fs.existsSync(f));
 
@@ -103,6 +103,23 @@ describe('encryptDatabase', () => {
     fs.writeFileSync(`${file}.encrypting-journal`, 'x');
     expect(await encryptDatabase(deps())).toEqual({ ok: true });
     expect(leftovers()).toEqual([]);
+  });
+
+  it('closed connections are released before the swap and before the copy is removed (Windows holds their files)', async () => {
+    await makePlain();
+    const order: string[] = [];
+    const r = await encryptDatabase(
+      deps({
+        release: async () => (order.push('release'), releaseClosedFiles()),
+        rename: async (a, b) => (order.push('rename'), fs.promises.rename(a, b)),
+      }),
+    );
+    expect(r).toEqual({ ok: true });
+    const swap = order.indexOf('rename');
+    expect(swap).toBeGreaterThan(0);
+    expect(order[swap - 1]).toBe('release');
+    // The cleanup after the swap removes the copy's leftovers: released first as well.
+    expect(order.slice(swap + 1)).toContain('release');
   });
 
   it('Windows: a rename held by another process is retried; a lasting error gives up with the old file intact', async () => {
