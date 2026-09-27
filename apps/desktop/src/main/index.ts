@@ -354,7 +354,7 @@ app.whenReady().then(async () => {
     if (!resumeChecked) {
       resumeChecked = true;
       // Not while the database is unavailable: the import would only fail on it.
-      // «Автообновление» after it: an unfinished import that resumed takes precedence.
+      // «Автосинхронизация» after it: an unfinished import that resumed takes precedence.
       if (access.isReady()) void importer.resumeOnLaunch().then(() => autoSync.maybeRun('launch')).catch(() => undefined);
       scheduleChecks(updater);
     }

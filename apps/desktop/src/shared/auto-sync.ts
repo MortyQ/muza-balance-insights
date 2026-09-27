@@ -1,4 +1,4 @@
-// «Автообновление» as main, the preload and the renderer see it. Plain types only (no imports): the sandboxed preload
+// «Автосинхронизация» as main, the preload and the renderer see it. Plain types only (no imports): the sandboxed preload
 // and the renderer (@contract/auto-sync.ts) bundle this file as is.
 
 /** When an automatic refresh may start: app launch, wake from sleep, the periodic check. */

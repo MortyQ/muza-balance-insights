@@ -36,7 +36,7 @@ export const NAV_GROUPS = [
   {
     label: 'Приложение',
     items: [
-      { label: 'Автообновление', icon: 'lucide:refresh-ccw', section: 'auto-sync' },
+      { label: 'Автосинхронизация', icon: 'lucide:refresh-ccw', section: 'auto-sync' },
       { label: 'Обновления', icon: 'lucide:refresh-cw', section: 'updates' },
       { label: 'Оформление', icon: 'lucide:palette', section: 'appearance' },
       { label: 'Язык и время', icon: 'lucide:languages', section: null },

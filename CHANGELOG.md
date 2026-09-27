@@ -32,7 +32,7 @@ redesigned settings and a light or dark theme.
   loaded is kept.
 - The home screen header shows how recent your data is («Данные до …» — data up to …).
 
-### Automatic refresh
+### Automatic sync
 
 - New: the app fetches new transactions of all connections by itself — at launch, after the computer wakes from sleep,
   and every 4 hours while it is open. Not more often than once every 30 minutes.
@@ -40,7 +40,7 @@ redesigned settings and a light or dark theme.
   cancelled are updated.
 - While it runs, the home screen shows just one line: «Обновляю данные…» (updating data).
 - The «Загрузить» button is still there to load a deeper history, and it takes over from a refresh in progress.
-- Settings → «Автообновление»: a main switch «Обновлять данные автоматически» and a switch for each occasion under
+- Settings → «Автосинхронизация»: a main switch «Обновлять данные автоматически» and a switch for each occasion under
   «Когда обновлять».
 - Automatic refresh starts once your statement has been loaded at least once: you choose the depth of the first load
   yourself.

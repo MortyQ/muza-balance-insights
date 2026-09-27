@@ -102,7 +102,7 @@ export class DataService {
     };
   }
 
-  /** Epoch seconds of the latest sync of any account; null — nothing imported yet (the «Автообновление» gap). */
+  /** Epoch seconds of the latest sync of any account; null — nothing imported yet (the «Автосинхронизация» gap). */
   async lastSyncSec(): Promise<number | null> {
     const rs = await (await this.conn()).execute('SELECT MAX(last_sync_at) AS last FROM sync_state WHERE newest_synced_time IS NOT NULL');
     const last = rs.rows[0]?.last;

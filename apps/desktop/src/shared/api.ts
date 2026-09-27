@@ -111,7 +111,7 @@ export type BalanceApi = {
   setTouchId(enabled: boolean): Promise<LockView>;
   /** Returns an unsubscribe function. */
   onLock(cb: (v: LockView) => void): () => void;
-  /** «Автообновление»: the main switch and its triggers (userData/preferences.json). */
+  /** «Автосинхронизация»: the main switch and its triggers (userData/preferences.json). */
   getAutoSync(): Promise<AutoSyncSettings>;
   /** Applies from the next trigger; returns what was saved. */
   setAutoSync(settings: AutoSyncSettings): Promise<AutoSyncSettings>;

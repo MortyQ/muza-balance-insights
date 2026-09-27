@@ -1,4 +1,4 @@
-// «Автообновление» in the renderer: the quiet line of an automatic refresh, the store's `auto` flag, the switch labels.
+// «Автосинхронизация» in the renderer: the quiet line of an automatic refresh, the store's `auto` flag, the switch labels.
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ref } from 'vue';
@@ -50,7 +50,7 @@ describe('import-progress store', () => {
   });
 });
 
-describe('«Автообновление» card', () => {
+describe('«Автосинхронизация» card', () => {
   it('a label for every trigger', () => {
     expect(Object.keys(TRIGGER_LABELS).sort()).toEqual([...AUTO_SYNC_TRIGGERS].sort());
   });

@@ -144,7 +144,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
-  - Приложение: «Автообновление» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
+  - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Язык и время» (Скоро), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
 - **Section layout** — `features/settings/shared/components`: `SettingsSection` (title, description, closing note),

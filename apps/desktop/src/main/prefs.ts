@@ -1,4 +1,4 @@
-// The app's preferences in userData/preferences.json: «Проверять обновления», «Автообновление» (all on by default), the
+// The app's preferences in userData/preferences.json: «Проверять обновления», «Автосинхронизация» (all on by default), the
 // theme and the language. Not data: «Delete all data» leaves it. Each field falls back to its own default, so a file of
 // an older version (or a broken field) never resets the others; a broken or foreign file reads as the defaults.
 import fs from 'node:fs';

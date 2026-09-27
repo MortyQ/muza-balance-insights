@@ -1,4 +1,4 @@
-// userData/preferences.json: «Проверять обновления», «Автообновление», the theme and the language. Every field keeps its
+// userData/preferences.json: «Проверять обновления», «Автосинхронизация», the theme and the language. Every field keeps its
 // own default, so a file of an older version or a broken field never resets the rest; concurrent changes are not lost;
 // an invalid change is refused before anything is written.
 import fs from 'node:fs';

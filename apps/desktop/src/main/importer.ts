@@ -3,7 +3,7 @@
 // final message arrives; a worker that dies without one is restarted on the shared retry policy (src/shared/retry.ts).
 // All connections import in one job (one worker, one job file). Tokens go to the worker in the `start` message only;
 // nothing sent to the renderer or logged can contain them. A connection without a token is skipped and reported.
-// «Автообновление» (startAuto) is the same run, quieter: no job file, no token prompts, every state marked `auto`, and a
+// «Автосинхронизация» (startAuto) is the same run, quieter: no job file, no token prompts, every state marked `auto`, and a
 // user's start replaces it.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -107,7 +107,7 @@ export class Importer {
   }
 
   /**
-   * «Автообновление»: every connection with a token, from the start of this Kyiv month, each covered account re-reading
+   * «Автосинхронизация»: every connection with a token, from the start of this Kyiv month, each covered account re-reading
    * one whole window up to now. Not while an import runs or an unfinished one waits to resume. Writes no job file
    * (the next launch refreshes again) and asks for no token: a connection without one is left to the home notice.
    */
