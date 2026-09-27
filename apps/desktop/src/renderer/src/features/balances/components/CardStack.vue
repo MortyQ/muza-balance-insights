@@ -48,7 +48,7 @@ const items = computed(() =>
       :style="s.vars"
       :aria-hidden="open || s.reachable ? undefined : 'true'"
     >
-      <BalanceCard v-bind="s.card" :aria-expanded="open" :aria-label="open ? 'Свернуть карты' : 'Развернуть карты'" :tabindex="s.reachable ? undefined : -1" @click="emit('toggle')" />
+      <BalanceCard v-bind="s.card" :aria-expanded="open" :tabindex="s.reachable ? undefined : -1" @click="emit('toggle')" />
       <FlowBars
         :flow="s.flow"
         class="transition-[opacity,translate] delay-150 duration-300 motion-reduce:translate-y-0"
