@@ -101,7 +101,7 @@ describe('About', () => {
 
   it('the disclaimer is the agreed text, and the renderer shows the same constant (connect screen and settings)', () => {
     expect(DISCLAIMER).toBe('Неофициальное приложение, не связано с Monobank.');
-    for (const file of ['features/settings/people/ConnectFirstFeature.vue', 'widgets/settings/components/AboutApp.vue']) {
+    for (const file of ['features/integrations/ConnectFirstFeature.vue', 'widgets/settings/components/AboutApp.vue']) {
       const src = fs.readFileSync(fileURLToPath(new URL(`../src/renderer/src/${file}`, import.meta.url)), 'utf8');
       expect(src, file).toMatch(/import \{[^}]*\bDISCLAIMER\b[^}]*\} from '@contract\/about\.ts'/);
       expect(src, file).toMatch(/\{\{ DISCLAIMER \}\}/);

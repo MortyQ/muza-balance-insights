@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import type { Bank } from '@/entities/bank';
+import { MONOBANK } from '@/entities/bank';
 import { VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
 
-const { bank, secureStorage, autofocus = false } = defineProps<{
-  bank: Readonly<Bank>;
+const { secureStorage, autofocus = false } = defineProps<{
   secureStorage: boolean;
   autofocus?: boolean;
 }>();
@@ -21,13 +20,13 @@ onMounted(() => {
 <template>
   <div class="flex flex-col gap-3">
     <ol class="flex list-decimal flex-col gap-1 pl-5 text-foreground-secondary">
-      <li v-for="step in bank.tokenSteps" :key="step">{{ step }}</li>
+      <li v-for="step in MONOBANK.tokenSteps" :key="step">{{ step }}</li>
     </ol>
     <VInput
       ref="input"
       v-model="token"
-      :name="`Токен ${bank.name}`"
-      :placeholder="bank.tokenPlaceholder"
+      :name="`Токен ${MONOBANK.name}`"
+      :placeholder="MONOBANK.tokenPlaceholder"
       autocomplete="off"
       spellcheck="false"
       type="password"

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { useId } from 'vue';
 import { LOCK_TRIGGERS, type LockTrigger } from '@contract/lock.ts';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VButton, VInfoNotice, VSwitch } from '@/shared/ui';
 import PinField from './components/PinField.vue';
 import { useLockSettings } from './composables/useLockSettings.ts';
 import { SUBMIT_TEXT, TRIGGER_LABELS } from './constants.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsRow from '../shared/components/SettingsRow.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 import { isChecked, restoreSwitch } from '../shared/utils.ts';
 
 const id = useId();

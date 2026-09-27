@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { DISCLAIMER } from '@contract/about.ts';
-import { BANKS, type Bank, BankMark } from '@/entities/bank';
+import { type Bank, BankMark } from '@/entities/bank';
 import { VButton } from '@/shared/ui';
-import AddConnectionForm from './components/AddConnectionForm.vue';
-import BankCard from './components/BankCard.vue';
+import AddConnectionFeature from './AddConnectionFeature.vue';
+import BankPicker from './shared/components/BankPicker.vue';
 
 const emit = defineEmits<{ connected: [] }>();
 
@@ -21,9 +21,7 @@ const selected = ref<Readonly<Bank> | null>(null);
     <Transition name="swap" mode="out-in">
       <section v-if="!selected" key="banks" class="flex flex-col gap-3">
         <h2 class="text-lg font-semibold">Выбери банк</h2>
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(11rem,1fr))] gap-3">
-          <BankCard v-for="bank in BANKS" :key="bank.id" :bank @select="selected = $event" />
-        </div>
+        <BankPicker @select="selected = $event" />
       </section>
 
       <section v-else key="token" class="flex flex-col gap-4">
@@ -37,7 +35,7 @@ const selected = ref<Readonly<Bank> | null>(null);
             <span class="text-sm text-foreground-muted">Токен даёт только чтение выписки и балансов и хранится на этом компьютере.</span>
           </div>
         </div>
-        <AddConnectionForm default-label="Я" autofocus @added="emit('connected')" />
+        <AddConnectionFeature default-label="Я" autofocus @added="emit('connected')" />
       </section>
     </Transition>
 

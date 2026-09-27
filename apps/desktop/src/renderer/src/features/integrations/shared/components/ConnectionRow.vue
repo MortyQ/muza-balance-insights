@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, type Component } from 'vue';
 import type { ColorKey, ConnectionView } from '@contract/api.ts';
 import { BANKS, BankMark, MONOBANK } from '@/entities/bank';
 import { ColorSwatches, colorVar, coverageLine, tokenBadge, tokenLine } from '@/entities/participant';
 import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton } from '@/shared/ui';
-import TokenField from './TokenField.vue';
 
-const { connection, secureStorage, takenColors } = defineProps<{
+const { connection, secureStorage, takenColors, tokenField } = defineProps<{
   connection: Readonly<ConnectionView>;
   secureStorage: boolean;
   /** Colours of the other connections → whose they are. */
   takenColors: ReadonlyMap<ColorKey, string>;
+  /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Ввести токен заново». */
+  tokenField: Component;
 }>();
 const emit = defineEmits<{
   setToken: [token: string, remember: boolean, done: (saved: boolean) => void];
@@ -94,7 +95,7 @@ function save() {
       <div v-if="editing" class="grid">
         <div class="-mx-1 min-h-0 overflow-hidden px-1">
           <form class="flex flex-col gap-3 pt-5 pb-1" @submit.prevent="save">
-            <TokenField v-model:token="tokenInput" v-model:remember="remember" :bank :secure-storage autofocus />
+            <component :is="tokenField" v-model:token="tokenInput" v-model:remember="remember" :secure-storage autofocus />
             <div>
               <VButton type="submit" text="Сохранить" :disabled="tokenInput.trim() === ''" />
             </div>

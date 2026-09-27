@@ -17,3 +17,6 @@ export const COLOR_NAMES = {
   violet: 'Фиолетовый',
   red: 'Красный',
 } as const satisfies Record<ColorKey, string>;
+
+/** A colour another person or connection took meanwhile. */
+export const COLOR_TAKEN_TEXT = 'Этот цвет уже занят — выбери другой.';

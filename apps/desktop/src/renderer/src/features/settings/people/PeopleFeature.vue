@@ -2,11 +2,10 @@
 import { onMounted } from 'vue';
 import type { ColorKey } from '@contract/api.ts';
 import { colorHolders, useParticipantStore } from '@/entities/participant';
+import { SettingsList, SettingsSection } from '@/shared/layout';
 import { VInfoNotice } from '@/shared/ui';
 import PersonBlock from './components/PersonBlock.vue';
 import { usePeopleActions } from './composables/usePeopleActions.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const participant = useParticipantStore();
 const { error, rename, restoreBankName, setPersonColor } = usePeopleActions();

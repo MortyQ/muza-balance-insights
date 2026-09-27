@@ -140,15 +140,16 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
-  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature`, badge `tokenBadge`, adding);
+  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
+    `tokenBadge`, adding);
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Язык и время» (Скоро), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
-- **Section layout** — `features/settings/shared/components`: `SettingsSection` (title, description, closing note),
+- **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
-  the text the control's label). Every section uses them; they are also exported from the domain index for sections
-  composed outside it («О программе»).
+  the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
+  and the settings widget («О программе»).
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

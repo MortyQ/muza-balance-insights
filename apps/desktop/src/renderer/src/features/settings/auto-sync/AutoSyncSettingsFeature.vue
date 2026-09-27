@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { useId } from 'vue';
 import { AUTO_SYNC_TRIGGERS, type AutoSyncTrigger } from '@contract/auto-sync.ts';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VInfoNotice, VSwitch } from '@/shared/ui';
 import { useAutoSyncSettings } from './composables/useAutoSyncSettings.ts';
 import { TRIGGER_LABELS } from './constants.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsRow from '../shared/components/SettingsRow.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 import { isChecked, restoreSwitch } from '../shared/utils.ts';
 
 const id = useId();

@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { AUTHOR, DISCLAIMER, LICENSE, REPO } from '@contract/about.ts';
 import { useAppUpdateStore } from '@/entities/app-update';
-import { SettingsList, SettingsRow, SettingsSection } from '@/features/settings';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VIcon } from '@/shared/ui';
 
 const update = useAppUpdateStore();
