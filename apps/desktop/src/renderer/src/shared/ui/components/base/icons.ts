@@ -10,7 +10,10 @@ import LucideGlobe from "~icons/lucide/globe";
 import LucideInfo from "~icons/lucide/info";
 import LucideKeyRound from "~icons/lucide/key-round";
 import LucideLandmark from "~icons/lucide/landmark";
+import LucideLanguages from "~icons/lucide/languages";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
+import LucideMonitor from "~icons/lucide/monitor";
+import LucideMoon from "~icons/lucide/moon";
 import LucidePalette from "~icons/lucide/palette";
 import LucidePlug from "~icons/lucide/plug";
 import LucidePlus from "~icons/lucide/plus";
@@ -19,6 +22,7 @@ import LucideSettings from "~icons/lucide/settings";
 import LucideShieldCheck from "~icons/lucide/shield-check";
 import LucideSparkles from "~icons/lucide/sparkles";
 import LucideSquare from "~icons/lucide/square";
+import LucideSun from "~icons/lucide/sun";
 import LucideTrash from "~icons/lucide/trash";
 import LucideTriangleAlert from "~icons/lucide/triangle-alert";
 import LucideUsers from "~icons/lucide/users";
@@ -45,7 +49,10 @@ export const ICONS: Record<string, Component> = {
   "lucide:info": LucideInfo,
   "lucide:key-round": LucideKeyRound,
   "lucide:landmark": LucideLandmark,
+  "lucide:languages": LucideLanguages,
   "lucide:loader-circle": LucideLoaderCircle,
+  "lucide:monitor": LucideMonitor,
+  "lucide:moon": LucideMoon,
   "lucide:palette": LucidePalette,
   "lucide:plug": LucidePlug,
   "lucide:plus": LucidePlus,
@@ -54,6 +61,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:shield-check": LucideShieldCheck,
   "lucide:sparkles": LucideSparkles,
   "lucide:square": LucideSquare,
+  "lucide:sun": LucideSun,
   "lucide:trash": LucideTrash,
   "lucide:triangle-alert": LucideTriangleAlert,
   "lucide:users": LucideUsers,

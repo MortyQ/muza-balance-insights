@@ -1,5 +1,7 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { Locale } from './locale.ts';
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
+import type { ThemePref } from './theme.ts';
 import type { UpdateView } from './update.ts';
 
 export type TokenStatus = {
@@ -90,6 +92,12 @@ export type BalanceApi = {
   setUpdateChecks(enabled: boolean): Promise<UpdateView>;
   /** The hosts the app may reach, for the settings screen. */
   getTrustedServices(): Promise<TrustedServiceView[]>;
+  getTheme(): Promise<ThemePref>;
+  /** Saves and applies at once: the frame, native dialogs and the page's prefers-color-scheme follow. */
+  setTheme(theme: ThemePref): Promise<ThemePref>;
+  /** The chosen language, or the system's until one is chosen. Not applied yet: the texts are not translated. */
+  getLocale(): Promise<Locale>;
+  setLocale(locale: Locale): Promise<Locale>;
   /** Returns an unsubscribe function. */
   onUpdate(cb: (v: UpdateView) => void): () => void;
 };

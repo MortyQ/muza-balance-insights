@@ -278,6 +278,14 @@
   через `shell.openExternal`. В prod — без reload, DevTools и роли `help`; «О программе» — нативная панель на macOS,
   диалог на Windows/Linux. Дисклеймер — одна константа `apps/desktop/src/shared/about.ts` (панель и экран), репозиторий
   в «О программе» — текстом, не ссылкой.
+- Рамка окна — своя (26.09.2026, ветка `title-bar`): `titleBarStyle: 'hidden'` на всех ОС (`frameOptions` в
+  `apps/desktop/src/main/window.ts`). Windows/Linux — нативные кнопки поверх нашей полосы (`titleBarOverlay`, цвета =
+  `--background` / `--foreground` из `theme.css` в hex, сверяет `tests/window.test.ts`; при смене системной темы main
+  перекрашивает их через `nativeTheme` → `setTitleBarOverlay`); Linux ещё `autoHideMenuBar`. macOS — светофор по центру
+  полосы. Высота — `TITLE_BAR_HEIGHT` (`src/shared/titlebar.ts`, 36 px). Полосу рисует `widgets/app-header` (`AppHeader`) над всеми
+  экранами (`App.vue`, прокручивается только экран под ней): лого и имя, шестерня → настройки; отступ под кнопки —
+  `env(titlebar-area-*)`. Меню как объект остаётся (горячие клавиши), на Windows/Linux не показывается.
+  Главный экран: вместо заголовка и шестерни — переключатель людей и «Обновлено…» (`widgets/home-header`, `HomeHeader`).
 - Иконка — `apps/desktop/build/` (`icon.icns` до 1024, `icon.ico` до 256, `icon.png` 512, исходник `icon.svg`),
   electron-builder берёт её оттуда сам. `package.test.ts` / `dmg.test.ts` проверяют размеры и что в `.app` своя иконка.
   Образы `.dmg` монтируются только в `test:dmg` (у пользователя): `hdiutil` в sandbox агента не работает.
@@ -338,7 +346,21 @@
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
-  `assetsInlineLimit: 0`: prod-CSP не пускает `data:`. Тема — по системной, через `data-theme`.
+  `assetsInlineLimit: 0`: prod-CSP не пускает `data:`. Тема — `data-theme` по `prefers-color-scheme` (`app/main.ts`).
+- **Тема** — в main, не в renderer: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, по умолчанию
+  `system`), до создания окна. За ней идут рамка (кнопки overlay через `nativeTheme.on('updated')`), системные диалоги и
+  меню, `prefers-color-scheme` страницы. Хранится в `userData/preferences.json` (`src/main/prefs.ts`: каждое поле со своим
+  значением по умолчанию, запись — `patchPrefs` только своих полей, по очереди). IPC `getTheme` / `setTheme`.
+- **Язык интерфейса** — пока только хранится, тексты не переведены: `src/shared/locale.ts` (`uk | en | ru`,
+  `resolveLocale`: первый язык системы из наших, иначе `en`), `preferences.json` → `locale` (`null` — язык системы),
+  IPC `getLocale` / `setLocale`. Данные для select — `features/language-select` (`LANGUAGE_OPTIONS`: своё название языка +
+  ISO-код страны флага `UA` / `GB` / `RU`, не emoji; `useLocale`). Сам select из muza и раздел «Язык и время» (сейчас
+  пункт «Скоро» в `settings-nav`) добавляет другой разработчик.
+- **Словари интерфейса** — каркас без переводов (ключи появятся, когда экраны устоятся): `src/shared/i18n/{uk,en,ru}.json`
+  (общие для main и renderer), вложенные ключи, синтаксис vue-i18n (`{name}`, формы множественного через `|`). Эталон —
+  `uk.json`: от него `Messages` и `MessageKey` (`src/shared/i18n/index.ts`). JSON не проверяется tsc, поэтому
+  `tests/i18n.test.ts`: у каждой локали свой файл, те же ключи, те же подстановки и число форм, без пустых строк.
+  Библиотеки и `t()` пока нет (vue-i18n — только с компиляцией при сборке: prod-CSP без `unsafe-eval`).
   Библиотеку muzakit целиком не подключаем, пока она не публикуется пакетом. Нужные компоненты — копиями в
   `apps/desktop/src/renderer/src/shared/ui/` (шапка «copied from muzakit», отличия — `shared/ui/README.md`), без `vue-router`
   внутри копий, `@vueuse`, `@iconify/vue`. Иконки — `unplugin-icons` (`autoInstall: false`) из локального `@iconify-json/lucide`,
@@ -376,7 +398,7 @@
   Разделы: «Люди» (`PeopleFeature`, имена) и «Подключения» (`ConnectionsFeature`, бейдж `tokenBadge`, добавление) из
   `features/people`; «Хранение и токены» и «Сеть» (`features/security-info`; хосты — IPC `getTrustedServices` из
   `TRUSTED_SERVICES`, тексты — `SERVICE_TEXT` по id; путь к базе не показывается); «Данные» (только удаление);
-  «Обновления» (`VSwitch`); «Оформление» — неактивный пункт «Скоро» (выбор темы — отдельная ветка); «О программе».
+  «Обновления» (`VSwitch`); «Оформление» (`features/theme-switch`: «Как в системе» / светлая / тёмная); «О программе».
   «Ввести токен» на главном открывает `section=connections`. Первый экран — `ConnectFirstFeature` (существующий
   человек или новый с именем / «Взять имя из банка», текст о согласии владельца токена) с человеком «Я»; на главном — `features/participant-switch` («Вся семья / имена», только если людей больше одного),
   траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
@@ -404,7 +426,7 @@
     не во время импорта. macOS и Linux без `$APPIMAGE` — проверенный файл в «Загрузки», `shell` не используется (#15);
   - сеть — только сессия `electron-updater` (одна на его запросы и наши) с фильтром сервиса `github`, в том числе на каждом
     редиректе (`session.ts`); `fromPartition` и `electron-updater` — только в `update/electron.ts`;
-  - проверка через 10 с после запуска и раз в 6 ч; выключатель в настройках (`userData/preferences.json`, по умолчанию вкл.);
+  - проверка через 10 с после запуска и раз в 6 ч; выключатель в настройках (`userData/preferences.json`, `src/main/prefs.ts`, по умолчанию вкл.);
     в dev не проверяется. Релизы публикуются обычными, не pre-release (`/releases/latest`).
   - Ключ: `scripts/update-keygen.mjs` (только автор), подпись — `scripts/update-sign.mjs` в release job.
   - Не проверено на живом обновлении: фильтр сессии на редиректах GitHub, SmartScreen при тихой установке, карантин `.dmg`.

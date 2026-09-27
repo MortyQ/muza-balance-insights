@@ -6,6 +6,7 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": [],
     "jsx": "preserve",
+    "resolveJsonModule": true,
     "paths": { "@/*": ["./src/renderer/src/*"], "@contract/*": ["./src/shared/*"] }
   },
   "include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.vue", "tests/renderer/**/*.ts"]

@@ -19,6 +19,10 @@ export const METHODS = [
   'installUpdate',
   'setUpdateChecks',
   'getTrustedServices',
+  'getTheme',
+  'setTheme',
+  'getLocale',
+  'setLocale',
 ] as const;
 
 export type Method = (typeof METHODS)[number];
