@@ -28,7 +28,8 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const db of open.splice(0)) db.close();
-  fs.rmSync(dir, { recursive: true, force: true });
+  // Windows may release a closed database file a moment later: rmSync retries on EBUSY.
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 async function seed(key?: string) {
