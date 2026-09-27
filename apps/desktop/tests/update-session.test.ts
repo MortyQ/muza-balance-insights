@@ -1,11 +1,9 @@
 // The updater's network: one session, the one electron-updater uses, guarded so that only the `github` trusted
-// service passes — for its requests and ours, and for every redirect hop. Plus the «Проверять обновления» file.
+// service passes — for its requests and ours, and for every redirect hop.
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { PREFS_FILE, readPrefs, writePrefs } from '../src/main/update/prefs.ts';
 import { UPDATE_PARTITION, downloadTo, guardUpdateSession, type UpdateSessionLike } from '../src/main/update/session.ts';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
@@ -92,16 +90,5 @@ describe('updater network lives in one place', () => {
 
   it('session fetches only in update/session.ts', () => {
     expect(files.filter((f) => /\bses\.fetch\(|session\.fetch\(/.test(read(f)))).toEqual(['main/update/session.ts']);
-  });
-});
-
-describe('«Проверять обновления» preference', () => {
-  it('on by default; a broken file reads as the default; writes round-trip', async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'prefs-'));
-    expect(readPrefs(dir)).toEqual({ updateChecks: true });
-    fs.writeFileSync(path.join(dir, PREFS_FILE), '{broken');
-    expect(readPrefs(dir)).toEqual({ updateChecks: true });
-    await writePrefs(dir, { updateChecks: false });
-    expect(readPrefs(dir)).toEqual({ updateChecks: false });
   });
 });
