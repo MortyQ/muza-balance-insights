@@ -29,6 +29,7 @@ const CANARY = {
   treasuryDescription: 'ГУК Canary обл/18050400',
   newColumn: 'canary-value-in-a-column-added-later',
   participantLabel: 'Canary Participantenko',
+  holderName: 'Canary Holderenko',
 };
 
 let tmpDir: string;
@@ -55,6 +56,7 @@ async function seed(db: Db): Promise<void> {
   await insertAccountRow(db, { id: 'jar1', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, goal: 500000, balance: 2000, updated_at: 1 });
   // The participant's label is personal data (a typed name or the holder's name from the bank).
   await db.execute({ sql: `UPDATE participants SET label = ?, label_source = 'bank'`, args: [CANARY.participantLabel] });
+  await db.execute({ sql: 'UPDATE connections SET holder_name = ?', args: [CANARY.holderName] });
   await db.execute(`INSERT INTO sync_state (account_id, oldest_synced_time, newest_synced_time, last_sync_at) VALUES ('jar1', 1, 2, 3)`);
 
   const tx = (id: string, account: string, time: number, amount: number, description: string, extra: Record<string, string | null> = {}) =>

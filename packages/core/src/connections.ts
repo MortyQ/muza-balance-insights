@@ -1,5 +1,6 @@
 // Participants (who) and connections (a bank + a credential). An account belongs to exactly one connection; the
 // connection says which provider's rules and client apply to it.
+import { firstFreeColor } from './colors.ts';
 import type { Db } from './db.ts';
 import { PROVIDER_IDS, type ProviderId } from './providers/types.ts';
 
@@ -31,14 +32,14 @@ export async function ensureDefaultConnection(db: Db, provider: ProviderId, nowS
   let participantId = first.rows[0] ? Number(first.rows[0].id) : null;
   if (participantId === null) {
     const p = await db.execute({
-      sql: 'INSERT INTO participants (label, sort, created_at) VALUES (?, 0, ?) RETURNING id',
-      args: [DEFAULT_PARTICIPANT_LABEL, nowSec],
+      sql: 'INSERT INTO participants (label, color, sort, created_at) VALUES (?, ?, 0, ?) RETURNING id',
+      args: [DEFAULT_PARTICIPANT_LABEL, await firstFreeColor(db, 'participants'), nowSec],
     });
     participantId = Number(p.rows[0]?.id);
   }
   const c = await db.execute({
-    sql: 'INSERT INTO connections (participant_id, provider, created_at) VALUES (?, ?, ?) RETURNING id',
-    args: [participantId, provider, nowSec],
+    sql: 'INSERT INTO connections (participant_id, provider, color, created_at) VALUES (?, ?, ?, ?) RETURNING id',
+    args: [participantId, provider, await firstFreeColor(db, 'connections'), nowSec],
   });
   return Number(c.rows[0]?.id);
 }

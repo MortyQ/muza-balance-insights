@@ -145,8 +145,10 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
   if (known === null && externalClientId !== null) {
     stmts.push({ sql: 'UPDATE connections SET external_client_id = ? WHERE id = ?', args: [externalClientId, connectionId] });
   }
+  // Kept even while the user's own name is the label: «взять имя из банка» applies it at once (restoreBankLabel).
+  const name = holderName?.replace(/\s+/g, ' ').trim().slice(0, PARTICIPANT_LABEL_MAX);
+  if (name) stmts.push({ sql: 'UPDATE connections SET holder_name = ? WHERE id = ?', args: [name, connectionId] });
   if (conn.rows[0]?.label_source === 'bank') {
-    const name = holderName?.replace(/\s+/g, ' ').trim().slice(0, PARTICIPANT_LABEL_MAX);
     if (name) {
       stmts.push({
         sql: `UPDATE participants SET label = ? WHERE id = ? AND label_source = 'bank'`,
