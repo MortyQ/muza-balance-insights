@@ -28,6 +28,7 @@ export interface Slide extends BalanceCardProps {
 }
 
 export interface LegendItem {
+  participantId: number;
   label: string;
   color: string;
 }
@@ -50,8 +51,8 @@ export interface UseMonthOverviewReturn {
   month: WritableComputedRef<string>;
   /** The shown answer's month: «Сентябрь», «Декабрь 2025». */
   monthName: ComputedRef<string>;
-  thisMonth: YearMonth;
-  currentYear: number;
+  thisMonth: ComputedRef<YearMonth>;
+  currentYear: ComputedRef<number>;
   /** The first month with data (Kyiv), or null while unknown. */
   firstMonth: ComputedRef<YearMonth | null>;
 }

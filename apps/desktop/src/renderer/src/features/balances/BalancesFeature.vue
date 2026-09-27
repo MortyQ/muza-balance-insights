@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue';
-import { useSyncStatusStore } from '@/entities/sync-status';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import BalancesHeader from './components/BalancesHeader.vue';
 import CardStack from './components/CardStack.vue';
@@ -12,7 +11,6 @@ import { accountsCount, coverageNote, maxOffset } from './utils.ts';
 const { state, view, slides, isFamily, legend, month, monthName, thisMonth, currentYear, firstMonth } = useMonthOverview();
 const stack = useCardStack(() => slides.value.length);
 const { open, offset, paging, stubShown } = stack;
-const syncStatus = useSyncStatusStore();
 const block = useTemplateRef<HTMLElement>('block');
 const cards = useTemplateRef<{ focusFront: () => void }>('cards');
 
@@ -37,7 +35,6 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
 <template>
   <VCard padding="md" @keydown.esc="collapse">
     <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
-    <p v-else-if="!syncStatus.hasData" class="text-foreground-muted">Счетов пока нет: загрузи выписку в разделе «Импорт».</p>
     <div v-else ref="block" class="flex flex-col gap-3">
       <BalancesHeader
         v-model="month"

@@ -150,8 +150,8 @@ async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number 
   const [a, b] = last.rows;
   if (a && a.balance !== null && !(b && Number(b.time) === Number(a.time))) return Number(a.balance);
   const after = await db.execute({
-    sql: 'SELECT COALESCE(SUM(amount), 0) AS s FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time >= ?',
-    args: [r.id, endSec],
+    sql: 'SELECT COALESCE(SUM(amount), 0) AS s FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time >= ? AND time <= ?',
+    args: [r.id, endSec, r.updatedAt],
   });
   return r.balance - Number(after.rows[0]?.s ?? 0);
 }

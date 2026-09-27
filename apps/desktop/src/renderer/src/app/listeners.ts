@@ -4,6 +4,7 @@ import { useAppUpdateStore } from '@/entities/app-update';
 import { useDbStateStore } from '@/entities/db-state';
 import { FINISHED_PHASES, useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
+import { useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { balanceApi } from '@/shared/api';
 import { ROUTE } from '@/shared/config';
@@ -26,8 +27,12 @@ export function listenToMain(router: Router): () => void {
   const appUpdate = useAppUpdateStore();
   const appLock = useAppLockStore();
   const dbState = useDbStateStore();
+  const monthStore = useMonthStore();
 
-  const live = throttle(() => void syncStatus.refresh(), LIVE_REFRESH_MS);
+  const live = throttle(() => {
+    monthStore.refresh();
+    void syncStatus.refresh();
+  }, LIVE_REFRESH_MS);
   // windowsDone of the last refresh; any change (a new window, or a restarted worker counting from 0) is new data.
   let windowsSeen = 0;
 
@@ -42,6 +47,7 @@ export function listenToMain(router: Router): () => void {
     if (FINISHED_PHASES.includes(p.phase) && was !== p.phase) {
       live.cancel();
       windowsSeen = 0;
+      monthStore.refresh();
       void syncStatus.refresh();
       refreshPeople();
     }
@@ -66,11 +72,16 @@ export function listenToMain(router: Router): () => void {
     if (route === ROUTE.lock) return;
     if (!dbState.ready && route !== ROUTE.dbRecovery) void router.replace({ name: ROUTE.dbRecovery });
     if (dbState.ready && route === ROUTE.dbRecovery) {
+      monthStore.refresh();
       void Promise.all([participant.refresh(), syncStatus.refresh()])
         .catch(() => undefined)
         .then(() => router.replace({ name: ROUTE.home }));
     }
   });
+  // Across a month boundary while the app stays open (or minimized/asleep), the clock has moved on by the time the
+  // window regains focus. Guarded: renderer tests run without a DOM.
+  const onFocus = () => monthStore.refresh();
+  if (typeof window !== 'undefined') window.addEventListener('focus', onFocus);
   return () => {
     live.cancel();
     offProgress();
@@ -78,5 +89,6 @@ export function listenToMain(router: Router): () => void {
     offSettings();
     offLock();
     offDbState();
+    if (typeof window !== 'undefined') window.removeEventListener('focus', onFocus);
   };
 }

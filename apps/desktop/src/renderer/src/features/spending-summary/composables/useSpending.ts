@@ -20,8 +20,7 @@ export function useSpending(): UseSpendingReturn {
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
   const monthStore = useMonthStore();
-  const { month } = storeToRefs(monthStore);
-  const thisMonth = monthStore.thisMonth;
+  const { month, thisMonth } = storeToRefs(monthStore);
   const scope = ref<Scope>('personal');
   const firstMonth = computed<YearMonth | null>(() => {
     const from = syncStatus.status?.dataFrom;

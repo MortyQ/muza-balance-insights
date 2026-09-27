@@ -54,6 +54,14 @@ describe('balancesAt', () => {
     expect(await own(END_JULY)).toEqual({ a: 70_000, b: 70_000 });
   });
 
+  it('ignores operations after updated_at: the stored balance is the bank\'s number at the last fetch, not now', async () => {
+    await account('a', 50_000);
+    await tx('a', END_JULY - 100, -1_000, null);
+    await tx('a', END_JULY + 100, -20_000, null);
+    await tx('a', SYNCED + 10, -5_000, null); // after updated_at: not yet reflected in the fetched balance
+    expect(await own(END_JULY)).toEqual({ a: 70_000 });
+  });
+
   it('ignores cancelled operations', async () => {
     await account('a', 50_000);
     await tx('a', END_JULY - 100, -1_000, 70_000);

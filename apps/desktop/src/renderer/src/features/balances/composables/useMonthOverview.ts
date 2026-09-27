@@ -1,4 +1,4 @@
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
@@ -17,8 +17,8 @@ export function useMonthOverview(): UseMonthOverviewReturn {
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
   const monthStore = useMonthStore();
-  const thisMonth = monthStore.thisMonth;
-  const currentYear = Number(thisMonth.slice(0, 4));
+  const thisMonth = computed(() => monthStore.thisMonth);
+  const currentYear = computed(() => Number(thisMonth.value.slice(0, 4)));
 
   const firstMonth = computed<YearMonth | null>(() => {
     const from = syncStatus.status?.dataFrom;
@@ -28,6 +28,8 @@ export function useMonthOverview(): UseMonthOverviewReturn {
     get: () => monthStore.month,
     set: (v) => monthStore.set(v as YearMonth, firstMonth.value),
   });
+  // The first data month can move later (a re-import that starts fresher); re-clamp the selection to it.
+  watch(firstMonth, (first) => monthStore.set(monthStore.month, first));
 
   const { state } = useAsyncData(
     async (): Promise<TaggedOverview> => {
@@ -40,12 +42,14 @@ export function useMonthOverview(): UseMonthOverviewReturn {
   );
   const view = computed(() => state.value.data?.overview ?? null);
   const shownId = computed<number | null>(() => state.value.data?.participantId ?? null);
-  const monthName = computed(() => monthNameOf(view.value?.month ?? monthStore.month, currentYear));
+  const monthName = computed(() => monthNameOf(view.value?.month ?? monthStore.month, currentYear.value));
   const isFamily = computed(() => shownId.value === null);
   const slides = computed(() =>
-    view.value ? slidesOf(view.value, { people: participant.people, selectedId: shownId.value, currentYear }) : [],
+    view.value ? slidesOf(view.value, { people: participant.people, selectedId: shownId.value, currentYear: currentYear.value }) : [],
   );
-  const legend = computed(() => (view.value?.people ?? []).map((p) => ({ label: p.label, color: colorVar(p.color) })));
+  const legend = computed(() =>
+    (view.value?.people ?? []).map((p) => ({ participantId: p.participantId, label: p.label, color: colorVar(p.color) })),
+  );
 
   return { state, view, slides, isFamily, legend, month, monthName, thisMonth, currentYear, firstMonth };
 }
