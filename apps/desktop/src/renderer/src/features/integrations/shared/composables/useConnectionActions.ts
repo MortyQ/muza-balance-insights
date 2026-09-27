@@ -50,7 +50,9 @@ export function useConnectionActions(): UseConnectionActionsReturn {
     if (accounts.value.get(connectionId)?.status !== 'ready') setAccounts(connectionId, { status: 'loading' });
     try {
       setAccounts(connectionId, { status: 'ready', accounts: await request.listAccounts(connectionId) });
-    } catch {
+    } catch (e) {
+      // The error only (no account data): the cause for the next report.
+      console.error('[accounts] list failed', e);
       setAccounts(connectionId, { status: 'error' });
     }
   }

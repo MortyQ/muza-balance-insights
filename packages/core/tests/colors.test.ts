@@ -64,7 +64,8 @@ describe('colours', () => {
     // A new connection has no colour (only people have one).
     const x = await addConnection(db, a, 'monobank', 0);
     const y = await addConnection(db, b, 'monobank', 0);
-    expect((await listConnections(db)).map((k) => [k.id, k.color])).toEqual([[x, null], [y, null]]);
+    expect((await db.execute('SELECT id, color FROM connections ORDER BY id')).rows.map((k) => [Number(k.id), k.color])).toEqual([[x, null], [y, null]]);
+    expect((await listConnections(db)).every((k) => !('color' in k))).toBe(true);
 
     for (let i = 0; i < COLOR_KEYS.length - 3; i++) await addParticipant(db, { label: `Ще ${i}` }, 0);
     expect(await firstFreeColor(db, 'participants')).toBeNull();

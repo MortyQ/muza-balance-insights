@@ -72,6 +72,12 @@ describe('participant store', () => {
     expect(tokenLine(token({ present: false, stored: null, needsReentry: true }))).toMatch(/больше не читается/);
     expect(coverageLine(conn(1))).toBe('Ещё не загружено');
     expect(coverageLine(conn(1, { coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Счетов: 2 · загружено с 01.06.2025 по 25.09.2026');
+    // Some accounts off: how many count, of all.
+    expect(coverageLine(conn(1, { accounts: 3, coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Счетов: 2 из 3 · загружено с 01.06.2025 по 25.09.2026');
+    // All off: no coverage of enabled accounts, but it is not «not imported».
+    expect(coverageLine(conn(1, { enabledAccounts: 0 }))).toBe('Все счета выключены');
+    expect(coverageLine(conn(1, { enabledAccounts: 0, coveredFrom: '2025-06-01', coveredTo: '2026-09-25' }))).toBe('Все счета выключены');
+    expect(coverageLine(conn(1, { accounts: 0, enabledAccounts: 0 }))).toBe('Ещё не загружено');
   });
 });
 

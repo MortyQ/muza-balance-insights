@@ -9,12 +9,13 @@ are quoted as they appear in it.
 
 - Every person now has their own colour, so people are easy to tell apart (and, later, on charts). Pick a new
   person's colour when you add their connection, or change it any time with «Изменить цвет» (change colour) in
-  Settings → «Люди» (people). No two people can share a colour. Connections have no colour of their own.
+  Settings → «Люди» (people). No two people can share a colour.
 - Choose which accounts count: in Settings → «Подключения» (connections), «Счета» (accounts) under a connection lists
   its cards and jars, each with a switch. A switched-off account is no longer downloaded and is left out of every
-  balance, total and search; a transfer between it and your other accounts counts as ordinary spending or income.
-  Its transactions already downloaded stay on your computer: switch it back on and they count again at once. If every
-  account is switched off, the home screen says so and takes you to «Подключения».
+  balance, total and search. A transfer between it and your other accounts is counted as ordinary spending or income
+  where the app can tell which account it went to. Its transactions already downloaded stay on your computer: switch
+  it back on and they count again at once. If every account is switched off, the home screen says so and takes you to
+  «Подключения».
 - The people switch at the top of the home screen shows each person's colour next to their name, and everyone's
   colours on «Вся семья» (the whole family), so you always know whose colour is whose.
 - «Взять имя из банка» (use the name from the bank) now also works after you have renamed someone: tick it in

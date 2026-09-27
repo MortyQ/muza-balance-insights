@@ -17,11 +17,13 @@ export function tokenBadge(s: Readonly<TokenStatus>): TokenBadge {
   return s.stored === 'secure' ? { tone: 'success', text: 'Токен сохранён' } : { tone: 'warning', text: 'Токен до закрытия' };
 }
 
-/** What has been imported for a connection. */
+/** What has been imported for a connection; with some accounts off — how many count, of all. */
 export function coverageLine(c: Readonly<ConnectionView>): string {
+  if (c.accounts > 0 && c.enabledAccounts === 0) return 'Все счета выключены';
   if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
   const d = (iso: string) => iso.split('-').reverse().join('.');
-  return `Счетов: ${c.accounts} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+  const count = c.enabledAccounts === c.accounts ? `${c.accounts}` : `${c.enabledAccounts} из ${c.accounts}`;
+  return `Счетов: ${count} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
 }
 
 /**

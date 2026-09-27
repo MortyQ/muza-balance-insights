@@ -23,12 +23,12 @@
   - Имя владельца от банка хранится и при `user` (миграция v10, `connections.holder_name`, только в базе):
     `restoreBankLabel` («Взять имя из банка» после переименования) ставит `bank` и сразу берёт `holder_name` первого
     подключения человека, где оно есть.
-  - Цвета (миграция v10, `packages/core/src/colors.ts`): `participants.color` и `connections.color` — ключ палитры
-    `COLOR_KEYS` (8, категориальная палитра dataviz), уникален отдельно среди людей и среди подключений, NULL = нет
-    (палитра кончилась). Новый ряд — выбранный (занят → `ColorTakenError`) или первый свободный; `setParticipantColor`.
-    В копию не идёт. С 27.09.2026 цвет только у людей: новое подключение пишет `color = NULL`
-    (`addConnection`, `ensureDefaultConnection`), колонка и индекс остаются; `setConnectionColor` удалён вместе с
-    выбором цвета подключения в десктопе.
+  - Цвета (миграция v10, `packages/core/src/colors.ts`): `participants.color` — ключ палитры `COLOR_KEYS` (8,
+    категориальная палитра dataviz), уникален среди людей, NULL = нет (палитра кончилась). Новый человек — выбранный
+    (занят → `ColorTakenError`) или первый свободный; `setParticipantColor`. В копию не идёт. Цвет только у людей
+    (`ColorTable = 'participants'`): колонка и индекс `connections.color` остаются в схеме, но ядро их не читает
+    (`ConnectionInfo` без `color`) и пишет только `NULL` (`addConnection`, `ensureDefaultConnection`);
+    `setConnectionColor` удалён вместе с выбором цвета подключения в десктопе.
   - Выбор счетов (миграция v11, `accounts.sync_choice`: NULL — авто, 1 — вкл, 0 — выкл; `packages/core/src/accounts.ts`).
     Действующее значение — `accountEnabledSql(alias)`, одно выражение на ядро: выбор, иначе авто (карта всегда; банка —
     баланс > 0 или есть `sync_state`). `syncAccounts` выбор не трогает. План (`defaultAccountSelection`) берёт только

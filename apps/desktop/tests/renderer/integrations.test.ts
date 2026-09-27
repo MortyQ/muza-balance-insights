@@ -14,7 +14,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('@/shared/api', () => ({ balanceApi: api }));
 
-const { accountLabel, accountToggleText, participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
+const { accountLabel, accountSwitchChange, accountToggleText, accountsButtonText, participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
 const { useConnectionActions } = await import('@/features/integrations/shared/composables/useConnectionActions.ts');
 const { useSyncStatusStore } = await import('@/entities/sync-status');
 const { CARD_TYPE_NAMES } = await import('@/features/integrations/monobank/constants.ts');
@@ -107,6 +107,29 @@ describe('«Счета» of a connection', () => {
     expect(accountToggleText({ changed: false, reason: 'import-running' })).toMatch(/после него/);
   });
 
+  it('the «Счета» button: all counted, or how many of all', () => {
+    expect(accountsButtonText({ accounts: 3, enabledAccounts: 3 })).toBe('Счета · 3');
+    expect(accountsButtonText({ accounts: 3, enabledAccounts: 1 })).toBe('Счета · 1 из 3');
+    expect(accountsButtonText({ accounts: 2, enabledAccounts: 0 })).toBe('Счета · 0 из 2');
+  });
+
+  it('a switch: saved value, rollback after a refusal; while another saves it goes back at once', () => {
+    // The browser has already flipped the input when @change fires.
+    const input = { checked: false };
+    const change = accountSwitchChange(input, true, false);
+    expect(change?.enabled).toBe(false);
+    change?.done(false); // refused (import running) or failed
+    expect(input.checked).toBe(true);
+
+    const ok = { checked: false };
+    accountSwitchChange(ok, true, false)?.done(true);
+    expect(ok.checked).toBe(false);
+
+    const other = { checked: true };
+    expect(accountSwitchChange(other, false, true)).toBeNull();
+    expect(other.checked).toBe(false);
+  });
+
   it('every Monobank type the database knows has a name', () => {
     for (const t of ['black', 'white', 'platinum', 'iron', 'fop', 'yellow', 'eAid']) expect(CARD_TYPE_NAMES[t], t).toBeTruthy();
   });
@@ -147,6 +170,16 @@ describe('«Счета» of a connection', () => {
     expect(await a.setAccountEnabled(7, 'a1', false)).toBe(false);
     expect(a.error.value).toMatch(/Не удалось выполнить/);
     expect(a.savingAccount.value).toBeNull();
+  });
+
+  it('a failed list load is logged (the error only) for the next report', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const a = useConnectionActions();
+    const e = new Error("Error invoking remote method 'balance:listConnectionAccounts'");
+    api.listConnectionAccounts.mockRejectedValueOnce(e);
+    await a.loadAccounts(5);
+    expect(log).toHaveBeenCalledWith('[accounts] list failed', e);
+    log.mockRestore();
   });
 
   it('a failed list load is an error state; a reopen keeps the old list while the new one comes', async () => {

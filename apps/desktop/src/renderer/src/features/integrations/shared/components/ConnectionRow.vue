@@ -8,7 +8,7 @@ import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton, VSwitch } from '@/shared/ui';
 import { DISABLED_ACCOUNT_HINT, IMPORT_RUNNING_ACCOUNTS_TEXT } from '../constants.ts';
 import type { AccountsState } from '../types.ts';
-import { accountLabel } from '../utils.ts';
+import { accountLabel, accountSwitchChange, accountsButtonText } from '../utils.ts';
 
 const { connection, secureStorage, tokenField, accounts, cardTypes, importRunning, savingAccount } = defineProps<{
   connection: Readonly<ConnectionView>;
@@ -50,11 +50,8 @@ function toggleAccounts() {
 
 function onSwitch(a: Readonly<ConnectionAccountView>, e: Event) {
   if (!(e.target instanceof HTMLInputElement)) return;
-  const input = e.target;
-  // The browser flips the input before @change; a refused or failed save puts it back.
-  emit('setAccountEnabled', a.id, input.checked, (changed) => {
-    if (!changed) input.checked = a.enabled;
-  });
+  const change = accountSwitchChange(e.target, a.enabled, savingAccount !== null);
+  if (change) emit('setAccountEnabled', a.id, change.enabled, change.done);
 }
 
 function save() {
@@ -93,7 +90,7 @@ function save() {
         <VButton
           v-if="connection.accounts > 0"
           variant="neutral"
-          :text="`Счета · ${connection.accounts}`"
+          :text="accountsButtonText(connection)"
           :aria-expanded="panel === 'accounts'"
           @click="toggleAccounts"
         />
@@ -139,7 +136,9 @@ function save() {
                   <VSwitch
                     :id="`${id}-${a.id}`"
                     :model-value="a.enabled"
-                    :disabled="importRunning || savingAccount !== null"
+                    :disabled="importRunning"
+                    :aria-disabled="savingAccount !== null || undefined"
+                    :aria-busy="savingAccount === a.id || undefined"
                     role="switch"
                     @change="onSwitch(a, $event)"
                   />

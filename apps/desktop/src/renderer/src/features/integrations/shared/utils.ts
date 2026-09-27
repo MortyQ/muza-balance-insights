@@ -1,5 +1,5 @@
 import { currencyAlpha } from '@mono/core/currency';
-import type { ColorKey, ConnectionAccountView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
+import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
 import { IMPORT_RUNNING_ACCOUNTS_TEXT } from './constants.ts';
 import type { PersonChoice } from './types.ts';
 
@@ -32,4 +32,31 @@ export function accountLabel(a: Readonly<ConnectionAccountView>, cardTypes: Read
 /** Why an account was not switched, or '' when it was. */
 export function accountToggleText(r: Readonly<SetAccountEnabledResult>): string {
   return r.changed ? '' : IMPORT_RUNNING_ACCOUNTS_TEXT;
+}
+
+/** «Счета · 3», or «Счета · 1 из 3» while some are off. */
+export function accountsButtonText(c: Readonly<Pick<ConnectionView, 'accounts' | 'enabledAccounts'>>): string {
+  return c.enabledAccounts === c.accounts ? `Счета · ${c.accounts}` : `Счета · ${c.enabledAccounts} из ${c.accounts}`;
+}
+
+/**
+ * A switch's @change in «Счета» (the browser has already flipped the input): the value to save and `done`, which puts
+ * the input back to `enabled` unless it changed; null while another account saves — the input goes back at once.
+ * The switches are not disabled while saving, so keyboard focus stays where it is.
+ */
+export function accountSwitchChange(
+  input: { checked: boolean },
+  enabled: boolean,
+  busy: boolean,
+): { enabled: boolean; done: (changed: boolean) => void } | null {
+  if (busy) {
+    input.checked = enabled;
+    return null;
+  }
+  return {
+    enabled: input.checked,
+    done: (changed) => {
+      if (!changed) input.checked = enabled;
+    },
+  };
 }

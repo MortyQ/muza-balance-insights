@@ -19,7 +19,6 @@ export type ConnectionInfo = {
   id: number;
   participantId: number;
   provider: ProviderId;
-  color: ColorKey | null;
   accounts: number;
   /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
   enabledAccounts: number;
@@ -105,7 +104,7 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
 /** Every connection with what the UI shows about it. The bank's holder id is not part of it. */
 export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
   const rs = await db.execute(
-    `SELECT c.id, c.participant_id, c.provider, c.color, COUNT(a.id) AS accounts,
+    `SELECT c.id, c.participant_id, c.provider, COUNT(a.id) AS accounts,
             SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
             MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
      FROM connections c
@@ -118,7 +117,6 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
     id: Number(r.id),
     participantId: Number(r.participant_id),
     provider: parseProviderId(r.provider),
-    color: parseColor(r.color),
     accounts: Number(r.accounts),
     enabledAccounts: Number(r.enabled_accounts ?? 0),
     coveredFrom: date(r.oldest),

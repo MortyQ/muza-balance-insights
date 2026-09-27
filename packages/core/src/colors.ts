@@ -1,6 +1,7 @@
-// The colour of a participant and of a connection: a key of one fixed palette (the desktop app maps each key to its
-// shade in the light and the dark theme). Unique among participants and, separately, among connections; NULL = none
-// (the palette ran out, or a row from before it existed and past its length).
+// The colour of a participant: a key of one fixed palette (the desktop app maps each key to its shade in the light and
+// the dark theme). Unique among participants; NULL = none (the palette ran out, or a row from before it existed and
+// past its length). connections.color (migration v10) stays in the schema but is no longer read or written: new
+// connections get NULL.
 import type { Db } from './db.ts';
 
 /** Categorical order; a new row takes the first free one. No ninth colour is generated. */
@@ -8,7 +9,7 @@ export const COLOR_KEYS = ['blue', 'orange', 'aqua', 'yellow', 'magenta', 'green
 
 export type ColorKey = (typeof COLOR_KEYS)[number];
 
-export type ColorTable = 'participants' | 'connections';
+export type ColorTable = 'participants';
 
 export class ColorTakenError extends Error {
   override name = 'ColorTakenError';
