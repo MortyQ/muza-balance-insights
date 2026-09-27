@@ -211,10 +211,16 @@ describe('the token never leaves main', () => {
     expect([...store.matchAll(/from '([^']+)'/g)]).toEqual([]);
     expect(store).not.toMatch(/console\.|process\.std(out|err)/);
     // The providers table: credential shapes only — no network, database or logging either.
-    const providers = fs.readFileSync(new URL('../src/net/providers.ts', import.meta.url), 'utf8');
-    expect([...providers.matchAll(/^import (type )?.* from '([^']+)'/gm)].map((m) => [m[1] ?? '', m[2]])).toEqual([
+    const importsOf = (p: string) =>
+      [...fs.readFileSync(new URL(p, import.meta.url), 'utf8').matchAll(/^import (type )?.* from '([^']+)'/gm)].map((m) => [m[1] ?? '', m[2]]);
+    expect(importsOf('../src/net/providers.ts')).toEqual([
       ['type ', '@mono/core/providers/types'],
+      ['', '../integrations/monobank/desktop.ts'],
+      ['type ', '../integrations/types.ts'],
     ]);
+    // Each bank's desktop entry: types only; the types file: types only.
+    expect(importsOf('../src/integrations/monobank/desktop.ts')).toEqual([['type ', '../types.ts']]);
+    expect(importsOf('../src/integrations/types.ts').every(([t]) => t === 'type ')).toBe(true);
   });
 });
 

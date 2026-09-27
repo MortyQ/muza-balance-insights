@@ -17,6 +17,7 @@
     "src/shared",
     "src/net",
     "src/worker",
+    "src/integrations",
     "scripts",
     "tests",
     "electron.vite.config.ts",
