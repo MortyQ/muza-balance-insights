@@ -7,7 +7,8 @@ are quoted as they appear in it.
 
 Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in
 someone else's cloud. New in this version: the app fetches new transactions by itself, it can be locked with a PIN or
-Touch ID, and the database on your computer is now encrypted.
+Touch ID, the database on your computer is now encrypted, and the app has a new look: its own window title bar,
+redesigned settings and a light or dark theme.
 
 ### Connecting your bank
 
@@ -16,8 +17,8 @@ Touch ID, and the database on your computer is now encrypted.
 - «Запомнить на этом компьютере» (remember on this computer) keeps the token in the system key store: Keychain on macOS,
   the Windows credential store, the keyring on Linux. If there is no such store, the token is kept in memory only until
   the app is closed, and the app tells you so.
-- Enter a token again or remove a connection in Settings → «Люди и подключения» (people and connections).
-- Settings open from the gear on the home screen or with Cmd+, / Ctrl+,. Esc goes back.
+- Enter a token again or remove a connection in Settings → «Подключения» (connections).
+- Settings open from the gear in the window's title bar or with Cmd+, / Ctrl+,. Esc goes back.
 
 ### Loading your statement
 
@@ -66,7 +67,7 @@ Touch ID, and the database on your computer is now encrypted.
 
 ### Family: several people and connections
 
-- Settings → «Люди и подключения»: one app can hold several people, for example you and your partner, each with their
+- Settings → «Люди» (people) and «Подключения» (connections): one app can hold several people, for example you and your partner, each with their
   own Monobank connections and tokens. Buttons: «Добавить подключение», «Переименовать», «Ввести токен заново»,
   «Удалить».
 - A new person's name can be typed or taken from the bank: it is filled in on the first load.
@@ -80,6 +81,18 @@ Touch ID, and the database on your computer is now encrypted.
 - «Удалить» removes the connection, its token and the loaded transactions of its accounts in this app. Nothing changes
   at the bank.
 
+### Look and settings
+
+- New: the app has its own window title bar with the app name and the settings gear. On Windows and Linux the window
+  buttons sit on it; on macOS, the usual traffic lights.
+- New: redesigned settings. A menu on the left — «Пользователи» (users), «Безопасность» (security), «Приложение» (the
+  app) — and one section at a time on the right. Arrow keys move through the menu.
+- New sections: «Хранение и токены» (where your statement and tokens are kept and who can read them) and «Сеть»
+  (network: the only services the app talks to).
+- New: Settings → «Оформление» (appearance): «Как в системе» (follow the system), light or dark. The window frame, menus
+  and system dialogs follow the choice too.
+- The home screen buttons «Ввести токен» (enter token) and «Включить» (turn on the lock) open the right settings section.
+
 ### Security and privacy
 
 - Your data stays on your computer. The app talks only to Monobank (for the statement) and GitHub (for updates). No
@@ -87,7 +100,7 @@ Touch ID, and the database on your computer is now encrypted.
 - New: the database is encrypted with a random key, and the key is kept in the system key store, like the tokens. A copy
   of the files — on another computer or user account, in a backup or a cloud folder — can't be opened.
 - An existing database is encrypted by itself on the first launch of the new version. Check it in Settings →
-  «Шифрование базы».
+  «Хранение и токены» (storage and tokens) → «Шифрование базы».
 - New: app lock. Turn it on in Settings → «Блокировка» → «Включить блокировку». It needs a PIN of 4–8 digits; on a Mac
   you can also unlock with Touch ID.
 - Under «Когда блокировать», choose when the app locks by itself: at launch, after 60 minutes of inactivity, when the
@@ -99,7 +112,7 @@ Touch ID, and the database on your computer is now encrypted.
 - If the database can't be opened, for example because its key is not available, the app offers: «Перезапустить»
   (restart), «Начать заново» (start over), «Удалить все данные» (delete all data) or «Выйти» (quit). «Начать заново»
   creates a new empty database, and your transactions are loaded from the bank again.
-- «Удалить все данные» (Settings → «Данные на этом компьютере») erases the database and its key, saved tokens, the lock
+- «Удалить все данные» (Settings → «Данные») erases the database and its key, saved tokens, the lock
   and an unfinished import. The app asks for confirmation first.
 - The app's data folder is open to your user account only (macOS, Linux).
 
@@ -111,7 +124,7 @@ Touch ID, and the database on your computer is now encrypted.
 - On macOS, «Скачать» (download) saves the verified file to Downloads. Open it and drag Balance Insights into
   Applications, replacing the old one.
 - An update is installed only if it is signed by the author and the file matches the signed description.
-- Settings → «Обновления»: the version number, «Проверить сейчас» (check now) and «Проверять обновления автоматически»
+- Settings → «Обновления»: the version number, «Проверить сейчас» (check now) and «Проверять автоматически»
   (check automatically).
 
 ### Installation
