@@ -26,26 +26,10 @@ beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dbenc-'));
   file = path.join(dir, 'test.db');
 });
-afterEach((ctx) => {
+afterEach(() => {
   for (const db of open.splice(0)) db.close();
-  try {
-    // Windows may release a closed database file a moment later: rmSync retries on EBUSY.
-    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
-  } catch (e) {
-    // Which of the files is still held (tests/windows-file-release.test.ts explains why); the failure stays a failure.
-    const files = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
-    const held = files.map((f) => {
-      try {
-        fs.renameSync(path.join(dir, f), path.join(dir, `${f}.probe`));
-        fs.renameSync(path.join(dir, `${f}.probe`), path.join(dir, f));
-        return { file: f, movable: true };
-      } catch (err) {
-        return { file: f, movable: false, code: (err as NodeJS.ErrnoException).code ?? null };
-      }
-    });
-    process.stdout.write(`DIAG ${JSON.stringify({ test: ctx.task.name, cleanup: (e as NodeJS.ErrnoException).code ?? null, held })}\n`);
-    throw e;
-  }
+  // Windows may release a closed database file a moment later: rmSync retries on EBUSY.
+  fs.rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 async function seed(key?: string) {
