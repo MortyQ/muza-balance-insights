@@ -241,7 +241,7 @@ describe('statistics without disabled accounts (variant A for transfers)', () =>
     expect((await periodInfo(db, { from: '2026-03-01', to: '2026-03-31' }, NOW)).pendingHolds).toBe(0);
     expect(await firstDataDate(db)).toBe('2026-01-01');
     const mine = (await listConnections(db)).find((c) => c.participantId === me);
-    expect(mine).toMatchObject({ accounts: 2, coveredFrom: '2026-01-01', coveredTo: '2026-03-10' });
+    expect(mine).toMatchObject({ accounts: 2, enabledAccounts: 1, coveredFrom: '2026-01-01', coveredTo: '2026-03-10' });
 
     await setAccountEnabled(db, 'white', true);
     expect((await getSyncStatus(db, NOW * 1000)).data_until).toBe('2026-02-20');

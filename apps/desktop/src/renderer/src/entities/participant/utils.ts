@@ -24,6 +24,14 @@ export function coverageLine(c: Readonly<ConnectionView>): string {
   return `Счетов: ${c.accounts} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
 }
 
+/**
+ * Every account of every connection is turned off in «Счета»: nothing to import or count. A connection with no accounts
+ * yet (not imported) does not count as off — its first import brings them.
+ */
+export function allAccountsOff(connections: ReadonlyArray<Readonly<ConnectionView>>): boolean {
+  return connections.length > 0 && connections.every((c) => c.accounts > 0 && c.enabledAccounts === 0);
+}
+
 /** The CSS colour of a palette key in the current theme; no colour → the strong border grey. */
 export function colorVar(color: ColorKey | null): string {
   return color === null ? 'var(--border-strong)' : `var(--series-${color})`;

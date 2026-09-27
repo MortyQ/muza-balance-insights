@@ -3,6 +3,7 @@ import { computed, ref } from 'vue';
 import type { ConnectionView, PeopleView, PersonView } from '@contract/api.ts';
 import { useParticipantsRequest } from '../api/useParticipantsRequest.ts';
 import { FAMILY, SELECTED_KEY } from '../constants.ts';
+import { allAccountsOff } from '../utils.ts';
 
 function readSelected(): number | null {
   try {
@@ -33,6 +34,8 @@ export const useParticipantStore = defineStore('participant', () => {
   /** At least one connection can import now. */
   const anyToken = computed(() => connections.value.some((c) => c.token.present));
   const withoutToken = computed(() => connections.value.filter((c) => !c.token.present));
+  /** Every account is turned off in «Счета»: home says so instead of showing nothing. */
+  const accountsOff = computed(() => allAccountsOff(connections.value));
   const secureStorage = computed(() => view.value?.secureStorage ?? true);
   const multiple = computed(() => people.value.length > 1);
   /** The participant the data screens show; null = the whole family (also when there is only one person). */
@@ -58,5 +61,5 @@ export const useParticipantStore = defineStore('participant', () => {
     view.value = await fetchPeople();
   }
 
-  return { view, chosen, people, connections, hasConnections, anyToken, withoutToken, secureStorage, multiple, selectedId, select, labelOf, refresh };
+  return { view, chosen, people, connections, hasConnections, anyToken, withoutToken, accountsOff, secureStorage, multiple, selectedId, select, labelOf, refresh };
 });

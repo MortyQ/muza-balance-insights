@@ -18,7 +18,7 @@ const api = vi.hoisted(() => {
 });
 vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api.people) } }));
 
-const { FAMILY, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
+const { FAMILY, allAccountsOff, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
@@ -26,7 +26,7 @@ const { connectionsCount } = await import('@/features/settings/people/utils.ts')
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
+  id, provider: 'monobank', bank: 'Monobank', accounts: 2, enabledAccounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
 const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, color: null, connections });
 
@@ -99,6 +99,20 @@ describe('screens and notices', () => {
     expect(startRoute(false, false)).toBe('connect');
     expect(startRoute(true, false)).toBe('home'); // a connection without a token: home asks for it, no second connection
     expect(startRoute(false, true)).toBe('home');
+  });
+
+  it('every account turned off: home with a notice, not the connect screen', async () => {
+    // Off accounts leave no data (hasData false), but there are connections: home, where the notice leads to «Подключения».
+    expect(startRoute(true, false)).toBe('home');
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { accounts: 1, enabledAccounts: 0 })])).toBe(true);
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { enabledAccounts: 1 })])).toBe(false);
+    // Not imported yet: the first import brings its accounts, nothing is off.
+    expect(allAccountsOff([conn(1, { enabledAccounts: 0 }), conn(2, { accounts: 0, enabledAccounts: 0 })])).toBe(false);
+    expect(allAccountsOff([])).toBe(false);
+    api.people = { people: [person(1, 'Я', [conn(1, { enabledAccounts: 0 })])], secureStorage: true };
+    const s = useParticipantStore();
+    await s.refresh();
+    expect(s.accountsOff).toBe(true);
   });
 
   it('missing tokens: all, some (named), unreadable, or an unfinished import', () => {

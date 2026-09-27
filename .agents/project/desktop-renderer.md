@@ -71,18 +71,27 @@
     `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка в `constants.ts`: `CONSENT_TEXT`,
     `TOKEN_STEPS`, `TOKEN_PLACEHOLDER`, `ACCESS_NOTE`) и
     `shared/` для общего между банками (`components/ConnectionRow.vue`, `components/BankPicker.vue` — выбор банка на первом
-    экране; `composables/useConnectionActions.ts` — удалить, «Ввести токен заново»;
+    экране; `composables/useConnectionActions.ts` — удалить, «Ввести токен заново», «Счета»;
     `composables/useConnectionOwner.ts` — чьё подключение и цвет нового человека; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
-    `participantChoice`, `removeText`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
+    `participantChoice`, `removeText`, `accountLabel`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
     «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвет нового человека — в слот
     формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField, accessNote }`,
-    `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
+    `cardTypes` — названия типов карт банка для «Счета», `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
     пропсы; пропсы в месте `<component :is>` не проверяются) и `DEFAULT_PROVIDER` (банк «Добавить подключение»);
     `utils.ts` — `isProviderKey`, `formsOf` (незнакомый провайдер → формы банка по умолчанию). Только корень импортирует
     папки банков, строка подключения получает поле токена своего банка пропсом. В корневых файлах нет текстов конкретного
     банка: имя — из `entities/bank` (`bankOf`), строка первого экрана — `accessNote` из папки банка. Наружу — `ConnectionsFeature`
     (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у `settings`. Новый банк —
     своя папка и запись в `PROVIDER_FORMS`;
+  - **«Счета» подключения** (`ConnectionRow`): кнопка «Счета · N» (`aria-expanded`) раскрывает панель, как у токена (открыта
+    одна из двух); список грузится при каждом открытии (`useConnectionActions.accounts`: `loading | ready | error`, старый
+    список остаётся на время перезагрузки). Строка счёта — `SettingsRow` + `VSwitch`: подпись `accountLabel` (карта: тип
+    банка · валюта · •• 1234; банка: «title» · валюта), у выключенного — «Не загружается и не входит в статистику». Во время
+    импорта переключатели `disabled` с подсказкой. Переключение не оптимистичное: строка меняется после ответа, отказ
+    (`import-running`) или ошибка — в `error` раздела, ползунок возвращается. После — `participant.refresh()` и
+    `syncStatus.refresh()` (push из main нет): главная перезагружается тихо. Все счета выключены (`accountsOff` в
+    `participant` по `ConnectionView.enabledAccounts`) → `hasData` ложно, но подключения есть: главная (не экран
+    подключения) с плашкой «Все счета выключены…» и кнопкой в «Подключения» (`widgets/home-notices`);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни

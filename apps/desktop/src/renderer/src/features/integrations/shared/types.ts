@@ -1,5 +1,5 @@
 import type { Component, ComputedRef, Ref } from 'vue';
-import type { ColorKey, ParticipantChoice } from '@contract/api.ts';
+import type { ColorKey, ConnectionAccountView, ParticipantChoice } from '@contract/api.ts';
 
 /** A bank's add form: holds the <form>; the owner fields come in its default slot; emits `added` once saved. */
 export interface ConnectFormProps {
@@ -21,6 +21,8 @@ export interface ProviderForms {
   tokenField: Component<TokenFieldProps>;
   /** Under the bank's name on the first connect screen: what the access gives and where it is kept. */
   accessNote: string;
+  /** The bank's card types → names in «Счета» (an unknown type shows as it is). */
+  cardTypes: Readonly<Record<string, string>>;
 }
 
 export type SubmitState = { status: 'idle' } | { status: 'saving' } | { status: 'error'; message: string };
@@ -44,9 +46,23 @@ export interface UseConnectionOwnerReturn {
   reset: () => void;
 }
 
+/** A connection's accounts in «Счета»: the list stays while it reloads. */
+export type AccountsState =
+  | { status: 'loading' }
+  | { status: 'ready'; accounts: ReadonlyArray<ConnectionAccountView> }
+  | { status: 'error' };
+
 export interface UseConnectionActionsReturn {
   error: Readonly<Ref<string>>;
   /** true = saved; the caller clears its field either way. */
   setToken: (connectionId: number, token: string, remember: boolean) => Promise<boolean>;
   remove: (connectionId: number) => Promise<void>;
+  /** Connection id → its accounts, once «Счета» was opened. */
+  accounts: Readonly<Ref<ReadonlyMap<number, AccountsState>>>;
+  /** Loads (or reloads) a connection's accounts. */
+  loadAccounts: (connectionId: number) => Promise<void>;
+  /** The account whose toggle is being saved; null = none. */
+  savingAccount: Readonly<Ref<string | null>>;
+  /** true = changed; false = refused (import running) or failed, the message is in `error`. */
+  setAccountEnabled: (connectionId: number, accountId: string, enabled: boolean) => Promise<boolean>;
 }

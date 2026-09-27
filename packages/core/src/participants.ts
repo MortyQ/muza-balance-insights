@@ -21,6 +21,8 @@ export type ConnectionInfo = {
   provider: ProviderId;
   color: ColorKey | null;
   accounts: number;
+  /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
+  enabledAccounts: number;
   /** Kyiv dates of the range covered by all its imported enabled accounts; null = nothing imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
@@ -104,6 +106,7 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
 export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
   const rs = await db.execute(
     `SELECT c.id, c.participant_id, c.provider, c.color, COUNT(a.id) AS accounts,
+            SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
             MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
      FROM connections c
      LEFT JOIN accounts a ON a.connection_id = c.id
@@ -117,6 +120,7 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
     provider: parseProviderId(r.provider),
     color: parseColor(r.color),
     accounts: Number(r.accounts),
+    enabledAccounts: Number(r.enabled_accounts ?? 0),
     coveredFrom: date(r.oldest),
     coveredTo: date(r.newest),
     lastSyncAt: r.last_sync === null ? null : toKyivDateTime(Number(r.last_sync)),

@@ -33,6 +33,8 @@ export type ConnectionView = {
   /** «Monobank». */
   bank: string;
   accounts: number;
+  /** Of `accounts`, the ones imported and counted («Счета» toggles). */
+  enabledAccounts: number;
   /** Kyiv dates covered by all its imported accounts; null = not imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;

@@ -34,6 +34,7 @@ export class PeopleService {
           provider: c.provider,
           bank: DESKTOP_PROVIDERS[c.provider].bank,
           accounts: c.accounts,
+          enabledAccounts: c.enabledAccounts,
           coveredFrom: c.coveredFrom,
           coveredTo: c.coveredTo,
           lastSyncAt: c.lastSyncAt,
