@@ -58,7 +58,7 @@ describe('electron-builder config', () => {
 
   it('only the build output goes in, as an asar; native modules unpacked; no rebuild, no signing identity', () => {
     expect(config.productName).toBe(PRODUCT);
-    // Frozen after the first release (CLAUDE.md): bundle id, updates, Windows install identity.
+    // Frozen after the first release (.agents/project/desktop-app.md): bundle id, updates, Windows install identity.
     expect(config.appId).toBe(APP_ID);
     // Source maps stay out, including the ones runtime deps (electron-updater, js-yaml …) ship in node_modules.
     expect(config.files).toEqual(['out/**', 'package.json', '!**/*.map']);
