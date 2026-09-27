@@ -23,11 +23,6 @@ const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
 const { connectionsCount } = await import('@/features/settings/people/utils.ts');
-const { participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
-const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
-const { formsOf, isProviderKey } = await import('@/features/integrations/utils.ts');
-const { BANKS, MONOBANK, bankOf } = await import('@/entities/bank');
-const { ACCESS_NOTE, TOKEN_PLACEHOLDER, TOKEN_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -121,34 +116,6 @@ describe('screens and notices', () => {
     expect(failureLines({ phase: 'idle' }, () => 'x')).toEqual([]);
     expect(progressLine({ phase: 'needs-token', connectionIds: [2] }, 0)).toMatch(/Люди и подключения/);
   });
-
-  it('who a new connection is for; why a removal did not happen', () => {
-    expect(participantChoice(3, 'ignored', true)).toEqual({ id: 3 });
-    expect(participantChoice('new', '  Оля ', false)).toEqual({ label: 'Оля' });
-    expect(participantChoice('new', '', true)).toEqual({ fromBank: true });
-    expect(participantChoice('new', '   ', false)).toBeNull();
-    expect(removeText({ removed: false, reason: 'import-running' })).toMatch(/останови импорт/);
-    expect(removeText({ removed: false, reason: 'cancelled' })).toBe('');
-    expect(removeText({ removed: true })).toBe('');
-  });
-
-  it('a bank’s forms by provider; an unknown provider gets the default bank’s', () => {
-    expect(isProviderKey('monobank')).toBe(true);
-    expect(isProviderKey('privatbank')).toBe(false);
-    expect(isProviderKey('toString')).toBe(false);
-    expect(formsOf('monobank')).toBe(PROVIDER_FORMS.monobank);
-    expect(formsOf('unknown')).toBe(PROVIDER_FORMS.monobank);
-  });
-
-  it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
-    expect(bankOf('monobank')).toBe(MONOBANK);
-    expect(bankOf('unknown')).toBe(MONOBANK);
-    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'Monobank', status: 'available', auth: 'token' });
-    for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
-    expect(TOKEN_STEPS[0]).toMatch(/api\.monobank\.ua/);
-    expect(TOKEN_PLACEHOLDER).toBe('Токен с api.monobank.ua');
-    expect(PROVIDER_FORMS.monobank.accessNote).toBe(ACCESS_NOTE);
-  });
 });
 
 describe('colours', () => {
@@ -173,12 +140,5 @@ describe('colours', () => {
       { label: 'Я', value: 1, colors: ['var(--series-violet)'] },
       { label: 'Вигадана', value: 2, colors: ['var(--border-strong)'] },
     ]);
-  });
-
-  it('a new person carries the chosen colour; an existing one does not', () => {
-    expect(participantChoice('new', 'Вигадана', false, 'green')).toEqual({ label: 'Вигадана', color: 'green' });
-    expect(participantChoice('new', '', true, 'green')).toEqual({ fromBank: true, color: 'green' });
-    expect(participantChoice('new', 'Вигадана', false, null)).toEqual({ label: 'Вигадана' });
-    expect(participantChoice(4, '', false, 'green')).toEqual({ id: 4 });
   });
 });

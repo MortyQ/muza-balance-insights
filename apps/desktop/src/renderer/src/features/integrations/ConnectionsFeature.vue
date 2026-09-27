@@ -10,12 +10,12 @@ import AddConnectionFeature from './AddConnectionFeature.vue';
 import { DEFAULT_PROVIDER } from './constants.ts';
 import ConnectionRow from './shared/components/ConnectionRow.vue';
 import { useConnectionActions } from './shared/composables/useConnectionActions.ts';
-import { formsOf } from './utils.ts';
+import { formsOf, newConnectionTitle } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
 const { error, setToken, setConnectionColor, remove } = useConnectionActions();
-const newBank = bankOf(DEFAULT_PROVIDER);
+const newTitle = newConnectionTitle(bankOf(DEFAULT_PROVIDER).name);
 const adding = ref(false);
 const added = ref(false);
 
@@ -78,7 +78,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           <div class="-m-1 min-h-0 overflow-hidden p-1">
             <div class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
               <div class="flex items-center justify-between gap-2">
-                <h3 class="text-base font-semibold">Новое подключение {{ newBank.name }}</h3>
+                <h3 class="text-base font-semibold">{{ newTitle }}</h3>
                 <VButton variant="neutral" text="Отмена" @click="adding = false" />
               </div>
               <AddConnectionFeature :provider="DEFAULT_PROVIDER" submit-text="Добавить" autofocus @added="onAdded" />
