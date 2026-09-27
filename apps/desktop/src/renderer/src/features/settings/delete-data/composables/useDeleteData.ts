@@ -1,11 +1,11 @@
 import { ref } from 'vue';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { useParticipantStore } from '@/entities/participant';
-import { useDeleteDataRequest } from '../api/useDeleteDataRequest.ts';
+import { useDeleteAllDataRequest } from '../../shared/api/useDeleteAllDataRequest.ts';
 import type { UseDeleteDataReturn } from '../types.ts';
 
 export function useDeleteData(): UseDeleteDataReturn {
-  const { deleteAllData } = useDeleteDataRequest();
+  const { deleteAllData } = useDeleteAllDataRequest();
   const participant = useParticipantStore();
   const syncStatus = useSyncStatusStore();
   const deleting = ref(false);

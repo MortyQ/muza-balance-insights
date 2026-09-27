@@ -36,11 +36,12 @@
     `selectedId`, запоминается в `localStorage` только для удобства), `sync-status` (статус данных и `version`, на который
     перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts` (люди обновляются на
     `needs-token`, в начале окон импорта и в его конце);
-  - **домен `features/settings`** — один слайс со всем, что настраивает пользователь: подфичи `app-lock`, `app-update`,
-    `people`, `auto-sync`, `db-encryption`, `delete-data` (у каждой свои сегменты) и `shared/` для общего между ними
-    (`isChecked`, `restoreSwitch` для `VSwitch`). Наружу — только `features/settings/index.ts`: карточки настроек (их
-    собирает виджет `settings`) и то, что живёт вне экрана настроек (экран блокировки, подсказка и баннер обновления на
-    главной, первый экран подключения). Подфичи не импортируют друг друга и `index.ts` домена, `shared/` — ни одну
+  - **домен `features/settings`** — один слайс со всем, что пользователь делает с приложением и своими данными на этом
+    компьютере: подфичи `app-lock`, `app-update`, `people`, `auto-sync`, `db-encryption`, `db-recovery`, `delete-data`
+    (у каждой свои сегменты) и `shared/` для общего между ними (`isChecked`, `restoreSwitch` для `VSwitch`;
+    `api/useDeleteAllDataRequest.ts` — «Удалить все данные» из настроек и с экрана «База недоступна»). Наружу — только
+    `features/settings/index.ts`: карточки настроек (их собирает виджет `settings`) и то, что живёт вне экрана настроек
+    (экран блокировки, подсказка и баннер обновления на главной, первый экран подключения, экран «База недоступна»). Подфичи не импортируют друг друга и `index.ts` домена, `shared/` — ни одну
     подфичу (`DOMAIN_SLICES` в `tests/helpers/architecture.ts`). Новая настройка — новая подфича здесь;
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,

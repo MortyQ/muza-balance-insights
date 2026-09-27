@@ -11,10 +11,10 @@ export const TITLES: Record<NotReady, string> = {
 
 /** key-unavailable depends on where the key lives; neutral wording, no advice to press «Всегда разрешать». */
 export const UNAVAILABLE_DETAIL: Record<DbStateView['platform'], string> = {
-  darwin: 'Разрешите доступ в запросе Связки ключей — он появится после перезапуска.',
-  linux: 'Разблокируйте связку ключей (keyring) и перезапустите приложение.',
-  win32: 'Системное хранилище ключей не ответило. Перезапустите приложение.',
-  other: 'Системное хранилище ключей не ответило. Перезапустите приложение.',
+  darwin: 'Разреши доступ в запросе Связки ключей — он появится после перезапуска.',
+  linux: 'Разблокируй связку ключей (keyring) и перезапусти приложение.',
+  win32: 'Системное хранилище ключей не ответило. Перезапусти приложение.',
+  other: 'Системное хранилище ключей не ответило. Перезапусти приложение.',
 };
 
 export const DETAILS: Record<Exclude<NotReady, 'key-unavailable'>, string> = {
@@ -35,4 +35,4 @@ export const ACTION_TEXT: Record<RecoveryAction, string> = {
   quit: 'Выйти',
 };
 
-export const ACTION_ERROR = 'Не получилось. Перезапустите приложение и попробуйте ещё раз.';
+export const ACTION_ERROR = 'Не получилось. Перезапусти приложение и попробуй ещё раз.';

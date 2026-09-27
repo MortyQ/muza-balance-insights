@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { useDbStateStore } from '@/entities/db-state';
+import { useDeleteAllDataRequest } from '../../shared/api/useDeleteAllDataRequest.ts';
 import { useDbRecoveryRequest } from '../api/useDbRecoveryRequest.ts';
 import { ACTION_ERROR } from '../constants.ts';
 import type { RecoveryAction, UseDbRecoveryReturn } from '../types.ts';
@@ -9,6 +10,7 @@ import { recoveryText } from '../utils.ts';
 /** Every button whatever the status: a wrong guess between «unavailable» and «lost» never takes a way out away. */
 export function useDbRecovery(): UseDbRecoveryReturn {
   const request = useDbRecoveryRequest();
+  const { deleteAllData } = useDeleteAllDataRequest();
   const { view } = storeToRefs(useDbStateStore());
   const text = computed(() => recoveryText(view.value));
   const busy = ref<RecoveryAction | null>(null);
@@ -18,7 +20,7 @@ export function useDbRecovery(): UseDbRecoveryReturn {
   const actions: Record<RecoveryAction, () => Promise<unknown>> = {
     relaunch: () => request.relaunchApp(),
     startOver: () => request.startOver(),
-    delete: () => request.deleteAllData(),
+    delete: () => deleteAllData(),
     quit: () => request.quitApp(),
   };
 

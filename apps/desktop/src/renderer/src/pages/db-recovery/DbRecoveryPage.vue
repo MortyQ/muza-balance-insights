@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DbRecoveryFeature } from '@/features/db-recovery';
+import { DbRecoveryFeature } from '@/features/settings';
 </script>
 
 <template>

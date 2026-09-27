@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue';
 import type { BalanceApi } from '@contract/api.ts';
 import type { DbStateView } from '@contract/db-state.ts';
 
-export type DbRecoveryRequest = Pick<BalanceApi, 'relaunchApp' | 'startOver' | 'deleteAllData' | 'quitApp'>;
+export type DbRecoveryRequest = Pick<BalanceApi, 'relaunchApp' | 'startOver' | 'quitApp'>;
 
 export type RecoveryAction = 'relaunch' | 'startOver' | 'delete' | 'quit';
 
