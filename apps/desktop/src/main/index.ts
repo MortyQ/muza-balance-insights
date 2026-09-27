@@ -1,9 +1,10 @@
 // Electron main. Order matters: identity, sandbox and the app:// scheme privileges are set before `ready`.
-import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import { OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { resolveLocale } from '../shared/locale.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { openLibsql } from '@mono/db-libsql';
@@ -15,10 +16,11 @@ import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
 import { trustedServicesView } from './services.ts';
 import { PeopleService } from './people.ts';
+import { patchPrefs, readPrefs } from './prefs.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
-import { windowOptions } from './window.ts';
+import { titleBarOverlay, windowOptions } from './window.ts';
 import { DB_FILE, deleteAllData } from './wipe.ts';
 
 // Before anything touches userData.
@@ -160,6 +162,17 @@ app.whenReady().then(async () => {
     installUpdate: async () => updater.install(),
     setUpdateChecks: (enabled) => updater.setChecks(enabled),
     getTrustedServices: async () => trustedServicesView(),
+    getTheme: async () => nativeTheme.themeSource,
+    setTheme: async (theme) => {
+      await patchPrefs(userData, { theme });
+      nativeTheme.themeSource = theme;
+      return theme;
+    },
+    getLocale: async () => readPrefs(userData).locale ?? resolveLocale(app.getPreferredSystemLanguages()),
+    setLocale: async (locale) => {
+      await patchPrefs(userData, { locale });
+      return locale;
+    },
   }, {
     trusted: (event) => isTrustedSender(event, win, devOrigin),
     onError: (method, err) => process.stderr.write(`[ipc] ${method}: ${err instanceof Error ? err.name : 'error'}\n`),
@@ -170,8 +183,15 @@ app.whenReady().then(async () => {
     process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, devOrigin })}\n`);
   }
 
-  win = new BrowserWindow(windowOptions({ preloadPath, isPackaged: app.isPackaged, title: identity.name }));
+  // The saved theme before the window exists: its frame colours and the first paint already follow it.
+  nativeTheme.themeSource = readPrefs(userData).theme;
+  const frame = { platform: process.platform, dark: nativeTheme.shouldUseDarkColors };
+  win = new BrowserWindow(windowOptions({ preloadPath, isPackaged: app.isPackaged, title: identity.name, ...frame }));
   win.once('ready-to-show', () => win?.show());
+  // System or the saved choice: the renderer follows it, and so do the native window buttons over its title bar.
+  if (process.platform !== 'darwin') {
+    nativeTheme.on('updated', () => win?.setTitleBarOverlay(titleBarOverlay(nativeTheme.shouldUseDarkColors)));
+  }
   if (devLog) {
     win.webContents.on('devtools-opened', () => devLog('devtools opened'));
     win.webContents.on('devtools-closed', () => devLog('devtools closed'));

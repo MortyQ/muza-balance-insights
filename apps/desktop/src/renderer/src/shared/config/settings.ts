@@ -1,5 +1,5 @@
 // Sections of the settings screen, in menu order. The section is `query.section` of the settings route.
-export const SETTINGS_SECTIONS = ['people', 'connections', 'storage', 'network', 'data', 'updates', 'about'] as const;
+export const SETTINGS_SECTIONS = ['people', 'connections', 'storage', 'network', 'data', 'updates', 'appearance', 'about'] as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number];
 

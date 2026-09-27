@@ -36,7 +36,8 @@ export const NAV_GROUPS = [
     label: 'Приложение',
     items: [
       { label: 'Обновления', icon: 'lucide:refresh-cw', section: 'updates' },
-      { label: 'Оформление', icon: 'lucide:palette', section: null },
+      { label: 'Оформление', icon: 'lucide:palette', section: 'appearance' },
+      { label: 'Язык и время', icon: 'lucide:languages', section: null },
       { label: 'О программе', icon: 'lucide:info', section: 'about' },
     ],
   },

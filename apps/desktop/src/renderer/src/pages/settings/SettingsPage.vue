@@ -5,6 +5,7 @@ import { UpdateSettingsFeature } from '@/features/app-update';
 import { DeleteDataFeature } from '@/features/delete-data';
 import { ConnectionsFeature, PeopleFeature } from '@/features/people';
 import { NetworkInfoFeature, StorageInfoFeature } from '@/features/security-info';
+import { ThemeSwitchFeature } from '@/features/theme-switch';
 import { ROUTE, settingsSection, type SettingsSection } from '@/shared/config';
 import { VButton } from '@/shared/ui';
 import { AboutApp } from '@/widgets/about-app';
@@ -27,6 +28,7 @@ const SECTIONS: Record<SettingsSection, Component> = {
   network: NetworkInfoFeature,
   data: DeleteDataFeature,
   updates: UpdateSettingsFeature,
+  appearance: ThemeSwitchFeature,
   about: AboutApp,
 };
 </script>

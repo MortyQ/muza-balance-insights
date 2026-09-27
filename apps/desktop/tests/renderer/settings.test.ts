@@ -56,6 +56,7 @@ describe('settings sections', () => {
     ['x', 'people'],
     [['connections', 'data'], 'people'],
     ['network', 'network'],
+    ['appearance', 'appearance'],
   ])('settingsSection(%j) → %s', (q, s) => expect(settingsSection(q)).toBe(s));
 
   it('arrows wrap and walk the menu order', () => {
@@ -64,8 +65,22 @@ describe('settings sections', () => {
     expect(nextSection('data', 1)).toBe('updates');
   });
 
-  it('the disabled item is never chosen: updates → about', () => {
-    expect(nextSection('updates', 1)).toBe('about');
-    expect(nextSection('about', -1)).toBe('updates');
+  it('appearance sits between updates and about', () => {
+    expect(nextSection('updates', 1)).toBe('appearance');
+    expect(nextSection('appearance', 1)).toBe('about');
+    expect(nextSection('about', -1)).toBe('appearance');
+  });
+});
+
+describe('language options (for the select)', () => {
+  it('exactly the locales main accepts, each with its own name and a flag country', async () => {
+    const { LANGUAGE_OPTIONS } = await import('@/features/language-select/constants.ts');
+    const { LOCALES } = await import('@contract/locale.ts');
+    expect(LANGUAGE_OPTIONS.map((o) => o.value)).toEqual([...LOCALES]);
+    expect(LANGUAGE_OPTIONS.map((o) => [o.label, o.country])).toEqual([
+      ['Українська', 'UA'],
+      ['English', 'GB'],
+      ['Русский', 'RU'],
+    ]);
   });
 });

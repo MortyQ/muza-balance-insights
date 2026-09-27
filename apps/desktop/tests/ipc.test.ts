@@ -111,6 +111,15 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setUpdateChecks', [true, 'extra']],
     ['getTrustedServices', [1]],
     ['getTrustedServices', [{}]],
+    ['getTheme', [1]],
+    ['setTheme', []],
+    ['setTheme', ['sepia']],
+    ['setTheme', ['dark', 'extra']],
+    ['getLocale', ['uk']],
+    ['setLocale', []],
+    ['setLocale', ['de']],
+    ['setLocale', [null]],
+    ['setLocale', ['uk-UA']],
   ];
   it.each(INVALID)('%s(%j) → rejected, handler not called', async (m, args) => {
     const ipc = fakeIpcMain();
@@ -143,6 +152,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }]) {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
+    }
+    for (const theme of ['system', 'light', 'dark']) {
+      await expect(ipc.handlers.get('balance:setTheme')!(good, theme)).resolves.toEqual({ m: 'setTheme', a: [theme] });
+    }
+    for (const locale of ['uk', 'en', 'ru']) {
+      await expect(ipc.handlers.get('balance:setLocale')!(good, locale)).resolves.toEqual({ m: 'setLocale', a: [locale] });
     }
   });
 

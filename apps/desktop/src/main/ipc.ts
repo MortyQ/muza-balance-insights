@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { LOCALES } from '../shared/locale.ts';
 import { IMPORT_DEPTHS } from '../shared/progress.ts';
+import { THEME_PREFS } from '../shared/theme.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const id = z.number().int().positive();
@@ -41,6 +43,10 @@ export const ARG_SCHEMAS = {
   installUpdate: z.tuple([]),
   setUpdateChecks: z.tuple([z.boolean()]),
   getTrustedServices: z.tuple([]),
+  getTheme: z.tuple([]),
+  setTheme: z.tuple([z.enum(THEME_PREFS)]),
+  getLocale: z.tuple([]),
+  setLocale: z.tuple([z.enum(LOCALES)]),
 } as const satisfies Record<Method, z.ZodType<unknown[]>>;
 
 export type Args<M extends Method> = z.infer<(typeof ARG_SCHEMAS)[M]>;
