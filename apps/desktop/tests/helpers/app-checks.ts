@@ -116,6 +116,19 @@ export function unpackedNatives(b: Built): string[] {
     : [];
 }
 
+/**
+ * Every unpacked libsql native carries the database cipher (SQLite3 Multiple Ciphers): a libsql build without it would
+ * open no encrypted database. Reads the files only; nothing is loaded.
+ */
+export function expectCipherInNatives(b: Built) {
+  const natives = unpackedNatives(b).filter((f) => f.includes('@libsql/'));
+  expect(natives.length).toBeGreaterThan(0);
+  for (const f of natives) {
+    const bin = fs.readFileSync(path.join(b.resources, 'app.asar.unpacked', ...f.split('/')));
+    expect(bin.includes('SQLite3 Multiple Ciphers'), f).toBe(true);
+  }
+}
+
 /** macOS: codesign only reads the bundle; it does not start the app. */
 export function expectValidSignature(b: Built) {
   expect(() => execFileSync('codesign', ['--verify', '--deep', '--strict', b.root], { stdio: 'pipe' })).not.toThrow();

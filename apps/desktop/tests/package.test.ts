@@ -15,6 +15,7 @@ import {
   expectAsarContents,
   expectAsarOnly,
   expectBundleId,
+  expectCipherInNatives,
   expectFuses,
   expectOwnIcon,
   expectValidSignature,
@@ -150,6 +151,10 @@ describe.skipIf(!present)(`packaged app (dist/, ${platform}-${arch})`, () => {
 
   it('the native libsql module for this OS and arch is unpacked next to the asar (it cannot load from inside)', () => {
     expect(unpackedNatives(app!).some((f) => f.includes(libsqlNative(platform, arch)))).toBe(true);
+  });
+
+  it('every libsql native in the app has the database cipher built in', () => {
+    expectCipherInNatives(app!);
   });
 
   it.runIf(platform === 'darwin')('macOS: frozen bundle id, own icon, host-arch executable, valid ad-hoc signature', () => {
