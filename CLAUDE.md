@@ -1,99 +1,100 @@
-# muza-balance-insights (локальная папка — monobank-mcp)
+# muza-balance-insights (local folder: monobank-mcp)
 
-Локальный stdio MCP-сервер: транзакции Monobank → SQLite → готовые агрегаты трат. Дальше — десктоп на Electron.
+A local stdio MCP server: Monobank transactions → SQLite → ready-made spending aggregates. Next: an Electron desktop app.
 
 @.agents/claude/behavior.md
 
-## Структура монорепы (pnpm workspace)
+## Monorepo layout (pnpm workspace)
 
-- pnpm 12.6.0 установлен глобально через npm (`packageManager` в корневом `package.json`), Corepack не используется.
-  Node — `.nvmrc` (22).
-- `packages/core` (`@mono/core`) — платформенно-независимое ядро: провайдеры банков (сейчас Monobank), sync, категории, переводы, возвраты,
-  scope, агрегаты, миграции и интерфейс `Db`. Без Node, браузера и глобалов: `fetch`, часы, логгер, id передаются
-  снаружи (`packages/core/src/platform.ts`). Проверки: `packages/core/tests/purity.test.ts` и `tsconfig.json` ядра
-  (`lib: ES2023 + WebWorker`, `types: []`). Runtime-зависимости — только `zod` и `@date-fns/tz`.
-  Экспорт — TS-исходники по модулю: `@mono/core/<модуль>` → `src/<модуль>.ts`, без сборки.
-  Доменные тесты — в `packages/core/tests`, на Node-адаптере (devDependency).
-- `packages/db-libsql` (`@mono/db-libsql`) — Node-адаптер libsql → `Db` (PRAGMA, WAL). Не зависит от core (типы
-  повторены, расхождение ловит typecheck ядра), чтобы не было цикла зависимостей. Нужен apps/mcp и main-процессу Electron.
-- `apps/mcp` (`@mono/mcp`) — MCP-сервер, CLI, скрипты, обезличенная копия (`analysis/*`), `.env`/токен (`config.ts`).
-- `apps/desktop` (`@mono/desktop`) — этап 1, Electron.
-- `data/`, `.env`, `analysis/`, `reports/`, `docs/` — в корне репозитория (`REPO_ROOT` в `apps/mcp/src/paths.ts`).
-- Корневые скрипты: `test`, `typecheck` (`pnpm -r`) и `q`. Больше корневых прокси нет.
-- Аргументы CLI — через `cliArgs()` (`apps/mcp/src/args.ts`): pnpm передаёт `--` скрипту как есть;
-  `apps/mcp/tests/cli-args.test.ts` проверяет это на настоящем pnpm.
+- pnpm 12.6.0 is installed globally via npm (`packageManager` in the root `package.json`); Corepack is not used.
+  Node: `.nvmrc` (22).
+- `packages/core` (`@mono/core`): the platform-independent core — bank providers (Monobank for now), sync, categories,
+  transfers, refunds, scope, aggregates, migrations and the `Db` interface. No Node, browser or globals: `fetch`, the
+  clock, the logger and ids are passed in (`packages/core/src/platform.ts`). Checked by `packages/core/tests/purity.test.ts`
+  and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime dependencies: only `zod` and
+  `@date-fns/tz`. Exports are TS sources per module: `@mono/core/<module>` → `src/<module>.ts`, no build step.
+  Domain tests live in `packages/core/tests` and run on the Node adapter (a devDependency).
+- `packages/db-libsql` (`@mono/db-libsql`): the Node libsql adapter → `Db` (PRAGMA, WAL). It does not depend on core
+  (the types are repeated; a mismatch fails the core's typecheck), so there is no dependency cycle. Used by apps/mcp and
+  the Electron main process.
+- `apps/mcp` (`@mono/mcp`): the MCP server, CLI, scripts, the anonymised copy (`analysis/*`), `.env` / the token (`config.ts`).
+- `apps/desktop` (`@mono/desktop`): stage 1, Electron.
+- `data/`, `.env`, `analysis/`, `reports/`, `docs/` are at the repo root (`REPO_ROOT` in `apps/mcp/src/paths.ts`).
+- Root scripts: `test`, `typecheck` (`pnpm -r`) and `q`. No other root proxies.
+- CLI arguments go through `cliArgs()` (`apps/mcp/src/args.ts`): pnpm passes `--` to the script as is;
+  `apps/mcp/tests/cli-args.test.ts` checks this against real pnpm.
 
-## Якоря доверия
+## Trust anchors
 
-Файлы, на которых держатся гарантии «агент не видит реальных данных и токена»:
+The files that hold the guarantee "the agent sees neither real data nor the token":
 
-- `apps/mcp/package.json`, блок `scripts`: что именно запускается под каждым именем, в том числе
-  `recategorize` вне sandbox;
-- `apps/mcp/tests/recategorize-safety.test.ts`: тест, который `recategorize` прогоняет первым шагом;
-- `.claude/settings.json`: allow/deny, sandbox и `excludedCommands` (правит только пользователь).
-- `.github/workflows/release.yml`: что собирается и публикуется от имени автора. Его гарантии проверяет
-  `apps/desktop/tests/release-workflow.test.ts` (actions по SHA, права, триггеры, только draft; один секрет —
-  `UPDATE_SIGNING_KEY`, только в Environment `release` с ручным подтверждением и только в шагах `update-sign.mjs`).
-  Публичная половина ключа — `apps/desktop/src/main/update/public-key.ts`: смена = установленные копии отвергнут обновления.
+- `apps/mcp/package.json`, the `scripts` block: exactly what runs under each name, including `recategorize` outside the
+  sandbox;
+- `apps/mcp/tests/recategorize-safety.test.ts`: the test `recategorize` runs as its first step;
+- `.claude/settings.json`: allow/deny, sandbox and `excludedCommands` (edited by the user only);
+- `.github/workflows/release.yml`: what is built and published under the author's name. Its guarantees are checked by
+  `apps/desktop/tests/release-workflow.test.ts` (actions pinned by SHA, permissions, triggers, draft only; one secret —
+  `UPDATE_SIGNING_KEY`, only in the `release` Environment with manual approval and only in the `update-sign.mjs` steps).
+  The public half of the key is `apps/desktop/src/main/update/public-key.ts`: changing it = installed copies reject updates.
 
-Правила:
-- любое изменение в них — отдельным пунктом в отчёте: что изменено и зачем;
-- такие изменения не смешиваются с другими в одном шаге. Сначала отдельный шаг с правкой якоря и проверкой,
-  потом остальная работа;
-- ослабление проверки (убрать ассерт, расширить allow, сузить deny) — только после явного ок пользователя.
+Rules:
+- any change to them is a separate item in the report: what changed and why;
+- such changes are never mixed with others in one step. First a separate step that edits the anchor and verifies it,
+  then the rest of the work;
+- weakening a check (removing an assertion, widening allow, narrowing deny) only after the user's explicit ok.
 
-## Работа с реальными данными
+## Working with real data
 
-- Реальные команды запускает только пользователь: `pnpm --filter @mono/mcp <команда>` для `sync`, `accounts`,
-  `dev:mcp`, `export:analysis`, `overrides:*`, `scope-overrides:*`, `settings:*`, `verify:merchants`
-  (вывод `overrides:candidates` содержит реальные имена контрагентов). Не запускать их и не предлагать запускать через `!`,
-  потому что вывод `!`-команд попадает в контекст агента. Корневых прокси для них нет и не будет:
-  каждая лишняя форма вызова — ещё одна дыра в deny-правилах.
-- `pnpm --filter @mono/mcp recategorize` агент запускает сам, когда нужно (ровно эта команда, без аргументов, отдельным вызовом:
-  она вне OS-sandbox через `sandbox.excludedCommands`, остальное в sandbox). Правила:
-  - код recategorize и всё, что он импортирует (`apps/mcp/src/cli/recategorize.ts` → `apps/mcp/src/rederive.ts` →
-    `packages/core/src/rederive.ts` → …), не читает `.env`, не импортирует `config.ts` и не вызывает `getToken`;
-    путь к БД — `apps/mcp/src/paths.ts`, `MONO_DB_PATH` только из окружения;
-  - вывод — только агрегаты и диагностика: никаких `description`, `counter_name`, `comment`, `iban`, `masked_pan`;
-  - оба правила проверяет `apps/mcp/tests/recategorize-safety.test.ts` (граф импортов через пакеты workspace по их `exports`,
-    статически и прогоном с канарейками); он же запускается первым шагом самого скрипта (`vitest run … && tsx …`),
-    pre/post-скриптов нет;
-  - изменить, что он печатает, — только после ок пользователя.
-- К `data/`, `*.db`, `*.db-*`, `.env`, `.env.*` доступа нет и не будет.
-- Запросы к данным — только через `pnpm q analysis/queries/<имя>.sql`: SQL агент пишет в файл в `analysis/queries/`
-  (папка в `.gitignore` вместе с `analysis/`), в командной строке SQL нет — нет ложных совпадений с deny-правилами.
-  Путь проверяет `q.ts` (только `.sql` внутри `analysis/queries/`, без симлинков наружу). Имена файлов — без слов из
-  deny-правил (`sync`, `accounts`, `settings` …). q читает только обезличенную копию
-  `analysis/analysis.sqlite` (read-only, один SELECT/WITH, не больше 500 строк).
-  Копию пересобирает пользователь (`pnpm --filter @mono/mcp export:analysis`), автоматически — после sync и recategorize.
-- Что в копии: только колонки из whitelist `apps/mcp/src/analysis/schema.ts`. `description` замаскирован
-  (`packages/core/src/masking.ts` → `maskDescription` провайдера): служебные шаблоны как есть, название банки → `[jar]`, остальное → `[other]`
-  плюс `desc_class` по форме строки. Вместо `counter_name` — флаг `has_counter`. У счёта — `participant_id` (число;
-  подпись участника в копию не идёт).
-  Новую колонку или шаблон добавлять в whitelist/маскировку только после ок пользователя.
-- Доступ дополнительно ограничен `permissions.deny` и sandbox в `.claude/settings.json`.
-  Не пытаться обойти ни то, ни другое.
+- Real commands are run by the user only: `pnpm --filter @mono/mcp <command>` for `sync`, `accounts`, `dev:mcp`,
+  `export:analysis`, `overrides:*`, `scope-overrides:*`, `settings:*`, `verify:merchants` (the output of
+  `overrides:candidates` contains real counterparty names). Do not run them and do not suggest running them via `!`:
+  the output of `!` commands lands in the agent's context. There are no root proxies for them and there won't be: every
+  extra way to invoke them is another hole in the deny rules.
+- `pnpm --filter @mono/mcp recategorize` is run by the agent itself when needed (exactly this command, no arguments, as a
+  separate call: it is outside the OS sandbox via `sandbox.excludedCommands`, everything else is sandboxed). Rules:
+  - the recategorize code and everything it imports (`apps/mcp/src/cli/recategorize.ts` → `apps/mcp/src/rederive.ts` →
+    `packages/core/src/rederive.ts` → …) does not read `.env`, does not import `config.ts` and does not call `getToken`;
+    the DB path comes from `apps/mcp/src/paths.ts`, `MONO_DB_PATH` from the environment only;
+  - output is aggregates and diagnostics only: no `description`, `counter_name`, `comment`, `iban`, `masked_pan`;
+  - both rules are checked by `apps/mcp/tests/recategorize-safety.test.ts` (the import graph through workspace packages by
+    their `exports`, statically and by a run with canaries); it also runs as the script's first step
+    (`vitest run … && tsx …`), with no pre/post scripts;
+  - changing what it prints only after the user's ok.
+- There is no access to `data/`, `*.db`, `*.db-*`, `.env`, `.env.*`, and there won't be.
+- Data queries only through `pnpm q analysis/queries/<name>.sql`: the agent writes the SQL to a file in
+  `analysis/queries/` (ignored in `.gitignore` together with `analysis/`); no SQL on the command line, so no false matches
+  with the deny rules. `q.ts` checks the path (only `.sql` inside `analysis/queries/`, no symlinks out). File names must
+  not contain words from the deny rules (`sync`, `accounts`, `settings` …). q reads only the anonymised copy
+  `analysis/analysis.sqlite` (read-only, one SELECT/WITH, at most 500 rows). The user rebuilds the copy
+  (`pnpm --filter @mono/mcp export:analysis`); it is also rebuilt automatically after sync and recategorize.
+- What the copy holds: only the columns in the whitelist `apps/mcp/src/analysis/schema.ts`. `description` is masked
+  (`packages/core/src/masking.ts` → the provider's `maskDescription`): service templates as is, a jar's name → `[jar]`,
+  everything else → `[other]`, plus `desc_class` by the shape of the line. Instead of `counter_name` — the `has_counter`
+  flag. An account has `participant_id` (a number; the participant's label does not go into the copy).
+  A new column or template goes into the whitelist / masking only after the user's ok.
+- Access is further restricted by `permissions.deny` and the sandbox in `.claude/settings.json`. Do not try to get
+  around either.
 
-## Процесс
+## Process
 
-- Работа идёт фазами с остановками. Сначала план, код только после явного «ок» пользователя.
-- Проверка перед сдачей: `pnpm test` и `pnpm typecheck` (в корне, `pnpm -r`).
+- Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok).
+- Before handing over: `pnpm test` and `pnpm typecheck` (at the root, `pnpm -r`).
 
-## Где остальные правила
+## Where the other rules are
 
-Подробности по частям проекта — в `.agents/project/`. Они подключены через `CLAUDE.md` в папках пакетов и загружаются
-сами, когда Claude работает с файлами этой папки. Задача затрагивает часть, файлы которой ещё не открывались, —
-прочитать нужный файл самому до правок.
+Details per part of the project live in `.agents/project/`. They are pulled in by the `CLAUDE.md` files in the package
+folders and load by themselves when Claude works with files in that folder. If a task touches a part whose files have not
+been opened yet, read the relevant file yourself before editing.
 
-| Файл | Когда читать | Подключён в |
+| File | Read when | Pulled in by |
 |---|---|---|
-| `.agents/project/core-providers.md` | провайдеры банков, граница домена | `packages/core/CLAUDE.md` |
-| `.agents/project/core-people.md` | участники, подключения, `runPlans`, порядок окон импорта | `packages/core/CLAUDE.md` |
-| `.agents/project/domain-rules.md` | категории, переводы, возвраты, комиссии, scope, агрегаты, `search`, `findRecurring` | `packages/core/CLAUDE.md`, `apps/mcp/CLAUDE.md` |
-| `.agents/project/mcp-server.md` | тулы MCP, формат ответов | `apps/mcp/CLAUDE.md` |
-| `.agents/project/reports.md` | **перед любым отчётом** в `reports/` | `apps/mcp/CLAUDE.md` |
-| `.agents/project/desktop-app.md` | имя, `appId`, userData, меню, иконка, установщики, релиз, автообновление | `apps/desktop/CLAUDE.md` |
-| `.agents/project/desktop-security.md` | CSP, fuses, сеть, блокировка, шифрование базы, «Удалить все данные» | `apps/desktop/CLAUDE.md` |
-| `.agents/project/desktop-import.md` | worker импорта, повторы, токены, IPC людей и подключений | `apps/desktop/CLAUDE.md` |
-| `.agents/project/desktop-renderer.md` | FSD, «сначала `shared/ui`», стили, навигация | `apps/desktop/src/renderer/CLAUDE.md` (там же инструкции muzakit) |
-| `docs/backlog.md` | планы и то, что не проверено вживую | — |
+| `.agents/project/core-providers.md` | bank providers, the domain boundary | `packages/core/CLAUDE.md` |
+| `.agents/project/core-people.md` | participants, connections, `runPlans`, the order of import windows | `packages/core/CLAUDE.md` |
+| `.agents/project/domain-rules.md` | categories, transfers, refunds, fees, scope, aggregates, `search`, `findRecurring` | `packages/core/CLAUDE.md`, `apps/mcp/CLAUDE.md` |
+| `.agents/project/mcp-server.md` | MCP tools, the response format | `apps/mcp/CLAUDE.md` |
+| `.agents/project/reports.md` | **before any report** in `reports/` | `apps/mcp/CLAUDE.md` |
+| `.agents/project/desktop-app.md` | name, `appId`, userData, menu, icon, installers, release, auto-update | `apps/desktop/CLAUDE.md` |
+| `.agents/project/desktop-security.md` | CSP, fuses, network, app lock, database encryption, «Удалить все данные» | `apps/desktop/CLAUDE.md` |
+| `.agents/project/desktop-import.md` | the import worker, retries, tokens, IPC for people and connections | `apps/desktop/CLAUDE.md` |
+| `.agents/project/desktop-renderer.md` | FSD, "`shared/ui` first", styles, navigation | `apps/desktop/src/renderer/CLAUDE.md` (with the muzakit instructions) |
+| `docs/backlog.md` | plans and what has not been checked on a live system | — |
