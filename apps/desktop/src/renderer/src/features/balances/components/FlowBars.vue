@@ -13,8 +13,8 @@ const { flow, size = 'sm' } = defineProps<{
 type Part = { w: number; color: string };
 
 const rows = computed(() => {
-  const { income, spending, currency, color, segments, approx } = flow;
-  const mark = approx ? '≈ ' : '';
+  const { income, spending, currency, color, segments, approxIncome, approxSpending } = flow;
+  const mark = (approx: boolean | undefined) => (approx ? '≈ ' : '');
   const parts = (value: number, other: number, pick: 'income' | 'spending'): Part[] => {
     if (segments && segments.length > 0) {
       const widths = flowWidths(segments.map((s) => s[pick]), value, other);
@@ -24,8 +24,8 @@ const rows = computed(() => {
     return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
-    { label: 'Пришло', amount: mark + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
-    { label: 'Ушло', amount: mark + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
+    { label: 'Пришло', amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
+    { label: 'Ушло', amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
   ];
 });
 </script>
@@ -47,7 +47,7 @@ const rows = computed(() => {
         <div class="flex h-2 grow gap-0.5" aria-hidden="true">
           <div v-for="(p, i) in row.parts" :key="i" class="bg-(--c) w-(--w) last:rounded-r-md" :style="{ '--c': p.color, '--w': `${p.w}%` }" />
         </div>
-        <span class="w-21 shrink-0 text-right font-semibold tabular-nums">{{ row.amount }}</span>
+        <span class="min-w-21 shrink-0 whitespace-nowrap text-right font-semibold tabular-nums">{{ row.amount }}</span>
       </template>
     </div>
   </div>
