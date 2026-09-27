@@ -97,6 +97,72 @@ export async function getBalances(db: Db, opts: { participantId?: number } = {})
   };
 }
 
+// ---------- balancesAt ----------
+
+export type AccountBalanceAt = Omit<AccountBalance, 'own_funds' | 'available' | 'updated_at'> & {
+  /** At the end: balance − credit limit (today's limit — the bank keeps no history of it). null = no data then. */
+  own_funds: number | null;
+};
+
+export type BalancesAt = {
+  accounts: AccountBalanceAt[];
+  /** Own funds per currency, accounts with data only. */
+  totals: Array<{ currency: number; own_funds: number }>;
+  /** Accounts without data at the end (imported from a later date, or never). */
+  missing: number;
+};
+
+/**
+ * Balances at `endSec` (exclusive: the first second after the period), the same accounts as getBalances. The bank's
+ * balance after the last operation before the end; when it is missing or ambiguous (two operations in that second) —
+ * today's balance minus every operation from the end on. From the moment of the last fetch on — today's balance.
+ */
+export async function balancesAt(db: Db, opts: { endSec: number; participantId?: number }): Promise<BalancesAt> {
+  const { rows, labels } = await loadAccounts(db, opts.participantId);
+  const accounts: AccountBalanceAt[] = [];
+  for (const r of rows.filter((x) => x.kind === 'card' || x.balance > 0 || x.synced)) {
+    const balance = await balanceAt(db, r, opts.endSec);
+    accounts.push({
+      id: r.id,
+      label: labels.get(r.id) ?? r.id,
+      kind: r.kind === 'jar' ? 'jar' : 'card',
+      currency: r.currency,
+      credit_limit: r.creditLimit,
+      own_funds: balance === null ? null : balance - r.creditLimit,
+    });
+  }
+  const totals = new Map<number, number>();
+  for (const a of accounts) if (a.own_funds !== null) totals.set(a.currency, (totals.get(a.currency) ?? 0) + a.own_funds);
+  return {
+    accounts,
+    totals: [...totals].sort(([a], [b]) => a - b).map(([currency, own_funds]) => ({ currency, own_funds })),
+    missing: accounts.filter((a) => a.own_funds === null).length,
+  };
+}
+
+async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number | null> {
+  if (endSec > r.updatedAt) return r.balance;
+  if (r.oldest === null || r.oldest >= endSec) return null;
+  const last = await db.execute({
+    sql: 'SELECT time, balance FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time < ? ORDER BY time DESC LIMIT 2',
+    args: [r.id, endSec],
+  });
+  const [a, b] = last.rows;
+  if (a && a.balance !== null && !(b && Number(b.time) === Number(a.time))) return Number(a.balance);
+  const after = await db.execute({
+    sql: 'SELECT COALESCE(SUM(amount), 0) AS s FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time >= ?',
+    args: [r.id, endSec],
+  });
+  return r.balance - Number(after.rows[0]?.s ?? 0);
+}
+
+/** Kyiv date of the oldest covered second over every account; null — nothing imported. */
+export async function firstDataDate(db: Db): Promise<string | null> {
+  const rs = await db.execute('SELECT MIN(oldest_synced_time) AS t FROM sync_state');
+  const t = rs.rows[0]?.t;
+  return t === null || t === undefined ? null : toKyivDate(Number(t));
+}
+
 // ---------- getSyncStatus ----------
 
 export type AccountSyncStatus = {
