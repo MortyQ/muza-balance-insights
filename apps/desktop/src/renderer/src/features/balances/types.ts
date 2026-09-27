@@ -19,6 +19,10 @@ export interface Flow {
   color: string;
   /** The family: one part per person, in their colours. */
   segments?: ReadonlyArray<FlowSegment>;
+  /** Total cards: part of the sums is another currency counted in hryvnia by the user's own exchange rate. */
+  approx?: boolean;
+  /** Total cards: the rate line under the bars («вкл. 3 162 $ по курсу 44,36»); '' — none. */
+  note?: string;
 }
 
 /** A card of the stack / row, in row order. */

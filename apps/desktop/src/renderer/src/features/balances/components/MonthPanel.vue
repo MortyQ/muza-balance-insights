@@ -27,6 +27,7 @@ const spent = computed(() => spentShare(flow.income, flow.spending));
       <span class="text-xs text-foreground-muted">{{ note }}<template v-if="spent !== null"> · потрачено {{ spent }}% прихода</template></span>
     </div>
     <FlowBars :flow size="md" />
+    <p v-if="flow.note" class="text-xs text-foreground-muted">{{ flow.note }}</p>
     <ul v-if="legend.length > 0" class="flex flex-wrap gap-x-4.5 gap-y-2" aria-label="Люди">
       <li v-for="p in legend" :key="p.participantId" class="inline-flex items-center gap-1.5 text-xs text-foreground-secondary">
         <span class="size-2 rounded-full bg-(--c)" :style="{ '--c': p.color }" aria-hidden="true" />

@@ -13,7 +13,8 @@ const { flow, size = 'sm' } = defineProps<{
 type Part = { w: number; color: string };
 
 const rows = computed(() => {
-  const { income, spending, currency, color, segments } = flow;
+  const { income, spending, currency, color, segments, approx } = flow;
+  const mark = approx ? '≈ ' : '';
   const parts = (value: number, other: number, pick: 'income' | 'spending'): Part[] => {
     if (segments && segments.length > 0) {
       const widths = flowWidths(segments.map((s) => s[pick]), value, other);
@@ -23,8 +24,8 @@ const rows = computed(() => {
     return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
-    { label: 'Пришло', amount: signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
-    { label: 'Ушло', amount: signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
+    { label: 'Пришло', amount: mark + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
+    { label: 'Ушло', amount: mark + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
   ];
 });
 </script>

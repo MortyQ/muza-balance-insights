@@ -1,4 +1,5 @@
-import type { CardTotal, MonthOverview, PersonView } from '@contract/api.ts';
+import { currencyExponent } from '@mono/core/currency';
+import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import { colorVar } from '@/entities/participant';
 import { formatMoney } from '@/shared/lib';
 import { CARD_STEP, CLOSE_STAGGER, MONTHS_GEN, MONTHS_IN, MONTHS_NOM, MONTHS_SHORT, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
@@ -95,6 +96,24 @@ export function flowWidths(parts: ReadonlyArray<number>, value: number, other: n
   return pos.map((x) => (sum > 0 && max > 0 ? (x / sum) * (v / max) * 100 : 0));
 }
 
+/** Hryvnia per whole unit, 2 decimals, comma: «44,36». Rounded on the cents so 44.355 does not fall to 44,35. */
+function rateText(rate: number, currency: number): string {
+  const perUnit = rate * 10 ** (currencyExponent(currency) - currencyExponent(UAH));
+  return (Math.round(perUnit * 100) / 100).toFixed(2).replace('.', ',');
+}
+
+/** The rate line of a total card: what other currencies went into its sums and at what rate, or what was left out. */
+export function fxNote(fx: ReadonlyArray<FxPart>): string {
+  return fx
+    .filter((p) => p.income !== 0 || p.spending !== 0)
+    .map((p) => {
+      const amount = formatMoney(Math.abs(p.income !== 0 ? p.income : p.spending), p.currency);
+      if (p.rate === null) return `без ${amount} — не было обмена`;
+      return `вкл. ${amount} по курсу ${p.nearest ? 'ближайшего обмена ' : ''}${rateText(p.rate, p.currency)}`;
+    })
+    .join(' · ');
+}
+
 function others(t: CardTotal): string {
   return t.others.map((o) => formatMoney(o.ownFunds, o.currency, { minorUnits: true })).join(' · ');
 }
@@ -105,19 +124,22 @@ export function slidesOf(
 ): Slide[] {
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
-  const totalSlide = (key: string, title: string, t: CardTotal, accents: string[], countText: string): Slide => ({
-    key,
-    title,
-    caption,
-    accents,
-    dim: false,
-    amount: formatMoney(t.ownFunds, UAH, { minorUnits: true }),
-    others: others(t),
-    bottom: [countText, t.missing > 0 ? withoutAccounts(t.missing) : ''].filter((s) => s !== '').join(' · '),
-    net: t.income - t.spending,
-    netText: `${netText(t.income - t.spending, UAH)} ${month}`,
-    flow: { currency: UAH, income: t.income, spending: t.spending, color: accents[0] ?? colorVar(null) },
-  });
+  const totalSlide = (key: string, title: string, t: CardTotal, accents: string[], countText: string): Slide => {
+    const approx = t.fx.some((p) => p.rate !== null);
+    return {
+      key,
+      title,
+      caption,
+      accents,
+      dim: false,
+      amount: formatMoney(t.ownFunds, UAH, { minorUnits: true }),
+      others: others(t),
+      bottom: [countText, t.missing > 0 ? withoutAccounts(t.missing) : ''].filter((s) => s !== '').join(' · '),
+      net: t.income - t.spending,
+      netText: `${approx ? '≈ ' : ''}${netText(t.income - t.spending, UAH)} ${month}`,
+      flow: { currency: UAH, income: t.income, spending: t.spending, color: accents[0] ?? colorVar(null), approx, note: fxNote(t.fx) },
+    };
+  };
   if (ctx.selectedId === null) {
     const accents = v.people.map((p) => colorVar(p.color));
     const family = totalSlide('family', 'Вся семья', v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`);
