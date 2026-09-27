@@ -36,12 +36,13 @@ beforeEach(() => {
 });
 
 describe('participant store', () => {
-  it('one person: no switch, always the whole family', async () => {
+  it('one person: no switch, always that person (no «Вся семья» repeating their card)', async () => {
     api.people = { people: [person(1, 'Я', [conn(1)])], secureStorage: true };
-    localStorage.setItem('balance.participant', '1');
+    localStorage.setItem('balance.participant', String(FAMILY));
     const s = useParticipantStore();
+    expect(s.selectedId).toBeNull();
     await s.refresh();
-    expect([s.multiple, s.selectedId, s.hasConnections, s.anyToken]).toEqual([false, null, true, true]);
+    expect([s.multiple, s.selectedId, s.hasConnections, s.anyToken]).toEqual([false, 1, true, true]);
   });
 
   it('two people: the choice is remembered; a person that is gone falls back to the family', async () => {
