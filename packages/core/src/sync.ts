@@ -211,6 +211,8 @@ export function splitWindows(from: number, to: number, windowSec = WINDOW_SEC): 
  * Windows to fetch for one account, in execution order. Every window touches the already covered range,
  * so coverage [oldest, newest] stays contiguous and an interruption never leaves a hole:
  *  1. forward:  from max(oldest, newest − 3 days) up to now (oldest first) — refreshes holds, catches new data;
+ *     with `rereadWindow`, from no later than now − one window: a short gap re-reads a whole window (one request) and
+ *     catches late changes to older operations; a gap longer than that plans exactly as without it;
  *  2. backward: from oldest down to `since` (newest first) — only if `since` is older than the coverage.
  * Without coverage: from now down to `since`, newest first.
  */
@@ -219,12 +221,14 @@ export function planAccountWindows(
   sinceSec: number | null,
   nowSec: number,
   windowSec = WINDOW_SEC,
+  rereadWindow = false,
 ): Window[] {
   if (!state) {
     if (sinceSec === null || sinceSec >= nowSec) return [];
     return splitWindows(sinceSec, nowSec, windowSec).reverse();
   }
-  const forwardFrom = Math.max(state.oldest, state.newest - RESYNC_OVERLAP_SEC);
+  const overlapFrom = state.newest - RESYNC_OVERLAP_SEC;
+  const forwardFrom = Math.max(state.oldest, rereadWindow ? Math.min(overlapFrom, nowSec - windowSec) : overlapFrom);
   const forward = splitWindows(forwardFrom, nowSec, windowSec);
   const backward = sinceSec !== null && sinceSec < state.oldest ? splitWindows(sinceSec, state.oldest, windowSec).reverse() : [];
   return [...forward, ...backward];
@@ -392,6 +396,8 @@ export type HistoryOptions = {
   /** Unix seconds; null = only refresh what is already covered (forward). */
   sinceSec: number | null;
   accountIds?: string[];
+  /** Re-read at least the last full window of every covered account (planAccountWindows). */
+  rereadWindow?: boolean;
 };
 
 /** Plans all accounts up front (so the CLI can print an estimate), then runs them. */
@@ -400,7 +406,7 @@ export async function planHistory(ctx: SyncContext, opts: HistoryOptions): Promi
   const ids = opts.accountIds ?? (await defaultAccountSelection(ctx.db, await syncConnectionId(ctx))).selected;
   const plan = new Map<string, Window[]>();
   for (const id of ids) {
-    plan.set(id, planAccountWindows(await getSyncState(ctx.db, id), opts.sinceSec, nowSec, windowSecFor(ctx.api.provider)));
+    plan.set(id, planAccountWindows(await getSyncState(ctx.db, id), opts.sinceSec, nowSec, windowSecFor(ctx.api.provider), opts.rereadWindow));
   }
   return plan;
 }
