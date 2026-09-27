@@ -19,6 +19,12 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
 /** Packages allowed only inside shared/ui — the muzakit-copy component library — never elsewhere in the renderer. */
 export const UI_ONLY_PACKAGES: ReadonlyArray<RegExp> = [/^reka-ui$/, /^@internationalized\/date$/];
 
+/**
+ * Domain slices: one slice split into sub-features, one per first-level folder, plus `shared/` for what they have in
+ * common. Sub-features never import each other or the domain's index.ts; `shared/` imports no sub-feature.
+ */
+export const DOMAIN_SLICES: ReadonlyArray<string> = ['features/settings'];
+
 /** The only file that reads window.balance. */
 export const BRIDGE_FILE = 'shared/api/balance.ts';
 
@@ -44,6 +50,23 @@ export function importsOf(text: string): string[] {
 }
 
 const rank = (l: Layer) => LAYERS.indexOf(l);
+
+/** The sub-feature folder of a file inside a domain slice; null for a file at the domain's root (its index.ts). */
+function subFeatureOf(file: string): string | null {
+  const parts = file.split('/');
+  return parts.length > 3 ? parts[2]! : null;
+}
+
+/** A relative import inside a domain slice that crosses sub-features the wrong way, or ''. */
+function domainViolation(file: string, target: string): string {
+  const from = subFeatureOf(file);
+  const to = subFeatureOf(target);
+  if (from === null) return '';
+  if (to === null) return 'a sub-feature must not import its domain index.ts';
+  if (from === 'shared' && to !== 'shared') return `shared/ of a domain must not import its sub-feature ${to}`;
+  if (from !== 'shared' && to !== from && to !== 'shared') return `sub-features of a domain must not import each other (${from} → ${to}); share through shared/`;
+  return '';
+}
 const hasIndex = (files: Files, dir: string) => files.has(`${dir}/index.ts`);
 
 export function violations(files: Files): string[] {
@@ -63,6 +86,10 @@ export function violations(files: Files): string[] {
         const target = path.posix.normalize(path.posix.join(path.posix.dirname(file), spec));
         const to = placeOf(target);
         if (!to || to.layer !== from.layer || to.slice !== from.slice) found.push(`${where}: a relative import leaves its slice (use @/<layer>/<slice>)`);
+        else if (DOMAIN_SLICES.includes(`${from.layer}/${from.slice}`)) {
+          const bad = domainViolation(file, target);
+          if (bad) found.push(`${where}: ${bad}`);
+        }
       } else if (spec.startsWith('@/')) {
         const target = spec.slice(2);
         const to = placeOf(`${target}/x`);

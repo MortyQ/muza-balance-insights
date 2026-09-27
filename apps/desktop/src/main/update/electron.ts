@@ -7,7 +7,7 @@ import { pipeline } from 'node:stream/promises';
 import { app, session } from 'electron';
 import electronUpdater from 'electron-updater';
 import type { UpdateView } from '../../shared/update.ts';
-import { readPrefs, writePrefs } from './prefs.ts';
+import { readPrefs, updatePrefs } from '../prefs.ts';
 import { UPDATE_PUBLIC_KEY } from './public-key.ts';
 import { UPDATE_PARTITION, downloadTo, fetchBytes, guardUpdateSession, type UpdateSessionLike } from './session.ts';
 import { CHECK_EVERY_MS, FETCH_TIMEOUT_MS, FIRST_CHECK_DELAY_MS, Updater, type ElectronUpdaterLike } from './updater.ts';
@@ -31,7 +31,7 @@ export function createUpdater(opts: {
     appImage: process.env.APPIMAGE,
     publicKeyPem: UPDATE_PUBLIC_KEY,
     checksEnabled: readPrefs(opts.userDataDir).updateChecks,
-    saveChecksEnabled: (enabled) => writePrefs(opts.userDataDir, { updateChecks: enabled }),
+    saveChecksEnabled: (enabled) => updatePrefs(opts.userDataDir, (p) => ({ ...p, updateChecks: enabled })),
     downloadsDir: app.getPath('downloads'),
     updatesDir,
     fetchBytes: (url) => fetchBytes(ses, url, FETCH_TIMEOUT_MS),

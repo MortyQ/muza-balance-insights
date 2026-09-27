@@ -1,14 +1,128 @@
-# Changelog
+# What's new in Balance Insights
 
-All notable changes to Balance Insights will be documented here.
+What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
+are quoted as they appear in it.
 
-Format: [Keep a Changelog](https://keepachangelog.com/), versions: [Semantic Versioning](https://semver.org/).
+## 0.1.4 — unreleased
 
----
+Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in
+someone else's cloud. New in this version: the app fetches new transactions by itself, it can be locked with a PIN or
+Touch ID, and the database on your computer is now encrypted.
 
-## [Unreleased]
+### Connecting your bank
 
-## [0.1.3] — 2026-09-26
+- On first launch, choose your bank and paste your personal Monobank token (issued at api.monobank.ua). The token only
+  allows reading your statement and balances. Other banks are marked «Скоро» (coming soon).
+- «Запомнить на этом компьютере» (remember on this computer) keeps the token in the system key store: Keychain on macOS,
+  the Windows credential store, the keyring on Linux. If there is no such store, the token is kept in memory only until
+  the app is closed, and the app tells you so.
+- Enter a token again or remove a connection in Settings → «Люди и подключения» (people and connections).
+- Settings open from the gear on the home screen or with Cmd+, / Ctrl+,. Esc goes back.
+
+### Loading your statement
+
+- The «Импорт» card on the home screen: pick the «Глубина» (depth — 1, 3, 12, 24 or 36 months) and press «Загрузить»
+  (load).
+- The current month of every account comes first, then the history. Spending and balances fill in while it loads.
+- Monobank gives out a statement at most once a minute, so a long history takes a while — about a minute per month of
+  each account. You can stop with «Остановить» and continue later. If you close the app, the import continues by itself
+  on the next launch when the token is remembered on this computer.
+- If the network drops or Monobank is temporarily unavailable, the app waits and retries by itself. Whatever has been
+  loaded is kept.
+- The home screen header shows how recent your data is («Данные до …» — data up to …).
+
+### Automatic refresh
+
+- New: the app fetches new transactions of all connections by itself — at launch, after the computer wakes from sleep,
+  and every 4 hours while it is open. Not more often than once every 30 minutes.
+- Each time, the last 31 days are read again, so transactions that were pending and have since completed or been
+  cancelled are updated.
+- While it runs, the home screen shows just one line: «Обновляю данные…» (updating data).
+- The «Загрузить» button is still there to load a deeper history, and it takes over from a refresh in progress.
+- Settings → «Автообновление»: a main switch «Обновлять данные автоматически» and a switch for each occasion under
+  «Когда обновлять».
+- Automatic refresh starts once your statement has been loaded at least once: you choose the depth of the first load
+  yourself.
+- It also runs while the app is locked.
+
+### Spending
+
+- The «Траты» card shows a month's spending by category, with three amounts each: gross (all charges), refunds, and net
+  (gross minus refunds).
+- Arrows switch months; «Текущий месяц» returns to the current one.
+- «Личное» (personal) and «Бизнес» (business, sole-proprietor accounts) are counted separately.
+- Different currencies are never added together: each currency has its own table.
+- Transfers between your own accounts and incoming money are not counted as spending.
+- Refunds are recognised even when the bank books them as a separate transaction, and go to the category of the purchase.
+- Bank fees have their own category, «комиссии банка».
+- The average spending per day is shown at the bottom.
+- If some transactions are still pending at the bank, you see how many: their amounts may still change.
+
+### Balances
+
+- The «Балансы» card shows how much of your own money is on each card. The credit limit is not included, and a minus
+  means credit card debt. The credit limit itself is shown separately.
+- It also shows jars («Банки») and «Всего своих денег» (your own money in total) per currency.
+
+### Family: several people and connections
+
+- Settings → «Люди и подключения»: one app can hold several people, for example you and your partner, each with their
+  own Monobank connections and tokens. Buttons: «Добавить подключение», «Переименовать», «Ввести токен заново»,
+  «Удалить».
+- A new person's name can be typed or taken from the bank: it is filled in on the first load.
+- Add another person's token only with their consent: they issue the token in their own Monobank and give it to you.
+- «Загрузить» loads all connections at once, and different people's connections load in parallel. If someone's token is
+  rejected, the others still load, and the app shows which connection did not.
+- The home screen has a «Чьи деньги» (whose money) switch: «Вся семья» (the whole family) or one person. Spending and
+  balances follow it.
+- Transfers within the family are not spending of the whole family. When you look at one person, such transfers are in
+  their «семье» (to family) category.
+- «Удалить» removes the connection, its token and the loaded transactions of its accounts in this app. Nothing changes
+  at the bank.
+
+### Security and privacy
+
+- Your data stays on your computer. The app talks only to Monobank (for the statement) and GitHub (for updates). No
+  analytics, no telemetry.
+- New: the database is encrypted with a random key, and the key is kept in the system key store, like the tokens. A copy
+  of the files — on another computer or user account, in a backup or a cloud folder — can't be opened.
+- An existing database is encrypted by itself on the first launch of the new version. Check it in Settings →
+  «Шифрование базы».
+- New: app lock. Turn it on in Settings → «Блокировка» → «Включить блокировку». It needs a PIN of 4–8 digits; on a Mac
+  you can also unlock with Touch ID.
+- Under «Когда блокировать», choose when the app locks by itself: at launch, after 60 minutes of inactivity, when the
+  screen locks, when the computer goes to sleep.
+- Lock by hand with «Заблокировать сейчас» or Cmd+L / Ctrl+L (menu «Файл» → «Заблокировать»).
+- After several wrong PINs in a row, the next attempt opens only after a pause.
+- A forgotten PIN can't be recovered. «Забыли PIN?» deletes all data; after that you can load your statement again.
+- Import and automatic refresh keep going while the app is locked.
+- If the database can't be opened, for example because its key is not available, the app offers: «Перезапустить»
+  (restart), «Начать заново» (start over), «Удалить все данные» (delete all data) or «Выйти» (quit). «Начать заново»
+  creates a new empty database, and your transactions are loaded from the bank again.
+- «Удалить все данные» (Settings → «Данные на этом компьютере») erases the database and its key, saved tokens, the lock
+  and an unfinished import. The app asks for confirmation first.
+- The app's data folder is open to your user account only (macOS, Linux).
+
+### App updates
+
+- Every few hours the app checks whether a new version is out.
+- On Windows and Linux (AppImage), the new version downloads in the background. The app then offers «Перезапустить и
+  обновить» (restart and update); otherwise it installs when you quit.
+- On macOS, «Скачать» (download) saves the verified file to Downloads. Open it and drag Balance Insights into
+  Applications, replacing the old one.
+- An update is installed only if it is signed by the author and the file matches the signed description.
+- Settings → «Обновления»: the version number, «Проверить сейчас» (check now) and «Проверять обновления автоматически»
+  (check automatically).
+
+### Installation
+
+- Available for macOS (Apple Silicon and Intel), Windows 10/11 (64-bit) and Linux (64-bit, AppImage).
+- The installers are not signed with an Apple or Microsoft certificate, so the system warns you on first launch.
+  How to get past it: the [installation guide](https://github.com/MortyQ/muza-balance-insights/blob/main/docs/INSTALL.md).
+- If you have 0.1.0 or 0.1.1, install the new version by hand once. Starting with 0.1.2, updates arrive by themselves.
+- This is an unofficial app, not affiliated with Monobank.
+
+## 0.1.3 — 2026-09-26
 
 Several people in one app: for example your own Monobank and your partner's, each with their own token.
 
@@ -29,7 +143,7 @@ Several people in one app: for example your own Monobank and your partner's, eac
   launch (the database is upgraded too, so keep a copy of the app's data folder before updating).
 - Removing a connection deletes its accounts and operations in the app (nothing changes at the bank).
 
-## [0.1.2] — 2026-09-25
+## 0.1.2 — 2026-09-25
 
 First version with automatic updates: install it by hand once, later versions come by themselves.
 
@@ -46,7 +160,7 @@ First version with automatic updates: install it by hand once, later versions co
 - Network access is a list of trusted services (GitHub for updates, Monobank for the import); each part of the app may use
   only its own.
 
-## [0.1.1] — 2026-09-25
+## 0.1.1 — 2026-09-25
 
 ### Added
 
@@ -60,7 +174,7 @@ First version with automatic updates: install it by hand once, later versions co
 - Home screen shows only spending, balances and import; the token and data cards moved to settings.
 - Internal: the interface code is split into layers with automatic checks of their boundaries.
 
-## [0.1.0] — 2026-09-25
+## 0.1.0 — 2026-09-25
 
 First release. Installers: macOS (Apple Silicon, Intel), Windows x64, Linux x64 AppImage — not signed, see [INSTALL](docs/INSTALL.md).
 

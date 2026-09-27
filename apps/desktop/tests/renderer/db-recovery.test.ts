@@ -32,8 +32,8 @@ vi.mock('@/shared/api', () => ({ balanceApi: api.fake }));
 
 const { startGuard } = await import('@/app/router/guards.ts');
 const { listenToMain } = await import('@/app/listeners.ts');
-const { recoveryText } = await import('@/features/db-recovery/utils.ts');
-const { useDbRecovery } = await import('@/features/db-recovery/composables/useDbRecovery.ts');
+const { recoveryText } = await import('@/features/settings/db-recovery/utils.ts');
+const { useDbRecovery } = await import('@/features/settings/db-recovery/composables/useDbRecovery.ts');
 const { useDbStateStore } = await import('@/entities/db-state');
 const guard = (name: string) => (startGuard as (to: unknown, from: unknown) => unknown)({ name }, {});
 

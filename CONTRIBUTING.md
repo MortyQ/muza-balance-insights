@@ -46,7 +46,8 @@ Node 22 (`.nvmrc`), pnpm 12. The desktop app: `pnpm --filter @mono/desktop dev`.
 - `pnpm test` and `pnpm typecheck` pass.
 - New behavior has tests. Test fixtures use made-up names and amounts only.
 - Security settings are not relaxed without discussion: CSP, IPC checks, the preload API, the network allowlist, Electron fuses.
-- Update `CHANGELOG.md` under `[Unreleased]`.
+- User-visible changes go into `CHANGELOG.md` under the next version (`## <version> — unreleased`, the one after
+  `apps/desktop/package.json`), in plain English for users. Tests, refactors and internal docs don't go there.
 
 ## Commit style
 

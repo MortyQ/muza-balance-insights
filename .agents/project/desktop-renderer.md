@@ -30,21 +30,28 @@
   - `window.balance` читает только `shared/api/balance.ts`; `balanceApi` вызывают только сегменты `api/` слайсов
     (`api/use<X>Request.ts`, возвращают объект функций) и подписки в `app/listeners.ts`;
   - сегменты слайса: `<Name>Feature.vue` (корень фичи), `api/`, `composables/` (логика, явный `Use<X>Return` в `types.ts`),
-    `components/` (только отображение), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
+    `components/` (только отображение; у сущности компонент может читать и менять свой стор — так `ParticipantFilter`), `store/` (Pinia setup-store, только тут), `types.ts`, `constants.ts`, `utils.ts`
     (чистые функции); страницы — тонкие оболочки над фичами и виджетами;
   - общее состояние — Pinia в `entities`: `participant` (люди, подключения, статусы токенов, выбор «Вся семья / человек» —
     `selectedId`, запоминается в `localStorage` только для удобства), `sync-status` (статус данных и `version`, на который
     перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts` (люди обновляются на
     `needs-token`, в начале окон импорта и в его конце);
+  - **домен `features/settings`** — один слайс со всем, что пользователь делает с приложением и своими данными на этом
+    компьютере: подфичи `app-lock`, `app-update`, `people`, `auto-sync`, `db-encryption`, `db-recovery`, `delete-data`
+    (у каждой свои сегменты) и `shared/` для общего между ними (`isChecked`, `restoreSwitch` для `VSwitch`;
+    `api/useDeleteAllDataRequest.ts` — «Удалить все данные» из настроек и с экрана «База недоступна»). Наружу — только
+    `features/settings/index.ts`: карточки настроек (их собирает виджет `settings`) и то, что живёт вне экрана настроек
+    (экран блокировки, подсказка и баннер обновления на главной, первый экран подключения, экран «База недоступна»). Подфичи не импортируют друг друга и `index.ts` домена, `shared/` — ни одну
+    подфичу (`DOMAIN_SLICES` в `tests/helpers/architecture.ts`). Новая настройка — новая подфича здесь;
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
   Банки — `entities/bank` (Monobank + «Скоро»), подключение — `addConnection` в main (пока только Monobank).
-- Простой UI людей (шаг 4e, до редизайна): настройки → «Люди и подключения» (`features/people`: имя и «Переименовать»,
+- Простой UI людей (шаг 4e, до редизайна): настройки → «Люди и подключения» (`features/settings/people`: имя и «Переименовать»,
   подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий человек или
   новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран — `ConnectFirstFeature` той же
-  формой с человеком «Я»; на главном — `features/participant-switch` («Вся семья / имена», только если людей больше одного),
+  формой с человеком «Я»; на главном — фильтр «Чьи деньги» `ParticipantFilter` из `entities/participant` («Вся семья / имена», только если людей больше одного),
   траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.

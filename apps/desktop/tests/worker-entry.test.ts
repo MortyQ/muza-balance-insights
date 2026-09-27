@@ -44,7 +44,7 @@ describe('worker entry', () => {
   });
 
   it('StartMessage: the key is 64 lowercase hex or null, and required', () => {
-    const base = { type: 'start', dbPath: '/x/monobank.db', connections: [{ connectionId: 1, provider: 'monobank', token: 'u'.repeat(44) }], sinceSec: 1 };
+    const base = { type: 'start', dbPath: '/x/monobank.db', connections: [{ connectionId: 1, provider: 'monobank', token: 'u'.repeat(44) }], sinceSec: 1, rereadWindow: false };
     const key = 'c0ffee'.padEnd(64, '0');
     expect(StartMessage.safeParse({ ...base, dbKey: key }).success).toBe(true);
     expect(StartMessage.safeParse({ ...base, dbKey: null }).success).toBe(true);

@@ -44,6 +44,30 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
   return '';
 }
 
+/**
+ * «Автообновление»: one quiet line while it runs, nothing once it is over — only a wait for the network or an error is
+ * worth a line; a connection that did not import still shows through failureLines.
+ */
+export function autoLine(p: Readonly<ImportProgress>, now: number): string {
+  switch (p.phase) {
+    case 'retry':
+      return progressLine(p, now);
+    case 'error':
+      return p.message;
+    case 'idle':
+    case 'needs-token':
+    case 'done':
+    case 'cancelled':
+      return '';
+    case 'starting':
+    case 'accounts':
+    case 'windows':
+    case 'rederive':
+      return 'Обновляю данные…';
+  }
+  return '';
+}
+
 /** After an import: one line per connection that did not import (`labelOf`: «Имя · Monobank»). */
 export function failureLines(p: Readonly<ImportProgress>, labelOf: (connectionId: number) => string): string[] {
   return p.phase === 'done' ? p.failed.map((f) => `${labelOf(f.connectionId)}: ${f.message}`) : [];

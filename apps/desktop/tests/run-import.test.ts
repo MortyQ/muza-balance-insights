@@ -32,6 +32,7 @@ async function setup(opts: { intercept?: (i: number, url: string) => Response | 
       clock,
       connections: [{ connectionId, provider: 'monobank', token: TEST_TOKEN }],
       sinceSec: since,
+      rereadWindow: false,
       signal: controller.signal,
       emit: (m) => messages.push(m),
     });
@@ -288,6 +289,7 @@ describe('runImport: several connections', () => {
         { connectionId: her, provider: 'monobank', token: TOKEN_B },
       ],
       sinceSec: since,
+      rereadWindow: false,
       signal: new AbortController().signal,
       emit: (m) => messages.push(m),
     });

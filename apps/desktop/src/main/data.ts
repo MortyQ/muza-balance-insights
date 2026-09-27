@@ -102,6 +102,13 @@ export class DataService {
     };
   }
 
+  /** Epoch seconds of the latest sync of any account; null — nothing imported yet (the «Автообновление» gap). */
+  async lastSyncSec(): Promise<number | null> {
+    const rs = await (await this.conn()).execute('SELECT MAX(last_sync_at) AS last FROM sync_state WHERE newest_synced_time IS NOT NULL');
+    const last = rs.rows[0]?.last;
+    return last === null || last === undefined ? null : Number(last);
+  }
+
   /** Every connection (the import takes them all). */
   async connections(): Promise<Array<{ connectionId: number; provider: ProviderId }>> {
     return (await listConnections(await this.conn())).map((c) => ({ connectionId: c.id, provider: c.provider }));

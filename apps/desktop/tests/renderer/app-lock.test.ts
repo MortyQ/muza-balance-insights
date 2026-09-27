@@ -61,7 +61,7 @@ describe('onLock push', () => {
   });
 });
 
-const { resultText, waitText } = await import('@/features/app-lock/utils.ts');
+const { resultText, waitText } = await import('@/features/settings/app-lock/utils.ts');
 
 describe('texts', () => {
   it('waitText: seconds under a minute, minutes above, empty when over', () => {
@@ -80,8 +80,8 @@ describe('texts', () => {
   });
 });
 
-const { HINT_KEY } = await import('@/features/app-lock/constants.ts');
-const { shouldShowHint } = await import('@/features/app-lock/utils.ts');
+const { HINT_KEY } = await import('@/features/settings/app-lock/constants.ts');
+const { shouldShowHint } = await import('@/features/settings/app-lock/utils.ts');
 
 describe('lock hint', () => {
   it('shown only while the lock is off and the hint was not dismissed', () => {
@@ -96,7 +96,7 @@ describe('lock hint', () => {
   });
 });
 
-const { canForgetPin, normalizePin, shouldAutoPromptTouchId } = await import('@/features/app-lock/utils.ts');
+const { canForgetPin, normalizePin, shouldAutoPromptTouchId } = await import('@/features/settings/app-lock/utils.ts');
 
 describe('pin normalization and forget visibility', () => {
   it('normalizePin: strips non-digits, cuts to PIN_MAX', () => {

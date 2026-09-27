@@ -49,6 +49,7 @@ port.on('message', (event: { data: unknown }) => {
         clock: abortableClock,
         connections: msg.connections,
         sinceSec: msg.sinceSec,
+        rereadWindow: msg.rereadWindow,
         signal: controller.signal,
         emit: send,
       });

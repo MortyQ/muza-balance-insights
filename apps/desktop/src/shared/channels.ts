@@ -27,6 +27,8 @@ export const METHODS = [
   'disableLock',
   'setLockTriggers',
   'setTouchId',
+  'getAutoSync',
+  'setAutoSync',
   'getDbState',
   'relaunchApp',
   'startOver',

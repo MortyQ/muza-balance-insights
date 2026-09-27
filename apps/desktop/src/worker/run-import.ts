@@ -33,6 +33,7 @@ export type RunImportDeps = {
   clock: Clock;
   connections: ReadonlyArray<ImportConnection>;
   sinceSec: number;
+  rereadWindow: boolean;
   signal: AbortSignal;
   emit: (msg: FromWorker) => void;
 };
@@ -197,7 +198,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
         }
         for (const r of active()) {
           if (r.remaining) continue;
-          r.remaining = await planHistory(r.ctx, { sinceSec: d.sinceSec });
+          r.remaining = await planHistory(r.ctx, { sinceSec: d.sinceSec, rereadWindow: d.rereadWindow });
           windowsTotal += count(r.remaining);
         }
         const lost = await runPlans(

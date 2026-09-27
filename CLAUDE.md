@@ -33,7 +33,7 @@ The files that hold the guarantee "the agent sees neither real data nor the toke
 - `apps/mcp/tests/recategorize-safety.test.ts`: the test `recategorize` runs as its first step;
 - `.claude/settings.json`: allow/deny, sandbox and `excludedCommands` (edited by the user only);
 - `.github/workflows/release.yml`: what is built and published under the author's name. Its guarantees are checked by
-  `apps/desktop/tests/release-workflow.test.ts` (actions pinned by SHA, permissions, triggers, draft only; one secret —
+  `apps/desktop/tests/release-workflow.test.ts` (actions pinned by SHA, permissions, triggers, draft only; the description from the version's `CHANGELOG.md` section; one secret —
   `UPDATE_SIGNING_KEY`, only in the `release` Environment with manual approval and only in the `update-sign.mjs` steps).
   The public half of the key is `apps/desktop/src/main/update/public-key.ts`: changing it = installed copies reject updates.
 
@@ -79,6 +79,13 @@ Rules:
 
 - Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok).
 - Before handing over: `pnpm test` and `pnpm typecheck` (at the root, `pnpm -r`).
+- `CHANGELOG.md` (**English**, for users; it is the release description): every user-visible change (new feature,
+  changed behaviour, notable fix) goes there in the same work, under the **next** unreleased version — the one after
+  `apps/desktop/package.json` (0.1.3 there → write into 0.1.4; no such section yet → create it as
+  `## <version> — unreleased`). The version bump at release time makes it the released one: `unreleased` → the date
+  (`## 0.1.4 — 2026-10-01`); the release refuses a tag whose section is missing or still `unreleased`. Plain English, no
+  internal terms (files, IPC, libraries, tests); screen and button names as in the Russian UI, in «»; security only in
+  terms of what it protects. Internal-only changes (tests, refactors, docs for agents) do not go there.
 
 ## Where the other rules are
 
@@ -98,3 +105,4 @@ been opened yet, read the relevant file yourself before editing.
 | `.agents/project/desktop-import.md` | the import worker, retries, tokens, IPC for people and connections | `apps/desktop/CLAUDE.md` |
 | `.agents/project/desktop-renderer.md` | FSD, "`shared/ui` first", styles, navigation | `apps/desktop/src/renderer/CLAUDE.md` (with the muzakit instructions) |
 | `docs/backlog.md` | plans and what has not been checked on a live system | — |
+| `CHANGELOG.md` | what users get in each version; the release description (rule in "Process") | — |

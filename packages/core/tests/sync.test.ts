@@ -10,6 +10,7 @@ import {
   getSyncState,
   planAccountWindows,
   planHistory,
+  windowSecFor,
   runPlan,
   splitWindows,
   syncAccounts,
@@ -112,6 +113,36 @@ describe('planAccountWindows: coverage stays contiguous', () => {
     const ws = planAccountWindows(state, now - 20 * DAY, now);
     expect(ws).toEqual([{ from: state.newest - RESYNC_OVERLAP_SEC, to: now }]);
     expect(planAccountWindows(null, null, now)).toEqual([]);
+  });
+
+  describe('rereadWindow: one whole window up to now', () => {
+    const W = 31 * DAY;
+
+    it('a short gap → one window of the full length ending now', () => {
+      const state = { oldest: now - 200 * DAY, newest: now - 7 * DAY, lastSyncAt: null };
+      const ws = planAccountWindows(state, null, now, W, true);
+      expect(ws).toEqual([{ from: now - W, to: now }]);
+      expect(assertContiguous(state, ws)).toEqual({ oldest: state.oldest, newest: now });
+    });
+
+    it('a gap longer than a window − 3 days → the same plan as without it', () => {
+      const state = { oldest: now - 200 * DAY, newest: now - 40 * DAY, lastSyncAt: null };
+      expect(planAccountWindows(state, null, now, W, true)).toEqual(planAccountWindows(state, null, now, W));
+      expect(planAccountWindows(state, null, now, W, true)[0]?.from).toBe(state.newest - RESYNC_OVERLAP_SEC);
+    });
+
+    it('coverage shorter than a window → from its start, never below it; backward to since as before', () => {
+      const state = { oldest: now - 10 * DAY, newest: now - DAY, lastSyncAt: null };
+      expect(planAccountWindows(state, now - 5 * DAY, now, W, true)).toEqual([{ from: state.oldest, to: now }]);
+      const since = now - 60 * DAY;
+      const ws = planAccountWindows(state, since, now, W, true);
+      expect(ws[0]).toEqual({ from: state.oldest, to: now });
+      expect(assertContiguous(state, ws)).toEqual({ oldest: since, newest: now });
+    });
+
+    it('no coverage → the same plan as without it', () => {
+      expect(planAccountWindows(null, now - 45 * DAY, now, W, true)).toEqual(planAccountWindows(null, now - 45 * DAY, now, W));
+    });
   });
 });
 
@@ -263,6 +294,13 @@ describe('resumability', () => {
     ]);
     await runPlan(ctx, plan2);
     expect(await getSyncState(db, 'a')).toMatchObject({ oldest: since, newest: now2 });
+    expect(await txRows()).toHaveLength(40);
+
+    // rereadWindow: one whole provider window up to now, written over what is there — no duplicates
+    const plan3 = await planHistory(ctx, { sinceSec: null, rereadWindow: true });
+    const now3 = Math.floor(clock.nowMs() / 1000);
+    expect(plan3.get('a')).toEqual([{ from: now3 - windowSecFor('monobank'), to: now3 }]);
+    await runPlan(ctx, plan3);
     expect(await txRows()).toHaveLength(40);
   });
 
