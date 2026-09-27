@@ -179,7 +179,7 @@ app.whenReady().then(async () => {
       defaultId: 1,
       cancelId: 1,
       message: 'Удалить все данные?',
-      detail: 'Будут удалены загруженные операции, сохранённые токены и незавершённый импорт. Отменить это нельзя.',
+      detail: 'Будут удалены загруженные операции, ключ базы, сохранённые токены, блокировка и незавершённый импорт. Отменить это нельзя.',
     };
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
