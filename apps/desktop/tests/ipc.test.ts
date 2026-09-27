@@ -103,6 +103,16 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['addConnection', [{ participant: { fromBank: false }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
     ['addConnection', [{ participant: { id: 1, label: 'x' }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
     ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'x'.repeat(40), remember: true, extra: 1 }]],
+    ['addConnection', [{ participant: { id: 1, color: 'blue' }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { label: 'x', color: 'pink' }, provider: 'monobank', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'x'.repeat(40), remember: true, color: '#ff0000' }]],
+    ['restoreBankName', []],
+    ['restoreBankName', ['1']],
+    ['setParticipantColor', [1]],
+    ['setParticipantColor', [1, 'pink']],
+    ['setParticipantColor', [1, '#ff0000']],
+    ['setConnectionColor', [0, 'blue']],
+    ['setConnectionColor', [1, 'blue', 'extra']],
     ['renameParticipant', [1]],
     ['renameParticipant', [1, '']],
     ['renameParticipant', [1, 'x'.repeat(81)]],
@@ -194,8 +204,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     });
     await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
     await expect(ipc.handlers.get('balance:getBalances')!(good, { participantId: 2 })).resolves.toEqual({ m: 'getBalances', a: [{ participantId: 2 }] });
-    for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }]) {
-      const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
+    for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }, { label: 'Вигадана', color: 'aqua' }, { fromBank: true, color: 'red' }]) {
+      const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false, color: 'green' };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
     }
     for (const theme of ['system', 'light', 'dark']) {

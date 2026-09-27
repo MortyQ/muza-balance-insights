@@ -238,6 +238,16 @@
     --border-subtle: oklch(92% 0.008 280);
     --border:        oklch(87% 0.010 280);
     --border-strong: oklch(77% 0.013 280);
+
+    /* ─── Series: people and connections (src/shared/colors.ts; dataviz categorical, CVD-checked for this theme) ─── */
+    --series-blue:     #2a78d6;
+    --series-orange:   #eb6834;
+    --series-aqua:     #1baf7a;
+    --series-yellow:   #eda100;
+    --series-magenta:  #e87ba4;
+    --series-green:    #008300;
+    --series-violet:   #4a3aa7;
+    --series-red:      #e34948;
     --border-focus:  oklch(52% 0.27 280);
 
     --overlay: oklch(0% 0 0 / 0.5);
@@ -322,6 +332,16 @@
     --border-subtle: oklch(24% 0.020 270);
     --border:        oklch(30% 0.022 270);
     --border-strong: oklch(40% 0.018 270);
+
+    /* ─── Series: people and connections (src/shared/colors.ts; dataviz categorical, CVD-checked for this theme) ─── */
+    --series-blue:     #3987e5;
+    --series-orange:   #d95926;
+    --series-aqua:     #199e70;
+    --series-yellow:   #c98500;
+    --series-magenta:  #d55181;
+    --series-green:    #008300;
+    --series-violet:   #9085e9;
+    --series-red:      #e66767;
     --border-focus:  oklch(65% 0.25 280);
 
     --overlay: oklch(0% 0 0 / 0.65);

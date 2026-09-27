@@ -23,8 +23,9 @@
   При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
 - IPC людей и подключений (`apps/desktop/src/main/people.ts`, `PeopleService`): `listPeople` (подпись участника — единственное
   имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
-  { fromBank: true }, provider, token, remember })` (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
-  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `setConnectionToken`,
+  { fromBank: true }, provider, token, remember, color? })` (у нового человека — свой `color?`) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
+  сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` / `setConnectionColor` (занятый цвет →
+  `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром в `people.ts`), `setConnectionToken`,
   `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
   `spendingSummary` / `getBalances` принимают `participantId`.
 - **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`

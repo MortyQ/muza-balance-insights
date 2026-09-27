@@ -1,5 +1,6 @@
 // «Люди и подключения» in main: participants and connections (core participants.ts) together with their tokens
 // (TokenVault). Replies carry a participant's label and numbers only — never a token or the bank's holder id.
+import { ColorTakenError, type ColorKey as CoreColorKey } from '@mono/core/colors';
 import type { Db } from '@mono/core/db';
 import {
   addConnection,
@@ -8,12 +9,17 @@ import {
   listConnections,
   listParticipants,
   renameParticipant,
+  restoreBankLabel,
+  setConnectionColor,
+  setParticipantColor,
 } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 import type {
   AddConnectionInput,
   AddConnectionResult,
+  ColorChangeResult,
+  ColorKey,
   PeopleView,
   ProviderKey,
   RemoveConnectionResult,
@@ -25,6 +31,8 @@ import { TokenError } from './token.ts';
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 const PROVIDER_KEYS_MATCH: Same<ProviderKey, ProviderId> = true;
 void PROVIDER_KEYS_MATCH;
+const COLOR_KEYS_MATCH: Same<ColorKey, CoreColorKey> = true;
+void COLOR_KEYS_MATCH;
 
 export type PeopleDeps = {
   db: () => Promise<Db>;
@@ -55,6 +63,7 @@ export class PeopleService {
           id: c.id,
           provider: c.provider,
           bank: DESKTOP_PROVIDERS[c.provider].bank,
+          color: c.color,
           accounts: c.accounts,
           coveredFrom: c.coveredFrom,
           coveredTo: c.coveredTo,
@@ -62,7 +71,7 @@ export class PeopleService {
           token: await this.d.tokens.status(c.id),
         });
       }
-      people.push({ id: p.id, label: p.label, labelFromBank: p.labelSource === 'bank', connections: own });
+      people.push({ id: p.id, label: p.label, labelFromBank: p.labelSource === 'bank', color: p.color, connections: own });
     }
     return { people, secureStorage: await this.d.tokens.secureStorageAvailable() };
   }
@@ -82,7 +91,7 @@ export class PeopleService {
     const participantId = 'id' in input.participant ? input.participant.id : await addParticipant(db, input.participant, now);
     let connectionId: number;
     try {
-      connectionId = await addConnection(db, participantId, input.provider, now);
+      connectionId = await addConnection(db, participantId, input.provider, now, input.color);
     } catch (err) {
       if (!('id' in input.participant)) await db.execute({ sql: 'DELETE FROM participants WHERE id = ?', args: [participantId] });
       throw err;
@@ -101,6 +110,18 @@ export class PeopleService {
     await renameParticipant(await this.d.db(), id, label);
   }
 
+  async restoreBankName(id: number): Promise<void> {
+    await restoreBankLabel(await this.d.db(), id);
+  }
+
+  setParticipantColor(id: number, color: ColorKey): Promise<ColorChangeResult> {
+    return colorChange(async () => setParticipantColor(await this.d.db(), id, color));
+  }
+
+  setConnectionColor(connectionId: number, color: ColorKey): Promise<ColorChangeResult> {
+    return colorChange(async () => setConnectionColor(await this.d.db(), connectionId, color));
+  }
+
   async setToken(connectionId: number, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
     const c = (await listConnections(await this.d.db())).find((x) => x.id === connectionId);
     if (!c) throw new TokenError('Такого подключения нет');
@@ -115,5 +136,15 @@ export class PeopleService {
     await this.d.tokens.clear(connectionId);
     await deleteConnection(await this.d.db(), connectionId);
     return { removed: true };
+  }
+}
+
+async function colorChange(set: () => Promise<void>): Promise<ColorChangeResult> {
+  try {
+    await set();
+    return { changed: true };
+  } catch (err) {
+    if (err instanceof ColorTakenError) return { changed: false, reason: 'taken' };
+    throw err;
   }
 }

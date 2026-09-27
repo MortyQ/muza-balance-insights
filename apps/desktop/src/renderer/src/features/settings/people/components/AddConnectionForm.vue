@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { MONOBANK } from '@/entities/bank';
-import { useParticipantStore } from '@/entities/participant';
+import { ColorSwatches, useParticipantStore } from '@/entities/participant';
 import { VButton, VCheckbox, VInfoNotice, VInput, VSelect, type VSelectOption } from '@/shared/ui';
 import { useAddConnection } from '../composables/useAddConnection.ts';
 import { CONSENT_TEXT } from '../constants.ts';
@@ -15,7 +15,20 @@ const { defaultLabel = '', submitText = 'Подключить', autofocus = fals
 const emit = defineEmits<{ added: [] }>();
 
 const participant = useParticipantStore();
-const { person, newLabel, fromBank, tokenInput, remember, canSubmit, submit, save } = useAddConnection(() => defaultLabel);
+const {
+  person,
+  newLabel,
+  fromBank,
+  tokenInput,
+  remember,
+  personColor,
+  connectionColor,
+  takenPersonColors,
+  takenConnectionColors,
+  canSubmit,
+  submit,
+  save,
+} = useAddConnection(() => defaultLabel);
 const personId = useId();
 
 const personOptions = computed<VSelectOption[]>(() => [
@@ -44,6 +57,17 @@ async function onSubmit() {
         <VCheckbox v-model="fromBank" label="Взять имя из банка (подставится при первом импорте)" />
       </template>
     </div>
+    <div class="flex flex-wrap gap-x-10 gap-y-4">
+      <div v-if="person === 'new'" class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-foreground-secondary">Цвет человека</span>
+        <ColorSwatches v-model="personColor" label="Цвет человека" :taken="takenPersonColors" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <span class="text-sm font-medium text-foreground-secondary">Цвет подключения</span>
+        <ColorSwatches v-model="connectionColor" label="Цвет подключения" :taken="takenConnectionColors" />
+      </div>
+    </div>
+    <p class="-mt-2 text-sm text-foreground-muted">По цвету человека и подключения их будет легко различать на графиках. Цвет можно сменить позже.</p>
     <TokenField v-model:token="tokenInput" v-model:remember="remember" :bank="MONOBANK" :secure-storage="participant.secureStorage" :autofocus />
     <p class="text-sm text-foreground-muted">{{ CONSENT_TEXT }}</p>
     <div>

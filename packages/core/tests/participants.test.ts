@@ -58,11 +58,11 @@ describe('participants', () => {
     const a = await addParticipant(db, { label: '  Вигадана   Особа ' }, 0);
     const b = await addParticipant(db, { fromBank: true }, 0);
     expect(await listParticipants(db)).toEqual([
-      { id: a, label: 'Вигадана Особа', labelSource: 'user' },
-      { id: b, label: BANK_LABEL_PLACEHOLDER, labelSource: 'bank' },
+      { id: a, label: 'Вигадана Особа', labelSource: 'user', color: 'blue' },
+      { id: b, label: BANK_LABEL_PLACEHOLDER, labelSource: 'bank', color: 'orange' },
     ]);
     await renameParticipant(db, b, 'Друга');
-    expect((await listParticipants(db))[1]).toEqual({ id: b, label: 'Друга', labelSource: 'user' });
+    expect((await listParticipants(db))[1]).toEqual({ id: b, label: 'Друга', labelSource: 'user', color: 'orange' });
     await expect(addParticipant(db, { label: '   ' }, 0)).rejects.toBeInstanceOf(ConnectionError);
     await expect(renameParticipant(db, b, 'x'.repeat(81))).rejects.toBeInstanceOf(ConnectionError);
     await expect(renameParticipant(db, 999, 'Хтось')).rejects.toBeInstanceOf(ConnectionError);
@@ -223,9 +223,9 @@ describe('connections: list and delete', () => {
     await db.execute({ sql: `UPDATE connections SET external_client_id = 'secret-holder' WHERE id = ?`, args: [her.connection] });
     const list = await listConnections(db);
     expect(list).toEqual([
-      { id: me.connection, participantId: me.participant, provider: 'monobank', accounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt: null },
+      { id: me.connection, participantId: me.participant, provider: 'monobank', color: 'blue', accounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt: null },
       {
-        id: her.connection, participantId: her.participant, provider: 'monobank', accounts: 1,
+        id: her.connection, participantId: her.participant, provider: 'monobank', color: 'orange', accounts: 1,
         coveredFrom: '2026-02-09', coveredTo: '2026-02-11', lastSyncAt: expect.stringMatching(/^2026-02-11/),
       },
     ]);

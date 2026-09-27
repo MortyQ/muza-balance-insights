@@ -10,7 +10,7 @@ Replace these copies with imports once muzakit is published as a package.
 |---|---|
 | `VButton` | `vue-router` removed (`to` / `replace` props, `RouterLink`): always a `<button>` |
 | `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network) |
-| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver` |
+| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter |
 | `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic) |
 | `VTooltip` | one `!` on `placements[0]` for our `noUncheckedIndexedAccess` (the array is a fixed literal) |
 | `VButtonGroup`, `VCard`, `VInfoNotice`, `VLoader`, `VProgressBar`, their `.scss` | none |

@@ -1,4 +1,7 @@
-import type { ConnectionView, TokenStatus } from '@contract/api.ts';
+import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
+import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
+import type { SegmentOption } from '@/shared/ui';
+import { FAMILY } from './constants.ts';
 
 /** One line about a connection's token, for its row. */
 export function tokenLine(s: Readonly<TokenStatus>): string {
@@ -19,4 +22,45 @@ export function coverageLine(c: Readonly<ConnectionView>): string {
   if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
   const d = (iso: string) => iso.split('-').reverse().join('.');
   return `Счетов: ${c.accounts} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+}
+
+/** The CSS colour of a palette key in the current theme; no colour → the strong border grey. */
+export function colorVar(color: ColorKey | null): string {
+  return color === null ? 'var(--border-strong)' : `var(--series-${color})`;
+}
+
+/**
+ * Who holds each colour among people or among connections, for «занят: …» — except the row being edited (its own colour
+ * stays selectable).
+ */
+export function colorHolders(
+  people: ReadonlyArray<Readonly<PersonView>>,
+  kind: 'people' | 'connections',
+  exceptId?: number,
+): Map<ColorKey, string> {
+  const held = new Map<ColorKey, string>();
+  for (const p of people) {
+    if (kind === 'people') {
+      if (p.color !== null && p.id !== exceptId) held.set(p.color, p.label);
+      continue;
+    }
+    for (const c of p.connections) if (c.color !== null && c.id !== exceptId) held.set(c.color, `${p.label} · ${c.bank}`);
+  }
+  return held;
+}
+
+/** The colour a new person or connection gets unless one is picked; null = all taken. */
+export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey | null {
+  return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
+}
+
+/**
+ * The people filter: each person's colour next to the name, and everyone's on «Вся семья» — charts and tables coloured
+ * by person read against this header.
+ */
+export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>): SegmentOption<number>[] {
+  return [
+    { label: 'Вся семья', value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
+    ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)] })),
+  ];
 }

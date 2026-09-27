@@ -18,7 +18,7 @@ const api = vi.hoisted(() => {
 });
 vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api.people) } }));
 
-const { FAMILY, coverageLine, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
+const { FAMILY, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
@@ -26,9 +26,9 @@ const { connectionsCount, participantChoice, removeText } = await import('@/feat
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
+  id, provider: 'monobank', bank: 'Monobank', color: null, accounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
-const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, connections });
+const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, color: null, connections });
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -125,5 +125,37 @@ describe('screens and notices', () => {
     expect(removeText({ removed: false, reason: 'import-running' })).toMatch(/останови импорт/);
     expect(removeText({ removed: false, reason: 'cancelled' })).toBe('');
     expect(removeText({ removed: true })).toBe('');
+  });
+});
+
+describe('colours', () => {
+  it('who holds each colour, except the row being edited; the first free one; the CSS colour', () => {
+    const people = [
+      { ...person(1, 'Я', [conn(1, { color: 'blue' }), conn(2, { color: null })]), color: 'violet' as const },
+      { ...person(2, 'Вигадана', [conn(3, { color: 'orange' })]), color: 'blue' as const },
+    ];
+    expect([...colorHolders(people, 'people')]).toEqual([['violet', 'Я'], ['blue', 'Вигадана']]);
+    expect([...colorHolders(people, 'people', 2)]).toEqual([['violet', 'Я']]);
+    expect([...colorHolders(people, 'connections', 3)]).toEqual([['blue', 'Я · Monobank']]);
+    expect(firstFreeColor(colorHolders(people, 'connections'))).toBe('aqua');
+    expect(firstFreeColor(new Map())).toBe('blue');
+    expect(colorVar('aqua')).toBe('var(--series-aqua)');
+    expect(colorVar(null)).toBe('var(--border-strong)');
+  });
+
+  it('the people filter: each person with their colour, the whole family with everyone’s', () => {
+    const people = [{ ...person(1, 'Я', []), color: 'violet' as const }, { ...person(2, 'Вигадана', []), color: null }];
+    expect(filterOptions(people)).toEqual([
+      { label: 'Вся семья', value: FAMILY, colors: ['var(--series-violet)', 'var(--border-strong)'] },
+      { label: 'Я', value: 1, colors: ['var(--series-violet)'] },
+      { label: 'Вигадана', value: 2, colors: ['var(--border-strong)'] },
+    ]);
+  });
+
+  it('a new person carries the chosen colour; an existing one does not', () => {
+    expect(participantChoice('new', 'Вигадана', false, 'green')).toEqual({ label: 'Вигадана', color: 'green' });
+    expect(participantChoice('new', '', true, 'green')).toEqual({ fromBank: true, color: 'green' });
+    expect(participantChoice('new', 'Вигадана', false, null)).toEqual({ label: 'Вигадана' });
+    expect(participantChoice(4, '', false, 'green')).toEqual({ id: 4 });
   });
 });
