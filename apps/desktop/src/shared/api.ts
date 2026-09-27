@@ -1,8 +1,10 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
+import type { Locale } from './locale.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
 import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
+import type { ThemePref } from './theme.ts';
 import type { UpdateView } from './update.ts';
 
 export type TokenStatus = {
@@ -59,6 +61,9 @@ export type AddConnectionResult =
   /** duplicate: this very token is already a connection. */
   | { added: false; reason: 'duplicate' };
 
+/** A service the app may reach (src/net/allowlist.ts); ids must equal its ServiceId (checked in src/main/services.ts). */
+export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
+
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
 export type BalanceApi = {
@@ -110,6 +115,14 @@ export type BalanceApi = {
   getAutoSync(): Promise<AutoSyncSettings>;
   /** Applies from the next trigger; returns what was saved. */
   setAutoSync(settings: AutoSyncSettings): Promise<AutoSyncSettings>;
+  /** The hosts the app may reach, for the settings screen. */
+  getTrustedServices(): Promise<TrustedServiceView[]>;
+  getTheme(): Promise<ThemePref>;
+  /** Saves and applies at once: the frame, native dialogs and the page's prefers-color-scheme follow. */
+  setTheme(theme: ThemePref): Promise<ThemePref>;
+  /** The chosen language, or the system's until one is chosen. Not applied yet: the texts are not translated. */
+  getLocale(): Promise<Locale>;
+  setLocale(locale: Locale): Promise<Locale>;
   /** Allowed while the database is not ready (not while locked). */
   getDbState(): Promise<DbStateView>;
   /** Database not ready only: a new process asks the keychain again. */
