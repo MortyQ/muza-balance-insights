@@ -9,6 +9,7 @@ const { flow, size = 'sm' } = defineProps<{
   size?: 'sm' | 'md';
 }>();
 
+/** A bar part; zero-width parts are dropped (the 2 px gap and the rounded end belong to visible parts only). */
 type Part = { w: number; color: string };
 
 const rows = computed(() => {
@@ -16,10 +17,10 @@ const rows = computed(() => {
   const parts = (value: number, other: number, pick: 'income' | 'spending'): Part[] => {
     if (segments && segments.length > 0) {
       const widths = flowWidths(segments.map((s) => s[pick]), value, other);
-      return segments.map((s, i) => ({ w: widths[i] ?? 0, color: s.color }));
+      return segments.map((s, i) => ({ w: widths[i] ?? 0, color: s.color })).filter((p) => p.w > 0);
     }
     const tone = pick === 'income' ? color : `color-mix(in oklch, ${color} 55%, var(--surface))`;
-    return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }];
+    return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
     { label: 'Пришло', amount: signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },

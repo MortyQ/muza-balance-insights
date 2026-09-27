@@ -32,17 +32,23 @@ export interface LegendItem {
   color: string;
 }
 
+/** An answer with the person it was asked for (null — the family): labels come from here, not from the live choice. */
+export interface TaggedOverview {
+  participantId: number | null;
+  overview: MonthOverview;
+}
+
 export interface UseMonthOverviewReturn {
-  state: Readonly<Ref<Loadable<MonthOverview>>>;
+  state: Readonly<Ref<Loadable<TaggedOverview>>>;
   view: ComputedRef<MonthOverview | null>;
   slides: ComputedRef<Slide[]>;
-  /** The family view (no person selected). */
+  /** The shown answer is the family view (no person). */
   isFamily: ComputedRef<boolean>;
   /** People of the family view with their colours; empty for a person. */
   legend: ComputedRef<LegendItem[]>;
   /** The selected month; setting it keeps it inside [first month with data, this month]. */
   month: WritableComputedRef<string>;
-  /** «сентябрь 2026». */
+  /** The shown answer's month: «Сентябрь», «Декабрь 2025». */
   monthName: ComputedRef<string>;
   thisMonth: YearMonth;
   currentYear: number;
@@ -60,6 +66,6 @@ export interface UseCardStackReturn {
   toggle: () => void;
   close: () => void;
   prev: () => void;
-  next: (n: number) => void;
+  next: () => void;
   showStub: () => void;
 }

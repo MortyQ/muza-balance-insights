@@ -6,7 +6,7 @@ import { spentShare } from '../utils.ts';
 import FlowBars from './FlowBars.vue';
 
 const { title, note, flow, legend, stubShown } = defineProps<{
-  /** «сентябрь 2026» (capitalised on screen). */
+  /** «Сентябрь», «Декабрь 2025». */
   title: string;
   /** «весь месяц» / «с 14 июня» / «по 27 сен». */
   note: string;
@@ -23,7 +23,7 @@ const spent = computed(() => spentShare(flow.income, flow.spending));
 <template>
   <div class="flex flex-col justify-center gap-4">
     <div class="flex items-baseline justify-between gap-3">
-      <h3 class="text-base font-bold first-letter:uppercase">{{ title }}</h3>
+      <h3 class="text-base font-bold">{{ title }}</h3>
       <span class="text-xs text-foreground-muted">{{ note }}<template v-if="spent !== null"> · потрачено {{ spent }}% прихода</template></span>
     </div>
     <FlowBars :flow size="md" />

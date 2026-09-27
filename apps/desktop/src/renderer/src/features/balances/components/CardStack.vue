@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useTemplateRef } from 'vue';
 import { BalanceCard } from '@/entities/account';
 import { VISIBLE_CARDS } from '../constants.ts';
 import type { Slide } from '../types.ts';
 import { slideDelay, slidePosition } from '../utils.ts';
 import FlowBars from './FlowBars.vue';
 
-const { slides, open, offset, paging, rowId } = defineProps<{
+const { slides, open, offset, paging } = defineProps<{
   slides: ReadonlyArray<Slide>;
   open: boolean;
   offset: number;
   paging: boolean;
-  /** id of this block: the cards control it (aria-controls). */
-  rowId: string;
 }>();
 const emit = defineEmits<{ toggle: [] }>();
+const row = useTemplateRef<HTMLElement>('row');
+
+/** Focus the front card (the first in row order): after the row folds back into the stack. */
+function focusFront(): void {
+  row.value?.querySelector('button')?.focus();
+}
+defineExpose({ focusFront });
 
 const items = computed(() =>
   slides.map(({ key, flow, ...card }, i) => {
@@ -34,7 +39,7 @@ const items = computed(() =>
 </script>
 
 <template>
-  <div :id="rowId" class="relative -mx-1 h-[270px] overflow-clip px-1">
+  <div ref="row" class="relative -mx-1 h-[270px] overflow-clip px-1">
     <div
       v-for="s in items"
       :key="s.key"
@@ -43,7 +48,7 @@ const items = computed(() =>
       :style="s.vars"
       :aria-hidden="open || s.reachable ? undefined : 'true'"
     >
-      <BalanceCard v-bind="s.card" :aria-expanded="open" :aria-controls="rowId" :tabindex="s.reachable ? undefined : -1" @click="emit('toggle')" />
+      <BalanceCard v-bind="s.card" :aria-expanded="open" :aria-label="open ? 'Свернуть карты' : 'Развернуть карты'" :tabindex="s.reachable ? undefined : -1" @click="emit('toggle')" />
       <FlowBars
         :flow="s.flow"
         class="transition-[opacity,translate] delay-150 duration-300 motion-reduce:translate-y-0"

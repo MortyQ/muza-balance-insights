@@ -149,7 +149,7 @@ describe('DataService.monthOverview', () => {
     expect(v.month).toBe('2026-03');
     expect(v.balanceAt).toBe('now');
     expect(v.coverage).toEqual({ from: '2026-03-01', to: '2026-03-10' });
-    expect(v.total).toEqual({ ownFunds: 100_000, others: [{ currency: 840, ownFunds: 5_000 }], missing: 0, income: 20_000, spending: 30_000 });
+    expect(v.total).toEqual({ ownFunds: 100_000, others: [{ currency: 840, ownFunds: 5_000 }], missing: 0, accounts: 2, income: 20_000, spending: 30_000 });
     expect(v.accounts).toEqual([]);
     // Only one participant exists (the default "Я"): its own view matches the family total (no family transfers).
     expect(v.people).toHaveLength(1);
@@ -174,7 +174,7 @@ describe('DataService.monthOverview', () => {
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
 
     const v = await svc.monthOverview({ month: '2025-11' });
-    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, income: 0, spending: 0 });
+    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, accounts: 1, income: 0, spending: 0 });
     // Coverage starts in 2026-01 but the month asked for ends in 2025-11: from > to before clamping — clamp to = from.
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
@@ -204,12 +204,12 @@ describe('DataService.monthOverview', () => {
 
     const family = await svc.monthOverview({ month: '2026-03' });
     expect(family.accounts).toEqual([]);
-    expect(family.total).toMatchObject({ ownFunds: 70_000, spending: 1_400 });
+    expect(family.total).toMatchObject({ ownFunds: 70_000, spending: 1_400, accounts: 2 });
     expect(family.people).toHaveLength(2);
     const hersView = family.people.find((p) => p.participantId === her)!;
-    expect(hersView).toMatchObject({ label: 'Вигадана', color: 'aqua', total: { ownFunds: 20_000, spending: 400 } });
+    expect(hersView).toMatchObject({ label: 'Вигадана', color: 'aqua', total: { ownFunds: 20_000, spending: 400, accounts: 1 } });
     const mineView = family.people.find((p) => p.participantId !== her)!;
-    expect(mineView.total).toMatchObject({ ownFunds: 50_000, spending: 1_000 });
+    expect(mineView.total).toMatchObject({ ownFunds: 50_000, spending: 1_000, accounts: 1 });
 
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.people).toEqual([]);

@@ -1,7 +1,7 @@
 import type { CardTotal, MonthOverview, PersonView } from '@contract/api.ts';
 import { colorVar } from '@/entities/participant';
 import { formatMoney } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, MONTHS_GEN, MONTHS_IN, MONTHS_SHORT, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
+import { CARD_STEP, CLOSE_STAGGER, MONTHS_GEN, MONTHS_IN, MONTHS_NOM, MONTHS_SHORT, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
 import type { Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
@@ -27,6 +27,12 @@ export function balanceCaption(balanceAt: 'now' | string, currentYear: number): 
   if (balanceAt === 'now') return 'Свои деньги · на сегодня';
   const [y, m, d] = balanceAt.split('-').map(Number) as [number, number, number];
   return `Свои деньги · на ${d} ${MONTHS_GEN[m - 1]}${yearSuffix(y, currentYear)}`;
+}
+
+/** «Сентябрь», «Декабрь 2025»: the year only when it is not the current one. */
+export function monthName(month: string, currentYear: number): string {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  return `${MONTHS_NOM[m - 1]}${yearSuffix(y, currentYear)}`;
 }
 
 export function monthIn(month: string, currentYear: number): string {
@@ -113,16 +119,17 @@ export function slidesOf(
     flow: { currency: UAH, income: t.income, spending: t.spending, color: accents[0] ?? colorVar(null) },
   });
   if (ctx.selectedId === null) {
-    const family = totalSlide('family', 'Вся семья', v.total, v.people.map((p) => colorVar(p.color)), peopleCount(v.people.length));
+    const accents = v.people.map((p) => colorVar(p.color));
+    const family = totalSlide('family', 'Вся семья', v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`);
     family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: p.total.income, spending: p.total.spending }));
-    return [family, ...v.people.map((p) => totalSlide(`p${p.participantId}`, p.label, p.total, [colorVar(p.color)], ''))];
+    return [family, ...v.people.map((p) => totalSlide(`p${p.participantId}`, p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts)))];
   }
   const person = ctx.people.find((p) => p.id === ctx.selectedId);
   const accent = colorVar(person?.color ?? null);
   const kindOf = (a: MonthOverview['accounts'][number]) =>
     a.kind === 'jar' ? 'Банка' : a.creditLimit > 0 ? 'Кредитка' : a.currency !== UAH ? 'Валютная карта' : 'Карта';
   return [
-    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.accounts.length)),
+    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts)),
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,
@@ -132,7 +139,7 @@ export function slidesOf(
         caption: a.ownFunds === null ? 'Нет данных на эту дату' : caption.replace('Свои деньги', kindOf(a)),
         amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
         others: '',
-        bottom: a.creditLimit > 0 ? `лимит ${formatMoney(a.creditLimit, a.currency)}` : 'Monobank',
+        bottom: a.creditLimit > 0 ? `лимит ${formatMoney(a.creditLimit, a.currency)}` : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
         net: a.ownFunds === null ? null : a.income - a.spending,
         netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
         flow: { currency: a.currency, income: a.income, spending: a.spending, color: accent },

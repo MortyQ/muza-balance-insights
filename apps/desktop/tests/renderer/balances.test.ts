@@ -8,6 +8,7 @@ import {
   flowWidths,
   maxOffset,
   monthIn,
+  monthName,
   netText,
   peopleCount,
   signedMoney,
@@ -19,7 +20,7 @@ import {
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
-const card = (ownFunds: number, income: number, spending: number, missing = 0) => ({ ownFunds, others: [], missing, income, spending });
+const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], missing, accounts, income, spending });
 
 describe('balances utils', () => {
   it('slidePosition: a stack of at most 4 visible cards; a row with the offset applied', () => {
@@ -51,6 +52,11 @@ describe('balances utils', () => {
     expect(balanceCaption('2025-12-31', 2026)).toBe('Свои деньги · на 31 декабря 2025');
     expect(monthIn('2026-09', 2026)).toBe('в сентябре');
     expect(monthIn('2025-12', 2026)).toBe('в декабре 2025');
+  });
+
+  it('monthName: the year only when it is not the current one', () => {
+    expect(monthName('2026-09', 2026)).toBe('Сентябрь');
+    expect(monthName('2025-12', 2026)).toBe('Декабрь 2025');
   });
 
   it('counts: people and accounts, with the Russian plural forms', () => {
@@ -105,17 +111,17 @@ describe('balances utils', () => {
       month: '2026-09',
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
-      total: card(10_000, 5_000, 4_000),
+      total: card(10_000, 5_000, 4_000, 0, 14),
       people: [
-        { participantId: 1, label: 'Сергей', color: 'blue', total: card(6_000, 3_000, 2_000) },
-        { participantId: 2, label: 'Аня', color: 'orange', total: card(4_000, 2_000, 2_000) },
+        { participantId: 1, label: 'Сергей', color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
+        { participantId: 2, label: 'Аня', color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
       ],
       accounts: [],
     };
     const s = slidesOf(fam, { people, selectedId: null, currentYear: 2026 });
     expect(s.map((x) => x.title)).toEqual(['Вся семья', 'Сергей', 'Аня']);
     expect(s[0]?.accents).toEqual(['var(--series-blue)', 'var(--series-orange)']);
-    expect(s[0]?.bottom).toBe('2 человека');
+    expect(s.map((x) => x.bottom)).toEqual(['2 человека · 14 счетов', '11 счетов', '3 счёта']);
     expect(s[0]?.netText).toBe('+10,00 ₴ в сентябре');
     expect(s[0]?.flow.segments).toEqual([
       { color: 'var(--series-blue)', income: 3_000, spending: 2_000 },
@@ -127,7 +133,7 @@ describe('balances utils', () => {
       ...fam,
       balanceAt: '2026-09-30',
       people: [],
-      total: card(6_000, 3_000, 2_000, 1),
+      total: card(6_000, 3_000, 2_000, 1, 4),
       accounts: [
         { id: 'a', label: 'black/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 6_000, income: 3_000, spending: 2_000 },
         { id: 'b', label: 'jar/UAH', kind: 'jar', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 },
@@ -145,6 +151,7 @@ describe('balances utils', () => {
     ]);
     expect(p[0]?.bottom).toBe('4 счёта · без 1 счёта');
     expect(p[1]?.caption).toBe('Карта · на 30 сентября');
+    expect(p[1]?.bottom).toBe('Monobank · Сергей');
     expect(p[2]?.amount).toBe('—');
     expect(p[2]?.caption).toBe('Нет данных на эту дату');
     expect(p[2]?.net).toBeNull();

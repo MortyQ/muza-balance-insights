@@ -118,6 +118,7 @@ export class DataService {
           ownFunds: balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0,
           others: balances.totals.filter((t) => t.currency !== UAH).map((t) => ({ currency: t.currency, ownFunds: t.own_funds })),
           missing: balances.missing,
+          accounts: balances.accounts.length,
           income: income.totals.find((t) => t.currency === UAH)?.total ?? 0,
           spending: spending.totals.find((t) => t.currency === UAH)?.net ?? 0,
         },

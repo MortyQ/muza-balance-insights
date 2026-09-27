@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue';
+import { computed, nextTick, useTemplateRef } from 'vue';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import BalancesHeader from './components/BalancesHeader.vue';
@@ -10,22 +10,35 @@ import { useMonthOverview } from './composables/useMonthOverview.ts';
 import { accountsCount, coverageNote, maxOffset } from './utils.ts';
 
 const { state, view, slides, isFamily, legend, month, monthName, thisMonth, currentYear, firstMonth } = useMonthOverview();
-const stack = useCardStack();
+const stack = useCardStack(() => slides.value.length);
 const { open, offset, paging, stubShown } = stack;
 const syncStatus = useSyncStatusStore();
-const rowId = useId();
+const block = useTemplateRef<HTMLElement>('block');
+const cards = useTemplateRef<{ focusFront: () => void }>('cards');
+
+/** Folds the row back; focus inside the block (now on a control that goes inert) moves to the front card. */
+function collapse(): void {
+  if (!open.value) return;
+  const inside = block.value?.contains(document.activeElement) ?? false;
+  stack.close();
+  if (inside) void nextTick(() => cards.value?.focusFront());
+}
+function onCard(): void {
+  if (open.value) collapse();
+  else stack.toggle();
+}
 
 const head = computed(() => slides.value[0] ?? null);
 const openTitle = computed(() => (isFamily.value ? 'Карты семьи' : `Счета · ${head.value?.title ?? ''}`));
-const openSubtitle = computed(() => (isFamily.value ? 'общий итог и каждый человек' : accountsCount(view.value?.accounts.length ?? 0)));
+const openSubtitle = computed(() => (isFamily.value ? 'общий итог и каждый человек' : accountsCount(view.value?.total.accounts ?? 0)));
 const note = computed(() => (view.value ? coverageNote(view.value.month, view.value.coverage) : ''));
 </script>
 
 <template>
-  <VCard padding="md" @keydown.esc="stack.close">
+  <VCard padding="md" @keydown.esc="collapse">
     <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
     <p v-else-if="!syncStatus.hasData" class="text-foreground-muted">Счетов пока нет: загрузи выписку в разделе «Импорт».</p>
-    <div v-else class="flex flex-col gap-3">
+    <div v-else ref="block" class="flex flex-col gap-3">
       <BalancesHeader
         v-model="month"
         :open
@@ -37,16 +50,16 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
         :can-prev="offset > 0"
         :can-next="offset < maxOffset(slides.length)"
         @prev="stack.prev"
-        @next="stack.next(slides.length)"
+        @next="stack.next"
         @stub="stack.showStub"
-        @close="stack.close"
+        @close="collapse"
       />
       <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
       <div v-if="head" class="relative transition-opacity" :class="{ 'opacity-60': state.status === 'loading' }">
-        <CardStack :slides :open :offset :paging :row-id @toggle="stack.toggle" />
+        <CardStack ref="cards" :slides :open :offset :paging @toggle="onCard" />
         <MonthPanel
-          class="absolute top-0 left-[452px] h-[266px] w-[340px] transition-[opacity,translate] duration-300 ease-[cubic-bezier(.2,.8,.2,1)]
-                 motion-reduce:translate-x-0"
+          class="absolute top-0 right-0 h-[266px] w-[340px] [transition:opacity_.3s_ease,translate_.4s_cubic-bezier(.2,.8,.2,1)]
+                 motion-reduce:translate-x-0 motion-reduce:[transition:opacity_.2s_ease]"
           :class="open ? 'pointer-events-none translate-x-8 opacity-0' : 'opacity-100'"
           :inert="open"
           :title="monthName"

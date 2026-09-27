@@ -197,6 +197,8 @@ export type CardTotal = FlowView & {
   others: Array<{ currency: number; ownFunds: number }>;
   /** Accounts without data at that date. */
   missing: number;
+  /** All accounts behind the card, with data or without. */
+  accounts: number;
 };
 
 export type OverviewAccount = FlowView & {
