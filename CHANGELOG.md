@@ -10,6 +10,8 @@ are quoted as they appear in it.
 - Every person and every connection now has its own colour, so they are easy to tell apart (and, later, on charts).
   Pick the colours when you add a connection, or change them any time with «Изменить цвет» (change colour) in Settings →
   «Люди» (people) and «Подключения» (connections). No two people, and no two connections, can share a colour.
+- The people switch at the top of the home screen shows each person's colour next to their name, and everyone's
+  colours on «Вся семья» (the whole family), so you always know whose colour is whose.
 - «Взять имя из банка» (use the name from the bank) now also works after you have renamed someone: tick it in
   «Переименовать» (rename) and the name from the bank comes back at once.
 

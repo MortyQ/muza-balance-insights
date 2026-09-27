@@ -1,5 +1,7 @@
 import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
 import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
+import type { SegmentOption } from '@/shared/ui';
+import { FAMILY } from './constants.ts';
 
 /** One line about a connection's token, for its row. */
 export function tokenLine(s: Readonly<TokenStatus>): string {
@@ -50,4 +52,15 @@ export function colorHolders(
 /** The colour a new person or connection gets unless one is picked; null = all taken. */
 export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey | null {
   return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
+}
+
+/**
+ * The people filter: each person's colour next to the name, and everyone's on «Вся семья» — charts and tables coloured
+ * by person read against this header.
+ */
+export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>): SegmentOption<number>[] {
+  return [
+    { label: 'Вся семья', value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
+    ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)] })),
+  ];
 }

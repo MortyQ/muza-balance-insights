@@ -18,7 +18,7 @@ const api = vi.hoisted(() => {
 });
 vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api.people) } }));
 
-const { FAMILY, colorHolders, colorVar, coverageLine, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
+const { FAMILY, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, useParticipantStore } = await import('@/entities/participant');
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
@@ -141,6 +141,15 @@ describe('colours', () => {
     expect(firstFreeColor(new Map())).toBe('blue');
     expect(colorVar('aqua')).toBe('var(--series-aqua)');
     expect(colorVar(null)).toBe('var(--border-strong)');
+  });
+
+  it('the people filter: each person with their colour, the whole family with everyone’s', () => {
+    const people = [{ ...person(1, 'Я', []), color: 'violet' as const }, { ...person(2, 'Вигадана', []), color: null }];
+    expect(filterOptions(people)).toEqual([
+      { label: 'Вся семья', value: FAMILY, colors: ['var(--series-violet)', 'var(--border-strong)'] },
+      { label: 'Я', value: 1, colors: ['var(--series-violet)'] },
+      { label: 'Вигадана', value: 2, colors: ['var(--border-strong)'] },
+    ]);
   });
 
   it('a new person carries the chosen colour; an existing one does not', () => {

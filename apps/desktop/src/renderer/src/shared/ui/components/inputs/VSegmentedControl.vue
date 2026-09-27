@@ -17,6 +17,11 @@ export interface SegmentOption<V extends string | number = string | number> {
   disabled?: boolean
   /** Shown on hover. HTML is allowed, as in VTooltip's `allow-html`. */
   tooltip?: string
+  /**
+   * Colour dots before the label (any CSS colour, e.g. `var(--series-blue)`): one for a single entity, several
+   * overlapping for a group of them. Decoration only — the label still names the option.
+   */
+  colors?: ReadonlyArray<string>
 }
 
 const {
@@ -175,6 +180,18 @@ const handleSelect = (option: SegmentOption<T>) => {
         <!-- The label stays in flow and only fades: pulling it out for the
              spinner would collapse the segment's width and drag the pill with it. -->
         <span class="v-sc__label">
+          <span
+            v-if="option.colors?.length"
+            aria-hidden="true"
+            class="v-sc__dots"
+          >
+            <span
+              v-for="(color, i) in option.colors"
+              :key="i"
+              :style="{ '--v-sc-dot': color }"
+              class="v-sc__dot"
+            />
+          </span>
           <VIcon
             v-if="option.icon"
             :icon="option.icon"

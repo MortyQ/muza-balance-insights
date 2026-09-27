@@ -192,3 +192,32 @@
   justify-content: center;
   color: var(--ui-foreground);
 }
+
+/* ============================================
+   COLOUR DOTS (ours, not in muzakit)
+
+   Who an option is, by colour: one dot, or a row of overlapping dots for a
+   group. Each dot is ringed in the surface it sits on — the track, or the pill
+   once the segment is selected — so overlapping dots stay apart.
+   ============================================ */
+.v-sc__dots {
+  display: inline-flex;
+  align-items: center;
+}
+
+.v-sc__dot {
+  width: var(--ui-space-md);
+  height: var(--ui-space-md);
+  border-radius: var(--ui-radius-full);
+  background: var(--v-sc-dot);
+  box-shadow: 0 0 0 1.5px var(--ui-surface-sunken);
+  transition: box-shadow 150ms ease-in-out;
+
+  & + & {
+    margin-left: calc(var(--ui-space-2xs) * -1.5);
+  }
+}
+
+.v-sc__item--active .v-sc__dot {
+  box-shadow: 0 0 0 1.5px var(--ui-surface);
+}
