@@ -11,7 +11,7 @@ const syncStatus = useSyncStatusStore();
 </script>
 
 <template>
-  <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-3 pb-6">
+  <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-1 pb-6">
     <GlobalFilters />
     <HomeNotices />
     <AppLockHintFeature />

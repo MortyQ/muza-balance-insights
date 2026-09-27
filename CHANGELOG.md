@@ -25,7 +25,7 @@ are quoted as they appear in it.
   euros — now count in «Пришло» and «Ушло» in hryvnia, at the rate of your own currency exchanges that month. Such
   sums are marked «≈», and the rate is shown under the bars.
 - The month is now chosen once, at the top of the home screen, next to the people switch; it applies to both
-  balances and spending.
+  balances and spending. The people switch and the month stay at the top while you scroll.
 
 ### Fixes
 
