@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AppLockFeature } from '@/features/app-lock';
+import { AppLockFeature } from '@/features/settings';
 </script>
 
 <template>

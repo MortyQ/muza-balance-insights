@@ -20,10 +20,6 @@ export function resultText(r: LockResult): string {
   }
 }
 
-export function isChecked(e: Event): boolean {
-  return e.target instanceof HTMLInputElement && e.target.checked;
-}
-
 export function shouldShowHint(view: LockView | null, dismissed: boolean): boolean {
   return view !== null && !view.enabled && !dismissed;
 }

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { AppLockHintFeature } from '@/features/app-lock';
-import { UpdateBannerFeature } from '@/features/app-update';
 import { BalancesFeature } from '@/features/balances';
 import { ImportFeature } from '@/features/import-statement';
 import { ParticipantSwitchFeature } from '@/features/participant-switch';
+import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
 import { AppHeader } from '@/widgets/app-header';
 import { HomeNotices } from '@/widgets/home-notices';

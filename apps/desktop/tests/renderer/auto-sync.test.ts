@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AUTO_SYNC_TRIGGERS } from '@contract/auto-sync.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { useImportProgressStore } from '@/entities/import-progress';
-import { TRIGGER_LABELS } from '@/features/auto-sync-settings/constants.ts';
+import { TRIGGER_LABELS } from '@/features/settings/auto-sync/constants.ts';
 import { autoLine, failureLines, progressLine } from '@/features/import-statement/utils.ts';
 
 const NOW = Date.UTC(2026, 8, 27, 9, 0);

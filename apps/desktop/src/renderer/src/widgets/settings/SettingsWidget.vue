@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { AppLockSettingsFeature } from '@/features/app-lock';
-import { UpdateSettingsFeature } from '@/features/app-update';
-import { AutoSyncSettingsFeature } from '@/features/auto-sync-settings';
-import { DbEncryptionFeature } from '@/features/db-encryption';
-import { DeleteDataFeature } from '@/features/delete-data';
-import { PeopleFeature } from '@/features/people';
+import {
+  AppLockSettingsFeature,
+  AutoSyncSettingsFeature,
+  DbEncryptionFeature,
+  DeleteDataFeature,
+  PeopleFeature,
+  UpdateSettingsFeature,
+} from '@/features/settings';
 
 const emit = defineEmits<{ deleted: [] }>();
 </script>

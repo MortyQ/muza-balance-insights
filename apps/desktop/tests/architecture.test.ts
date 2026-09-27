@@ -56,6 +56,26 @@ describe('renderer architecture', () => {
     ).toEqual([]);
   });
 
+  const domain = {
+    'features/settings/index.ts': "export { a } from './a/a.ts';\nexport { b } from './b/b.ts';\n",
+    'features/settings/shared/s.ts': 'export const s = 1;\n',
+    'features/settings/a/a.ts': "import { s } from '../shared/s.ts';\nimport { x } from './x.ts';\nexport const a = [s, x];\n",
+    'features/settings/a/x.ts': 'export const x = 1;\n',
+    'features/settings/b/b.ts': "import { s } from '../shared/s.ts';\nexport const b = s;\n",
+  };
+
+  it('a domain slice: sub-features import their own files and shared/; the index re-exports them', () => {
+    expect(violations(ok(domain))).toEqual([]);
+  });
+
+  it.each([
+    ['sub-feature → sub-feature', { 'features/settings/b/b.ts': "import { x } from '../a/x.ts';\nexport const b = x;\n" }, 'must not import each other (b → a)'],
+    ['sub-feature → the domain index', { 'features/settings/b/b.ts': "import { a } from '../index.ts';\nexport const b = a;\n" }, 'must not import its domain index.ts'],
+    ['shared/ → a sub-feature', { 'features/settings/shared/s.ts': "import { x } from '../a/x.ts';\nexport const s = x;\n" }, 'must not import its sub-feature a'],
+  ])('a domain slice fails on %s', (_name, extra, message) => {
+    expect(violations(ok({ ...domain, ...extra })).join('\n')).toContain(message);
+  });
+
   it.each([
     ['upwards (entities → features)', { 'entities/token/u.ts': "import { f } from '@/features/f';\n" }, 'must not import the higher layer'],
     ['sideways (entity → entity)', { 'entities/token/u.ts': "import { b } from '@/entities/bank';\n" }, 'must not import each other'],

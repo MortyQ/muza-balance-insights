@@ -3,22 +3,20 @@ import { AUTO_SYNC_TRIGGERS, type AutoSyncTrigger } from '@contract/auto-sync.ts
 import { VCard, VInfoNotice, VSwitch } from '@/shared/ui';
 import { useAutoSyncSettings } from './composables/useAutoSyncSettings.ts';
 import { TRIGGER_LABELS } from './constants.ts';
-import { isChecked } from './utils.ts';
+import { isChecked, restoreSwitch } from '../shared/utils.ts';
 
 const { settings, busy, error, setEnabled, setTrigger } = useAutoSyncSettings();
 
-// The switch's hidden input is flipped by the browser before @change fires; on failure `settings` stays as it was,
-// so the input is put back by hand.
 async function onEnabled(e: Event): Promise<void> {
   const checked = isChecked(e);
   await setEnabled(checked);
-  if (error.value && e.target instanceof HTMLInputElement) e.target.checked = settings.value?.enabled ?? !checked;
+  if (error.value) restoreSwitch(e, settings.value?.enabled ?? !checked);
 }
 
 async function onTrigger(trigger: AutoSyncTrigger, e: Event): Promise<void> {
   const checked = isChecked(e);
   await setTrigger(trigger, checked);
-  if (error.value && e.target instanceof HTMLInputElement) e.target.checked = settings.value?.triggers[trigger] ?? !checked;
+  if (error.value) restoreSwitch(e, settings.value?.triggers[trigger] ?? !checked);
 }
 </script>
 

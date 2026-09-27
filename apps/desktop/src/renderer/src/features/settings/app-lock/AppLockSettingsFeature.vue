@@ -4,22 +4,20 @@ import { VButton, VCard, VInfoNotice, VSwitch } from '@/shared/ui';
 import PinField from './components/PinField.vue';
 import { useLockSettings } from './composables/useLockSettings.ts';
 import { SUBMIT_TEXT, TRIGGER_LABELS } from './constants.ts';
-import { isChecked } from './utils.ts';
+import { isChecked, restoreSwitch } from '../shared/utils.ts';
 
 const { view, mode, current, next, repeat, busy, error, open, submit, disableWithTouchId, setTrigger, setTouchId, lockNow } = useLockSettings();
 
-// The switch's track follows `view`, but its hidden input is flipped by the browser before @change fires; on failure
-// the request never lands in `view`, so the input is put back by hand.
 async function onTrigger(trigger: LockTrigger, e: Event): Promise<void> {
   const checked = isChecked(e);
   await setTrigger(trigger, checked);
-  if (error.value && e.target instanceof HTMLInputElement) e.target.checked = view.value?.triggers[trigger] ?? !checked;
+  if (error.value) restoreSwitch(e, view.value?.triggers[trigger] ?? !checked);
 }
 
 async function onTouchId(e: Event): Promise<void> {
   const checked = isChecked(e);
   await setTouchId(checked);
-  if (error.value && e.target instanceof HTMLInputElement) e.target.checked = view.value?.touchId ?? !checked;
+  if (error.value) restoreSwitch(e, view.value?.touchId ?? !checked);
 }
 </script>
 

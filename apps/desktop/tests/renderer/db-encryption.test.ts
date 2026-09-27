@@ -1,7 +1,7 @@
 // The «Шифрование базы» card per state (the texts no screen may use: tests/db-encryption-texts.test.ts).
 import { describe, expect, it } from 'vitest';
 import type { DbStateView } from '@contract/db-state.ts';
-import { encryptionText } from '@/features/db-encryption/utils.ts';
+import { encryptionText } from '@/features/settings/db-encryption/utils.ts';
 
 const view = (o: Partial<DbStateView>): DbStateView => ({ status: 'ready', encrypted: true, notice: null, platform: 'darwin', ...o });
 
