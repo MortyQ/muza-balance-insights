@@ -4,7 +4,7 @@ import { BalancesFeature } from '@/features/balances';
 import { ImportFeature } from '@/features/import-statement';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
-import { HomeHeader } from '@/widgets/home-header';
+import { GlobalFilters } from '@/widgets/global-filters';
 import { HomeNotices } from '@/widgets/home-notices';
 
 const syncStatus = useSyncStatusStore();
@@ -12,7 +12,7 @@ const syncStatus = useSyncStatusStore();
 
 <template>
   <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-3 pb-6">
-    <HomeHeader />
+    <GlobalFilters />
     <HomeNotices />
     <AppLockHintFeature />
     <UpdateBannerFeature />
