@@ -79,11 +79,13 @@ Rules:
 
 - Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok).
 - Before handing over: `pnpm test` and `pnpm typecheck` (at the root, `pnpm -r`).
-- `CHANGELOG.md` (Russian, for users): every user-visible change (new feature, changed behaviour, notable fix) goes there
-  in the same work, under the **next** unreleased version — the one after `apps/desktop/package.json` (0.1.3 there →
-  write into 0.1.4; no such section yet → create it as `## <version> — не выпущена`). The version bump at release time
-  makes it the released one: «не выпущена» → the date. Plain Russian, no internal terms (files, IPC, libraries, tests);
-  security only in terms of what it protects. Internal-only changes (tests, refactors, docs for agents) do not go there.
+- `CHANGELOG.md` (**English**, for users; it is the release description): every user-visible change (new feature,
+  changed behaviour, notable fix) goes there in the same work, under the **next** unreleased version — the one after
+  `apps/desktop/package.json` (0.1.3 there → write into 0.1.4; no such section yet → create it as
+  `## <version> — unreleased`). The version bump at release time makes it the released one: `unreleased` → the date
+  (`## 0.1.4 — 2026-10-01`); the release refuses a tag whose section is missing or still `unreleased`. Plain English, no
+  internal terms (files, IPC, libraries, tests); screen and button names as in the Russian UI, in «»; security only in
+  terms of what it protects. Internal-only changes (tests, refactors, docs for agents) do not go there.
 
 ## Where the other rules are
 
