@@ -3,7 +3,7 @@
 What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
 are quoted as they appear in it.
 
-## 0.1.5 — unreleased
+## 0.1.5 — 2026-09-27
 
 ### People and connections
 
