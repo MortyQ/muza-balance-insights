@@ -230,6 +230,9 @@ export function toUah(minor: number, currency: number, rates: ReadonlyMap<number
   - та же продажа в феврале, доход в марте → `nearest: true`, сумма по февральскому курсу;
   - доход в EUR без единого обмена EUR → `rate: null`, в `total.income` не входит;
   - траты в USD (−10.00 $) пересчитываются в `total.spending` по тому же курсу;
+  - снятие наличных в EUR (MCC 6011, «наличные») −1 000.00 € и комиссия 9.00 € (`commission_rate`) на счёте в EUR;
+    покупка € с гривневой карты (`pair_fx`, `amount < 0`) — единственный обмен EUR → обе суммы в `total.spending` по
+    курсу покупки; `fx` = `[{ currency: 978, income: 0, spending: 100_900, rate: <курс покупки>, nearest: false }]`;
   - вид человека и семьи: у `people[i].total` свои `fx`; карты счетов (`accounts[]`) — в валюте счёта, без пересчёта.
 - [ ] **Шаг 2:** прогон → FAIL.
 - [ ] **Шаг 3: реализация.** `api.ts`: тип `FxPart` (как в «Контракте»), `CardTotal.fx: FxPart[]`, комментарий к
