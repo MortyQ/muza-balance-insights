@@ -291,6 +291,18 @@ describe('DataService.monthOverview', () => {
     expect(v.total.fx).toEqual([{ currency: 978, income: 0, spending: 100_900, rate: 52, nearest: false }]);
   });
 
+  it('a dollar purchase refunded in full the same month: net zero, no income → nothing in fx', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    for (const a of ['uah', 'usd']) await synced(a);
+    await tx('uah', '2026-03-02', -1_000, 'продукты');
+    await tx('usd', '2026-03-03', -2_500, 'кафе и рестораны');
+    await tx('usd', '2026-03-04', 2_500, 'кафе и рестораны'); // refund
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total).toMatchObject({ income: 0, spending: 1_000 });
+    expect(v.total.fx).toEqual([]);
+  });
+
   it('family and person: each person\'s card has its own fx at the family\'s rate; account cards stay in their currency', async () => {
     await account('mine', 'black', 980, 0);
     await synced('mine');
