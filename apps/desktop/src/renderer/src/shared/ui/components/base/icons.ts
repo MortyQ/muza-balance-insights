@@ -1,5 +1,7 @@
 import type { Component } from "vue";
 
+import LucideArrowDownRight from "~icons/lucide/arrow-down-right";
+import LucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import LucideCalendar from "~icons/lucide/calendar";
 import LucideCheck from "~icons/lucide/check";
 import LucideChevronDown from "~icons/lucide/chevron-down";
@@ -21,6 +23,7 @@ import LucideLandmark from "~icons/lucide/landmark";
 import LucideLanguages from "~icons/lucide/languages";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucideLock from "~icons/lucide/lock";
+import LucideMaximize2 from "~icons/lucide/maximize-2";
 import LucideMonitor from "~icons/lucide/monitor";
 import LucideMoon from "~icons/lucide/moon";
 import LucidePalette from "~icons/lucide/palette";
@@ -52,6 +55,8 @@ import LucideX from "~icons/lucide/x";
  * a component uses a name that is missing from this map.
  */
 export const ICONS: Record<string, Component> = {
+  "lucide:arrow-down-right": LucideArrowDownRight,
+  "lucide:arrow-up-right": LucideArrowUpRight,
   "lucide:calendar": LucideCalendar,
   "lucide:check": LucideCheck,
   // Lucide renamed check-circle; the key keeps the name VProgressBar (copied as is) uses.
@@ -74,6 +79,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:languages": LucideLanguages,
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:lock": LucideLock,
+  "lucide:maximize-2": LucideMaximize2,
   "lucide:monitor": LucideMonitor,
   "lucide:moon": LucideMoon,
   "lucide:palette": LucidePalette,

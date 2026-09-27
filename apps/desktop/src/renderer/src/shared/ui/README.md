@@ -36,6 +36,10 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
   holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
   Locale is fixed to `uk-UA`, week starts Monday. No consumer yet.
+- `VMonthPicker` — a month/year picker on reka-ui's `MonthPicker` in a `Popover` (muzakit has no month picker at all).
+  `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
+  own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
+  conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
 
 `table/VSimpleTable` — a plain data table (columns as data, `cell-<key>` slots, an optional total row), written in the same
 BEM + SCSS + `--ui-*` token style. Not muzakit's `VTable` (virtualised, TanStack), which this app does not need.
