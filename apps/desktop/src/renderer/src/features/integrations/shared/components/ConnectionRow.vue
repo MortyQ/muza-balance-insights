@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, type Component } from 'vue';
 import type { ColorKey, ConnectionView } from '@contract/api.ts';
-import { BANKS, BankMark, MONOBANK } from '@/entities/bank';
+import { BankMark, bankOf } from '@/entities/bank';
 import { ColorSwatches, colorVar, coverageLine, tokenBadge, tokenLine } from '@/entities/participant';
 import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton } from '@/shared/ui';
@@ -20,7 +20,7 @@ const emit = defineEmits<{
   remove: [];
 }>();
 
-const bank = computed(() => BANKS.find((b) => b.id === connection.provider) ?? MONOBANK);
+const bank = computed(() => bankOf(connection.provider));
 const badge = computed(() => tokenBadge(connection.token));
 const editing = ref(false);
 const coloring = ref(false);

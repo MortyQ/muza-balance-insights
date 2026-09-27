@@ -67,26 +67,29 @@
     корневой файл (`DOMAIN_SLICES` в `tests/helpers/architecture.ts`). Новая настройка — новая подфича здесь;
   - **домен `features/integrations`** — подключение банков и строки подключений, папка на банк: `monobank/`
     (`MonobankConnectFeature.vue` — форма добавления по токену: `<form>`, поле токена, согласие, кнопка;
-    `components/MonobankTokenField.vue` — шаги и поле токена, шаги пока из `entities/bank`;
-    `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка — `CONSENT_TEXT` и
-    др. — в `constants.ts`) и
+    `components/MonobankTokenField.vue` — шаги и поле токена;
+    `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка в `constants.ts`: `CONSENT_TEXT`,
+    `TOKEN_STEPS`, `TOKEN_PLACEHOLDER`, `ACCESS_NOTE`) и
     `shared/` для общего между банками (`components/ConnectionRow.vue`, `components/BankPicker.vue` — выбор банка на первом
     экране; `composables/useConnectionActions.ts` — удалить, цвет подключения, «Ввести токен заново»;
     `composables/useConnectionOwner.ts` — чьё подключение и цвета; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
     `participantChoice`, `removeText`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
     «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвета — в слот
-    формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField }`,
+    формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField, accessNote }`,
     `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
     пропсы; пропсы в месте `<component :is>` не проверяются) и `DEFAULT_PROVIDER` (банк «Добавить подключение»);
     `utils.ts` — `isProviderKey`, `formsOf` (незнакомый провайдер → формы банка по умолчанию). Только корень импортирует
-    папки банков, строка подключения получает поле токена своего банка пропсом. Наружу — `ConnectionsFeature`
+    папки банков, строка подключения получает поле токена своего банка пропсом. В корневых файлах нет текстов конкретного
+    банка: имя — из `entities/bank` (`bankOf`), строка первого экрана — `accessNote` из папки банка. Наружу — `ConnectionsFeature`
     (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у `settings`. Новый банк —
     своя папка и запись в `PROVIDER_FORMS`;
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
-  Банки — `entities/bank` (Monobank + «Скоро»), подключение — `addConnection` в main (пока только Monobank).
+  Банки — `entities/bank`, только отображение (`BANKS`: `id`, `name`, монограмма / логотип, `status` — доступен / «Скоро»;
+  у доступного — `auth: 'token' | 'oauth' | 'file'`, у Monobank `'token'`; `bankOf` — банк подключения, незнакомый →
+  Monobank); как подключать — в папке банка в `features/integrations`. Подключение — `addConnection` в main (пока только Monobank).
 - Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «Люди» — `features/settings/people`
   (имя и «Переименовать», «Взять имя из банка», цвет человека); раздел «Подключения» — `features/integrations`
   (подключения со статусом токена, «Ввести токен заново», «Изменить цвет», «Удалить», «Добавить подключение» — существующий

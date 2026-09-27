@@ -16,10 +16,12 @@ export interface TokenFieldProps {
   autofocus?: boolean;
 }
 
-/** One bank's forms, picked by the domain root. */
+/** One bank's forms and texts, picked by the domain root. */
 export interface ProviderForms {
   connect: Component<ConnectFormProps>;
   tokenField: Component<TokenFieldProps>;
+  /** Under the bank's name on the first connect screen: what the access gives and where it is kept. */
+  accessNote: string;
 }
 
 export type SubmitState = { status: 'idle' } | { status: 'saving' } | { status: 'error'; message: string };

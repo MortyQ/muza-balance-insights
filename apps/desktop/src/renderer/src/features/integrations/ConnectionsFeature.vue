@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { bankOf } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { colorHolders, useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
@@ -14,6 +15,7 @@ import { formsOf } from './utils.ts';
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
 const { error, setToken, setConnectionColor, remove } = useConnectionActions();
+const newBank = bankOf(DEFAULT_PROVIDER);
 const adding = ref(false);
 const added = ref(false);
 
@@ -76,7 +78,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           <div class="-m-1 min-h-0 overflow-hidden p-1">
             <div class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
               <div class="flex items-center justify-between gap-2">
-                <h3 class="text-base font-semibold">Новое подключение Monobank</h3>
+                <h3 class="text-base font-semibold">Новое подключение {{ newBank.name }}</h3>
                 <VButton variant="neutral" text="Отмена" @click="adding = false" />
               </div>
               <AddConnectionFeature :provider="DEFAULT_PROVIDER" submit-text="Добавить" autofocus @added="onAdded" />

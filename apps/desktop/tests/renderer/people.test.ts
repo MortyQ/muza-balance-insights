@@ -26,6 +26,8 @@ const { connectionsCount } = await import('@/features/settings/people/utils.ts')
 const { participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
 const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
 const { formsOf, isProviderKey } = await import('@/features/integrations/utils.ts');
+const { BANKS, MONOBANK, bankOf } = await import('@/entities/bank');
+const { ACCESS_NOTE, TOKEN_PLACEHOLDER, TOKEN_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -136,6 +138,16 @@ describe('screens and notices', () => {
     expect(isProviderKey('toString')).toBe(false);
     expect(formsOf('monobank')).toBe(PROVIDER_FORMS.monobank);
     expect(formsOf('unknown')).toBe(PROVIDER_FORMS.monobank);
+  });
+
+  it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
+    expect(bankOf('monobank')).toBe(MONOBANK);
+    expect(bankOf('unknown')).toBe(MONOBANK);
+    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'Monobank', status: 'available', auth: 'token' });
+    for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
+    expect(TOKEN_STEPS[0]).toMatch(/api\.monobank\.ua/);
+    expect(TOKEN_PLACEHOLDER).toBe('Токен с api.monobank.ua');
+    expect(PROVIDER_FORMS.monobank.accessNote).toBe(ACCESS_NOTE);
   });
 });
 

@@ -5,6 +5,7 @@ import type { ProviderKey } from '@contract/api.ts';
 import { type Bank, BankMark } from '@/entities/bank';
 import { VButton } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
+import { PROVIDER_FORMS } from './constants.ts';
 import BankPicker from './shared/components/BankPicker.vue';
 import { isProviderKey } from './utils.ts';
 
@@ -38,7 +39,7 @@ function select(bank: Readonly<Bank>) {
           <BankMark :bank="selected.bank" size="lg" />
           <div class="flex flex-col">
             <h2 class="text-lg font-semibold">{{ selected.bank.name }}</h2>
-            <span class="text-sm text-foreground-muted">Токен даёт только чтение выписки и балансов и хранится на этом компьютере.</span>
+            <span class="text-sm text-foreground-muted">{{ PROVIDER_FORMS[selected.provider].accessNote }}</span>
           </div>
         </div>
         <AddConnectionFeature :provider="selected.provider" default-label="Я" autofocus @added="emit('connected')" />
