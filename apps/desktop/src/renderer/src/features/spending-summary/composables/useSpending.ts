@@ -1,9 +1,11 @@
 import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import type { Scope } from '@contract/api.ts';
 import { useImportProgressStore } from '@/entities/import-progress';
+import { useMonthStore } from '@/entities/period';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { kyivToday, monthOf, monthRange, useAsyncData, type YearMonth } from '@/shared/lib';
+import { monthOf, monthRange, useAsyncData, type YearMonth } from '@/shared/lib';
 import { useSpendingRequest } from '../api/useSpendingRequest.ts';
 import type { UseSpendingReturn } from '../types.ts';
 import { periodNote } from '../utils.ts';
@@ -17,9 +19,13 @@ export function useSpending(): UseSpendingReturn {
   const syncStatus = useSyncStatusStore();
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
-  const thisMonth = monthOf(kyivToday(new Date()));
-  const month = ref<YearMonth>(thisMonth);
+  const monthStore = useMonthStore();
+  const { month, thisMonth } = storeToRefs(monthStore);
   const scope = ref<Scope>('personal');
+  const firstMonth = computed<YearMonth | null>(() => {
+    const from = syncStatus.status?.dataFrom;
+    return from ? monthOf(from) : null;
+  });
 
   const participantId = () => participant.selectedId;
   const query = () => {
@@ -33,5 +39,5 @@ export function useSpending(): UseSpendingReturn {
   const note = computed(() => (view.value ? periodNote(view.value.period) : null));
   const importing = computed(() => importProgress.running && !importProgress.auto);
 
-  return { thisMonth, month, scope, state, view, periodNote: note, importing };
+  return { thisMonth, month, scope, state, view, periodNote: note, importing, firstMonth };
 }

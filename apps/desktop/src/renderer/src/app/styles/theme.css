@@ -228,6 +228,10 @@
     --nav-active: oklch(30% 0.030 275);
     --nav-border: oklch(28% 0.025 275);
 
+    /* ─── Balance card (entities/account): always-dark card, same values in both themes ─── */
+    --card-up:   oklch(76% 0.2 145);
+    --card-down: oklch(72% 0.19 25);
+
     --foreground:           oklch(16% 0.015 280);
     --foreground-secondary: oklch(38% 0.012 280);
     --foreground-muted:     oklch(55% 0.008 280);
@@ -321,6 +325,10 @@
     --nav-hover:  oklch(17% 0.022 270);
     --nav-active: oklch(20% 0.025 270);
     --nav-border: oklch(22% 0.020 270);
+
+    /* ─── Balance card (entities/account): always-dark card, same values in both themes ─── */
+    --card-up:   oklch(76% 0.2 145);
+    --card-down: oklch(72% 0.19 25);
 
     --foreground:           oklch(93% 0.006 280);
     --foreground-secondary: oklch(73% 0.010 280);

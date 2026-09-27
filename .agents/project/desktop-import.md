@@ -27,7 +27,9 @@
   сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` / `setConnectionColor` (занятый цвет →
   `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром в `people.ts`), `setConnectionToken`,
   `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
-  `spendingSummary` / `getBalances` принимают `participantId`.
+  `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
+  `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по всем счетам (`firstDataDate` в `packages/core/src/status.ts`),
+  пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`.
 - **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`
   не чаще раза в `LIVE_REFRESH_MS` (3 с, `throttle` из `shared/lib`, последний тик не теряется), конец импорта — ещё раз.
   Экраны перезагружаются по `version` «тихо» (`useAsyncData(…, { quiet })`: без `loading`, старые цифры до прихода новых);

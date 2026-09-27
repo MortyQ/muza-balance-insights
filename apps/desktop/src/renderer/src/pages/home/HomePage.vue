@@ -17,8 +17,8 @@ const syncStatus = useSyncStatusStore();
     <AppLockHintFeature />
     <UpdateBannerFeature />
     <template v-if="syncStatus.hasData">
-      <SpendingFeature />
       <BalancesFeature />
+      <SpendingFeature />
     </template>
     <ImportFeature />
   </main>

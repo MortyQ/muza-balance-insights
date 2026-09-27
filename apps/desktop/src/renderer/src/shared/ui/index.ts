@@ -12,6 +12,7 @@ export { default as VSelect, type VSelectOption } from "./components/inputs/VSel
 export { default as VSwitch } from "./components/inputs/VSwitch.vue";
 export { default as VDatepicker } from "./components/inputs/VDatepicker.vue";
 export type { IsoDateRange } from "./components/inputs/calendarDate.ts";
+export { default as VMonthPicker } from "./components/inputs/VMonthPicker.vue";
 export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VCollapse } from "./components/layout/VCollapse.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";

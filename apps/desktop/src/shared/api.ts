@@ -100,7 +100,7 @@ export type BalanceApi = {
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
   spendingSummary(q: SpendingQuery): Promise<SpendingView>;
-  getBalances(q?: BalancesQuery): Promise<BalancesView>;
+  getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
   deleteAllData(): Promise<{ deleted: boolean }>;
@@ -161,8 +161,6 @@ export type Scope = 'personal' | 'business';
 
 export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
 
-export type BalancesQuery = { participantId?: number };
-
 export type SpendingLine = { category: string; gross: number; refunds: number; net: number };
 
 export type SpendingCurrency = {
@@ -187,22 +185,59 @@ export type SpendingView = {
   currencies: SpendingCurrency[];
 };
 
-export type BalanceLine = {
-  id: string;
-  label: string;
+export type MonthOverviewQuery = { month: string; participantId?: number };
+
+/** Minor units: income and spending of the month (the core aggregates, all scopes). */
+export type FlowView = { income: number; spending: number };
+
+/** A foreign-currency part of a card's income / spending, converted to hryvnia by the user's own exchanges. */
+export type FxPart = {
   currency: number;
-  /** balance − credit limit: the main number. */
-  ownFunds: number;
-  creditLimit: number;
-  /** Kyiv «YYYY-MM-DD HH:mm» of the balance. */
-  updatedAt: string;
+  /** Minor units of `currency`. */
+  income: number;
+  spending: number;
+  /** Hryvnia kopecks per minor unit; null — no exchange of this currency at all, the part is left out of the sums. */
+  rate: number | null;
+  /** The rate is from the nearest exchange, not from this month's. */
+  nearest: boolean;
 };
 
-export type BalancesView = {
-  cards: BalanceLine[];
-  jars: BalanceLine[];
-  /** Own funds per currency, cards + jars. */
-  totals: Array<{ currency: number; ownFunds: number }>;
+/** Income / spending: hryvnia, foreign parts converted by `fx`. */
+export type CardTotal = FlowView & {
+  /** Foreign-currency parts of income / spending (never hryvnia; parts with nothing in either are left out). */
+  fx: FxPart[];
+  /** Own funds in hryvnia at the end of the month (accounts with data only). */
+  ownFunds: number;
+  /** Other currencies — never summed with hryvnia. */
+  others: Array<{ currency: number; ownFunds: number }>;
+  /** Accounts without data at that date. */
+  missing: number;
+  /** All accounts behind the card, with data or without. */
+  accounts: number;
+};
+
+export type OverviewAccount = FlowView & {
+  id: string;
+  /** «black/UAH»-style label: never a card number or a jar title. */
+  label: string;
+  kind: 'card' | 'jar';
+  currency: number;
+  creditLimit: number;
+  /** null — no data at that date. Income / spending are in the account's currency. */
+  ownFunds: number | null;
+};
+
+export type MonthOverview = {
+  month: string;
+  /** 'now' for the current month, else the month's last day YYYY-MM-DD. */
+  balanceAt: 'now' | string;
+  /** Kyiv dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
+  coverage: { from: string; to: string };
+  total: CardTotal;
+  /** The whole family only: each person in their own view of transfers. */
+  people: Array<{ participantId: number; label: string; color: ColorKey | null; total: CardTotal }>;
+  /** One person only: their accounts. */
+  accounts: OverviewAccount[];
 };
 
 export type DataStatus = {
@@ -210,5 +245,7 @@ export type DataStatus = {
   hasData: boolean;
   /** Kyiv «YYYY-MM-DD HH:mm» up to which every imported account is covered. */
   dataUntil: string | null;
+  /** Kyiv date the data starts at; null = never imported. */
+  dataFrom: string | null;
   lastSyncAt: string | null;
 };

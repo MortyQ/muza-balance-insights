@@ -1,54 +1,73 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { formatMoney, shortDate } from '@/shared/lib';
+import { computed, nextTick, useTemplateRef } from 'vue';
 import { VCard, VInfoNotice } from '@/shared/ui';
-import { useBalances } from './composables/useBalances.ts';
-import { latestUpdate } from './utils.ts';
+import BalancesHeader from './components/BalancesHeader.vue';
+import CardStack from './components/CardStack.vue';
+import MonthPanel from './components/MonthPanel.vue';
+import { useCardStack } from './composables/useCardStack.ts';
+import { useMonthOverview } from './composables/useMonthOverview.ts';
+import { accountsCount, coverageNote, maxOffset } from './utils.ts';
 
-const { state } = useBalances();
-const view = computed(() => state.value.data);
-const failed = computed(() => state.value.status === 'error');
-const updated = computed(() => (view.value ? latestUpdate([...view.value.cards, ...view.value.jars]) : null));
+const { state, view, slides, isFamily, legend, month, monthName, thisMonth, currentYear, firstMonth } = useMonthOverview();
+const stack = useCardStack(() => slides.value.length);
+const { open, offset, paging, stubShown } = stack;
+const block = useTemplateRef<HTMLElement>('block');
+const cards = useTemplateRef<{ focusFront: () => void }>('cards');
+
+/** Folds the row back; focus inside the block (now on a control that goes inert) moves to the front card. */
+function collapse(): void {
+  if (!open.value) return;
+  const inside = block.value?.contains(document.activeElement) ?? false;
+  stack.close();
+  if (inside) void nextTick(() => cards.value?.focusFront());
+}
+function onCard(): void {
+  if (open.value) collapse();
+  else stack.toggle();
+}
+
+const head = computed(() => slides.value[0] ?? null);
+const openTitle = computed(() => (isFamily.value ? 'Карты семьи' : `Счета · ${head.value?.title ?? ''}`));
+const openSubtitle = computed(() => (isFamily.value ? 'общий итог и каждый человек' : accountsCount(view.value?.total.accounts ?? 0)));
+const note = computed(() => (view.value ? coverageNote(view.value.month, view.value.coverage) : ''));
 </script>
 
 <template>
-  <VCard title="Балансы" padding="md">
-    <div class="flex flex-col gap-4">
-      <VInfoNotice v-if="failed" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
-      <p v-else-if="view && view.cards.length === 0" class="text-foreground-muted">Счетов пока нет: загрузи выписку в разделе «Импорт».</p>
-
-      <template v-if="view && view.cards.length > 0">
-        <div class="grid grid-cols-[repeat(auto-fill,minmax(12rem,1fr))] gap-3">
-          <div v-for="a in view.cards" :key="a.id" class="flex flex-col gap-1 rounded-md border border-border-subtle bg-surface-raised p-3">
-            <span class="text-sm text-foreground-muted">{{ a.label }}</span>
-            <span class="text-xl font-semibold tabular-nums" :class="{ 'text-danger': a.ownFunds < 0 }">
-              {{ formatMoney(a.ownFunds, a.currency, { minorUnits: true }) }}
-            </span>
-            <span v-if="a.creditLimit > 0" class="text-sm text-foreground-muted tabular-nums">
-              кредитный лимит {{ formatMoney(a.creditLimit, a.currency) }}
-            </span>
-          </div>
-        </div>
-
-        <div v-if="view.jars.length > 0" class="flex flex-col gap-1">
-          <h3 class="text-sm font-medium text-foreground-secondary">Банки</h3>
-          <ul class="flex flex-col">
-            <li v-for="j in view.jars" :key="j.id" class="flex justify-between border-t border-border-subtle py-1.5 tabular-nums">
-              <span>{{ j.label }}</span>
-              <span class="font-medium">{{ formatMoney(j.ownFunds, j.currency, { minorUnits: true }) }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="flex flex-wrap gap-x-6 gap-y-1 border-t border-border pt-3 tabular-nums">
-          <span class="text-foreground-secondary">Всего своих денег:</span>
-          <span v-for="t in view.totals" :key="t.currency" class="font-semibold">{{ formatMoney(t.ownFunds, t.currency, { minorUnits: true }) }}</span>
-        </div>
-        <p class="text-sm text-foreground-muted">
-          Свои деньги — баланс без кредитного лимита; минус — долг по кредитке. Банки входят в итог. Балансы на
-          {{ shortDate(updated ?? '') }}, обновляются при импорте.
-        </p>
-      </template>
+  <VCard padding="md" @keydown.esc="collapse">
+    <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
+    <div v-else ref="block" class="flex flex-col gap-3">
+      <BalancesHeader
+        v-model="month"
+        :open
+        :title="openTitle"
+        :subtitle="openSubtitle"
+        :min="firstMonth ?? undefined"
+        :max="thisMonth"
+        :current-year
+        :can-prev="offset > 0"
+        :can-next="offset < maxOffset(slides.length)"
+        @prev="stack.prev"
+        @next="stack.next"
+        @stub="stack.showStub"
+        @close="collapse"
+      />
+      <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
+      <div v-if="head" class="relative transition-opacity" :class="{ 'opacity-60': state.status === 'loading' }">
+        <CardStack ref="cards" :slides :open :offset :paging @toggle="onCard" />
+        <MonthPanel
+          class="absolute top-0 right-0 h-[266px] w-[340px] [transition:opacity_.3s_ease,translate_.4s_cubic-bezier(.2,.8,.2,1)]
+                 motion-reduce:translate-x-0 motion-reduce:[transition:opacity_.2s_ease]"
+          :class="open ? 'pointer-events-none translate-x-8 opacity-0' : 'opacity-100'"
+          :inert="open"
+          :title="monthName"
+          :note
+          :flow="head.flow"
+          :legend
+          :stub-shown
+          @stub="stack.showStub"
+        />
+      </div>
+      <p v-if="open && stubShown" class="text-right text-xs text-foreground-muted" role="status">«Все счета» — раздел появится позже</p>
     </div>
   </VCard>
 </template>

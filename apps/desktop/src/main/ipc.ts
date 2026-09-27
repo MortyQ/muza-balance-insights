@@ -11,6 +11,7 @@ import { IMPORT_DEPTHS } from '../shared/progress.ts';
 import { THEME_PREFS } from '../shared/theme.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
 const token = z.string().min(20).max(200).regex(/^\S+$/);
@@ -51,7 +52,7 @@ export const ARG_SCHEMAS = {
   spendingSummary: z.tuple([
     z.strictObject({ from: isoDate, to: isoDate, scope: z.enum(['personal', 'business']).optional(), participantId: id.optional() }),
   ]),
-  getBalances: z.union([z.tuple([]), z.tuple([z.strictObject({ participantId: id.optional() })])]),
+  getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

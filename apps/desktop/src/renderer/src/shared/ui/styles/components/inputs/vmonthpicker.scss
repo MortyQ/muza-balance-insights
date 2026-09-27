@@ -1,0 +1,204 @@
+/* Ours, not copied — VMonthPicker is built on reka-ui, not on any muzakit component (see VMonthPicker.vue header). */
+
+.v-month-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-control-gap);
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-full);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+
+  &:hover {
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+}
+
+.v-month-picker__icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex-shrink: 0;
+  color: var(--ui-foreground-muted);
+}
+
+/* ============================================
+   POPOVER (teleported to body by PopoverPortal — Vue's scope attribute travels with the vnode through Teleport)
+   ============================================ */
+.v-month-picker__content {
+  z-index: 10000;
+  width: 17rem;
+  padding: var(--ui-space-lg);
+  background-color: var(--ui-surface-overlay);
+  border-radius: var(--ui-radius-xl);
+  box-shadow: var(--ui-shadow-lg);
+  animation: v-month-picker-in 160ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: v-month-picker-in-reduced 160ms ease-out;
+  }
+}
+
+@keyframes v-month-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes v-month-picker-in-reduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.v-month-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ui-space-sm);
+}
+
+.v-month-picker__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-h-sm);
+  height: var(--ui-control-h-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    color: var(--ui-primary);
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+    background-color: transparent;
+  }
+
+  svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+}
+
+.v-month-picker__heading {
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 500;
+}
+
+.v-month-picker__grid {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* reka-ui's grid.rows chunks the year's 12 months by 4, so each row holds 4 cells — not 3. */
+.v-month-picker__row {
+  display: flex;
+  gap: var(--ui-space-xs);
+
+  & + & {
+    margin-top: var(--ui-space-xs);
+  }
+}
+
+/* MonthPickerCell renders a <td>: a flex item of `__row`, stretched so its trigger child can fill it. */
+.v-month-picker__cell-wrap {
+  display: flex;
+  flex: 1;
+}
+
+.v-month-picker__cell {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  height: var(--ui-control-h-md);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-sm);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+
+  &[data-today] {
+    border-color: var(--ui-primary-muted);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-subtle);
+    text-decoration: line-through;
+    background-color: transparent;
+  }
+
+  &[data-selected] {
+    background-color: var(--ui-primary);
+    color: var(--ui-primary-foreground);
+    font-weight: 500;
+  }
+}
+
+.v-month-picker__footer {
+  margin-top: var(--ui-space-sm);
+  padding-top: var(--ui-space-sm);
+  border-top: 1px solid var(--ui-border-subtle);
+  text-align: center;
+}
+
+.v-month-picker__now {
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-primary);
+  font-size: var(--ui-text-sm);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+}
