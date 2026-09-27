@@ -3,6 +3,7 @@ import type { AutoSyncSettings, AutoSyncTrigger } from '@contract/auto-sync.ts';
 import { FAILED_TEXT } from '@/shared/lib';
 import { useAutoSyncRequest } from '../api/useAutoSyncRequest.ts';
 import type { UseAutoSyncSettingsReturn } from '../types.ts';
+import { withChange } from '../utils.ts';
 
 export function useAutoSyncSettings(): UseAutoSyncSettingsReturn {
   const request = useAutoSyncRequest();
@@ -24,12 +25,12 @@ export function useAutoSyncSettings(): UseAutoSyncSettingsReturn {
 
   function setEnabled(on: boolean): Promise<void> {
     const s = settings.value;
-    return s ? save({ ...s, enabled: on }) : Promise.resolve();
+    return s ? save(withChange(s, { enabled: on })) : Promise.resolve();
   }
 
   function setTrigger(trigger: AutoSyncTrigger, on: boolean): Promise<void> {
     const s = settings.value;
-    return s ? save({ ...s, triggers: { ...s.triggers, [trigger]: on } }) : Promise.resolve();
+    return s ? save(withChange(s, { trigger, on })) : Promise.resolve();
   }
 
   onMounted(async () => {

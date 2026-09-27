@@ -1,10 +1,12 @@
 // «Автообновление» in the renderer: the quiet line of an automatic refresh, the store's `auto` flag, the switch labels.
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { AUTO_SYNC_TRIGGERS } from '@contract/auto-sync.ts';
+import { ref } from 'vue';
+import { AUTO_SYNC_TRIGGERS, DEFAULT_AUTO_SYNC, type AutoSyncSettings } from '@contract/auto-sync.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { TRIGGER_LABELS } from '@/features/settings/auto-sync/constants.ts';
+import { withChange } from '@/features/settings/auto-sync/utils.ts';
 import { autoLine, failureLines, progressLine } from '@/features/import-statement/utils.ts';
 
 const NOW = Date.UTC(2026, 8, 27, 9, 0);
@@ -51,5 +53,27 @@ describe('import-progress store', () => {
 describe('«Автообновление» card', () => {
   it('a label for every trigger', () => {
     expect(Object.keys(TRIGGER_LABELS).sort()).toEqual([...AUTO_SYNC_TRIGGERS].sort());
+  });
+});
+
+describe('withChange: what goes to setAutoSync', () => {
+  // The screen keeps the settings in a ref (a deep proxy); IPC clones its argument the way structuredClone does.
+  const held = () => ref<AutoSyncSettings>(structuredClone(DEFAULT_AUTO_SYNC)).value;
+
+  it('the main switch and each trigger give a plain object IPC can clone', () => {
+    expect(() => structuredClone({ ...held(), enabled: false })).toThrow(); // the bug it replaces
+    const off = withChange(held(), { enabled: false });
+    expect(structuredClone(off)).toEqual({ ...DEFAULT_AUTO_SYNC, enabled: false });
+    for (const t of AUTO_SYNC_TRIGGERS) {
+      const next = withChange(held(), { trigger: t, on: false });
+      expect(structuredClone(next)).toEqual({ enabled: true, triggers: { ...DEFAULT_AUTO_SYNC.triggers, [t]: false } });
+    }
+  });
+
+  it('leaves what it was given as it was', () => {
+    const s = held();
+    withChange(s, { enabled: false });
+    withChange(s, { trigger: 'wake', on: false });
+    expect(structuredClone({ enabled: s.enabled, triggers: { ...s.triggers } })).toEqual(DEFAULT_AUTO_SYNC);
   });
 });
