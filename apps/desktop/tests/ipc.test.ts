@@ -88,10 +88,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['spendingSummary', [{ from: '2026-9-1', to: '2026-09-30' }]],
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', sql: 'DROP TABLE x' }]],
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', scope: 'all' }]],
-    ['getBalances', [1]],
-    ['getBalances', [{ participantId: 0 }]],
-    ['getBalances', [{ participantId: 1, sql: 'x' }]],
-    ['getBalances', [{}, 'extra']],
+    ['getMonthOverview', []],
+    ['getMonthOverview', [{}]],
+    ['getMonthOverview', [{ month: '2026-13' }]],
+    ['getMonthOverview', [{ month: '2026-9' }]],
+    ['getMonthOverview', [{ month: '2026-09', participantId: 1.5 }]],
+    ['getMonthOverview', [{ month: '2026-09', extra: 1 }]],
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: '1' }]],
     ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: 1.5 }]],
     ['listPeople', [1]],
@@ -202,8 +204,14 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'spendingSummary',
       a: [{ from: '2026-09-01', to: '2026-09-30' }],
     });
-    await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
-    await expect(ipc.handlers.get('balance:getBalances')!(good, { participantId: 2 })).resolves.toEqual({ m: 'getBalances', a: [{ participantId: 2 }] });
+    await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09' })).resolves.toEqual({
+      m: 'getMonthOverview',
+      a: [{ month: '2026-09' }],
+    });
+    await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09', participantId: 2 })).resolves.toEqual({
+      m: 'getMonthOverview',
+      a: [{ month: '2026-09', participantId: 2 }],
+    });
     for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }, { label: 'Вигадана', color: 'aqua' }, { fromBank: true, color: 'red' }]) {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false, color: 'green' };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
@@ -222,16 +230,16 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     registerIpc(
       ipc,
       {
-        getBalances: async () => {
+        getSyncStatus: async () => {
           throw new Error('SECRET internal path /Users/x/db token=abc');
         },
       },
       { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, e) => seen.push(`${m}:${(e as Error).message}`) },
     );
-    const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
+    const err = await ipc.handlers.get('balance:getSyncStatus')!(good).catch((e: Error) => e);
     expect((err as Error).message).toBe(FAILED);
     expect(JSON.stringify(err)).not.toContain('SECRET');
-    expect(seen).toEqual(['getBalances:SECRET internal path /Users/x/db token=abc']);
+    expect(seen).toEqual(['getSyncStatus:SECRET internal path /Users/x/db token=abc']);
   });
 
   it('schemas cover exactly the contract', () => {
@@ -278,11 +286,11 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       const ipc = fakeIpcMain();
       let isLocked = false;
       registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => isLocked });
-      await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
+      await expect(ipc.handlers.get('balance:getSyncStatus')!(good)).resolves.toEqual({ m: 'getSyncStatus', a: [] });
       isLocked = true;
-      await expect(ipc.handlers.get('balance:getBalances')!(good)).rejects.toThrow(LOCKED);
+      await expect(ipc.handlers.get('balance:getSyncStatus')!(good)).rejects.toThrow(LOCKED);
       isLocked = false;
-      await expect(ipc.handlers.get('balance:getBalances')!(good)).resolves.toEqual({ m: 'getBalances', a: [] });
+      await expect(ipc.handlers.get('balance:getSyncStatus')!(good)).resolves.toEqual({ m: 'getSyncStatus', a: [] });
     });
 
     it('opts.locked() throwing fails closed with a fixed message; details go to onError only, handler not run', async () => {
@@ -291,7 +299,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       let ran = false;
       registerIpc(
         ipc,
-        { getBalances: async () => ((ran = true), { m: 'getBalances', a: [] }) },
+        { getSyncStatus: async () => ((ran = true), { m: 'getSyncStatus', a: [] }) },
         {
           trusted: () => true, dbReady: () => true,
           locked: () => {
@@ -300,9 +308,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
           onError: (m, err) => seen.push(`${m}:${(err as Error).message}`),
         },
       );
-      const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
+      const err = await ipc.handlers.get('balance:getSyncStatus')!(good).catch((e: Error) => e);
       expect((err as Error).message).toBe(LOCKED);
-      expect(seen).toEqual(['getBalances:secret path']);
+      expect(seen).toEqual(['getSyncStatus:secret path']);
       expect(ran).toBe(false);
     });
   });
@@ -347,7 +355,7 @@ describe('the database gate', () => {
       locked: () => (asked.push('lock'), false),
       dbReady: () => (asked.push('db'), false),
     });
-    await expect(ipc.handlers.get('balance:getBalances')!(good, 'bad')).rejects.toThrow(DB_UNAVAILABLE);
+    await expect(ipc.handlers.get('balance:getSyncStatus')!(good, 'bad')).rejects.toThrow(DB_UNAVAILABLE);
     expect(asked).toEqual(['sender', 'lock', 'db']);
   });
 
@@ -374,8 +382,8 @@ describe('the database gate', () => {
       },
       onError: (m, err) => void seen.push(`${m}:${(err as Error).message}`),
     });
-    const err = await ipc.handlers.get('balance:getBalances')!(good).catch((e: Error) => e);
+    const err = await ipc.handlers.get('balance:getSyncStatus')!(good).catch((e: Error) => e);
     expect((err as Error).message).toBe(DB_UNAVAILABLE);
-    expect(seen).toEqual(['getBalances:secret path']);
+    expect(seen).toEqual(['getSyncStatus:secret path']);
   });
 });

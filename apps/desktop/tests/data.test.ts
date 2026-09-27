@@ -21,12 +21,15 @@ async function account(id: string, type: string | null, currency: number, balanc
   });
 }
 
-async function tx(accountId: string, date: string, amount: number, category: string, o: { scope?: string; commission?: number } = {}) {
+async function tx(accountId: string, date: string, amount: number, category: string, o: { scope?: string; commission?: number; balance?: number } = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, counter_name, mcc, hold, amount, operation_amount,
-            currency_code, commission_rate, category, is_internal_transfer, scope, is_cancelled, raw_json, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, 5411, 0, ?, ?, (SELECT currency_code FROM accounts WHERE id = ?), ?, ?, 0, ?, 0, '{}', 0)`,
-    args: [`t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, amount, amount, accountId, o.commission ?? 0, category, o.scope ?? 'personal'],
+            currency_code, commission_rate, balance, category, is_internal_transfer, scope, is_cancelled, raw_json, synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, 5411, 0, ?, ?, (SELECT currency_code FROM accounts WHERE id = ?), ?, ?, ?, 0, ?, 0, '{}', 0)`,
+    args: [
+      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, amount, amount, accountId,
+      o.commission ?? 0, o.balance ?? null, category, o.scope ?? 'personal',
+    ],
   });
 }
 
@@ -84,30 +87,11 @@ describe('DataService (main → renderer view types)', () => {
     expect(business.currencies[0]!.categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
   });
 
-  it('balances: cards and jars apart, own funds = balance − credit limit, totals per currency', async () => {
-    await account('uah', 'black', 980, 150_000, 100_000);
-    await account('usd', 'white', 840, 7_000);
-    await account('jar1', null, 980, 20_000);
-    await account('jar0', null, 980, 0); // empty, never synced → hidden (core rule)
-    const b = await svc.balances();
-    // Core order: by currency code, then id.
-    expect(b.cards.map((c) => [c.label, c.ownFunds, c.creditLimit])).toEqual([
-      ['white/USD', 7_000, 0],
-      ['black/UAH', 50_000, 100_000],
-    ]);
-    // Two UAH jars exist (one hidden): the core disambiguates the label with the id prefix.
-    expect(b.jars.map((j) => [j.label, j.ownFunds])).toEqual([['банка/UAH #jar1', 20_000]]);
-    expect(b.totals).toEqual([
-      { currency: 840, ownFunds: 7_000 },
-      { currency: 980, ownFunds: 70_000 },
-    ]);
-  });
-
-  it('status: empty database → no data; after an import → Kyiv date-time the data reaches', async () => {
-    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, lastSyncAt: null });
+  it('status: empty database → no data; after an import → Kyiv date-time and date the data reaches / starts at', async () => {
+    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
     await account('uah', 'black', 980, 0);
     await synced('uah');
-    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', lastSyncAt: '2026-03-10 23:01' });
+    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01' });
   });
 
   it('lastSyncSec: null before any import, then the epoch seconds of the latest sync', async () => {
@@ -117,16 +101,6 @@ describe('DataService (main → renderer view types)', () => {
     const at = await svc.lastSyncSec();
     expect(at).not.toBeNull();
     expect(toKyivDateTime(at!)).toBe((await svc.status()).lastSyncAt);
-  });
-
-  it('nothing the renderer gets contains a name, description, card number, IBAN or jar title', async () => {
-    await account('uah', 'black', 980, 1_000);
-    await account('jar1', null, 980, 1_000);
-    await synced('uah');
-    await tx('uah', '2026-03-02', -10_000, 'переводы людям');
-    const out = JSON.stringify([await svc.spending({ from: '2026-03-01', to: '2026-03-31' }), await svc.balances(), await svc.status()]);
-    for (const c of CANARIES) expect(out).not.toContain(c);
-    expect(out).not.toMatch(/CANARY|\*{4}|UA\d{2}/);
   });
 
   it('a failed open is not cached; close() lets the next call open a fresh connection', async () => {
@@ -161,8 +135,89 @@ describe('DataService (main → renderer view types)', () => {
   });
 });
 
+describe('DataService.monthOverview', () => {
+  it('the current month: balanceAt "now", family total in hryvnia, other currencies apart, income and spending of the month', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await account('usd', 'black', 840, 5_000);
+    await synced('uah');
+    await synced('usd');
+    await tx('uah', '2026-03-02', -30_000, 'продукты');
+    await tx('uah', '2026-03-05', 20_000, 'поступления');
+    await tx('usd', '2026-03-06', -1_000, 'путешествия');
+
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.month).toBe('2026-03');
+    expect(v.balanceAt).toBe('now');
+    expect(v.coverage).toEqual({ from: '2026-03-01', to: '2026-03-10' });
+    expect(v.total).toEqual({ ownFunds: 100_000, others: [{ currency: 840, ownFunds: 5_000 }], missing: 0, income: 20_000, spending: 30_000 });
+    expect(v.accounts).toEqual([]);
+    // Only one participant exists (the default "Я"): its own view matches the family total (no family transfers).
+    expect(v.people).toHaveLength(1);
+    expect(v.people[0]!.total).toEqual(v.total);
+  });
+
+  it('a past month: balanceAt is its last day, the balance comes from the last operation before its end', async () => {
+    await account('uah', 'black', 980, 90_000);
+    await synced('uah');
+    await tx('uah', '2026-02-27', -5_000, 'продукты', { balance: 60_000 });
+    await tx('uah', '2026-03-02', -10_000, 'продукты'); // after the month: does not affect its end balance
+
+    const v = await svc.monthOverview({ month: '2026-02' });
+    expect(v.balanceAt).toBe('2026-02-28');
+    expect(v.coverage).toEqual({ from: '2026-02-01', to: '2026-02-28' });
+    expect(v.total).toMatchObject({ ownFunds: 60_000, missing: 0, income: 0, spending: 5_000 });
+  });
+
+  it('a month before coverage: accounts have no data, missing counts them, the total excludes them', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await synced('uah'); // covered from 2026-01-01 on only
+
+    const v = await svc.monthOverview({ month: '2025-11' });
+    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, income: 0, spending: 0 });
+  });
+
+  it('the family: each person in the list with label and color, no accounts; a person: their accounts with income/spending', async () => {
+    await account('mine', 'black', 980, 50_000);
+    await synced('mine');
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 20_000, updated_at: SYNCED_TO });
+    await synced('hers');
+    await tx('mine', '2026-03-02', -1_000, 'продукты');
+    await tx('hers', '2026-03-03', -400, 'продукты');
+
+    const family = await svc.monthOverview({ month: '2026-03' });
+    expect(family.accounts).toEqual([]);
+    expect(family.people).toHaveLength(2);
+    const hersView = family.people.find((p) => p.participantId === her)!;
+    expect(hersView).toMatchObject({ label: 'Вигадана', color: 'aqua', total: { ownFunds: 20_000, spending: 400 } });
+    const mineView = family.people.find((p) => p.participantId !== her)!;
+    expect(mineView.total).toMatchObject({ ownFunds: 50_000, spending: 1_000 });
+
+    const person = await svc.monthOverview({ month: '2026-03', participantId: her });
+    expect(person.people).toEqual([]);
+    expect(person.accounts).toEqual([
+      { id: 'hers', label: 'white/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
+    ]);
+  });
+
+  it('nothing the renderer gets contains a name, description, card number, IBAN or jar title', async () => {
+    await account('uah', 'black', 980, 1_000);
+    await account('jar1', null, 980, 1_000);
+    await synced('uah');
+    await tx('uah', '2026-03-02', -10_000, 'переводы людям');
+    const out = JSON.stringify([
+      await svc.spending({ from: '2026-03-01', to: '2026-03-31' }),
+      await svc.monthOverview({ month: '2026-03' }),
+      await svc.status(),
+    ]);
+    for (const c of CANARIES) expect(out).not.toContain(c);
+    expect(out).not.toMatch(/CANARY|\*{4}|UA\d{2}/);
+  });
+});
+
 describe('DataService: one participant or the whole family', () => {
-  it('spending and balances take participantId; without it — everyone', async () => {
+  it('spending takes participantId; without it — everyone', async () => {
     await account('mine', 'black', 980, 10_000);
     const her = Number((await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Вигадана', 0) RETURNING id`)).rows[0]?.id);
     const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
@@ -175,7 +230,5 @@ describe('DataService: one participant or the whole family', () => {
       (await svc.spending({ ...q, ...(participantId !== undefined ? { participantId } : {}) })).currencies[0]?.total.net;
     expect(await total()).toBe(1_400);
     expect(await total(her)).toBe(400);
-    expect((await svc.balances({ participantId: her })).cards.map((c) => c.id)).toEqual(['hers']);
-    expect((await svc.balances()).totals).toEqual([{ currency: 980, ownFunds: 13_000 }]);
   });
 });
