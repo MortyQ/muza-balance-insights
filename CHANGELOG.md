@@ -3,7 +3,7 @@
 What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
 are quoted as they appear in it.
 
-## 0.1.4 — unreleased
+## 0.1.4 — 2026-09-27
 
 Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in
 someone else's cloud. New in this version: the app fetches new transactions by itself, it can be locked with a PIN or
