@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import type { Bank } from '@/entities/bank';
+import { MONOBANK } from '@/entities/bank';
 import { VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
+import type { TokenFieldProps } from '../../shared/types.ts';
+import { TOKEN_PLACEHOLDER, TOKEN_STEPS } from '../constants.ts';
 
-const { bank, secureStorage, autofocus = false } = defineProps<{
-  bank: Readonly<Bank>;
-  secureStorage: boolean;
-  autofocus?: boolean;
-}>();
+const { secureStorage, autofocus = false } = defineProps<TokenFieldProps>();
 const token = defineModel<string>('token', { required: true });
 const remember = defineModel<boolean>('remember', { required: true });
 
@@ -21,13 +19,13 @@ onMounted(() => {
 <template>
   <div class="flex flex-col gap-3">
     <ol class="flex list-decimal flex-col gap-1 pl-5 text-foreground-secondary">
-      <li v-for="step in bank.tokenSteps" :key="step">{{ step }}</li>
+      <li v-for="step in TOKEN_STEPS" :key="step">{{ step }}</li>
     </ol>
     <VInput
       ref="input"
       v-model="token"
-      :name="`Токен ${bank.name}`"
-      :placeholder="bank.tokenPlaceholder"
+      :name="`Токен ${MONOBANK.name}`"
+      :placeholder="TOKEN_PLACEHOLDER"
       autocomplete="off"
       spellcheck="false"
       type="password"

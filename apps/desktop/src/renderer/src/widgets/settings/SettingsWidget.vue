@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
+import { ConnectionsFeature } from '@/features/integrations';
 import {
   AppLockSettingsFeature,
   AutoSyncSettingsFeature,
-  ConnectionsFeature,
   DbEncryptionFeature,
   DeleteDataFeature,
   NetworkInfoFeature,

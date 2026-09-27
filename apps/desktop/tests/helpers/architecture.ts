@@ -21,9 +21,10 @@ export const UI_ONLY_PACKAGES: ReadonlyArray<RegExp> = [/^reka-ui$/, /^@internat
 
 /**
  * Domain slices: one slice split into sub-features, one per first-level folder, plus `shared/` for what they have in
- * common. Sub-features never import each other or the domain's index.ts; `shared/` imports no sub-feature.
+ * common, plus root files that may compose sub-features. Sub-features never import each other or the domain's root
+ * (index.ts and root files); `shared/` imports no sub-feature and no root file.
  */
-export const DOMAIN_SLICES: ReadonlyArray<string> = ['features/settings'];
+export const DOMAIN_SLICES: ReadonlyArray<string> = ['features/settings', 'features/integrations'];
 
 /** The only file that reads window.balance. */
 export const BRIDGE_FILE = 'shared/api/balance.ts';
@@ -32,7 +33,7 @@ export type Files = ReadonlyMap<string, string>; // path relative to src/rendere
 
 type Place = { layer: Layer; slice: string };
 
-/** app is one slice; shared is split into segments (api, config, lib, ui); the rest into slices. */
+/** app is one slice; shared is split into segments (api, config, layout, lib, ui); the rest into slices. */
 export function placeOf(file: string): Place | null {
   const [layer, slice] = file.split('/');
   if (!layer || !(LAYERS as ReadonlyArray<string>).includes(layer)) return null;
@@ -51,7 +52,7 @@ export function importsOf(text: string): string[] {
 
 const rank = (l: Layer) => LAYERS.indexOf(l);
 
-/** The sub-feature folder of a file inside a domain slice; null for a file at the domain's root (its index.ts). */
+/** The sub-feature folder of a file inside a domain slice; null for a file at the domain's root (index.ts, root files). */
 function subFeatureOf(file: string): string | null {
   const parts = file.split('/');
   return parts.length > 3 ? parts[2]! : null;
@@ -62,7 +63,7 @@ function domainViolation(file: string, target: string): string {
   const from = subFeatureOf(file);
   const to = subFeatureOf(target);
   if (from === null) return '';
-  if (to === null) return 'a sub-feature must not import its domain index.ts';
+  if (to === null) return 'a sub-feature must not import its domain index.ts or root files';
   if (from === 'shared' && to !== 'shared') return `shared/ of a domain must not import its sub-feature ${to}`;
   if (from !== 'shared' && to !== from && to !== 'shared') return `sub-features of a domain must not import each other (${from} → ${to}); share through shared/`;
   return '';

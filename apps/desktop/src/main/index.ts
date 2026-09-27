@@ -18,6 +18,7 @@ import { isTrustedSender, registerIpc } from './ipc.ts';
 import { startLockTriggers, touchId } from './lock/electron.ts';
 import { gatedPush } from './lock/gate.ts';
 import { LockService } from './lock/service.ts';
+import { IntegrationsService } from './integrations.ts';
 import { PeopleService } from './people.ts';
 import { DbAccess } from './db/access.ts';
 import { encryptDatabase } from './db/encrypt.ts';
@@ -225,7 +226,8 @@ app.whenReady().then(async () => {
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
   };
-  const people = new PeopleService({
+  const people = new PeopleService({ db: () => data.database(), tokens: vault });
+  const integrations = new IntegrationsService({
     db: () => data.database(),
     tokens: vault,
     importRunning: () => importer.running,
@@ -246,13 +248,13 @@ app.whenReady().then(async () => {
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
     listPeople: () => people.list(),
-    addConnection: (input) => people.addConnection(input),
+    addConnection: (input) => integrations.addConnection(input),
     renameParticipant: (id, label) => people.rename(id, label),
     restoreBankName: (id) => people.restoreBankName(id),
     setParticipantColor: (id, color) => people.setParticipantColor(id, color),
-    setConnectionColor: (id, color) => people.setConnectionColor(id, color),
-    setConnectionToken: (id, token, remember) => people.setToken(id, token, remember),
-    removeConnection: (id) => people.remove(id),
+    setConnectionColor: (id, color) => integrations.setConnectionColor(id, color),
+    setConnectionToken: (id, token, remember) => integrations.setToken(id, token, remember),
+    removeConnection: (id) => integrations.remove(id),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
     spendingSummary: (q) => data.spending(q),
@@ -310,7 +312,7 @@ app.whenReady().then(async () => {
           tokens: vault,
           importer,
           data,
-          people,
+          integrations,
           userDataDir: userData,
           log: (m) => process.stderr.write(`[db] ${m}\n`),
         });

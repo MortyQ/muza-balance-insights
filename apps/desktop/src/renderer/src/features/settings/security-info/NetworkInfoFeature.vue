@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { SettingsList, SettingsSection } from '@/shared/layout';
 import { useAsyncData } from '@/shared/lib';
 import { VInfoNotice } from '@/shared/ui';
 import { useTrustedServicesRequest } from './api/useTrustedServicesRequest.ts';
 import { SERVICE_TEXT } from './constants.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const request = useTrustedServicesRequest();
 const { state } = useAsyncData(() => request.list(), []);

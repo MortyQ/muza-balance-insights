@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { useAppUpdateStore } from '@/entities/app-update';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VButton, VInfoNotice, VProgressBar, VSwitch } from '@/shared/ui';
 import UpdateActions from './components/UpdateActions.vue';
 import { useUpdate } from './composables/useUpdate.ts';
 import { updateLine } from './utils.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsRow from '../shared/components/SettingsRow.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const store = useAppUpdateStore();
 const { error, check, download, install, setChecks } = useUpdate();

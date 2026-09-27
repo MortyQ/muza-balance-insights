@@ -14,18 +14,25 @@
   0600), статус и «ввести заново» — по подключению. Старый `token.bin` при запуске переносится к подключению Monobank
   как есть, без расшифровки. Форма токена провайдера — `apps/desktop/src/net/providers.ts` (`DESKTOP_PROVIDERS`, запись на
   каждый провайдер ядра — `tests/providers.test.ts`).
+- Папка банка — `apps/desktop/src/integrations/<банк>/`: `desktop.ts` (сторона main: название, форма токена) и
+  `worker.ts` (сторона worker: клиент, тексты и разбор ошибок); общие типы — `integrations/types.ts`. Таблицы
+  `DESKTOP_PROVIDERS` (`net/providers.ts`) и `WORKER_PROVIDERS` (`worker/providers.ts`) только собирают их в
+  `Record<ProviderId, …>`: main не импортирует код worker. Сеть банка сюда не входит — она в `FETCH` (`worker/import.ts`).
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
   `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
-  банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`); сеть — таблица `FETCH` в
+  банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`, из папок банков); сеть — таблица `FETCH` в
   `worker/import.ts`, у каждого провайдера `allowlistedFetch(net.fetch, [его сервисы])` буквально. Отклонённый токен
   (`auth`) или чужой / уже подключённый владелец (`connection`) выключает только своё подключение: итог — `done` с
   `failed`; если не прошло ни одно — `error` первого. Подключение без токена main пропускает и добавляет в `failed`.
   При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
-- IPC людей и подключений (`apps/desktop/src/main/people.ts`, `PeopleService`): `listPeople` (подпись участника — единственное
+- IPC людей и подключений: люди — `PeopleService` (`apps/desktop/src/main/people.ts`: `listPeople`, `renameParticipant`,
+  `restoreBankName`, `setParticipantColor`), подключения и их токены — `IntegrationsService` (`main/integrations.ts`:
+  `addConnection`, `setConnectionToken`, `setConnectionColor`, `removeConnection`; людей берёт из ядра, не из
+  `PeopleService`); `ipc.ts` только направляет вызовы. `listPeople` (подпись участника — единственное
   имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
   { fromBank: true }, provider, token, remember, color? })` (у нового человека — свой `color?`) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не
   сохранился — подключение и новый участник откатываются; импорт не запускает), `renameParticipant`, `restoreBankName`, `setParticipantColor` / `setConnectionColor` (занятый цвет →
-  `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром в `people.ts`), `setConnectionToken`,
+  `{ changed: false, reason: 'taken' }`; ключи — `src/shared/colors.ts`, сверка с ядром — только в `people.ts`), `setConnectionToken`,
   `removeConnection` (во время импорта — `import-running` без диалога, затем системный диалог, токен, данные).
   `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по всем счетам (`firstDataDate` в `packages/core/src/status.ts`),

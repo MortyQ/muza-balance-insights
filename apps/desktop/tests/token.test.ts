@@ -3,9 +3,63 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { registerIpc, type IpcEventLike } from '../src/main/ipc.ts';
 import { LEGACY_TOKEN_FILE, TOKENS_DIR, TokenError, TokenVault, type SafeStorageLike } from '../src/main/token.ts';
+
+const stripComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+
+/** Globals and modules the bank tables must never reach: network, logging, the process, Electron, Node, the database. */
+// `fetch` as anything but a property name in a type (`fetch: FetchLike` in types.ts is the worker's injected one).
+const BANK_TABLE_BANNED = /(?<![.\w])fetch\b(?!\s*:)|\bglobalThis\b|\bnet\.|\bconsole\.|\bprocess\.|electron|node:|@mono\/db|db-libsql/;
+
+/**
+ * Every import of a module, in source order, as [type | value, specifier]: `import … from`, `import 'x'`,
+ * `export … from`, `import()` and `require()`. Only `import type` / `export type` count as `type`: `import { type X }`
+ * still loads the module at run time (verbatimModuleSyntax), so it is `value`.
+ * Throws when the text has more `import` / `require` / `from '…'` than were parsed (a form this parser missed).
+ */
+function parseImports(code: string): [string, string][] {
+  const src = ts.createSourceFile('x.ts', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const out: [string, string][] = [];
+  const n = { importDecl: 0, importFrom: 0, exportFrom: 0, dynamicImport: 0, require: 0 };
+  const spec = (e: ts.Expression | undefined) => (e && ts.isStringLiteral(e) ? e.text : '?');
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node)) {
+      n.importDecl++;
+      const c = node.importClause;
+      if (c) n.importFrom++;
+      out.push([c?.isTypeOnly ? 'type' : 'value', spec(node.moduleSpecifier)]);
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier) {
+      n.exportFrom++;
+      out.push([node.isTypeOnly ? 'type' : 'value', spec(node.moduleSpecifier)]);
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      n.dynamicImport++;
+      out.push(['value', spec(node.arguments[0])]);
+    } else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'require') {
+      n.require++;
+      out.push(['value', spec(node.arguments[0])]);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(src);
+  // Cross-check against the bare text (no comments, string contents blanked): every `import`, `require(` and
+  // `from '…'` must be one the parser saw.
+  const text = stripComments(code).replace(/'[^'\n]*'|"[^"\n]*"/g, "''");
+  const seen = (re: RegExp) => (text.match(re) ?? []).length;
+  if (
+    seen(/\bimport\b/g) !== n.importDecl + n.dynamicImport ||
+    seen(/\brequire\s*\(/g) !== n.require ||
+    seen(/\bfrom\s*['"]/g) !== n.importFrom + n.exportFrom
+  ) {
+    throw new Error('uncounted import form');
+  }
+  return out;
+}
+
+const importsOf = (p: string) => parseImports(fs.readFileSync(new URL(p, import.meta.url), 'utf8'));
 
 const CANARY = 'uCANARY-TOKEN-must-never-leak-7f3e9b2a';
 let dir: string;
@@ -167,7 +221,7 @@ describe('the token never leaves main', () => {
       handlers.clear();
       registerIpc(
         { handle: (ch, fn) => void handlers.set(ch, fn) },
-        // What reaches the vault from the renderer: a connection's new token (src/main/people.ts → TokenVault.set).
+        // What reaches the vault from the renderer: a connection's new token (src/main/integrations.ts → TokenVault.set).
         { setConnectionToken: (id, t, r) => v.set(id, 'monobank', t, r) },
         // The same log line as src/main/index.ts: the error's name only.
         { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
@@ -211,10 +265,48 @@ describe('the token never leaves main', () => {
     expect([...store.matchAll(/from '([^']+)'/g)]).toEqual([]);
     expect(store).not.toMatch(/console\.|process\.std(out|err)/);
     // The providers table: credential shapes only — no network, database or logging either.
-    const providers = fs.readFileSync(new URL('../src/net/providers.ts', import.meta.url), 'utf8');
-    expect([...providers.matchAll(/^import (type )?.* from '([^']+)'/gm)].map((m) => [m[1] ?? '', m[2]])).toEqual([
-      ['type ', '@mono/core/providers/types'],
+    const bySpecifier = (xs: [string, string][]) => [...xs].sort((a, b) => a[1].localeCompare(b[1]));
+    expect(bySpecifier(importsOf('../src/net/providers.ts'))).toEqual(
+      bySpecifier([
+        ['type', '@mono/core/providers/types'],
+        ['type', '../integrations/types.ts'],
+        ...PROVIDER_IDS.map((id): [string, string] => ['value', `../integrations/${id}/desktop.ts`]),
+      ]),
+    );
+    // Each bank's desktop entry and the types file: types only.
+    for (const id of PROVIDER_IDS) expect(importsOf(`../src/integrations/${id}/desktop.ts`), id).toEqual([['type', '../types.ts']]);
+    expect(importsOf('../src/integrations/types.ts').map(([kind]) => kind)).toEqual(['type', 'type', 'type', 'type']);
+    for (const f of ['../src/net/providers.ts', '../src/integrations/types.ts', ...PROVIDER_IDS.map((id) => `../src/integrations/${id}/desktop.ts`)]) {
+      expect(stripComments(fs.readFileSync(new URL(f, import.meta.url), 'utf8')), f).not.toMatch(BANK_TABLE_BANNED);
+    }
+  });
+
+  it('control: the bank-table guard catches every import form and a banned global', () => {
+    const decoy = [
+      "import {\n  createMonoClient,\n} from '@mono/core/providers/monobank/client';",
+      "import type { A } from './a.ts';",
+      "import { type B } from './b.ts';",
+      "import './side.ts';",
+      "export { c } from './c.ts';",
+      "export type { D } from './d.ts';",
+      "const e = await import('./e.ts');",
+      "const f = require('./f.ts');",
+      "// import { g } from './g.ts';",
+    ].join('\n');
+    expect(parseImports(decoy)).toEqual([
+      ['value', '@mono/core/providers/monobank/client'],
+      ['type', './a.ts'],
+      ['value', './b.ts'],
+      ['value', './side.ts'],
+      ['value', './c.ts'],
+      ['type', './d.ts'],
+      ['value', './e.ts'],
+      ['value', './f.ts'],
     ]);
+    expect(() => parseImports('const u = import.meta.url;')).toThrow(/uncounted/);
+    for (const bad of ['fetch(url)', 'const f = fetch;', 'globalThis.fetch', 'net.request()', 'console.log(1)', 'process.env', "'electron'", "'node:fs'", '@mono/db-libsql', '@mono/db']) {
+      expect(stripComments(bad), bad).toMatch(BANK_TABLE_BANNED);
+    }
   });
 });
 

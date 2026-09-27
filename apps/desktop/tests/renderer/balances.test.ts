@@ -114,13 +114,20 @@ describe('balances utils', () => {
       accounts: [],
     };
     const s = slidesOf(fam, { people: [], selectedId: null, currentYear: 2026 });
-    expect(s.map((x) => x.flow.approx)).toEqual([true, true]);
-    expect(s[0]?.netText.startsWith('≈ +')).toBe(true);
+    expect(s.map((x) => [x.flow.approxIncome, x.flow.approxSpending])).toEqual([
+      [true, false],
+      [true, false],
+    ]);
+    expect(s[0]?.netText.startsWith('≈ +')).toBe(true);
     expect(s[0]?.flow.note).toBe('вкл. 3 162 $ по курсу 44,36');
 
     const unrated: MonthOverview = { ...fam, people: [], total: { ...card(10_000, 5_000, 4_000), fx: [{ ...usd, rate: null }] } };
     const u = slidesOf(unrated, { people: [], selectedId: null, currentYear: 2026 });
-    expect(u[0]?.flow.approx).toBe(false);
+    expect([u[0]?.flow.approxIncome, u[0]?.flow.approxSpending]).toEqual([false, false]);
+    const spent: MonthOverview = { ...unrated, total: { ...card(10_000, 5_000, 4_000), fx: [{ currency: 978, income: 0, spending: 100_900, rate: 52, nearest: false }] } };
+    const e = slidesOf(spent, { people: [], selectedId: null, currentYear: 2026 });
+    expect([e[0]?.flow.approxIncome, e[0]?.flow.approxSpending]).toEqual([false, true]);
+    expect(e[0]?.netText.startsWith('≈')).toBe(true);
     expect(u[0]?.netText).toBe('+10,00 ₴ в сентябре');
     expect(u[0]?.flow.note).toBe('без 3 162 $ — не было обмена');
 
@@ -130,8 +137,9 @@ describe('balances utils', () => {
       accounts: [{ id: 'd', label: 'fop/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 316_200, spending: 0 }],
     };
     const p = slidesOf(person, { people: [], selectedId: 1, currentYear: 2026 });
-    expect(p[0]?.flow.approx).toBe(true);
-    expect(p[1]?.flow.approx).toBeFalsy();
+    expect(p[0]?.flow.approxIncome).toBe(true);
+    expect(p[1]?.flow.approxIncome).toBeFalsy();
+    expect(p[1]?.flow.approxSpending).toBeFalsy();
     expect(p[1]?.flow.note).toBeUndefined();
     expect(p[1]?.netText.startsWith('≈')).toBe(false);
   });
@@ -147,6 +155,8 @@ describe('balances utils', () => {
     expect(fxNote([{ currency: 978, income: 0, spending: -2_500, rate: 50.5, nearest: false }])).toBe('вкл. 25 € по курсу 50,50');
     expect(fxNote([{ currency: 978, income: 0, spending: 0, rate: 50, nearest: false }])).toBe('');
     expect(fxNote([])).toBe('');
+    // Rates are per whole unit: 28 kopecks per yen (no minor units) → 0,28 ₴.
+    expect(fxNote([{ currency: 392, income: 10_000, spending: 0, rate: 28, nearest: false }])).toBe('вкл. 10 000 JPY по курсу 0,28');
   });
 
   it('slidesOf: the family — head then people; a person — head then accounts, no data dimmed', () => {
@@ -174,7 +184,7 @@ describe('balances utils', () => {
       { color: 'var(--series-blue)', income: 3_000, spending: 2_000 },
       { color: 'var(--series-orange)', income: 2_000, spending: 2_000 },
     ]);
-    expect(s[1]?.flow).toEqual({ currency: 980, income: 3_000, spending: 2_000, color: 'var(--series-blue)', approx: false, note: '' });
+    expect(s[1]?.flow).toEqual({ currency: 980, income: 3_000, spending: 2_000, color: 'var(--series-blue)', approxIncome: false, approxSpending: false, note: '' });
 
     const one: MonthOverview = {
       ...fam,

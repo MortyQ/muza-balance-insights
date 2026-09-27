@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { SettingsSection } from '@/shared/layout';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import { useDeleteData } from './composables/useDeleteData.ts';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const emit = defineEmits<{ deleted: [] }>();
 const { deleting, error, run } = useDeleteData();

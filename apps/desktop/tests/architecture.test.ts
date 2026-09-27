@@ -62,9 +62,10 @@ describe('renderer architecture', () => {
     'features/settings/a/a.ts': "import { s } from '../shared/s.ts';\nimport { x } from './x.ts';\nexport const a = [s, x];\n",
     'features/settings/a/x.ts': 'export const x = 1;\n',
     'features/settings/b/b.ts': "import { s } from '../shared/s.ts';\nexport const b = s;\n",
+    'features/settings/root.ts': "import { x } from './a/x.ts';\nimport { b } from './b/b.ts';\nimport { s } from './shared/s.ts';\nexport const root = [x, b, s];\n",
   };
 
-  it('a domain slice: sub-features import their own files and shared/; the index re-exports them', () => {
+  it('a domain slice: sub-features import their own files and shared/; a root file composes sub-features; the index re-exports them', () => {
     expect(violations(ok(domain))).toEqual([]);
   });
 
@@ -72,6 +73,8 @@ describe('renderer architecture', () => {
     ['sub-feature → sub-feature', { 'features/settings/b/b.ts': "import { x } from '../a/x.ts';\nexport const b = x;\n" }, 'must not import each other (b → a)'],
     ['sub-feature → the domain index', { 'features/settings/b/b.ts': "import { a } from '../index.ts';\nexport const b = a;\n" }, 'must not import its domain index.ts'],
     ['shared/ → a sub-feature', { 'features/settings/shared/s.ts': "import { x } from '../a/x.ts';\nexport const s = x;\n" }, 'must not import its sub-feature a'],
+    ['sub-feature → a root file', { 'features/settings/b/b.ts': "import { root } from '../root.ts';\nexport const b = root;\n" }, 'must not import its domain index.ts or root files'],
+    ['shared/ → a root file', { 'features/settings/shared/s.ts': "import { root } from '../root.ts';\nexport const s = root;\n" }, 'must not import its domain index.ts or root files'],
   ])('a domain slice fails on %s', (_name, extra, message) => {
     expect(violations(ok({ ...domain, ...extra })).join('\n')).toContain(message);
   });

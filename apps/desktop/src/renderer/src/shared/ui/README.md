@@ -16,7 +16,7 @@ Replace these copies with imports once muzakit is published as a package.
 | `VButtonGroup`, `VCard`, `VInfoNotice`, `VLoader`, `VProgressBar`, their `.scss` | none |
 | `VCheckbox` | `ref<HTMLInputElement \| null>(null)` → `useTemplateRef` (vue-syntax.instructions.md Rule 4) |
 | `VSwitch`, `vswitch.scss` | `vswitch.scss`: focus ring on the track for `:focus-visible` (the real input is clipped) |
-| `VInput` | `useDebounceFn` from `@vueuse/core` → local `debounce()` in `components/inputs/debounce.ts` (not exported from `index.ts`); the `debounce` prop is destructured as `debounceProp` to avoid shadowing the imported helper; `ref<HTMLInputElement \| HTMLTextAreaElement \| null>(null)` → `useTemplateRef`; added `defineExpose({ focus })` so a parent can call `.focus()` on a template ref to the component (muzakit's `VInput` doesn't expose this — no screen there needed to refocus it programmatically) |
+| `VInput` | `useDebounceFn` from `@vueuse/core` → local `debounce()` in `components/inputs/debounce.ts` (not exported from `index.ts`); the `debounce` prop is destructured as `debounceProp` to avoid shadowing the imported helper; `ref<HTMLInputElement \| HTMLTextAreaElement \| null>(null)` → `useTemplateRef`; added `defineExpose({ focus })` so a parent can call `.focus()` on a template ref to the component (muzakit's `VInput` doesn't expose this — no screen there needed to refocus it programmatically); `vinput.scss`: a disabled field drops its resting shadow, as a disabled `VButton` does |
 | `VCollapse` | none |
 | `VComposer` | `useClipboard` from `@vueuse/core` → a local `copy()`: `navigator.clipboard.writeText`, falling back to an off-screen `<textarea>` + `execCommand('copy')` (vueuse's own pre-`execCommand`-removal fallback) when the Clipboard API is unavailable or rejects; its own `copied` ref/timeout, cleared in `onScopeDispose` — see the note below about Electron's `denyAllPermissions` |
 
@@ -40,6 +40,20 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
+
+All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
+reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element
+never gets the component's scope attribute and a scoped rule on it matches nothing (the panel was see-through).
+`tests/ui.test.ts` checks it. `VDatepicker`'s closed field uses the same box, type, hover, focus (also while open) and
+disabled styles as `VSelect`'s trigger.
+
+Shadows follow `VButton` (`vbutton.scss`): `VSelect`'s trigger, `VDatepicker`'s field, `VMonthPicker`'s trigger and
+`VInput` rest on `--ui-shadow-xs` and drop it when disabled, with the same 120 ms transitions (off under
+`prefers-reduced-motion`). `VMonthPicker`'s trigger reads exactly like `VSelect`'s closed trigger, not as a pill: same
+radius (`--ui-radius-lg`), background (`--ui-input-bg`), border (`--ui-input-border`), height, padding and type. The
+focus/open border of `VSelect`, `VDatepicker` and `VMonthPicker` is 1px + a 1px inset ring rather than a 2px border, so
+the value does not shift. The three popover panels share one elevation: `--ui-surface-overlay`, a 1px `--ui-border`,
+`--ui-radius-lg`, `--ui-shadow-lg`. `tests/ui.test.ts` checks both.
 
 `table/VSimpleTable` — a plain data table (columns as data, `cell-<key>` slots, an optional total row), written in the same
 BEM + SCSS + `--ui-*` token style. Not muzakit's `VTable` (virtualised, TanStack), which this app does not need.

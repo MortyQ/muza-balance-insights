@@ -21,6 +21,16 @@ are quoted as they appear in it.
   every person (or, for one person, every account).
 - Pick a month: the cards show the balance at the end of that month, and income and spending for it. The spending
   block below follows the same month.
+- Income and spending in other currencies — for example, dollars on a sole-proprietor account or cash withdrawn in
+  euros — now count in «Пришло» and «Ушло» in hryvnia, at the rate of your own currency exchanges that month. Such
+  sums are marked «≈», and the rate is shown under the bars.
+- The month is now chosen once, at the top of the home screen, next to the people switch; it applies to both
+  balances and spending. The people switch and the month stay at the top while you scroll.
+
+### Fixes
+
+- Drop-down lists and the month and date pickers are no longer see-through, so their text is easy to read. The date
+  field now looks the same as the other fields next to it. Fields, drop-downs and buttons now share the same shadows.
 
 ## 0.1.4 — 2026-09-27
 

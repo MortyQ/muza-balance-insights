@@ -70,23 +70,26 @@ const rootValue = computed<string | number | undefined>({
       </SelectTrigger>
 
       <SelectPortal>
-        <SelectContent class="v-select__content" position="popper" :side-offset="4">
-          <SelectScrollUpButton class="v-select__scroll-button">
-            <VIcon icon="lucide:chevron-up" class="v-select__scroll-icon" />
-          </SelectScrollUpButton>
+        <!-- as-child: the panel is our own <div>, so it carries this component's scope attribute (see vselect.scss). -->
+        <SelectContent as-child position="popper" :side-offset="4">
+          <div class="v-select__content">
+            <SelectScrollUpButton class="v-select__scroll-button">
+              <VIcon icon="lucide:chevron-up" class="v-select__scroll-icon" />
+            </SelectScrollUpButton>
 
-          <SelectViewport class="v-select__viewport">
-            <SelectItem v-for="option in options" :key="option.value" :value="option.value" class="v-select__item">
-              <SelectItemText>{{ option.label }}</SelectItemText>
-              <SelectItemIndicator class="v-select__item-indicator">
-                <VIcon icon="lucide:check" class="v-select__check-icon" />
-              </SelectItemIndicator>
-            </SelectItem>
-          </SelectViewport>
+            <SelectViewport class="v-select__viewport">
+              <SelectItem v-for="option in options" :key="option.value" :value="option.value" class="v-select__item">
+                <SelectItemText>{{ option.label }}</SelectItemText>
+                <SelectItemIndicator class="v-select__item-indicator">
+                  <VIcon icon="lucide:check" class="v-select__check-icon" />
+                </SelectItemIndicator>
+              </SelectItem>
+            </SelectViewport>
 
-          <SelectScrollDownButton class="v-select__scroll-button">
-            <VIcon icon="lucide:chevron-down" class="v-select__scroll-icon" />
-          </SelectScrollDownButton>
+            <SelectScrollDownButton class="v-select__scroll-button">
+              <VIcon icon="lucide:chevron-down" class="v-select__scroll-icon" />
+            </SelectScrollDownButton>
+          </div>
         </SelectContent>
       </SelectPortal>
     </SelectRoot>

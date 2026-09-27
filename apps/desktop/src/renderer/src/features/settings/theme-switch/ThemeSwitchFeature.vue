@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { ThemePref } from '@contract/theme.ts';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VInfoNotice, VSegmentedControl } from '@/shared/ui';
 import { useTheme } from './composables/useTheme.ts';
 import { THEME_OPTIONS } from './constants.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsRow from '../shared/components/SettingsRow.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const { theme, error, select } = useTheme();
 const value = computed<ThemePref>({

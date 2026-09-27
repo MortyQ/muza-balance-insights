@@ -1,18 +1,14 @@
 <script setup lang="ts">
-import { VButton, VIcon, VMonthPicker } from '@/shared/ui';
+import { VButton, VIcon } from '@/shared/ui';
 
-const { open, title, subtitle, min, max, currentYear, canPrev, canNext } = defineProps<{
+const { open, title, subtitle, canPrev, canNext } = defineProps<{
   open: boolean;
   /** Title of the open row: «Карты семьи» / «Счета · Имя». */
   title: string;
   subtitle: string;
-  min?: string;
-  max: string;
-  currentYear: number;
   canPrev: boolean;
   canNext: boolean;
 }>();
-const month = defineModel<string>({ required: true });
 const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
 </script>
 
@@ -31,7 +27,6 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
           Нажмите на карту, чтобы развернуть
         </span>
       </div>
-      <VMonthPicker v-model="month" :min :max :current-year label="Месяц" />
     </div>
     <div
       class="absolute inset-0 flex items-center justify-between gap-3 transition-opacity duration-250"
@@ -43,7 +38,6 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
         <span class="text-xs text-foreground-muted">{{ subtitle }}</span>
       </div>
       <div class="flex items-center gap-2">
-        <VMonthPicker v-model="month" :min :max :current-year label="Месяц" />
         <VButton variant="neutral" size="md" icon="lucide:chevron-left" aria-label="Назад" :disabled="!canPrev" @click="emit('prev')" />
         <VButton variant="neutral" size="md" icon="lucide:chevron-right" aria-label="Дальше" :disabled="!canNext" @click="emit('next')" />
         <VButton variant="primary" size="md" text="Все счета" @click="emit('stub')" />

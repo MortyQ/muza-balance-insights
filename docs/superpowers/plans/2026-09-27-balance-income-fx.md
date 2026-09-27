@@ -1,7 +1,10 @@
 # «Пришло / Ушло» с валютой по курсу своих обменов — план
 
+> **Выполнено.** Итоговое поведение (формат «3 162 $», «≈» у каждой строки отдельно, курс с учётом числа знаков валюты,
+> ближайший обмен по секундам) — в спеке `docs/superpowers/specs/2026-09-27-balance-cards-design.md` и в коде.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or
-> superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Цель:** доход и траты в валюте (доллары на ФОП) входят в «Пришло / Ушло» блока балансов в гривне — по курсу
 собственных обменов пользователя; такая сумма помечена «≈», курс виден в панели месяца.
@@ -68,7 +71,7 @@ export type FxPart = {
 
 **Files:** Create `packages/core/src/fx.ts`, `packages/core/tests/fx.test.ts`
 
-- [ ] **Шаг 1: тесты** (`packages/core/tests/fx.test.ts`, фикстуры вымышленные, хелперы как в `balances-at.test.ts`)
+- [x] **Шаг 1: тесты** (`packages/core/tests/fx.test.ts`, фикстуры вымышленные, хелперы как в `balances-at.test.ts`)
 
 ```ts
 // Month rates of foreign currencies from the user's own exchanges (pair_fx rows on hryvnia accounts).
@@ -147,9 +150,9 @@ describe('exchangeRates', () => {
 });
 ```
 
-- [ ] **Шаг 2:** `pnpm --filter @mono/core exec vitest run tests/fx.test.ts` → FAIL (нет модуля).
+- [x] **Шаг 2:** `pnpm --filter @mono/core exec vitest run tests/fx.test.ts` → FAIL (нет модуля).
 
-- [ ] **Шаг 3: реализация** `packages/core/src/fx.ts`
+- [x] **Шаг 3: реализация** `packages/core/src/fx.ts`
 
 ```ts
 // Rates of foreign currencies from the user's own exchanges: the hryvnia side of a pair_fx row holds both amounts.
@@ -215,14 +218,14 @@ export function toUah(minor: number, currency: number, rates: ReadonlyMap<number
 
   `Date.parse` с явной датой — не часы: `purity.test.ts` запрещает только `Date.now()` / `new Date()` без аргументов.
 
-- [ ] **Шаг 4:** экспорт не нужен (`"./*": "./src/*.ts"`), импорт — `@mono/core/fx`. `pnpm --filter @mono/core test` + `pnpm --filter @mono/core typecheck` → PASS.
-- [ ] **Шаг 5:** коммит `feat(core): month exchange rates from the user's own currency sales`.
+- [x] **Шаг 4:** экспорт не нужен (`"./*": "./src/*.ts"`), импорт — `@mono/core/fx`. `pnpm --filter @mono/core test` + `pnpm --filter @mono/core typecheck` → PASS.
+- [x] **Шаг 5:** коммит `feat(core): month exchange rates from the user's own currency sales`.
 
 ### Задача 2: main — пересчёт в `monthOverview`
 
 **Files:** `apps/desktop/src/shared/api.ts`, `apps/desktop/src/main/data.ts`, `apps/desktop/tests/data.test.ts`
 
-- [ ] **Шаг 1: тесты** в `describe('DataService.monthOverview')` (хелперы файла; суммы вымышленные):
+- [x] **Шаг 1: тесты** в `describe('DataService.monthOverview')` (хелперы файла; суммы вымышленные):
   - счёт ФОП в USD: «поступления» +1 000.00 $ (100 000 центов) в марте; гривневый ФОП: `pair_fx` +41 000.00 ₴
     (4 100 000 коп.) за 1 000.00 $ в марте; перевод ₴ ФОП → карта (`pair`, internal) → `total.income` =
     4 100 000 + гривневые зачисления месяца; `total.fx` =
@@ -234,8 +237,8 @@ export function toUah(minor: number, currency: number, rates: ReadonlyMap<number
     покупка € с гривневой карты (`pair_fx`, `amount < 0`) — единственный обмен EUR → обе суммы в `total.spending` по
     курсу покупки; `fx` = `[{ currency: 978, income: 0, spending: 100_900, rate: <курс покупки>, nearest: false }]`;
   - вид человека и семьи: у `people[i].total` свои `fx`; карты счетов (`accounts[]`) — в валюте счёта, без пересчёта.
-- [ ] **Шаг 2:** прогон → FAIL.
-- [ ] **Шаг 3: реализация.** `api.ts`: тип `FxPart` (как в «Контракте»), `CardTotal.fx: FxPart[]`, комментарий к
+- [x] **Шаг 2:** прогон → FAIL.
+- [x] **Шаг 3: реализация.** `api.ts`: тип `FxPart` (как в «Контракте»), `CardTotal.fx: FxPart[]`, комментарий к
   `income` / `spending`: «hryvnia, foreign parts converted by `fx`». `data.ts`, в `monthOverview`:
 
 ```ts
@@ -259,22 +262,22 @@ const flowOf = (inc: IncomeSummary, sp: SpendingSummary): FlowView & { fx: FxPar
 ```
 
   Части с нулём и в доходе, и в тратах в `fx` не попадают (отфильтровать).
-- [ ] **Шаг 4:** `cd apps/desktop && npx vitest run tests/data.test.ts tests/ipc.test.ts` + `pnpm --filter @mono/desktop typecheck` → PASS.
-- [ ] **Шаг 5:** коммит `feat(desktop): income and spending in other currencies count in hryvnia by the user's own exchange rate`.
+- [x] **Шаг 4:** `cd apps/desktop && npx vitest run tests/data.test.ts tests/ipc.test.ts` + `pnpm --filter @mono/desktop typecheck` → PASS.
+- [x] **Шаг 5:** коммит `feat(desktop): income and spending in other currencies count in hryvnia by the user's own exchange rate`.
 
 ### Задача 3: renderer — «≈» и строка курса
 
 **Files:** `features/balances/{types.ts,utils.ts,components/FlowBars.vue,components/MonthPanel.vue}`,
 `tests/renderer/balances.test.ts`
 
-- [ ] **Шаг 1: тесты utils:**
+- [x] **Шаг 1: тесты utils:**
   - `slidesOf`: у итоговых карт `flow.approx === true`, если в `fx` есть часть с `rate !== null`; у карт счетов —
     `false`; `netText` итоговой карты начинается с «≈»;
   - `fxNote(fx)`: `[{840, income 316_200, rate 44.355, nearest false}]` → `«вкл. $3 162 по курсу 44,36»`;
     `nearest: true` → `«… по курсу ближайшего обмена 44,36»`; `rate: null` → `«без $3 162 — не было обмена»`;
     несколько валют — через « · »; пустой список → `''`.
-- [ ] **Шаг 2:** прогон → FAIL.
-- [ ] **Шаг 3: реализация.**
+- [x] **Шаг 2:** прогон → FAIL.
+- [x] **Шаг 3: реализация.**
   - `types.ts`: `Flow.approx?: boolean`; `Flow.note?: string` (строка курса, только для итоговых карт).
   - `utils.ts`: `fxNote(fx: ReadonlyArray<FxPart>): string` (сумма = доход части, если он есть, иначе траты; знак
     валюты — через `formatMoney`; курс — `rate / 1`, 2 знака, запятая: `rate.toFixed(2).replace('.', ',')`);
@@ -282,19 +285,19 @@ const flowOf = (inc: IncomeSummary, sp: SpendingSummary): FlowView & { fx: FxPar
   - `FlowBars.vue`: суммы с префиксом «≈ » при `flow.approx`.
   - `MonthPanel.vue`: под `FlowBars` — `<p v-if="flow.note" class="text-xs text-foreground-muted">{{ flow.note }}</p>`.
   - `spentShare` без изменений: считает по уже пересчитанным суммам.
-- [ ] **Шаг 4:** `cd apps/desktop && npx vitest run tests/renderer` + `pnpm --filter @mono/desktop typecheck` → PASS.
-- [ ] **Шаг 5:** коммит `feat(desktop): the month panel shows converted income with its rate`.
+- [x] **Шаг 4:** `cd apps/desktop && npx vitest run tests/renderer` + `pnpm --filter @mono/desktop typecheck` → PASS.
+- [x] **Шаг 5:** коммит `feat(desktop): the month panel shows converted income with its rate`.
 
 ### Задача 4: документы и финальная проверка
 
-- [ ] Спека `docs/superpowers/specs/2026-09-27-balance-cards-design.md`: раздел «Валюта в „Пришло / Ушло“» — правило
+- [x] Спека `docs/superpowers/specs/2026-09-27-balance-cards-design.md`: раздел «Валюта в „Пришло / Ушло“» — правило
   курса, `FxPart`, «≈», строка курса; убрать «только гривна» для потоков, если так написано.
-- [ ] `.agents/project/domain-rules.md`: пункт про курс обменов (`fx.ts`), рядом с `balancesAt`.
-- [ ] `CHANGELOG.md`, `## 0.1.5 — unreleased` → `### Balances`:
+- [x] `.agents/project/domain-rules.md`: пункт про курс обменов (`fx.ts`), рядом с `balancesAt`.
+- [x] `CHANGELOG.md`, `## 0.1.5 — unreleased` → `### Balances`:
   «Income and spending in other currencies (for example, dollars on a sole-proprietor account) now count in «Пришло»
   and «Ушло» in hryvnia, at the rate of your own currency sales that month; such sums are marked «≈» and the rate is
   shown under the bars.»
-- [ ] В корне `pnpm test` и `pnpm typecheck` → всё зелёное; коммит `docs: exchange rates in the balance block`.
+- [x] В корне `pnpm test` и `pnpm typecheck` → всё зелёное; коммит `docs: exchange rates in the balance block`.
 
 ---
 

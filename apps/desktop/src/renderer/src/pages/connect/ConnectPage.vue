@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { ConnectFirstFeature } from '@/features/settings';
+import { ConnectFirstFeature } from '@/features/integrations';
 import { ROUTE } from '@/shared/config';
 
 const router = useRouter();

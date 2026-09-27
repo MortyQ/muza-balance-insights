@@ -8,7 +8,7 @@ import { useCardStack } from './composables/useCardStack.ts';
 import { useMonthOverview } from './composables/useMonthOverview.ts';
 import { accountsCount, coverageNote, maxOffset } from './utils.ts';
 
-const { state, view, slides, isFamily, legend, month, monthName, thisMonth, currentYear, firstMonth } = useMonthOverview();
+const { state, view, slides, isFamily, legend, monthName } = useMonthOverview();
 const stack = useCardStack(() => slides.value.length);
 const { open, offset, paging, stubShown } = stack;
 const block = useTemplateRef<HTMLElement>('block');
@@ -37,13 +37,9 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
     <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
     <div v-else ref="block" class="flex flex-col gap-3">
       <BalancesHeader
-        v-model="month"
         :open
         :title="openTitle"
         :subtitle="openSubtitle"
-        :min="firstMonth ?? undefined"
-        :max="thisMonth"
-        :current-year
         :can-prev="offset > 0"
         :can-next="offset < maxOffset(slides.length)"
         @prev="stack.prev"

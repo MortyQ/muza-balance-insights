@@ -125,7 +125,8 @@ export function slidesOf(
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
   const totalSlide = (key: string, title: string, t: CardTotal, accents: string[], countText: string): Slide => {
-    const approx = t.fx.some((p) => p.rate !== null);
+    const approxIncome = t.fx.some((p) => p.rate !== null && p.income !== 0);
+    const approxSpending = t.fx.some((p) => p.rate !== null && p.spending !== 0);
     return {
       key,
       title,
@@ -136,8 +137,8 @@ export function slidesOf(
       others: others(t),
       bottom: [countText, t.missing > 0 ? withoutAccounts(t.missing) : ''].filter((s) => s !== '').join(' · '),
       net: t.income - t.spending,
-      netText: `${approx ? '≈ ' : ''}${netText(t.income - t.spending, UAH)} ${month}`,
-      flow: { currency: UAH, income: t.income, spending: t.spending, color: accents[0] ?? colorVar(null), approx, note: fxNote(t.fx) },
+      netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(t.income - t.spending, UAH)} ${month}`,
+      flow: { currency: UAH, income: t.income, spending: t.spending, color: accents[0] ?? colorVar(null), approxIncome, approxSpending, note: fxNote(t.fx) },
     };
   };
   if (ctx.selectedId === null) {

@@ -53,36 +53,39 @@ function toMax() {
     <PopoverTrigger class="v-month-picker__trigger" :aria-label="triggerAriaLabel">
       <VIcon icon="lucide:calendar" class="v-month-picker__icon" />
       <span>{{ triggerText }}</span>
-      <VIcon icon="lucide:chevron-down" class="v-month-picker__icon" />
+      <VIcon icon="lucide:chevron-down" class="v-month-picker__caret-icon" />
     </PopoverTrigger>
     <PopoverPortal>
-      <PopoverContent class="v-month-picker__content" align="end" :side-offset="6">
-        <MonthPickerRoot
-          v-slot="{ grid }"
-          v-model="calendarValue"
-          :min-value="minCalendar"
-          :max-value="maxCalendar"
-          locale="ru-RU"
-          :calendar-label="label"
-          prevent-deselect
-        >
-          <MonthPickerHeader class="v-month-picker__header">
-            <MonthPickerPrev class="v-month-picker__nav" aria-label="Предыдущий год"><VIcon icon="lucide:chevron-left" /></MonthPickerPrev>
-            <MonthPickerHeading class="v-month-picker__heading" />
-            <MonthPickerNext class="v-month-picker__nav" aria-label="Следующий год"><VIcon icon="lucide:chevron-right" /></MonthPickerNext>
-          </MonthPickerHeader>
-          <MonthPickerGrid class="v-month-picker__grid">
-            <MonthPickerGridBody>
-              <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i" class="v-month-picker__row">
-                <MonthPickerCell v-for="m in row" :key="m.toString()" :date="m" class="v-month-picker__cell-wrap">
-                  <MonthPickerCellTrigger :month="m" class="v-month-picker__cell">{{ SHORT[m.month - 1] }}</MonthPickerCellTrigger>
-                </MonthPickerCell>
-              </MonthPickerGridRow>
-            </MonthPickerGridBody>
-          </MonthPickerGrid>
-        </MonthPickerRoot>
-        <div v-if="max" class="v-month-picker__footer">
-          <button type="button" class="v-month-picker__now" @click="toMax">Текущий месяц</button>
+      <!-- as-child: the panel is our own <div>, so it carries this component's scope attribute (see vmonthpicker.scss). -->
+      <PopoverContent as-child align="end" :side-offset="6">
+        <div class="v-month-picker__content">
+          <MonthPickerRoot
+            v-slot="{ grid }"
+            v-model="calendarValue"
+            :min-value="minCalendar"
+            :max-value="maxCalendar"
+            locale="ru-RU"
+            :calendar-label="label"
+            prevent-deselect
+          >
+            <MonthPickerHeader class="v-month-picker__header">
+              <MonthPickerPrev class="v-month-picker__nav" aria-label="Предыдущий год"><VIcon icon="lucide:chevron-left" /></MonthPickerPrev>
+              <MonthPickerHeading class="v-month-picker__heading" />
+              <MonthPickerNext class="v-month-picker__nav" aria-label="Следующий год"><VIcon icon="lucide:chevron-right" /></MonthPickerNext>
+            </MonthPickerHeader>
+            <MonthPickerGrid class="v-month-picker__grid">
+              <MonthPickerGridBody>
+                <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i" class="v-month-picker__row">
+                  <MonthPickerCell v-for="m in row" :key="m.toString()" :date="m" class="v-month-picker__cell-wrap">
+                    <MonthPickerCellTrigger :month="m" class="v-month-picker__cell">{{ SHORT[m.month - 1] }}</MonthPickerCellTrigger>
+                  </MonthPickerCell>
+                </MonthPickerGridRow>
+              </MonthPickerGridBody>
+            </MonthPickerGrid>
+          </MonthPickerRoot>
+          <div v-if="max" class="v-month-picker__footer">
+            <button type="button" class="v-month-picker__now" @click="toMax">Текущий месяц</button>
+          </div>
         </div>
       </PopoverContent>
     </PopoverPortal>

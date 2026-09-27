@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import { useParticipantStore } from '@/entities/participant';
+import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { osStoreName } from '@/shared/lib';
 import { tokensStorage } from './utils.ts';
-import SettingsList from '../shared/components/SettingsList.vue';
-import SettingsRow from '../shared/components/SettingsRow.vue';
-import SettingsSection from '../shared/components/SettingsSection.vue';
 
 const participant = useParticipantStore();
 const store = osStoreName(navigator.userAgent);

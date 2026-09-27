@@ -2,10 +2,10 @@
 import { storeToRefs } from 'pinia';
 import { computed } from 'vue';
 import { useDbStateStore } from '@/entities/db-state';
+import { SettingsRow } from '@/shared/layout';
 import { VIcon } from '@/shared/ui';
 import { SCOPE_NOTE } from './constants.ts';
 import { encryptionText } from './utils.ts';
-import SettingsRow from '../shared/components/SettingsRow.vue';
 
 const { view } = storeToRefs(useDbStateStore());
 const line = computed(() => encryptionText(view.value));

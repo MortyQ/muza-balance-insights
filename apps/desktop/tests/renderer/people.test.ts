@@ -22,7 +22,7 @@ const { FAMILY, colorHolders, colorVar, coverageLine, filterOptions, firstFreeCo
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
-const { connectionsCount, participantChoice, removeText } = await import('@/features/settings/people/utils.ts');
+const { connectionsCount } = await import('@/features/settings/people/utils.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -116,16 +116,6 @@ describe('screens and notices', () => {
     expect(failureLines({ phase: 'idle' }, () => 'x')).toEqual([]);
     expect(progressLine({ phase: 'needs-token', connectionIds: [2] }, 0)).toMatch(/Люди и подключения/);
   });
-
-  it('who a new connection is for; why a removal did not happen', () => {
-    expect(participantChoice(3, 'ignored', true)).toEqual({ id: 3 });
-    expect(participantChoice('new', '  Оля ', false)).toEqual({ label: 'Оля' });
-    expect(participantChoice('new', '', true)).toEqual({ fromBank: true });
-    expect(participantChoice('new', '   ', false)).toBeNull();
-    expect(removeText({ removed: false, reason: 'import-running' })).toMatch(/останови импорт/);
-    expect(removeText({ removed: false, reason: 'cancelled' })).toBe('');
-    expect(removeText({ removed: true })).toBe('');
-  });
 });
 
 describe('colours', () => {
@@ -150,12 +140,5 @@ describe('colours', () => {
       { label: 'Я', value: 1, colors: ['var(--series-violet)'] },
       { label: 'Вигадана', value: 2, colors: ['var(--border-strong)'] },
     ]);
-  });
-
-  it('a new person carries the chosen colour; an existing one does not', () => {
-    expect(participantChoice('new', 'Вигадана', false, 'green')).toEqual({ label: 'Вигадана', color: 'green' });
-    expect(participantChoice('new', '', true, 'green')).toEqual({ fromBank: true, color: 'green' });
-    expect(participantChoice('new', 'Вигадана', false, null)).toEqual({ label: 'Вигадана' });
-    expect(participantChoice(4, '', false, 'green')).toEqual({ id: 4 });
   });
 });

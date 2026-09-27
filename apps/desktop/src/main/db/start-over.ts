@@ -19,7 +19,7 @@ export type StartOverDeps = {
   tokens: { saved(): Promise<number[]>; get(connectionId: number): Promise<string | null>; clearAll(): Promise<void> };
   importer: { stop(): Promise<void> };
   data: { close(): Promise<void> };
-  people: {
+  integrations: {
     addConnection(input: { participant: { fromBank: true }; provider: ProviderId; token: string; remember: boolean }): Promise<{ added: boolean }>;
   };
   userDataDir: string;
@@ -57,7 +57,7 @@ export async function startOver(d: StartOverDeps): Promise<StartOverResult> {
   let restored = 0;
   for (const k of kept) {
     try {
-      if ((await d.people.addConnection({ participant: { fromBank: true }, provider: k.provider, token: k.token, remember: true })).added) restored++;
+      if ((await d.integrations.addConnection({ participant: { fromBank: true }, provider: k.provider, token: k.token, remember: true })).added) restored++;
     } catch (err) {
       d.log(`start over: connection not restored: ${err instanceof Error ? err.name : 'error'}`);
     }

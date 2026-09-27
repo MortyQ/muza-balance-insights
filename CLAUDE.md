@@ -119,8 +119,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   (`src/shared/titlebar.ts`, 36 px). The strip is `widgets/app-header` (`AppHeader`) over every screen (`App.vue`; only the
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
-  stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/home-header` (`HomeHeader`) — `ParticipantFilter`
-  and «Обновлено…».
+  stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…».
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
@@ -140,15 +140,16 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
-  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature`, badge `tokenBadge`, adding);
+  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
+    `tokenBadge`, adding);
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Язык и время» (Скоро), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
-- **Section layout** — `features/settings/shared/components`: `SettingsSection` (title, description, closing note),
+- **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
-  the text the control's label). Every section uses them; they are also exported from the domain index for sections
-  composed outside it («О программе»).
+  the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
+  and the settings widget («О программе»).
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.
