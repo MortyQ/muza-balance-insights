@@ -68,14 +68,18 @@
   - **домен `features/integrations`** — подключение банков и строки подключений, папка на банк: `monobank/`
     (`MonobankConnectFeature.vue` — форма добавления по токену: `<form>`, поле токена, согласие, кнопка;
     `components/MonobankTokenField.vue` — шаги и поле токена, шаги пока из `entities/bank`;
-    `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка в `constants.ts`) и
+    `composables/useMonobankConnect.ts` — `addConnection` с `provider: 'monobank'`, тексты банка — `CONSENT_TEXT` и
+    др. — в `constants.ts`) и
     `shared/` для общего между банками (`components/ConnectionRow.vue`, `components/BankPicker.vue` — выбор банка на первом
     экране; `composables/useConnectionActions.ts` — удалить, цвет подключения, «Ввести токен заново»;
-    `composables/useConnectionOwner.ts` — чьё подключение и цвета; `api/useConnectionsRequest.ts`; `CONSENT_TEXT`,
-    `TOKEN_ERROR_TEXT`; `participantChoice`, `removeText`). Корень домена: `ConnectionsFeature.vue` (раздел
+    `composables/useConnectionOwner.ts` — чьё подключение и цвета; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
+    `participantChoice`, `removeText`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
     «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвета — в слот
-    формы банка) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField }`): только корень
-    импортирует папки банков, строка подключения получает поле токена своего банка пропсом. Наружу — `ConnectionsFeature`
+    формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField }`,
+    `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
+    пропсы; пропсы в месте `<component :is>` не проверяются) и `DEFAULT_PROVIDER` (банк «Добавить подключение»);
+    `utils.ts` — `isProviderKey`, `formsOf` (незнакомый провайдер → формы банка по умолчанию). Только корень импортирует
+    папки банков, строка подключения получает поле токена своего банка пропсом. Наружу — `ConnectionsFeature`
     (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у `settings`. Новый банк —
     своя папка и запись в `PROVIDER_FORMS`;
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.

@@ -1,5 +1,26 @@
-import type { ComputedRef, Ref } from 'vue';
+import type { Component, ComputedRef, Ref } from 'vue';
 import type { ColorKey, ParticipantChoice } from '@contract/api.ts';
+
+/** A bank's add form: holds the <form>; the owner fields come in its default slot; emits `added` once saved. */
+export interface ConnectFormProps {
+  /** Who the connection is for; null while a new person has no name. */
+  owner: ParticipantChoice | null;
+  connectionColor: ColorKey | null;
+  submitText: string;
+  autofocus: boolean;
+}
+
+/** A bank's token field, next to v-model:token and v-model:remember: the add form and «Ввести токен заново». */
+export interface TokenFieldProps {
+  secureStorage: boolean;
+  autofocus?: boolean;
+}
+
+/** One bank's forms, picked by the domain root. */
+export interface ProviderForms {
+  connect: Component<ConnectFormProps>;
+  tokenField: Component<TokenFieldProps>;
+}
 
 export type SubmitState = { status: 'idle' } | { status: 'saving' } | { status: 'error'; message: string };
 

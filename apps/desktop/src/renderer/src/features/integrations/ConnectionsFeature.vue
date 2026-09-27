@@ -2,13 +2,14 @@
 import { onMounted, ref } from 'vue';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { colorHolders, useParticipantStore } from '@/entities/participant';
-import { EXPAND_TRANSITION } from '@/shared/lib';
 import { SettingsList, SettingsSection } from '@/shared/layout';
+import { EXPAND_TRANSITION } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
-import { PROVIDER_FORMS } from './constants.ts';
+import { DEFAULT_PROVIDER } from './constants.ts';
 import ConnectionRow from './shared/components/ConnectionRow.vue';
 import { useConnectionActions } from './shared/composables/useConnectionActions.ts';
+import { formsOf } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
@@ -48,7 +49,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :connection="c"
           :secure-storage="participant.secureStorage"
           :taken-colors="colorHolders(participant.people, 'connections', c.id)"
-          :token-field="PROVIDER_FORMS[c.provider].tokenField"
+          :token-field="formsOf(c.provider).tokenField"
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
           @color="(color) => void setConnectionColor(c.id, color)"
           @remove="remove(c.id)"
@@ -78,7 +79,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
                 <h3 class="text-base font-semibold">Новое подключение Monobank</h3>
                 <VButton variant="neutral" text="Отмена" @click="adding = false" />
               </div>
-              <AddConnectionFeature submit-text="Добавить" autofocus @added="onAdded" />
+              <AddConnectionFeature :provider="DEFAULT_PROVIDER" submit-text="Добавить" autofocus @added="onAdded" />
             </div>
           </div>
         </div>

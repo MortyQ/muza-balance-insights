@@ -24,6 +24,8 @@ const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
 const { connectionsCount } = await import('@/features/settings/people/utils.ts');
 const { participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
+const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
+const { formsOf, isProviderKey } = await import('@/features/integrations/utils.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -126,6 +128,14 @@ describe('screens and notices', () => {
     expect(removeText({ removed: false, reason: 'import-running' })).toMatch(/останови импорт/);
     expect(removeText({ removed: false, reason: 'cancelled' })).toBe('');
     expect(removeText({ removed: true })).toBe('');
+  });
+
+  it('a bank’s forms by provider; an unknown provider gets the default bank’s', () => {
+    expect(isProviderKey('monobank')).toBe(true);
+    expect(isProviderKey('privatbank')).toBe(false);
+    expect(isProviderKey('toString')).toBe(false);
+    expect(formsOf('monobank')).toBe(PROVIDER_FORMS.monobank);
+    expect(formsOf('unknown')).toBe(PROVIDER_FORMS.monobank);
   });
 });
 

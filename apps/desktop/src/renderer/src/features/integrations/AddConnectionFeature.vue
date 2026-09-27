@@ -7,12 +7,12 @@ import { PROVIDER_FORMS } from './constants.ts';
 import { useConnectionOwner } from './shared/composables/useConnectionOwner.ts';
 
 const {
-  provider = 'monobank',
+  provider,
   defaultLabel = '',
   submitText = 'Подключить',
   autofocus = false,
 } = defineProps<{
-  provider?: ProviderKey;
+  provider: ProviderKey;
   defaultLabel?: string;
   submitText?: string;
   autofocus?: boolean;
@@ -38,7 +38,7 @@ function onAdded() {
 
 <template>
   <!-- The bank's form holds the <form>, its credential fields and the submit; whose it is and the colours come first. -->
-  <component :is="PROVIDER_FORMS[provider].connect" :owner :connection-color="connectionColor" :submit-text :autofocus @added="onAdded">
+  <component :is="PROVIDER_FORMS[provider].connect" :owner :connection-color :submit-text :autofocus @added="onAdded">
     <div class="flex flex-col gap-2">
       <VSelect :id="personId" v-model="person" label="Чьи это счета" :options="personOptions" class="w-full max-w-[420px]" />
       <template v-if="person === 'new'">

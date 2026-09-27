@@ -2,11 +2,9 @@
 import { onMounted, useTemplateRef } from 'vue';
 import { MONOBANK } from '@/entities/bank';
 import { VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
+import type { TokenFieldProps } from '../../shared/types.ts';
 
-const { secureStorage, autofocus = false } = defineProps<{
-  secureStorage: boolean;
-  autofocus?: boolean;
-}>();
+const { secureStorage, autofocus = false } = defineProps<TokenFieldProps>();
 const token = defineModel<string>('token', { required: true });
 const remember = defineModel<boolean>('remember', { required: true });
 

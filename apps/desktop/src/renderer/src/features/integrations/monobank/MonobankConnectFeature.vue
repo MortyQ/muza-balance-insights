@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import type { ColorKey, ParticipantChoice } from '@contract/api.ts';
 import { useParticipantStore } from '@/entities/participant';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import MonobankTokenField from './components/MonobankTokenField.vue';
 import { useMonobankConnect } from './composables/useMonobankConnect.ts';
-import { CONSENT_TEXT } from '../shared/constants.ts';
+import { CONSENT_TEXT } from './constants.ts';
+import type { ConnectFormProps } from '../shared/types.ts';
 
-const { owner, connectionColor, submitText, autofocus } = defineProps<{
-  /** Who the connection is for; the owner fields come in the default slot, at the top of the form. */
-  owner: ParticipantChoice | null;
-  connectionColor: ColorKey | null;
-  submitText: string;
-  autofocus: boolean;
-}>();
+// The owner fields come in the default slot, at the top of the form.
+const { owner, connectionColor, submitText, autofocus } = defineProps<ConnectFormProps>();
 const emit = defineEmits<{ added: [] }>();
 
 const participant = useParticipantStore();
