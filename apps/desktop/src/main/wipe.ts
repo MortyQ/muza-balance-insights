@@ -6,7 +6,7 @@
 // leaves the app unlocked over data that is still (partly) there.
 import fs from 'node:fs';
 import path from 'node:path';
-import { DB_FILE } from './db/access.ts';
+import { DB_FILE, DB_FILES } from './db/access.ts';
 import { DB_KEY_FILE } from './db/key-vault.ts';
 import { JOB_FILE } from './importer.ts';
 import { LOCK_FILE } from './lock/store.ts';
@@ -18,7 +18,7 @@ export { DB_FILE };
 const KEY_FILES = [DB_KEY_FILE, `${DB_KEY_FILE}.tmp`] as const;
 /** Everything but the key and the lock, removed after the worker stopped. */
 const OTHER_FILES = [
-  DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`,
+  ...DB_FILES,
   // A copy of an interrupted encryption (db/encrypt.ts: encryptingFiles).
   `${DB_FILE}.encrypting`, `${DB_FILE}.encrypting-journal`, `${DB_FILE}.encrypting-wal`, `${DB_FILE}.encrypting-shm`,
   JOB_FILE, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,

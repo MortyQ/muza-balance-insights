@@ -22,6 +22,8 @@ api.fake = {
   onUpdate: vi.fn(() => () => undefined),
   onOpenSettings: vi.fn(() => () => undefined),
   onLock: vi.fn((cb: (v: unknown) => void) => ((api.state.onLock = cb), () => undefined)),
+  getDbState: vi.fn(async () => ({ status: 'ready', encrypted: true, notice: null, platform: 'darwin' })),
+  onDbState: vi.fn(() => () => undefined),
 };
 vi.mock('@/shared/api', () => ({ balanceApi: api.fake }));
 

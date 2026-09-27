@@ -5,6 +5,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Db } from '@mono/core/db';
+import type { DbStateView } from '../../shared/db-state.ts';
 import type { SecureStore } from '../secure-store.ts';
 import { encryptingFiles } from './encrypt.ts';
 import { dbFileKind } from './header.ts';
@@ -13,6 +14,8 @@ import type { DbKeyVault } from './key-vault.ts';
 export const DB_FILE = 'monobank.db';
 /** The encrypted copy while a plain database is being encrypted (encrypt.ts); a leftover means an interrupted run. */
 export const ENCRYPTING_FILE = `${DB_FILE}.encrypting`;
+/** The database with everything SQLite and the migration can leave next to it. */
+export const DB_FILES = [DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-shm`, `${DB_FILE}-journal`] as const;
 
 /** `no-secure-storage`: nowhere to keep a key (Linux without a keyring) — plain for good. `encrypt-pending`: plain for now, retried next launch. */
 export type DbNotice = 'no-secure-storage' | 'encrypt-pending';
@@ -33,7 +36,7 @@ export class DbOpenError extends Error {
 
 export type DbAccessDeps = {
   userDataDir: string;
-  keys: Pick<DbKeyVault, 'load' | 'create'>;
+  keys: Pick<DbKeyVault, 'load' | 'create' | 'clear'>;
   store: Pick<SecureStore, 'reliability'>;
   openDb: (url: string, opts?: { encryptionKey?: string }) => Promise<Db>;
   /** Plain → encrypted, in place (encrypt.ts). Absent: a plain database stays plain (`encrypt-pending`). */
@@ -60,6 +63,14 @@ export class DbAccess {
 
   isReady(): boolean {
     return this.current.kind === 'ready';
+  }
+
+  /** For the renderer: enums and booleans only (shared/db-state.ts). */
+  view(platform: NodeJS.Platform): DbStateView {
+    const s = this.current;
+    const p = platform === 'darwin' || platform === 'win32' || platform === 'linux' ? platform : 'other';
+    if (s.kind !== 'ready') return { status: s.kind, encrypted: false, notice: null, platform: p };
+    return { status: 'ready', encrypted: s.encrypted, notice: s.notice, platform: p };
   }
 
   get dbPath(): string {
@@ -96,6 +107,19 @@ export class DbAccess {
 
   /** After «Удалить все данные»: no key and no database — decided again (a fresh install gets a new key). */
   async afterWipe(): Promise<DbState> {
+    return this.init();
+  }
+
+  /**
+   * «Начать заново» only (start-over.ts, after the user confirmed and nothing holds the file): the key first — a
+   * database file that fails to go is unreadable already — then the database, then decided again as a fresh install.
+   */
+  async reset(): Promise<DbState> {
+    this.key = null;
+    await this.d.keys.clear();
+    for (const f of [...DB_FILES.map((n) => path.join(this.d.userDataDir, n)), ...encryptingFiles(this.file)]) {
+      await fs.promises.rm(f, { force: true });
+    }
     return this.init();
   }
 

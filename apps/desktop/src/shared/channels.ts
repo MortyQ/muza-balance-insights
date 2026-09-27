@@ -27,6 +27,10 @@ export const METHODS = [
   'disableLock',
   'setLockTriggers',
   'setTouchId',
+  'getDbState',
+  'relaunchApp',
+  'startOver',
+  'quitApp',
 ] as const;
 
 export type Method = (typeof METHODS)[number];
@@ -45,6 +49,9 @@ export const OPEN_SETTINGS_CHANNEL = `${CHANNEL_PREFIX}open-settings`;
 
 /** main → renderer only: the app-lock view (src/shared/lock.ts) on every change; the only push while locked. */
 export const LOCK_CHANNEL = `${CHANNEL_PREFIX}lock`;
+
+/** main → renderer only: the database view (src/shared/db-state.ts) whenever it changes. */
+export const DB_STATE_CHANNEL = `${CHANNEL_PREFIX}db-state`;
 
 /** The name of the API object in the renderer: window.balance. */
 export const API_KEY = 'balance';

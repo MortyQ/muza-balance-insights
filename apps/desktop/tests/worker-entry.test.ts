@@ -34,7 +34,7 @@ describe('worker entry', () => {
     expect(main).toMatch(/utilityProcess\.fork\(workerPath, \[\], \{ serviceName: 'balance-import', env: \{\}/);
     expect(main).not.toMatch(/fork\([^)]*token/i);
     expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker)/i);
-    expect(main).toMatch(/db: \(\) => dbAccess\.forWorker\(\)/);
+    expect(main).toMatch(/db: \(\) => access\.forWorker\(\)/);
   });
 
   it('the database key comes only in the start message and opens the file; its error is a fixed text', () => {

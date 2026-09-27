@@ -2,7 +2,7 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
-import { LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { importActive } from '../shared/progress.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
@@ -19,6 +19,7 @@ import { LockService } from './lock/service.ts';
 import { PeopleService } from './people.ts';
 import { DbAccess } from './db/access.ts';
 import { encryptDatabase } from './db/encrypt.ts';
+import { startOver } from './db/start-over.ts';
 import { DbKeyVault } from './db/key-vault.ts';
 import { SecureStore } from './secure-store.ts';
 import { runDbSmoke } from './smoke.ts';
@@ -44,7 +45,13 @@ const devOrigin = app.isPackaged ? null : localDevOrigin(process.env.ELECTRON_RE
 let win: BrowserWindow | null = null;
 // Created in whenReady; until then (and if it failed) the app counts as locked: pushes fail closed.
 let lock: LockService | null = null;
-const push = gatedPush(() => lock?.isLocked() ?? true, (ch, payload) => win?.webContents.send(ch, payload));
+// Likewise the database: until it is decided (and if that failed) only the lock and database views are pushed.
+let dbAccess: DbAccess | null = null;
+const push = gatedPush(
+  () => lock?.isLocked() ?? true,
+  () => dbAccess?.isReady() ?? false,
+  (ch, payload) => win?.webContents.send(ch, payload),
+);
 
 /** Dev-only diagnostics (stdout of `pnpm dev`): what the guards blocked. URLs without query/fragment; no data. */
 const devLog = app.isPackaged ? undefined : (msg: string) => process.stdout.write(`[guard] ${msg}\n`);
@@ -98,7 +105,10 @@ app.whenReady().then(async () => {
   const vault = new TokenVault({ safeStorage, platform: process.platform, userDataDir: userData, store: secureStore });
   // Before anything opens the database (and before the window: a Keychain prompt never lands on the lock screen's
   // Touch ID prompt). Decides encrypted / plain / key unavailable; never deletes a database.
-  const dbAccess = new DbAccess({
+  // «Начать заново» pushes once, at its end: a push from its reset would send the renderer home before the connections
+  // are back (home would then pick the connect screen).
+  let dbStateQuiet = false;
+  const access = new DbAccess({
     userDataDir: userData,
     keys: new DbKeyVault({ store: secureStore, userDataDir: userData, platform: process.platform }),
     store: secureStore,
@@ -106,12 +116,14 @@ app.whenReady().then(async () => {
     // An existing plain database (before 0.1.4) is encrypted here, once; a failure keeps it plain until next launch.
     encrypt: (file, key) =>
       encryptDatabase({ file, key, openDb: (url, opts) => openLibsql(url, opts), platform: process.platform, log: (msg) => process.stderr.write(`[db] ${msg}\n`) }),
+    onChange: () => void (dbStateQuiet || push(DB_STATE_CHANNEL, access.view(process.platform))),
     log: (msg) => process.stderr.write(`[db] ${msg}\n`),
   });
-  await dbAccess.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));
-  const data = new DataService({ open: () => dbAccess.open(), nowSec: () => Math.floor(Date.now() / 1000) });
+  dbAccess = access;
+  await access.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));
+  const data = new DataService({ open: () => access.open(), nowSec: () => Math.floor(Date.now() / 1000) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
-  if (dbAccess.isReady() && vault.hasLegacy()) {
+  if (access.isReady() && vault.hasLegacy()) {
     try {
       process.stderr.write(`[token] legacy token: ${await vault.migrateLegacy(await data.legacyConnection())}\n`);
     } catch (err) {
@@ -125,7 +137,7 @@ app.whenReady().then(async () => {
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
-    db: () => dbAccess.forWorker(),
+    db: () => access.forWorker(),
     nowSec: () => Math.floor(Date.now() / 1000),
     // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
     send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),
@@ -151,6 +163,7 @@ app.whenReady().then(async () => {
     onChange: (v) => {
       push(LOCK_CHANNEL, v);
       if (v.locked) return;
+      push(DB_STATE_CHANNEL, access.view(process.platform));
       push(PROGRESS_CHANNEL, importer.lastProgress);
       push(UPDATE_CHANNEL, updater.view());
     },
@@ -167,6 +180,20 @@ app.whenReady().then(async () => {
       cancelId: 1,
       message: 'Удалить все данные?',
       detail: 'Будут удалены загруженные операции, сохранённые токены и незавершённый импорт. Отменить это нельзя.',
+    };
+    const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
+    return r.response === 0;
+  };
+  const confirmStartOver = async () => {
+    const opts = {
+      type: 'warning' as const,
+      buttons: ['Начать заново', 'Отмена'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Начать заново?',
+      detail:
+        'Загруженные операции, люди и их имена, оверрайды и настройки будут удалены. Сохранённые токены останутся, если их ' +
+        'удастся прочитать, — операции загрузятся из банка заново. Отменить это нельзя.',
     };
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
@@ -205,7 +232,7 @@ app.whenReady().then(async () => {
       const r = await deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
-        await dbAccess.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));
+        await access.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));
       }
       return r;
     },
@@ -223,16 +250,43 @@ app.whenReady().then(async () => {
     disableLock: (auth) => appLock.disable(auth),
     setLockTriggers: async (t) => (await appLock.setTriggers(t), appLock.view()),
     setTouchId: async (enabled) => (await appLock.setTouchId(enabled), appLock.view()),
+    getDbState: async () => access.view(process.platform),
+    // A retry in this process would not help (the cipher state is cached): a new process asks the keychain again.
+    relaunchApp: async () => {
+      if (access.isReady()) throw new Error('database is ready');
+      app.relaunch();
+      app.quit();
+    },
+    startOver: async () => {
+      dbStateQuiet = true;
+      try {
+        return await startOver({
+          access,
+          confirm: confirmStartOver,
+          tokens: vault,
+          importer,
+          data,
+          people,
+          userDataDir: userData,
+          log: (m) => process.stderr.write(`[db] ${m}\n`),
+        });
+      } finally {
+        dbStateQuiet = false;
+        push(DB_STATE_CHANNEL, access.view(process.platform));
+      }
+    },
+    quitApp: async () => app.quit(),
   }, {
     trusted: (event) => isTrustedSender(event, win, devOrigin),
     locked: () => appLock.isLocked(),
+    dbReady: () => access.isReady(),
     onError: (method, err) => process.stderr.write(`[ipc] ${method}: ${err instanceof Error ? err.name : 'error'}\n`),
   });
 
   if (!app.isPackaged) {
-    const st = dbAccess.state();
-    const smoke = dbAccess.isReady()
-      ? await runDbSmoke(() => dbAccess.open(), st.kind === 'ready' && st.encrypted, Math.floor(Date.now() / 1000))
+    const st = access.state();
+    const smoke = access.isReady()
+      ? await runDbSmoke(() => access.open(), st.kind === 'ready' && st.encrypted, Math.floor(Date.now() / 1000))
       : ({ ok: false, error: st.kind } as const);
     process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, devOrigin })}\n`);
   }
@@ -250,12 +304,13 @@ app.whenReady().then(async () => {
   let resumeChecked = false;
   win.webContents.on('did-finish-load', () => {
     push(LOCK_CHANNEL, appLock.view());
+    push(DB_STATE_CHANNEL, access.view(process.platform));
     push(PROGRESS_CHANNEL, importer.lastProgress);
     push(UPDATE_CHANNEL, updater.view());
     if (!resumeChecked) {
       resumeChecked = true;
       // Not while the database is unavailable: the import would only fail on it.
-      if (dbAccess.isReady()) void importer.resumeOnLaunch();
+      if (access.isReady()) void importer.resumeOnLaunch();
       scheduleChecks(updater);
     }
   });

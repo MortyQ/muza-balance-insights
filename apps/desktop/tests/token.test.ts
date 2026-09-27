@@ -170,7 +170,7 @@ describe('the token never leaves main', () => {
         // What reaches the vault from the renderer: a connection's new token (src/main/people.ts → TokenVault.set).
         { setConnectionToken: (id, t, r) => v.set(id, 'monobank', t, r) },
         // The same log line as src/main/index.ts: the error's name only.
-        { trusted: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
+        { trusted: () => true, dbReady: () => true, locked: () => false, onError: (m, err) => logs.push(`[ipc] ${m}: ${err instanceof Error ? err.name : 'error'}`) },
       );
     };
     const ev = { sender: {}, senderFrame: { url: 'app://renderer/', parent: null } };

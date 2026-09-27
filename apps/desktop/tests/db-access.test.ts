@@ -37,14 +37,16 @@ async function makeDb(key?: string) {
 }
 
 function access(o: { load?: KeyLoad; create?: KeyCreate; reliability?: Reliability; encrypt?: DbAccessDeps['encrypt'] } = {}) {
-  const calls = { create: 0, encrypt: 0 };
+  const calls = { create: 0, encrypt: 0, clear: 0 };
   const logs: string[] = [];
   const changes: DbState[] = [];
+  let load = o.load;
   const a = new DbAccess({
     userDataDir: dir,
     keys: {
-      load: async () => o.load ?? { kind: 'missing' },
+      load: async () => load ?? { kind: 'missing' },
       create: async () => (calls.create++, o.create ?? { kind: 'ok', key: NEW_KEY }),
+      clear: async () => void (calls.clear++, (load = undefined)),
     },
     store: { reliability: async () => o.reliability ?? 'secure' },
     openDb: async (url, opts) => {
@@ -212,5 +214,52 @@ describe('DbAccess — around init', () => {
     fs.rmSync(file(), { force: true });
     expect(await a.afterWipe()).toEqual(ready(true));
     expect(calls.create).toBe(2);
+  });
+});
+
+describe('DbAccess.view — what the renderer gets', () => {
+  it('enums and booleans only, never the key; platform folded to four values', async () => {
+    const { a } = access({ load: { kind: 'ok', key: KEY } });
+    await makeDb(KEY);
+    await a.init();
+    expect(a.view('darwin')).toEqual({ status: 'ready', encrypted: true, notice: null, platform: 'darwin' });
+    expect(a.view('freebsd').platform).toBe('other');
+    expect(JSON.stringify(a.view('win32'))).not.toContain(KEY);
+  });
+
+  it.each([
+    [{ kind: 'unavailable' }, 'key-unavailable'],
+    [{ kind: 'lost' }, 'key-lost'],
+    [{ kind: 'ok', key: NEW_KEY }, 'db-unreadable'],
+  ] as const)('not ready (%j) → status %s, encrypted false, no notice', async (load, status) => {
+    await makeDb(KEY);
+    const { a } = access({ load });
+    await a.init();
+    const v = a.view('linux');
+    expect(v).toEqual({ status, encrypted: false, notice: null, platform: 'linux' });
+    for (const x of Object.values(v)) expect(['string', 'boolean', 'object']).toContain(typeof x);
+    expect(JSON.stringify(v)).not.toContain(KEY);
+  });
+
+  it('plain with a notice', async () => {
+    const { a } = access({ reliability: 'insecure', create: { kind: 'insecure' } });
+    await a.init();
+    expect(a.view('linux')).toEqual({ status: 'ready', encrypted: false, notice: 'no-secure-storage', platform: 'linux' });
+  });
+});
+
+describe('DbAccess.reset («Начать заново»)', () => {
+  it('key-lost: the key and every database file go, a new empty encrypted database with a new key', async () => {
+    await makeDb(KEY);
+    for (const f of [`${DB_FILE}-wal`, `${DB_FILE}-journal`, ENCRYPTING_FILE]) fs.writeFileSync(path.join(dir, f), 'x');
+    const { a, calls } = access({ load: { kind: 'lost' } });
+    expect(await a.init()).toEqual({ kind: 'key-lost' });
+    expect(await a.reset()).toEqual(ready(true));
+    expect(calls.clear).toBe(1);
+    expect(calls.create).toBe(1);
+    expect(a.forWorker()).toEqual({ dbPath: file(), dbKey: NEW_KEY });
+    for (const f of [DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-journal`, ENCRYPTING_FILE]) expect(fs.existsSync(path.join(dir, f)), f).toBe(false);
+    const db = await a.open();
+    expect((await db.execute("SELECT COUNT(*) AS n FROM sqlite_schema WHERE name = 't'")).rows[0]?.n).toBe(0);
   });
 });
