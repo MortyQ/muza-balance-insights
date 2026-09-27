@@ -24,6 +24,9 @@ const open = ref(false);
 const NAMES = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
 const SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
+const minCalendar = computed(() => monthToCalendar(min));
+const maxCalendar = computed(() => monthToCalendar(max));
+
 const calendarValue = computed({
   get: () => monthToCalendar(month.value),
   set: (v) => {
@@ -35,9 +38,10 @@ const calendarValue = computed({
 const triggerText = computed(() => {
   const d = monthToCalendar(month.value);
   if (!d) return label;
-  const year = currentYear ?? monthToCalendar(max)?.year;
+  const year = currentYear ?? maxCalendar.value?.year;
   return `${NAMES[d.month - 1]}${d.year === year ? "" : ` ${d.year}`}`;
 });
+const triggerAriaLabel = computed(() => (monthToCalendar(month.value) ? `${label}: ${triggerText.value}` : label));
 function toMax() {
   if (max) month.value = max;
   open.value = false;
@@ -46,7 +50,7 @@ function toMax() {
 
 <template>
   <PopoverRoot v-model:open="open">
-    <PopoverTrigger class="v-month-picker__trigger" :aria-label="`${label}: ${triggerText}`">
+    <PopoverTrigger class="v-month-picker__trigger" :aria-label="triggerAriaLabel">
       <VIcon icon="lucide:calendar" class="v-month-picker__icon" />
       <span>{{ triggerText }}</span>
       <VIcon icon="lucide:chevron-down" class="v-month-picker__icon" />
@@ -56,10 +60,11 @@ function toMax() {
         <MonthPickerRoot
           v-slot="{ grid }"
           v-model="calendarValue"
-          :min-value="monthToCalendar(min)"
-          :max-value="monthToCalendar(max)"
+          :min-value="minCalendar"
+          :max-value="maxCalendar"
           locale="ru-RU"
           :calendar-label="label"
+          prevent-deselect
         >
           <MonthPickerHeader class="v-month-picker__header">
             <MonthPickerPrev class="v-month-picker__nav" aria-label="Предыдущий год"><VIcon icon="lucide:chevron-left" /></MonthPickerPrev>
@@ -69,7 +74,7 @@ function toMax() {
           <MonthPickerGrid class="v-month-picker__grid">
             <MonthPickerGridBody>
               <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i" class="v-month-picker__row">
-                <MonthPickerCell v-for="m in row" :key="m.toString()" :date="m">
+                <MonthPickerCell v-for="m in row" :key="m.toString()" :date="m" class="v-month-picker__cell-wrap">
                   <MonthPickerCellTrigger :month="m" class="v-month-picker__cell">{{ SHORT[m.month - 1] }}</MonthPickerCellTrigger>
                 </MonthPickerCell>
               </MonthPickerGridRow>

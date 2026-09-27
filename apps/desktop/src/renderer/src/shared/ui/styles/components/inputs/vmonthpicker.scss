@@ -80,8 +80,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: var(--ui-control-h-sm);
+  height: var(--ui-control-h-sm);
   background: transparent;
   border: none;
   border-radius: var(--ui-radius);
@@ -92,6 +92,11 @@
   &:hover {
     color: var(--ui-primary);
     background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
   }
 
   &[data-disabled] {
@@ -127,9 +132,15 @@
   }
 }
 
-.v-month-picker__cell {
+/* MonthPickerCell renders a <td>: a flex item of `__row`, stretched so its trigger child can fill it. */
+.v-month-picker__cell-wrap {
   display: flex;
   flex: 1;
+}
+
+.v-month-picker__cell {
+  display: flex;
+  width: 100%;
   align-items: center;
   justify-content: center;
   height: var(--ui-control-h-md);
@@ -142,6 +153,11 @@
 
   &:hover {
     background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
   }
 
   &[data-today] {
@@ -172,11 +188,17 @@
 .v-month-picker__now {
   background: transparent;
   border: none;
+  border-radius: var(--ui-radius);
   color: var(--ui-primary);
   font-size: var(--ui-text-sm);
   cursor: pointer;
 
   &:hover {
     text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
   }
 }
