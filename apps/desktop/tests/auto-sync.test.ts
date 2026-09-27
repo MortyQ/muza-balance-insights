@@ -1,4 +1,4 @@
-// «Автообновление»: when a refresh starts (switches, a ready database, data already there, the gap since the latest
+// «Автосинхронизация»: when a refresh starts (switches, a ready database, data already there, the gap since the latest
 // sync or attempt), and the wake / periodic triggers. Plus how main wires it.
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';

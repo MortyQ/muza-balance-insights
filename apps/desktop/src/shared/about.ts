@@ -2,5 +2,7 @@
 
 export const DISCLAIMER = 'Неофициальное приложение, не связано с Monobank.';
 export const COPYRIGHT = '© 2026 MortyQ · MIT License';
+export const LICENSE = 'MIT';
+export const AUTHOR = 'MortyQ';
 /** Shown as text, never opened: the app has no shell.openExternal (Checklist #15). */
 export const REPO = 'github.com/MortyQ/muza-balance-insights';

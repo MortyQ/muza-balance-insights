@@ -44,7 +44,7 @@ export type ImportProgress = (
   | { phase: 'cancelled' }
   | { phase: 'error'; message: string }
 ) & {
-  /** Started by «Автообновление», not by the user: the UI shows it quietly. On every state of that run. */
+  /** Started by «Автосинхронизация», not by the user: the UI shows it quietly. On every state of that run. */
   auto?: true;
 };
 

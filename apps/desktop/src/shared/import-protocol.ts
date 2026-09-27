@@ -28,7 +28,7 @@ export const StartMessage = z.strictObject({
     .max(MAX_CONNECTIONS)
     .refine((cs) => new Set(cs.map((c) => c.connectionId)).size === cs.length, { message: 'duplicate connection' }),
   sinceSec: z.number().int().positive(),
-  /** «Автообновление»: every covered account re-reads one whole window up to now (core planHistory). */
+  /** «Автосинхронизация»: every covered account re-reads one whole window up to now (core planHistory). */
   rereadWindow: z.boolean(),
 });
 export const CancelMessage = z.strictObject({ type: z.literal('cancel') });

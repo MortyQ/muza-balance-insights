@@ -440,7 +440,7 @@ describe('Importer', () => {
   });
 });
 
-describe('Importer: «Автообновление»', () => {
+describe('Importer: «Автосинхронизация»', () => {
   const MONTH_START = kyivStartOfDay('2026-03-01');
 
   it('from the start of this Kyiv month, one whole window re-read; no job file; every state marked auto', async () => {

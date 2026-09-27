@@ -45,7 +45,7 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
 }
 
 /**
- * «Автообновление»: one quiet line while it runs, nothing once it is over — only a wait for the network or an error is
+ * «Автосинхронизация»: one quiet line while it runs, nothing once it is over — only a wait for the network or an error is
  * worth a line; a connection that did not import still shows through failureLines.
  */
 export function autoLine(p: Readonly<ImportProgress>, now: number): string {

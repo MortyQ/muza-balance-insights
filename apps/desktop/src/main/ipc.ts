@@ -4,8 +4,10 @@ import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
 import { IMPORT_DEPTHS } from '../shared/progress.ts';
+import { THEME_PREFS } from '../shared/theme.ts';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const id = z.number().int().positive();
@@ -58,6 +60,11 @@ export const ARG_SCHEMAS = {
   setTouchId: z.tuple([z.boolean()]),
   getAutoSync: z.tuple([]),
   setAutoSync: z.tuple([autoSync]),
+  getTrustedServices: z.tuple([]),
+  getTheme: z.tuple([]),
+  setTheme: z.tuple([z.enum(THEME_PREFS)]),
+  getLocale: z.tuple([]),
+  setLocale: z.tuple([z.enum(LOCALES)]),
   getDbState: z.tuple([]),
   relaunchApp: z.tuple([]),
   startOver: z.tuple([]),

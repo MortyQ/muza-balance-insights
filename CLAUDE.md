@@ -106,3 +106,49 @@ been opened yet, read the relevant file yourself before editing.
 | `.agents/project/desktop-renderer.md` | FSD, "`shared/ui` first", styles, navigation | `apps/desktop/src/renderer/CLAUDE.md` (with the muzakit instructions) |
 | `docs/backlog.md` | plans and what has not been checked on a live system | — |
 | `CHANGELOG.md` | what users get in each version; the release description (rule in "Process") | — |
+
+## From the settings-ui branch (rebased onto main 27.09.2026, to review)
+
+Merged from `settings-ui` (title bar, theme, language, settings redesign) and adapted to the settings domain of main.
+Kept apart from the rules above until reviewed; move each item to its `.agents/project/` file once accepted.
+
+- **Window title bar** — our own (`titleBarStyle: 'hidden'` on every OS, `frameOptions` in `apps/desktop/src/main/window.ts`).
+  Windows/Linux: native buttons over our strip (`titleBarOverlay`, colours = `--background` / `--foreground` of `theme.css`
+  in hex, checked by `tests/window.test.ts`; main repaints them on a theme change via `nativeTheme` → `setTitleBarOverlay`);
+  Linux also `autoHideMenuBar`. macOS: traffic lights, title centred. Height — `TITLE_BAR_HEIGHT`
+  (`src/shared/titlebar.ts`, 36 px). The strip is `widgets/app-header` (`AppHeader`) over every screen (`App.vue`; only the
+  screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
+  hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
+  stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/home-header` (`HomeHeader`) — `ParticipantFilter`
+  and «Обновлено…».
+- **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
+  before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
+  `getTheme` / `setTheme`.
+- **Language** — stored only, texts are not translated: `src/shared/locale.ts` (`uk | en | ru`, `resolveLocale`: the first
+  system language we have, else `en`), IPC `getLocale` / `setLocale`. Data for the select —
+  `features/settings/language-select` (`LANGUAGE_OPTIONS`: own name + ISO country of the flag, not emoji; `useLocale`).
+  The select itself and the «Язык и время» section (now «Скоро» in the menu) come from another developer.
+- **Dictionaries** — a skeleton without translations: `src/shared/i18n/{uk,en,ru}.json` (shared by main and renderer),
+  vue-i18n syntax; `uk.json` is the reference (`Messages`, `MessageKey` in `src/shared/i18n/index.ts`);
+  `tests/i18n.test.ts` checks the same keys, placeholders and plural forms. No library and no `t()` yet (vue-i18n only
+  with build-time compilation: the prod CSP has no `unsafe-eval`).
+- **Preferences** — `userData/preferences.json` (`src/main/prefs.ts`): `updateChecks`, `autoSync`, `theme`, `locale`.
+  Reading forgives each field on its own; writing (`updatePrefs`, one at a time) is strict: an invalid value throws and
+  nothing is written.
+- **Settings screen** — the menu on the left (`widgets/settings/components/SettingsNav.vue`, groups «Пользователи →
+  Безопасность → Приложение», arrows, roving tabindex) and one section on the right; the section is `query.section` of
+  the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
+  equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
+  section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
+  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature`, badge `tokenBadge`, adding);
+  - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
+    `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
+    `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
+  - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
+    «Язык и время» (Скоро), «О программе».
+  Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
+- **Section layout** — `features/settings/shared/components`: `SettingsSection` (title, description, closing note),
+  `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
+  the text the control's label). Every section uses them; they are also exported from the domain index for sections
+  composed outside it («О программе»).
+- The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

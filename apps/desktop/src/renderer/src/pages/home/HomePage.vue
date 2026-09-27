@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { ParticipantFilter } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
 import { ImportFeature } from '@/features/import-statement';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
-import { AppHeader } from '@/widgets/app-header';
+import { HomeHeader } from '@/widgets/home-header';
 import { HomeNotices } from '@/widgets/home-notices';
 
 const syncStatus = useSyncStatusStore();
 </script>
 
 <template>
-  <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 py-6">
-    <AppHeader />
+  <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-3 pb-6">
+    <HomeHeader />
     <HomeNotices />
     <AppLockHintFeature />
     <UpdateBannerFeature />
     <template v-if="syncStatus.hasData">
-      <ParticipantFilter />
       <SpendingFeature />
       <BalancesFeature />
     </template>

@@ -1,4 +1,4 @@
-// «Автообновление» without Electron: when an automatic refresh starts. Three triggers — app launch, wake from sleep
+// «Автосинхронизация» without Electron: when an automatic refresh starts. Three triggers — app launch, wake from sleep
 // (after a pause: the network is often not back yet), a periodic check — each behind the user's switches. A refresh
 // needs data already there (the first history is the user's choice) and a gap since the latest sync, so frequent
 // relaunches do not eat the bank's rate limit. The run itself is Importer.startAuto.

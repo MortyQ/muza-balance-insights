@@ -6,6 +6,14 @@ export function tokenLine(s: Readonly<TokenStatus>): string {
   return s.stored === 'secure' ? 'Токен в системном хранилище ключей' : 'Токен только в памяти до закрытия приложения';
 }
 
+export type TokenBadge = { tone: 'success' | 'warning'; text: string };
+
+/** The short badge of a connection's token in settings. */
+export function tokenBadge(s: Readonly<TokenStatus>): TokenBadge {
+  if (!s.present) return { tone: 'warning', text: s.needsReentry ? 'Введи токен заново' : 'Нужен токен' };
+  return s.stored === 'secure' ? { tone: 'success', text: 'Токен сохранён' } : { tone: 'warning', text: 'Токен до закрытия' };
+}
+
 /** What has been imported for a connection. */
 export function coverageLine(c: Readonly<ConnectionView>): string {
   if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
