@@ -66,7 +66,8 @@
 - `status.ts`, новая функция `balancesAt(db, { endSec, participantId? })`:
   - на каждый счёт из того же набора, что `getBalances` (карты + банки с балансом или историей):
     `{ id, label, kind, currency, credit_limit, own_funds: number | null }`, `null` = нет данных;
-  - `endSec` — начало следующего месяца по Киеву; если `endSec` ≥ `updated_at` счёта — текущий остаток;
+  - `endSec` — начало следующего месяца по Киеву; если `endSec` > `updated_at` счёта — текущий остаток;
+  - «нет данных»: `oldest_synced_time` счёта > `endSec` (счёт с покрытием от конца месяца и позже данные имеет);
   - `totals` — только по счетам с данными, плюс `missing` — сколько счетов без данных.
 - `getBalances` не меняется (им пользуется MCP).
 - Отдельных функций прихода и трат не нужно: main вызывает `incomeSummary` и `spendingSummary`.
@@ -90,7 +91,7 @@
 
   ```ts
   type FlowView = { income: number; spending: number };           // гривны, минимальные единицы
-  type CardTotal = { ownFunds: number; others: Array<{ currency: number; ownFunds: number }>; missing: number } & FlowView;
+  type CardTotal = { ownFunds: number; others: Array<{ currency: number; ownFunds: number }>; missing: number; accounts: number } & FlowView;
   type MonthOverview = {
     month: string;                          // 'YYYY-MM'
     balanceAt: 'now' | string;              // 'now' или 'YYYY-MM-DD' — последний день месяца
@@ -127,7 +128,8 @@
 - **`entities/account`** (новая сущность), `components/BalanceCard.vue` — только отображение:
   - свойства: `title`, `caption`, `amount` (строка), `bottom`, `net` (число | null) + `netText`, `accents` (цвета для
     кругов в углу), `dim`;
-  - корень — `<button>`, `aria-expanded` и `aria-controls` приходят снаружи;
+  - корень — `<button>`, `aria-expanded` приходит снаружи (без `aria-controls`); своего `aria-label` нет —
+    содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние;
   - тёмный фон `--nav` в обеих темах, круги в цветах людей, стрелка: `--success` / `--danger` в оттенке для тёмной карты;
   - нажатие: `active:scale-[0.97]` и возврат с пружиной (`cubic-bezier(.34,1.8,.64,1)`), наведение — подъём на 3 px.
 - **`features/balances`** переписывается:

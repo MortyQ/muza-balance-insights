@@ -15,6 +15,13 @@ are quoted as they appear in it.
 - «Взять имя из банка» (use the name from the bank) now also works after you have renamed someone: tick it in
   «Переименовать» (rename) and the name from the bank comes back at once.
 
+### Balances
+
+- Balances on the home screen are now a bank card with this month's income and spending; click it to see a card for
+  every person (or, for one person, every account).
+- Pick a month: the cards show the balance at the end of that month, and income and spending for it. The spending
+  block below follows the same month.
+
 ## 0.1.4 — 2026-09-27
 
 Balance Insights shows where your money goes, from your Monobank statement, right on your computer rather than in

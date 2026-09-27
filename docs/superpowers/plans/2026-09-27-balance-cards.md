@@ -19,7 +19,7 @@
 
 **Файлы:** `packages/core/src/status.ts`; тест `packages/core/tests/balances-at.test.ts` (новый).
 
-- [ ] Тест (фикстуры — `insertAccountRow`, прямой INSERT в `transactions` и `sync_state`, как в `family.test.ts`):
+- [x] Тест (фикстуры — `insertAccountRow`, прямой INSERT в `transactions` и `sync_state`, как в `family.test.ts`):
 
 ```ts
 // End-of-month balances from the stored per-operation balance, with the backward calculation as the fallback.
@@ -129,8 +129,8 @@ describe('firstDataDate', () => {
   Проверь сигнатуры `addParticipant` / `addConnection` в `participants.ts` (в предыдущей задаче они получили `color?`) и
   поправь вызовы теста, если они другие.
 
-- [ ] `pnpm --filter @mono/core exec vitest run tests/balances-at.test.ts` — падает: функций нет.
-- [ ] Реализация в `status.ts` после `getBalances`:
+- [x] `pnpm --filter @mono/core exec vitest run tests/balances-at.test.ts` — падает: функций нет.
+- [x] Реализация в `status.ts` после `getBalances`:
 
 ```ts
 // ---------- balancesAt ----------
@@ -202,8 +202,8 @@ export async function firstDataDate(db: Db): Promise<string | null> {
 
   Тест «current month»: `own(SYNCED + 1)` — `endSec > updatedAt` → текущий. Тест «no operation after the end»:
   `END_JULY < SYNCED`, последняя операция до конца с `balance` → её число (50 000).
-- [ ] Тесты ядра целиком и typecheck: `pnpm --filter @mono/core test && pnpm --filter @mono/core typecheck`.
-- [ ] Коммит: `feat(core): balancesAt — balances at the end of a month; firstDataDate`.
+- [x] Тесты ядра целиком и typecheck: `pnpm --filter @mono/core test && pnpm --filter @mono/core typecheck`.
+- [x] Коммит: `feat(core): balancesAt — balances at the end of a month; firstDataDate`.
 
 ### Задача 2: main — `getMonthOverview` вместо `getBalances`, `DataStatus.dataFrom`
 
@@ -212,7 +212,7 @@ export async function firstDataDate(db: Db): Promise<string | null> {
 убрать всё, что держится только на старом IPC (renderer-часть уйдёт в задаче 6; до неё `features/balances` временно
 переключить на новый вызов — см. последний шаг задачи).
 
-- [ ] Типы в `api.ts` (вместо `BalanceLine` / `BalancesView` / `BalancesQuery`):
+- [x] Типы в `api.ts` (вместо `BalanceLine` / `BalancesView` / `BalancesQuery`):
 
 ```ts
 export type MonthOverviewQuery = { month: string; participantId?: number };
@@ -256,7 +256,7 @@ export type MonthOverview = {
 
   `DataStatus` — поле `dataFrom: string | null` («Kyiv date the data starts at; null = never imported»). `BalanceApi`:
   `getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>` вместо `getBalances`.
-- [ ] `channels.ts`: `'getBalances'` → `'getMonthOverview'`. `ipc.ts`:
+- [x] `channels.ts`: `'getBalances'` → `'getMonthOverview'`. `ipc.ts`:
 
 ```ts
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -265,9 +265,9 @@ getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() 
 ```
 
   `index.ts`: `getMonthOverview: (q) => data.monthOverview(q),`.
-- [ ] Тесты `ipc.test.ts`: в `INVALID` — `getMonthOverview: [[], [{}], [{ month: '2026-13' }], [{ month: '2026-9' }], [{ month: '2026-09', participantId: 1.5 }], [{ month: '2026-09', extra: 1 }]]`
+- [x] Тесты `ipc.test.ts`: в `INVALID` — `getMonthOverview: [[], [{}], [{ month: '2026-13' }], [{ month: '2026-9' }], [{ month: '2026-09', participantId: 1.5 }], [{ month: '2026-09', extra: 1 }]]`
   (формат — как у соседних методов в файле).
-- [ ] Тесты `data.test.ts` (фикстуры — существующие `account`, `tx`, `synced`; добавить `balance` в `tx` через
+- [x] Тесты `data.test.ts` (фикстуры — существующие `account`, `tx`, `synced`; добавить `balance` в `tx` через
   необязательный параметр `o.balance`), новый `describe('monthOverview')`:
   - текущий месяц (`2026-03`): `balanceAt: 'now'`, `total.ownFunds` = сумма гривневых счетов, `others` — доллары,
     `income` / `spending` = суммы `tx` с категориями `поступления` / трат; `coverage` = `{ from: '2026-03-01', to: '2026-03-10' }`;
@@ -277,7 +277,7 @@ getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() 
     `income` / `spending` по счёту;
   - канарейки: `JSON.stringify(view)` не содержит ни одной строки из `CANARIES`.
   - `status()`: `dataFrom: '2026-01-01'`.
-- [ ] `DataService` в `data.ts` (вместо `balances()`):
+- [x] `DataService` в `data.ts` (вместо `balances()`):
 
 ```ts
 const UAH = 980;
@@ -340,11 +340,11 @@ async monthOverview(q: MonthOverviewQuery): Promise<MonthOverview> {
   `incomeSummary`, `spendingSummary` из `@mono/core/summaries`, `listParticipants` из `@mono/core/participants`,
   `kyivStartOfDay` из `@mono/core/format`. Проверь поле `color` у `Participant` (задача прошлой ветки) — тип
   `ColorKey | null`, совпадает с `src/shared/colors.ts` (сверка `COLOR_KEYS_MATCH` в `people.ts`).
-- [ ] Временный мост для renderer: в `features/balances/api/useBalancesRequest.ts` вызов `getBalances` меняется на
+- [x] Временный мост для renderer: в `features/balances/api/useBalancesRequest.ts` вызов `getBalances` меняется на
   `getMonthOverview`, `BalancesFeature.vue` пока показывает `total.ownFunds` одной строкой (renderer переписывается в
   задаче 6) — только чтобы `typecheck` и тесты оставались зелёными между коммитами.
-- [ ] `cd apps/desktop && npx vitest run tests/data.test.ts tests/ipc.test.ts && pnpm typecheck`; затем `pnpm test` desktop.
-- [ ] Коммит: `feat(desktop): getMonthOverview (balances at the month end, income, spending) replaces getBalances; DataStatus.dataFrom`.
+- [x] `cd apps/desktop && npx vitest run tests/data.test.ts tests/ipc.test.ts && pnpm typecheck`; затем `pnpm test` desktop.
+- [x] Коммит: `feat(desktop): getMonthOverview (balances at the month end, income, spending) replaces getBalances; DataStatus.dataFrom`.
 
 ### Задача 3: `shared/ui` — `VMonthPicker` и три иконки
 
@@ -352,9 +352,9 @@ async monthOverview(q: MonthOverviewQuery): Promise<MonthOverview> {
 `shared/ui/styles/components/inputs/vmonthpicker.scss`, `shared/ui/index.ts`, `shared/ui/README.md`,
 `shared/ui/components/base/icons.ts`; тест `tests/renderer/calendarMonth.test.ts`.
 
-- [ ] Иконки в реестр (канонические имена Lucide): `lucide:arrow-up-right`, `lucide:arrow-down-right`,
+- [x] Иконки в реестр (канонические имена Lucide): `lucide:arrow-up-right`, `lucide:arrow-down-right`,
   `lucide:maximize-2` — импорт `~icons/lucide/<name>` + строка в объекте, по алфавиту (правило `ui.test.ts`).
-- [ ] Тест преобразований:
+- [x] Тест преобразований:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -374,7 +374,7 @@ describe('calendarMonth', () => {
 });
 ```
 
-- [ ] `calendarMonth.ts`:
+- [x] `calendarMonth.ts`:
 
 ```ts
 import { CalendarDate, type DateValue } from '@internationalized/date';
@@ -392,7 +392,7 @@ export function calendarToMonth(d: DateValue | null): string | null {
 }
 ```
 
-- [ ] `VMonthPicker.vue` (шапка — как у `VDatepicker`: «built on reka-ui (2026-09-27)…», без `copied from muzakit`):
+- [x] `VMonthPicker.vue` (шапка — как у `VDatepicker`: «built on reka-ui (2026-09-27)…», без `copied from muzakit`):
 
 ```vue
 <!-- built on reka-ui (2026-09-27): MonthPicker in a Popover. Ours, not copied: muzakit has no month picker.
@@ -487,7 +487,7 @@ function toMax() {
   Перед записью сверить с `node_modules/reka-ui/dist/MonthPicker/*.js` и `Popover/*.js`: форма `grid` (`{ value, rows }`),
   имена свойств (`date` у `MonthPickerCell`, `month` у `MonthPickerCellTrigger`), что `MonthPickerHeading` выводит год.
   Если `Heading` форматирует по локали иначе, чем нужно, — выводить год из `grid.value.year` своим `<span>`.
-- [ ] `vmonthpicker.scss` — только `--ui-*` токены (правила `ui-component-migration.md`, шаги 5–7):
+- [x] `vmonthpicker.scss` — только `--ui-*` токены (правила `ui-component-migration.md`, шаги 5–7):
   - `__trigger` — высота `--ui-control-h`, `border-radius: var(--ui-radius-full)`, рамка `--ui-border`, фон `--ui-surface`,
     `gap: var(--ui-control-gap)`, шрифт `--ui-text-base` 600, наведение `--ui-surface-hover`, `:focus-visible` — `--ui-ring`;
   - `__content` — ширина 17rem, `padding: var(--ui-space-lg)`, `border-radius: var(--ui-radius-xl)`, фон
@@ -499,11 +499,11 @@ function toMax() {
     `--ui-primary-muted`;
   - `__footer` — верхняя граница `--ui-border-subtle`, кнопка `__now` цвета `--ui-primary`, `--ui-text-sm`.
   Атрибуты `data-selected` / `data-disabled` / `data-today` сверить с `MonthPickerCellTrigger.js`.
-- [ ] `index.ts`: `export { default as VMonthPicker } from "./components/inputs/VMonthPicker.vue";`; README — абзац в
+- [x] `index.ts`: `export { default as VMonthPicker } from "./components/inputs/VMonthPicker.vue";`; README — абзац в
   «Ours, not copied» рядом с `VDatepicker` (reka `MonthPicker` + `Popover`, значение `YYYY-MM`, названия месяцев свои,
   потребитель — блок балансов).
-- [ ] `cd apps/desktop && npx vitest run tests/ui.test.ts tests/renderer/calendarMonth.test.ts tests/styles.test.ts && pnpm typecheck`.
-- [ ] Коммит: `feat(desktop): VMonthPicker on reka-ui MonthPicker; arrow and maximize icons`.
+- [x] `cd apps/desktop && npx vitest run tests/ui.test.ts tests/renderer/calendarMonth.test.ts tests/styles.test.ts && pnpm typecheck`.
+- [x] Коммит: `feat(desktop): VMonthPicker on reka-ui MonthPicker; arrow and maximize icons`.
 
 ### Задача 4: `entities/period` — один месяц на главную
 
@@ -511,7 +511,7 @@ function toMax() {
 `features/spending-summary/types.ts`, `features/spending-summary/SpendingFeature.vue`; тест
 `tests/renderer/period.test.ts`.
 
-- [ ] Тест (Pinia как в соседних тестах renderer: `setActivePinia(createPinia())`):
+- [x] Тест (Pinia как в соседних тестах renderer: `setActivePinia(createPinia())`):
 
 ```ts
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -533,7 +533,7 @@ describe('month store', () => {
 });
 ```
 
-- [ ] Store:
+- [x] Store:
 
 ```ts
 import { defineStore } from 'pinia';
@@ -555,17 +555,17 @@ export const useMonthStore = defineStore('period', () => {
 ```
 
   `index.ts`: `export { useMonthStore } from './store/useMonthStore.ts';`
-- [ ] `useSpending`: `month` — `storeToRefs(useMonthStore()).month` вместо своего `ref`; `thisMonth` — из стора; в
+- [x] `useSpending`: `month` — `storeToRefs(useMonthStore()).month` вместо своего `ref`; `thisMonth` — из стора; в
   возврат — `firstMonth` (`computed` от `syncStatus.status?.dataFrom` → `monthOf`). `SpendingFeature`: стрелка «назад»
   `:disabled="firstMonth !== null && month <= firstMonth"`. Тип `UseSpendingReturn` в `types.ts` — поле `firstMonth`.
-- [ ] `npx vitest run tests/renderer tests/architecture.test.ts && pnpm typecheck`.
-- [ ] Коммит: `feat(desktop): one selected month for the home screen (entities/period)`.
+- [x] `npx vitest run tests/renderer tests/architecture.test.ts && pnpm typecheck`.
+- [x] Коммит: `feat(desktop): one selected month for the home screen (entities/period)`.
 
 ### Задача 5: `entities/account` — `BalanceCard`
 
 **Файлы:** `entities/account/{index.ts,components/BalanceCard.vue,types.ts}`.
 
-- [ ] `types.ts`:
+- [x] `types.ts`:
 
 ```ts
 export interface BalanceCardProps {
@@ -585,7 +585,7 @@ export interface BalanceCardProps {
 }
 ```
 
-- [ ] `BalanceCard.vue` (Tailwind-утилиты, как остальной renderer; вне `shared/ui`):
+- [x] `BalanceCard.vue` (Tailwind-утилиты, как остальной renderer; вне `shared/ui`):
 
 ```vue
 <script setup lang="ts">
@@ -638,9 +638,9 @@ defineEmits<{ click: [] }>();
   константы для всегда тёмной карты (фон `--nav` тёмный в обеих темах); если `styles.test.ts` запрещает сырые цвета в
   renderer — завести в `theme.css` пару токенов `--card-up` / `--card-down` в обеих темах одинаковыми значениями.
   `aria-expanded` / `aria-controls` приходят через `$attrs` (они падают на корневой `<button>`).
-- [ ] `index.ts`: `export { default as BalanceCard } from './components/BalanceCard.vue'; export type { BalanceCardProps } from './types.ts';`
-- [ ] `npx vitest run tests/architecture.test.ts tests/styles.test.ts tests/ui.test.ts && pnpm typecheck`.
-- [ ] Коммит: `feat(desktop): BalanceCard (entities/account)`.
+- [x] `index.ts`: `export { default as BalanceCard } from './components/BalanceCard.vue'; export type { BalanceCardProps } from './types.ts';`
+- [x] `npx vitest run tests/architecture.test.ts tests/styles.test.ts tests/ui.test.ts && pnpm typecheck`.
+- [x] Коммит: `feat(desktop): BalanceCard (entities/account)`.
 
 ### Задача 6: `features/balances` — стопка, ряд, панель месяца
 
@@ -649,7 +649,7 @@ defineEmits<{ click: [] }>();
 `features/balances/components/{CardStack.vue,FlowBars.vue,MonthPanel.vue,BalancesHeader.vue}`; тест
 `tests/renderer/balances.test.ts`.
 
-- [ ] Тест чистых функций:
+- [x] Тест чистых функций:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -727,7 +727,7 @@ describe('balances utils', () => {
 
   Ожидаемые строки сумм уточнить по реальному `formatMoney` (`shared/lib/money.ts`: разделители `Intl`), не менять
   логику под тест.
-- [ ] `utils.ts` (чистые функции; `slidesOf` возвращает `Slide[]` — тип в `types.ts`):
+- [x] `utils.ts` (чистые функции; `slidesOf` возвращает `Slide[]` — тип в `types.ts`):
 
 ```ts
 import type { CardTotal, MonthOverview, PersonView } from '@contract/api.ts';
@@ -822,49 +822,49 @@ export function slidesOf(v: MonthOverview, ctx: { people: ReadonlyArray<Readonly
   Подписи числа счетов («3 человека · 8 счетов») — склонение как `connectionsCount` в `features/settings/people/utils.ts`;
   функцию для счетов добавить здесь же (`accountsCount`) и поправить ожидания теста. `constants.ts`: `UAH = 980`,
   `CARD_STEP = 356`, `STACK_DEPTH = 3`, `VISIBLE_CARDS = 2`, `MONTHS_GEN`, `MONTHS_IN`, `MONTHS_SHORT`.
-- [ ] `types.ts`: `Slide` (поля `BalanceCardProps` + `key`, `flow: { currency: number; income: number; spending: number }`),
+- [x] `types.ts`: `Slide` (поля `BalanceCardProps` + `key`, `flow: { currency: number; income: number; spending: number }`),
   `UseCardStackReturn`, `UseMonthOverviewReturn`.
-- [ ] `api/useBalancesRequest.ts`: `{ fetchOverview: (q: MonthOverviewQuery) => balanceApi.getMonthOverview(q) }`.
-- [ ] `composables/useMonthOverview.ts`: `useAsyncData(() => fetchOverview({ month: month.value, ...(id !== null ? { participantId: id } : {}) }), [() => monthStore.month, () => participant.selectedId], { quiet: [() => syncStatus.version] })`.
-- [ ] `composables/useCardStack.ts`: `open`, `offset`, `stubShown` (`ref`); `toggle()` (меняет `open`, `offset = 0`,
+- [x] `api/useBalancesRequest.ts`: `{ fetchOverview: (q: MonthOverviewQuery) => balanceApi.getMonthOverview(q) }`.
+- [x] `composables/useMonthOverview.ts`: `useAsyncData(() => fetchOverview({ month: month.value, ...(id !== null ? { participantId: id } : {}) }), [() => monthStore.month, () => participant.selectedId], { quiet: [() => syncStatus.version] })`.
+- [x] `composables/useCardStack.ts`: `open`, `offset`, `stubShown` (`ref`); `toggle()` (меняет `open`, `offset = 0`,
   `stubShown = false`), `close()`, `prev()`, `next(n)` (в пределах `maxOffset(n)`), `showStub()`; `watch` на месяц и
   человека → `offset = 0`.
-- [ ] `components/CardStack.vue`: контейнер `relative h-[270px] overflow-hidden`; на каждый слайд — обёртка
+- [x] `components/CardStack.vue`: контейнер `relative h-[270px] overflow-hidden`; на каждый слайд — обёртка
   `absolute w-[340px] flex flex-col gap-3`, позиция через `:style="{ '--x': …px, '--y': …px, '--d': …ms, zIndex, opacity }"` и
   классы `left-(--x) top-(--y) delay-(--d) transition-[left,top,opacity] duration-550 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-opacity`;
   внутри `BalanceCard` (`@click="emit('toggle')"`, `:aria-expanded`, `aria-controls` = id ряда) и `FlowBars` под картой
   (`v-show="open"` с плавным появлением через `opacity` + задержку 150 ms). Задержка: `open ? i * 45 : (n - i) * 20`,
   при листании стрелками — 0.
-- [ ] `components/FlowBars.vue`: две строки «Пришло» / «Ушло», полоса из сегментов (`flowWidths`), сумма справа;
+- [x] `components/FlowBars.vue`: две строки «Пришло» / «Ушло», полоса из сегментов (`flowWidths`), сумма справа;
   свойства `income`, `spending`, `currency`, `segments?: ReadonlyArray<{ color: string; income: number; spending: number }>`
   (у семьи — люди; иначе одна полоса цвета человека и её приглушённая копия `color-mix(in oklch, <цвет> 55%, var(--surface))`),
   `size: 'sm' | 'md'` (8 px под картой / 12 px в панели). Зазор 2 px между сегментами, скругление только у последнего.
-- [ ] `components/MonthPanel.vue`: заголовок месяца (`monthTitle` с большой буквы) + `coverageNote` +
+- [x] `components/MonthPanel.vue`: заголовок месяца (`monthTitle` с большой буквы) + `coverageNote` +
   «потрачено N% прихода» (скрыть, если приход 0), `FlowBars size="md"`, легенда людей (только семья; точка
   `colorVar`), `VButton` «Все счета» + текст заглушки.
-- [ ] `components/BalancesHeader.vue`: два слоя с перекрёстным `opacity` (как в прототипе): свёрнутый — «Баланс», подсказка с
+- [x] `components/BalancesHeader.vue`: два слоя с перекрёстным `opacity` (как в прототипе): свёрнутый — «Баланс», подсказка с
   иконкой `lucide:maximize-2`, `VMonthPicker`; развёрнутый — «Карты семьи» / «Счета · Имя», `VMonthPicker`, `VButton`
   `neutral` со стрелками (`aria-label` «Назад» / «Дальше», `disabled` на границах), «Все счета», «Свернуть» (`lucide:x`).
   `VMonthPicker`: `v-model` — `monthStore.month` через `set(…, firstMonth)`, `min` — первый месяц из
   `syncStatus.status.dataFrom`, `max` — `thisMonth`.
-- [ ] `BalancesFeature.vue`: `VCard` без заголовка (padding `md`), `@keydown.esc="stack.close"`; ошибка —
+- [x] `BalancesFeature.vue`: `VCard` без заголовка (padding `md`), `@keydown.esc="stack.close"`; ошибка —
   `VInfoNotice` как сейчас; пустые данные — прежний текст; сетка: `BalancesHeader`, затем `relative` блок с `CardStack` и
   `MonthPanel` (абсолютно справа, `left-[452px]`; при `open` — `opacity-0 translate-x-8 pointer-events-none` с переходом).
-- [ ] `npx vitest run tests/renderer tests/architecture.test.ts tests/ui.test.ts tests/styles.test.ts && pnpm typecheck`.
-- [ ] Коммит: `feat(desktop): the balance block — card stack, carousel, month panel`.
+- [x] `npx vitest run tests/renderer tests/architecture.test.ts tests/ui.test.ts tests/styles.test.ts && pnpm typecheck`.
+- [x] Коммит: `feat(desktop): the balance block — card stack, carousel, month panel`.
 
 ### Задача 7: документы, CHANGELOG, финальная проверка
 
-- [ ] `CHANGELOG.md`, раздел `## 0.1.5 — unreleased`:
+- [x] `CHANGELOG.md`, раздел `## 0.1.5 — unreleased`:
   - «Balances on the home screen are now a bank card with this month's income and spending; click it to see a card for
     every person (or, for one person, every account).»
   - «Pick a month: the cards show the balance at the end of that month, and income and spending for it. The spending
     block below follows the same month.»
-- [ ] `.agents/project/desktop-renderer.md`: блок балансов (стопка / ряд, `entities/account`, `entities/period`, один
+- [x] `.agents/project/desktop-renderer.md`: блок балансов (стопка / ряд, `entities/account`, `entities/period`, один
   месяц на главную, `VMonthPicker`); `.agents/project/desktop-import.md`: `getMonthOverview` вместо `getBalances`,
   `DataStatus.dataFrom`; `.agents/project/domain-rules.md`: остаток на конец месяца (`balancesAt`, обратный расчёт,
   текущий лимит кредитки).
-- [ ] В корне: `pnpm test && pnpm typecheck` — всё зелёное; отметить чекбоксы этого плана.
-- [ ] Коммит: `docs: changelog 0.1.5 and project notes for the balance block`.
-- [ ] Отчёт пользователю: что сделано, что проверить глазами (анимация стопки и ряда, пружина нажатия, выбор месяца в
+- [x] В корне: `pnpm test && pnpm typecheck` — всё зелёное; отметить чекбоксы этого плана.
+- [x] Коммит: `docs: changelog 0.1.5 and project notes for the balance block`.
+- [x] Отчёт пользователю: что сделано, что проверить глазами (анимация стопки и ряда, пружина нажатия, выбор месяца в
   обеих темах, «уменьшить движение», прошлый месяц с остатком на конец, счёт без данных). Приложение агент не запускает.
