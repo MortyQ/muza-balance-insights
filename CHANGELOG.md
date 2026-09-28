@@ -1,9 +1,14 @@
 # What's new in Balance Insights
 
-What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
-are quoted as they appear in it.
+What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
+English interface.
 
 ## 0.1.6 — unreleased
+
+### Languages
+
+- The app now speaks Ukrainian. It starts in your system's language when that is Ukrainian, English or Russian, and in
+  Ukrainian otherwise. The app menu and system dialogs are not translated yet.
 
 ### Fixes
 
