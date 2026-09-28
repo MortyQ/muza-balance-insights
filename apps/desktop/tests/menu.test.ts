@@ -99,13 +99,15 @@ describe('About', () => {
     for (const name of ['LICENSE', 'REPO', 'AUTHOR']) expect(src, name).toContain(`{{ ${name} }}`);
   });
 
-  it('the disclaimer is the agreed text, and the renderer shows the same constant (connect screen and settings)', () => {
+  it('the disclaimer is the agreed text; the renderer shows the dictionary one, the same text in Russian (connect screen and settings)', async () => {
     expect(DISCLAIMER).toBe('Неофициальное приложение, не связано с Monobank.');
+    const { MESSAGES } = await import('../src/shared/i18n/index.ts');
+    expect(MESSAGES.ru.common.disclaimer).toBe(DISCLAIMER);
+    for (const m of Object.values(MESSAGES)) expect(m.common.disclaimer).toMatch(/Monobank/);
     for (const file of ['features/integrations/ConnectFirstFeature.vue', 'widgets/settings/components/AboutApp.vue']) {
       const src = fs.readFileSync(fileURLToPath(new URL(`../src/renderer/src/${file}`, import.meta.url)), 'utf8');
-      expect(src, file).toMatch(/import \{[^}]*\bDISCLAIMER\b[^}]*\} from '@contract\/about\.ts'/);
-      expect(src, file).toMatch(/\{\{ DISCLAIMER \}\}/);
-      expect(src, file).not.toContain('не связано с Monobank');
+      expect(src, file).toContain("{{ $t('common.disclaimer') }}");
+      expect(src, file).not.toContain('Monobank.');
     }
   });
 

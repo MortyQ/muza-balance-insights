@@ -128,3 +128,14 @@ describe('useAsyncData', () => {
     s.stop();
   });
 });
+
+describe('plural forms («one | few | many»)', async () => {
+  const { pluralForm } = await import('@/shared/lib/i18n.ts');
+  it.each([
+    ['uk', [1, 21, 2, 4, 22, 5, 11, 12, 14, 0, 100], [0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2]],
+    ['ru', [1, 21, 3, 24, 5, 11, 0], [0, 0, 1, 1, 2, 2, 2]],
+    ['en', [1, 0, 2, 21], [0, 2, 2, 2]],
+  ] as const)('%s', (locale, counts, forms) => {
+    expect(counts.map((n) => pluralForm(locale)(n, 3))).toEqual(forms);
+  });
+});

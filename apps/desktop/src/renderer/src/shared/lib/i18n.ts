@@ -10,11 +10,26 @@ declare module 'vue-i18n' {
   export interface DefineLocaleMessage extends Messages {}
 }
 
+/**
+ * Plurals in every dictionary have three forms, «one | few | many» (the test keeps the count equal across locales):
+ * uk and ru need all three, English repeats the plural in the last two. The form is chosen by the language's own
+ * rule (Intl.PluralRules), not vue-i18n's default (which reads three forms as «zero | one | many»).
+ */
+export function pluralForm(locale: Locale): (choice: number, choicesLength: number) => number {
+  const rules = new Intl.PluralRules(locale);
+  return (choice, choicesLength) => {
+    if (choicesLength !== 3) return Math.min(choicesLength - 1, choice === 1 ? 0 : 1);
+    const category = rules.select(choice);
+    return category === 'one' ? 0 : category === 'few' ? 1 : 2;
+  };
+}
+
 export const i18n = createI18n<[Messages], Locale, false>({
   legacy: false,
   locale: DEFAULT_LOCALE,
   fallbackLocale: REFERENCE_LOCALE,
   messages: MESSAGES,
+  pluralRules: { uk: pluralForm('uk'), en: pluralForm('en'), ru: pluralForm('ru') },
 });
 
 export const t = i18n.global.t;
