@@ -17,4 +17,5 @@ export { default as StorageInfoFeature } from './security-info/StorageInfoFeatur
 export { default as ThemeSwitchFeature } from './theme-switch/ThemeSwitchFeature.vue';
 export { LANGUAGE_OPTIONS } from './language-select/constants.ts';
 export { useLocale } from './language-select/composables/useLocale.ts';
+export { loadLocale } from './language-select/utils.ts';
 export type { LanguageOption, UseLocaleReturn } from './language-select/types.ts';

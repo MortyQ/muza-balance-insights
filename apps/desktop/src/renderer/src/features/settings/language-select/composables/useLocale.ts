@@ -1,10 +1,9 @@
 import { onMounted, ref } from 'vue';
 import type { Locale } from '@contract/locale.ts';
-import { FAILED_TEXT } from '@/shared/lib';
+import { applyLocale, FAILED_TEXT } from '@/shared/lib';
 import { useLocaleRequest } from '../api/useLocaleRequest.ts';
 import type { UseLocaleReturn } from '../types.ts';
 
-// Only stored for now: the texts are not translated yet.
 export function useLocale(): UseLocaleReturn {
   const request = useLocaleRequest();
   const locale = ref<Locale | null>(null);
@@ -28,6 +27,7 @@ export function useLocale(): UseLocaleReturn {
     saving = true;
     try {
       locale.value = await request.set(next);
+      applyLocale(locale.value);
     } catch {
       locale.value = previous;
       error.value = FAILED_TEXT;

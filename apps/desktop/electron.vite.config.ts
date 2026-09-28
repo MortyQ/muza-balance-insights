@@ -23,6 +23,13 @@ export function cspMetaPlugin(csp: string): Plugin {
  */
 export const ICONS_OPTIONS = { compiler: 'vue3', autoInstall: false } as const;
 
+/** vue-i18n build flags: Composition API only (the legacy API is dropped from the bundle), no devtools in prod. */
+export const VUE_I18N_FLAGS = {
+  __VUE_I18N_FULL_INSTALL__: true,
+  __VUE_I18N_LEGACY_API__: false,
+  __INTLIFY_PROD_DEVTOOLS__: false,
+} as const;
+
 export default defineConfig({
   main: {
     build: {
@@ -41,6 +48,7 @@ export default defineConfig({
   },
   renderer: {
     plugins: [vue(), tailwindcss(), Icons(ICONS_OPTIONS), cspMetaPlugin(PROD_CSP)],
+    define: VUE_I18N_FLAGS,
     // `@/` = src/renderer/src: slices import each other by layer (`@/features/x`); `@contract/` = src/shared, the types and
     // constants shared with main and the preload. Layer rules: tests/architecture.test.ts.
     resolve: {
