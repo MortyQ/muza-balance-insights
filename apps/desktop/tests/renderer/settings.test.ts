@@ -1,6 +1,7 @@
 // The settings screen: which section a query opens and how the arrows walk the menu.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { describe, expect, it } from 'vitest';
+import type { NavItem } from '@/widgets/settings/constants.ts';
 
 const { settingsSection } = await import('@/shared/config');
 const { nextSection } = await import('@/widgets/settings/utils.ts');
@@ -85,7 +86,7 @@ describe('settings sections', () => {
 
   it('language is a section now, not «Soon»; the menu has no disabled items left', async () => {
     const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
-    const items = NAV_GROUPS.flatMap((g) => g.items);
+    const items: ReadonlyArray<NavItem> = NAV_GROUPS.flatMap((g): ReadonlyArray<NavItem> => g.items);
     expect(items.find((i) => i.label === 'settings.nav.language')?.section).toBe('language');
     expect(items.filter((i) => i.section === null)).toEqual([]);
     expect(settingsSection('language')).toBe('language');
