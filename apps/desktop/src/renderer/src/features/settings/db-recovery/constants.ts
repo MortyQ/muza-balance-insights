@@ -1,38 +1,31 @@
 import type { DbStateView } from '@contract/db-state.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
 import type { RecoveryAction } from './types.ts';
 
 type NotReady = Exclude<DbStateView['status'], 'ready'>;
 
-export const TITLES: Record<NotReady, string> = {
-  'key-unavailable': 'Нет доступа к ключу базы',
-  'key-lost': 'Ключ базы потерян',
-  'db-unreadable': 'База не открывается',
+export const TITLES: Record<NotReady, MessageKey> = {
+  'key-unavailable': 'settings.dbRecovery.title.keyUnavailable',
+  'key-lost': 'settings.dbRecovery.title.keyLost',
+  'db-unreadable': 'settings.dbRecovery.title.dbUnreadable',
 };
 
-/** key-unavailable depends on where the key lives; neutral wording, no advice to press «Всегда разрешать». */
-export const UNAVAILABLE_DETAIL: Record<DbStateView['platform'], string> = {
-  darwin: 'Разреши доступ в запросе Связки ключей — он появится после перезапуска.',
-  linux: 'Разблокируй связку ключей (keyring) и перезапусти приложение.',
-  win32: 'Системное хранилище ключей не ответило. Перезапусти приложение.',
-  other: 'Системное хранилище ключей не ответило. Перезапусти приложение.',
+/** key-unavailable depends on where the key lives; neutral wording, no advice to press «Always Allow». */
+export const UNAVAILABLE_DETAIL: Record<DbStateView['platform'], MessageKey> = {
+  darwin: 'settings.dbRecovery.unavailable.darwin',
+  linux: 'settings.dbRecovery.unavailable.linux',
+  win32: 'settings.dbRecovery.unavailable.other',
+  other: 'settings.dbRecovery.unavailable.other',
 };
 
-export const DETAILS: Record<Exclude<NotReady, 'key-unavailable'>, string> = {
-  'key-lost':
-    'Ключ, которым зашифрована база, больше не читается (переустановка без подписи, удалённая запись в Связке ключей, ' +
-    'перенос на другой компьютер). Открыть эту базу нельзя.',
-  'db-unreadable': 'Файл базы повреждён или зашифрован другим ключом.',
+export const DETAILS: Record<Exclude<NotReady, 'key-unavailable'>, MessageKey> = {
+  'key-lost': 'settings.dbRecovery.detail.keyLost',
+  'db-unreadable': 'settings.dbRecovery.detail.dbUnreadable',
 };
 
-export const START_OVER_HINT =
-  '«Начать заново» создаст новую пустую базу: операции загрузятся из банка заново, сохранённые токены останутся, если их ' +
-  'удастся прочитать. Имена людей, оверрайды и настройки пропадут.';
-
-export const ACTION_TEXT: Record<RecoveryAction, string> = {
-  relaunch: 'Перезапустить',
-  startOver: 'Начать заново',
-  delete: 'Удалить все данные',
-  quit: 'Выйти',
+export const ACTION_TEXT: Record<RecoveryAction, MessageKey> = {
+  relaunch: 'settings.dbRecovery.action.relaunch',
+  startOver: 'settings.dbRecovery.action.startOver',
+  delete: 'settings.dbRecovery.action.delete',
+  quit: 'settings.dbRecovery.action.quit',
 };
-
-export const ACTION_ERROR = 'Не получилось. Перезапусти приложение и попробуй ещё раз.';

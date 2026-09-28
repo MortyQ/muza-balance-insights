@@ -28,11 +28,11 @@ function onColor(id: number, color: ColorKey) {
 
 <template>
   <SettingsSection
-    title="Люди"
-    description="Чьи счета загружаются в приложение. Имя человека хранится только на этом компьютере и никуда не отправляется."
-    note="Человек добавляется вместе с подключением — в разделе «Подключения». Когда подключений у человека не остаётся, он удаляется сам."
+    :title="$t('settings.people.title')"
+    :description="$t('settings.people.description')"
+    :note="$t('settings.people.note')"
   >
-    <p v-if="participant.people.length === 0" class="text-foreground-secondary">Людей пока нет.</p>
+    <p v-if="participant.people.length === 0" class="text-foreground-secondary">{{ $t('settings.people.empty') }}</p>
     <SettingsList v-else>
       <PersonBlock
         v-for="p in participant.people"

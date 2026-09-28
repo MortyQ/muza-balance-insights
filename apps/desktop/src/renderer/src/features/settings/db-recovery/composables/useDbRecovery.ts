@@ -1,9 +1,9 @@
 import { storeToRefs } from 'pinia';
 import { computed, ref } from 'vue';
 import { useDbStateStore } from '@/entities/db-state';
+import { t } from '@/shared/lib';
 import { useDeleteAllDataRequest } from '../../shared/api/useDeleteAllDataRequest.ts';
 import { useDbRecoveryRequest } from '../api/useDbRecoveryRequest.ts';
-import { ACTION_ERROR } from '../constants.ts';
 import type { RecoveryAction, UseDbRecoveryReturn } from '../types.ts';
 import { recoveryText } from '../utils.ts';
 
@@ -31,7 +31,7 @@ export function useDbRecovery(): UseDbRecoveryReturn {
     try {
       await actions[action]();
     } catch {
-      error.value = ACTION_ERROR;
+      error.value = t('settings.dbRecovery.actionError');
     } finally {
       busy.value = null;
     }

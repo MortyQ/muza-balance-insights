@@ -17,7 +17,7 @@ export function usePeopleActions(): UsePeopleActionsReturn {
       await participant.refresh();
       return true;
     } catch {
-      error.value = 'Имя не сохранено: от 1 до 80 символов.';
+      error.value = t('settings.people.renameError');
       return false;
     }
   }

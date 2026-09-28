@@ -1,4 +1,5 @@
 import type { DbStateView } from '@contract/db-state.ts';
+import { t } from '@/shared/lib';
 import { DETAILS, TITLES, UNAVAILABLE_DETAIL } from './constants.ts';
 import type { RecoveryText } from './types.ts';
 
@@ -6,7 +7,7 @@ import type { RecoveryText } from './types.ts';
 export function recoveryText(view: DbStateView | null): RecoveryText | null {
   if (!view || view.status === 'ready') return null;
   if (view.status === 'key-unavailable') {
-    return { title: TITLES[view.status], detail: UNAVAILABLE_DETAIL[view.platform], primary: 'relaunch' };
+    return { title: t(TITLES[view.status]), detail: t(UNAVAILABLE_DETAIL[view.platform]), primary: 'relaunch' };
   }
-  return { title: TITLES[view.status], detail: DETAILS[view.status], primary: 'startOver' };
+  return { title: t(TITLES[view.status]), detail: t(DETAILS[view.status]), primary: 'startOver' };
 }

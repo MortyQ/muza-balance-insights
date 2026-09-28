@@ -1,20 +1,10 @@
 import type { DbStateView } from '@contract/db-state.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
 
-export const KEY_STORE: Record<DbStateView['platform'], string> = {
-  darwin: 'в Связке ключей macOS',
-  win32: 'в хранилище Windows (DPAPI)',
-  linux: 'в связке ключей (keyring)',
-  other: 'в системном хранилище ключей',
+/** Where the key lives, as the end of «the key is kept in …». */
+export const KEY_STORE: Record<DbStateView['platform'], MessageKey> = {
+  darwin: 'settings.dbEncryption.keyStore.darwin',
+  win32: 'settings.dbEncryption.keyStore.win32',
+  linux: 'settings.dbEncryption.keyStore.linux',
+  other: 'settings.dbEncryption.keyStore.other',
 };
-
-export const NO_SECURE_STORAGE =
-  'База не зашифрована: на этом компьютере нет надёжного хранилища ключей (keyring). Когда оно появится, приложение ' +
-  'зашифрует базу при следующем запуске. По той же причине токены хранятся только в памяти.';
-
-export const ENCRYPT_PENDING = 'Зашифровать базу не удалось — приложение попробует при следующем запуске.';
-
-/** What encryption does and does not cover. Nothing about detecting changes to the file: the cipher cannot. */
-export const SCOPE_NOTE =
-  'Шифрование защищает копию файлов: на другом компьютере, в другой учётной записи, в резервной копии или облаке базу ' +
-  'не открыть. Программы, запущенные под твоей учётной записью, ключ получить могут — для этого есть блокировка и ' +
-  'шифрование диска.';
