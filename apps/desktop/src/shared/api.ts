@@ -1,5 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { AutoSyncSettings } from './auto-sync.ts';
+import type { AccountName } from './account-name.ts';
 import type { CategoryId } from './categories.ts';
 import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
@@ -182,7 +183,7 @@ export type BalanceApi = {
 
 // ---------- data for the screen ----------
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
-// No names, descriptions, card numbers or IBANs: categories and «black/UAH» labels only.
+// No names, descriptions, card numbers or IBANs: categories and account name parts only.
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -247,8 +248,8 @@ export type CardTotal = FlowView & {
 
 export type OverviewAccount = FlowView & {
   id: string;
-  /** «black/UAH»-style label: never a card number or a jar title. */
-  label: string;
+  /** Never a card number or a jar title. */
+  name: AccountName;
   kind: 'card' | 'jar';
   currency: number;
   creditLimit: number;

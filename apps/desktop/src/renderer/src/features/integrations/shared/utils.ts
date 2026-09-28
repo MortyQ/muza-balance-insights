@@ -1,6 +1,7 @@
 import { currencyAlpha } from '@mono/core/currency';
 import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
+import { cardTypeName } from '@/entities/bank';
 import { t } from '@/shared/lib';
 import { IMPORT_RUNNING_ACCOUNTS_TEXT } from './constants.ts';
 import type { PersonChoice } from './types.ts';
@@ -28,11 +29,9 @@ export function accountLabel(a: Readonly<ConnectionAccountView>, cardTypes: Read
   const currency = currencyAlpha(a.currencyCode);
   if (a.kind === 'jar') {
     const title = a.jarTitle?.trim() ?? '';
-    return [title === '' ? t('integrations.accounts.jar') : t('integrations.accounts.jarNamed', { title }), currency].join(' · ');
+    return [title === '' ? t('entities.bank.jar') : t('integrations.accounts.jarNamed', { title }), currency].join(' · ');
   }
-  const key = a.type !== null && Object.hasOwn(cardTypes, a.type) ? cardTypes[a.type] : undefined;
-  const name = a.type === null ? t('integrations.accounts.card') : key === undefined ? a.type : t(key);
-  return [name, currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
+  return [cardTypeName(a.type, cardTypes), currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
 }
 
 /** Why an account was not switched, or '' when it was. */

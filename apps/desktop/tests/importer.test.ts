@@ -211,7 +211,7 @@ describe('Importer', () => {
     // A window committed between crashes → the streak starts over.
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
     expect(await crash()).toMatchObject({ attempt: 2, inSec: 900 });
-    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: 'black/UAH', from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
+    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
 
     let last: ImportProgress;

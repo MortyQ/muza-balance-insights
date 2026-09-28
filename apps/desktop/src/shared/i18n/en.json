@@ -45,7 +45,20 @@
   },
   "entities": {
     "bank": {
+      "card": "Card",
+      "jar": "Jar",
       "monobank": "Monobank",
+      "monobankCard": {
+        "black": "Black card",
+        "eAid": "eSupport",
+        "fop": "Sole proprietor account",
+        "iron": "Iron",
+        "madeInUkraine": "National cashback",
+        "platinum": "Platinum",
+        "rebuilding": "eRecovery",
+        "white": "White card",
+        "yellow": "Children's card"
+      },
       "other": "Other banks",
       "privatbank": "PrivatBank"
     },
@@ -196,6 +209,7 @@
         "server": "Monobank is not answering for now"
       },
       "retryLine": "{reason}. Retrying at {at} (attempt {attempt}). What is downloaded is saved.",
+      "someAccount": "account",
       "start": "Download",
       "startError": {
         "dbUnavailable": "The database is unavailable right now — the import did not start.",
@@ -278,10 +292,8 @@
     "accounts": {
       "button": "Accounts · {count}",
       "buttonPart": "Accounts · {enabled} of {total}",
-      "card": "Card",
       "disabledHint": "Not downloaded and left out of the statistics",
       "importRunning": "An import is running: accounts can be switched on and off after it.",
-      "jar": "Jar",
       "jarNamed": "Jar «{title}»"
     },
     "add": {
@@ -314,17 +326,6 @@
     },
     "monobank": {
       "accessNote": "The token only reads the statement and balances and is kept on this computer.",
-      "card": {
-        "black": "Black card",
-        "eAid": "eSupport",
-        "fop": "Sole proprietor account",
-        "iron": "Iron",
-        "madeInUkraine": "National cashback",
-        "platinum": "Platinum",
-        "rebuilding": "eRecovery",
-        "white": "White card",
-        "yellow": "Children's card"
-      },
       "consent": "The account owner issues the token in their own Monobank and gives it to you. The token opens all of their statements and balances for reading — add it only with their consent.",
       "duplicate": "This token is already connected.",
       "noSecureStorage": "This computer has no secure key store: the token will not be saved, only kept in memory until the app closes.",

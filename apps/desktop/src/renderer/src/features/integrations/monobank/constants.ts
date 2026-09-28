@@ -1,4 +1,5 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
+import { MONOBANK_CARD_TYPES } from '@/entities/bank';
 
 // Dictionary keys: the texts are translated where they are shown.
 
@@ -15,15 +16,5 @@ export const TOKEN_PLACEHOLDER: MessageKey = 'integrations.monobank.placeholder'
 /** Under the bank's name on the first connect screen. */
 export const ACCESS_NOTE: MessageKey = 'integrations.monobank.accessNote';
 
-/** Monobank's card types → names for «Accounts»; a type not listed shows as the bank sent it. */
-export const CARD_TYPE_NAMES: Readonly<Record<string, MessageKey>> = {
-  black: 'integrations.monobank.card.black',
-  white: 'integrations.monobank.card.white',
-  platinum: 'integrations.monobank.card.platinum',
-  iron: 'integrations.monobank.card.iron',
-  fop: 'integrations.monobank.card.fop',
-  yellow: 'integrations.monobank.card.yellow',
-  eAid: 'integrations.monobank.card.eAid',
-  madeInUkraine: 'integrations.monobank.card.madeInUkraine',
-  rebuilding: 'integrations.monobank.card.rebuilding',
-};
+/** Monobank's card types → names for «Accounts» (the bank entity's table: balance cards use it too). */
+export const CARD_TYPE_NAMES = MONOBANK_CARD_TYPES;

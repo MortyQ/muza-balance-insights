@@ -43,7 +43,14 @@ export const WorkerProgress = z.discriminatedUnion('phase', [
   z.strictObject({ phase: z.literal('accounts') }),
   z.strictObject({
     phase: z.literal('windows'),
-    account: z.string().max(40),
+    account: z
+      .strictObject({
+        kind: z.enum(['card', 'jar']),
+        type: z.string().max(40).nullable(),
+        currency: z.number().int().min(0).max(999),
+        tag: z.string().max(4).nullable(),
+      })
+      .nullable(),
     from: date,
     to: date,
     round: count,

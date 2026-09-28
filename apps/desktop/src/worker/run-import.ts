@@ -5,7 +5,8 @@
 import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
 import type { Db } from '@mono/core/db';
 import { RateLimitError } from '@mono/core/errors';
-import { accountLabels, toKyivDate } from '@mono/core/format';
+import { toKyivDate } from '@mono/core/format';
+import { accountNames, type AccountName } from '../shared/account-name.ts';
 import type { Clock, FetchLike } from '@mono/core/platform';
 import { rulesFor } from '@mono/core/providers/rules';
 import type { ProviderId } from '@mono/core/providers/types';
@@ -98,7 +99,7 @@ type Run = {
 const count = (plan: ReadonlyMap<string, readonly Window[]> | null) => [...(plan?.values() ?? [])].reduce((n, w) => n + w.length, 0);
 
 export async function runImport(d: RunImportDeps): Promise<void> {
-  let labels = new Map<string, string>();
+  let names = new Map<string, AccountName>();
   let windowsTotal = 0;
   let windowsDone = 0;
   let transactions = 0;
@@ -149,7 +150,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
           if (e.type === 'window-start') {
             last = {
               phase: 'windows',
-              account: labels.get(e.accountId) ?? 'счёт',
+              account: names.get(e.accountId) ?? null,
               from: toKyivDate(e.window.from),
               to: toKyivDate(e.window.to),
               round: e.round,
@@ -198,8 +199,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
             }
           }
           const rs = await d.db.execute('SELECT id, kind, type, currency_code FROM accounts');
-          labels = accountLabels(
-            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currencyCode: Number(r.currency_code) })),
+          names = accountNames(
+            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })),
           );
         }
         for (const r of active()) {

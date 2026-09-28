@@ -53,8 +53,10 @@ describe('runImport', () => {
     // Windows in the order they were started (several progress messages per window: start, waits, done).
     const windows = messages.flatMap((m) => (m.type === 'progress' && m.progress.phase === 'windows' ? [m.progress] : []));
     const started: Array<[string, number]> = [];
-    for (const p of windows) if (!started.some(([a, r]) => a === p.account && r === p.round)) started.push([p.account, p.round]);
-    // Round 1 = both accounts' freshest window, labelled by type/currency — never an id or card number.
+    const label = (p: (typeof windows)[number]) => (p.account ? `${p.account.type}/${p.account.currency === 980 ? 'UAH' : 'USD'}` : '?');
+    for (const p of windows) if (!started.some(([a, r]) => a === label(p) && r === p.round)) started.push([label(p), p.round]);
+    // Round 1 = both accounts' freshest window, named by type/currency — never an id or card number.
+    for (const p of windows) expect(p.account?.tag).toBeNull();
     expect(started).toEqual([
       ['black/UAH', 1],
       ['black/USD', 1],
@@ -313,7 +315,8 @@ describe('runImport: several connections', () => {
     expect(messages.at(-1)).toEqual({ type: 'done', windowsTotal: 4, transactions: 2, failed: [] });
     const windows = messages.flatMap((m) => (m.type === 'progress' && m.progress.phase === 'windows' ? [m.progress] : []));
     const started: string[] = [];
-    for (const p of windows) if (!started.includes(`${p.account} ${p.round}`)) started.push(`${p.account} ${p.round}`);
+    const label = (p: (typeof windows)[number]) => `${p.account?.type}/${p.account?.currency === 980 ? 'UAH' : 'USD'} ${p.round}`;
+    for (const p of windows) if (!started.includes(label(p))) started.push(label(p));
     expect(started).toEqual(['black/UAH 1', 'black/USD 1', 'black/UAH 2', 'black/USD 2']);
     expect(a.calls.every((c) => c.token === TEST_TOKEN)).toBe(true);
     expect(b.calls.every((c) => c.token === TOKEN_B)).toBe(true);

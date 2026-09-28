@@ -33,7 +33,7 @@ const lockView = (locked: boolean): LockView => ({
 });
 
 const win = (windowsDone: number): WindowProgress => ({
-  phase: 'windows', account: 'black/UAH', from: '2026-08-01', to: '2026-09-01', round: 1, index: 1, total: 3,
+  phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-08-01', to: '2026-09-01', round: 1, index: 1, total: 3,
   windowsDone, windowsTotal: 3, transactions: 0, etaSec: 0, waitingSec: null,
 });
 const send = (p: ImportProgress) => api.state.progress?.(p);

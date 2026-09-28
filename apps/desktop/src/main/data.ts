@@ -1,5 +1,5 @@
 // Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, balancesAt), mapped
-// to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and «black/UAH» labels leave main —
+// to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave main —
 // never names, descriptions, card numbers or IBANs. The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
@@ -11,6 +11,7 @@ import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { exchangeRates, toUah } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
+import { accountNames } from '../shared/account-name.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type { CardTotal, DataStatus, FlowView, FxPart, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
 
@@ -169,9 +170,11 @@ export class DataService {
     const f = { participantId: q.participantId };
     const inc = await incomeSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const sp = await spendingSummary(db, { ...period, groupBy: 'account', ...f }, now);
+    const types = new Map((await db.execute('SELECT id, type FROM accounts')).rows.map((r) => [String(r.id), r.type === null ? null : String(r.type)]));
+    const names = accountNames(head.balances.accounts.map((a) => ({ id: a.id, kind: a.kind, type: types.get(a.id) ?? null, currency: a.currency })));
     const accounts: OverviewAccount[] = head.balances.accounts.map((a) => ({
       id: a.id,
-      label: a.label,
+      name: names.get(a.id) ?? { kind: a.kind, type: null, currency: a.currency, tag: null },
       kind: a.kind,
       currency: a.currency,
       creditLimit: a.credit_limit,

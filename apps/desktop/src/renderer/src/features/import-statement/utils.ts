@@ -1,5 +1,6 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
 import type { ImportProgress } from '@contract/progress.ts';
+import { accountName } from '@/entities/bank';
 import { i18n, t } from '@/shared/lib';
 import { IMPORT_ERRORS } from './constants.ts';
 
@@ -30,7 +31,7 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
     case 'windows': {
       const wait = p.waitingSec ? t('home.import.waitLimit', { sec: p.waitingSec }) : '';
       return t('home.import.windowsLine', {
-        account: p.account,
+        account: p.account === null ? t('home.import.someAccount') : accountName(p.account),
         from: p.from,
         to: p.to,
         index: p.index,

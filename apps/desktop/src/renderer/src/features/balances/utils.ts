@@ -1,5 +1,6 @@
 import { currencyExponent } from '@mono/core/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
+import { accountName } from '@/entities/bank';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t } from '@/shared/lib';
 import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
@@ -155,7 +156,7 @@ export function slidesOf(
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,
-        title: a.label,
+        title: accountName(a.name),
         accents: [accent],
         dim: a.ownFunds === null,
         caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),

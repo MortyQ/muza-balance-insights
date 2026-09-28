@@ -209,7 +209,7 @@ describe('DataService.monthOverview', () => {
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
     const person = await svc.monthOverview({ month: '2025-11', participantId: me });
-    expect(person.accounts).toEqual([{ id: 'uah', label: 'black/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
+    expect(person.accounts).toEqual([{ id: 'uah', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
   });
 
   it('a month straddling the account\'s coverage start: balanceAt its last day, own funds from the backward calculation', async () => {
@@ -244,7 +244,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.people).toEqual([]);
     expect(person.accounts).toEqual([
-      { id: 'hers', label: 'white/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
+      { id: 'hers', name: { kind: 'card', type: 'white', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
     ]);
   });
 
@@ -342,7 +342,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.total.fx).toEqual([{ currency: 840, income: 0, spending: 500, rate: 41, nearest: false }]);
     expect(person.accounts).toEqual([
-      { id: 'herusd', label: 'white/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
+      { id: 'herusd', name: { kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
   });
 

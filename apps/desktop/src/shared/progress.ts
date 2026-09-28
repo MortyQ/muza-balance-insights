@@ -1,13 +1,15 @@
 // Import state as the renderer sees it (main → renderer over PROGRESS_CHANNEL). Plain types, no dependencies.
-// Nothing here can carry a token, a description or a counterparty: accounts appear as «black/UAH».
+// Nothing here can carry a token, a description or a counterparty: accounts appear by their name parts (AccountName).
+
+import type { AccountName } from './account-name.ts';
 
 export const IMPORT_DEPTHS = [1, 3, 12, 24, 36] as const;
 export type ImportDepth = (typeof IMPORT_DEPTHS)[number];
 
 export type WindowProgress = {
   phase: 'windows';
-  /** «black/UAH», «банка/UAH #ab12» — never a card number. */
-  account: string;
+  /** Never a card number or a jar title; null before the accounts are known. */
+  account: AccountName | null;
   /** Window dates, Kyiv, YYYY-MM-DD. */
   from: string;
   to: string;
