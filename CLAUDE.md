@@ -131,7 +131,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
-- **Language** — `src/shared/locale.ts` (`uk | en | ru`, `resolveLocale`: the first system language we have, else `uk`);
+- **Language** — `src/shared/locale.ts` (`uk | en | ru`, `resolveLocale`: the first system language we have, else `en`);
   the saved choice (`preferences.json`) wins. IPC `getLocale` / `setLocale`; `getLocale` also passes a closed lock and a
   database that is not ready (the lock and recovery screens speak the language). The renderer loads it before the first
   screen (`loadLocale`) and switches at once on a choice (`applyLocale`, also sets `<html lang>`). Data for the select —

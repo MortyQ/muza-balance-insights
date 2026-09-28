@@ -8,7 +8,7 @@ English interface.
 ### Languages
 
 - The app now speaks Ukrainian. It starts in your system's language when that is Ukrainian, English or Russian, and in
-  Ukrainian otherwise. The app menu and system dialogs are not translated yet.
+  English otherwise. The app menu and system dialogs are not translated yet.
 
 ### Fixes
 
