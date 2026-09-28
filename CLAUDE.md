@@ -79,12 +79,19 @@ Rules:
 
 - Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok).
 - Before handing over: `pnpm test` and `pnpm typecheck` (at the root, `pnpm -r`).
+- **English only in the repository**: code comments, docs, agent instructions (`CLAUDE.md`, `.agents/`), specs, plans,
+  briefs, reports, the backlog, commit messages and PR texts — no Russian (or Ukrainian) anywhere but the UI
+  dictionaries. A screen or button is named by its English UI text (`en.json`) in «», or by its dictionary key. Chat
+  replies to the user are not covered by this rule.
+- **Every UI text goes through i18n**: no literal text in a template or in renderer code — `$t('key')` in templates,
+  `t('key')` from `@/shared/lib` in script code. A new text is a key in `uk.json` (the reference) and, in the same
+  change, in `en.json` and `ru.json`. Details: «Interface texts» in `.agents/project/desktop-renderer.md`.
 - `CHANGELOG.md` (**English**, for users; it is the release description): every user-visible change (new feature,
   changed behaviour, notable fix) goes there in the same work, under the **next** unreleased version — the one after
   `apps/desktop/package.json` (0.1.3 there → write into 0.1.4; no such section yet → create it as
   `## <version> — unreleased`). The version bump at release time makes it the released one: `unreleased` → the date
   (`## 0.1.4 — 2026-10-01`); the release refuses a tag whose section is missing or still `unreleased`. Plain English, no
-  internal terms (files, IPC, libraries, tests); screen and button names as in the Russian UI, in «»; security only in
+  internal terms (files, IPC, libraries, tests); screen and button names as in the English UI (`en.json`), in «»; security only in
   terms of what it protects. Internal-only changes (tests, refactors, docs for agents) do not go there.
 
 ## Where the other rules are
@@ -124,14 +131,19 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
-- **Language** — stored only, texts are not translated: `src/shared/locale.ts` (`uk | en | ru`, `resolveLocale`: the first
-  system language we have, else `en`), IPC `getLocale` / `setLocale`. Data for the select —
+- **Language** — `src/shared/locale.ts` (`uk | en | ru`, `resolveLocale`: the first system language we have, else `uk`);
+  the saved choice (`preferences.json`) wins. IPC `getLocale` / `setLocale`; `getLocale` also passes a closed lock and a
+  database that is not ready (the lock and recovery screens speak the language). The renderer loads it before the first
+  screen (`loadLocale`) and switches at once on a choice (`applyLocale`, also sets `<html lang>`). Data for the select —
   `features/settings/language-select` (`LANGUAGE_OPTIONS`: own name + ISO country of the flag, not emoji; `useLocale`).
   The select itself and the «Язык и время» section (now «Скоро» in the menu) come from another developer.
-- **Dictionaries** — a skeleton without translations: `src/shared/i18n/{uk,en,ru}.json` (shared by main and renderer),
-  vue-i18n syntax; `uk.json` is the reference (`Messages`, `MessageKey` in `src/shared/i18n/index.ts`);
-  `tests/i18n.test.ts` checks the same keys, placeholders and plural forms. No library and no `t()` yet (vue-i18n only
-  with build-time compilation: the prod CSP has no `unsafe-eval`).
+- **Dictionaries** — `src/shared/i18n/{uk,en,ru}.json` (shared by main and renderer), vue-i18n syntax; `uk.json` is the
+  reference (`Messages`, `MessageKey` in `src/shared/i18n/index.ts`); `tests/i18n.test.ts` checks the same keys,
+  placeholders and plural forms. Renderer: vue-i18n 11 (`shared/lib/i18n.ts`, Composition API, typed keys — an unknown
+  key fails `vue-tsc`), fallback `uk`. It compiles messages at run time without `new Function`, so the prod CSP (no
+  `unsafe-eval`) holds; `tests/i18n.test.ts` scans every vue-i18n / @intlify build for `new Function` and `eval`.
+  Renderer tests read texts in Russian (`tests/renderer/setup-locale.ts`). Main (menu, dialogs, error texts) is not
+  translated yet.
 - **Preferences** — `userData/preferences.json` (`src/main/prefs.ts`): `updateChecks`, `autoSync`, `theme`, `locale`.
   Reading forgives each field on its own; writing (`updatePrefs`, one at a time) is strict: an invalid value throws and
   nothing is written.

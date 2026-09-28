@@ -7,6 +7,12 @@
 - Use markdown only when it adds clarity
 - No trailing summaries of what was just done
 
+## Language
+
+- Everything written into the repository is in English: code comments, docs, instructions, notes, commit messages.
+  The only non-English text is the UI dictionaries (`apps/desktop/src/shared/i18n/*.json`).
+- UI text is never a literal in code: `$t()` / `t()` with a key (see `CLAUDE.md`, «Process»).
+
 ## Code Changes
 
 - Read the file before editing it
