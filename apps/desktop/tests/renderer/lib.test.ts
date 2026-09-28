@@ -139,3 +139,19 @@ describe('plural forms («one | few | many»)', async () => {
     expect(counts.map((n) => pluralForm(locale)(n, 3))).toEqual(forms);
   });
 });
+
+// The core groups by its own word; main adds the id, the table shows the dictionary name.
+const { categoryName } = await import('@/features/spending-summary/utils.ts');
+
+describe('spending category names', () => {
+  const line = { gross: 1, refunds: 0, net: 1 };
+
+  it('a known category by its id, in the app language', () => {
+    expect(categoryName({ ...line, category: 'продукты', categoryId: 'groceries' })).toBe('Продукты');
+    expect(categoryName({ ...line, category: 'комиссии банка', categoryId: 'fees' })).toBe('Комиссии банка');
+  });
+
+  it('a word without an id is shown as it came, capitalised', () => {
+    expect(categoryName({ ...line, category: 'невідома', categoryId: null })).toBe('Невідома');
+  });
+});

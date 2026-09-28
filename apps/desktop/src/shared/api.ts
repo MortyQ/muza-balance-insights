@@ -1,5 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { AutoSyncSettings } from './auto-sync.ts';
+import type { CategoryId } from './categories.ts';
 import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
@@ -188,7 +189,8 @@ export type Scope = 'personal' | 'business';
 
 export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
 
-export type SpendingLine = { category: string; gross: number; refunds: number; net: number };
+/** `category` — the core's word; `categoryId` — its CATEGORY key (null on the total line, or a word the core no longer has). */
+export type SpendingLine = { category: string; categoryId: CategoryId | null; gross: number; refunds: number; net: number };
 
 export type SpendingCurrency = {
   currency: number;

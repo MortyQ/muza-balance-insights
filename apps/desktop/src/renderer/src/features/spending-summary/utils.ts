@@ -15,9 +15,13 @@ export function share(net: number, max: number): number {
   return max > 0 ? Math.max(0, Math.min(100, (net / max) * 100)) : 0;
 }
 
-/** Categories come lowercase from the core («groceries»); the table shows them capitalised. */
+/** A category the core no longer has comes as its bare word: shown capitalised. */
 export function capitalize(s: string): string {
   return s.charAt(0).toLocaleUpperCase('uk') + s.slice(1);
+}
+
+export function categoryName(line: Readonly<SpendingLine>): string {
+  return line.categoryId ? t(`home.spending.category.${line.categoryId}`) : capitalize(line.category);
 }
 
 const refundsText = (amount: number, currency: number) => (amount ? formatMoney(amount, currency) : '—');
@@ -25,7 +29,7 @@ const refundsText = (amount: number, currency: number) => (amount ? formatMoney(
 /** Columns of one currency's table; `share` is drawn by the feature (a bar), the rest is text. */
 export function spendingColumns(currency: number): TableColumn<SpendingLine>[] {
   return [
-    { key: 'category', label: t('home.spending.column.category'), value: (r) => capitalize(r.category) },
+    { key: 'category', label: t('home.spending.column.category'), value: (r) => categoryName(r) },
     { key: 'share', label: t('home.spending.column.share'), hideLabel: true, width: '34%' },
     { key: 'gross', label: t('home.spending.column.gross'), align: 'end', tone: 'secondary', value: (r) => formatMoney(r.gross, currency) },
     { key: 'refunds', label: t('home.spending.column.refunds'), align: 'end', tone: 'secondary', value: (r) => refundsText(r.refunds, currency) },

@@ -72,10 +72,10 @@ describe('DataService (main → renderer view types)', () => {
     expect(v.currencies.map((c) => c.currency)).toEqual([840, 980]);
     const uah = v.currencies.find((c) => c.currency === 980)!;
     expect(uah.categories).toEqual([
-      { category: 'кафе и рестораны', gross: 50_000, refunds: 10_000, net: 40_000 },
-      { category: 'продукты', gross: 30_000, refunds: 0, net: 30_000 },
+      { category: 'кафе и рестораны', categoryId: 'cafes', gross: 50_000, refunds: 10_000, net: 40_000 },
+      { category: 'продукты', categoryId: 'groceries', gross: 30_000, refunds: 0, net: 30_000 },
     ]);
-    expect(uah.total).toEqual({ category: '', gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
+    expect(uah.total).toEqual({ category: '', categoryId: null, gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
     expect(v.currencies.find((c) => c.currency === 840)!.total.net).toBe(2_500);
   });
 
@@ -88,8 +88,8 @@ describe('DataService (main → renderer view types)', () => {
 
     const personal = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'personal' });
     expect(personal.currencies[0]!.categories).toEqual([
-      { category: 'продукты', gross: 9_500, refunds: 0, net: 9_500 },
-      { category: 'комиссии банка', gross: 500, refunds: 0, net: 500 },
+      { category: 'продукты', categoryId: 'groceries', gross: 9_500, refunds: 0, net: 9_500 },
+      { category: 'комиссии банка', categoryId: 'fees', gross: 500, refunds: 0, net: 500 },
     ]);
     const business = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'business' });
     expect(business.currencies[0]!.categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
