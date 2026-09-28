@@ -1,7 +1,6 @@
 // Interface texts: one JSON dictionary per locale, nested keys («settings.language.title»), vue-i18n message syntax
 // ({name} placeholders, plural forms split by «|»). uk.json is the reference: it sets the keys and the types;
-// tests/i18n.test.ts checks that the other dictionaries match it. Not translated yet: the dictionaries stay empty
-// until the screens settle.
+// tests/i18n.test.ts checks that the other dictionaries match it. Main reads them too (src/main/i18n.ts, keys main.*).
 import type { Locale } from '../locale.ts';
 import en from './en.json' with { type: 'json' };
 import ru from './ru.json' with { type: 'json' };

@@ -8,11 +8,12 @@ English interface.
 ### Languages
 
 - The app now speaks Ukrainian. It starts in your system's language when that is Ukrainian, English or Russian, and in
-  English otherwise. The app menu and system dialogs are not translated yet.
+  English otherwise. The app menu, confirmation dialogs, the Touch ID prompt and import and update errors speak the
+  same language.
 
 ### Fixes
 
-- With only one person in the app, the home screen no longer shows a «Вся семья» (whole family) card that repeats
+- With only one person in the app, the home screen no longer shows a «Whole family» card that repeats
   theirs: it shows that person's card and a card for each of their accounts.
 
 ## 0.1.5 — 2026-09-27

@@ -142,8 +142,13 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   placeholders and plural forms. Renderer: vue-i18n 11 (`shared/lib/i18n.ts`, Composition API, typed keys — an unknown
   key fails `vue-tsc`), fallback `uk`. It compiles messages at run time without `new Function`, so the prod CSP (no
   `unsafe-eval`) holds; `tests/i18n.test.ts` scans every vue-i18n / @intlify build for `new Function` and `eval`.
-  Renderer tests read texts in Russian (`tests/renderer/setup-locale.ts`). Main (menu, dialogs, error texts) is not
-  translated yet.
+  Renderer tests read texts in Russian (`tests/renderer/setup-locale.ts`). Main reads the same dictionaries without
+  vue-i18n (`src/main/i18n.ts`, `translator(locale)`): keys `main.*` (menu, confirmation dialogs, the Touch ID reason)
+  and `common.disclaimer` (About), plain text only (`tests/main-i18n.test.ts`); the language is read at each use and the
+  menu is rebuilt on `setLocale`. Errors that reach the screen travel as codes, the renderer words them: update —
+  `UpdateError` (`settings.update.error.*`), import — `ImportError` (`WORKER_ERRORS` + `no-token`, `crash`;
+  `home.import.error.*`); the worker protocol carries no error text. Internal errors (IPC refusals, `TokenError`,
+  network policy) are English and never shown.
 - **Preferences** — `userData/preferences.json` (`src/main/prefs.ts`): `updateChecks`, `autoSync`, `theme`, `locale`.
   Reading forgives each field on its own; writing (`updatePrefs`, one at a time) is strict: an invalid value throws and
   nothing is written.
