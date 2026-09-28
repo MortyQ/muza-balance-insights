@@ -82,7 +82,8 @@
     },
     "participant": {
       "connection": "Connection",
-      "family": "Whole family"
+      "family": "Whole family",
+      "pending": "New person"
     },
     "syncStatus": {
       "none": "No data yet",

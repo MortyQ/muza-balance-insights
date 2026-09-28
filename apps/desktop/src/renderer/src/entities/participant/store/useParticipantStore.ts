@@ -29,7 +29,10 @@ export const useParticipantStore = defineStore('participant', () => {
   const view = ref<PeopleView | null>(null);
   const chosen = ref<number>(readSelected() ?? FAMILY);
 
-  const people = computed<ReadonlyArray<PersonView>>(() => view.value?.people ?? []);
+  // A person still waiting for the bank's name reads «New person» in the app's language.
+  const people = computed<ReadonlyArray<PersonView>>(() =>
+    (view.value?.people ?? []).map((p) => (p.labelPending ? { ...p, label: t('entities.participant.pending') } : p)),
+  );
   const connections = computed<ReadonlyArray<ConnectionView>>(() => people.value.flatMap((p) => p.connections));
   const hasConnections = computed(() => connections.value.length > 0);
   /** At least one connection can import now. */

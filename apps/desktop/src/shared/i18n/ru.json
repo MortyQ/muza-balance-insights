@@ -82,7 +82,8 @@
     },
     "participant": {
       "connection": "Подключение",
-      "family": "Вся семья"
+      "family": "Вся семья",
+      "pending": "Новый участник"
     },
     "syncStatus": {
       "none": "Данных пока нет",

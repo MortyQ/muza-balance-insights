@@ -12,6 +12,7 @@ import { exchangeRates, toUah } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
+import { labelPending } from './people.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type { CardTotal, DataStatus, FlowView, FxPart, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
 
@@ -163,7 +164,7 @@ export class DataService {
     if (q.participantId === undefined) {
       const people: MonthOverview['people'] = [];
       for (const p of await listParticipants(db)) {
-        people.push({ participantId: p.id, label: p.label, color: p.color, total: (await cardTotal(p.id)).total });
+        people.push({ participantId: p.id, label: p.label, labelPending: labelPending(p), color: p.color, total: (await cardTotal(p.id)).total });
       }
       return { ...base, people, accounts: [] };
     }

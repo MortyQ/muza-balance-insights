@@ -28,7 +28,7 @@ const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, s
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
   id, provider: 'monobank', bank: 'Monobank', accounts: 2, enabledAccounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
-const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, color: null, connections });
+const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, labelPending: false, color: null, connections });
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -161,5 +161,22 @@ describe('colours', () => {
       { label: 'Я', value: 1, colors: ['var(--series-violet)'] },
       { label: 'Вигадана', value: 2, colors: ['var(--border-strong)'] },
     ]);
+  });
+});
+
+describe('a person waiting for the bank name', () => {
+  it('reads «New person» in the app language, whatever the core stored', async () => {
+    const { createPinia, setActivePinia } = await import('pinia');
+    setActivePinia(createPinia());
+    const { useParticipantStore } = await import('@/entities/participant');
+    const store = useParticipantStore();
+    store.view = {
+      secureStorage: true,
+      people: [
+        { id: 1, label: 'stand-in', labelFromBank: true, labelPending: true, color: null, connections: [] },
+        { id: 2, label: 'Вигадана', labelFromBank: true, labelPending: false, color: null, connections: [] },
+      ],
+    };
+    expect(store.people.map((p) => p.label)).toEqual(['Новый участник', 'Вигадана']);
   });
 });

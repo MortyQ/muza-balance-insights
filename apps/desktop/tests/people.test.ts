@@ -55,6 +55,6 @@ describe('PeopleService', () => {
     if (!r.added) throw new Error('not added');
     await db.execute({ sql: 'UPDATE connections SET holder_name = ? WHERE id = ?', args: ['Вигадана Банківська', r.connectionId] });
     await people.restoreBankName(r.participantId);
-    expect((await people.list()).people[0]).toMatchObject({ label: 'Вигадана Банківська', labelFromBank: true });
+    expect((await people.list()).people[0]).toMatchObject({ label: 'Вигадана Банківська', labelFromBank: true, labelPending: false });
   });
 });

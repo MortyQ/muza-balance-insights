@@ -110,7 +110,7 @@ describe('balances utils', () => {
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] },
-      people: [{ participantId: 1, label: 'Сергей', color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
+      people: [{ participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
       accounts: [],
     };
     const s = slidesOf(fam, { people: [], selectedId: null, currentYear: 2026 });
@@ -161,8 +161,8 @@ describe('balances utils', () => {
 
   it('slidesOf: the family — head then people; a person — head then accounts, no data dimmed', () => {
     const people: PersonView[] = [
-      { id: 1, label: 'Сергей', labelFromBank: true, color: 'blue', connections: [] },
-      { id: 2, label: 'Аня', labelFromBank: false, color: 'orange', connections: [] },
+      { id: 1, label: 'Сергей', labelFromBank: true, labelPending: false, color: 'blue', connections: [] },
+      { id: 2, label: 'Аня', labelFromBank: false, labelPending: false, color: 'orange', connections: [] },
     ];
     const fam: MonthOverview = {
       month: '2026-09',
@@ -170,8 +170,8 @@ describe('balances utils', () => {
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(10_000, 5_000, 4_000, 0, 14),
       people: [
-        { participantId: 1, label: 'Сергей', color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
-        { participantId: 2, label: 'Аня', color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
+        { participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
+        { participantId: 2, label: 'Аня', labelPending: false, color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
       ],
       accounts: [],
     };

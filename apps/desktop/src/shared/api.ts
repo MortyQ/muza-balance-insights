@@ -49,6 +49,8 @@ export type PersonView = {
   label: string;
   /** The label is the holder's name from the bank (until the user renames). */
   labelFromBank: boolean;
+  /** Waiting for the bank's name (added with «Use the name from the bank», not imported yet): the renderer words it. */
+  labelPending: boolean;
   /** null = none (the palette ran out). */
   color: ColorKey | null;
   connections: ConnectionView[];
@@ -265,7 +267,7 @@ export type MonthOverview = {
   coverage: { from: string; to: string };
   total: CardTotal;
   /** The whole family only: each person in their own view of transfers. */
-  people: Array<{ participantId: number; label: string; color: ColorKey | null; total: CardTotal }>;
+  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
 };
