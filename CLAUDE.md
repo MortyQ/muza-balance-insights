@@ -136,7 +136,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   database that is not ready (the lock and recovery screens speak the language). The renderer loads it before the first
   screen (`loadLocale`) and switches at once on a choice (`applyLocale`, also sets `<html lang>`). Data for the select —
   `features/settings/language-select` (`LANGUAGE_OPTIONS`: own name + ISO country of the flag, not emoji; `useLocale`).
-  The select itself and the «Язык и время» section (now «Скоро» in the menu) come from another developer.
+  The «Language and time» section (`LanguageSelectFeature`, section `language`): one «Language» row with `VSelect`,
+  languages by their own names, no flags yet (no flag icons in the project); applies at once, main rebuilds the menu.
+  The time part of the section is still to come.
 - **Dictionaries** — `src/shared/i18n/{uk,en,ru}.json` (shared by main and renderer), vue-i18n syntax; `uk.json` is the
   reference (`Messages`, `MessageKey` in `src/shared/i18n/index.ts`); `tests/i18n.test.ts` checks the same keys,
   placeholders and plural forms. Renderer: vue-i18n 11 (`shared/lib/i18n.ts`, Composition API, typed keys — an unknown
@@ -163,7 +165,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
-    «Язык и время» (Скоро), «О программе».
+    «Language and time» (`LanguageSelectFeature`), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
 - **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes

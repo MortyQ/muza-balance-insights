@@ -42,7 +42,7 @@ export const NAV_GROUPS = [
       { label: 'settings.nav.autoSync', icon: 'lucide:refresh-ccw', section: 'auto-sync' },
       { label: 'settings.nav.updates', icon: 'lucide:refresh-cw', section: 'updates' },
       { label: 'settings.nav.appearance', icon: 'lucide:palette', section: 'appearance' },
-      { label: 'settings.nav.language', icon: 'lucide:languages', section: null },
+      { label: 'settings.nav.language', icon: 'lucide:languages', section: 'language' },
       { label: 'settings.nav.about', icon: 'lucide:info', section: 'about' },
     ],
   },

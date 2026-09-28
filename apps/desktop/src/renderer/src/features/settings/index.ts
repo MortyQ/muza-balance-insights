@@ -15,6 +15,7 @@ export { default as DeleteDataFeature } from './delete-data/DeleteDataFeature.vu
 export { default as NetworkInfoFeature } from './security-info/NetworkInfoFeature.vue';
 export { default as StorageInfoFeature } from './security-info/StorageInfoFeature.vue';
 export { default as ThemeSwitchFeature } from './theme-switch/ThemeSwitchFeature.vue';
+export { default as LanguageSelectFeature } from './language-select/LanguageSelectFeature.vue';
 export { LANGUAGE_OPTIONS } from './language-select/constants.ts';
 export { useLocale } from './language-select/composables/useLocale.ts';
 export { loadLocale } from './language-select/utils.ts';

@@ -6,6 +6,7 @@ import {
   AutoSyncSettingsFeature,
   DbEncryptionFeature,
   DeleteDataFeature,
+  LanguageSelectFeature,
   NetworkInfoFeature,
   PeopleFeature,
   StorageInfoFeature,
@@ -29,6 +30,7 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage'>, Component> = {
   'auto-sync': AutoSyncSettingsFeature,
   updates: UpdateSettingsFeature,
   appearance: ThemeSwitchFeature,
+  language: LanguageSelectFeature,
   about: AboutApp,
 };
 </script>

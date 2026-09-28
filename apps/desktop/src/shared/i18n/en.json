@@ -448,6 +448,12 @@
       "heading": "Delete all data",
       "title": "Data"
     },
+    "language": {
+      "description": "The language of the window, menus and system dialogs.",
+      "hint": "Applies at once.",
+      "language": "Language",
+      "title": "Language and time"
+    },
     "lock": {
       "broken": "The lock file is damaged. The app can only be opened by deleting all data.",
       "cancel": "Cancel",

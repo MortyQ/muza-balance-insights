@@ -9,6 +9,7 @@ export const SETTINGS_SECTIONS = [
   'auto-sync',
   'updates',
   'appearance',
+  'language',
   'about',
 ] as const;
 

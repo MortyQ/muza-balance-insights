@@ -76,10 +76,19 @@ describe('settings sections', () => {
     expect(inMenu).toEqual([...SETTINGS_SECTIONS]);
   });
 
-  it('appearance sits between updates and about', () => {
+  it('appearance and language sit between updates and about', () => {
     expect(nextSection('updates', 1)).toBe('appearance');
-    expect(nextSection('appearance', 1)).toBe('about');
-    expect(nextSection('about', -1)).toBe('appearance');
+    expect(nextSection('appearance', 1)).toBe('language');
+    expect(nextSection('language', 1)).toBe('about');
+    expect(nextSection('about', -1)).toBe('language');
+  });
+
+  it('language is a section now, not «Soon»; the menu has no disabled items left', async () => {
+    const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
+    const items = NAV_GROUPS.flatMap((g) => g.items);
+    expect(items.find((i) => i.label === 'settings.nav.language')?.section).toBe('language');
+    expect(items.filter((i) => i.section === null)).toEqual([]);
+    expect(settingsSection('language')).toBe('language');
   });
 });
 

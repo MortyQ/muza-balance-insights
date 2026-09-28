@@ -8,8 +8,8 @@ English interface.
 ### Languages
 
 - The app now speaks Ukrainian. It starts in your system's language when that is Ukrainian, English or Russian, and in
-  English otherwise. The app menu, confirmation dialogs, the Touch ID prompt and import and update errors speak the
-  same language.
+  English otherwise; choose another in «Settings» → «Language and time». The app menu, confirmation dialogs, the Touch
+  ID prompt, spending categories, account names and import and update errors follow the language.
 
 ### Fixes
 
