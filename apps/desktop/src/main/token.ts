@@ -37,7 +37,7 @@ export class TokenVault {
   }
 
   private file(connectionId: number): string {
-    if (!Number.isSafeInteger(connectionId) || connectionId <= 0) throw new TokenError('Неверный id подключения');
+    if (!Number.isSafeInteger(connectionId) || connectionId <= 0) throw new TokenError('Invalid connection id');
     return path.join(this.dir, `${connectionId}.bin`);
   }
 
@@ -61,7 +61,7 @@ export class TokenVault {
   /** Keeps the token for this session; persists it encrypted only if asked and the store is secure. */
   async set(connectionId: number, provider: Provider, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
     const { bank, credential } = DESKTOP_PROVIDERS[provider];
-    if (!credential.test(token)) throw new TokenError(`Токен не похож на токен ${bank}`);
+    if (!credential.test(token)) throw new TokenError(`Not a ${bank} token`);
     const file = this.file(connectionId);
     this.memory.set(connectionId, token);
     this.needsReentry.delete(connectionId);

@@ -242,7 +242,7 @@ describe('the token never leaves main', () => {
     expect(text).not.toContain(CANARY);
     expect(text).not.toContain('CANARY');
     expect(outputs).toContainEqual({ stored: 'secure' });
-    expect(outputs).toContainEqual({ error: 'Не удалось выполнить операцию', name: 'Error' });
+    expect(outputs).toContainEqual({ error: 'Operation failed', name: 'Error' });
     expect(logs).toEqual(['[ipc] setConnectionToken: Error']);
   });
 

@@ -9,7 +9,7 @@ for (const m of METHODS) api[m] = (...args: unknown[]) => ipcRenderer.invoke(cha
 /** The callback receives the payload only — never the IpcRendererEvent (it carries `sender`). Returns an unsubscribe. */
 function subscribe(ch: string, name: string) {
   return (cb: (payload: unknown) => void) => {
-    if (typeof cb !== 'function') throw new TypeError(`${name}: нужна функция`);
+    if (typeof cb !== 'function') throw new TypeError(`${name}: expected a function`);
     const listener = (_event: unknown, payload: unknown) => cb(payload);
     ipcRenderer.on(ch, listener);
     return () => void ipcRenderer.removeListener(ch, listener);
