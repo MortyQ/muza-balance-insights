@@ -7,6 +7,7 @@ const { nextSection } = await import('@/widgets/settings/utils.ts');
 const { osStoreName } = await import('@/shared/lib');
 const { tokensStorage } = await import('@/features/settings/security-info/utils.ts');
 const { NAV_LABEL_CLASS } = await import('@/widgets/settings/constants.ts');
+const { updateLine } = await import('@/features/settings/app-update/utils.ts');
 
 describe('storage section', () => {
   it('says nothing about encryption until main has answered', () => {
@@ -92,5 +93,17 @@ describe('language options (for the select)', () => {
       ['English', 'GB'],
       ['Русский', 'RU'],
     ]);
+  });
+});
+
+// Main sends why an update failed; the text is the renderer's, in the app's language.
+describe('update errors', () => {
+  it.each([
+    ['offline', 'нет связи с GitHub'],
+    ['rejected', 'не прошло проверку подписи'],
+    ['download', 'Не удалось скачать обновление'],
+    ['mismatch', 'не совпал с подписанным описанием'],
+  ] as const)('%s', (reason, text) => {
+    expect(updateLine({ phase: 'error', reason })).toContain(text);
   });
 });

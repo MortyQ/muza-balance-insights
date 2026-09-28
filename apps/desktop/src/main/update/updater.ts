@@ -59,13 +59,6 @@ export interface UpdaterDeps {
   now(): Date;
 }
 
-const TEXT = {
-  offline: 'Не удалось проверить обновления: нет связи с GitHub. Попробуй позже.',
-  rejected: 'Обновление не прошло проверку подписи и не будет установлено.',
-  download: 'Не удалось скачать обновление. Попробуй позже.',
-  mismatch: 'Скачанный файл обновления не совпал с подписанным описанием — он удалён и не будет установлен.',
-} as const;
-
 export class Updater {
   private state: UpdateState = { phase: 'idle' };
   private manifest: { m: Manifest; file: ManifestFile } | null = null;
@@ -114,11 +107,11 @@ export class Updater {
         this.set({ phase: 'up-to-date', checkedAt: this.d.now().toISOString() });
       } else if (e instanceof UpdateRejected) {
         this.d.log(`update check: ${e.code}`);
-        this.set({ phase: 'error', message: TEXT.rejected });
+        this.set({ phase: 'error', reason: 'rejected' });
       } else {
         this.d.log(`update check failed: ${e instanceof Error ? e.name : 'error'}`);
         // A background check that could not reach GitHub leaves the screen as it was.
-        this.set(userAsked ? { phase: 'error', message: TEXT.offline } : before);
+        this.set(userAsked ? { phase: 'error', reason: 'offline' } : before);
       }
       return this.view();
     } finally {
@@ -140,7 +133,7 @@ export class Updater {
       else await this.downloadManual(m, file);
     } catch (e) {
       this.d.log(`update download failed: ${e instanceof Error ? e.name : 'error'}`);
-      this.set({ phase: 'error', message: TEXT.download });
+      this.set({ phase: 'error', reason: 'download' });
     } finally {
       this.busy = false;
     }
@@ -153,13 +146,13 @@ export class Updater {
     // electron-updater reads latest.yml of the same release; it must describe the version we verified.
     if (found?.updateInfo.version !== m.version) {
       this.d.log('update: latest.yml version differs from the signed manifest');
-      this.set({ phase: 'error', message: TEXT.rejected });
+      this.set({ phase: 'error', reason: 'rejected' });
       return;
     }
     const [downloaded] = await eu.downloadUpdate();
     if (!downloaded || !(await fileMatches(downloaded, file))) {
       if (downloaded) await this.d.remove(downloaded);
-      this.set({ phase: 'error', message: TEXT.mismatch });
+      this.set({ phase: 'error', reason: 'mismatch' });
       return;
     }
     // Only now: electron-updater installs on the next quit, and only this verified file.
@@ -174,7 +167,7 @@ export class Updater {
     );
     if (!(await fileMatches(part, file))) {
       await this.d.remove(part);
-      this.set({ phase: 'error', message: TEXT.mismatch });
+      this.set({ phase: 'error', reason: 'mismatch' });
       return;
     }
     const fileName = await this.d.moveToFreeName(part, this.d.downloadsDir, file.name);

@@ -535,6 +535,12 @@
       "devBuild": "Updates are not checked in a development build.",
       "download": "Download",
       "downloading": "Downloading {version}… {percent}%",
+      "error": {
+        "download": "Could not download the update. Try again later.",
+        "mismatch": "The downloaded update did not match its signed description — it was deleted and will not be installed.",
+        "offline": "Could not check for updates: no connection to GitHub. Try again later.",
+        "rejected": "The update failed the signature check and will not be installed."
+      },
       "importRunning": "An import is running — the update installs once it finishes and the app closes.",
       "later": "Later",
       "note": "Before installing, the file is checked against the signed description of the version: size and checksum. Going back to an older version is not possible.",
