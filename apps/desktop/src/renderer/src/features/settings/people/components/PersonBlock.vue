@@ -68,14 +68,14 @@ function pick(color: ColorKey | null) {
         <div class="flex min-w-0 flex-col gap-0.5">
           <span class="font-semibold">{{ person.label }}</span>
           <span class="text-sm text-foreground-muted">
-            {{ person.labelFromBank ? 'Имя из банка, обновляется при импорте' : 'Имя введено вручную' }} ·
+            {{ person.labelFromBank ? $t('settings.people.nameFromBank') : $t('settings.people.nameManual') }} ·
             {{ connectionsCount(person.connections.length) }}
           </span>
         </div>
       </div>
       <div class="flex items-center gap-4">
-        <VButton variant="link" :text="panel === 'color' ? 'Готово' : 'Изменить цвет'" :aria-expanded="panel === 'color'" @click="toggleColor" />
-        <VButton variant="link" :text="panel === 'rename' ? 'Отмена' : 'Переименовать'" :aria-expanded="panel === 'rename'" @click="toggleRename" />
+        <VButton variant="link" :text="panel === 'color' ? $t('settings.people.done') : $t('settings.people.changeColor')" :aria-expanded="panel === 'color'" @click="toggleColor" />
+        <VButton variant="link" :text="panel === 'rename' ? $t('settings.people.cancel') : $t('settings.people.rename')" :aria-expanded="panel === 'rename'" @click="toggleRename" />
       </div>
     </div>
     <!-- The gap lives inside the expanding box (pt-3), so nothing jumps when it opens or closes. -->
@@ -89,13 +89,13 @@ function pick(color: ColorKey | null) {
                 class="w-56 max-w-full"
                 :disabled="fromBank"
                 maxlength="80"
-                name="Новое имя"
+                :name="$t('settings.people.newName')"
                 type="text"
                 @keydown.esc.prevent="panel = null"
               />
-              <VButton type="submit" text="Сохранить" :disabled="!fromBank && label.trim() === ''" />
+              <VButton type="submit" :text="$t('settings.people.save')" :disabled="!fromBank && label.trim() === ''" />
             </div>
-            <VCheckbox v-model="fromBank" label="Взять имя из банка (обновляется при каждом импорте)" />
+            <VCheckbox v-model="fromBank" :label="$t('settings.people.useBankName')" />
           </form>
         </div>
       </div>
@@ -104,7 +104,7 @@ function pick(color: ColorKey | null) {
       <div v-if="panel === 'color'" class="grid">
         <div class="-mx-1 min-h-0 overflow-hidden px-1">
           <div class="pt-3 pb-1">
-            <ColorSwatches :model-value="person.color" label="Цвет человека" :taken="takenColors" @update:model-value="pick" />
+            <ColorSwatches :model-value="person.color" :label="$t('settings.people.colorLabel')" :taken="takenColors" @update:model-value="pick" />
           </div>
         </div>
       </div>

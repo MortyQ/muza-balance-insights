@@ -97,6 +97,17 @@
     `participant` по `ConnectionView.enabledAccounts`) → `hasData` ложно, но подключения есть: главная (не экран
     подключения) с плашкой «Все счета выключены…» и кнопкой в «Подключения» (`widgets/home-notices`);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
+- **Interface texts** — every text on a screen goes through vue-i18n, no literals:
+  - templates: `$t('key')`, `$t('key', { name })`, plurals `$t('key', n)`; script code (`utils.ts`, composables,
+    stores): `t` from `@/shared/lib`, called when the text is needed — never at module load (a constant built with `t`
+    does not follow a language switch). Tables of texts in `constants.ts` hold keys (`MessageKey` from
+    `@contract/i18n/index.ts`), the component translates them;
+  - keys are nested by layer and slice, `<layer>.<slice>.<what>` (`settings.lock.title`, `home.balances.income`),
+    shared words in `common.*`; `uk.json` is the reference, `en.json` and `ru.json` get the same key in the same change
+    (`tests/i18n.test.ts`);
+  - Ukrainian and Russian texts address the user informally (ти / ты), as the screens always have; English is plain;
+  - numbers, dates and money keep their own formatters (`formatMoney`, `monthTitle`) and are passed in as placeholders;
+  - bank names, the app name and the language names in the language select are not translated.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.

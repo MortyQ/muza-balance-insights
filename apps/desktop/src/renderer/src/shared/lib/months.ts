@@ -1,7 +1,19 @@
 // Calendar months for the spending screen, in Kyiv time (the same zone the core uses for local_date).
+import { t } from './i18n.ts';
+
 export type YearMonth = `${number}-${string}`;
 
-const MONTHS = ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'];
+/** The month's name in the interface language, as a standalone word («September»). */
+export function monthName(month: number): string {
+  return t(`common.month.${month as MonthNumber}`);
+}
+
+/** Short name for the month grid («Sep»). */
+export function monthShortName(month: number): string {
+  return t(`common.monthShort.${month as MonthNumber}`);
+}
+
+type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 const kyivDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -27,10 +39,10 @@ export function monthRange(ym: YearMonth): { from: string; to: string } {
   return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, '0')}` };
 }
 
-/** «сентябрь 2026». */
+/** «September 2026». */
 export function monthTitle(ym: YearMonth): string {
   const [y, m] = ym.split('-').map(Number) as [number, number];
-  return `${MONTHS[m - 1]} ${y}`;
+  return `${monthName(m)} ${y}`;
 }
 
 /** «2026-03-10» → «10.03»; «2026-03-10 23:00» → «10.03, 23:00». */

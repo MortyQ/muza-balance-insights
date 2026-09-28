@@ -1,4 +1,4 @@
-// The interface language: the user's choice, or the system's when it is one of ours. No translation yet.
+// The interface language: the user's choice, or the system's when it is one of ours, else English.
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_LOCALE, LOCALES, resolveLocale } from '../src/shared/locale.ts';
 
@@ -18,5 +18,6 @@ describe('resolveLocale', () => {
     [['de-DE', 'fr-FR'], 'en'],
     [[], 'en'],
     [['ukr', 'english'], 'en'],
+    [['en-US'], 'en'],
   ])('%j → %s', (languages, locale) => expect(resolveLocale(languages)).toBe(locale));
 });

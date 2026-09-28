@@ -93,6 +93,8 @@ describe('renderer architecture', () => {
     ['a store outside store/', { 'entities/token/u.ts': "import { defineStore } from 'pinia';\nexport const s = defineStore('s', () => ({}));\n" }, 'outside a store/ segment'],
     ['logic in a public API', { 'entities/bank/index.ts': "export { b } from './b.ts';\nexport const extra = 2;\n" }, 'only re-exports'],
     ['a slice without index.ts', { 'entities/lonely/x.ts': 'export const x = 1;\n', 'features/f/u.ts': "import { x } from '@/entities/lonely';\n" }, 'no index.ts'],
+    ['@contract/ past a folder index', { 'shared/lib/b.ts': "import uk from '@contract/i18n/uk.json';\n" }, '@contract/ is for the files of src/shared only'],
+    ['@contract/ out of src/shared', { 'shared/lib/b.ts': "import { x } from '@contract/../main/x.ts';\n" }, '@contract/ is for the files of src/shared only'],
     ['a dynamic import upwards', { 'shared/lib/b.ts': "const p = () => import('@/pages/home');\n" }, 'must not import the higher layer'],
   ])('fails on %s', (_name, extra, message) => {
     expect(violations(ok(extra)).join('\n')).toContain(message);

@@ -297,10 +297,11 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       await expect(ipc.handlers.get('balance:getLockState')!(good)).resolves.toEqual({ m: 'getLockState', a: [] });
       await expect(ipc.handlers.get('balance:unlockWithTouchId')!(good)).resolves.toEqual({ m: 'unlockWithTouchId', a: [] });
       await expect(ipc.handlers.get('balance:deleteAllData')!(good)).resolves.toEqual({ m: 'deleteAllData', a: [] });
+      await expect(ipc.handlers.get('balance:getLocale')!(good)).resolves.toEqual({ m: 'getLocale', a: [] });
     });
 
-    it('exactly four methods pass a closed lock', () => {
-      expect([...ALLOWED_WHEN_LOCKED].sort()).toEqual(['deleteAllData', 'getLockState', 'unlockWithPin', 'unlockWithTouchId']);
+    it('exactly five methods pass a closed lock', () => {
+      expect([...ALLOWED_WHEN_LOCKED].sort()).toEqual(['deleteAllData', 'getLocale', 'getLockState', 'unlockWithPin', 'unlockWithTouchId']);
     });
 
     it('an untrusted sender is refused before the lock is even looked at', async () => {
@@ -363,7 +364,7 @@ describe('the database gate', () => {
 
   it('exactly the recovery screen and the lock pass a database that is not ready', () => {
     expect([...ALLOWED_WHEN_DB_UNAVAILABLE].sort()).toEqual(
-      ['deleteAllData', 'getDbState', 'getLockState', 'lockNow', 'quitApp', 'relaunchApp', 'startOver', 'unlockWithPin', 'unlockWithTouchId'],
+      ['deleteAllData', 'getDbState', 'getLocale', 'getLockState', 'lockNow', 'quitApp', 'relaunchApp', 'startOver', 'unlockWithPin', 'unlockWithTouchId'],
     );
   });
 

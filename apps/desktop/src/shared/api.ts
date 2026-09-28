@@ -1,5 +1,7 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { AutoSyncSettings } from './auto-sync.ts';
+import type { AccountName } from './account-name.ts';
+import type { CategoryId } from './categories.ts';
 import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
@@ -47,6 +49,8 @@ export type PersonView = {
   label: string;
   /** The label is the holder's name from the bank (until the user renames). */
   labelFromBank: boolean;
+  /** Waiting for the bank's name (added with «Use the name from the bank», not imported yet): the renderer words it. */
+  labelPending: boolean;
   /** null = none (the palette ran out). */
   color: ColorKey | null;
   connections: ConnectionView[];
@@ -181,14 +185,15 @@ export type BalanceApi = {
 
 // ---------- data for the screen ----------
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
-// No names, descriptions, card numbers or IBANs: categories and «black/UAH» labels only.
+// No names, descriptions, card numbers or IBANs: categories and account name parts only.
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
 
 export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
 
-export type SpendingLine = { category: string; gross: number; refunds: number; net: number };
+/** `category` — the core's word; `categoryId` — its CATEGORY key (null on the total line, or a word the core no longer has). */
+export type SpendingLine = { category: string; categoryId: CategoryId | null; gross: number; refunds: number; net: number };
 
 export type SpendingCurrency = {
   currency: number;
@@ -245,8 +250,8 @@ export type CardTotal = FlowView & {
 
 export type OverviewAccount = FlowView & {
   id: string;
-  /** «black/UAH»-style label: never a card number or a jar title. */
-  label: string;
+  /** Never a card number or a jar title. */
+  name: AccountName;
   kind: 'card' | 'jar';
   currency: number;
   creditLimit: number;
@@ -262,7 +267,7 @@ export type MonthOverview = {
   coverage: { from: string; to: string };
   total: CardTotal;
   /** The whole family only: each person in their own view of transfers. */
-  people: Array<{ participantId: number; label: string; color: ColorKey | null; total: CardTotal }>;
+  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
 };

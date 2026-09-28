@@ -1,7 +1,8 @@
 import type { TrustedServiceView } from '@contract/api.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
 
 /** A new trusted service breaks the typecheck here until it has its words. Hosts always come from main. */
 export const SERVICE_TEXT = {
-  github: { title: 'GitHub', purpose: 'Проверка и загрузка обновлений.' },
-  monobank: { title: 'Monobank', purpose: 'Счета и выписка. Токен отправляется только сюда.' },
-} as const satisfies Record<TrustedServiceView['id'], { title: string; purpose: string }>;
+  github: { title: 'GitHub', purpose: 'settings.securityInfo.network.github' },
+  monobank: { title: 'Monobank', purpose: 'settings.securityInfo.network.monobank' },
+} as const satisfies Record<TrustedServiceView['id'], { title: string; purpose: MessageKey }>;

@@ -39,9 +39,9 @@ describe('IntegrationsService', () => {
 
     const view = await people.list();
     expect(view.secureStorage).toBe(true);
-    expect(view.people.map((p) => [p.label, p.labelFromBank, p.connections.map((x) => [x.bank, x.token.stored])])).toEqual([
-      ['Вигаданий Я', false, [['Monobank', 'secure'], ['Monobank', 'secure']]],
-      [BANK_LABEL_PLACEHOLDER, true, [['Monobank', 'memory']]],
+    expect(view.people.map((p) => [p.label, p.labelFromBank, p.labelPending, p.connections.map((x) => [x.bank, x.token.stored])])).toEqual([
+      ['Вигаданий Я', false, false, [['Monobank', 'secure'], ['Monobank', 'secure']]],
+      [BANK_LABEL_PLACEHOLDER, true, true, [['Monobank', 'memory']]],
     ]);
     await db.execute(`UPDATE connections SET external_client_id = 'secret-holder-id' WHERE id = 1`);
     const text = JSON.stringify(await people.list());

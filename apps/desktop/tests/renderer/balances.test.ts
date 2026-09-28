@@ -110,7 +110,7 @@ describe('balances utils', () => {
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] },
-      people: [{ participantId: 1, label: 'Сергей', color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
+      people: [{ participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
       accounts: [],
     };
     const s = slidesOf(fam, { people: [], selectedId: null, currentYear: 2026 });
@@ -134,7 +134,7 @@ describe('balances utils', () => {
     const person: MonthOverview = {
       ...fam,
       people: [],
-      accounts: [{ id: 'd', label: 'fop/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 316_200, spending: 0 }],
+      accounts: [{ id: 'd', name: { kind: 'card', type: 'fop', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 316_200, spending: 0 }],
     };
     const p = slidesOf(person, { people: [], selectedId: 1, currentYear: 2026 });
     expect(p[0]?.flow.approxIncome).toBe(true);
@@ -161,8 +161,8 @@ describe('balances utils', () => {
 
   it('slidesOf: the family — head then people; a person — head then accounts, no data dimmed', () => {
     const people: PersonView[] = [
-      { id: 1, label: 'Сергей', labelFromBank: true, color: 'blue', connections: [] },
-      { id: 2, label: 'Аня', labelFromBank: false, color: 'orange', connections: [] },
+      { id: 1, label: 'Сергей', labelFromBank: true, labelPending: false, color: 'blue', connections: [] },
+      { id: 2, label: 'Аня', labelFromBank: false, labelPending: false, color: 'orange', connections: [] },
     ];
     const fam: MonthOverview = {
       month: '2026-09',
@@ -170,8 +170,8 @@ describe('balances utils', () => {
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(10_000, 5_000, 4_000, 0, 14),
       people: [
-        { participantId: 1, label: 'Сергей', color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
-        { participantId: 2, label: 'Аня', color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
+        { participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
+        { participantId: 2, label: 'Аня', labelPending: false, color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
       ],
       accounts: [],
     };
@@ -192,19 +192,19 @@ describe('balances utils', () => {
       people: [],
       total: card(6_000, 3_000, 2_000, 1, 4),
       accounts: [
-        { id: 'a', label: 'black/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 6_000, income: 3_000, spending: 2_000 },
-        { id: 'b', label: 'jar/UAH', kind: 'jar', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 },
-        { id: 'c', label: 'iron/UAH', kind: 'card', currency: 980, creditLimit: 3_000_000, ownFunds: -678_000, income: 0, spending: 10_000 },
-        { id: 'd', label: 'black/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 125_000, income: 0, spending: 0 },
+        { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 6_000, income: 3_000, spending: 2_000 },
+        { id: 'b', name: { kind: 'jar', type: null, currency: 980, tag: 'b123' }, kind: 'jar', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 },
+        { id: 'c', name: { kind: 'card', type: 'iron', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 3_000_000, ownFunds: -678_000, income: 0, spending: 10_000 },
+        { id: 'd', name: { kind: 'card', type: 'black', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 125_000, income: 0, spending: 0 },
       ],
     };
     const p = slidesOf(one, { people, selectedId: 1, currentYear: 2026 });
     expect(p.map((x) => [x.title, x.dim])).toEqual([
       ['Сергей', false],
-      ['black/UAH', false],
-      ['jar/UAH', true],
-      ['iron/UAH', false],
-      ['black/USD', false],
+      ['Чёрная карта · UAH', false],
+      ['Банка · UAH #b123', true],
+      ['Iron · UAH', false],
+      ['Чёрная карта · USD', false],
     ]);
     expect(p[0]?.bottom).toBe('4 счёта · без 1 счёта');
     expect(p[1]?.caption).toBe('Карта · на 30 сентября');

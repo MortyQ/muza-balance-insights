@@ -11,7 +11,7 @@ import { autoLine, failureLines, progressLine } from '@/features/import-statemen
 
 const NOW = Date.UTC(2026, 8, 27, 9, 0);
 const windows: ImportProgress = {
-  phase: 'windows', account: 'black/UAH', from: '2026-08-27', to: '2026-09-27', round: 1, index: 1, total: 1,
+  phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-08-27', to: '2026-09-27', round: 1, index: 1, total: 1,
   windowsDone: 0, windowsTotal: 3, transactions: 0, etaSec: 180, waitingSec: null, auto: true,
 };
 
@@ -24,18 +24,18 @@ describe('autoLine', () => {
     }
   });
 
-  it('a wait for the network is shown as for a user import; an error by its message', () => {
+  it('a wait for the network is shown as for a user import; an error by its code', () => {
     const retry: ImportProgress = { phase: 'retry', reason: 'network', attempt: 1, inSec: 60, auto: true };
     expect(autoLine(retry, NOW)).toBe(progressLine(retry, NOW));
-    expect(autoLine({ phase: 'error', message: 'Сбой', auto: true }, NOW)).toBe('Сбой');
+    expect(autoLine({ phase: 'error', error: 'network', auto: true }, NOW)).toBe('Нет связи с Monobank. Импорт продолжится со следующего запуска.');
   });
 
   it('once over: no «Готово» line; a connection that did not import still shows', () => {
-    const done: ImportProgress = { phase: 'done', windowsTotal: 3, transactions: 5, failed: [{ connectionId: 2, message: 'Токен не принят' }], auto: true };
+    const done: ImportProgress = { phase: 'done', windowsTotal: 3, transactions: 5, failed: [{ connectionId: 2, error: 'auth' }], auto: true };
     expect(autoLine(done, NOW)).toBe('');
     expect(autoLine({ phase: 'cancelled', auto: true }, NOW)).toBe('');
     expect(autoLine({ phase: 'idle' }, NOW)).toBe('');
-    expect(failureLines(done, (id) => `Люди ${id}`)).toEqual(['Люди 2: Токен не принят']);
+    expect(failureLines(done, (id) => `Люди ${id}`)).toEqual(['Люди 2: Monobank не принял токен. Проверь токен и введи его заново.']);
   });
 });
 
@@ -75,5 +75,13 @@ describe('withChange: what goes to setAutoSync', () => {
     withChange(s, { enabled: false });
     withChange(s, { trigger: 'wake', on: false });
     expect(structuredClone({ enabled: s.enabled, triggers: { ...s.triggers } })).toEqual(DEFAULT_AUTO_SYNC);
+  });
+});
+
+describe('the import line names the account', () => {
+  it('by its parts, in the app language; before the accounts are known — a plain word', () => {
+    expect(progressLine(windows, NOW)).toMatch(/^Чёрная карта · UAH: окно /);
+    expect(progressLine({ ...windows, account: { kind: 'jar', type: null, currency: 978, tag: 'ab12' } }, NOW)).toMatch(/^Банка · EUR #ab12: /);
+    expect(progressLine({ ...windows, account: null }, NOW)).toMatch(/^счёт: /);
   });
 });

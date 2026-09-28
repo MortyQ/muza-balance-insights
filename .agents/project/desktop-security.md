@@ -15,7 +15,7 @@
   не шифрование. Всё в `src/main/lock/`: scrypt-хеш, `lock.json` (0600, повреждён → заблокировано навсегда, выход —
   «Удалить все данные»), паузы 5 ошибок → 30 с / 1 / 5 / 15 мин (счётчик на диске). Триггеры — переключатели, все вкл.:
   запуск, 60 мин системного простоя, блокировка экрана, сон; плюс «Заблокировать» `CmdOrCtrl+L`.
-  Под замком `registerIpc` пропускает только `ALLOWED_WHEN_LOCKED` (`getLockState`, `unlockWithPin`, `unlockWithTouchId`,
+  Под замком `registerIpc` пропускает только `ALLOWED_WHEN_LOCKED` (`getLockState`, `unlockWithPin`, `unlockWithTouchId`, `getLocale` — язык экрана замка,
   `deleteAllData`), push — только `balance:lock` (`gatedPush`, единственный путь `webContents.send` в `index.ts` —
   проверяет `tests/window.test.ts`); при блокировке renderer перезагружается. Импорт и проверка обновлений идут под
   замком, установка — после разблокировки (скачанное обновление ставится при выходе и под замком). «Идёт импорт» —

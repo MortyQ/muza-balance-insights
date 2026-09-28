@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue';
+import { t } from '@/shared/lib';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import BalancesHeader from './components/BalancesHeader.vue';
 import CardStack from './components/CardStack.vue';
@@ -27,14 +28,14 @@ function onCard(): void {
 }
 
 const head = computed(() => slides.value[0] ?? null);
-const openTitle = computed(() => (isFamily.value ? 'Карты семьи' : `Счета · ${head.value?.title ?? ''}`));
-const openSubtitle = computed(() => (isFamily.value ? 'общий итог и каждый человек' : accountsCount(view.value?.total.accounts ?? 0)));
+const openTitle = computed(() => (isFamily.value ? t('home.balances.familyCards') : t('home.balances.accountsOf', { name: head.value?.title ?? '' })));
+const openSubtitle = computed(() => (isFamily.value ? t('home.balances.familySubtitle') : accountsCount(view.value?.total.accounts ?? 0)));
 const note = computed(() => (view.value ? coverageNote(view.value.month, view.value.coverage) : ''));
 </script>
 
 <template>
   <VCard padding="md" @keydown.esc="collapse">
-    <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
+    <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('home.balances.readFailed')" />
     <div v-else ref="block" class="flex flex-col gap-3">
       <BalancesHeader
         :open
@@ -47,7 +48,7 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
         @stub="stack.showStub"
         @close="collapse"
       />
-      <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" subtitle="Не удалось прочитать балансы." />
+      <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('home.balances.readFailed')" />
       <div v-if="head" class="relative transition-opacity" :class="{ 'opacity-60': state.status === 'loading' }">
         <CardStack ref="cards" :slides :open :offset :paging @toggle="onCard" />
         <MonthPanel
@@ -63,7 +64,7 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
           @stub="stack.showStub"
         />
       </div>
-      <p v-if="open && stubShown" class="text-right text-xs text-foreground-muted" role="status">«Все счета» — раздел появится позже</p>
+      <p v-if="open && stubShown" class="text-right text-xs text-foreground-muted" role="status">{{ $t('home.balances.stubLater') }}</p>
     </div>
   </VCard>
 </template>

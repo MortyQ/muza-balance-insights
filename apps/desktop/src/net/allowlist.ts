@@ -44,13 +44,13 @@ export function assertAllowedUrl(url: string, services: ReadonlyArray<ServiceId>
   try {
     u = new URL(url);
   } catch {
-    throw new NetworkPolicyError('Запрос отклонён: некорректный адрес');
+    throw new NetworkPolicyError('Request refused: invalid URL');
   }
-  const refuse = (why: string) => new NetworkPolicyError(`Запрос к ${u.hostname || '(нет хоста)'} отклонён: ${why}`);
-  if (u.protocol !== 'https:') throw refuse('только https');
-  if (u.username || u.password) throw refuse('учётные данные в адресе');
-  if (u.port !== '') throw refuse('нестандартный порт');
-  if (!hostsOf(services).includes(u.hostname)) throw refuse('хост не в списке разрешённых');
+  const refuse = (why: string) => new NetworkPolicyError(`Request to ${u.hostname || '(no host)'} refused: ${why}`);
+  if (u.protocol !== 'https:') throw refuse('https only');
+  if (u.username || u.password) throw refuse('credentials in the URL');
+  if (u.port !== '') throw refuse('non-default port');
+  if (!hostsOf(services).includes(u.hostname)) throw refuse('host not allowed');
   return u;
 }
 

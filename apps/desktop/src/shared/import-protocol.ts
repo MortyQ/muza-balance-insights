@@ -1,11 +1,12 @@
 // Messages between main and the import worker (utilityProcess). Validated with zod on both sides.
 // Tokens and the database key appear in exactly one message: `start`, main → worker (a token per connection, the key
 // once — null for a plain database). Nothing the worker sends back can
-// hold them: progress is typed data, errors are fixed texts or already-redacted bank messages; connections appear by
+// hold them: progress is typed data, errors are codes (log lines: names, statuses and counts); connections appear by
 // their numeric id only, never by a participant's name.
 import { z } from 'zod';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { WORKER_ERRORS } from './progress.ts';
 
 export const MAX_CONNECTIONS = 10;
 
@@ -42,7 +43,14 @@ export const WorkerProgress = z.discriminatedUnion('phase', [
   z.strictObject({ phase: z.literal('accounts') }),
   z.strictObject({
     phase: z.literal('windows'),
-    account: z.string().max(40),
+    account: z
+      .strictObject({
+        kind: z.enum(['card', 'jar']),
+        type: z.string().max(40).nullable(),
+        currency: z.number().int().min(0).max(999),
+        tag: z.string().max(4).nullable(),
+      })
+      .nullable(),
     from: date,
     to: date,
     round: count,
@@ -64,8 +72,9 @@ export const WorkerProgress = z.discriminatedUnion('phase', [
   z.strictObject({ phase: z.literal('rederive') }),
 ]);
 
-/** auth = the bank rejected the credential; connection = the credential is of another holder / already connected. */
-export const ErrorKind = z.enum(['cancelled', 'auth', 'connection', 'rate-limit', 'network', 'format', 'other']);
+/** The codes are described at WORKER_ERRORS (progress.ts); cancelled = the user stopped the import. */
+const ConnectionErrorKind = z.enum(WORKER_ERRORS);
+export const ErrorKind = z.enum(['cancelled', ...WORKER_ERRORS]);
 export type ErrorKind = z.infer<typeof ErrorKind>;
 
 export const FromWorker = z.discriminatedUnion('type', [
@@ -75,9 +84,9 @@ export const FromWorker = z.discriminatedUnion('type', [
     windowsTotal: count,
     transactions: count,
     /** Connections that stopped on their own error while the others finished. */
-    failed: z.array(z.strictObject({ connectionId, kind: ErrorKind, message: z.string().max(300) })).max(MAX_CONNECTIONS),
+    failed: z.array(z.strictObject({ connectionId, kind: ConnectionErrorKind })).max(MAX_CONNECTIONS),
   }),
-  z.strictObject({ type: z.literal('error'), kind: ErrorKind, message: z.string().max(300) }),
+  z.strictObject({ type: z.literal('error'), kind: ErrorKind }),
   /** Service lines for the main log (dev stdout): names and counts only. */
   z.strictObject({ type: z.literal('log'), message: z.string().max(300) }),
 ]);

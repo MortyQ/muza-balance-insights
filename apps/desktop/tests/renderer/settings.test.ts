@@ -1,12 +1,14 @@
 // The settings screen: which section a query opens and how the arrows walk the menu.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { describe, expect, it } from 'vitest';
+import type { NavItem } from '@/widgets/settings/constants.ts';
 
 const { settingsSection } = await import('@/shared/config');
 const { nextSection } = await import('@/widgets/settings/utils.ts');
 const { osStoreName } = await import('@/shared/lib');
 const { tokensStorage } = await import('@/features/settings/security-info/utils.ts');
 const { NAV_LABEL_CLASS } = await import('@/widgets/settings/constants.ts');
+const { updateLine } = await import('@/features/settings/app-update/utils.ts');
 
 describe('storage section', () => {
   it('says nothing about encryption until main has answered', () => {
@@ -75,10 +77,19 @@ describe('settings sections', () => {
     expect(inMenu).toEqual([...SETTINGS_SECTIONS]);
   });
 
-  it('appearance sits between updates and about', () => {
+  it('appearance and language sit between updates and about', () => {
     expect(nextSection('updates', 1)).toBe('appearance');
-    expect(nextSection('appearance', 1)).toBe('about');
-    expect(nextSection('about', -1)).toBe('appearance');
+    expect(nextSection('appearance', 1)).toBe('language');
+    expect(nextSection('language', 1)).toBe('about');
+    expect(nextSection('about', -1)).toBe('language');
+  });
+
+  it('language is a section now, not «Soon»; the menu has no disabled items left', async () => {
+    const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
+    const items: ReadonlyArray<NavItem> = NAV_GROUPS.flatMap((g): ReadonlyArray<NavItem> => g.items);
+    expect(items.find((i) => i.label === 'settings.nav.language')?.section).toBe('language');
+    expect(items.filter((i) => i.section === null)).toEqual([]);
+    expect(settingsSection('language')).toBe('language');
   });
 });
 
@@ -92,5 +103,17 @@ describe('language options (for the select)', () => {
       ['English', 'GB'],
       ['Русский', 'RU'],
     ]);
+  });
+});
+
+// Main sends why an update failed; the text is the renderer's, in the app's language.
+describe('update errors', () => {
+  it.each([
+    ['offline', 'нет связи с GitHub'],
+    ['rejected', 'не прошло проверку подписи'],
+    ['download', 'Не удалось скачать обновление'],
+    ['mismatch', 'не совпал с подписанным описанием'],
+  ] as const)('%s', (reason, text) => {
+    expect(updateLine({ phase: 'error', reason })).toContain(text);
   });
 });

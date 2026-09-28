@@ -44,7 +44,7 @@ export class IntegrationsService {
    */
   async addConnection(input: AddConnectionInput): Promise<AddConnectionResult> {
     const { bank, credential } = DESKTOP_PROVIDERS[input.provider];
-    if (!credential.test(input.token)) throw new TokenError(`Токен не похож на токен ${bank}`);
+    if (!credential.test(input.token)) throw new TokenError(`Not a ${bank} token`);
     const db = await this.d.db();
     for (const c of await listConnections(db)) {
       if (c.provider === input.provider && (await this.d.tokens.get(c.id)) === input.token) return { added: false, reason: 'duplicate' };
@@ -70,14 +70,14 @@ export class IntegrationsService {
 
   async setToken(connectionId: number, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
     const c = (await listConnections(await this.d.db())).find((x) => x.id === connectionId);
-    if (!c) throw new TokenError('Такого подключения нет');
+    if (!c) throw new TokenError('No such connection');
     return this.d.tokens.set(connectionId, c.provider, token, remember);
   }
 
   /** Field by field: nothing of an account beyond the label parts reaches the renderer. */
   async listConnectionAccounts(connectionId: number): Promise<ConnectionAccountView[]> {
     const db = await this.d.db();
-    if (!(await listConnections(db)).some((c) => c.id === connectionId)) throw new ConnectionError('Такого подключения нет');
+    if (!(await listConnections(db)).some((c) => c.id === connectionId)) throw new ConnectionError('No such connection');
     return (await listConnectionAccounts(db, connectionId)).map((a) => ({
       id: a.id,
       kind: a.kind,

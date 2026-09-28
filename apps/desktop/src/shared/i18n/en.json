@@ -1,1 +1,607 @@
-{}
+{
+  "common": {
+    "disclaimer": "Unofficial app, not affiliated with Monobank.",
+    "failed": "Something went wrong. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
+    "month": {
+      "1": "January",
+      "10": "October",
+      "11": "November",
+      "12": "December",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September"
+    },
+    "monthPicker": {
+      "label": "Month",
+      "nextYear": "Next year",
+      "prevYear": "Previous year",
+      "thisMonth": "This month"
+    },
+    "monthShort": {
+      "1": "Jan",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec",
+      "2": "Feb",
+      "3": "Mar",
+      "4": "Apr",
+      "5": "May",
+      "6": "Jun",
+      "7": "Jul",
+      "8": "Aug",
+      "9": "Sep"
+    },
+    "osStore": {
+      "linux": "the system password store",
+      "mac": "the macOS Keychain",
+      "other": "the system store",
+      "windows": "Windows secure storage"
+    }
+  },
+  "entities": {
+    "bank": {
+      "card": "Card",
+      "jar": "Jar",
+      "monobank": "Monobank",
+      "monobankCard": {
+        "black": "Black card",
+        "eAid": "eSupport",
+        "fop": "Sole proprietor account",
+        "iron": "Iron",
+        "madeInUkraine": "National cashback",
+        "platinum": "Platinum",
+        "rebuilding": "eRecovery",
+        "white": "White card",
+        "yellow": "Children's card"
+      },
+      "other": "Other banks",
+      "privatbank": "PrivatBank"
+    },
+    "color": {
+      "aqua": "Aqua",
+      "blue": "Blue",
+      "green": "Green",
+      "magenta": "Pink",
+      "orange": "Orange",
+      "red": "Red",
+      "taken": "This colour is already taken — pick another one.",
+      "takenBy": "{color} — taken by {who}",
+      "violet": "Violet",
+      "yellow": "Yellow"
+    },
+    "coverage": {
+      "allOff": "All accounts are off",
+      "line": "Accounts: {count} · downloaded from {from} to {to}",
+      "notYet": "Not downloaded yet",
+      "partOf": "{enabled} of {total}"
+    },
+    "participant": {
+      "connection": "Connection",
+      "family": "Whole family",
+      "pending": "New person"
+    },
+    "syncStatus": {
+      "none": "No data yet",
+      "until": "Data up to {date}"
+    },
+    "token": {
+      "badgeNeeded": "Token needed",
+      "badgeReenter": "Enter the token again",
+      "badgeSaved": "Token saved",
+      "badgeUntilClose": "Token until closing",
+      "memory": "Token kept in memory only until the app closes",
+      "none": "No token",
+      "secure": "Token in the system keychain",
+      "unreadable": "The saved token can no longer be read — enter it again."
+    }
+  },
+  "header": {
+    "settings": "Settings",
+    "settingsMac": "Settings (⌘,)",
+    "settingsOther": "Settings (Ctrl+,)"
+  },
+  "home": {
+    "balances": {
+      "accountsCount": "{n} account | {n} accounts | {n} accounts",
+      "accountsOf": "Accounts · {name}",
+      "allAccounts": "All accounts",
+      "back": "Back",
+      "captionOn": "{label} · on {day} {month}{year}",
+      "captionToday": "{label} · today",
+      "collapse": "Collapse",
+      "coverageFrom": "from {day} {month}",
+      "coverageTo": "to {day} {month}",
+      "expandHint": "Click a card to expand it",
+      "familyCards": "Family cards",
+      "familySubtitle": "the total and each person",
+      "fxNearestRate": "incl. {amount} at the nearest exchange rate {rate}",
+      "fxNoRate": "without {amount} — no exchange",
+      "fxRate": "incl. {amount} at the rate {rate}",
+      "inMonth": "in {month}{year}",
+      "income": "In",
+      "kind": {
+        "card": "Card",
+        "credit": "Credit card",
+        "fx": "Currency card",
+        "jar": "Jar"
+      },
+      "limit": "limit {amount}",
+      "monthGen": {
+        "1": "January",
+        "10": "October",
+        "11": "November",
+        "12": "December",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September"
+      },
+      "monthIn": {
+        "1": "January",
+        "10": "October",
+        "11": "November",
+        "12": "December",
+        "2": "February",
+        "3": "March",
+        "4": "April",
+        "5": "May",
+        "6": "June",
+        "7": "July",
+        "8": "August",
+        "9": "September"
+      },
+      "next": "Next",
+      "noDataOnDate": "No data for this date",
+      "ownFunds": "Own money",
+      "people": "People",
+      "peopleCount": "{n} person | {n} people | {n} people",
+      "readFailed": "Could not read the balances.",
+      "spending": "Out",
+      "spentShare": "spent {spent}% of income",
+      "stubLater": "«All accounts» — this section is coming later",
+      "stubSoon": "This section is coming later",
+      "title": "Balance",
+      "wholeMonth": "whole month",
+      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
+    },
+    "import": {
+      "about": "All connections are downloaded. Monobank gives out the statement at most once a minute per token and at most 31 days per request: about a minute for each month of history of each account; the connections of different people go in parallel. The current month of all accounts comes first, then the history. You can stop the import and continue later. New transactions also arrive on their own — see «Auto-sync» in the settings.",
+      "accounts": "Updating the list of accounts…",
+      "autoRunning": "Updating the data…",
+      "cancelled": "The import is stopped. What is downloaded is saved.",
+      "depth": "Depth",
+      "depthMonths": "{n} mo.",
+      "done": "Done: windows {windows}, transactions {transactions}.",
+      "duration": {
+        "hourMin": "≈ {hours} h {min} min",
+        "min": "≈ {min} min",
+        "sec": "{sec} s"
+      },
+      "error": {
+        "alreadyConnected": "This bank account is already in another connection. Nothing was changed.",
+        "auth": "Monobank did not accept the token. Check it and enter it again.",
+        "bank": "Monobank answered with an error. The import continues on the next launch.",
+        "crash": "The import process kept stopping unexpectedly for several hours. The import continues on the next launch.",
+        "dbOpen": "Could not open the database for the import.",
+        "format": "Monobank sent data in an unexpected format. The import continues on the next launch.",
+        "network": "No connection to Monobank. The import continues on the next launch.",
+        "noToken": "The token is not saved — enter it again to import this connection.",
+        "other": "The import stopped because of an error. It continues on the next launch.",
+        "otherHolder": "The token belongs to a different bank account than this connection. Nothing was changed.",
+        "rateLimit": "Monobank limited the number of requests. The import continues on the next launch."
+      },
+      "needsToken": "There is an unfinished import. Enter the token in «Connections» to continue.",
+      "notLoaded": "Not downloaded — {line}",
+      "rederive": "Marking transfers and categories…",
+      "resuming": "Resuming the import…",
+      "retry": {
+        "crash": "The import process is restarting",
+        "network": "No connection to Monobank",
+        "rateLimit": "Monobank asks to wait",
+        "server": "Monobank is not answering for now"
+      },
+      "retryLine": "{reason}. Retrying at {at} (attempt {attempt}). What is downloaded is saved.",
+      "someAccount": "account",
+      "start": "Download",
+      "startError": {
+        "dbUnavailable": "The database is unavailable right now — the import did not start.",
+        "noToken": "There is no token: enter one in the settings, «Connections».",
+        "running": "The import is already running."
+      },
+      "starting": "Starting the import…",
+      "stop": "Stop",
+      "title": "Import",
+      "waitLimit": " · waiting for the Monobank limit {sec} s",
+      "windowsLine": "{account}: window {from} … {to} ({index}/{total}) · windows downloaded {done} of {windows}, transactions {transactions} · {eta} left{wait}"
+    },
+    "notices": {
+      "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
+      "enterToken": "Enter token",
+      "noTokenAll": "No token: new transactions are not downloaded. What is downloaded stays.",
+      "noTokenSome": "No token: {names}. Their new transactions are not downloaded.",
+      "openConnections": "Open «Connections»",
+      "readFailed": "Could not read the data. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
+      "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
+    },
+    "spending": {
+      "accountsIn": "Accounts in {currency}",
+      "category": {
+        "beauty": "Beauty",
+        "cafes": "Cafes and restaurants",
+        "cash": "Cash",
+        "charity": "Charity",
+        "clothing": "Clothing",
+        "delivery": "Delivery",
+        "education": "Education",
+        "entertainment": "Entertainment",
+        "family": "To family",
+        "fees": "Bank fees",
+        "gifts": "Flowers and gifts",
+        "groceries": "Groceries",
+        "health": "Pharmacies and health",
+        "home": "Home and appliances",
+        "income": "Income",
+        "installments": "Installments and loans",
+        "insurance": "Insurance",
+        "marketplaces": "Marketplaces",
+        "other": "Other",
+        "ownTransfers": "Own transfers",
+        "p2p": "Transfers to people",
+        "pets": "Pet supplies",
+        "sport": "Sport",
+        "taxes": "Taxes and government fees",
+        "telecom": "Mobile and digital services",
+        "transport": "Taxi and transport",
+        "travel": "Travel",
+        "utilities": "Utilities"
+      },
+      "column": {
+        "category": "Category",
+        "gross": "Gross",
+        "net": "Net",
+        "refunds": "Refunds",
+        "share": "Share"
+      },
+      "empty": "No spending this month.",
+      "failed": "Could not count the spending. Try again or restart the app.",
+      "footnote": "Gross is everything charged, refunds is the money that came back, net = gross − refunds. Transfers between your own accounts and income are not counted as spending. Different currencies are not added up.",
+      "importing": "Import in progress — the numbers fill in as the statement downloads.",
+      "noData": "No data yet: download the statement in «Import».",
+      "notYet": "Data is downloaded only up to {date}: there is none for this month yet.",
+      "partial": "The month is not complete: data up to {date}, the numbers will still grow.",
+      "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
+      "perDay": "On average {amount} a day",
+      "perDayCovered": "(over {days} full days with data)",
+      "scope": {
+        "business": "Business",
+        "personal": "Personal"
+      },
+      "title": "Spending",
+      "total": "Total"
+    }
+  },
+  "integrations": {
+    "accounts": {
+      "button": "Accounts · {count}",
+      "buttonPart": "Accounts · {enabled} of {total}",
+      "disabledHint": "Not downloaded and left out of the statistics",
+      "importRunning": "An import is running: accounts can be switched on and off after it.",
+      "jarNamed": "Jar «{title}»"
+    },
+    "add": {
+      "colorNote": "The colour makes the person easy to tell apart on charts. You can change it later.",
+      "fromBank": "Use the name from the bank (filled in on the first import)",
+      "name": "Name",
+      "namePlaceholder": "A name, for example «Me» or «Olya»",
+      "newPerson": "New person",
+      "personColor": "Person's colour",
+      "submit": "Connect",
+      "submitShort": "Add",
+      "whose": "Whose accounts are these"
+    },
+    "connections": {
+      "add": "Add connection",
+      "added": "Connection added. Press «Download» on the home screen to download every connection.",
+      "addedDuringImport": "Connection added. It will be downloaded with the next import.",
+      "cancel": "Cancel",
+      "description": "The bank and the token the app reads your statement with. The token is read-only: it cannot move money. In «Accounts» you can switch an account off: it is not downloaded and is left out of the statistics.",
+      "newTitle": "New {bank} connection",
+      "none": "No connections yet.",
+      "note": "Connect someone else's account only with the token owner's consent. «Remove» erases the connection, its token and the downloaded transactions in this app; nothing changes at the bank.",
+      "title": "Connections"
+    },
+    "first": {
+      "defaultLabel": "Me",
+      "otherBank": "Another bank",
+      "pickBank": "Choose your bank",
+      "tagline": "Where your money goes — from your statement, on your computer."
+    },
+    "monobank": {
+      "accessNote": "The token only reads the statement and balances and is kept on this computer.",
+      "consent": "The account owner issues the token in their own Monobank and gives it to you. The token opens all of their statements and balances for reading — add it only with their consent.",
+      "duplicate": "This token is already connected.",
+      "noSecureStorage": "This computer has no secure key store: the token will not be saved, only kept in memory until the app closes.",
+      "placeholder": "Token from api.monobank.ua",
+      "remember": "Remember on this computer",
+      "step1": "Open api.monobank.ua in a browser and sign in with the Monobank app (QR code).",
+      "step2": "Copy your personal token and paste it here.",
+      "tokenName": "{bank} token"
+    },
+    "picker": {
+      "available": "Personal token, read-only",
+      "later": "Coming later",
+      "soon": "Soon"
+    },
+    "removeImportRunning": "Stop the import first: it is writing these accounts right now.",
+    "row": {
+      "accountsEmpty": "Accounts appear after the first import.",
+      "accountsFailed": "Could not load the accounts.",
+      "accountsLoading": "Loading accounts…",
+      "cancel": "Cancel",
+      "enterToken": "Enter token",
+      "reenterToken": "Enter token again",
+      "remove": "Remove",
+      "save": "Save"
+    },
+    "tokenError": "The token was not saved: check that the whole token is pasted, with no spaces."
+  },
+  "main": {
+    "dialog": {
+      "cancel": "Cancel",
+      "deleteAll": {
+        "confirm": "Delete everything",
+        "detail": "Downloaded transactions, the database key, saved tokens, the lock and an unfinished import will be deleted. This cannot be undone.",
+        "message": "Delete all data?"
+      },
+      "removeConnection": {
+        "confirm": "Remove connection",
+        "detail": "Its token, accounts and transactions in this app will be deleted. Nothing changes at the bank. This cannot be undone.",
+        "message": "Remove the connection?"
+      },
+      "startOver": {
+        "confirm": "Start over",
+        "detail": "Downloaded transactions, people and their names, overrides and settings will be deleted. Saved tokens stay if they can be read — transactions are downloaded from the bank again. This cannot be undone.",
+        "message": "Start over?"
+      }
+    },
+    "menu": {
+      "about": "About",
+      "develop": "Develop",
+      "file": "File",
+      "help": "Help",
+      "lock": "Lock",
+      "quit": "Quit",
+      "settings": "Settings…"
+    },
+    "touchIdReason": "unlock the app"
+  },
+  "settings": {
+    "about": {
+      "author": "Author",
+      "license": "License",
+      "source": "Source code",
+      "title": "About",
+      "version": "Version {version} · "
+    },
+    "autoSync": {
+      "description": "The app fetches new transactions of every connection by itself and rereads the last 31 days: that is how holds that have since completed or been cancelled catch up.",
+      "enabled": "Update data automatically",
+      "enabledHint": "The whole family: connections with a saved token.",
+      "note": "At most once every 30 minutes. Deeper history is downloaded with the «Download» button on the home screen.",
+      "title": "Auto-sync",
+      "triggerInterval": "Every 4 hours while the app is open",
+      "triggerLaunch": "When the app starts",
+      "triggerWake": "When the computer wakes from sleep",
+      "when": "When to update"
+    },
+    "dbEncryption": {
+      "encrypted": "The database on this computer is encrypted; the key is kept in {store}.",
+      "keyStore": {
+        "darwin": "the macOS Keychain",
+        "linux": "the keyring",
+        "other": "the system key store",
+        "win32": "Windows storage (DPAPI)"
+      },
+      "noSecureStorage": "The database is not encrypted: this computer has no secure key store (keyring). Once it has one, the app will encrypt the database on the next launch. For the same reason, tokens are kept in memory only.",
+      "pending": "Could not encrypt the database — the app will try again on the next launch.",
+      "scope": "Encryption protects a copy of the files: on another computer, in another user account, in a backup or in the cloud, the database cannot be opened. Programs running under your user account can get the key — that is what the app lock and disk encryption are for.",
+      "title": "Database encryption"
+    },
+    "dbRecovery": {
+      "action": {
+        "delete": "Delete all data",
+        "quit": "Quit",
+        "relaunch": "Relaunch",
+        "startOver": "Start over"
+      },
+      "actionError": "That did not work. Relaunch the app and try again.",
+      "detail": {
+        "dbUnreadable": "The database file is damaged or encrypted with another key.",
+        "keyLost": "The key the database is encrypted with can no longer be read (a reinstall without a signature, a deleted Keychain entry, a move to another computer). This database cannot be opened."
+      },
+      "startOverHint": "«Start over» creates a new empty database: transactions are downloaded from the bank again, saved tokens stay if they can be read. People's names, overrides and settings are lost.",
+      "title": {
+        "dbUnreadable": "The database does not open",
+        "keyLost": "The database key is lost",
+        "keyUnavailable": "No access to the database key"
+      },
+      "unavailable": {
+        "darwin": "Allow access when Keychain asks — the request appears after a relaunch.",
+        "linux": "Unlock the keyring and relaunch the app.",
+        "other": "The system key store did not respond. Relaunch the app."
+      }
+    },
+    "deleteData": {
+      "body": "Erases the transactions database and its key, saved tokens, the app lock and an unfinished import. Nothing changes at the bank, but the statement will have to be downloaded again. The app asks for confirmation before deleting.",
+      "button": "Delete all data",
+      "description": "Everything the app has saved on this computer.",
+      "error": "Not everything could be deleted. Restart the app and try again.",
+      "heading": "Delete all data",
+      "title": "Data"
+    },
+    "language": {
+      "description": "The language of the window, menus and system dialogs.",
+      "hint": "Applies at once.",
+      "language": "Language",
+      "title": "Language and time"
+    },
+    "lock": {
+      "broken": "The lock file is damaged. The app can only be opened by deleting all data.",
+      "cancel": "Cancel",
+      "cancelled": "Touch ID was cancelled.",
+      "cannotRestore": "A PIN cannot be recovered: you can only delete all data and download the statement again.",
+      "changePin": "Change PIN",
+      "currentPin": "Current PIN",
+      "description": "A PIN closes the app to anyone who sits down at your unlocked computer. It is a lock on the door, not encryption: the database is encrypted separately, with a key from the system store, and your user account can reach that key without the PIN.",
+      "disable": "Turn off lock",
+      "enable": "Turn on lock",
+      "forgot": "Forgot your PIN?",
+      "hintEnable": "Turn on",
+      "hintLater": "Not now",
+      "hintText": "Closes the app when you step away from the computer. Turn it on in settings.",
+      "hintTitle": "New: lock with a PIN or Touch ID",
+      "importRunning": "An import is running — it keeps going while the app is locked.",
+      "lockNow": "Lock now",
+      "locked": "The app is locked",
+      "mismatch": "The PINs do not match.",
+      "newPin": "New PIN — 4 to 8 digits",
+      "note": "A forgotten PIN cannot be recovered — you can only delete all data.",
+      "off": "Lock is off",
+      "offHint": "The app opens without a PIN.",
+      "pin": "PIN",
+      "pinProblem": {
+        "length": "A PIN is {min} to {max} digits.",
+        "same": "All digits are the same — such a PIN is easy to guess.",
+        "sequence": "The digits are in a row — such a PIN is easy to guess."
+      },
+      "repeatPin": "Repeat the PIN",
+      "signIn": "Unlock",
+      "submitDisable": "Turn off",
+      "submitEnable": "Done",
+      "title": "Lock",
+      "tooManySr": "Too many attempts — please wait.",
+      "touchId": "Unlock with Touch ID",
+      "touchIdHint": "The system dialog offers the Mac password by itself.",
+      "triggerIdle": "After 60 minutes of inactivity",
+      "triggerScreenLock": "When the screen locks",
+      "triggerSleep": "When the computer goes to sleep",
+      "triggerStartup": "When the app starts",
+      "unavailable": "This method is not available right now.",
+      "wait": "Too many attempts. Wait and try again.",
+      "waitMin": "Next attempt in {min} min",
+      "waitSec": "Next attempt in {sec} s",
+      "when": "When to lock",
+      "wrongPin": "Wrong PIN."
+    },
+    "nav": {
+      "about": "About",
+      "appearance": "Appearance",
+      "autoSync": "Auto-sync",
+      "connections": "Connections",
+      "data": "Data",
+      "groupApp": "App",
+      "groupSecurity": "Security",
+      "groupUsers": "Users",
+      "label": "Settings sections",
+      "language": "Language and time",
+      "later": "Coming later",
+      "lock": "Lock",
+      "network": "Network",
+      "people": "People",
+      "soon": "Soon",
+      "storage": "Storage and tokens",
+      "updates": "Updates"
+    },
+    "page": {
+      "back": "Back",
+      "backTitle": "Back (Esc)",
+      "title": "Settings"
+    },
+    "people": {
+      "cancel": "Cancel",
+      "changeColor": "Change colour",
+      "colorLabel": "Person's colour",
+      "connections": "{n} connection | {n} connections | {n} connections",
+      "description": "Whose accounts are downloaded into the app. A person's name is kept on this computer only and is never sent anywhere.",
+      "done": "Done",
+      "empty": "No people yet.",
+      "nameFromBank": "Name from the bank, updated on import",
+      "nameManual": "Name entered by hand",
+      "newName": "New name",
+      "note": "A person is added together with a connection — in «Connections». When a person has no connections left, they are removed automatically.",
+      "rename": "Rename",
+      "renameError": "Name not saved: 1 to 80 characters.",
+      "save": "Save",
+      "title": "People",
+      "useBankName": "Use the name from the bank (updated on every import)"
+    },
+    "securityInfo": {
+      "network": {
+        "description": "The app talks to these services only.",
+        "error": "Could not get the list of services.",
+        "github": "Checking for and downloading updates.",
+        "monobank": "Accounts and the statement. The token is sent here only.",
+        "note": "Other addresses are blocked in the code, not by a setting. Only https and the default port; a redirect to another address is refused.",
+        "title": "Network"
+      },
+      "storage": {
+        "description": "Where the statement and the tokens are kept, and who can read them.",
+        "importOnLaunch": "Import on launch",
+        "importOnLaunchHint": "An unfinished import resumes by itself if the token is saved. Otherwise the app asks you to enter it.",
+        "insecureBadge": "Encryption unavailable",
+        "insecureHint": "The system store is unavailable: tokens live in memory only until the app closes.",
+        "secureBadge": "Encryption available",
+        "secureHint": "Encrypted by {store}. Only this app, under your user account, can read them.",
+        "title": "Storage and tokens",
+        "tokens": "Tokens",
+        "transactions": "Transactions",
+        "transactionsHint": "A database in the app's folder on this computer. Not copied to the cloud."
+      }
+    },
+    "theme": {
+      "dark": "Dark",
+      "description": "The theme of the window, menus and system dialogs.",
+      "hint": "«As in the system» follows the system setting.",
+      "light": "Light",
+      "system": "As in the system",
+      "theme": "Theme",
+      "title": "Appearance"
+    },
+    "update": {
+      "auto": "Check automatically",
+      "autoHint": "10 seconds after start and every 6 hours.",
+      "available": "Version {version} is available.",
+      "checkNow": "Check now",
+      "checking": "Checking…",
+      "description": "New versions come from GitHub and are installed only if signed by the author.",
+      "devBuild": "Updates are not checked in a development build.",
+      "download": "Download",
+      "downloading": "Downloading {version}… {percent}%",
+      "error": {
+        "download": "Could not download the update. Try again later.",
+        "mismatch": "The downloaded update did not match its signed description — it was deleted and will not be installed.",
+        "offline": "Could not check for updates: no connection to GitHub. Try again later.",
+        "rejected": "The update failed the signature check and will not be installed."
+      },
+      "importRunning": "An import is running — the update installs once it finishes and the app closes.",
+      "later": "Later",
+      "note": "Before installing, the file is checked against the signed description of the version: size and checksum. Going back to an older version is not possible.",
+      "ready": "Version {version} is downloaded and checked — it installs on restart.",
+      "restart": "Restart and update",
+      "saved": "Version {version} is downloaded and checked: «{file}» in the «Downloads» folder.",
+      "savedHelp": "Open the file in «Downloads» and drag Balance Insights into «Applications», replacing the old one. macOS asks for your password once so the new version can read the saved token — choose «Always Allow». Your data and token stay.",
+      "title": "Updates",
+      "upToDate": "The latest version is installed.",
+      "version": "Version {version}"
+    }
+  }
+}

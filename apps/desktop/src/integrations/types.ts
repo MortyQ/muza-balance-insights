@@ -26,8 +26,8 @@ export type ClientDeps = {
 
 export interface WorkerProvider {
   create(d: ClientDeps): ProviderClient;
-  /** This provider's error → kind + fixed, token-free text; null = not its error. */
-  describe(err: unknown): { kind: ErrorKind; message: string } | null;
+  /** This provider's error → its code for the UI; null = not its error. */
+  describe(err: unknown): ErrorKind | null;
   /** Failures worth waiting out: no connection / timeout, the bank's 5xx. Null = not transient or not its error. */
   transient(err: unknown): 'network' | 'server' | null;
   /** For the log: the error's name and status — never its message (it may quote a response). Null = not its error. */

@@ -30,7 +30,7 @@ export type EncryptResult = { ok: true } | { ok: false; step: string };
 export class DbOpenError extends Error {
   override name = 'DbOpenError';
   constructor(readonly kind: 'unavailable' | 'unreadable') {
-    super(kind === 'unavailable' ? 'База недоступна' : 'База не открывается');
+    super(kind === 'unavailable' ? 'Database unavailable' : 'Database cannot be opened');
   }
 }
 

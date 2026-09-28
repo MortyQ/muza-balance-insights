@@ -1,5 +1,5 @@
 // Integrations on the screen: whose a new connection is, why a removal did not happen, each bank's forms and texts,
-// the accounts of «Счета» (labels, the toggle and what it refreshes).
+// the accounts of «Accounts» (labels, the toggle and what it refreshes).
 // The Monobank texts are pinned to what the screens said before the bank got its own folder. balanceApi is a fake.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { createPinia, setActivePinia } from 'pinia';
@@ -21,6 +21,7 @@ const { CARD_TYPE_NAMES } = await import('@/features/integrations/monobank/const
 const { DEFAULT_PROVIDER, PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
 const { formsOf, isProviderKey, newConnectionTitle } = await import('@/features/integrations/utils.ts');
 const { BANKS, MONOBANK, bankOf } = await import('@/entities/bank');
+const { t } = await import('@/shared/lib');
 const { ACCESS_NOTE, CONSENT_TEXT, DUPLICATE_TOKEN_TEXT, TOKEN_PLACEHOLDER, TOKEN_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 
 describe('a new connection', () => {
@@ -60,25 +61,26 @@ describe('banks and their forms', () => {
   it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
     expect(bankOf('monobank')).toBe(MONOBANK);
     expect(bankOf('unknown')).toBe(MONOBANK);
-    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'Monobank', status: 'available', auth: 'token' });
+    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'entities.bank.monobank', status: 'available', auth: 'token' });
+    expect(t(MONOBANK.name)).toBe('Monobank');
     for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
-    expect(TOKEN_STEPS[0]).toMatch(/api\.monobank\.ua/);
-    expect(TOKEN_PLACEHOLDER).toBe('Токен с api.monobank.ua');
+    expect(t(TOKEN_STEPS[0])).toMatch(/api\.monobank\.ua/);
+    expect(t(TOKEN_PLACEHOLDER)).toBe('Токен с api.monobank.ua');
     expect(PROVIDER_FORMS.monobank.accessNote).toBe(ACCESS_NOTE);
   });
 
   it('the Monobank texts are the same as before the bank got its folder', () => {
-    expect(TOKEN_STEPS).toEqual([
+    expect(TOKEN_STEPS.map((k) => t(k))).toEqual([
       'Открой в браузере api.monobank.ua и войди через приложение Monobank (QR-код).',
       'Скопируй личный токен и вставь его сюда.',
     ]);
-    expect(TOKEN_PLACEHOLDER).toEqual('Токен с api.monobank.ua');
-    expect(ACCESS_NOTE).toEqual('Токен даёт только чтение выписки и балансов и хранится на этом компьютере.');
-    expect(CONSENT_TEXT).toEqual(
+    expect(t(TOKEN_PLACEHOLDER)).toEqual('Токен с api.monobank.ua');
+    expect(t(ACCESS_NOTE)).toEqual('Токен даёт только чтение выписки и балансов и хранится на этом компьютере.');
+    expect(t(CONSENT_TEXT)).toEqual(
       'Токен выпускает сам владелец счетов в своём Monobank и передаёт его тебе. Токен открывает чтение всех его выписок и балансов — добавляй только с его согласия.',
     );
-    expect(DUPLICATE_TOKEN_TEXT).toEqual('Этот токен уже подключён.');
-    expect(newConnectionTitle(bankOf(DEFAULT_PROVIDER).name)).toEqual('Новое подключение Monobank');
+    expect(t(DUPLICATE_TOKEN_TEXT)).toEqual('Этот токен уже подключён.');
+    expect(newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name))).toEqual('Новое подключение Monobank');
   });
 });
 
@@ -86,7 +88,7 @@ const account = (o: Partial<ConnectionAccountView> = {}): ConnectionAccountView 
   id: 'a1', kind: 'card', type: 'black', currencyCode: 980, maskedPanTail: '1234', jarTitle: null, enabled: true, auto: true, ...o,
 });
 
-describe('«Счета» of a connection', () => {
+describe('«Accounts» of a connection', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
@@ -107,7 +109,7 @@ describe('«Счета» of a connection', () => {
     expect(accountToggleText({ changed: false, reason: 'import-running' })).toMatch(/после него/);
   });
 
-  it('the «Счета» button: all counted, or how many of all', () => {
+  it('the «Accounts» button: all counted, or how many of all', () => {
     expect(accountsButtonText({ accounts: 3, enabledAccounts: 3 })).toBe('Счета · 3');
     expect(accountsButtonText({ accounts: 3, enabledAccounts: 1 })).toBe('Счета · 1 из 3');
     expect(accountsButtonText({ accounts: 2, enabledAccounts: 0 })).toBe('Счета · 0 из 2');
@@ -131,7 +133,7 @@ describe('«Счета» of a connection', () => {
   });
 
   it('every Monobank type the database knows has a name', () => {
-    for (const t of ['black', 'white', 'platinum', 'iron', 'fop', 'yellow', 'eAid']) expect(CARD_TYPE_NAMES[t], t).toBeTruthy();
+    for (const type of ['black', 'white', 'platinum', 'iron', 'fop', 'yellow', 'eAid']) expect(CARD_TYPE_NAMES[type], type).toBeTruthy();
   });
 
   it('loads the list on open; a toggle updates the row and refreshes people and the data status', async () => {

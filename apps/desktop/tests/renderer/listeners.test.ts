@@ -33,7 +33,7 @@ const lockView = (locked: boolean): LockView => ({
 });
 
 const win = (windowsDone: number): WindowProgress => ({
-  phase: 'windows', account: 'black/UAH', from: '2026-08-01', to: '2026-09-01', round: 1, index: 1, total: 3,
+  phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-08-01', to: '2026-09-01', round: 1, index: 1, total: 3,
   windowsDone, windowsTotal: 3, transactions: 0, etaSec: 0, waitingSec: null,
 });
 const send = (p: ImportProgress) => api.state.progress?.(p);
@@ -97,7 +97,7 @@ describe('listenToMain: live data during an import', () => {
     send(win(0));
     send(win(1));
     expect(people()).toBe(1);
-    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [{ connectionId: 2, message: 'x' }] });
+    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [{ connectionId: 2, error: 'auth' }] });
     expect(people()).toBe(2);
     send({ phase: 'needs-token', connectionIds: [2] });
     expect(people()).toBe(3);

@@ -5,7 +5,8 @@
 import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
 import type { Db } from '@mono/core/db';
 import { RateLimitError } from '@mono/core/errors';
-import { accountLabels, toKyivDate } from '@mono/core/format';
+import { toKyivDate } from '@mono/core/format';
+import { accountNames, type AccountName } from '../shared/account-name.ts';
 import type { Clock, FetchLike } from '@mono/core/platform';
 import { rulesFor } from '@mono/core/providers/rules';
 import type { ProviderId } from '@mono/core/providers/types';
@@ -40,18 +41,23 @@ export type RunImportDeps = {
 
 const providers = Object.values(WORKER_PROVIDERS);
 
-/** Worker errors → a fixed, token-free text for the UI. Bank messages are already redacted by the core clients. */
-export function describeError(err: unknown): { kind: ErrorKind; message: string } {
-  if (err instanceof SyncCancelledError) return { kind: 'cancelled', message: 'Импорт остановлен' };
-  if (err instanceof RateLimitError) return { kind: 'rate-limit', message: err.message };
-  // Fixed texts of the core, without the holder id.
-  if (err instanceof ConnectionMismatchError || err instanceof ConnectionDuplicateError) return { kind: 'connection', message: err.message };
+/** Worker errors → a code for the UI (`home.import.error.*`); what exactly failed goes to the log (errorTag). */
+export function describeError(err: unknown): ErrorKind {
+  if (err instanceof SyncCancelledError) return 'cancelled';
+  if (err instanceof RateLimitError) return 'rate-limit';
+  if (err instanceof ConnectionMismatchError) return 'other-holder';
+  if (err instanceof ConnectionDuplicateError) return 'already-connected';
   for (const p of providers) {
     const d = p.describe(err);
     if (d) return d;
   }
-  if (err instanceof Error && /Неожиданный формат ответа API/.test(err.message)) return { kind: 'format', message: err.message.slice(0, 300) };
-  return { kind: 'other', message: 'Импорт остановился из-за ошибки. Он продолжится со следующего запуска.' };
+  if (isFormatError(err)) return 'format';
+  return 'other';
+}
+
+// The core's describeFormatError: field names, transaction id, account and window only — log-safe by design.
+function isFormatError(err: unknown): err is Error {
+  return err instanceof Error && /Неожиданный формат ответа API/.test(err.message);
 }
 
 /** Failures worth waiting out: no connection / timeout, the bank's 5xx, 429 beyond the core's own retries. */
@@ -66,8 +72,8 @@ export function transientReason(err: unknown): Exclude<RetryReason, 'crash'> | n
 
 /** Stops only its own connection: the others can go on. */
 export function isConnectionFailure(err: unknown): boolean {
-  const { kind } = describeError(err);
-  return kind === 'auth' || kind === 'connection';
+  const kind = describeError(err);
+  return kind === 'auth' || kind === 'other-holder' || kind === 'already-connected';
 }
 
 /** For the log: the error's name and HTTP status — never its message (it may quote a response). */
@@ -93,7 +99,7 @@ type Run = {
 const count = (plan: ReadonlyMap<string, readonly Window[]> | null) => [...(plan?.values() ?? [])].reduce((n, w) => n + w.length, 0);
 
 export async function runImport(d: RunImportDeps): Promise<void> {
-  let labels = new Map<string, string>();
+  let names = new Map<string, AccountName>();
   let windowsTotal = 0;
   let windowsDone = 0;
   let transactions = 0;
@@ -101,7 +107,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   // Current streak of transient failures; a committed window ends it.
   let failingSince: number | null = null;
   let attempt = 0;
-  const failed = new Map<number, { kind: ErrorKind; message: string }>();
+  const failed = new Map<number, Exclude<ErrorKind, 'cancelled'>>();
 
   const runs: Run[] = [];
   const active = () => runs.filter((r) => !failed.has(r.input.connectionId));
@@ -111,7 +117,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
     if (last) d.emit({ type: 'progress', progress: { ...last, waitingSec: Math.ceil(ms / 1000), etaSec: eta(Math.ceil(ms / 1000)) } });
   };
   const fail = (r: Run, err: unknown) => {
-    failed.set(r.input.connectionId, describeError(err));
+    const kind = describeError(err);
+    failed.set(r.input.connectionId, kind === 'cancelled' ? 'other' : kind);
     windowsTotal -= count(r.remaining);
     r.remaining = new Map();
     d.emit({ type: 'log', message: `connection ${r.input.connectionId} stopped: ${errorTag(err)}` });
@@ -143,7 +150,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
           if (e.type === 'window-start') {
             last = {
               phase: 'windows',
-              account: labels.get(e.accountId) ?? 'счёт',
+              account: names.get(e.accountId) ?? null,
               from: toKyivDate(e.window.from),
               to: toKyivDate(e.window.to),
               round: e.round,
@@ -192,8 +199,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
             }
           }
           const rs = await d.db.execute('SELECT id, kind, type, currency_code FROM accounts');
-          labels = accountLabels(
-            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currencyCode: Number(r.currency_code) })),
+          names = accountNames(
+            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })),
           );
         }
         for (const r of active()) {
@@ -231,16 +238,17 @@ export async function runImport(d: RunImportDeps): Promise<void> {
     // Nothing imported at all: the first connection's reason is the job's error (one connection = as before).
     const first = failed.values().next();
     if (active().length === 0 && !first.done) {
-      d.emit({ type: 'error', ...first.value });
+      d.emit({ type: 'error', kind: first.value });
       return;
     }
     d.emit({ type: 'progress', progress: { phase: 'rederive' } });
     const report = await rederiveCore(d.db);
     d.emit({ type: 'log', message: `rederive: ${report[0] ?? ''}`.slice(0, 300) });
-    d.emit({ type: 'done', windowsTotal, transactions, failed: [...failed].map(([connectionId, f]) => ({ connectionId, ...f })) });
+    d.emit({ type: 'done', windowsTotal, transactions, failed: [...failed].map(([connectionId, kind]) => ({ connectionId, kind })) });
   } catch (err) {
     // The log line first: main closes the worker as soon as the final message (error / done) arrives.
     if (!(err instanceof SyncCancelledError)) d.emit({ type: 'log', message: `error: ${errorTag(err)}` });
-    d.emit({ type: 'error', ...describeError(err) });
+    if (isFormatError(err)) d.emit({ type: 'log', message: err.message.slice(0, 300) });
+    d.emit({ type: 'error', kind: describeError(err) });
   }
 }

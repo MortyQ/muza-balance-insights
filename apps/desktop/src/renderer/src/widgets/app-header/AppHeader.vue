@@ -54,8 +54,8 @@ function openSettings() {
       <button
         v-if="settingsShown"
         type="button"
-        aria-label="Настройки"
-        :title="mac ? 'Настройки (⌘,)' : 'Настройки (Ctrl+,)'"
+        :aria-label="$t('header.settings')"
+        :title="mac ? $t('header.settingsMac') : $t('header.settingsOther')"
         :aria-current="inSettings ? 'page' : undefined"
         class="grid size-7 place-items-center rounded-md text-foreground-secondary transition-colors duration-150 hover:bg-surface-hover hover:text-foreground focus-visible:outline-2 focus-visible:outline-border-focus aria-[current=page]:text-primary [-webkit-app-region:no-drag]"
         @click="openSettings"

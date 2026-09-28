@@ -6,6 +6,7 @@ import {
   AutoSyncSettingsFeature,
   DbEncryptionFeature,
   DeleteDataFeature,
+  LanguageSelectFeature,
   NetworkInfoFeature,
   PeopleFeature,
   StorageInfoFeature,
@@ -19,7 +20,7 @@ import SettingsNav from './components/SettingsNav.vue';
 const { section } = defineProps<{ section: SettingsSection }>();
 const emit = defineEmits<{ select: [section: SettingsSection]; deleted: [] }>();
 
-// «Хранение и токены» is composed below: the encryption row goes into its list.
+// «Storage and tokens» is composed below: the encryption row goes into its list.
 const SECTIONS: Record<Exclude<SettingsSection, 'storage'>, Component> = {
   people: PeopleFeature,
   connections: ConnectionsFeature,
@@ -29,6 +30,7 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage'>, Component> = {
   'auto-sync': AutoSyncSettingsFeature,
   updates: UpdateSettingsFeature,
   appearance: ThemeSwitchFeature,
+  language: LanguageSelectFeature,
   about: AboutApp,
 };
 </script>

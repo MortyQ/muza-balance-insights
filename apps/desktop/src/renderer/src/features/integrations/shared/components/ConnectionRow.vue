@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, useId, type Component } from 'vue';
 import type { ConnectionAccountView, ConnectionView } from '@contract/api.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
 import { BankMark, bankOf } from '@/entities/bank';
 import { coverageLine, tokenBadge, tokenLine } from '@/entities/participant';
 import { SettingsList, SettingsRow } from '@/shared/layout';
@@ -13,12 +14,12 @@ import { accountLabel, accountSwitchChange, accountsButtonText } from '../utils.
 const { connection, secureStorage, tokenField, accounts, cardTypes, importRunning, savingAccount } = defineProps<{
   connection: Readonly<ConnectionView>;
   secureStorage: boolean;
-  /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Ввести токен заново». */
+  /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Enter token again». */
   tokenField: Component;
-  /** «Счета»: undefined until first opened. */
+  /** «Accounts»: undefined until first opened. */
   accounts: AccountsState | undefined;
-  /** The bank's card types → names. */
-  cardTypes: Readonly<Record<string, string>>;
+  /** The bank's card types → dictionary keys of their names. */
+  cardTypes: Readonly<Record<string, MessageKey>>;
   /** The switches wait for the import to end. */
   importRunning: boolean;
   /** The account whose switch is being saved. */
@@ -27,7 +28,7 @@ const { connection, secureStorage, tokenField, accounts, cardTypes, importRunnin
 const emit = defineEmits<{
   setToken: [token: string, remember: boolean, done: (saved: boolean) => void];
   remove: [];
-  /** «Счета» opened: load the list. */
+  /** «Accounts» opened: load the list. */
   openAccounts: [];
   setAccountEnabled: [accountId: string, enabled: boolean, done: (changed: boolean) => void];
 }>();
@@ -96,11 +97,11 @@ function save() {
         />
         <VButton
           :variant="connection.token.present ? 'neutral' : 'primary'"
-          :text="panel === 'token' ? 'Отмена' : connection.token.present ? 'Ввести токен заново' : 'Ввести токен'"
+          :text="panel === 'token' ? $t('integrations.row.cancel') : connection.token.present ? $t('integrations.row.reenterToken') : $t('integrations.row.enterToken')"
           :aria-expanded="panel === 'token'"
           @click="toggleToken"
         />
-        <VButton variant="negative" text="Удалить" @click="emit('remove')" />
+        <VButton variant="negative" :text="$t('integrations.row.remove')" @click="emit('remove')" />
       </div>
     </div>
     <!-- The gap lives inside the expanding box (pt-5), so nothing jumps when it opens or closes. -->
@@ -110,7 +111,7 @@ function save() {
           <form class="flex flex-col gap-3 pt-5 pb-1" @submit.prevent="save">
             <component :is="tokenField" v-model:token="tokenInput" v-model:remember="remember" :secure-storage autofocus />
             <div>
-              <VButton type="submit" text="Сохранить" :disabled="tokenInput.trim() === ''" />
+              <VButton type="submit" :text="$t('integrations.row.save')" :disabled="tokenInput.trim() === ''" />
             </div>
           </form>
         </div>
@@ -120,17 +121,17 @@ function save() {
       <div v-if="panel === 'accounts'" class="grid">
         <div class="-mx-1 min-h-0 overflow-hidden px-1">
           <div class="flex flex-col gap-2 pt-5 pb-1">
-            <p v-if="accounts === undefined || accounts.status === 'loading'" class="text-sm text-foreground-muted">Загружаю счета…</p>
-            <p v-else-if="accounts.status === 'error'" class="text-sm text-foreground-muted">Не удалось загрузить счета.</p>
-            <p v-else-if="accounts.accounts.length === 0" class="text-sm text-foreground-muted">Счета появятся после первого импорта.</p>
+            <p v-if="accounts === undefined || accounts.status === 'loading'" class="text-sm text-foreground-muted">{{ $t('integrations.row.accountsLoading') }}</p>
+            <p v-else-if="accounts.status === 'error'" class="text-sm text-foreground-muted">{{ $t('integrations.row.accountsFailed') }}</p>
+            <p v-else-if="accounts.accounts.length === 0" class="text-sm text-foreground-muted">{{ $t('integrations.row.accountsEmpty') }}</p>
             <template v-else>
-              <p v-if="importRunning" class="text-sm text-foreground-muted">{{ IMPORT_RUNNING_ACCOUNTS_TEXT }}</p>
+              <p v-if="importRunning" class="text-sm text-foreground-muted">{{ $t(IMPORT_RUNNING_ACCOUNTS_TEXT) }}</p>
               <SettingsList>
                 <SettingsRow
                   v-for="a in accounts.accounts"
                   :key="a.id"
                   :title="accountLabel(a, cardTypes)"
-                  :hint="a.enabled ? undefined : DISABLED_ACCOUNT_HINT"
+                  :hint="a.enabled ? undefined : $t(DISABLED_ACCOUNT_HINT)"
                   :label-for="`${id}-${a.id}`"
                 >
                   <VSwitch

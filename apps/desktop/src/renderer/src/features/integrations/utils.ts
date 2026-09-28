@@ -1,4 +1,5 @@
 import type { ProviderKey } from '@contract/api.ts';
+import { t } from '@/shared/lib';
 import { DEFAULT_PROVIDER, PROVIDER_FORMS } from './constants.ts';
 import type { ProviderForms } from './shared/types.ts';
 
@@ -14,7 +15,7 @@ export function formsOf(provider: string): ProviderForms {
   return isProviderKey(provider) ? PROVIDER_FORMS[provider] : PROVIDER_FORMS[DEFAULT_PROVIDER];
 }
 
-/** The title of the «Добавить подключение» panel. */
+/** The title of the «Add connection» panel. */
 export function newConnectionTitle(bankName: string): string {
-  return `Новое подключение ${bankName}`;
+  return t('integrations.connections.newTitle', { bank: bankName });
 }

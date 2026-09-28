@@ -55,7 +55,7 @@ port.on('message', (event: { data: unknown }) => {
       });
     } catch (err) {
       send({ type: 'log', message: `worker: ${err instanceof Error ? err.name : 'unknown'}` });
-      send({ type: 'error', kind: 'other', message: 'Не удалось открыть базу для импорта' });
+      send({ type: 'error', kind: 'db-open' });
     } finally {
       db?.close();
       // No process.exit() right after postMessage: the final message could be lost on the way (it was — main then

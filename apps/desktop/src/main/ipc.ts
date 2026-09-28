@@ -87,15 +87,19 @@ export const ARG_SCHEMAS = {
 export type Args<M extends Method> = z.infer<(typeof ARG_SCHEMAS)[M]>;
 export type Handlers = { [M in Method]: (...args: Args<M>) => Promise<unknown> };
 
-/** Messages the renderer gets on refusal: fixed text, never the input, a stack or internals. */
-export const FORBIDDEN = 'Запрещено';
-export const INVALID_ARGS = 'Недопустимые аргументы';
-export const FAILED = 'Не удалось выполнить операцию';
-export const LOCKED = 'Приложение заблокировано';
-export const DB_UNAVAILABLE = 'База недоступна';
+/** Messages the renderer gets on refusal: fixed text, never the input, a stack or internals. Never shown: the renderer
+ *  words a failure itself (`common.failed`). */
+export const FORBIDDEN = 'Forbidden';
+export const INVALID_ARGS = 'Invalid arguments';
+export const FAILED = 'Operation failed';
+export const LOCKED = 'App is locked';
+export const DB_UNAVAILABLE = 'Database unavailable';
 
-/** What a locked app answers: its own state, the two ways in, and «Забыли PIN?» → «Удалить все данные». */
-export const ALLOWED_WHEN_LOCKED = ['getLockState', 'unlockWithPin', 'unlockWithTouchId', 'deleteAllData'] as const satisfies ReadonlyArray<Method>;
+/**
+ * What a locked app answers: its own state, the two ways in, «Забыли PIN?» → «Удалить все данные», and the interface
+ * language (only uk | en | ru, from preferences.json, no data) so the lock screen speaks it.
+ */
+export const ALLOWED_WHEN_LOCKED = ['getLockState', 'unlockWithPin', 'unlockWithTouchId', 'deleteAllData', 'getLocale'] as const satisfies ReadonlyArray<Method>;
 const allowedWhenLocked: ReadonlySet<Method> = new Set(ALLOWED_WHEN_LOCKED);
 
 /** What an open app answers while its database is not ready: the recovery screen's buttons and the lock. */

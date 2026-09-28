@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { DISCLAIMER } from '@contract/about.ts';
 import type { ProviderKey } from '@contract/api.ts';
 import { type Bank, BankMark } from '@/entities/bank';
 import { VButton } from '@/shared/ui';
@@ -22,30 +21,30 @@ function select(bank: Readonly<Bank>) {
   <div class="flex flex-col gap-8">
     <header class="flex flex-col gap-1">
       <h1 class="text-2xl font-semibold">Balance Insights</h1>
-      <p class="text-foreground-secondary">Куда уходят деньги — по твоей выписке, на твоём компьютере.</p>
+      <p class="text-foreground-secondary">{{ $t('integrations.first.tagline') }}</p>
     </header>
 
     <Transition name="swap" mode="out-in">
       <section v-if="!selected" key="banks" class="flex flex-col gap-3">
-        <h2 class="text-lg font-semibold">Выбери банк</h2>
+        <h2 class="text-lg font-semibold">{{ $t('integrations.first.pickBank') }}</h2>
         <BankPicker @select="select" />
       </section>
 
       <section v-else key="token" class="flex flex-col gap-4">
         <div>
-          <VButton variant="link" icon="lucide:chevron-left" text="Другой банк" @click="selected = null" />
+          <VButton variant="link" icon="lucide:chevron-left" :text="$t('integrations.first.otherBank')" @click="selected = null" />
         </div>
         <div class="flex items-center gap-3">
           <BankMark :bank="selected.bank" size="lg" />
           <div class="flex flex-col">
-            <h2 class="text-lg font-semibold">{{ selected.bank.name }}</h2>
-            <span class="text-sm text-foreground-muted">{{ PROVIDER_FORMS[selected.provider].accessNote }}</span>
+            <h2 class="text-lg font-semibold">{{ $t(selected.bank.name) }}</h2>
+            <span class="text-sm text-foreground-muted">{{ $t(PROVIDER_FORMS[selected.provider].accessNote) }}</span>
           </div>
         </div>
-        <AddConnectionFeature :provider="selected.provider" default-label="Я" autofocus @added="emit('connected')" />
+        <AddConnectionFeature :provider="selected.provider" :default-label="$t('integrations.first.defaultLabel')" autofocus @added="emit('connected')" />
       </section>
     </Transition>
 
-    <p class="text-sm text-foreground-muted">{{ DISCLAIMER }}</p>
+    <p class="text-sm text-foreground-muted">{{ $t('common.disclaimer') }}</p>
   </div>
 </template>

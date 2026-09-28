@@ -22,23 +22,23 @@ const checksEnabled = computed({
 
 <template>
   <SettingsSection
-    title="Обновления"
-    description="Новые версии приходят с GitHub и ставятся, только если подписаны автором."
-    note="Перед установкой файл сверяется с подписанным описанием версии: размер и контрольная сумма. Откат на старую версию невозможен."
+    :title="$t('settings.update.title')"
+    :description="$t('settings.update.description')"
+    :note="$t('settings.update.note')"
     note-icon="lucide:shield-check"
   >
     <SettingsList v-if="view">
       <div class="flex flex-col gap-3 px-4 py-3">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div class="flex min-w-0 flex-col gap-0.5">
-            <span class="font-semibold">Версия {{ view.currentVersion }}</span>
+            <span class="font-semibold">{{ $t('settings.update.version', { version: view.currentVersion }) }}</span>
             <span v-if="line" class="text-sm" :class="view.state.phase === 'error' ? 'text-danger' : 'text-foreground-muted'">{{ line }}</span>
           </div>
           <div class="flex flex-wrap items-center justify-end gap-2">
             <UpdateActions :state="view.state" @download="download" @install="install" />
             <VButton
               variant="neutral"
-              text="Проверить сейчас"
+              :text="$t('settings.update.checkNow')"
               icon="lucide:refresh-cw"
               :loading="checking"
               :disabled="!view.supported || ['downloading', 'ready', 'saved'].includes(view.state.phase)"
@@ -49,8 +49,8 @@ const checksEnabled = computed({
         <VProgressBar v-if="view.state.phase === 'downloading'" :percentage="view.state.percent" size="sm" />
       </div>
       <SettingsRow
-        title="Проверять автоматически"
-        :hint="view.supported ? 'Через 10 секунд после запуска и раз в 6 часов.' : 'В сборке для разработки обновления не проверяются.'"
+        :title="$t('settings.update.auto')"
+        :hint="view.supported ? $t('settings.update.autoHint') : $t('settings.update.devBuild')"
         :label-for="switchId"
       >
         <VSwitch :id="switchId" v-model="checksEnabled" :disabled="!view.supported" role="switch" />

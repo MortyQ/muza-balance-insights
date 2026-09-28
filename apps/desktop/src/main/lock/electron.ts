@@ -5,10 +5,13 @@ import { watchLockTriggers } from './triggers.ts';
 
 // Electron's promptTouchID signs with a key under kSecAccessControlUserPresence: the system prompt itself offers the
 // Mac password when the finger fails. canPromptTouchID checks for a sensor (or a Watch): without one, the PIN only.
-export const touchId: TouchIdLike = {
-  available: () => process.platform === 'darwin' && systemPreferences.canPromptTouchID(),
-  prompt: () => systemPreferences.promptTouchID('разблокировать приложение').then(() => true, () => false),
-};
+// `reason` finishes the system's «<app> is trying to …»; it is read at each prompt, in the current language.
+export function createTouchId(reason: () => string): TouchIdLike {
+  return {
+    available: () => process.platform === 'darwin' && systemPreferences.canPromptTouchID(),
+    prompt: () => systemPreferences.promptTouchID(reason()).then(() => true, () => false),
+  };
+}
 
 /** lock-screen exists on macOS and Windows; on Linux only sleep and idle lock. */
 export function startLockTriggers(lock: LockService): () => void {

@@ -1,5 +1,7 @@
 // Interface dictionaries (src/shared/i18n): one JSON per locale, all matching the reference one.
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MESSAGES, REFERENCE_LOCALE } from '../src/shared/i18n/index.ts';
 import { LOCALES } from '../src/shared/locale.ts';
@@ -38,5 +40,24 @@ describe('dictionaryProblems catches', () => {
     ['an array', { ...good, a: ['Title'] }, 'a: expected a string or an object'],
   ])('%s', (_name, dict, problem) => {
     expect(dictionaryProblems(ref, JSON.parse(JSON.stringify(dict)), 'en')).toContain(problem);
+  });
+});
+
+// The prod CSP has no 'unsafe-eval': the vue-i18n code that goes into the bundle must never build code from strings.
+describe('vue-i18n in the bundle', () => {
+  // Every build each package ships (Vite picks one of them by its export conditions).
+  const distOf = (pkg: string, from: string): string => path.join(path.dirname(createRequire(from).resolve(`${pkg}/package.json`)), 'dist');
+  const vueI18n = distOf('vue-i18n', import.meta.url);
+  const files = [vueI18n, ...['@intlify/core-base', '@intlify/message-compiler', '@intlify/shared'].map((p) => distOf(p, vueI18n))]
+    .flatMap((dir) => fs.readdirSync(dir).filter((f) => /\.(m?js|cjs)$/.test(f)).map((f) => path.join(dir, f)));
+
+  it('covers every build, including the one for bundlers', () => {
+    expect(files.some((f) => f.endsWith('vue-i18n.esm-bundler.js'))).toBe(true);
+    expect(files.length).toBeGreaterThan(20);
+  });
+
+  it.each(files.map((f) => [path.relative(process.cwd(), f), f]))('%s: no new Function, no eval', (_name, file) => {
+    const code = fs.readFileSync(file, 'utf8');
+    expect(code).not.toMatch(/new Function\b|\beval\s*\(/);
   });
 });

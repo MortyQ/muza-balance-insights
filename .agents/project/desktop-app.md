@@ -22,7 +22,7 @@
   везде запрет выкладывать токен, выписки, суммы, имена, скриншоты с данными. Уязвимости — через private reporting.
 - Меню приложения — своё (`apps/desktop/src/main/menu.ts`): стандартное меню Electron даёт Reload/DevTools и Help-ссылки
   через `shell.openExternal`. В prod — без reload, DevTools и роли `help`; «О программе» — нативная панель на macOS,
-  диалог на Windows/Linux. Дисклеймер — одна константа `apps/desktop/src/shared/about.ts` (панель и экран), репозиторий
+  диалог на Windows/Linux. Дисклеймер — текст словаря `common.disclaimer` (панель и экран), репозиторий
   в «О программе» — текстом, не ссылкой.
 - Иконка — `apps/desktop/build/` (`icon.icns` до 1024, `icon.ico` до 256, `icon.png` 512, исходник `icon.svg`),
   electron-builder берёт её оттуда сам. `package.test.ts` / `dmg.test.ts` проверяют размеры и что в `.app` своя иконка.

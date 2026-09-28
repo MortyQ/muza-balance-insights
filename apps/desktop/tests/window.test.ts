@@ -140,7 +140,7 @@ describe('own title bar instead of the system frame', () => {
   it('renderer strip: drags the window, the settings button does not; room for the native buttons on the right', () => {
     const vue = fs.readFileSync(new URL('../src/renderer/src/widgets/app-header/AppHeader.vue', import.meta.url), 'utf8');
     expect(vue).toContain('[-webkit-app-region:drag]');
-    expect(vue).toMatch(/<button[^>]*aria-label="Настройки"[^>]*\[-webkit-app-region:no-drag\]/s);
+    expect(vue).toMatch(/<button[^>]*:aria-label="\$t\('header\.settings'\)"[^>]*\[-webkit-app-region:no-drag\]/s);
     // Window-controls-overlay area, with a fallback for three 46px Windows buttons.
     expect(vue).toContain('env(titlebar-area-width,calc(100vw_-_138px))');
     expect(vue).toContain('TITLE_BAR_HEIGHT');

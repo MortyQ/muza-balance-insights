@@ -13,9 +13,10 @@ import { DataService } from './data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
+import { translator } from './i18n.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from './menu.ts';
 import { isTrustedSender, registerIpc } from './ipc.ts';
-import { startLockTriggers, touchId } from './lock/electron.ts';
+import { createTouchId, startLockTriggers } from './lock/electron.ts';
 import { gatedPush } from './lock/gate.ts';
 import { LockService } from './lock/service.ts';
 import { IntegrationsService } from './integrations.ts';
@@ -74,26 +75,35 @@ app.on('second-instance', () => {
 app.on('window-all-closed', () => app.quit());
 
 app.whenReady().then(async () => {
-  // Our own menu instead of Electron's default (no DevTools / reload in prod, no Help links to the outside).
+  const userData = app.getPath('userData');
+  // The language main speaks: the saved choice, else the system's. Read at each use, so a change applies at once.
+  const locale = () => readPrefs(userData).locale ?? resolveLocale(app.getPreferredSystemLanguages());
+  // Our own menu instead of Electron's default (no DevTools / reload in prod, no Help links to the outside);
+  // installed again when the language changes.
   const about = { name: identity.name, version: app.getVersion() };
-  app.setAboutPanelOptions(aboutPanelOptions(about));
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate(
-      menuTemplate({
-        name: identity.name,
-        platform: process.platform,
-        isPackaged: app.isPackaged,
-        showAbout: () => void dialog.showMessageBox({ type: 'info', buttons: ['OK'], ...aboutText(about) }),
-        openSettings: () => {
-          if (!win) return;
-          if (win.isMinimized()) win.restore();
-          win.focus();
-          push(OPEN_SETTINGS_CHANNEL);
-        },
-        lockNow: () => lock?.lock('manual'),
-      }),
-    ),
-  );
+  const installMenu = () => {
+    const t = translator(locale());
+    app.setAboutPanelOptions(aboutPanelOptions({ ...about, t }));
+    Menu.setApplicationMenu(
+      Menu.buildFromTemplate(
+        menuTemplate({
+          name: identity.name,
+          platform: process.platform,
+          isPackaged: app.isPackaged,
+          showAbout: () => void dialog.showMessageBox({ type: 'info', buttons: ['OK'], ...aboutText({ ...about, t: translator(locale()) }) }),
+          openSettings: () => {
+            if (!win) return;
+            if (win.isMinimized()) win.restore();
+            win.focus();
+            push(OPEN_SETTINGS_CHANNEL);
+          },
+          lockNow: () => lock?.lock('manual'),
+          t,
+        }),
+      ),
+    );
+  };
+  installMenu();
   const s = session.defaultSession;
   denyAllPermissions(s);
   restrictRendererSession(s, {
@@ -102,7 +112,6 @@ app.whenReady().then(async () => {
     ...(devLog ? { onBlocked: (where: string) => devLog(`blocked request ${where}`) } : {}),
   });
   protocol.handle(APP_SCHEME, createAppProtocolHandler(rendererDir, PROD_CSP));
-  const userData = app.getPath('userData');
   await restrictUserData(userData).catch((err: unknown) =>
     process.stderr.write(`[identity] userData mode not set: ${err instanceof Error ? err.name : 'error'}\n`),
   );
@@ -180,7 +189,7 @@ app.whenReady().then(async () => {
   });
   lock = new LockService({
     userDataDir: userData,
-    touchId,
+    touchId: createTouchId(() => translator(locale())('main.touchIdReason')),
     // Not importer.running: that stays true between a worker's final message and its exit event, and scheduleRestart
     // emits `retry` before the restart timer is set — importActive reads the phase itself, so neither window shows
     // «Идёт импорт» after the import is actually over.
@@ -200,28 +209,16 @@ app.whenReady().then(async () => {
   const appLock = lock;
   const stopLockTriggers = startLockTriggers(appLock);
   app.on('will-quit', () => stopLockTriggers());
-  const confirmDelete = async () => {
+  // A destructive step asks first; «Cancel» is the default and the Esc answer.
+  const confirm = async (what: 'deleteAll' | 'startOver' | 'removeConnection') => {
+    const t = translator(locale());
     const opts = {
       type: 'warning' as const,
-      buttons: ['Удалить всё', 'Отмена'],
+      buttons: [t(`main.dialog.${what}.confirm`), t('main.dialog.cancel')],
       defaultId: 1,
       cancelId: 1,
-      message: 'Удалить все данные?',
-      detail: 'Будут удалены загруженные операции, ключ базы, сохранённые токены, блокировка и незавершённый импорт. Отменить это нельзя.',
-    };
-    const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
-    return r.response === 0;
-  };
-  const confirmStartOver = async () => {
-    const opts = {
-      type: 'warning' as const,
-      buttons: ['Начать заново', 'Отмена'],
-      defaultId: 1,
-      cancelId: 1,
-      message: 'Начать заново?',
-      detail:
-        'Загруженные операции, люди и их имена, оверрайды и настройки будут удалены. Сохранённые токены останутся, если их ' +
-        'удастся прочитать, — операции загрузятся из банка заново. Отменить это нельзя.',
+      message: t(`main.dialog.${what}.message`),
+      detail: t(`main.dialog.${what}.detail`),
     };
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
@@ -231,18 +228,7 @@ app.whenReady().then(async () => {
     db: () => data.database(),
     tokens: vault,
     importRunning: () => importer.running,
-    confirmRemove: async () => {
-      const opts = {
-        type: 'warning' as const,
-        buttons: ['Удалить подключение', 'Отмена'],
-        defaultId: 1,
-        cancelId: 1,
-        message: 'Удалить подключение?',
-        detail: 'Будут удалены его токен, счета и операции в этом приложении. В банке ничего не изменится. Отменить это нельзя.',
-      };
-      const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
-      return r.response === 0;
-    },
+    confirmRemove: () => confirm('removeConnection'),
     nowSec: () => Math.floor(Date.now() / 1000),
   });
   // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
@@ -262,7 +248,7 @@ app.whenReady().then(async () => {
     getMonthOverview: (q) => data.monthOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
-      const r = await deleteAllData({ confirm: confirmDelete, tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
+      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
         await access.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));
@@ -292,10 +278,11 @@ app.whenReady().then(async () => {
       nativeTheme.themeSource = theme;
       return theme;
     },
-    getLocale: async () => readPrefs(userData).locale ?? resolveLocale(app.getPreferredSystemLanguages()),
-    setLocale: async (locale) => {
-      await updatePrefs(userData, (p) => ({ ...p, locale }));
-      return locale;
+    getLocale: async () => locale(),
+    setLocale: async (next) => {
+      await updatePrefs(userData, (p) => ({ ...p, locale: next }));
+      installMenu();
+      return next;
     },
     getDbState: async () => access.view(process.platform),
     // A retry in this process would not help (the cipher state is cached): a new process asks the keychain again.
@@ -309,7 +296,7 @@ app.whenReady().then(async () => {
       try {
         return await startOver({
           access,
-          confirm: confirmStartOver,
+          confirm: () => confirm('startOver'),
           tokens: vault,
           importer,
           data,

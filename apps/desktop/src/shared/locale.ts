@@ -1,5 +1,4 @@
-// The interface language. Only stored for now: the texts are not translated yet. No dependencies: shared by main,
-// preload and renderer.
+// The interface language. No dependencies: shared by main, preload and renderer.
 
 export const LOCALES = ['uk', 'en', 'ru'] as const;
 

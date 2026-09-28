@@ -1,10 +1,13 @@
 import { currencyAlpha } from '@mono/core/currency';
 import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
+import { cardTypeName } from '@/entities/bank';
+import { t } from '@/shared/lib';
 import { IMPORT_RUNNING_ACCOUNTS_TEXT } from './constants.ts';
 import type { PersonChoice } from './types.ts';
 
 /**
- * Who the new connection is for, or null while a new person has neither a name nor «взять имя из банка». A new person
+ * Who the new connection is for, or null while a new person has neither a name nor «Use the name from the bank». A new person
  * carries its colour (none left → main leaves it without one).
  */
 export function participantChoice(person: PersonChoice, newLabel: string, fromBank: boolean, color: ColorKey | null = null): ParticipantChoice | null {
@@ -18,29 +21,33 @@ export function participantChoice(person: PersonChoice, newLabel: string, fromBa
 /** Why a connection was not removed, or '' when there is nothing to say. */
 export function removeText(r: Readonly<RemoveConnectionResult>): string {
   if (r.removed || r.reason === 'cancelled') return '';
-  return 'Сначала останови импорт: он сейчас записывает эти счета.';
+  return t('integrations.removeImportRunning');
 }
 
-/** An account in «Счета»: «Чёрная карта · UAH · •• 1234», «Банка «Отпуск» · UAH». `cardTypes` — the bank's names. */
-export function accountLabel(a: Readonly<ConnectionAccountView>, cardTypes: Readonly<Record<string, string>>): string {
+/** An account in «Accounts»: «Black card · UAH · •• 1234», «Jar «Holiday» · UAH». `cardTypes` — keys of the bank's names. */
+export function accountLabel(a: Readonly<ConnectionAccountView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
   const currency = currencyAlpha(a.currencyCode);
-  if (a.kind === 'jar') return [a.jarTitle === null || a.jarTitle.trim() === '' ? 'Банка' : `Банка «${a.jarTitle.trim()}»`, currency].join(' · ');
-  const name = a.type === null ? 'Карта' : ((Object.hasOwn(cardTypes, a.type) ? cardTypes[a.type] : undefined) ?? a.type);
-  return [name, currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
+  if (a.kind === 'jar') {
+    const title = a.jarTitle?.trim() ?? '';
+    return [title === '' ? t('entities.bank.jar') : t('integrations.accounts.jarNamed', { title }), currency].join(' · ');
+  }
+  return [cardTypeName(a.type, cardTypes), currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
 }
 
 /** Why an account was not switched, or '' when it was. */
 export function accountToggleText(r: Readonly<SetAccountEnabledResult>): string {
-  return r.changed ? '' : IMPORT_RUNNING_ACCOUNTS_TEXT;
+  return r.changed ? '' : t(IMPORT_RUNNING_ACCOUNTS_TEXT);
 }
 
-/** «Счета · 3», or «Счета · 1 из 3» while some are off. */
+/** «Accounts · 3», or «Accounts · 1 of 3» while some are off. */
 export function accountsButtonText(c: Readonly<Pick<ConnectionView, 'accounts' | 'enabledAccounts'>>): string {
-  return c.enabledAccounts === c.accounts ? `Счета · ${c.accounts}` : `Счета · ${c.enabledAccounts} из ${c.accounts}`;
+  return c.enabledAccounts === c.accounts
+    ? t('integrations.accounts.button', { count: c.accounts })
+    : t('integrations.accounts.buttonPart', { enabled: c.enabledAccounts, total: c.accounts });
 }
 
 /**
- * A switch's @change in «Счета» (the browser has already flipped the input): the value to save and `done`, which puts
+ * A switch's @change in «Accounts» (the browser has already flipped the input): the value to save and `done`, which puts
  * the input back to `enabled` unless it changed; null while another account saves — the input goes back at once.
  * The switches are not disabled while saving, so keyboard focus stays where it is.
  */

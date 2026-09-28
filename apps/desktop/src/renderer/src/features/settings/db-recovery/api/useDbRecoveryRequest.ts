@@ -1,7 +1,7 @@
 import { balanceApi } from '@/shared/api';
 import type { DbRecoveryRequest } from '../types.ts';
 
-/** Main refuses relaunchApp and startOver while the database is ready; startOver asks first. «Удалить все данные» — shared/api. */
+/** Main refuses relaunchApp and startOver while the database is ready; startOver asks first. «Delete all data» — shared/api. */
 export function useDbRecoveryRequest(): DbRecoveryRequest {
   return {
     relaunchApp: () => balanceApi.relaunchApp(),

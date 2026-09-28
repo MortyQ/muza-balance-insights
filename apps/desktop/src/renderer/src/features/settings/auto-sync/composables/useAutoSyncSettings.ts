@@ -1,6 +1,6 @@
 import { onMounted, ref } from 'vue';
 import type { AutoSyncSettings, AutoSyncTrigger } from '@contract/auto-sync.ts';
-import { FAILED_TEXT } from '@/shared/lib';
+import { failedText } from '@/shared/lib';
 import { useAutoSyncRequest } from '../api/useAutoSyncRequest.ts';
 import type { UseAutoSyncSettingsReturn } from '../types.ts';
 import { withChange } from '../utils.ts';
@@ -17,7 +17,7 @@ export function useAutoSyncSettings(): UseAutoSyncSettingsReturn {
     try {
       settings.value = await request.setAutoSync(next);
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     } finally {
       busy.value = false;
     }
@@ -37,7 +37,7 @@ export function useAutoSyncSettings(): UseAutoSyncSettingsReturn {
     try {
       settings.value = await request.getAutoSync();
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     }
   });
 

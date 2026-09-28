@@ -1,13 +1,19 @@
 # What's new in Balance Insights
 
-What changed in each version of the app, newest first. The app's interface is in Russian, so screen and button names
-are quoted as they appear in it.
+What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
+English interface.
 
 ## 0.1.6 — unreleased
 
+### Languages
+
+- The app now speaks Ukrainian. It starts in your system's language when that is Ukrainian, English or Russian, and in
+  English otherwise; choose another in «Settings» → «Language and time». The app menu, confirmation dialogs, the Touch
+  ID prompt, spending categories, account names and import and update errors follow the language.
+
 ### Fixes
 
-- With only one person in the app, the home screen no longer shows a «Вся семья» (whole family) card that repeats
+- With only one person in the app, the home screen no longer shows a «Whole family» card that repeats
   theirs: it shows that person's card and a card for each of their accounts.
 
 ## 0.1.5 — 2026-09-27

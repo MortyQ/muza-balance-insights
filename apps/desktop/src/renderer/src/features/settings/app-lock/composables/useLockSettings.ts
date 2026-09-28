@@ -1,7 +1,7 @@
 import { computed, onMounted, ref } from 'vue';
-import { pinProblem, PIN_RE, type LockResult, type LockTrigger } from '@contract/lock.ts';
+import { PIN_MAX, PIN_MIN, pinProblem, PIN_RE, type LockResult, type LockTrigger } from '@contract/lock.ts';
 import { useAppLockStore } from '@/entities/app-lock';
-import { FAILED_TEXT } from '@/shared/lib';
+import { failedText, t } from '@/shared/lib';
 import { useAppLockRequest } from '../api/useAppLockRequest.ts';
 import type { LockSettingsMode, UseLockSettingsReturn } from '../types.ts';
 import { resultText } from '../utils.ts';
@@ -43,7 +43,7 @@ export function useLockSettings(): UseLockSettingsReturn {
       error.value = await fn();
       if (!error.value && closeOnDone) open('idle');
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     } finally {
       busy.value = false;
     }
@@ -51,8 +51,12 @@ export function useLockSettings(): UseLockSettingsReturn {
 
   // The current PIN's format is checked here so a too-short value never reaches the IPC schema (which would just
   // show the generic failure text); its own correctness (right/wrong) is still main's call.
-  const currentPinProblem = (): string => (PIN_RE.test(current.value) ? '' : (pinProblem(current.value) ?? ''));
-  const newPinProblem = (): string => (next.value !== repeat.value ? 'PIN не совпадают.' : (pinProblem(next.value) ?? ''));
+  const pinText = (pin: string): string => {
+    const problem = pinProblem(pin);
+    return problem === null ? '' : t(`settings.lock.pinProblem.${problem}`, { min: PIN_MIN, max: PIN_MAX });
+  };
+  const currentPinProblem = (): string => (PIN_RE.test(current.value) ? '' : pinText(current.value));
+  const newPinProblem = (): string => (next.value !== repeat.value ? t('settings.lock.mismatch') : pinText(next.value));
   const withResult = async (call: Promise<LockResult>): Promise<string> => resultText(await call);
 
   function submit(): Promise<void> {

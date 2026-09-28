@@ -12,15 +12,12 @@ async function onDelete() {
 </script>
 
 <template>
-  <SettingsSection title="Данные" description="Всё, что приложение сохранило на этом компьютере.">
+  <SettingsSection :title="$t('settings.deleteData.title')" :description="$t('settings.deleteData.description')">
     <div class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
-      <h3 class="text-lg font-semibold">Удалить все данные</h3>
-      <p class="max-w-[62ch] text-sm text-foreground-secondary">
-        Стирает базу операций и её ключ, сохранённые токены, блокировку и незавершённый импорт. В банке ничего не меняется, но
-        загружать выписку придётся заново. Перед удалением приложение спросит подтверждение.
-      </p>
+      <h3 class="text-lg font-semibold">{{ $t('settings.deleteData.heading') }}</h3>
+      <p class="max-w-[62ch] text-sm text-foreground-secondary">{{ $t('settings.deleteData.body') }}</p>
       <div class="flex justify-end">
-        <VButton variant="negative" text="Удалить все данные" icon="lucide:trash" :loading="deleting" @click="onDelete" />
+        <VButton variant="negative" :text="$t('settings.deleteData.button')" icon="lucide:trash" :loading="deleting" @click="onDelete" />
       </div>
       <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
     </div>

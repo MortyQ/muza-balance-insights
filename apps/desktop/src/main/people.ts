@@ -3,9 +3,14 @@
 // Adding, re-keying and removing connections is IntegrationsService's (integrations.ts).
 import { ColorTakenError, type ColorKey as CoreColorKey } from '@mono/core/colors';
 import type { Db } from '@mono/core/db';
-import { listConnections, listParticipants, renameParticipant, restoreBankLabel, setParticipantColor } from '@mono/core/participants';
+import { BANK_LABEL_PLACEHOLDER, listConnections, listParticipants, renameParticipant, restoreBankLabel, setParticipantColor } from '@mono/core/participants';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 import type { ColorChangeResult, ColorKey, PeopleView, TokenStatus } from '../shared/api.ts';
+
+/** The core's stand-in label until the bank sends the holder's name. */
+export function labelPending(p: { label: string; labelSource: 'bank' | 'user' }): boolean {
+  return p.labelSource === 'bank' && p.label === BANK_LABEL_PLACEHOLDER;
+}
 
 type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 const COLOR_KEYS_MATCH: Same<ColorKey, CoreColorKey> = true;
@@ -41,7 +46,7 @@ export class PeopleService {
           token: await this.d.tokens.status(c.id),
         });
       }
-      people.push({ id: p.id, label: p.label, labelFromBank: p.labelSource === 'bank', color: p.color, connections: own });
+      people.push({ id: p.id, label: p.label, labelFromBank: p.labelSource === 'bank', labelPending: labelPending(p), color: p.color, connections: own });
     }
     return { people, secureStorage: await this.d.tokens.secureStorageAvailable() };
   }

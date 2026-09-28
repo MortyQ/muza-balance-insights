@@ -14,12 +14,12 @@ const { visible, dismiss } = useLockHint();
       :card="false"
       icon="lucide:lock"
       tone="info"
-      title="Новое: блокировка по PIN или Touch ID"
-      subtitle="Закроет приложение, когда ты отошёл от компьютера. Включается в настройках."
+      :title="$t('settings.lock.hintTitle')"
+      :subtitle="$t('settings.lock.hintText')"
     />
     <div class="flex gap-2">
-      <VButton text="Включить" @click="router.push({ name: ROUTE.settings, query: { section: 'lock' } })" />
-      <VButton variant="neutral" text="Не сейчас" @click="dismiss" />
+      <VButton :text="$t('settings.lock.hintEnable')" @click="router.push({ name: ROUTE.settings, query: { section: 'lock' } })" />
+      <VButton variant="neutral" :text="$t('settings.lock.hintLater')" @click="dismiss" />
     </div>
   </div>
 </template>

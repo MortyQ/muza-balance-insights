@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import type { ColorKey } from '@contract/api.ts';
-import { COLOR_TAKEN_TEXT, useParticipantStore } from '@/entities/participant';
-import { FAILED_TEXT } from '@/shared/lib';
+import { useParticipantStore } from '@/entities/participant';
+import { failedText, t } from '@/shared/lib';
 import { usePeopleRequest } from '../api/usePeopleRequest.ts';
 import type { UsePeopleActionsReturn } from '../types.ts';
 
@@ -17,7 +17,7 @@ export function usePeopleActions(): UsePeopleActionsReturn {
       await participant.refresh();
       return true;
     } catch {
-      error.value = 'Имя не сохранено: от 1 до 80 символов.';
+      error.value = t('settings.people.renameError');
       return false;
     }
   }
@@ -29,7 +29,7 @@ export function usePeopleActions(): UsePeopleActionsReturn {
       await participant.refresh();
       return true;
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
       return false;
     }
   }
@@ -39,10 +39,10 @@ export function usePeopleActions(): UsePeopleActionsReturn {
     try {
       const r = await request.setPersonColor(id, color);
       await participant.refresh();
-      if (!r.changed) error.value = COLOR_TAKEN_TEXT;
+      if (!r.changed) error.value = t('entities.color.taken');
       return r.changed;
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
       return false;
     }
   }

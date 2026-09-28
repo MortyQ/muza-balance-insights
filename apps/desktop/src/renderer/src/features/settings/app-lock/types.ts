@@ -17,7 +17,7 @@ export interface UseUnlockReturn {
   pin: Ref<string>;
   busy: Readonly<Ref<boolean>>;
   error: Readonly<Ref<string>>;
-  /** «Следующая попытка через …»; '' when a PIN can be tried now. */
+  /** «Next attempt in …»; '' when a PIN can be tried now. */
   wait: ComputedRef<string>;
   broken: ComputedRef<boolean>;
   touchId: ComputedRef<boolean>;

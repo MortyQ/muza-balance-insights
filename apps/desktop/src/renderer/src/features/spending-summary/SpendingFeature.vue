@@ -1,20 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import { currencyAlpha } from '@mono/core/currency';
-import { formatMoney, monthTitle } from '@/shared/lib';
+import { formatMoney, monthTitle, t } from '@/shared/lib';
 import { VCard, VInfoNotice, VSegmentedControl, VSimpleTable } from '@/shared/ui';
 import { useSpending } from './composables/useSpending.ts';
 import { SCOPES } from './constants.ts';
 import { share, spendingColumns, spendingFooter } from './utils.ts';
 
 const { month, scope, state, view, periodNote, importing } = useSpending();
+const scopes = computed(() => SCOPES.map((s) => ({ ...s, label: t(s.label) })));
 </script>
 
 <template>
-  <VCard title="Траты" padding="md">
+  <VCard :title="$t('home.spending.title')" padding="md">
     <div class="flex flex-col gap-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span class="inline-block text-lg font-semibold first-letter:uppercase">{{ monthTitle(month) }}</span>
-        <VSegmentedControl v-model="scope" :options="SCOPES" />
+        <VSegmentedControl v-model="scope" :options="scopes" />
       </div>
 
       <VInfoNotice
@@ -22,20 +24,20 @@ const { month, scope, state, view, periodNote, importing } = useSpending();
         :card="false"
         icon="lucide:circle-alert"
         tone="danger"
-        subtitle="Не удалось посчитать траты. Попробуй ещё раз или перезапусти приложение."
+        :subtitle="$t('home.spending.failed')"
       />
       <VInfoNotice v-else-if="periodNote" :card="false" icon="lucide:info" tone="info" :subtitle="periodNote" />
-      <p v-if="importing" class="text-sm text-foreground-muted">Идёт импорт — цифры дополняются по мере загрузки выписки.</p>
+      <p v-if="importing" class="text-sm text-foreground-muted">{{ $t('home.spending.importing') }}</p>
       <p v-if="view && view.period.pendingHolds > 0" class="text-sm text-foreground-muted">
-        Операций в обработке банком: {{ view.period.pendingHolds }} — их суммы ещё могут измениться.
+        {{ $t('home.spending.pending', { count: view.period.pendingHolds }) }}
       </p>
 
       <p v-if="view && state.status !== 'error' && view.currencies.length === 0 && view.period.dataUntil !== null" class="text-foreground-muted">
-        Трат за этот месяц нет.
+        {{ $t('home.spending.empty') }}
       </p>
 
       <div v-for="c in view?.currencies ?? []" :key="c.currency" class="flex flex-col gap-2" :class="{ 'opacity-60': state.status === 'loading' }">
-        <h3 v-if="(view?.currencies.length ?? 0) > 1" class="text-sm font-medium text-foreground-secondary">Счета в {{ currencyAlpha(c.currency) }}</h3>
+        <h3 v-if="(view?.currencies.length ?? 0) > 1" class="text-sm font-medium text-foreground-secondary">{{ $t('home.spending.accountsIn', { currency: currencyAlpha(c.currency) }) }}</h3>
         <VSimpleTable :columns="spendingColumns(c.currency)" :rows="c.categories" :row-key="(r) => r.category" :footer="spendingFooter(c)">
           <template #cell-share="{ row }">
             <svg class="block h-2 w-full" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true">
@@ -45,14 +47,13 @@ const { month, scope, state, view, periodNote, importing } = useSpending();
           </template>
         </VSimpleTable>
         <p v-if="c.total.netPerDay !== null && view" class="text-sm text-foreground-muted">
-          В среднем {{ formatMoney(c.total.netPerDay, c.currency) }} в день
-          <template v-if="view.period.coveredDays < view.period.days">(по {{ view.period.coveredDays }} полным дням с данными)</template>
+          {{ $t('home.spending.perDay', { amount: formatMoney(c.total.netPerDay, c.currency) }) }}
+          <template v-if="view.period.coveredDays < view.period.days">{{ $t('home.spending.perDayCovered', { days: view.period.coveredDays }) }}</template>
         </p>
       </div>
 
       <p v-if="view?.currencies.length" class="text-sm text-foreground-muted">
-        Брутто — все списания, возвраты — вернувшиеся деньги, нетто = брутто − возвраты. Переводы между своими счетами и
-        поступления в траты не входят. Разные валюты не складываются.
+        {{ $t('home.spending.footnote') }}
       </p>
     </div>
   </VCard>

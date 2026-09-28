@@ -1,5 +1,5 @@
 <!-- built on reka-ui (2026-09-27): MonthPicker in a Popover. Ours, not copied: muzakit has no month picker.
-     The value is "YYYY-MM"; CalendarDate stays inside (calendarMonth.ts). Month names are ours (Russian UI).
+     The value is "YYYY-MM"; CalendarDate stays inside (calendarMonth.ts). Month names come from the dictionaries.
      grid.rows is a 3x4 grid (reka-ui chunks the year's 12 months by 4 per row, not 3 — verified against
      dist/date/calendar.js's createMonthGrid), so the row is styled as a 4-column flex row, not a 3-column one. -->
 <script setup lang="ts">
@@ -8,10 +8,11 @@ import {
   MonthPickerCell, MonthPickerCellTrigger, MonthPickerGrid, MonthPickerGridBody, MonthPickerGridRow, MonthPickerHeader,
   MonthPickerHeading, MonthPickerNext, MonthPickerPrev, MonthPickerRoot, PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger,
 } from "reka-ui";
+import { monthName, monthShortName, t } from "@/shared/lib";
 import { calendarToMonth, monthToCalendar } from "./calendarMonth";
 import VIcon from "../base/VIcon.vue";
 
-const { min = undefined, max = undefined, label = "Месяц", currentYear = undefined } = defineProps<{
+const { min = undefined, max = undefined, label = undefined, currentYear = undefined } = defineProps<{
   min?: string;
   max?: string;
   label?: string;
@@ -21,8 +22,7 @@ const { min = undefined, max = undefined, label = "Месяц", currentYear = un
 const month = defineModel<string>({ required: true });
 const open = ref(false);
 
-const NAMES = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
-const SHORT = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
+const labelText = computed(() => label ?? t("common.monthPicker.label"));
 
 const minCalendar = computed(() => monthToCalendar(min));
 const maxCalendar = computed(() => monthToCalendar(max));
@@ -37,11 +37,11 @@ const calendarValue = computed({
 });
 const triggerText = computed(() => {
   const d = monthToCalendar(month.value);
-  if (!d) return label;
+  if (!d) return labelText.value;
   const year = currentYear ?? maxCalendar.value?.year;
-  return `${NAMES[d.month - 1]}${d.year === year ? "" : ` ${d.year}`}`;
+  return `${monthName(d.month)}${d.year === year ? "" : ` ${d.year}`}`;
 });
-const triggerAriaLabel = computed(() => (monthToCalendar(month.value) ? `${label}: ${triggerText.value}` : label));
+const triggerAriaLabel = computed(() => (monthToCalendar(month.value) ? `${labelText.value}: ${triggerText.value}` : labelText.value));
 function toMax() {
   if (max) month.value = max;
   open.value = false;
@@ -65,26 +65,26 @@ function toMax() {
             :min-value="minCalendar"
             :max-value="maxCalendar"
             locale="ru-RU"
-            :calendar-label="label"
+            :calendar-label="labelText"
             prevent-deselect
           >
             <MonthPickerHeader class="v-month-picker__header">
-              <MonthPickerPrev class="v-month-picker__nav" aria-label="Предыдущий год"><VIcon icon="lucide:chevron-left" /></MonthPickerPrev>
+              <MonthPickerPrev class="v-month-picker__nav" :aria-label="$t('common.monthPicker.prevYear')"><VIcon icon="lucide:chevron-left" /></MonthPickerPrev>
               <MonthPickerHeading class="v-month-picker__heading" />
-              <MonthPickerNext class="v-month-picker__nav" aria-label="Следующий год"><VIcon icon="lucide:chevron-right" /></MonthPickerNext>
+              <MonthPickerNext class="v-month-picker__nav" :aria-label="$t('common.monthPicker.nextYear')"><VIcon icon="lucide:chevron-right" /></MonthPickerNext>
             </MonthPickerHeader>
             <MonthPickerGrid class="v-month-picker__grid">
               <MonthPickerGridBody>
                 <MonthPickerGridRow v-for="(row, i) in grid.rows" :key="i" class="v-month-picker__row">
                   <MonthPickerCell v-for="m in row" :key="m.toString()" :date="m" class="v-month-picker__cell-wrap">
-                    <MonthPickerCellTrigger :month="m" class="v-month-picker__cell">{{ SHORT[m.month - 1] }}</MonthPickerCellTrigger>
+                    <MonthPickerCellTrigger :month="m" class="v-month-picker__cell">{{ monthShortName(m.month) }}</MonthPickerCellTrigger>
                   </MonthPickerCell>
                 </MonthPickerGridRow>
               </MonthPickerGridBody>
             </MonthPickerGrid>
           </MonthPickerRoot>
           <div v-if="max" class="v-month-picker__footer">
-            <button type="button" class="v-month-picker__now" @click="toMax">Текущий месяц</button>
+            <button type="button" class="v-month-picker__now" @click="toMax">{{ $t('common.monthPicker.thisMonth') }}</button>
           </div>
         </div>
       </PopoverContent>

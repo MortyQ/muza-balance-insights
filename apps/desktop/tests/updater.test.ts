@@ -123,7 +123,7 @@ describe('Updater — Windows / Linux AppImage (auto)', () => {
   it('a downloaded file that differs from the manifest is deleted and never installed', async () => {
     const t = setup({ downloaded: Buffer.from('a tampered installer') });
     const v = await t.u.check(false);
-    expect(v.state.phase).toBe('error');
+    expect(v.state).toEqual({ phase: 'error', reason: 'mismatch' });
     expect(t.eu.autoInstallOnAppQuit).toBe(false);
     expect(t.u.install()).toEqual({ started: false, reason: 'not-ready' });
     expect(t.quit).toEqual([]);
@@ -131,7 +131,7 @@ describe('Updater — Windows / Linux AppImage (auto)', () => {
 
   it('latest.yml of another version than the signed manifest → refused before downloading', async () => {
     const t = setup({ feedVersion: '0.4.0' });
-    expect((await t.u.check(false)).state.phase).toBe('error');
+    expect((await t.u.check(false)).state).toEqual({ phase: 'error', reason: 'rejected' });
     expect(t.eu.autoInstallOnAppQuit).toBe(false);
   });
 
@@ -168,7 +168,7 @@ describe('Updater — macOS (manual)', () => {
   it('a .dmg that differs from the manifest never reaches Downloads', async () => {
     const t = setup({ platform: 'darwin', downloaded: Buffer.from('a tampered image!!') });
     await t.u.check(false);
-    expect((await t.u.download()).state.phase).toBe('error');
+    expect((await t.u.download()).state).toEqual({ phase: 'error', reason: 'mismatch' });
     expect(fs.readdirSync(t.downloadsDir)).toEqual([]);
   });
 });
@@ -176,7 +176,7 @@ describe('Updater — macOS (manual)', () => {
 describe('Updater — what is refused, and when it stays quiet', () => {
   it('a manifest signed with another key → error, nothing downloaded', async () => {
     const t = setup({ release: manifest('0.3.0', generateKeyPairSync('ed25519').privateKey) });
-    expect((await t.u.check(false)).state.phase).toBe('error');
+    expect((await t.u.check(false)).state).toEqual({ phase: 'error', reason: 'rejected' });
     expect(t.euCreated()).toBe(0);
   });
 
@@ -189,7 +189,7 @@ describe('Updater — what is refused, and when it stays quiet', () => {
     const bg = setup({ release: 'offline' });
     expect((await bg.u.check(false)).state).toEqual({ phase: 'idle' });
     const asked = setup({ release: 'offline' });
-    expect((await asked.u.check(true)).state.phase).toBe('error');
+    expect((await asked.u.check(true)).state).toEqual({ phase: 'error', reason: 'offline' });
     expect(asked.log.join('\n')).not.toMatch(/https?:/);
   });
 

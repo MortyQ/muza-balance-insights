@@ -4,10 +4,15 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { MenuItemConstructorOptions } from 'electron';
 import { describe, expect, it } from 'vitest';
-import { COPYRIGHT, DISCLAIMER, REPO } from '../src/shared/about.ts';
+import { COPYRIGHT, REPO } from '../src/shared/about.ts';
+import { MESSAGES } from '../src/shared/i18n/index.ts';
+import { LOCALES } from '../src/shared/locale.ts';
+import { translator } from '../src/main/i18n.ts';
 import { aboutPanelOptions, aboutText, menuTemplate } from '../src/main/menu.ts';
 
-const ABOUT = { name: 'Balance Insights', version: '0.1.0' };
+const en = translator('en');
+const ABOUT = { name: 'Balance Insights', version: '0.1.0', t: en };
+const DISCLAIMER = MESSAGES.en.common.disclaimer;
 const DEV_ROLES = ['reload', 'forceReload', 'toggleDevTools', 'viewMenu'];
 
 function flatten(items: MenuItemConstructorOptions[]): MenuItemConstructorOptions[] {
@@ -27,6 +32,7 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
       showAbout: () => void (aboutCalls += 1),
       openSettings: () => void (settingsCalls += 1),
       lockNow: () => void (lockCalls += 1),
+      t: en,
     });
     return { t, aboutCalls: () => aboutCalls, settingsCalls: () => settingsCalls, lockCalls: () => lockCalls };
   };
@@ -49,9 +55,9 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
     const clickable = items.filter((i) => typeof i.click === 'function');
     if (platform === 'darwin') {
       expect(items.some((i) => i.role === 'about')).toBe(true);
-      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'Заблокировать']);
+      expect(clickable.map((i) => i.label)).toEqual(['Settings…', 'Lock']);
     } else {
-      expect(clickable.map((i) => i.label)).toEqual(['Настройки…', 'Заблокировать', 'О программе']);
+      expect(clickable.map((i) => i.label)).toEqual(['Settings…', 'Lock', 'About']);
       (clickable[2]!.click as () => void)();
       expect(aboutCalls()).toBe(1);
     }
@@ -59,7 +65,7 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
 
   it('Settings: Cmd/Ctrl+, and it only asks the renderer to open its screen', () => {
     const { t, settingsCalls, aboutCalls } = build(true);
-    const item = flatten(t).find((i) => i.label === 'Настройки…');
+    const item = flatten(t).find((i) => i.label === 'Settings…');
     expect(item?.accelerator).toBe('CmdOrCtrl+,');
     (item!.click as () => void)();
     expect([settingsCalls(), aboutCalls()]).toEqual([1, 0]);
@@ -67,10 +73,32 @@ describe.each(['darwin', 'win32', 'linux'] as const)('menu on %s', (platform) =>
 
   it('Lock: Cmd/Ctrl+L, it only asks main to lock', () => {
     const { t, lockCalls, settingsCalls } = build(true);
-    const item = flatten(t).find((i) => i.label === 'Заблокировать');
+    const item = flatten(t).find((i) => i.label === 'Lock');
     expect(item?.accelerator).toBe('CmdOrCtrl+L');
     (item!.click as () => void)();
     expect([lockCalls(), settingsCalls()]).toEqual([1, 0]);
+  });
+});
+
+describe('menu language', () => {
+  const labels = (locale: (typeof LOCALES)[number], platform: NodeJS.Platform) =>
+    flatten(menuTemplate({ name: ABOUT.name, platform, isPackaged: false, showAbout() {}, openSettings() {}, lockNow() {}, t: translator(locale) }))
+      .map((i) => i.label)
+      .filter((l): l is string => typeof l === 'string');
+
+  it.each(LOCALES)('%s: every label is a text of that dictionary, no key shows through', (locale) => {
+    for (const platform of ['darwin', 'win32'] as const) {
+      for (const label of labels(locale, platform).filter((l) => l !== ABOUT.name)) {
+        expect(label).not.toMatch(/^main\./);
+        expect(Object.values(MESSAGES[locale].main.menu)).toContain(label);
+      }
+    }
+  });
+
+  it('the labels follow the language', () => {
+    expect(labels('uk', 'win32')).toContain('Налаштування…');
+    expect(labels('ru', 'win32')).toContain('Настройки…');
+    expect(labels('en', 'win32')).toContain('Settings…');
   });
 });
 
@@ -91,7 +119,7 @@ describe('About', () => {
     for (const s of [DISCLAIMER, COPYRIGHT, REPO]) expect(t.detail).toContain(s);
   });
 
-  it('settings «О программе» shows license, source and author from about.ts', async () => {
+  it('settings «About» shows license, source and author from about.ts', async () => {
     const about = await import('../src/shared/about.ts');
     expect(about.LICENSE).toBe('MIT');
     expect(about.AUTHOR).toBe('MortyQ');
@@ -99,17 +127,17 @@ describe('About', () => {
     for (const name of ['LICENSE', 'REPO', 'AUTHOR']) expect(src, name).toContain(`{{ ${name} }}`);
   });
 
-  it('the disclaimer is the agreed text, and the renderer shows the same constant (connect screen and settings)', () => {
-    expect(DISCLAIMER).toBe('Неофициальное приложение, не связано с Monobank.');
+  it('the disclaimer is the agreed text in every language; the renderer shows it from the dictionary (connect screen and settings)', async () => {
+    expect(MESSAGES.ru.common.disclaimer).toBe('Неофициальное приложение, не связано с Monobank.');
+    for (const m of Object.values(MESSAGES)) expect(m.common.disclaimer).toMatch(/Monobank/);
     for (const file of ['features/integrations/ConnectFirstFeature.vue', 'widgets/settings/components/AboutApp.vue']) {
       const src = fs.readFileSync(fileURLToPath(new URL(`../src/renderer/src/${file}`, import.meta.url)), 'utf8');
-      expect(src, file).toMatch(/import \{[^}]*\bDISCLAIMER\b[^}]*\} from '@contract\/about\.ts'/);
-      expect(src, file).toMatch(/\{\{ DISCLAIMER \}\}/);
-      expect(src, file).not.toContain('не связано с Monobank');
+      expect(src, file).toContain("{{ $t('common.disclaimer') }}");
+      expect(src, file).not.toContain('Monobank.');
     }
   });
 
-  it('main installs the menu and the About panel before the window is created', () => {
+  it('main installs the menu and the About panel before the window is created, and again on a language change', () => {
     const main = fs.readFileSync(fileURLToPath(new URL('../src/main/index.ts', import.meta.url)), 'utf8');
     const at = (s: string) => {
       const i = main.indexOf(s);
@@ -119,6 +147,8 @@ describe('About', () => {
     const win = at('new BrowserWindow(');
     expect(at('app.setAboutPanelOptions(aboutPanelOptions(')).toBeLessThan(win);
     expect(at('Menu.setApplicationMenu(')).toBeLessThan(win);
+    expect(at('  installMenu();\n')).toBeLessThan(win);
     expect(main).not.toMatch(/setApplicationMenu\(\s*null/);
+    expect(main).toMatch(/setLocale: async \(next\) => \{\n\s+await updatePrefs\([^\n]+\n\s+installMenu\(\);/);
   });
 });

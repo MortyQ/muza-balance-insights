@@ -1,6 +1,6 @@
-// What the app says about itself: the About panel (main) and the footer of the screen (renderer). Plain strings only.
+// What the app says about itself: the About panel (main) and «About» in settings (renderer). Plain strings only; the
+// disclaimer is a translated text (`common.disclaimer`).
 
-export const DISCLAIMER = 'Неофициальное приложение, не связано с Monobank.';
 export const COPYRIGHT = '© 2026 MortyQ · MIT License';
 export const LICENSE = 'MIT';
 export const AUTHOR = 'MortyQ';

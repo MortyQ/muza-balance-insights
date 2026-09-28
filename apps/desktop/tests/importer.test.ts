@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { kyivStartOfDay } from '@mono/core/format';
-import { CANCEL_KILL_MS, CRASH_GIVE_UP_MESSAGE, Importer, JOB_FILE, NO_TOKEN_MESSAGE, sinceForDepth, type ChildLike } from '../src/main/importer.ts';
+import { CANCEL_KILL_MS, Importer, JOB_FILE, sinceForDepth, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
 import type { ImportProgress } from '../src/shared/progress.ts';
@@ -158,20 +158,20 @@ describe('Importer', () => {
   it('a non-cancel error keeps the job for the next launch; blocker stopped', async () => {
     const { importer, children, sent, blocker } = setup();
     await importer.start(1);
-    children[0]!.reply({ type: 'error', kind: 'network', message: 'Нет связи с Monobank.' });
+    children[0]!.reply({ type: 'error', kind: 'network' });
     children[0]!.exit();
     expect(fs.existsSync(job())).toBe(true);
     expect(blocker.stopped).toEqual([1]);
-    expect(sent.at(-1)).toEqual({ phase: 'error', message: 'Нет связи с Monobank.' });
+    expect(sent.at(-1)).toEqual({ phase: 'error', error: 'network' });
   });
 
   it('the final message closes the worker from main (no reliance on the worker exiting); exit code logged', async () => {
     const { importer, children, sent, logs } = setup();
     await importer.start(1);
     children[0]!.reply({ type: 'log', message: 'error: MonoApiError status=502' });
-    children[0]!.reply({ type: 'error', kind: 'other', message: 'Monobank ответил 502.' });
+    children[0]!.reply({ type: 'error', kind: 'bank' });
     expect(children[0]!.killed).toBe(true);
-    expect(sent.at(-1)).toEqual({ phase: 'error', message: 'Monobank ответил 502.' });
+    expect(sent.at(-1)).toEqual({ phase: 'error', error: 'bank' });
     expect(logs).toEqual(['import: error: MonoApiError status=502', 'import: worker exit code=0']);
     children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 1, failed: [] }); // late messages are ignored
     expect(sent.at(-1)).toMatchObject({ phase: 'error' });
@@ -211,7 +211,7 @@ describe('Importer', () => {
     // A window committed between crashes → the streak starts over.
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
     expect(await crash()).toMatchObject({ attempt: 2, inSec: 900 });
-    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: 'black/UAH', from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
+    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
 
     let last: ImportProgress;
@@ -222,7 +222,7 @@ describe('Importer', () => {
       waited += last.inSec * 1000;
       expect(i).toBeLessThan(40);
     }
-    expect(last).toEqual({ phase: 'error', message: CRASH_GIVE_UP_MESSAGE });
+    expect(last).toEqual({ phase: 'error', error: 'crash' });
     expect(60_000 + waited).toBeLessThanOrEqual(RETRY_BUDGET_MS);
     expect(fs.existsSync(job())).toBe(true); // the next launch resumes
     expect(importer.running).toBe(false);
@@ -327,7 +327,7 @@ describe('Importer', () => {
     const { importer, children, sent } = setup();
     await importer.start(1);
     importer.cancel();
-    children[0]!.reply({ type: 'error', kind: 'cancelled', message: 'Импорт остановлен' });
+    children[0]!.reply({ type: 'error', kind: 'cancelled' });
     children[0]!.exit();
     expect(sent.at(-1)).toEqual({ phase: 'cancelled' });
     expect(fs.existsSync(job())).toBe(false);
@@ -400,14 +400,14 @@ describe('Importer', () => {
         { connectionId: 3, provider: 'monobank', token: `${TOKEN}-her` },
       ],
     });
-    children[0]!.reply({ type: 'done', windowsTotal: 4, transactions: 9, failed: [{ connectionId: 3, kind: 'auth', message: 'Токен не принят' }] });
+    children[0]!.reply({ type: 'done', windowsTotal: 4, transactions: 9, failed: [{ connectionId: 3, kind: 'auth' }] });
     expect(sent.at(-1)).toEqual({
       phase: 'done',
       windowsTotal: 4,
       transactions: 9,
       failed: [
-        { connectionId: 3, message: 'Токен не принят' },
-        { connectionId: 2, message: NO_TOKEN_MESSAGE },
+        { connectionId: 3, error: 'auth' },
+        { connectionId: 2, error: 'no-token' },
       ],
     });
     expect(JSON.stringify({ sent, logs })).not.toContain(TOKEN);
@@ -491,8 +491,8 @@ describe('Importer: «Автосинхронизация»', () => {
     });
     await importer.startAuto();
     expect(children[0]!.sent[0]).toMatchObject({ connections: [{ connectionId: 1 }] });
-    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, kind: 'auth', message: 'Токен не принят' }] });
-    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, message: 'Токен не принят' }], auto: true });
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, kind: 'auth' }] });
+    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 1, transactions: 0, failed: [{ connectionId: 1, error: 'auth' }], auto: true });
 
     const none = setup({ token: null });
     expect(await none.importer.startAuto()).toEqual({ started: false, reason: 'no-token' });
@@ -548,7 +548,7 @@ describe('Importer: «Автосинхронизация»', () => {
     const { importer, children, sent } = setup();
     await importer.startAuto();
     fs.writeFileSync(job(), '{}'); // not the auto run's: it must stay
-    children[0]!.reply({ type: 'error', kind: 'cancelled', message: 'x' });
+    children[0]!.reply({ type: 'error', kind: 'cancelled' });
     expect(sent.at(-1)).toEqual({ phase: 'cancelled', auto: true });
     expect(fs.existsSync(job())).toBe(true);
   });

@@ -1,14 +1,17 @@
+import type { MessageKey } from '@contract/i18n/index.ts';
 import type { SettingsSection } from '@/shared/config';
 
 export interface NavItem {
-  label: string;
+  /** Dictionary key of the item's name. */
+  label: MessageKey;
   icon: string;
-  /** null: shown disabled with «Скоро», no section yet. */
+  /** null: shown disabled with «Soon», no section yet. */
   section: SettingsSection | null;
 }
 
 export interface NavGroup {
-  label: string;
+  /** Dictionary key of the group's title. */
+  label: MessageKey;
   items: ReadonlyArray<NavItem>;
 }
 
@@ -18,29 +21,29 @@ export const NAV_LABEL_CLASS =
 
 export const NAV_GROUPS = [
   {
-    label: 'Пользователи',
+    label: 'settings.nav.groupUsers',
     items: [
-      { label: 'Люди', icon: 'lucide:users', section: 'people' },
-      { label: 'Подключения', icon: 'lucide:landmark', section: 'connections' },
+      { label: 'settings.nav.people', icon: 'lucide:users', section: 'people' },
+      { label: 'settings.nav.connections', icon: 'lucide:landmark', section: 'connections' },
     ],
   },
   {
-    label: 'Безопасность',
+    label: 'settings.nav.groupSecurity',
     items: [
-      { label: 'Блокировка', icon: 'lucide:lock', section: 'lock' },
-      { label: 'Хранение и токены', icon: 'lucide:key-round', section: 'storage' },
-      { label: 'Сеть', icon: 'lucide:globe', section: 'network' },
-      { label: 'Данные', icon: 'lucide:database', section: 'data' },
+      { label: 'settings.nav.lock', icon: 'lucide:lock', section: 'lock' },
+      { label: 'settings.nav.storage', icon: 'lucide:key-round', section: 'storage' },
+      { label: 'settings.nav.network', icon: 'lucide:globe', section: 'network' },
+      { label: 'settings.nav.data', icon: 'lucide:database', section: 'data' },
     ],
   },
   {
-    label: 'Приложение',
+    label: 'settings.nav.groupApp',
     items: [
-      { label: 'Автосинхронизация', icon: 'lucide:refresh-ccw', section: 'auto-sync' },
-      { label: 'Обновления', icon: 'lucide:refresh-cw', section: 'updates' },
-      { label: 'Оформление', icon: 'lucide:palette', section: 'appearance' },
-      { label: 'Язык и время', icon: 'lucide:languages', section: null },
-      { label: 'О программе', icon: 'lucide:info', section: 'about' },
+      { label: 'settings.nav.autoSync', icon: 'lucide:refresh-ccw', section: 'auto-sync' },
+      { label: 'settings.nav.updates', icon: 'lucide:refresh-cw', section: 'updates' },
+      { label: 'settings.nav.appearance', icon: 'lucide:palette', section: 'appearance' },
+      { label: 'settings.nav.language', icon: 'lucide:languages', section: 'language' },
+      { label: 'settings.nav.about', icon: 'lucide:info', section: 'about' },
     ],
   },
 ] as const satisfies ReadonlyArray<NavGroup>;

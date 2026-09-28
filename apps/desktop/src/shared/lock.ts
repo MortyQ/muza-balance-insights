@@ -39,12 +39,15 @@ export type LockResult =
 
 export type DisableAuth = { pin: string } | { touchId: true };
 
-/** Why a new PIN is refused, as text for the screen; null = fine. */
-export function pinProblem(pin: string): string | null {
-  if (!PIN_RE.test(pin)) return `PIN — от ${PIN_MIN} до ${PIN_MAX} цифр.`;
-  if (/^(\d)\1+$/.test(pin)) return 'Все цифры одинаковые — такой PIN легко угадать.';
+/** Why a new PIN is refused; the renderer words it (`settings.lock.pinProblem.<problem>`). */
+export type PinProblem = 'length' | 'same' | 'sequence';
+
+/** Why a new PIN is refused; null = fine. */
+export function pinProblem(pin: string): PinProblem | null {
+  if (!PIN_RE.test(pin)) return 'length';
+  if (/^(\d)\1+$/.test(pin)) return 'same';
   const digits = Array.from(pin, Number);
   const steps = digits.slice(1).map((d, i) => d - (digits[i] ?? d));
-  if (steps.every((s) => s === 1) || steps.every((s) => s === -1)) return 'Цифры идут подряд — такой PIN легко угадать.';
+  if (steps.every((s) => s === 1) || steps.every((s) => s === -1)) return 'sequence';
   return null;
 }

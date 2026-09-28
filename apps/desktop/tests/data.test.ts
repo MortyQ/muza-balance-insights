@@ -72,10 +72,10 @@ describe('DataService (main → renderer view types)', () => {
     expect(v.currencies.map((c) => c.currency)).toEqual([840, 980]);
     const uah = v.currencies.find((c) => c.currency === 980)!;
     expect(uah.categories).toEqual([
-      { category: 'кафе и рестораны', gross: 50_000, refunds: 10_000, net: 40_000 },
-      { category: 'продукты', gross: 30_000, refunds: 0, net: 30_000 },
+      { category: 'кафе и рестораны', categoryId: 'cafes', gross: 50_000, refunds: 10_000, net: 40_000 },
+      { category: 'продукты', categoryId: 'groceries', gross: 30_000, refunds: 0, net: 30_000 },
     ]);
-    expect(uah.total).toEqual({ category: '', gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
+    expect(uah.total).toEqual({ category: '', categoryId: null, gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
     expect(v.currencies.find((c) => c.currency === 840)!.total.net).toBe(2_500);
   });
 
@@ -88,8 +88,8 @@ describe('DataService (main → renderer view types)', () => {
 
     const personal = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'personal' });
     expect(personal.currencies[0]!.categories).toEqual([
-      { category: 'продукты', gross: 9_500, refunds: 0, net: 9_500 },
-      { category: 'комиссии банка', gross: 500, refunds: 0, net: 500 },
+      { category: 'продукты', categoryId: 'groceries', gross: 9_500, refunds: 0, net: 9_500 },
+      { category: 'комиссии банка', categoryId: 'fees', gross: 500, refunds: 0, net: 500 },
     ]);
     const business = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'business' });
     expect(business.currencies[0]!.categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
@@ -209,7 +209,7 @@ describe('DataService.monthOverview', () => {
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
     const person = await svc.monthOverview({ month: '2025-11', participantId: me });
-    expect(person.accounts).toEqual([{ id: 'uah', label: 'black/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
+    expect(person.accounts).toEqual([{ id: 'uah', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
   });
 
   it('a month straddling the account\'s coverage start: balanceAt its last day, own funds from the backward calculation', async () => {
@@ -244,7 +244,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.people).toEqual([]);
     expect(person.accounts).toEqual([
-      { id: 'hers', label: 'white/UAH', kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
+      { id: 'hers', name: { kind: 'card', type: 'white', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
     ]);
   });
 
@@ -342,7 +342,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.total.fx).toEqual([{ currency: 840, income: 0, spending: 500, rate: 41, nearest: false }]);
     expect(person.accounts).toEqual([
-      { id: 'herusd', label: 'white/USD', kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
+      { id: 'herusd', name: { kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
   });
 

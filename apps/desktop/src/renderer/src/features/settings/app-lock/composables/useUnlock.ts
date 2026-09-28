@@ -1,7 +1,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import type { LockResult } from '@contract/lock.ts';
 import { useAppLockStore } from '@/entities/app-lock';
-import { FAILED_TEXT } from '@/shared/lib';
+import { failedText } from '@/shared/lib';
 import { useAppLockRequest } from '../api/useAppLockRequest.ts';
 import type { UseUnlockReturn } from '../types.ts';
 import { canForgetPin, resultText, shouldAutoPromptTouchId, waitText } from '../utils.ts';
@@ -31,7 +31,7 @@ export function useUnlock(): UseUnlockReturn {
       // Never keep the PIN around after a check, success or not.
       pin.value = '';
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
       pin.value = '';
     } finally {
       busy.value = false;
@@ -41,7 +41,7 @@ export function useUnlock(): UseUnlockReturn {
   const submitPin = () => run(() => request.unlockWithPin(pin.value));
   const unlockTouchId = () => run(() => request.unlockWithTouchId());
 
-  // Once per lock screen (it is a fresh page after every lock): after «Отмена» the button stays, no second prompt.
+  // Once per lock screen (it is a fresh page after every lock): after «Cancel» the button stays, no second prompt.
   let prompted = false;
   function autoPrompt(): void {
     const ready = shouldAutoPromptTouchId({
@@ -65,7 +65,7 @@ export function useUnlock(): UseUnlockReturn {
     try {
       await request.deleteAllData();
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     } finally {
       busy.value = false;
     }

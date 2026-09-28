@@ -25,24 +25,24 @@ async function onTrigger(trigger: AutoSyncTrigger, e: Event): Promise<void> {
 
 <template>
   <SettingsSection
-    title="Автосинхронизация"
-    description="Приложение само подгружает новые операции всех подключений и заново читает последний 31 день: так подтягиваются холды, которые с тех пор завершились или отменились."
-    note="Не чаще раза в 30 минут. Историю глубже загружает кнопка «Загрузить» на главной."
+    :title="$t('settings.autoSync.title')"
+    :description="$t('settings.autoSync.description')"
+    :note="$t('settings.autoSync.note')"
   >
     <template v-if="settings">
       <SettingsList>
-        <SettingsRow title="Обновлять данные автоматически" hint="Вся семья: подключения с сохранённым токеном." :label-for="`${id}-enabled`">
+        <SettingsRow :title="$t('settings.autoSync.enabled')" :hint="$t('settings.autoSync.enabledHint')" :label-for="`${id}-enabled`">
           <VSwitch :id="`${id}-enabled`" :model-value="settings.enabled" :disabled="busy" role="switch" @change="onEnabled($event)" />
         </SettingsRow>
       </SettingsList>
-      <SettingsList v-if="settings.enabled" heading="Когда обновлять">
-        <SettingsRow v-for="t in AUTO_SYNC_TRIGGERS" :key="t" :title="TRIGGER_LABELS[t]" :label-for="`${id}-${t}`">
+      <SettingsList v-if="settings.enabled" :heading="$t('settings.autoSync.when')">
+        <SettingsRow v-for="tr in AUTO_SYNC_TRIGGERS" :key="tr" :title="$t(TRIGGER_LABELS[tr])" :label-for="`${id}-${tr}`">
           <VSwitch
-            :id="`${id}-${t}`"
-            :model-value="settings.triggers[t]"
+            :id="`${id}-${tr}`"
+            :model-value="settings.triggers[tr]"
             :disabled="busy"
             role="switch"
-            @change="onTrigger(t, $event)"
+            @change="onTrigger(tr, $event)"
           />
         </SettingsRow>
       </SettingsList>

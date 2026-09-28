@@ -1,6 +1,7 @@
 import { ref } from 'vue';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { useParticipantStore } from '@/entities/participant';
+import { t } from '@/shared/lib';
 import { useDeleteAllDataRequest } from '../../shared/api/useDeleteAllDataRequest.ts';
 import type { UseDeleteDataReturn } from '../types.ts';
 
@@ -21,7 +22,7 @@ export function useDeleteData(): UseDeleteDataReturn {
       await syncStatus.refresh();
       return true;
     } catch {
-      error.value = 'Не всё удалось удалить. Перезапусти приложение и попробуй ещё раз.';
+      error.value = t('settings.deleteData.error');
       return false;
     } finally {
       deleting.value = false;

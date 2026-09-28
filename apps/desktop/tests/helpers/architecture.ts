@@ -11,6 +11,7 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
   /^vue$/,
   /^vue-router$/,
   /^pinia$/,
+  /^vue-i18n$/,
   /^@mono\/core\/currency$/,
   /^~icons\/lucide\/[a-z0-9-]+$/,
   /^@fontsource-variable\/manrope\/wght\.css$/,
@@ -104,7 +105,8 @@ export function violations(files: Files): string[] {
         else if (rank(to.layer) > rank(from.layer)) found.push(`${where}: ${from.layer} must not import the higher layer ${to.layer}`);
         else if (to.layer === from.layer && to.layer !== 'shared') found.push(`${where}: slices of one layer must not import each other`);
       } else if (spec.startsWith('@contract/')) {
-        if (!/^@contract\/[a-z-]+\.ts$/.test(spec)) found.push(`${where}: @contract/ is for the files of src/shared only`);
+        // A file of src/shared, or a folder's index.ts there (i18n: the dictionaries behind it).
+        if (!/^@contract\/[a-z0-9-]+(\/index)?\.ts$/.test(spec)) found.push(`${where}: @contract/ is for the files of src/shared only`);
       } else if (!ALLOWED_PACKAGES.some((re) => re.test(spec))) {
         if (UI_ONLY_PACKAGES.some((re) => re.test(spec)) && file.startsWith('shared/ui/')) {
           // reka-ui and @internationalized/date are allowed, but only inside shared/ui.
