@@ -16,10 +16,9 @@ export const monobank: WorkerProvider = {
     }),
   describe: (err) => {
     if (!(err instanceof MonoApiError)) return null;
-    if (err.status === 401 || err.status === 403) return { kind: 'auth', message: 'Monobank не принял токен. Проверь токен и введи его заново.' };
-    if (err.status === null) return { kind: 'network', message: 'Нет связи с Monobank. Импорт продолжится со следующего запуска.' };
-    // Already redacted by the core client.
-    return { kind: 'other', message: err.message.slice(0, 300) };
+    if (err.status === 401 || err.status === 403) return 'auth';
+    if (err.status === null) return 'network';
+    return 'bank';
   },
   transient: (err) => {
     if (!(err instanceof MonoApiError)) return null;

@@ -16,8 +16,6 @@ import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
 
 export const JOB_FILE = 'import-job.json';
 export const CANCEL_KILL_MS = 10_000;
-export const NO_TOKEN_MESSAGE = 'Токен не сохранён — введи его заново, чтобы импортировать это подключение.';
-export const CRASH_GIVE_UP_MESSAGE = 'Процесс импорта несколько часов подряд неожиданно завершался. Импорт продолжится со следующего запуска.';
 
 /** Start of the Kyiv day `depth` months before today (day clamped: 31 Mar − 1 month = 28/29 Feb). */
 export function sinceForDepth(depth: ImportDepth, nowSec: number): number {
@@ -245,8 +243,8 @@ export class Importer {
         this.resetCrashes();
         this.removeJob();
         const failed: ImportFailure[] = [
-          ...msg.failed.map(({ connectionId, message }) => ({ connectionId, message })),
-          ...(job.auto ? [] : skipped.map((connectionId) => ({ connectionId, message: NO_TOKEN_MESSAGE }))),
+          ...msg.failed.map(({ connectionId, kind }) => ({ connectionId, error: kind })),
+          ...(job.auto ? [] : skipped.map((connectionId) => ({ connectionId, error: 'no-token' as const }))),
         ];
         this.emit({ phase: 'done', windowsTotal: msg.windowsTotal, transactions: msg.transactions, failed }, job);
       } else if (msg.kind === 'cancelled') {
@@ -254,7 +252,7 @@ export class Importer {
         this.removeJob();
         this.emit({ phase: 'cancelled' }, job);
       } else {
-        this.emit({ phase: 'error', message: msg.message }, job);
+        this.emit({ phase: 'error', error: msg.kind }, job);
       }
       // The final message is in: nothing else is expected, so main closes the worker itself.
       child.kill();
@@ -289,7 +287,7 @@ export class Importer {
     const delay = nextRetryDelay(this.crashSince, now, this.crashAttempt);
     if (delay === null) {
       this.resetCrashes();
-      this.emit({ phase: 'error', message: CRASH_GIVE_UP_MESSAGE }, job);
+      this.emit({ phase: 'error', error: 'crash' }, job);
       return;
     }
     this.d.log(`import: worker died, restart ${this.crashAttempt} in ${delay / 1000} s`);

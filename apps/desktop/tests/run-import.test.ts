@@ -95,16 +95,16 @@ describe('runImport', () => {
       return r;
     };
     await run();
-    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'cancelled', message: 'Импорт остановлен' });
+    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'cancelled' });
     expect(messages.some((m) => m.type === 'done')).toBe(false);
     expect(Number((await db.execute('SELECT COUNT(*) AS n FROM transactions')).rows[0]?.n)).toBeGreaterThan(0);
     db.close();
   });
 
-  it('Monobank 401 → "auth" with a fixed text, no retry, no token echoed', async () => {
+  it('Monobank 401 → "auth", no retry, no token echoed', async () => {
     const a = await setup({ intercept: (i) => (i === 0 ? Response.json({ errorDescription: `Unknown 'X-Token' ${TEST_TOKEN}` }, { status: 401 }) : undefined) });
     await a.run();
-    expect(a.messages.find((m) => m.type === 'error')).toEqual({ type: 'error', kind: 'auth', message: 'Monobank не принял токен. Проверь токен и введи его заново.' });
+    expect(a.messages.find((m) => m.type === 'error')).toEqual({ type: 'error', kind: 'auth' });
     expect(a.messages.some((m) => m.type === 'progress' && m.progress.phase === 'retry')).toBe(false);
     expect(JSON.stringify(a.messages)).not.toContain(TEST_TOKEN);
     a.db.close();
@@ -170,7 +170,7 @@ describe('runImport: transient failures are waited out (overnight import)', () =
     const waited = r.reduce((n, x) => n + x.inSec * 1000, 0);
     expect(waited).toBeLessThanOrEqual(RETRY_BUDGET_MS);
     expect(waited + RETRY_EVERY_MS).toBeGreaterThan(RETRY_BUDGET_MS - 5 * 60_000); // ≈ the whole budget was used
-    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'network', message: 'Нет связи с Monobank. Импорт продолжится со следующего запуска.' });
+    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'network' });
     expect(clock.sleeps.length).toBeGreaterThan(r.length); // retries plus the usual 60 s limit waits
     db.close();
   });
@@ -230,7 +230,7 @@ describe('runImport: transient failures are waited out (overnight import)', () =
     };
     await run();
     expect(retries(messages)).toHaveLength(1);
-    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'cancelled', message: 'Импорт остановлен' });
+    expect(messages.at(-1)).toEqual({ type: 'error', kind: 'cancelled' });
     db.close();
   });
 
@@ -250,11 +250,22 @@ describe('runImport: transient failures are waited out (overnight import)', () =
     db.close();
   });
 
-  it('an unknown error becomes a generic text; only its name goes to the log', () => {
-    expect(describeError(new Error(`boom ${TEST_TOKEN} /Users/x/secret`))).toEqual({
-      kind: 'other',
-      message: 'Импорт остановился из-за ошибки. Он продолжится со следующего запуска.',
-    });
+  it('an unknown error becomes the generic code; only its name goes to the log', () => {
+    expect(describeError(new Error(`boom ${TEST_TOKEN} /Users/x/secret`))).toBe('other');
+  });
+
+  // The UI words the code; nothing of the error's own text crosses to main.
+  it.each([
+    ['cancelled', new SyncCancelledError()],
+    ['rate-limit', new RateLimitError(60, 'server', 'Monobank', 60)],
+    ['other-holder', new ConnectionMismatchError('x')],
+    ['already-connected', new ConnectionDuplicateError('x')],
+    ['auth', new MonoApiError('x', 401)],
+    ['network', new MonoApiError('x', null)],
+    ['bank', new MonoApiError('x', 502)],
+    ['format', new Error('Неожиданный формат ответа API: поля [x]')],
+  ] as const)('%s', (kind, err) => {
+    expect(describeError(err)).toBe(kind);
   });
 });
 
@@ -326,7 +337,7 @@ describe('runImport: several connections', () => {
       type: 'done',
       windowsTotal: 2,
       transactions: 1,
-      failed: [{ connectionId: her, kind: 'auth', message: 'Monobank не принял токен. Проверь токен и введи его заново.' }],
+      failed: [{ connectionId: her, kind: 'auth' }],
     });
     expect((await db.execute('SELECT id FROM transactions')).rows.map((r) => r.id)).toEqual(['m1']);
     expect(messages.some((m) => m.type === 'progress' && m.progress.phase === 'retry')).toBe(false);
@@ -342,9 +353,9 @@ describe('runImport: several connections', () => {
     db.close();
   });
 
-  it('the same holder connected twice: the second is refused (kind connection), the first is imported', async () => {
+  it('the same holder connected twice: the second is refused (already-connected), the first is imported', async () => {
     const { db, messages, her } = await two({ bClientId: 'holder-a' });
-    expect(messages.at(-1)).toMatchObject({ type: 'done', failed: [{ connectionId: her, kind: 'connection' }] });
+    expect(messages.at(-1)).toMatchObject({ type: 'done', failed: [{ connectionId: her, kind: 'already-connected' }] });
     expect(JSON.stringify(messages)).not.toContain('holder-a');
     db.close();
   });

@@ -25,7 +25,16 @@ export type WindowProgress = {
   waitingSec: number | null;
 };
 
-export type ImportFailure = { connectionId: number; message: string };
+/**
+ * Why a connection or the whole import stopped; the renderer words it (`home.import.error.*`). The worker's codes:
+ * auth = the bank rejected the token; other-holder / already-connected = the token is of another bank account / that
+ * account is in another connection; bank = any other bank error; db-open = the worker could not open the database.
+ */
+export const WORKER_ERRORS = ['auth', 'other-holder', 'already-connected', 'rate-limit', 'network', 'format', 'bank', 'other', 'db-open'] as const;
+/** Main's own: no-token = the token was only in memory (a resumed import); crash = the worker kept dying for hours. */
+export type ImportError = (typeof WORKER_ERRORS)[number] | 'no-token' | 'crash';
+
+export type ImportFailure = { connectionId: number; error: ImportError };
 
 export type RetryReason = 'network' | 'server' | 'rate-limit' | 'crash';
 
@@ -42,7 +51,7 @@ export type ImportProgress = (
   /** `failed`: connections that did not import (a rejected or missing token …); the others did. */
   | { phase: 'done'; windowsTotal: number; transactions: number; failed: ImportFailure[] }
   | { phase: 'cancelled' }
-  | { phase: 'error'; message: string }
+  | { phase: 'error'; error: ImportError }
 ) & {
   /** Started by «Автосинхронизация», not by the user: the UI shows it quietly. On every state of that run. */
   auto?: true;

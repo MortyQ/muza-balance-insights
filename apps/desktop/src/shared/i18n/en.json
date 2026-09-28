@@ -172,6 +172,19 @@
         "min": "≈ {min} min",
         "sec": "{sec} s"
       },
+      "error": {
+        "alreadyConnected": "This bank account is already in another connection. Nothing was changed.",
+        "auth": "Monobank did not accept the token. Check it and enter it again.",
+        "bank": "Monobank answered with an error. The import continues on the next launch.",
+        "crash": "The import process kept stopping unexpectedly for several hours. The import continues on the next launch.",
+        "dbOpen": "Could not open the database for the import.",
+        "format": "Monobank sent data in an unexpected format. The import continues on the next launch.",
+        "network": "No connection to Monobank. The import continues on the next launch.",
+        "noToken": "The token is not saved — enter it again to import this connection.",
+        "other": "The import stopped because of an error. It continues on the next launch.",
+        "otherHolder": "The token belongs to a different bank account than this connection. Nothing was changed.",
+        "rateLimit": "Monobank limited the number of requests. The import continues on the next launch."
+      },
       "needsToken": "There is an unfinished import. Enter the token in «Connections» to continue.",
       "notLoaded": "Not downloaded — {line}",
       "rederive": "Marking transfers and categories…",

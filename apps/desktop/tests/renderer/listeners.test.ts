@@ -97,7 +97,7 @@ describe('listenToMain: live data during an import', () => {
     send(win(0));
     send(win(1));
     expect(people()).toBe(1);
-    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [{ connectionId: 2, message: 'x' }] });
+    send({ phase: 'done', windowsTotal: 2, transactions: 10, failed: [{ connectionId: 2, error: 'auth' }] });
     expect(people()).toBe(2);
     send({ phase: 'needs-token', connectionIds: [2] });
     expect(people()).toBe(3);

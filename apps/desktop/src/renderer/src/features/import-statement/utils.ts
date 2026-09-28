@@ -1,6 +1,7 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { i18n, t } from '@/shared/lib';
+import { IMPORT_ERRORS } from './constants.ts';
 
 export function fmtDuration(sec: number): string {
   if (sec < 60) return t('home.import.duration.sec', { sec });
@@ -52,7 +53,7 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
     case 'cancelled':
       return t('home.import.cancelled');
     case 'error':
-      return p.message;
+      return t(IMPORT_ERRORS[p.error]);
   }
   return '';
 }
@@ -66,7 +67,7 @@ export function autoLine(p: Readonly<ImportProgress>, now: number): string {
     case 'retry':
       return progressLine(p, now);
     case 'error':
-      return p.message;
+      return t(IMPORT_ERRORS[p.error]);
     case 'idle':
     case 'needs-token':
     case 'done':
@@ -83,7 +84,7 @@ export function autoLine(p: Readonly<ImportProgress>, now: number): string {
 
 /** After an import: one line per connection that did not import (`labelOf`: «Name · Monobank»). */
 export function failureLines(p: Readonly<ImportProgress>, labelOf: (connectionId: number) => string): string[] {
-  return p.phase === 'done' ? p.failed.map((f) => `${labelOf(f.connectionId)}: ${f.message}`) : [];
+  return p.phase === 'done' ? p.failed.map((f) => `${labelOf(f.connectionId)}: ${t(IMPORT_ERRORS[f.error])}`) : [];
 }
 
 /** Share of windows done, or null when there is no bar to show. */

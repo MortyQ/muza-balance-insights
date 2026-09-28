@@ -132,8 +132,8 @@ describe('screens and notices', () => {
   });
 
   it('after an import: one line per connection that did not import', () => {
-    const done = { phase: 'done' as const, windowsTotal: 4, transactions: 9, failed: [{ connectionId: 2, message: 'Monobank не принял токен.' }] };
-    expect(failureLines(done, () => 'Вигадана · Monobank')).toEqual(['Вигадана · Monobank: Monobank не принял токен.']);
+    const done = { phase: 'done' as const, windowsTotal: 4, transactions: 9, failed: [{ connectionId: 2, error: 'auth' as const }] };
+    expect(failureLines(done, () => 'Вигадана · Monobank')).toEqual(['Вигадана · Monobank: Monobank не принял токен. Проверь токен и введи его заново.']);
     expect(failureLines({ phase: 'idle' }, () => 'x')).toEqual([]);
     expect(progressLine({ phase: 'needs-token', connectionIds: [2] }, 0)).toMatch(/«Подключения»/);
   });

@@ -28,7 +28,7 @@ const CASES: Array<[ImportProgress, boolean]> = [
   [{ phase: 'rederive' }, true],
   [{ phase: 'done', windowsTotal: 1, transactions: 1, failed: [] }, false],
   [{ phase: 'cancelled' }, false],
-  [{ phase: 'error', message: 'oops' }, false],
+  [{ phase: 'error', error: 'other' }, false],
 ];
 
 describe('importActive', () => {

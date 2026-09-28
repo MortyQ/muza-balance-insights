@@ -24,18 +24,18 @@ describe('autoLine', () => {
     }
   });
 
-  it('a wait for the network is shown as for a user import; an error by its message', () => {
+  it('a wait for the network is shown as for a user import; an error by its code', () => {
     const retry: ImportProgress = { phase: 'retry', reason: 'network', attempt: 1, inSec: 60, auto: true };
     expect(autoLine(retry, NOW)).toBe(progressLine(retry, NOW));
-    expect(autoLine({ phase: 'error', message: 'Сбой', auto: true }, NOW)).toBe('Сбой');
+    expect(autoLine({ phase: 'error', error: 'network', auto: true }, NOW)).toBe('Нет связи с Monobank. Импорт продолжится со следующего запуска.');
   });
 
   it('once over: no «Готово» line; a connection that did not import still shows', () => {
-    const done: ImportProgress = { phase: 'done', windowsTotal: 3, transactions: 5, failed: [{ connectionId: 2, message: 'Токен не принят' }], auto: true };
+    const done: ImportProgress = { phase: 'done', windowsTotal: 3, transactions: 5, failed: [{ connectionId: 2, error: 'auth' }], auto: true };
     expect(autoLine(done, NOW)).toBe('');
     expect(autoLine({ phase: 'cancelled', auto: true }, NOW)).toBe('');
     expect(autoLine({ phase: 'idle' }, NOW)).toBe('');
-    expect(failureLines(done, (id) => `Люди ${id}`)).toEqual(['Люди 2: Токен не принят']);
+    expect(failureLines(done, (id) => `Люди ${id}`)).toEqual(['Люди 2: Monobank не принял токен. Проверь токен и введи его заново.']);
   });
 });
 
