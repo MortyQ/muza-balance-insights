@@ -94,8 +94,11 @@ export const FAILED = 'Не удалось выполнить операцию';
 export const LOCKED = 'Приложение заблокировано';
 export const DB_UNAVAILABLE = 'База недоступна';
 
-/** What a locked app answers: its own state, the two ways in, and «Забыли PIN?» → «Удалить все данные». */
-export const ALLOWED_WHEN_LOCKED = ['getLockState', 'unlockWithPin', 'unlockWithTouchId', 'deleteAllData'] as const satisfies ReadonlyArray<Method>;
+/**
+ * What a locked app answers: its own state, the two ways in, «Забыли PIN?» → «Удалить все данные», and the interface
+ * language (only uk | en | ru, from preferences.json, no data) so the lock screen speaks it.
+ */
+export const ALLOWED_WHEN_LOCKED = ['getLockState', 'unlockWithPin', 'unlockWithTouchId', 'deleteAllData', 'getLocale'] as const satisfies ReadonlyArray<Method>;
 const allowedWhenLocked: ReadonlySet<Method> = new Set(ALLOWED_WHEN_LOCKED);
 
 /** What an open app answers while its database is not ready: the recovery screen's buttons and the lock. */
