@@ -41,7 +41,7 @@ export function useUnlock(): UseUnlockReturn {
   const submitPin = () => run(() => request.unlockWithPin(pin.value));
   const unlockTouchId = () => run(() => request.unlockWithTouchId());
 
-  // Once per lock screen (it is a fresh page after every lock): after «Отмена» the button stays, no second prompt.
+  // Once per lock screen (it is a fresh page after every lock): after «Cancel» the button stays, no second prompt.
   let prompted = false;
   function autoPrompt(): void {
     const ready = shouldAutoPromptTouchId({

@@ -8,7 +8,7 @@ import { updateLine } from './utils.ts';
 
 const store = useAppUpdateStore();
 const { error, download, install } = useUpdate();
-// «Позже» hides the banner until the next start; the update itself stays (settings, or the next quit).
+// «Later» hides the banner until the next start; the update itself stays (settings, or the next quit).
 const later = ref(false);
 
 const state = computed(() => store.view?.state ?? { phase: 'idle' as const });
@@ -26,14 +26,11 @@ const shown = computed(() => !later.value && ['available', 'downloading', 'ready
       />
       <div class="flex items-center gap-2">
         <UpdateActions :state @download="download" @install="install" />
-        <VButton variant="neutral" text="Позже" @click="later = true" />
+        <VButton variant="neutral" :text="$t('settings.update.later')" @click="later = true" />
       </div>
     </div>
     <VProgressBar v-if="state.phase === 'downloading'" :percentage="state.percent" size="sm" />
-    <p v-if="state.phase === 'saved'" class="text-sm text-foreground-secondary">
-      Открой файл в «Загрузках» и перетащи Balance Insights в «Программы» с заменой. macOS один раз спросит пароль, чтобы новая
-      версия могла прочитать сохранённый токен, — выбери «Разрешать всегда». Данные и токен останутся.
-    </p>
+    <p v-if="state.phase === 'saved'" class="text-sm text-foreground-secondary">{{ $t('settings.update.savedHelp') }}</p>
     <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="warning" :subtitle="error" />
   </div>
 </template>

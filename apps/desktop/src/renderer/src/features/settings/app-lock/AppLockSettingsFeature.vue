@@ -26,38 +26,38 @@ async function onTouchId(e: Event): Promise<void> {
 
 <template>
   <SettingsSection
-    title="Блокировка"
-    description="PIN закрывает приложение от тех, кто сядет за твой незаблокированный компьютер. Это замок на входе, а не шифрование: база шифруется отдельно, ключом из системного хранилища, и её ключ доступен твоей учётной записи и без PIN."
-    note="Забытый PIN не восстановить — только удалить все данные."
+    :title="$t('settings.lock.title')"
+    :description="$t('settings.lock.description')"
+    :note="$t('settings.lock.note')"
   >
     <template v-if="view">
       <SettingsList v-if="!view.enabled && mode === 'idle'">
-        <SettingsRow title="Блокировка выключена" hint="Приложение открывается без PIN.">
-          <VButton text="Включить блокировку" icon="lucide:lock" @click="open('enable')" />
+        <SettingsRow :title="$t('settings.lock.off')" :hint="$t('settings.lock.offHint')">
+          <VButton :text="$t('settings.lock.enable')" icon="lucide:lock" @click="open('enable')" />
         </SettingsRow>
       </SettingsList>
 
       <template v-if="view.enabled && mode === 'idle'">
-        <SettingsList heading="Когда блокировать">
-          <SettingsRow v-for="t in LOCK_TRIGGERS" :key="t" :title="TRIGGER_LABELS[t]" :label-for="`${id}-${t}`">
+        <SettingsList :heading="$t('settings.lock.when')">
+          <SettingsRow v-for="tr in LOCK_TRIGGERS" :key="tr" :title="$t(TRIGGER_LABELS[tr])" :label-for="`${id}-${tr}`">
             <VSwitch
-              :id="`${id}-${t}`"
-              :model-value="view.triggers[t]"
+              :id="`${id}-${tr}`"
+              :model-value="view.triggers[tr]"
               :disabled="busy"
               role="switch"
-              @change="onTrigger(t, $event)"
+              @change="onTrigger(tr, $event)"
             />
           </SettingsRow>
         </SettingsList>
         <SettingsList v-if="view.touchIdAvailable">
-          <SettingsRow title="Разблокировать по Touch ID" hint="Системный диалог сам предложит пароль Mac." :label-for="`${id}-touch-id`">
+          <SettingsRow :title="$t('settings.lock.touchId')" :hint="$t('settings.lock.touchIdHint')" :label-for="`${id}-touch-id`">
             <VSwitch :id="`${id}-touch-id`" :model-value="view.touchId" :disabled="busy" role="switch" @change="onTouchId($event)" />
           </SettingsRow>
         </SettingsList>
         <div class="flex flex-wrap gap-2">
-          <VButton variant="neutral" icon="lucide:lock" text="Заблокировать сейчас" @click="lockNow" />
-          <VButton variant="neutral" text="Сменить PIN" @click="open('change')" />
-          <VButton variant="negative" text="Выключить блокировку" @click="open('disable')" />
+          <VButton variant="neutral" icon="lucide:lock" :text="$t('settings.lock.lockNow')" @click="lockNow" />
+          <VButton variant="neutral" :text="$t('settings.lock.changePin')" @click="open('change')" />
+          <VButton variant="negative" :text="$t('settings.lock.disable')" @click="open('disable')" />
         </div>
       </template>
 
@@ -66,13 +66,13 @@ async function onTouchId(e: Event): Promise<void> {
         class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm"
         @submit.prevent="submit"
       >
-        <PinField v-if="mode !== 'enable'" v-model="current" label="Текущий PIN" autofocus />
+        <PinField v-if="mode !== 'enable'" v-model="current" :label="$t('settings.lock.currentPin')" autofocus />
         <template v-if="mode !== 'disable'">
-          <PinField v-model="next" label="Новый PIN — от 4 до 8 цифр" :autofocus="mode === 'enable'" />
-          <PinField v-model="repeat" label="Повтори PIN" />
+          <PinField v-model="next" :label="$t('settings.lock.newPin')" :autofocus="mode === 'enable'" />
+          <PinField v-model="repeat" :label="$t('settings.lock.repeatPin')" />
         </template>
         <div class="flex flex-wrap gap-2">
-          <VButton type="submit" :text="SUBMIT_TEXT[mode]" :loading="busy" />
+          <VButton type="submit" :text="$t(SUBMIT_TEXT[mode])" :loading="busy" />
           <VButton
             v-if="mode === 'disable' && view.touchId && view.touchIdAvailable"
             variant="neutral"
@@ -81,7 +81,7 @@ async function onTouchId(e: Event): Promise<void> {
             :disabled="busy"
             @click="disableWithTouchId"
           />
-          <VButton variant="neutral" text="Отмена" :disabled="busy" @click="open('idle')" />
+          <VButton variant="neutral" :text="$t('settings.lock.cancel')" :disabled="busy" @click="open('idle')" />
         </div>
       </form>
 

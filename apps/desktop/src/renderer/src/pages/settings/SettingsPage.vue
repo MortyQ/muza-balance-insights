@@ -21,8 +21,8 @@ const select = (s: SettingsSection) => void router.replace({ name: ROUTE.setting
     class="mx-auto grid max-w-[calc(13rem+3rem+40rem)] items-start gap-y-6 px-4 pt-6 pb-16 min-[45rem]:grid-cols-[13rem_minmax(0,1fr)] min-[45rem]:gap-x-12 min-[45rem]:px-8"
   >
     <header class="col-span-full flex items-center gap-2">
-      <VButton variant="neutral" icon="lucide:chevron-left" title="Назад (Esc)" aria-label="Назад" @click="back" />
-      <h1 class="text-xl font-semibold">Настройки</h1>
+      <VButton variant="neutral" icon="lucide:chevron-left" :title="$t('settings.page.backTitle')" :aria-label="$t('settings.page.back')" @click="back" />
+      <h1 class="text-xl font-semibold">{{ $t('settings.page.title') }}</h1>
     </header>
     <SettingsWidget :section @select="select" @deleted="back" />
   </main>

@@ -5,7 +5,7 @@ export function useAppLockRequest(): AppLockRequest {
   return {
     unlockWithPin: (pin) => balanceApi.unlockWithPin(pin),
     unlockWithTouchId: () => balanceApi.unlockWithTouchId(),
-    // «Забыли PIN?»: main asks in a system dialog first and then opens the app as a fresh install.
+    // «Forgot your PIN?»: main asks in a system dialog first and then opens the app as a fresh install.
     deleteAllData: () => balanceApi.deleteAllData(),
     enableLock: (pin) => balanceApi.enableLock(pin),
     changePin: (current, next) => balanceApi.changePin(current, next),

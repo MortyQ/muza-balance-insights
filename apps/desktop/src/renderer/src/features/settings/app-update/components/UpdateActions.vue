@@ -7,6 +7,6 @@ const emit = defineEmits<{ download: []; install: [] }>();
 </script>
 
 <template>
-  <VButton v-if="state.phase === 'available' && state.mode === 'manual'" text="Скачать" icon="lucide:download" @click="emit('download')" />
-  <VButton v-else-if="state.phase === 'ready'" text="Перезапустить и обновить" icon="lucide:refresh-cw" @click="emit('install')" />
+  <VButton v-if="state.phase === 'available' && state.mode === 'manual'" :text="$t('settings.update.download')" icon="lucide:download" @click="emit('download')" />
+  <VButton v-else-if="state.phase === 'ready'" :text="$t('settings.update.restart')" icon="lucide:refresh-cw" @click="emit('install')" />
 </template>

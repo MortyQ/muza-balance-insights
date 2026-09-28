@@ -1,7 +1,7 @@
 // The settings domain: everything the user does with the app and their data on this computer, as sub-features
 // (app-lock, app-update, people, auto-sync, db-encryption, db-recovery, delete-data, security-info, theme-switch,
 // language-select) with what they share in shared/. Most are sections of the settings screen; some live outside it (the
-// lock screen, the home hint and update banner, the «База недоступна» screen).
+// lock screen, the home hint and update banner, the «Database unavailable» screen).
 export { default as AppLockFeature } from './app-lock/AppLockFeature.vue';
 export { default as AppLockHintFeature } from './app-lock/AppLockHintFeature.vue';
 export { default as AppLockSettingsFeature } from './app-lock/AppLockSettingsFeature.vue';

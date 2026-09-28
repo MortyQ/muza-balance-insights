@@ -1,7 +1,8 @@
 import type { AutoSyncTrigger } from '@contract/auto-sync.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
 
 export const TRIGGER_LABELS = {
-  launch: 'При запуске приложения',
-  wake: 'После выхода компьютера из сна',
-  interval: 'Каждые 4 часа, пока приложение открыто',
-} as const satisfies Record<AutoSyncTrigger, string>;
+  launch: 'settings.autoSync.triggerLaunch',
+  wake: 'settings.autoSync.triggerWake',
+  interval: 'settings.autoSync.triggerInterval',
+} as const satisfies Record<AutoSyncTrigger, MessageKey>;
