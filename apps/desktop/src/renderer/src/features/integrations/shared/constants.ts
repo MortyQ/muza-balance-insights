@@ -1,7 +1,11 @@
-export const TOKEN_ERROR_TEXT = 'Токен не сохранён: проверь, что вставлен весь токен без пробелов.';
+import type { MessageKey } from '@contract/i18n/index.ts';
 
-/** Under a disabled account in «Счета». */
-export const DISABLED_ACCOUNT_HINT = 'Не загружается и не входит в статистику';
+// Dictionary keys: the texts are translated where they are shown.
 
-/** While an import runs the switches in «Счета» are off. */
-export const IMPORT_RUNNING_ACCOUNTS_TEXT = 'Идёт импорт: включать и выключать счета можно после него.';
+export const TOKEN_ERROR_TEXT: MessageKey = 'integrations.tokenError';
+
+/** Under a disabled account in «Accounts». */
+export const DISABLED_ACCOUNT_HINT: MessageKey = 'integrations.accounts.disabledHint';
+
+/** While an import runs the switches in «Accounts» are off. */
+export const IMPORT_RUNNING_ACCOUNTS_TEXT: MessageKey = 'integrations.accounts.importRunning';

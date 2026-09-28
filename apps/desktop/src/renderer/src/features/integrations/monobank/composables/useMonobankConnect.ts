@@ -1,6 +1,7 @@
 import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue';
 import type { ParticipantChoice } from '@contract/api.ts';
 import { useParticipantStore } from '@/entities/participant';
+import { t } from '@/shared/lib';
 import { useConnectionsRequest } from '../../shared/api/useConnectionsRequest.ts';
 import { TOKEN_ERROR_TEXT } from '../../shared/constants.ts';
 import type { SubmitState } from '../../shared/types.ts';
@@ -23,14 +24,14 @@ export function useMonobankConnect(owner: MaybeRefOrGetter<ParticipantChoice | n
     try {
       const r = await addConnection({ participant: choice, provider: 'monobank', token: tokenInput.value.trim(), remember: remember.value });
       if (!r.added) {
-        submit.value = { status: 'error', message: DUPLICATE_TOKEN_TEXT };
+        submit.value = { status: 'error', message: t(DUPLICATE_TOKEN_TEXT) };
         return false;
       }
       await participant.refresh();
       submit.value = { status: 'idle' };
       return true;
     } catch {
-      submit.value = { status: 'error', message: TOKEN_ERROR_TEXT };
+      submit.value = { status: 'error', message: t(TOKEN_ERROR_TEXT) };
       return false;
     } finally {
       // The token never stays in the renderer: the field is cleared whatever happened.

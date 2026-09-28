@@ -6,12 +6,12 @@ import type { ProviderForms } from './shared/types.ts';
 
 /**
  * Each bank's forms and texts, from its folder: `connect` — the add form around the owner fields (its default slot);
- * `tokenField` — the token field of «Ввести токен заново» in a connection row; `accessNote` — the first screen's line;
- * `cardTypes` — the bank's card types for «Счета».
+ * `tokenField` — the token field of «Enter token again» in a connection row; `accessNote` — the first screen's line;
+ * `cardTypes` — the bank's card types for «Accounts».
  */
 export const PROVIDER_FORMS: Record<ProviderKey, ProviderForms> = {
   monobank: { connect: MonobankConnectFeature, tokenField: MonobankTokenField, accessNote: MONOBANK_ACCESS_NOTE, cardTypes: MONOBANK_CARD_TYPES },
 };
 
-/** The bank «Добавить подключение» adds (the only one available), and the forms of a provider this app does not know. */
+/** The bank «Add connection» adds (the only one available), and the forms of a provider this app does not know. */
 export const DEFAULT_PROVIDER: ProviderKey = 'monobank';

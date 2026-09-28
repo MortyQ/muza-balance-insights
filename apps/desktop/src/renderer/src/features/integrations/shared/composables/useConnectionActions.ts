@@ -1,7 +1,7 @@
 import { ref } from 'vue';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { failedText } from '@/shared/lib';
+import { failedText, t } from '@/shared/lib';
 import { useConnectionsRequest } from '../api/useConnectionsRequest.ts';
 import { TOKEN_ERROR_TEXT } from '../constants.ts';
 import type { AccountsState, UseConnectionActionsReturn } from '../types.ts';
@@ -27,7 +27,7 @@ export function useConnectionActions(): UseConnectionActionsReturn {
       await participant.refresh();
       return true;
     } catch {
-      error.value = TOKEN_ERROR_TEXT;
+      error.value = t(TOKEN_ERROR_TEXT);
       return false;
     }
   }

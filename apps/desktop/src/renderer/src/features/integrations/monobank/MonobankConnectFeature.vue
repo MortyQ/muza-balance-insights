@@ -22,7 +22,7 @@ async function onSubmit() {
   <form class="flex flex-col gap-4" @submit.prevent="onSubmit">
     <slot />
     <MonobankTokenField v-model:token="tokenInput" v-model:remember="remember" :secure-storage="participant.secureStorage" :autofocus />
-    <p class="text-sm text-foreground-muted">{{ CONSENT_TEXT }}</p>
+    <p class="text-sm text-foreground-muted">{{ $t(CONSENT_TEXT) }}</p>
     <div>
       <VButton type="submit" :text="submitText" :loading="submit.status === 'saving'" :disabled="!canSubmit" />
     </div>
