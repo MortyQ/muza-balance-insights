@@ -1,9 +1,10 @@
 import type { ConnectionView } from '@contract/api.ts';
 import type { ImportProgress } from '@contract/progress.ts';
+import { t } from '@/shared/lib';
 
 /**
  * Why some connections cannot import, when home is shown with them. `missing`: connections without a token, of `total`;
- * `labelOf`: «Имя · Monobank».
+ * `labelOf`: «Name · Monobank».
  */
 export function noTokenText(
   missing: ReadonlyArray<ConnectionView>,
@@ -12,8 +13,8 @@ export function noTokenText(
   labelOf: (connectionId: number) => string,
 ): string {
   const names = missing.map((c) => labelOf(c.id)).join(', ');
-  if (phase === 'needs-token') return 'Есть незавершённый импорт. Введи токен в «Люди и подключения», чтобы продолжить.';
-  if (missing.some((c) => c.token.needsReentry)) return `Сохранённый токен больше не читается (${names}). Введи его заново, чтобы загружать новые операции.`;
-  if (missing.length === total) return 'Нет токена: новые операции не загружаются. Уже загруженное на месте.';
-  return `Нет токена: ${names}. Их новые операции не загружаются.`;
+  if (phase === 'needs-token') return t('home.import.needsToken');
+  if (missing.some((c) => c.token.needsReentry)) return t('home.notices.unreadable', { names });
+  if (missing.length === total) return t('home.notices.noTokenAll');
+  return t('home.notices.noTokenSome', { names });
 }

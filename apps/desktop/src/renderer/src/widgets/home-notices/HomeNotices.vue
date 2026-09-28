@@ -29,17 +29,17 @@ const text = computed(() =>
     :card="false"
     icon="lucide:circle-alert"
     tone="danger"
-    subtitle="Не удалось прочитать данные. Перезапусти приложение; если повторится — пришли строки [ipc] из терминала."
+    :subtitle="$t('home.notices.readFailed')"
   />
   <div v-if="showNoToken" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice :card="false" icon="lucide:plug" tone="warning" :subtitle="text" />
-    <VButton text="Ввести токен" @click="openConnections" />
+    <VButton :text="$t('home.notices.enterToken')" @click="openConnections" />
   </div>
   <div
     v-if="participant.accountsOff"
     class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3"
   >
-    <VInfoNotice :card="false" icon="lucide:eye-off" tone="warning" :subtitle="ALL_ACCOUNTS_OFF_TEXT" />
-    <VButton text="Открыть «Подключения»" @click="openConnections" />
+    <VInfoNotice :card="false" icon="lucide:eye-off" tone="warning" :subtitle="$t(ALL_ACCOUNTS_OFF_TEXT)" />
+    <VButton :text="$t('home.notices.openConnections')" @click="openConnections" />
   </div>
 </template>

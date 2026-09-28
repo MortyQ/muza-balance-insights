@@ -64,8 +64,8 @@ export function listenToMain(router: Router): () => void {
     if (v.locked && !onLockScreen) void router.replace({ name: ROUTE.lock });
     if (!v.locked && onLockScreen) void router.replace({ name: ROUTE.home });
   });
-  // Not ready → the recovery screen (never over the lock screen: the lock comes first). Ready again («Начать заново»,
-  // «Удалить все данные») → a new, different database: people and data are fetched afresh before home picks its screen.
+  // Not ready → the recovery screen (never over the lock screen: the lock comes first). Ready again («Start over»,
+  // «Delete all data») → a new, different database: people and data are fetched afresh before home picks its screen.
   const offDbState = balanceApi.onDbState((v) => {
     dbState.set(v);
     const route = router.currentRoute.value.name;

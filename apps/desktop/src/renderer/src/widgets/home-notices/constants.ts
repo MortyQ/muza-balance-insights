@@ -1,2 +1,4 @@
-/** Every account is turned off in «Подключения» → «Счета». */
-export const ALL_ACCOUNTS_OFF_TEXT = 'Все счета выключены: загружать и считать нечего. Включи нужные в «Подключения».';
+import type { MessageKey } from '@contract/i18n/index.ts';
+
+/** Every account is turned off in «Connections» → «Accounts». */
+export const ALL_ACCOUNTS_OFF_TEXT: MessageKey = 'home.notices.allAccountsOff';

@@ -3,7 +3,7 @@ import { VButton, VIcon } from '@/shared/ui';
 
 const { open, title, subtitle, canPrev, canNext } = defineProps<{
   open: boolean;
-  /** Title of the open row: «Карты семьи» / «Счета · Имя». */
+  /** Title of the open row: «Family cards» / «Accounts · Name». */
   title: string;
   subtitle: string;
   canPrev: boolean;
@@ -21,10 +21,10 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
       :inert="open"
     >
       <div class="flex items-baseline gap-3">
-        <h3 class="text-base font-bold">Баланс</h3>
+        <h3 class="text-base font-bold">{{ $t('home.balances.title') }}</h3>
         <span class="inline-flex items-center gap-1.5 text-xs text-foreground-muted">
           <VIcon icon="lucide:maximize-2" :size="14" />
-          Нажмите на карту, чтобы развернуть
+          {{ $t('home.balances.expandHint') }}
         </span>
       </div>
     </div>
@@ -38,10 +38,10 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
         <span class="text-xs text-foreground-muted">{{ subtitle }}</span>
       </div>
       <div class="flex items-center gap-2">
-        <VButton variant="neutral" size="md" icon="lucide:chevron-left" aria-label="Назад" :disabled="!canPrev" @click="emit('prev')" />
-        <VButton variant="neutral" size="md" icon="lucide:chevron-right" aria-label="Дальше" :disabled="!canNext" @click="emit('next')" />
-        <VButton variant="primary" size="md" text="Все счета" @click="emit('stub')" />
-        <VButton variant="neutral" size="md" icon="lucide:x" text="Свернуть" @click="emit('close')" />
+        <VButton variant="neutral" size="md" icon="lucide:chevron-left" :aria-label="$t('home.balances.back')" :disabled="!canPrev" @click="emit('prev')" />
+        <VButton variant="neutral" size="md" icon="lucide:chevron-right" :aria-label="$t('home.balances.next')" :disabled="!canNext" @click="emit('next')" />
+        <VButton variant="primary" size="md" :text="$t('home.balances.allAccounts')" @click="emit('stub')" />
+        <VButton variant="neutral" size="md" icon="lucide:x" :text="$t('home.balances.collapse')" @click="emit('close')" />
       </div>
     </div>
   </div>

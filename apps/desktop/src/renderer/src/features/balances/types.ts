@@ -10,7 +10,7 @@ export interface FlowSegment {
   spending: number;
 }
 
-/** «Пришло / Ушло» of one card, minor units of `currency`. */
+/** «In / Out» of one card, minor units of `currency`. */
 export interface Flow {
   currency: number;
   income: number;
@@ -22,7 +22,7 @@ export interface Flow {
   /** Total cards: part of the income / spending is another currency counted in hryvnia by the user's own exchange rate. */
   approxIncome?: boolean;
   approxSpending?: boolean;
-  /** Total cards: the rate line under the bars («вкл. 3 162 $ по курсу 44,36»); '' — none. */
+  /** Total cards: the rate line under the bars («incl. 3 162 $ at the rate 44,36»); '' — none. */
   note?: string;
 }
 
@@ -52,7 +52,7 @@ export interface UseMonthOverviewReturn {
   isFamily: ComputedRef<boolean>;
   /** People of the family view with their colours; empty for a person. */
   legend: ComputedRef<LegendItem[]>;
-  /** The shown answer's month: «Сентябрь», «Декабрь 2025». */
+  /** The shown answer's month: «September», «December 2025». */
   monthName: ComputedRef<string>;
 }
 
@@ -61,7 +61,7 @@ export interface UseCardStackReturn {
   offset: Ref<number>;
   /** The last move was paging (arrows or a new month): the row slides without the stagger. */
   paging: Ref<boolean>;
-  /** «Все счета» was pressed: the «later» note is shown. */
+  /** «All accounts» was pressed: the «later» note is shown. */
   stubShown: Ref<boolean>;
   toggle: () => void;
   close: () => void;

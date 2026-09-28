@@ -1,17 +1,19 @@
+import type { MessageKey } from '@contract/i18n/index.ts';
 import type { ImportProgress } from '@contract/progress.ts';
+import { i18n, t } from '@/shared/lib';
 
 export function fmtDuration(sec: number): string {
-  if (sec < 60) return `${sec} с`;
+  if (sec < 60) return t('home.import.duration.sec', { sec });
   const m = Math.round(sec / 60);
-  return m < 60 ? `≈ ${m} мин` : `≈ ${Math.floor(m / 60)} ч ${m % 60} мин`;
+  return m < 60 ? t('home.import.duration.min', { min: m }) : t('home.import.duration.hourMin', { hours: Math.floor(m / 60), min: m % 60 });
 }
 
 const RETRY_REASON = {
-  network: 'Нет связи с Monobank',
-  server: 'Monobank временно не отвечает',
-  'rate-limit': 'Monobank просит подождать',
-  crash: 'Процесс импорта перезапускается',
-} as const satisfies Record<Extract<ImportProgress, { phase: 'retry' }>['reason'], string>;
+  network: 'home.import.retry.network',
+  server: 'home.import.retry.server',
+  'rate-limit': 'home.import.retry.rateLimit',
+  crash: 'home.import.retry.crash',
+} as const satisfies Record<Extract<ImportProgress, { phase: 'retry' }>['reason'], MessageKey>;
 
 /** One line under the import controls; `now` is passed in so the retry time is testable. */
 export function progressLine(p: Readonly<ImportProgress>, now: number): string {
@@ -19,25 +21,36 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
     case 'idle':
       return '';
     case 'needs-token':
-      return 'Есть незавершённый импорт. Введи токен в «Люди и подключения», чтобы продолжить.';
+      return t('home.import.needsToken');
     case 'starting':
-      return p.resumed ? 'Продолжаю импорт…' : 'Запускаю импорт…';
+      return p.resumed ? t('home.import.resuming') : t('home.import.starting');
     case 'accounts':
-      return 'Обновляю список счетов…';
+      return t('home.import.accounts');
     case 'windows': {
-      const wait = p.waitingSec ? ` · жду лимит Monobank ${p.waitingSec} с` : '';
-      return `${p.account}: окно ${p.from} … ${p.to} (${p.index}/${p.total}) · загружено окон ${p.windowsDone} из ${p.windowsTotal}, операций ${p.transactions} · осталось ${fmtDuration(p.etaSec)}${wait}`;
+      const wait = p.waitingSec ? t('home.import.waitLimit', { sec: p.waitingSec }) : '';
+      return t('home.import.windowsLine', {
+        account: p.account,
+        from: p.from,
+        to: p.to,
+        index: p.index,
+        total: p.total,
+        done: p.windowsDone,
+        windows: p.windowsTotal,
+        transactions: p.transactions,
+        eta: fmtDuration(p.etaSec),
+        wait,
+      });
     }
     case 'retry': {
-      const at = new Date(now + p.inSec * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-      return `${RETRY_REASON[p.reason]}. Повтор в ${at} (попытка ${p.attempt}). Уже загруженное сохранено.`;
+      const at = new Date(now + p.inSec * 1000).toLocaleTimeString(i18n.global.locale.value, { hour: '2-digit', minute: '2-digit' });
+      return t('home.import.retryLine', { reason: t(RETRY_REASON[p.reason]), at, attempt: p.attempt });
     }
     case 'rederive':
-      return 'Размечаю переводы и категории…';
+      return t('home.import.rederive');
     case 'done':
-      return `Готово: окон ${p.windowsTotal}, операций ${p.transactions}.`;
+      return t('home.import.done', { windows: p.windowsTotal, transactions: p.transactions });
     case 'cancelled':
-      return 'Импорт остановлен. Уже загруженное сохранено.';
+      return t('home.import.cancelled');
     case 'error':
       return p.message;
   }
@@ -45,7 +58,7 @@ export function progressLine(p: Readonly<ImportProgress>, now: number): string {
 }
 
 /**
- * «Автосинхронизация»: one quiet line while it runs, nothing once it is over — only a wait for the network or an error is
+ * «Auto-sync»: one quiet line while it runs, nothing once it is over — only a wait for the network or an error is
  * worth a line; a connection that did not import still shows through failureLines.
  */
 export function autoLine(p: Readonly<ImportProgress>, now: number): string {
@@ -63,12 +76,12 @@ export function autoLine(p: Readonly<ImportProgress>, now: number): string {
     case 'accounts':
     case 'windows':
     case 'rederive':
-      return 'Обновляю данные…';
+      return t('home.import.autoRunning');
   }
   return '';
 }
 
-/** After an import: one line per connection that did not import (`labelOf`: «Имя · Monobank»). */
+/** After an import: one line per connection that did not import (`labelOf`: «Name · Monobank»). */
 export function failureLines(p: Readonly<ImportProgress>, labelOf: (connectionId: number) => string): string[] {
   return p.phase === 'done' ? p.failed.map((f) => `${labelOf(f.connectionId)}: ${f.message}`) : [];
 }

@@ -8,7 +8,7 @@ import { startRoute } from './startRoute.ts';
 
 /**
  * While locked every route is the lock screen; the lock route itself becomes home once open. Then the database: not
- * ready → every route, settings too, is the recovery screen (the lock comes first: «Начать заново» is not for whoever
+ * ready → every route, settings too, is the recovery screen (the lock comes first: «Start over» is not for whoever
  * sits at an unlocked computer); ready → the recovery route becomes home. Home and connect
  * otherwise swap according to startRoute; settings are always reachable (Cmd+, works on the connect screen too).
  * The first navigation waits for the connections and data status, so no screen flashes before we know which one to show.

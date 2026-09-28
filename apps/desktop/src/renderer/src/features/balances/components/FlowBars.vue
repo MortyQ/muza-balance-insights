@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { t } from '@/shared/lib';
 import type { Flow } from '../types.ts';
 import { flowWidths, signedMoney } from '../utils.ts';
 
@@ -24,8 +25,8 @@ const rows = computed(() => {
     return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
-    { label: 'Пришло', amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
-    { label: 'Ушло', amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
+    { label: t('home.balances.income'), amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
+    { label: t('home.balances.spending'), amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
   ];
 });
 </script>

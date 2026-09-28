@@ -135,7 +135,7 @@ describe('screens and notices', () => {
     const done = { phase: 'done' as const, windowsTotal: 4, transactions: 9, failed: [{ connectionId: 2, message: 'Monobank не принял токен.' }] };
     expect(failureLines(done, () => 'Вигадана · Monobank')).toEqual(['Вигадана · Monobank: Monobank не принял токен.']);
     expect(failureLines({ phase: 'idle' }, () => 'x')).toEqual([]);
-    expect(progressLine({ phase: 'needs-token', connectionIds: [2] }, 0)).toMatch(/Люди и подключения/);
+    expect(progressLine({ phase: 'needs-token', connectionIds: [2] }, 0)).toMatch(/«Подключения»/);
   });
 });
 
