@@ -21,6 +21,7 @@ const { CARD_TYPE_NAMES } = await import('@/features/integrations/monobank/const
 const { DEFAULT_PROVIDER, PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
 const { formsOf, isProviderKey, newConnectionTitle } = await import('@/features/integrations/utils.ts');
 const { BANKS, MONOBANK, bankOf } = await import('@/entities/bank');
+const { t } = await import('@/shared/lib');
 const { ACCESS_NOTE, CONSENT_TEXT, DUPLICATE_TOKEN_TEXT, TOKEN_PLACEHOLDER, TOKEN_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 
 describe('a new connection', () => {
@@ -60,7 +61,8 @@ describe('banks and their forms', () => {
   it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
     expect(bankOf('monobank')).toBe(MONOBANK);
     expect(bankOf('unknown')).toBe(MONOBANK);
-    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'Monobank', status: 'available', auth: 'token' });
+    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'entities.bank.monobank', status: 'available', auth: 'token' });
+    expect(t(MONOBANK.name)).toBe('Monobank');
     for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
     expect(TOKEN_STEPS[0]).toMatch(/api\.monobank\.ua/);
     expect(TOKEN_PLACEHOLDER).toBe('Токен с api.monobank.ua');
@@ -78,7 +80,7 @@ describe('banks and their forms', () => {
       'Токен выпускает сам владелец счетов в своём Monobank и передаёт его тебе. Токен открывает чтение всех его выписок и балансов — добавляй только с его согласия.',
     );
     expect(DUPLICATE_TOKEN_TEXT).toEqual('Этот токен уже подключён.');
-    expect(newConnectionTitle(bankOf(DEFAULT_PROVIDER).name)).toEqual('Новое подключение Monobank');
+    expect(newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name))).toEqual('Новое подключение Monobank');
   });
 });
 

@@ -38,7 +38,7 @@ function select(bank: Readonly<Bank>) {
         <div class="flex items-center gap-3">
           <BankMark :bank="selected.bank" size="lg" />
           <div class="flex flex-col">
-            <h2 class="text-lg font-semibold">{{ selected.bank.name }}</h2>
+            <h2 class="text-lg font-semibold">{{ $t(selected.bank.name) }}</h2>
             <span class="text-sm text-foreground-muted">{{ PROVIDER_FORMS[selected.provider].accessNote }}</span>
           </div>
         </div>

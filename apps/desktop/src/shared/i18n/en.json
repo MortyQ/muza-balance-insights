@@ -1,1 +1,88 @@
-{}
+{
+  "common": {
+    "failed": "Something went wrong. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
+    "month": {
+      "1": "January",
+      "10": "October",
+      "11": "November",
+      "12": "December",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September"
+    },
+    "monthPicker": {
+      "label": "Month",
+      "nextYear": "Next year",
+      "prevYear": "Previous year",
+      "thisMonth": "This month"
+    },
+    "monthShort": {
+      "1": "Jan",
+      "10": "Oct",
+      "11": "Nov",
+      "12": "Dec",
+      "2": "Feb",
+      "3": "Mar",
+      "4": "Apr",
+      "5": "May",
+      "6": "Jun",
+      "7": "Jul",
+      "8": "Aug",
+      "9": "Sep"
+    },
+    "osStore": {
+      "linux": "the system password store",
+      "mac": "the macOS Keychain",
+      "other": "the system store",
+      "windows": "Windows secure storage"
+    }
+  },
+  "entities": {
+    "bank": {
+      "monobank": "Monobank",
+      "other": "Other banks",
+      "privatbank": "PrivatBank"
+    },
+    "color": {
+      "aqua": "Aqua",
+      "blue": "Blue",
+      "green": "Green",
+      "magenta": "Pink",
+      "orange": "Orange",
+      "red": "Red",
+      "taken": "This colour is already taken — pick another one.",
+      "takenBy": "{color} — taken by {who}",
+      "violet": "Violet",
+      "yellow": "Yellow"
+    },
+    "coverage": {
+      "allOff": "All accounts are off",
+      "line": "Accounts: {count} · downloaded from {from} to {to}",
+      "notYet": "Not downloaded yet",
+      "partOf": "{enabled} of {total}"
+    },
+    "participant": {
+      "connection": "Connection",
+      "family": "Whole family"
+    },
+    "syncStatus": {
+      "none": "No data yet",
+      "until": "Data up to {date}"
+    },
+    "token": {
+      "badgeNeeded": "Token needed",
+      "badgeReenter": "Enter the token again",
+      "badgeSaved": "Token saved",
+      "badgeUntilClose": "Token until closing",
+      "memory": "Token kept in memory only until the app closes",
+      "none": "No token",
+      "secure": "Token in the system keychain",
+      "unreadable": "The saved token can no longer be read — enter it again."
+    }
+  }
+}

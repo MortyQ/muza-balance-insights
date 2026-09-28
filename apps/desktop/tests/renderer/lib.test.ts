@@ -1,10 +1,11 @@
 // Pure helpers of the screen: money formatting and Kyiv months.
+// Typechecked with the renderer (tsconfig.web.json): months read the dictionaries through the renderer aliases.
 import { effectScope, nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatMoney, currencySymbol } from '../src/renderer/src/shared/lib/money.ts';
-import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '../src/renderer/src/shared/lib/months.ts';
-import { throttle } from '../src/renderer/src/shared/lib/throttle.ts';
-import { useAsyncData } from '../src/renderer/src/shared/lib/useAsyncData.ts';
+import { formatMoney, currencySymbol } from '@/shared/lib/money.ts';
+import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '@/shared/lib/months.ts';
+import { throttle } from '@/shared/lib/throttle.ts';
+import { useAsyncData } from '@/shared/lib/useAsyncData.ts';
 
 // Intl puts a no-break space between thousands; compare with plain spaces.
 const plain = (s: string) => s.replace(/[  ]/g, ' ');
@@ -39,7 +40,7 @@ describe('months (Kyiv)', () => {
     expect(shiftMonth('2026-03', -26)).toBe('2024-01');
     expect(monthRange('2024-02')).toEqual({ from: '2024-02-01', to: '2024-02-29' });
     expect(monthRange('2026-09')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
-    expect(monthTitle('2026-09')).toBe('сентябрь 2026');
+    expect(monthTitle('2026-09')).toBe('Сентябрь 2026');
   });
 
   it('short dates', () => {

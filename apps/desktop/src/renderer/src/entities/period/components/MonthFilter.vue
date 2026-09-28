@@ -23,5 +23,5 @@ watch(
 </script>
 
 <template>
-  <VMonthPicker v-model="month" :min="min ?? undefined" :max="monthStore.thisMonth" :current-year label="Месяц" />
+  <VMonthPicker v-model="month" :min="min ?? undefined" :max="monthStore.thisMonth" :current-year :label="$t('common.monthPicker.label')" />
 </template>

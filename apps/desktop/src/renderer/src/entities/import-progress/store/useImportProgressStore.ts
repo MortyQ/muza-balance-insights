@@ -7,7 +7,7 @@ import { RUNNING_PHASES } from '../constants.ts';
 export const useImportProgressStore = defineStore('import-progress', () => {
   const progress = ref<ImportProgress>({ phase: 'idle' });
   const running = computed(() => RUNNING_PHASES.includes(progress.value.phase));
-  /** The state belongs to «Автосинхронизация», not to a user's import: shown quietly. */
+  /** The state belongs to «Auto-sync», not to a user's import: shown quietly. */
   const auto = computed(() => progress.value.auto === true);
 
   function set(p: ImportProgress): void {

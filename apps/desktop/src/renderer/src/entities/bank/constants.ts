@@ -1,11 +1,11 @@
-// Banks on the connect screen. Only Monobank works today; the rest are shown as «Скоро». How a bank is connected (token
+// Banks on the connect screen. Only Monobank works today; the rest are shown as «Soon». How a bank is connected (token
 // steps, forms) lives in its folder in features/integrations.
 import type { Bank } from './types.ts';
 
 export const BANKS = [
   {
     id: 'monobank',
-    name: 'Monobank',
+    name: 'entities.bank.monobank',
     status: 'available',
     auth: 'token',
     monogram: 'm',
@@ -13,14 +13,15 @@ export const BANKS = [
   },
   {
     id: 'privatbank',
-    name: 'ПриватБанк',
+    name: 'entities.bank.privatbank',
     status: 'soon',
+    // The bank's own letter mark, not a text: the same in every language.
     monogram: 'П',
     monogramClass: 'bg-surface-sunken text-foreground-muted',
   },
   {
     id: 'other',
-    name: 'Другие банки',
+    name: 'entities.bank.other',
     status: 'soon',
     monogram: '+',
     monogramClass: 'bg-surface-sunken text-foreground-muted',

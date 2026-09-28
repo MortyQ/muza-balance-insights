@@ -1,6 +1,6 @@
 import { onMounted, ref } from 'vue';
 import type { ThemePref } from '@contract/theme.ts';
-import { FAILED_TEXT } from '@/shared/lib';
+import { failedText } from '@/shared/lib';
 import { useThemeRequest } from '../api/useThemeRequest.ts';
 import type { UseThemeReturn } from '../types.ts';
 
@@ -15,7 +15,7 @@ export function useTheme(): UseThemeReturn {
     try {
       theme.value = await request.get();
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     }
   });
 
@@ -30,7 +30,7 @@ export function useTheme(): UseThemeReturn {
       theme.value = await request.set(next);
     } catch {
       theme.value = previous;
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     } finally {
       saving = false;
     }

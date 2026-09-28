@@ -1,7 +1,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { pinProblem, PIN_RE, type LockResult, type LockTrigger } from '@contract/lock.ts';
 import { useAppLockStore } from '@/entities/app-lock';
-import { FAILED_TEXT } from '@/shared/lib';
+import { failedText } from '@/shared/lib';
 import { useAppLockRequest } from '../api/useAppLockRequest.ts';
 import type { LockSettingsMode, UseLockSettingsReturn } from '../types.ts';
 import { resultText } from '../utils.ts';
@@ -43,7 +43,7 @@ export function useLockSettings(): UseLockSettingsReturn {
       error.value = await fn();
       if (!error.value && closeOnDone) open('idle');
     } catch {
-      error.value = FAILED_TEXT;
+      error.value = failedText();
     } finally {
       busy.value = false;
     }

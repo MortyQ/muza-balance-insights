@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { bankOf } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
-import { EXPAND_TRANSITION } from '@/shared/lib';
+import { EXPAND_TRANSITION, t } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
 import { DEFAULT_PROVIDER } from './constants.ts';
@@ -15,7 +15,7 @@ import { formsOf, newConnectionTitle } from './utils.ts';
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
 const { error, setToken, remove, accounts, loadAccounts, savingAccount, setAccountEnabled } = useConnectionActions();
-const newTitle = newConnectionTitle(bankOf(DEFAULT_PROVIDER).name);
+const newTitle = computed(() => newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name)));
 const adding = ref(false);
 const added = ref(false);
 

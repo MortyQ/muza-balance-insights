@@ -1,33 +1,37 @@
 import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
 import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
+import { t } from '@/shared/lib';
 import type { SegmentOption } from '@/shared/ui';
 import { FAMILY } from './constants.ts';
 
 /** One line about a connection's token, for its row. */
 export function tokenLine(s: Readonly<TokenStatus>): string {
-  if (!s.present) return s.needsReentry ? 'Сохранённый токен больше не читается — введи его заново.' : 'Нет токена';
-  return s.stored === 'secure' ? 'Токен в системном хранилище ключей' : 'Токен только в памяти до закрытия приложения';
+  if (!s.present) return s.needsReentry ? t('entities.token.unreadable') : t('entities.token.none');
+  return s.stored === 'secure' ? t('entities.token.secure') : t('entities.token.memory');
 }
 
 export type TokenBadge = { tone: 'success' | 'warning'; text: string };
 
 /** The short badge of a connection's token in settings. */
 export function tokenBadge(s: Readonly<TokenStatus>): TokenBadge {
-  if (!s.present) return { tone: 'warning', text: s.needsReentry ? 'Введи токен заново' : 'Нужен токен' };
-  return s.stored === 'secure' ? { tone: 'success', text: 'Токен сохранён' } : { tone: 'warning', text: 'Токен до закрытия' };
+  if (!s.present) return { tone: 'warning', text: s.needsReentry ? t('entities.token.badgeReenter') : t('entities.token.badgeNeeded') };
+  return s.stored === 'secure'
+    ? { tone: 'success', text: t('entities.token.badgeSaved') }
+    : { tone: 'warning', text: t('entities.token.badgeUntilClose') };
 }
 
 /** What has been imported for a connection; with some accounts off — how many count, of all. */
 export function coverageLine(c: Readonly<ConnectionView>): string {
-  if (c.accounts > 0 && c.enabledAccounts === 0) return 'Все счета выключены';
-  if (c.coveredFrom === null || c.coveredTo === null) return 'Ещё не загружено';
+  if (c.accounts > 0 && c.enabledAccounts === 0) return t('entities.coverage.allOff');
+  if (c.coveredFrom === null || c.coveredTo === null) return t('entities.coverage.notYet');
   const d = (iso: string) => iso.split('-').reverse().join('.');
-  const count = c.enabledAccounts === c.accounts ? `${c.accounts}` : `${c.enabledAccounts} из ${c.accounts}`;
-  return `Счетов: ${count} · загружено с ${d(c.coveredFrom)} по ${d(c.coveredTo)}`;
+  const count =
+    c.enabledAccounts === c.accounts ? `${c.accounts}` : t('entities.coverage.partOf', { enabled: c.enabledAccounts, total: c.accounts });
+  return t('entities.coverage.line', { count, from: d(c.coveredFrom), to: d(c.coveredTo) });
 }
 
 /**
- * Every account of every connection is turned off in «Счета»: nothing to import or count. A connection with no accounts
+ * Every account of every connection is turned off in «Accounts»: nothing to import or count. A connection with no accounts
  * yet (not imported) does not count as off — its first import brings them.
  */
 export function allAccountsOff(connections: ReadonlyArray<Readonly<ConnectionView>>): boolean {
@@ -40,7 +44,7 @@ export function colorVar(color: ColorKey | null): string {
 }
 
 /**
- * Who holds each colour among people, for «занят: …» — except the person being edited (their own colour stays
+ * Who holds each colour among people, for «taken by …» — except the person being edited (their own colour stays
  * selectable). Connections have no colour.
  */
 export function colorHolders(people: ReadonlyArray<Readonly<PersonView>>, exceptId?: number): Map<ColorKey, string> {
@@ -55,12 +59,12 @@ export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey |
 }
 
 /**
- * The people filter: each person's colour next to the name, and everyone's on «Вся семья» — charts and tables coloured
+ * The people filter: each person's colour next to the name, and everyone's on «Whole family» — charts and tables coloured
  * by person read against this header.
  */
 export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>): SegmentOption<number>[] {
   return [
-    { label: 'Вся семья', value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
+    { label: t('entities.participant.family'), value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
     ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)] })),
   ];
 }

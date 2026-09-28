@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { DataStatus } from '@contract/api.ts';
-import { shortDate } from '@/shared/lib';
+import { shortDate, t } from '@/shared/lib';
 import { useSyncStatusRequest } from '../api/useSyncStatusRequest.ts';
 
 /** What has been imported so far, and a counter the data screens reload on. */
@@ -16,7 +16,7 @@ export const useSyncStatusStore = defineStore('sync-status', () => {
   const line = computed(() => {
     const s = status.value;
     if (!s) return '';
-    return s.hasData && s.dataUntil ? `Данные до ${shortDate(s.dataUntil)}` : 'Данных пока нет';
+    return s.hasData && s.dataUntil ? t('entities.syncStatus.until', { date: shortDate(s.dataUntil) }) : t('entities.syncStatus.none');
   });
 
   async function refresh(): Promise<void> {

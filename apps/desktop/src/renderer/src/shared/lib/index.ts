@@ -1,7 +1,7 @@
 export { currencySymbol, formatMoney } from './money.ts';
-export { kyivToday, monthOf, monthRange, monthTitle, shiftMonth, shortDate, type YearMonth } from './months.ts';
+export { kyivToday, monthName, monthOf, monthRange, monthShortName, monthTitle, shiftMonth, shortDate, type YearMonth } from './months.ts';
 export { osStoreName } from './os.ts';
-export { FAILED_TEXT } from './texts.ts';
+export { failedText } from './texts.ts';
 export { applyLocale, i18n, t } from './i18n.ts';
 export { throttle, type Throttled } from './throttle.ts';
 export { EXPAND_TRANSITION } from './transitions.ts';

@@ -16,7 +16,7 @@ const emit = defineEmits<{ select: [bank: Readonly<Bank>] }>();
     >
       <BankMark :bank size="lg" />
       <span class="flex w-full items-center justify-between gap-2">
-        <span class="font-semibold" :class="{ 'text-foreground-muted': bank.status !== 'available' }">{{ bank.name }}</span>
+        <span class="font-semibold" :class="{ 'text-foreground-muted': bank.status !== 'available' }">{{ $t(bank.name) }}</span>
         <span v-if="bank.status === 'soon'" class="rounded-full bg-surface-sunken px-2 py-0.5 text-xs text-foreground-muted">Скоро</span>
       </span>
       <span class="text-sm text-foreground-muted">
