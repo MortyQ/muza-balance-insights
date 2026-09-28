@@ -309,6 +309,36 @@
     },
     "tokenError": "The token was not saved: check that the whole token is pasted, with no spaces."
   },
+  "main": {
+    "dialog": {
+      "cancel": "Cancel",
+      "deleteAll": {
+        "confirm": "Delete everything",
+        "detail": "Downloaded transactions, the database key, saved tokens, the lock and an unfinished import will be deleted. This cannot be undone.",
+        "message": "Delete all data?"
+      },
+      "removeConnection": {
+        "confirm": "Remove connection",
+        "detail": "Its token, accounts and transactions in this app will be deleted. Nothing changes at the bank. This cannot be undone.",
+        "message": "Remove the connection?"
+      },
+      "startOver": {
+        "confirm": "Start over",
+        "detail": "Downloaded transactions, people and their names, overrides and settings will be deleted. Saved tokens stay if they can be read — transactions are downloaded from the bank again. This cannot be undone.",
+        "message": "Start over?"
+      }
+    },
+    "menu": {
+      "about": "About",
+      "develop": "Develop",
+      "file": "File",
+      "help": "Help",
+      "lock": "Lock",
+      "quit": "Quit",
+      "settings": "Settings…"
+    },
+    "touchIdReason": "unlock the app"
+  },
   "settings": {
     "about": {
       "author": "Author",

@@ -1,28 +1,30 @@
 // The application menu and the About panel, as data. Without an explicit menu Electron installs its default one:
 // View → Reload / Toggle Developer Tools, and Help → links that go through shell.openExternal (Checklist #15).
 import type { AboutPanelOptionsOptions, MenuItemConstructorOptions } from 'electron';
-import { COPYRIGHT, DISCLAIMER, REPO } from '../shared/about.ts';
+import { COPYRIGHT, REPO } from '../shared/about.ts';
+import type { Translate } from './i18n.ts';
 
-export function aboutPanelOptions(opts: { name: string; version: string }): AboutPanelOptionsOptions {
+export function aboutPanelOptions(opts: { name: string; version: string; t: Translate }): AboutPanelOptionsOptions {
   return {
     applicationName: opts.name,
     applicationVersion: opts.version,
     version: '',
     copyright: COPYRIGHT,
-    credits: `${DISCLAIMER}\n${REPO}`,
+    credits: `${opts.t('common.disclaimer')}\n${REPO}`,
   };
 }
 
 /** Text of the About dialog on Windows and Linux, where the native panel is not used. */
-export function aboutText(opts: { name: string; version: string }): { message: string; detail: string } {
-  return { message: `${opts.name} ${opts.version}`, detail: `${DISCLAIMER}\n\n${COPYRIGHT}\n${REPO}` };
+export function aboutText(opts: { name: string; version: string; t: Translate }): { message: string; detail: string } {
+  return { message: `${opts.name} ${opts.version}`, detail: `${opts.t('common.disclaimer')}\n\n${COPYRIGHT}\n${REPO}` };
 }
 
 /**
- * macOS: the app menu with the native About panel and «Настройки…» (Cmd+,). Windows / Linux: File → Settings (Ctrl+,) and
+ * macOS: the app menu with the native About panel and «Settings…» (Cmd+,). Windows / Linux: File → Settings (Ctrl+,) and
  * Quit, Help → About (a message box). Settings only tells the renderer to open its screen.
  * Lock (Cmd/Ctrl+L) asks main to lock (a no-op while the lock is off).
  * Reload and DevTools only in an unpackaged app (webPreferences.devTools is off in a packaged one anyway).
+ * Labels come from `t`: main rebuilds the menu when the language changes.
  */
 export function menuTemplate(opts: {
   name: string;
@@ -31,18 +33,20 @@ export function menuTemplate(opts: {
   showAbout: () => void;
   openSettings: () => void;
   lockNow: () => void;
+  t: Translate;
 }): MenuItemConstructorOptions[] {
-  const settings: MenuItemConstructorOptions = { label: 'Настройки…', accelerator: 'CmdOrCtrl+,', click: () => opts.openSettings() };
-  const lock: MenuItemConstructorOptions = { label: 'Заблокировать', accelerator: 'CmdOrCtrl+L', click: () => opts.lockNow() };
+  const { t } = opts;
+  const settings: MenuItemConstructorOptions = { label: t('main.menu.settings'), accelerator: 'CmdOrCtrl+,', click: () => opts.openSettings() };
+  const lock: MenuItemConstructorOptions = { label: t('main.menu.lock'), accelerator: 'CmdOrCtrl+L', click: () => opts.lockNow() };
   const dev: MenuItemConstructorOptions[] = opts.isPackaged
     ? []
-    : [{ label: 'Разработка', submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }] }];
+    : [{ label: t('main.menu.develop'), submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }] }];
   if (opts.platform === 'darwin') {
     return [
       {
         label: opts.name,
         submenu: [
-          { role: 'about', label: 'О программе' },
+          { role: 'about', label: t('main.menu.about') },
           { type: 'separator' },
           settings,
           lock,
@@ -60,9 +64,9 @@ export function menuTemplate(opts: {
     ];
   }
   return [
-    { label: 'Файл', submenu: [settings, lock, { type: 'separator' }, { role: 'quit', label: 'Выход' }] },
+    { label: t('main.menu.file'), submenu: [settings, lock, { type: 'separator' }, { role: 'quit', label: t('main.menu.quit') }] },
     { role: 'editMenu' },
     ...dev,
-    { label: 'Справка', submenu: [{ label: 'О программе', click: () => opts.showAbout() }] },
+    { label: t('main.menu.help'), submenu: [{ label: t('main.menu.about'), click: () => opts.showAbout() }] },
   ];
 }
