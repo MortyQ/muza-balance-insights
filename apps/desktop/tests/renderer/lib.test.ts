@@ -4,6 +4,7 @@ import { effectScope, nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatMoney, currencySymbol } from '@/shared/lib/money.ts';
 import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '@/shared/lib/months.ts';
+import { osFamily } from '@/shared/lib/os.ts';
 import { throttle } from '@/shared/lib/throttle.ts';
 import { useAsyncData } from '@/shared/lib/useAsyncData.ts';
 
@@ -154,4 +155,13 @@ describe('spending category names', () => {
   it('a word without an id is shown as it came, capitalised', () => {
     expect(categoryName({ ...line, category: 'невідома', categoryId: null })).toBe('Невідома');
   });
+});
+
+describe('osFamily', () => {
+  it.each([
+    ['Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 Electron/38.0.0', 'mac'],
+    ['Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Electron/38.0.0', 'windows'],
+    ['Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Electron/38.0.0', 'linux'],
+    ['', 'other'],
+  ])('%s', (ua, os) => expect(osFamily(ua)).toBe(os));
 });

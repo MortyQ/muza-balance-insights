@@ -3,6 +3,13 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.7 — unreleased
+
+### Look and feel
+
+- On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,
+  instead of the grey system ones with arrows.
+
 ## 0.1.6 — 2026-09-29
 
 ### Languages
