@@ -9,6 +9,8 @@ English interface.
 
 - On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,
   instead of the grey system ones with arrows.
+- The home screen has a menu on the left, like the settings screen. For now it has one item, «General», with everything
+  the home screen showed before. In a narrow window the menu moves to a strip at the top.
 
 ## 0.1.6 — 2026-09-29
 
