@@ -24,7 +24,7 @@ const failed = computed(() => failedConnections(importProgress.progress));
        title bar (widgets/app-header). Sticky: the filters stay at hand while the blocks scroll under them; above the
        balance block's header (z-40). -->
   <!-- No aria-busy here: it can hold back the status's live-region announcement. -->
-  <header class="sticky top-0 z-50 -mx-8 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-background px-8 py-2">
+  <header class="sticky top-0 z-50 -mx-4 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-background px-4 py-2 min-[45rem]:-mx-8 min-[45rem]:px-8">
     <h1 class="sr-only">Balance Insights</h1>
     <template v-if="syncStatus.hasData">
       <ParticipantFilter :failed />

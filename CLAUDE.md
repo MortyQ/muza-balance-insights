@@ -154,8 +154,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Preferences** — `userData/preferences.json` (`src/main/prefs.ts`): `updateChecks`, `autoSync`, `theme`, `locale`.
   Reading forgives each field on its own; writing (`updatePrefs`, one at a time) is strict: an invalid value throws and
   nothing is written.
-- **Settings screen** — the menu on the left (`widgets/settings/components/SettingsNav.vue`, groups «Пользователи →
-  Безопасность → Приложение», arrows, roving tabindex) and one section on the right; the section is `query.section` of
+- **Settings screen** — the menu on the left (`SideNav` from `shared/layout` with `NAV_GROUPS` of `widgets/settings`,
+  groups «Пользователи → Безопасность → Приложение») and one section on the right; the section is `query.section` of
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
@@ -171,4 +171,10 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
   the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
   and the settings widget («О программе»).
+- **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
+  group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
+  items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
+  top below 45rem. Used by settings (`NAV_GROUPS`) and home (`HOME_NAV` in `pages/home/constants.ts`: one item «General»
+  for now). Home uses the settings grid: `GlobalFilters` across the top, the menu under them on the left, the blocks on
+  the right; `--side-nav-top` keeps the menu under the sticky filters.
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

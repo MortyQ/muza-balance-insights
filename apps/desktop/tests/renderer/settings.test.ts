@@ -1,13 +1,16 @@
 // The settings screen: which section a query opens and how the arrows walk the menu.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { describe, expect, it } from 'vitest';
-import type { NavItem } from '@/widgets/settings/constants.ts';
+import type { SettingsSection } from '@/shared/config';
+import type { SideNavItem } from '@/shared/layout';
 
 const { settingsSection } = await import('@/shared/config');
-const { nextSection } = await import('@/widgets/settings/utils.ts');
+const { nextItem, SIDE_NAV_LABEL_CLASS } = await import('@/shared/layout');
+const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
+const { HOME_NAV } = await import('@/pages/home/constants.ts');
+const nextSection = (s: SettingsSection, delta: 1 | -1) => nextItem(NAV_GROUPS, s, delta);
 const { osStoreName } = await import('@/shared/lib');
 const { tokensStorage } = await import('@/features/settings/security-info/utils.ts');
-const { NAV_LABEL_CLASS } = await import('@/widgets/settings/constants.ts');
 const { updateLine } = await import('@/features/settings/app-update/utils.ts');
 
 describe('storage section', () => {
@@ -37,8 +40,8 @@ describe('reveal transitions', () => {
 
 describe('menu group titles', () => {
   it('keep their padding on wide windows: hidden only below 45rem, never via not-sr-only (it zeroes padding)', () => {
-    expect(NAV_LABEL_CLASS).toContain('max-[45rem]:sr-only');
-    expect(NAV_LABEL_CLASS).not.toContain('not-sr-only');
+    expect(SIDE_NAV_LABEL_CLASS).toContain('max-[45rem]:sr-only');
+    expect(SIDE_NAV_LABEL_CLASS).not.toContain('not-sr-only');
   });
 });
 
@@ -72,8 +75,7 @@ describe('settings sections', () => {
 
   it('every section is in the menu, once and in the order of SETTINGS_SECTIONS', async () => {
     const { SETTINGS_SECTIONS } = await import('@/shared/config');
-    const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
-    const inMenu = NAV_GROUPS.flatMap((g) => g.items.flatMap((i) => (i.section === null ? [] : [i.section])));
+    const inMenu = NAV_GROUPS.flatMap((g) => g.items.flatMap((i) => (i.id === null ? [] : [i.id])));
     expect(inMenu).toEqual([...SETTINGS_SECTIONS]);
   });
 
@@ -85,11 +87,30 @@ describe('settings sections', () => {
   });
 
   it('language is a section now, not «Soon»; the menu has no disabled items left', async () => {
-    const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
-    const items: ReadonlyArray<NavItem> = NAV_GROUPS.flatMap((g): ReadonlyArray<NavItem> => g.items);
-    expect(items.find((i) => i.label === 'settings.nav.language')?.section).toBe('language');
-    expect(items.filter((i) => i.section === null)).toEqual([]);
+    const items: ReadonlyArray<SideNavItem<SettingsSection>> = NAV_GROUPS.flatMap((g): ReadonlyArray<SideNavItem<SettingsSection>> => g.items);
+    expect(items.find((i) => i.label === 'settings.nav.language')?.id).toBe('language');
+    expect(items.filter((i) => i.id === null)).toEqual([]);
     expect(settingsSection('language')).toBe('language');
+  });
+});
+
+describe('side menu arrows', () => {
+  it('skip «Soon» items and wrap across groups', () => {
+    const groups = [
+      { label: 'settings.nav.groupUsers', items: [{ label: 'settings.nav.people', icon: 'lucide:users', id: 'a' }, { label: 'settings.nav.data', icon: 'lucide:database', id: null }] },
+      { items: [{ label: 'settings.nav.lock', icon: 'lucide:lock', id: 'b' }] },
+    ] as const;
+    expect(nextItem(groups, 'a', 1)).toBe('b');
+    expect(nextItem(groups, 'b', 1)).toBe('a');
+    expect(nextItem(groups, 'a', -1)).toBe('b');
+  });
+});
+
+describe('home menu', () => {
+  it('one untitled group with «General» only; the arrows stay on it', () => {
+    expect(HOME_NAV).toEqual([{ items: [{ label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'general' }] }]);
+    expect(nextItem(HOME_NAV, 'general', 1)).toBe('general');
+    expect(nextItem(HOME_NAV, 'general', -1)).toBe('general');
   });
 });
 
