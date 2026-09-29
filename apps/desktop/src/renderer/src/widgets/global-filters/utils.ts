@@ -1,7 +1,7 @@
 import type { ImportProgress } from '@contract/progress.ts';
 import { IMPORT_ERRORS, progressLine } from '@/features/import-statement';
 import { i18n, syncedWhen, t } from '@/shared/lib';
-import type { SyncStatusView } from './types.ts';
+import type { FilterRowWidths, SyncStatusView } from './types.ts';
 
 /** When the data was last updated, for the tooltip of the data line: «Updated at 14:20»; '' — never. */
 function updatedLine(line: string, lastSyncAt: string | null, now: number): string {
@@ -63,4 +63,13 @@ export function syncStatusView(
 /** Connections that did not update in the last import → why, for the people filter. */
 export function failedConnections(p: Readonly<ImportProgress>): Record<number, string> {
   return p.phase === 'done' ? Object.fromEntries(p.failed.map((f) => [f.connectionId, t(IMPORT_ERRORS[f.error])])) : {};
+}
+
+/**
+ * Whether the person buttons fit centred in the row: the middle column of `1fr auto 1fr` is as wide as the row minus
+ * two of the wider side and the two gaps around it. Before the first measurement (row 0): fits, so the first frame
+ * shows the buttons rather than a select that flips to them.
+ */
+export function fitsCenter(w: Readonly<FilterRowWidths>, gap: number): boolean {
+  return w.row === 0 || w.center + 2 * gap + 2 * Math.max(w.left, w.right) <= w.row;
 }

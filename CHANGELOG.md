@@ -57,6 +57,8 @@ English interface.
   instead of the grey system ones with arrows.
 - The home screen has a menu on the left, like the settings screen. For now it has one item, «General», with everything
   the home screen showed before. In a narrow window the menu moves to a strip at the top.
+- On the home screen the row with the person and the month now stays at the top while you scroll. The person buttons
+  sit in the middle of the row; with more than four people, or in a narrow window, they become a list next to the month.
 
 ## 0.1.6 — 2026-09-29
 

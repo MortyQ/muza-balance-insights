@@ -20,7 +20,7 @@
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
-  Виджет `widgets/global-filters` (`GlobalFilters`, над блоками главной) — фильтры, которые читают все блоки:
+  Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the home screen's scroll area; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
   `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.

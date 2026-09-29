@@ -127,7 +127,12 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
-  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…».
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…». It sits outside the home
+  screen's own scroll area (the page is a column: the filters, then a scroll area with the grid), so it never scrolls
+  and the scroll bar starts under it. Month on the left, «Обновлено…» on the right; the person switch is buttons centred
+  in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
+  `ResizeObserver` on the row, the month, «Обновлено…» and a hidden copy of the buttons; `fitsCenter`), otherwise a
+  `VSelect` before the month (`ParticipantFilter` `mode`).
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
@@ -175,6 +180,6 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
   top below 45rem. Used by settings (`NAV_GROUPS`) and home (`HOME_NAV` in `pages/home/constants.ts`: one item «General»
-  for now). Home uses the settings grid: `GlobalFilters` across the top, the menu under them on the left, the blocks on
-  the right; `--side-nav-top` keeps the menu under the sticky filters.
+  for now). Home uses the settings grid (menu on the left, blocks on the right) inside its scroll area, under the
+  pinned `GlobalFilters`.
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

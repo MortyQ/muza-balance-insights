@@ -138,6 +138,7 @@
     "participant": {
       "connection": "Підключення",
       "family": "Уся родина",
+      "label": "Чиї дані",
       "pending": "Новий учасник",
       "syncFailed": "не оновлено",
       "updated": "Оновлено {when}"
