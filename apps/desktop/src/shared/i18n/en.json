@@ -87,6 +87,7 @@
     "participant": {
       "connection": "Connection",
       "family": "Whole family",
+      "label": "Whose data",
       "pending": "New person"
     },
     "syncStatus": {
