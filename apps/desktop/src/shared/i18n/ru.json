@@ -41,6 +41,10 @@
       "mac": "связкой ключей macOS",
       "other": "системным хранилищем",
       "windows": "защищённым хранилищем Windows"
+    },
+    "sideNav": {
+      "later": "Появится позже",
+      "soon": "Скоро"
     }
   },
   "entities": {
@@ -83,6 +87,7 @@
     "participant": {
       "connection": "Подключение",
       "family": "Вся семья",
+      "label": "Чьи данные",
       "pending": "Новый участник"
     },
     "syncStatus": {
@@ -222,6 +227,10 @@
       "title": "Импорт",
       "waitLimit": " · жду лимит Monobank {sec} с",
       "windowsLine": "{account}: окно {from} … {to} ({index}/{total}) · загружено окон {done} из {windows}, операций {transactions} · осталось {eta}{wait}"
+    },
+    "nav": {
+      "general": "Общее",
+      "label": "Разделы главной"
     },
     "notices": {
       "allAccountsOff": "Все счета выключены: загружать и считать нечего. Включи нужные в «Подключения».",
@@ -513,11 +522,9 @@
       "groupUsers": "Пользователи",
       "label": "Разделы настроек",
       "language": "Язык и время",
-      "later": "Появится позже",
       "lock": "Блокировка",
       "network": "Сеть",
       "people": "Люди",
-      "soon": "Скоро",
       "storage": "Хранение и токены",
       "updates": "Обновления"
     },

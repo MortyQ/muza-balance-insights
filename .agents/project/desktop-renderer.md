@@ -20,7 +20,7 @@
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
-  Виджет `widgets/global-filters` (`GlobalFilters`, над блоками главной) — фильтры, которые читают все блоки:
+  Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the home screen's scroll area; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
   `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
@@ -60,7 +60,7 @@
     `security-info`, `theme-switch`, `language-select`
     (у каждой свои сегменты) и `shared/` для общего между ними (`isChecked`, `restoreSwitch` для `VSwitch`;
     `api/useDeleteAllDataRequest.ts` — «Удалить все данные» из настроек и с экрана «База недоступна»). Раскладка раздела
-    (`Settings{Section,List,Row}`) — сегмент `shared/layout`: ей пользуются и домен `integrations`, и виджет `settings`
+    (`Settings{Section,List,Row}`; also the side menu `SideNav` of settings and home) — сегмент `shared/layout`: ей пользуются и домен `integrations`, и виджет `settings`
     («О программе»). Наружу — только `features/settings/index.ts`: карточки настроек (их собирает виджет `settings`) и то,
     что живёт вне экрана настроек (экран блокировки, подсказка и баннер обновления на главной, экран «База недоступна»).
     Подфичи не импортируют друг друга и корень домена (`index.ts` и корневые файлы), `shared/` — ни одну подфичу и ни один

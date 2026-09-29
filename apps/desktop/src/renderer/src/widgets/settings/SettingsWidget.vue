@@ -14,8 +14,9 @@ import {
   UpdateSettingsFeature,
 } from '@/features/settings';
 import type { SettingsSection } from '@/shared/config';
+import { SideNav } from '@/shared/layout';
 import AboutApp from './components/AboutApp.vue';
-import SettingsNav from './components/SettingsNav.vue';
+import { NAV_GROUPS } from './constants.ts';
 
 const { section } = defineProps<{ section: SettingsSection }>();
 const emit = defineEmits<{ select: [section: SettingsSection]; deleted: [] }>();
@@ -36,7 +37,7 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage'>, Component> = {
 </script>
 
 <template>
-  <SettingsNav :current="section" @select="emit('select', $event)" />
+  <SideNav :groups="NAV_GROUPS" :current="section" label="settings.nav.label" @select="emit('select', $event)" />
   <div class="min-w-0 max-w-160">
     <Transition
       mode="out-in"

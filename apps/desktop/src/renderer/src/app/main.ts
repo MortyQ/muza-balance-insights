@@ -3,7 +3,7 @@ import './styles/main.css';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import { loadLocale } from '@/features/settings';
-import { i18n } from '@/shared/lib';
+import { i18n, osFamily } from '@/shared/lib';
 import App from './App.vue';
 import { listenToMain } from './listeners.ts';
 import { createAppRouter } from './router/index.ts';
@@ -13,6 +13,8 @@ const dark = window.matchMedia('(prefers-color-scheme: dark)');
 const applyTheme = () => document.documentElement.setAttribute('data-theme', dark.matches ? 'dark' : 'light');
 applyTheme();
 dark.addEventListener('change', applyTheme);
+// Styles that apply on one OS only (the Windows scroll bar) switch on data-os.
+document.documentElement.dataset.os = osFamily(navigator.userAgent);
 
 const app = createApp(App);
 const router = createAppRouter();

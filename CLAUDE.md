@@ -127,7 +127,12 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
-  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…».
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…». It sits outside the home
+  screen's own scroll area (the page is a column: the filters, then a scroll area with the grid), so it never scrolls
+  and the scroll bar starts under it. Month on the left, «Обновлено…» on the right; the person switch is buttons centred
+  in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
+  `ResizeObserver` on the row, the month, «Обновлено…» and a hidden copy of the buttons; `fitsCenter`), otherwise a
+  `VSelect` before the month (`ParticipantFilter` `mode`).
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
   `getTheme` / `setTheme`.
@@ -154,8 +159,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Preferences** — `userData/preferences.json` (`src/main/prefs.ts`): `updateChecks`, `autoSync`, `theme`, `locale`.
   Reading forgives each field on its own; writing (`updatePrefs`, one at a time) is strict: an invalid value throws and
   nothing is written.
-- **Settings screen** — the menu on the left (`widgets/settings/components/SettingsNav.vue`, groups «Пользователи →
-  Безопасность → Приложение», arrows, roving tabindex) and one section on the right; the section is `query.section` of
+- **Settings screen** — the menu on the left (`SideNav` from `shared/layout` with `NAV_GROUPS` of `widgets/settings`,
+  groups «Пользователи → Безопасность → Приложение») and one section on the right; the section is `query.section` of
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
@@ -171,4 +176,10 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
   the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
   and the settings widget («О программе»).
+- **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
+  group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
+  items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
+  top below 45rem. Used by settings (`NAV_GROUPS`) and home (`HOME_NAV` in `pages/home/constants.ts`: one item «General»
+  for now). Home uses the settings grid (menu on the left, blocks on the right) inside its scroll area, under the
+  pinned `GlobalFilters`.
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

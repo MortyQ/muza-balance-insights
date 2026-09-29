@@ -41,6 +41,10 @@
       "mac": "the macOS Keychain",
       "other": "the system store",
       "windows": "Windows secure storage"
+    },
+    "sideNav": {
+      "later": "Coming later",
+      "soon": "Soon"
     }
   },
   "entities": {
@@ -83,6 +87,7 @@
     "participant": {
       "connection": "Connection",
       "family": "Whole family",
+      "label": "Whose data",
       "pending": "New person"
     },
     "syncStatus": {
@@ -222,6 +227,10 @@
       "title": "Import",
       "waitLimit": " · waiting for the Monobank limit {sec} s",
       "windowsLine": "{account}: window {from} … {to} ({index}/{total}) · windows downloaded {done} of {windows}, transactions {transactions} · {eta} left{wait}"
+    },
+    "nav": {
+      "general": "General",
+      "label": "Home sections"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
@@ -513,11 +522,9 @@
       "groupUsers": "Users",
       "label": "Settings sections",
       "language": "Language and time",
-      "later": "Coming later",
       "lock": "Lock",
       "network": "Network",
       "people": "People",
-      "soon": "Soon",
       "storage": "Storage and tokens",
       "updates": "Updates"
     },
