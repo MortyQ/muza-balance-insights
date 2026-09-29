@@ -51,6 +51,11 @@ English interface.
   did not update gets a small warning dot, and the hint says which connection and why.
 - With reduced motion turned on in your system settings, loading spinners no longer spin.
 
+### Look and feel
+
+- On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,
+  instead of the grey system ones with arrows.
+
 ## 0.1.6 — 2026-09-29
 
 ### Languages
