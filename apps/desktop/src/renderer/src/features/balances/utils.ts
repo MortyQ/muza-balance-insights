@@ -27,7 +27,7 @@ const yearSuffix = (y: number, current: number) => (y === current ? '' : ` ${y}`
 
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 /** The month after a day number: «31 July» (genitive in uk / ru). */
-const monthOfDay = (m: number) => t(`home.balances.monthGen.${m as MonthNumber}`);
+const monthOfDay = (m: number) => t(`common.monthGen.${m as MonthNumber}`);
 
 /** «Own money · today» / «Own money · on 31 July [2025]»; `label` replaces «Own money» on an account's card. */
 export function balanceCaption(balanceAt: 'now' | string, currentYear: number, label = t('home.balances.ownFunds')): string {
@@ -45,7 +45,7 @@ export function monthName(month: string, currentYear: number): string {
 /** «in September», «in December 2025». */
 export function monthIn(month: string, currentYear: number): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
-  return t('home.balances.inMonth', { month: t(`home.balances.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
+  return t('home.balances.inMonth', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
 }
 
 /** «1 person», «3 people». */
