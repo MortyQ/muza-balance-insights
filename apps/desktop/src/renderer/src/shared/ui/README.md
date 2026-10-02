@@ -40,6 +40,8 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
+- `VPopover` — an icon-only trigger and a panel on reka-ui's `Popover` (muzakit has no popover or dropdown menu); the
+  spending block's settings menu.
 
 All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
 reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element
