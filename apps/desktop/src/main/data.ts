@@ -29,8 +29,6 @@ import type {
   SpendingOverview,
   SpendingOverviewQuery,
   SpendingPersonPart,
-  SpendingQuery,
-  SpendingView,
 } from '../shared/api.ts';
 
 /** The core's category word → its CATEGORY key, the id the renderer translates. */
@@ -96,32 +94,6 @@ export class DataService {
   /** The migrated connection, for the other services of main (people.ts, integrations.ts). */
   database(): Promise<Db> {
     return this.conn();
-  }
-
-  async spending(q: SpendingQuery): Promise<SpendingView> {
-    const s = await spendingSummary(
-      await this.conn(),
-      {
-        from: q.from,
-        to: q.to,
-        groupBy: 'category',
-        ...(q.scope ? { scope: q.scope } : {}),
-        ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
-      },
-      this.d.nowSec(),
-    );
-    const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = s.period;
-    return {
-      period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
-      currencies: s.totals.map((t) => ({
-        currency: t.currency,
-        categories: s.groups
-          .filter((g) => g.currency === t.currency)
-          .map((g) => ({ category: g.key, categoryId: CATEGORY_ID.get(g.key) ?? null, gross: g.gross, refunds: g.refunds, net: g.net }))
-          .sort((a, b) => b.net - a.net || (a.category < b.category ? -1 : 1)),
-        total: { category: '', categoryId: null, gross: t.gross, refunds: t.refunds, net: t.net, netPerDay: t.netPerDay },
-      })),
-    };
   }
 
   /**

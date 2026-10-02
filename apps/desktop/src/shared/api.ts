@@ -130,7 +130,6 @@ export type BalanceApi = {
   onProgress(cb: (p: ImportProgress) => void): () => void;
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
-  spendingSummary(q: SpendingQuery): Promise<SpendingView>;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
@@ -191,33 +190,6 @@ export type BalanceApi = {
 
 export type Scope = 'personal' | 'business';
 
-export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
-
-/** `category` — the core's word; `categoryId` — its CATEGORY key (null on the total line, or a word the core no longer has). */
-export type SpendingLine = { category: string; categoryId: CategoryId | null; gross: number; refunds: number; net: number };
-
-export type SpendingCurrency = {
-  currency: number;
-  /** Sorted by net, largest first. */
-  categories: SpendingLine[];
-  total: SpendingLine & { netPerDay: number | null };
-};
-
-export type SpendingView = {
-  period: {
-    from: string;
-    to: string;
-    days: number;
-    /** The period ends after the last sync (or in the future): numbers will still grow. */
-    incomplete: boolean;
-    /** Kyiv date the data reaches (see core periodInfo); null = never imported. */
-    dataUntil: string | null;
-    coveredDays: number;
-    pendingHolds: number;
-  };
-  currencies: SpendingCurrency[];
-};
-
 export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
 
 /** Hryvnia kopecks (account currencies folded by the user's own exchange rates) and spending lines. */
@@ -243,7 +215,17 @@ export type SpendingFx = { currency: 840 | 978; rate: number | null; prevRate: n
 
 export type SpendingOverview = {
   month: string;
-  period: SpendingView['period'];
+  period: {
+    from: string;
+    to: string;
+    days: number;
+    /** The period ends after the last sync (or in the future): numbers will still grow. */
+    incomplete: boolean;
+    /** Kyiv date the data reaches (see core periodInfo); null = never imported. */
+    dataUntil: string | null;
+    coveredDays: number;
+    pendingHolds: number;
+  };
   /** The period compared with: last month, cut to the same day while this one is incomplete; null — not covered. */
   compare: { from: string; to: string; partial: boolean } | null;
   total: SpendingAmounts & { netPerDay: number | null; prev: SpendingAmounts | null };

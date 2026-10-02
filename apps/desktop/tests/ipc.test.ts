@@ -84,10 +84,6 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['startImport', ['3']],
     ['startImport', []],
     ['startImport', [3, 'extra']],
-    ['spendingSummary', [{ from: '2026-09-01' }]],
-    ['spendingSummary', [{ from: '2026-9-1', to: '2026-09-30' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', sql: 'DROP TABLE x' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', scope: 'all' }]],
     ['getSpendingOverview', []],
     ['getSpendingOverview', [{ month: '2026-09' }]],
     ['getSpendingOverview', [{ month: '2026-9', scope: 'personal' }]],
@@ -101,8 +97,6 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getMonthOverview', [{ month: '2026-9' }]],
     ['getMonthOverview', [{ month: '2026-09', participantId: 1.5 }]],
     ['getMonthOverview', [{ month: '2026-09', extra: 1 }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: '1' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: 1.5 }]],
     ['listPeople', [1]],
     ['addConnection', []],
     ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'short', remember: true }]],
@@ -218,9 +212,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     const ipc = fakeIpcMain();
     registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => false });
     await expect(ipc.handlers.get('balance:startImport')!(good, 12)).resolves.toEqual({ m: 'startImport', a: [12] });
-    await expect(ipc.handlers.get('balance:spendingSummary')!(good, { from: '2026-09-01', to: '2026-09-30' })).resolves.toEqual({
-      m: 'spendingSummary',
-      a: [{ from: '2026-09-01', to: '2026-09-30' }],
+    await expect(ipc.handlers.get('balance:getSpendingOverview')!(good, { month: '2026-09', scope: 'personal' })).resolves.toEqual({
+      m: 'getSpendingOverview',
+      a: [{ month: '2026-09', scope: 'personal' }],
     });
     await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09' })).resolves.toEqual({
       m: 'getMonthOverview',

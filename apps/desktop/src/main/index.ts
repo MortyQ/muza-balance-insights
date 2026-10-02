@@ -244,7 +244,6 @@ app.whenReady().then(async () => {
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
-    spendingSummary: (q) => data.spending(q),
     getMonthOverview: (q) => data.monthOverview(q),
     getSpendingOverview: (q) => data.spendingOverview(q),
     getSyncStatus: () => data.status(),

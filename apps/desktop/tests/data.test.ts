@@ -58,45 +58,6 @@ beforeEach(async () => {
 afterEach(() => db.close());
 
 describe('DataService (main → renderer view types)', () => {
-  it('spending: categories per account currency, net-sorted; currencies never summed; incomplete month flagged', async () => {
-    await account('uah', 'black', 980, 100_000);
-    await account('usd', 'black', 840, 5_000);
-    await synced('uah');
-    await synced('usd');
-    await tx('uah', '2026-03-02', -30_000, 'продукты');
-    await tx('uah', '2026-03-03', -50_000, 'кафе и рестораны');
-    await tx('uah', '2026-03-04', 10_000, 'кафе и рестораны'); // refund
-    await tx('usd', '2026-03-05', -2_500, 'путешествия');
-    await tx('uah', '2026-02-20', -99_900, 'продукты'); // outside the month
-
-    const v = await svc.spending({ from: '2026-03-01', to: '2026-03-31' });
-    expect(v.period).toMatchObject({ from: '2026-03-01', to: '2026-03-31', days: 31, incomplete: true, dataUntil: '2026-03-10', coveredDays: 9 });
-    expect(v.currencies.map((c) => c.currency)).toEqual([840, 980]);
-    const uah = v.currencies.find((c) => c.currency === 980)!;
-    expect(uah.categories).toEqual([
-      { category: 'кафе и рестораны', categoryId: 'cafes', gross: 50_000, refunds: 10_000, net: 40_000 },
-      { category: 'продукты', categoryId: 'groceries', gross: 30_000, refunds: 0, net: 30_000 },
-    ]);
-    expect(uah.total).toEqual({ category: '', categoryId: null, gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
-    expect(v.currencies.find((c) => c.currency === 840)!.total.net).toBe(2_500);
-  });
-
-  it('spending: scope filter and the commission split come from the core as is', async () => {
-    await account('uah', 'black', 980, 0);
-    await account('fop', 'fop', 980, 0);
-    await synced('uah');
-    await tx('uah', '2026-03-02', -10_000, 'продукты', { commission: 500 });
-    await tx('fop', '2026-03-02', -70_000, 'налоги и госплатежи', { scope: 'business' });
-
-    const personal = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'personal' });
-    expect(personal.currencies[0]!.categories).toEqual([
-      { category: 'продукты', categoryId: 'groceries', gross: 9_500, refunds: 0, net: 9_500 },
-      { category: 'комиссии банка', categoryId: 'fees', gross: 500, refunds: 0, net: 500 },
-    ]);
-    const business = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'business' });
-    expect(business.currencies[0]!.categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
-  });
-
   it('status: empty database → no data; after an import → Kyiv date-time and date the data reaches / starts at', async () => {
     expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
     await account('uah', 'black', 980, 0);
@@ -355,7 +316,7 @@ describe('DataService.monthOverview', () => {
     await tx('uah', '2026-03-02', -10_000, 'переводы людям');
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
     const out = JSON.stringify([
-      await svc.spending({ from: '2026-03-01', to: '2026-03-31' }),
+      await svc.spendingOverview({ month: '2026-03', scope: 'personal' }),
       await svc.monthOverview({ month: '2026-03' }),
       // The person view too: account labels (jar labels included) go through the same canary check.
       await svc.monthOverview({ month: '2026-03', participantId: me }),
@@ -367,7 +328,7 @@ describe('DataService.monthOverview', () => {
 });
 
 describe('DataService: one participant or the whole family', () => {
-  it('spending takes participantId; without it — everyone', async () => {
+  it('spendingOverview takes participantId; without it — everyone', async () => {
     await account('mine', 'black', 980, 10_000);
     const her = Number((await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Вигадана', 0) RETURNING id`)).rows[0]?.id);
     const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
@@ -375,11 +336,10 @@ describe('DataService: one participant or the whole family', () => {
     await tx('mine', '2026-03-02', -1_000, 'продукты');
     await tx('hers', '2026-03-03', -400, 'продукты');
     for (const a of ['mine', 'hers']) await synced(a);
-    const q = { from: '2026-03-01', to: '2026-03-10' };
-    const total = async (participantId?: number) =>
-      (await svc.spending({ ...q, ...(participantId !== undefined ? { participantId } : {}) })).currencies[0]?.total.net;
-    expect(await total()).toBe(1_400);
-    expect(await total(her)).toBe(400);
+    const all = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    const one = await svc.spendingOverview({ month: '2026-03', scope: 'personal', participantId: her });
+    expect(all.total.net).toBe(1_400);
+    expect(one.total.net).toBe(400);
   });
 });
 
