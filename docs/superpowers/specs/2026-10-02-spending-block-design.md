@@ -155,9 +155,9 @@ No names, descriptions, card numbers or IBANs: categories, amounts, counts, ids 
 
 ## Colours
 
-Categories take colours by rank from the series tokens (as in the prototype); people keep their own `--series-<key>`.
-Open question (decide before the renderer step): a category and a person can share a colour (groceries and Serhii are
-both blue). Option: a separate category palette without the people's keys.
+Categories have their own palette (`--category-1…7` in `theme.css`, both themes) by rank in the family's order, so a
+category never shares a colour with a person (people keep `--series-<key>`). People are saturated; categories are
+muted and take the hues between the people's. «Other» is grey. A picked person keeps the categories' colours.
 
 ## Out of scope
 

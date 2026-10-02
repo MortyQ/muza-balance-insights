@@ -46,7 +46,8 @@ reka-ui (inside `shared/ui` only), vitest (+ `@vue/test-utils` / `happy-dom` for
 | `apps/desktop/src/renderer/src/shared/ui/styles/components/overlay/vpopover.scss` | create | its styles |
 | `apps/desktop/src/renderer/src/shared/ui/index.ts`, `README.md` | modify | export, «ours» note |
 | `apps/desktop/src/renderer/src/shared/ui/components/base/icons.ts` | modify | category icons |
-| `apps/desktop/src/renderer/src/features/spending-summary/constants.ts` | modify | `SCOPES`, `TOP`, `CATEGORY_TONES`, `CATEGORY_ICON`, `FX_CURRENCIES`, `PREFS_KEY` |
+| `apps/desktop/src/renderer/src/app/styles/theme.css` | modify | `--category-1…7` (both themes): the category palette, apart from the people's `--series-*` |
+| `apps/desktop/src/renderer/src/features/spending-summary/constants.ts` | modify | `SCOPES`, `TOP`, `CATEGORY_COLORS`, `CATEGORY_ICON`, `FX_CURRENCIES`, `PREFS_KEY` |
 | `.../spending-summary/types.ts` | rewrite | view models (`RowView`, `PersonLineView`, `ChipView` …), `UseSpendingReturn` |
 | `.../spending-summary/utils.ts` | rewrite | pure helpers |
 | `.../spending-summary/store/useSpendingPrefsStore.ts` | create | menu choices in `localStorage` |
@@ -993,10 +994,11 @@ git commit -m "feat(desktop): VPopover — an icon trigger and a panel (reka-ui 
 
 ---
 
-### Task 7: category icons and the slice's constants and types
+### Task 7: category icons, the category palette, the slice's constants and types
 
 **Files:**
 - Modify: `apps/desktop/src/renderer/src/shared/ui/components/base/icons.ts`
+- Modify: `apps/desktop/src/renderer/src/app/styles/theme.css`
 - Modify: `apps/desktop/src/renderer/src/features/spending-summary/constants.ts`
 - Rewrite: `apps/desktop/src/renderer/src/features/spending-summary/types.ts`
 
@@ -1013,11 +1015,42 @@ import LucideShoppingCart from "~icons/lucide/shopping-cart";
   "lucide:shopping-cart": LucideShoppingCart,
 ```
 
+- [ ] **Step 1b: The category palette** — categories get their own colours, apart from the people's `--series-*`
+  (the user's decision: a category and a person never share a colour). People are saturated; categories are muted and
+  take the hues between the people's. In `theme.css`, right after the `--series-red` line of the **light** block:
+
+```css
+    /* ─── Category palette: the spending block's categories by rank — muted, the hues between the people's series ─── */
+    --category-1: oklch(60% 0.11 220);
+    --category-2: oklch(64% 0.13 120);
+    --category-3: oklch(56% 0.13 320);
+    --category-4: oklch(64% 0.09 65);
+    --category-5: oklch(52% 0.07 265);
+    --category-6: oklch(60% 0.08 185);
+    --category-7: oklch(58% 0.08 10);
+```
+
+  and after `--series-red` of the **dark** block:
+
+```css
+    /* ─── Category palette (see the light theme) ─── */
+    --category-1: oklch(68% 0.11 220);
+    --category-2: oklch(72% 0.13 120);
+    --category-3: oklch(66% 0.13 320);
+    --category-4: oklch(72% 0.09 65);
+    --category-5: oklch(62% 0.08 265);
+    --category-6: oklch(68% 0.08 185);
+    --category-7: oklch(67% 0.08 10);
+```
+
+  Run `pnpm --filter @mono/desktop exec vitest run tests/styles.test.ts` — PASS (if it checks that both themes define
+  the same custom properties, both blocks above satisfy it).
+
 - [ ] **Step 2: Constants** — replace `features/spending-summary/constants.ts`:
 
 ```ts
 import type { CategoryId } from '@contract/categories.ts';
-import type { ColorKey, Scope } from '@contract/api.ts';
+import type { Scope } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 
 /** The scope switch; labels are dictionary keys, the feature translates them. */
@@ -1029,8 +1062,8 @@ export const SCOPES: ReadonlyArray<{ label: MessageKey; value: Scope }> = [
 /** Categories named one by one; the rest is one «Other · N» line. */
 export const TOP = 7;
 
-/** Category colours by rank in the family's order (the rest is grey). */
-export const CATEGORY_TONES: ReadonlyArray<ColorKey> = ['blue', 'orange', 'aqua', 'yellow', 'magenta', 'violet', 'green'];
+/** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
+export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
 
 /** Change under this share of last month reads «as in August». */
 export const SAME_SHARE = 0.03;
@@ -1056,7 +1089,6 @@ export const FX_CURRENCIES: ReadonlyArray<{ currency: 840 | 978; key: 'usd' | 'e
 export const PREFS_KEY = 'spending.view';
 ```
 
-(If `ColorKey` is exported from another contract file, import it from there — `PersonView.color` uses it.)
 
 - [ ] **Step 3: Types** — replace `features/spending-summary/types.ts`:
 
@@ -1255,9 +1287,9 @@ describe('rowsFor', () => {
   it('the family: colours by rank, people segments, share of the total, change chips', () => {
     const rows = rowsFor(VIEW, null, P, PREFS);
     expect(rows.map((r) => [r.key, r.color, r.share])).toEqual([
-      ['продукты', 'var(--series-blue)', '50%'],
-      ['кафе и рестораны', 'var(--series-orange)', '30%'],
-      ['подарки', 'var(--series-aqua)', '20%'],
+      ['продукты', 'var(--category-1)', '50%'],
+      ['кафе и рестораны', 'var(--category-2)', '30%'],
+      ['подарки', 'var(--category-3)', '20%'],
     ]);
     expect(rows[0]!.segments.map((s) => [s.value, s.color])).toEqual([[30_000, 'var(--series-blue)'], [20_000, 'var(--series-orange)']]);
     expect(rows[0]!.chip).toMatchObject({ tone: 'up', arrow: 'up' });
@@ -1272,12 +1304,12 @@ describe('rowsFor', () => {
     expect(rows[0]!.segments.map((s) => s.color)).toEqual(['color-mix(in oklch, var(--series-blue) 22%, var(--surface))', 'var(--series-orange)']);
     expect(rows[0]!.people.find((p) => p.participantId === 1)!.faded).toBe(true);
     // colours stay those of the family's rank
-    expect(rows[1]!.color).toBe('var(--series-aqua)');
+    expect(rows[1]!.color).toBe('var(--category-3)');
   });
 
   it('split off → one segment in the category colour; mark on → last month position', () => {
     const rows = rowsFor(VIEW, null, P, { ...PREFS, split: false, mark: true });
-    expect(rows[0]!.segments).toEqual([{ value: 1, color: 'var(--series-blue)', title: '' }]);
+    expect(rows[0]!.segments).toEqual([{ value: 1, color: 'var(--category-1)', title: '' }]);
     expect(rows[0]!.mark).toBe(80);
     expect(rows[2]!.mark).toBeNull(); // nothing last month
   });
@@ -1331,7 +1363,7 @@ Expected: FAIL — the helpers do not exist.
 ```ts
 import type { SpendingAmounts, SpendingFx, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
 import { formatMoney, monthShortName, shortDate, t } from '@/shared/lib';
-import { CATEGORY_ICON, CATEGORY_TONES, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
+import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
 import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
 const UAH = 980;
@@ -1496,7 +1528,7 @@ function sumParts(lists: ReadonlyArray<ReadonlyArray<SpendingPersonPart>>): Spen
 
 /** The rows of the list for the family (pick null) or one picked person; colours stay those of the family's rank. */
 export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>, prefs: Readonly<SpendingPrefs>): RowView[] {
-  const color = new Map(view.categories.map((c, i) => [c.category, i < CATEGORY_TONES.length ? `var(--series-${CATEGORY_TONES[i]})` : GREY]));
+  const color = new Map(view.categories.map((c, i) => [c.category, CATEGORY_COLORS[i] ?? GREY]));
   const lines: Line[] = view.categories
     .map((c) => {
       const own = pick === null ? c : c.people.find((p) => p.participantId === pick);
@@ -1666,7 +1698,7 @@ Notes for the implementer:
 ```ts
   it('ringOf: the rows own nets in their colours', () => {
     expect(ringOf(rowsFor(VIEW, null, P, PREFS), VIEW, null)).toBe(
-      ringStops([{ value: 50_000, color: 'var(--series-blue)' }, { value: 30_000, color: 'var(--series-orange)' }, { value: 20_000, color: 'var(--series-aqua)' }]),
+      ringStops([{ value: 50_000, color: 'var(--category-1)' }, { value: 30_000, color: 'var(--category-2)' }, { value: 20_000, color: 'var(--category-3)' }]),
     );
   });
 ```
@@ -2463,7 +2495,7 @@ git commit -m "docs: the spending block — project notes, purchases, changelog 
 - A dollar card with spending and dollar exchanges: its spending is inside the hryvnia totals.
 - Light and dark theme; a long category name next to many operations — nothing overlaps.
 
-## Open question (before Task 7)
+## Category palette
 
-Category colours vs people colours (see the spec, «Colours»): keep the series by rank (the plan as written), or a
-category palette without the people's keys — the latter changes `CATEGORY_TONES` only.
+Decided (02.10.2026): a separate category palette (`--category-1…7`, Task 7 Step 1b). After the block is on screen,
+check the palette in both themes and for colour-vision deficiencies; adjust the oklch values only.
