@@ -156,6 +156,8 @@ export type SpendingGroup = {
   label?: string;
   /** Ledger lines: a row with a commission counts as two lines (body + commission). */
   lines: number;
+  /** Spending lines (amount < 0): a refund is not an operation; a commission is a line of its own. */
+  purchases: number;
   /** All ≥ 0. net = gross − refunds. */
   gross: number;
   refunds: number;
@@ -167,6 +169,7 @@ export type SpendingGroup = {
 export type CurrencyTotal = {
   currency: number;
   lines: number;
+  purchases: number;
   gross: number;
   refunds: number;
   net: number;
@@ -239,6 +242,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
             SELECT currency, account_id, local_date, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
           )
           SELECT currency, ${KEY_SQL[groupBy]} AS k, COUNT(*) AS lines,
+                 SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
                  SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
                  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds,
                  COUNT(DISTINCT op_currency) AS op_currencies, SUM(op_currency IS NULL) AS op_missing, MIN(op_currency) AS op_currency,
@@ -265,6 +269,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
       key,
       ...(labels ? { label: labels.get(rawKey) ?? rawKey } : {}),
       lines: Number(r.lines),
+      purchases: Number(r.purchases),
       gross,
       refunds,
       net: gross - refunds,
@@ -291,8 +296,9 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
 function currencyTotals(groups: readonly SpendingGroup[], period: PeriodInfo): CurrencyTotal[] {
   const by = new Map<number, CurrencyTotal & { opOk: boolean }>();
   for (const g of groups) {
-    const t = by.get(g.currency) ?? { currency: g.currency, lines: 0, gross: 0, refunds: 0, net: 0, netPerDay: null, opOk: true };
+    const t = by.get(g.currency) ?? { currency: g.currency, lines: 0, purchases: 0, gross: 0, refunds: 0, net: 0, netPerDay: null, opOk: true };
     t.lines += g.lines;
+    t.purchases += g.purchases;
     t.gross += g.gross;
     t.refunds += g.refunds;
     t.net += g.net;
