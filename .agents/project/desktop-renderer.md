@@ -20,6 +20,21 @@
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
+- **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
+  one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
+  `main/spending.ts`) — categories in hryvnia (account currencies folded by own exchanges, `leftOut` without a rate),
+  `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
+  before the data), for the family each participant's part of every category. Renderer: `utils.ts` builds rows for the
+  family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
+  family's rank from `--category-1…7`), chips (`change`, 3% → «as in»), operations (`opsView`, `opsVs` with `OPS_TONE`),
+  the ring (`ringStops` / `ringOf`), «≈ $ / €» lines (`convertLines`, `centerConv`). `composables/useSpending.ts` — the
+  request, the pick and the expanded category (reset on month, scope and global filter changes);
+  `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
+  segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
+  of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts`
+  (`localStorage` `spending.view`, defaults: split and mark on, $ / € off). Layout: `@container`, the columns stack
+  below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
+  `shared/ui/VPopover` — ours on reka-ui.
   Виджет `widgets/global-filters` (`GlobalFilters`, над блоками главной) — фильтры, которые читают все блоки:
   `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):

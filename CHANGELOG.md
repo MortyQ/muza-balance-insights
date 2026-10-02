@@ -3,6 +3,20 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.7 — unreleased
+
+### Spending
+
+- The «Spending» block is new: a ring of categories with the month's total, and for each category its share, the
+  number of operations and how much more or less it is than last month. While a month is in progress it is compared
+  with the same days of last month.
+- For the whole family the block shows who spent how much: click a person to see their part of the family's spending,
+  or click a category to see each person's amount and operations in it.
+- The gear in the block's corner chooses what the bars show — split by people, a mark at last month's amount — and can
+  add amounts in dollars or euros next to the hryvnia ones, at the rate of your own exchanges. Totals stay in hryvnia.
+- Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
+  table per currency.
+
 ## 0.1.6 — 2026-09-29
 
 ### Languages
