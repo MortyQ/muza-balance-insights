@@ -20,9 +20,9 @@ const { stops, label, amount, perDay, chip, conv } = defineProps<{
         <span class="max-w-full truncate text-xs text-foreground-muted">{{ label }}</span>
         <span class="whitespace-nowrap text-2xl font-bold tabular-nums">{{ amount }}</span>
         <span v-if="perDay" class="whitespace-nowrap text-xs text-foreground-muted">{{ perDay }}</span>
-        <span v-for="c in conv" :key="c.text" class="whitespace-nowrap text-xs text-foreground-secondary tabular-nums" :title="c.title">
+        <span v-for="c in conv" :key="c.text" class="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-secondary tabular-nums" :title="c.title">
           {{ c.text }}
-          <span v-if="c.chip" class="font-bold">{{ c.chip.text }}</span>
+          <ChangeChip v-if="c.chip" :chip="c.chip" size="sm" />
         </span>
       </div>
     </div>
