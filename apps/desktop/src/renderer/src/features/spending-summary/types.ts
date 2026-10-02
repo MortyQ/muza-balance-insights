@@ -109,14 +109,14 @@ export interface UseSpendingReturn {
 
 /** The block's display state from `useSpending` and the menu choices: everything the template binds. */
 export interface UseSpendingViewReturn {
-  /** «Вся семья», the picked person, a family member of the global filter; '' — the only person. */
+  /** «Whole family», the picked person, a family member of the global filter; '' — the only person. */
   who: ComputedRef<string>;
-  /** «Сентябрь · Вся семья». */
+  /** «September · Whole family». */
   subtitle: ComputedRef<string>;
   /** The month has spending in the family view (the block shows even when a pick has none). */
   hasData: ComputedRef<boolean>;
   rows: ComputedRef<RowView[]>;
-  /** «У Ани в этом месяце нет трат» — a pick with no rows; '' otherwise. */
+  /** «Olya: no spending this month» — a pick with no rows; '' otherwise. */
   noneBy: ComputedRef<string>;
   total: ComputedRef<(SpendingAmounts & { prev: SpendingAmounts | null }) | null>;
   ring: ComputedRef<string>;
@@ -128,7 +128,7 @@ export interface UseSpendingViewReturn {
   noCompare: ComputedRef<string>;
   prevIn: ComputedRef<string>;
   opsVs: ComputedRef<string>;
-  /** The member card: «46% трат семьи» and «семья — 101 830 ₴»; null — no card. */
+  /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
   memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
   onPick: (id: number | null) => void;
   onToggle: (key: string) => void;

@@ -8,11 +8,15 @@ import {
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
 export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
   const { month, view, family, member, people, selected, pick, open } = base;
-  /** The in-block pick counts in the family view only. */
-  const blockPick = computed(() => (family.value ? pick.value : null));
+  /** The in-block pick counts in the family view only, and only for a person still in the view (one removed meanwhile → the family). */
+  const blockPick = computed(() => {
+    const id = pick.value;
+    if (!family.value || id === null) return null;
+    return view.value?.people.some((p) => p.participantId === id) && people.value.some((p) => p.id === id) ? id : null;
+  });
 
   const who = computed(() => {
-    if (family.value) return pick.value === null ? t('home.spending.whole') : (people.value.find((p) => p.id === pick.value)?.name ?? '');
+    if (family.value) return blockPick.value === null ? t('home.spending.whole') : (people.value.find((p) => p.id === blockPick.value)?.name ?? '');
     return member.value ? (selected.value?.name ?? '') : '';
   });
   const subtitle = computed(() => [monthName(Number(month.value.slice(5, 7))), who.value].filter(Boolean).join(' · '));
@@ -32,7 +36,7 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
     if (!v || !total.value || v.period.coveredDays === 0) return null;
     return t('home.spending.perDayShort', { amount: money(Math.round(total.value.net / v.period.coveredDays)) });
   });
-  const whoRows = computed(() => (view.value && family.value ? peopleRows(view.value, pick.value, people.value) : []));
+  const whoRows = computed(() => (view.value && family.value ? peopleRows(view.value, blockPick.value, people.value) : []));
   const leftOut = computed(() => (view.value ? leftOutLines(view.value) : []));
   const noCompare = computed(() => (view.value && !view.value.compare ? noCompareText(view.value.month) : ''));
   const prevIn = computed(() => (view.value ? prevInText(view.value.month) : ''));
