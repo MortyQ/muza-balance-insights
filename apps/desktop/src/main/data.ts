@@ -14,7 +14,19 @@ import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummar
 import { accountNames } from '../shared/account-name.ts';
 import { labelPending } from './people.ts';
 import type { CategoryId } from '../shared/categories.ts';
-import type { CardTotal, DataStatus, FlowView, FxPart, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
+import type {
+  CardTotal,
+  DataStatus,
+  FlowView,
+  FxPart,
+  MonthOverview,
+  MonthOverviewQuery,
+  OverviewAccount,
+  SpendingOverview,
+  SpendingOverviewQuery,
+  SpendingQuery,
+  SpendingView,
+} from '../shared/api.ts';
 
 /** The core's category word → its CATEGORY key, the id the renderer translates. */
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
@@ -184,6 +196,11 @@ export class DataService {
       spending: sp.groups.find((g) => g.key === a.id)?.net ?? 0,
     }));
     return { ...base, people: [], accounts };
+  }
+
+  // TODO(Task 4): replace with the real implementation.
+  async spendingOverview(_q: SpendingOverviewQuery): Promise<SpendingOverview> {
+    throw new Error('not implemented');
   }
 
   /** Enabled accounts only (a disabled one is in no statistic): `dataUntil` agrees with `dataFrom`. */
