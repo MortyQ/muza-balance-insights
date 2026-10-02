@@ -382,7 +382,7 @@ export function leftOutLines(view: Readonly<SpendingOverview>): string[] {
  * JSON object's fields after the object / array guard.
  */
 export function parsePrefs(raw: string | null): SpendingPrefs {
-  const d: SpendingPrefs = { split: true, mark: false, usd: false, eur: false };
+  const d: SpendingPrefs = { split: true, mark: true, usd: false, eur: false };
   if (raw === null) return d;
   let v: unknown;
   try {

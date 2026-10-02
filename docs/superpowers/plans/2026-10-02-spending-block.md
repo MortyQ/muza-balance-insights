@@ -2441,7 +2441,7 @@ git commit -m "refactor(desktop): drop the old spendingSummary IPC and its view 
   before the data), for the family each participant's part of every category. Renderer: `utils.ts` builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «Other»; colours by the family's rank), chips (`change`, 3% →
   «as in»), operations (`opsView`), the ring (`ringStops` / `ringOf`), «≈ $ / €» lines (`convertLines`, `centerConv`).
-  Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split on, mark / $ / € off).
+  Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on, $ / € off).
   The pick and the expanded category reset on month, scope and global filter changes. Layout: only the category name
   shrinks (ellipsis + title); numbers have fixed widths and never wrap. `shared/ui/VPopover` — ours on reka-ui.
 ```

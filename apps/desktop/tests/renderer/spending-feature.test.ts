@@ -173,7 +173,7 @@ describe('spending block: one person picked in the global filter', () => {
 });
 
 describe('spending block: the settings menu', () => {
-  it('shows the switches and toggling «last month\'s mark» persists in prefs', async () => {
+  it('shows the switches and toggling «last month\'s mark» (on by default) persists in prefs', async () => {
     const w = await mountBlock(document.body);
 
     const trigger = document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]');
@@ -189,14 +189,14 @@ describe('spending block: the settings menu', () => {
     );
     const checkbox = markRow?.querySelector<HTMLInputElement>('input[type="checkbox"]');
     expect(checkbox).toBeTruthy();
-    expect(checkbox!.checked).toBe(false);
+    expect(checkbox!.checked).toBe(true);
 
     checkbox!.click();
     await flushPromises();
 
-    expect(checkbox!.checked).toBe(true);
+    expect(checkbox!.checked).toBe(false);
     const stored = JSON.parse(localStorage.getItem('spending.view') ?? '{}') as { mark?: boolean };
-    expect(stored.mark).toBe(true);
+    expect(stored.mark).toBe(false);
 
     w.unmount();
   });

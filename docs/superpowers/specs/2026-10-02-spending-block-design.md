@@ -26,7 +26,7 @@ to a future analytics block.
 - The gear opens a menu (popover, closes on Esc and a click outside) with two sections of switches (`VSwitch`):
   - «Show on the bars»:
     - «Who spent how much» — the category bar is split by people's colours (family view only); default **on**;
-    - «Last month's mark» — a tick on each bar at last month's amount; default **off**;
+    - «Last month's mark» — a tick on each bar at last month's amount; default **on**;
   - «Also show in currency» (note «Totals stay in hryvnia»):
     - «Dollars $», «Euro €» — default **off** (see «Currencies»).
   - The choices are remembered on this computer (renderer `localStorage`, a convenience: when storage is unavailable

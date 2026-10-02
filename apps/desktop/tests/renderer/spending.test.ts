@@ -272,10 +272,10 @@ describe('texts under the ring', () => {
 
 describe('parsePrefs', () => {
   it('defaults for nothing or garbage; each field on its own', () => {
-    expect(parsePrefs(null)).toEqual({ split: true, mark: false, usd: false, eur: false });
-    expect(parsePrefs('{oops')).toEqual({ split: true, mark: false, usd: false, eur: false });
-    expect(parsePrefs('[true]')).toEqual({ split: true, mark: false, usd: false, eur: false });
-    expect(parsePrefs('{"mark":true,"usd":"yes","split":false}')).toEqual({ split: false, mark: true, usd: false, eur: false });
+    expect(parsePrefs(null)).toEqual({ split: true, mark: true, usd: false, eur: false });
+    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true, usd: false, eur: false });
+    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true, usd: false, eur: false });
+    expect(parsePrefs('{"mark":false,"usd":"yes","split":false}')).toEqual({ split: false, mark: false, usd: false, eur: false });
   });
 });
 
@@ -287,16 +287,16 @@ describe('useSpendingPrefsStore', () => {
     setActivePinia(createPinia());
     const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
     const s = useSpendingPrefsStore();
-    expect(s.prefs).toEqual({ split: true, mark: false, usd: false, eur: false });
+    expect(s.prefs).toEqual({ split: true, mark: true, usd: false, eur: false });
     s.set('usd', true);
-    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: true, mark: false, usd: true, eur: false });
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: true, mark: true, usd: true, eur: false });
 
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
     setActivePinia(createPinia());
     const s2 = useSpendingPrefsStore();
     expect(s2.prefs.split).toBe(true);
-    expect(() => s2.set('mark', true)).not.toThrow();
-    expect(s2.prefs.mark).toBe(true);
+    expect(() => s2.set('mark', false)).not.toThrow();
+    expect(s2.prefs.mark).toBe(false);
     vi.unstubAllGlobals();
   });
 });
