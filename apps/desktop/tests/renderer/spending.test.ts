@@ -278,3 +278,25 @@ describe('parsePrefs', () => {
     expect(parsePrefs('{"mark":true,"usd":"yes","split":false}')).toEqual({ split: false, mark: true, usd: false, eur: false });
   });
 });
+
+describe('useSpendingPrefsStore', () => {
+  it('reads defaults, writes each change, survives a storage that throws', async () => {
+    const { createPinia, setActivePinia } = await import('pinia');
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) });
+    setActivePinia(createPinia());
+    const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
+    const s = useSpendingPrefsStore();
+    expect(s.prefs).toEqual({ split: true, mark: false, usd: false, eur: false });
+    s.set('usd', true);
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: true, mark: false, usd: true, eur: false });
+
+    vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
+    setActivePinia(createPinia());
+    const s2 = useSpendingPrefsStore();
+    expect(s2.prefs.split).toBe(true);
+    expect(() => s2.set('mark', true)).not.toThrow();
+    expect(s2.prefs.mark).toBe(true);
+    vi.unstubAllGlobals();
+  });
+});
