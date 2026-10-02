@@ -252,6 +252,15 @@
     --series-green:    #008300;
     --series-violet:   #4a3aa7;
     --series-red:      #e34948;
+
+    /* ─── Category palette: the spending block's categories by rank — muted, the hues between the people's series ─── */
+    --category-1: oklch(60% 0.11 220);
+    --category-2: oklch(64% 0.13 120);
+    --category-3: oklch(56% 0.13 320);
+    --category-4: oklch(64% 0.09 65);
+    --category-5: oklch(52% 0.07 265);
+    --category-6: oklch(60% 0.08 185);
+    --category-7: oklch(58% 0.08 10);
     --border-focus:  oklch(52% 0.27 280);
 
     --overlay: oklch(0% 0 0 / 0.5);
@@ -350,6 +359,15 @@
     --series-green:    #008300;
     --series-violet:   #9085e9;
     --series-red:      #e66767;
+
+    /* ─── Category palette (see the light theme) ─── */
+    --category-1: oklch(68% 0.11 220);
+    --category-2: oklch(72% 0.13 120);
+    --category-3: oklch(66% 0.13 320);
+    --category-4: oklch(72% 0.09 65);
+    --category-5: oklch(62% 0.08 265);
+    --category-6: oklch(68% 0.08 185);
+    --category-7: oklch(67% 0.08 10);
     --border-focus:  oklch(65% 0.25 280);
 
     --overlay: oklch(0% 0 0 / 0.65);

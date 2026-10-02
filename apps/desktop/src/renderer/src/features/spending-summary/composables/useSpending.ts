@@ -7,14 +7,14 @@ import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { monthRange, useAsyncData } from '@/shared/lib';
 import { useSpendingRequest } from '../api/useSpendingRequest.ts';
-import type { UseSpendingReturn } from '../types.ts';
+import type { UseSpendingLegacyReturn } from '../types.ts';
 import { periodNote } from '../utils.ts';
 
 /**
  * Spending of one Kyiv month, scope and participant (or the whole family); reloads when any changes, and in the background when the data changes
  * (sync-status version: every imported window and the end of an import).
  */
-export function useSpending(): UseSpendingReturn {
+export function useSpending(): UseSpendingLegacyReturn {
   const { fetchSpending } = useSpendingRequest();
   const syncStatus = useSyncStatusStore();
   const importProgress = useImportProgressStore();
