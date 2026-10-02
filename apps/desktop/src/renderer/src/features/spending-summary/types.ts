@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { Scope, SpendingOverview, SpendingView } from '@contract/api.ts';
+import type { Scope, SpendingOverview } from '@contract/api.ts';
 import type { Loadable, YearMonth } from '@/shared/lib';
 
 /** A change chip: the text and its tone; `arrow` — show the up / down arrow. */
@@ -105,14 +105,4 @@ export interface UseSpendingReturn {
   pick: Ref<number | null>;
   /** The expanded category key (family view), or null. */
   open: Ref<string | null>;
-}
-
-// Old block (removed in Task 10): the table's composable still returns this shape.
-export interface UseSpendingLegacyReturn {
-  month: Readonly<Ref<YearMonth>>;
-  scope: Ref<Scope>;
-  state: Readonly<Ref<Loadable<SpendingView>>>;
-  view: ComputedRef<SpendingView | null>;
-  periodNote: ComputedRef<string | null>;
-  importing: ComputedRef<boolean>;
 }

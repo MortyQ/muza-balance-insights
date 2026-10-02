@@ -1,7 +1,6 @@
 import type { CategoryId } from '@contract/categories.ts';
-import type { SpendingAmounts, SpendingCurrency, SpendingFx, SpendingLine, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
+import type { SpendingAmounts, SpendingFx, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
 import { formatMoney, monthShortName, shortDate, t } from '@/shared/lib';
-import type { TableColumn, TableFooterCell } from '@/shared/ui';
 import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
 import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
@@ -174,7 +173,7 @@ export function totalFor(view: Readonly<SpendingOverview>, pick: number | null):
 }
 
 const fade = (color: string) => `color-mix(in oklch, ${color} 22%, var(--surface))`;
-const initial = (name: string) => name.slice(0, 1).toLocaleUpperCase('uk');
+export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
 const personOf = (people: ReadonlyArray<BlockPerson>, id: number): BlockPerson => people.find((p) => p.id === id) ?? { id, name: '?', color: GREY };
 /** % of `max`, one decimal. */
 const pctOf = (value: number, max: number) => Math.round((value / max) * 1000) / 10;
@@ -398,33 +397,4 @@ export function parsePrefs(raw: string | null): SpendingPrefs {
     return typeof x === 'boolean' ? x : d[k];
   };
   return { split: field('split'), mark: field('mark'), usd: field('usd'), eur: field('eur') };
-}
-
-// Old block (removed in Task 10): the table of the current SpendingFeature.vue.
-
-/** Bar length: share of the largest net in that currency (refund-only categories draw no bar). */
-export function share(net: number, max: number): number {
-  return max > 0 ? Math.max(0, Math.min(100, (net / max) * 100)) : 0;
-}
-
-const refundsText = (amount: number, currency: number) => (amount ? formatMoney(amount, currency) : '—');
-
-/** Columns of one currency's table; `share` is drawn by the feature (a bar), the rest is text. */
-export function spendingColumns(currency: number): TableColumn<SpendingLine>[] {
-  return [
-    { key: 'category', label: t('home.spending.column.category'), value: (r) => categoryName(r) },
-    { key: 'share', label: t('home.spending.column.share'), hideLabel: true, width: '34%' },
-    { key: 'gross', label: t('home.spending.column.gross'), align: 'end', tone: 'secondary', value: (r) => formatMoney(r.gross, currency) },
-    { key: 'refunds', label: t('home.spending.column.refunds'), align: 'end', tone: 'secondary', value: (r) => refundsText(r.refunds, currency) },
-    { key: 'net', label: t('home.spending.column.net'), align: 'end', strong: true, value: (r) => formatMoney(r.net, currency) },
-  ];
-}
-
-export function spendingFooter(c: Readonly<SpendingCurrency>): TableFooterCell[] {
-  return [
-    { text: t('home.spending.total'), colspan: 2 },
-    { text: formatMoney(c.total.gross, c.currency), align: 'end' },
-    { text: refundsText(c.total.refunds, c.currency), align: 'end' },
-    { text: formatMoney(c.total.net, c.currency), align: 'end' },
-  ];
 }

@@ -233,7 +233,6 @@
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
     },
     "spending": {
-      "accountsIn": "Accounts in {currency}",
       "category": {
         "beauty": "Beauty",
         "cafes": "Cafes and restaurants",
@@ -272,13 +271,6 @@
         "new": "new",
         "same": "as in {month}"
       },
-      "column": {
-        "category": "Category",
-        "gross": "Gross",
-        "net": "Net",
-        "refunds": "Refunds",
-        "share": "Share"
-      },
       "empty": "No spending this month.",
       "failed": "Could not count the spending. Try again or restart the app.",
       "familyShare": "{pct}% of the family's spending",
@@ -300,8 +292,6 @@
       "opsVs": "{diff} vs {month}",
       "partial": "The month is not complete: data up to {date}, the numbers will still grow.",
       "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
-      "perDay": "On average {amount} a day",
-      "perDayCovered": "(over {days} full days with data)",
       "perDayShort": "{amount} a day",
       "personShare": "{pct}% · {ops}",
       "rest": "Other · {n}",
@@ -325,7 +315,6 @@
       },
       "title": "Spending",
       "together": "together · {ops}",
-      "total": "Total",
       "whole": "Whole family"
     }
   },
