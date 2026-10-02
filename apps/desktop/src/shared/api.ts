@@ -247,7 +247,10 @@ export type SpendingOverview = {
   /** The period compared with: last month, cut to the same day while this one is incomplete; null — not covered. */
   compare: { from: string; to: string; partial: boolean } | null;
   total: SpendingAmounts & { netPerDay: number | null; prev: SpendingAmounts | null };
-  /** Family view only: each participant's sum over the family's categories (they add up to `total`). */
+  /**
+   * Family view only: each participant's sum over the family's categories (they add up to `total`). With
+   * foreign-currency spending they may differ from it by a few kopecks: each group is rounded on its own.
+   */
   people: SpendingPersonPart[];
   /** net > 0 only, net desc; a refund-only category is left out here but counts in `total`. */
   categories: SpendingCategoryView[];

@@ -27,6 +27,8 @@ type TxOpts = {
   op?: { currency: number; amount: number };
   /** An own transfer: is_internal_transfer = 1 with this transfer_rule. */
   rule?: 'pair' | 'pair_fx';
+  /** A transfer between two participants: transfer_rule = family, not internal (the core's marking). */
+  family?: boolean;
 };
 
 async function tx(accountId: string, date: string, amount: number, category: string, o: TxOpts = {}) {
@@ -36,7 +38,7 @@ async function tx(accountId: string, date: string, amount: number, category: str
           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, '{}', 0)`,
     args: [
       `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
-      o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? null, o.scope ?? 'personal',
+      o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? (o.family ? 'family' : null), o.scope ?? 'personal',
     ],
   });
 }
@@ -474,6 +476,40 @@ describe('DataService.spendingOverview', () => {
     expect(person.people).toEqual([]);
     expect(person.total.net).toBe(25_000);
     expect(person.familyTotal).toBe(55_000);
+  });
+
+  it('a family transfer: the sender\'s spending in their own view, out of the family view; the people still add up', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('hers', '2026-02-04', -20_000, 'продукты');
+    await tx('uah', '2026-02-05', -15_000, 'семье', { family: true });
+    await tx('hers', '2026-02-05', 15_000, 'поступления', { family: true });
+
+    const mine = await svc.spendingOverview({ month: '2026-02', scope: 'personal', participantId: me });
+    expect(mine.categories.map((c) => [c.category, c.net])).toEqual([['продукты', 30_000], ['семье', 15_000]]);
+    expect(mine.total.net).toBe(45_000);
+
+    const family = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(family.categories.map((c) => c.category)).toEqual(['продукты']);
+    expect(family.total.net).toBe(50_000);
+    expect(family.people.map((p) => [p.participantId, p.net])).toEqual([[me, 30_000], [her, 20_000]]);
+    expect(family.people.reduce((s, p) => s + p.net, 0)).toBe(family.total.net);
+  });
+
+  it('a refund-only category is not listed, but its net counts in the total', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('uah', '2026-02-04', 4_000, 'кафе и рестораны'); // refund of a January purchase
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.categories.map((c) => c.category)).toEqual(['продукты']);
+    expect(v.total).toMatchObject({ net: 26_000, purchases: 1 });
   });
 
   it('scope: business spending only in the business view', async () => {

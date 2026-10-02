@@ -222,9 +222,9 @@ export class DataService {
     const compare = comparePeriod(q.month, head.period, status.dataFrom);
     const rates = await exchangeRates(db, period);
     // The previous period is folded by its own rates.
-    const prevRates = compare ? await exchangeRates(db, compare) : null;
+    const before = compare ? { period: compare, rates: await exchangeRates(db, compare) } : null;
     const cur = foldByCategory(head, rates);
-    const prev = compare && prevRates ? foldByCategory(await summary(compare, q.participantId), prevRates).byCategory : null;
+    const prev = before ? foldByCategory(await summary(before.period, q.participantId), before.rates).byCategory : null;
 
     const zero: SpendingAmounts = { net: 0, purchases: 0 };
     const sum = (m: ReadonlyMap<string, SpendingAmounts>, keys: Iterable<string> = m.keys()): SpendingAmounts => {
@@ -244,7 +244,7 @@ export class DataService {
         parts.push({
           id: p.id,
           cur: foldByCategory(await summary(period, p.id), rates).byCategory,
-          prev: compare && prevRates ? foldByCategory(await summary(compare, p.id), prevRates).byCategory : null,
+          prev: before ? foldByCategory(await summary(before.period, p.id), before.rates).byCategory : null,
         });
       }
     }
@@ -275,7 +275,7 @@ export class DataService {
     const fx: SpendingFx[] = FX_CURRENCIES.map((c) => ({
       currency: c,
       rate: rates.get(c)?.rate ?? null,
-      prevRate: prevRates?.get(c)?.rate ?? null,
+      prevRate: before?.rates.get(c)?.rate ?? null,
       nearest: rates.get(c)?.nearest ?? false,
     }));
     const familyTotal =
