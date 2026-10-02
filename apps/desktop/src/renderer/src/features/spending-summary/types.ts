@@ -127,7 +127,7 @@ export interface UseSpendingViewReturn {
   leftOut: ComputedRef<string[]>;
   noCompare: ComputedRef<string>;
   prevIn: ComputedRef<string>;
-  opsVs: ComputedRef<string>;
+  opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone'>>;
   /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
   memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
   onPick: (id: number | null) => void;

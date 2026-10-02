@@ -36,3 +36,10 @@ export const FX_CURRENCIES: ReadonlyArray<{ currency: 840 | 978; key: 'usd' | 'e
 
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';
+
+/** The tone of an operations difference: more — orange, fewer — blue (as the change chips). */
+export const OPS_TONE = {
+  up: 'text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',
+  down: 'text-[color-mix(in_oklch,var(--series-blue)_72%,var(--foreground))]',
+  neutral: 'text-foreground-muted',
+} as const;

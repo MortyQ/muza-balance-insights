@@ -5,6 +5,7 @@ import CategoryRing from './components/CategoryRing.vue';
 import CategoryRow from './components/CategoryRow.vue';
 import PeopleList from './components/PeopleList.vue';
 import SpendingHeader from './components/SpendingHeader.vue';
+import { OPS_TONE } from './constants.ts';
 import { useSpending } from './composables/useSpending.ts';
 import { useSpendingView } from './composables/useSpendingView.ts';
 import { useSpendingPrefsStore } from './store/useSpendingPrefsStore.ts';
@@ -45,7 +46,7 @@ const {
               <span class="text-xs text-foreground-muted">{{ $t('home.spending.operations') }}</span>
               <span class="flex items-baseline gap-1.5 whitespace-nowrap">
                 <span class="text-lg font-bold tabular-nums">{{ total.purchases }}</span>
-                <span class="text-xs font-bold tabular-nums">{{ opsVs }}</span>
+                <span class="text-xs font-bold tabular-nums" :class="OPS_TONE[opsVs.tone]">{{ opsVs.text }}</span>
               </span>
             </div>
             <div v-if="total.prev" class="flex flex-col gap-0.5">

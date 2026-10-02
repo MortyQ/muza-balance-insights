@@ -96,11 +96,11 @@ describe('opsView', () => {
   });
 
   it('opsVs: «+2 к авг» under the ring; neutral differences as they are', () => {
-    expect(opsVs(38, 36, '2026-09')).toBe('+2 к авг');
-    expect(opsVs(21, 24, '2026-01')).toBe('−3 к дек');
-    expect(opsVs(5, 5, '2026-09')).toBe('столько же');
-    expect(opsVs(2, 0, '2026-09')).toBe('новое');
-    expect(opsVs(2, null, '2026-09')).toBe('');
+    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up' });
+    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down' });
+    expect(opsVs(5, 5, '2026-09')).toEqual({ text: 'столько же', tone: 'neutral' });
+    expect(opsVs(2, 0, '2026-09')).toEqual({ text: 'новое', tone: 'neutral' });
+    expect(opsVs(2, null, '2026-09')).toEqual({ text: '', tone: 'neutral' });
   });
 });
 

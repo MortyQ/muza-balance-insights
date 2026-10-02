@@ -40,7 +40,7 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
   const leftOut = computed(() => (view.value ? leftOutLines(view.value) : []));
   const noCompare = computed(() => (view.value && !view.value.compare ? noCompareText(view.value.month) : ''));
   const prevIn = computed(() => (view.value ? prevInText(view.value.month) : ''));
-  const opsVsText = computed(() => (view.value && total.value ? opsVs(total.value.purchases, total.value.prev?.purchases ?? null, view.value.month) : ''));
+  const opsVsText = computed(() => (view.value && total.value ? opsVs(total.value.purchases, total.value.prev?.purchases ?? null, view.value.month) : { text: '', tone: 'neutral' as const }));
   const memberCard = computed(() => {
     const v = view.value;
     const s = selected.value;

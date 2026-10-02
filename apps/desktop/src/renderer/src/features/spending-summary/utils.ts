@@ -93,11 +93,11 @@ export function opsView(now: number, prev: number | null, month: string): OpsVie
   return { text, diff: `${d > 0 ? '+' : '−'}${Math.abs(d)}`, tone: d > 0 ? 'up' : 'down', title };
 }
 
-/** «+4 к авг.» under the ring. */
-export function opsVs(now: number, prev: number | null, month: string): string {
+/** «+4 к авг.» under the ring, with the tone of the difference. */
+export function opsVs(now: number, prev: number | null, month: string): Pick<OpsView, 'text' | 'tone'> {
   const v = opsView(now, prev, month);
-  if (!v.diff || v.tone === 'neutral') return v.diff;
-  return t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) });
+  if (!v.diff || v.tone === 'neutral') return { text: v.diff, tone: v.tone };
+  return { text: t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) }), tone: v.tone };
 }
 
 /** Whole percent of `whole` (0 when there is no whole). */

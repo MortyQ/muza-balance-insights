@@ -2,16 +2,12 @@
 import { useId } from 'vue';
 import { VIcon } from '@/shared/ui';
 import type { RowView } from '../types.ts';
+import { OPS_TONE } from '../constants.ts';
 import ChangeChip from './ChangeChip.vue';
 
 const { row, expandable, open } = defineProps<{ row: RowView; expandable: boolean; open: boolean }>();
 const emit = defineEmits<{ toggle: [] }>();
 const panelId = useId();
-const OPS_TONE = {
-  up: 'text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',
-  down: 'text-[color-mix(in_oklch,var(--series-blue)_72%,var(--foreground))]',
-  neutral: 'text-foreground-muted',
-} as const;
 </script>
 
 <template>
