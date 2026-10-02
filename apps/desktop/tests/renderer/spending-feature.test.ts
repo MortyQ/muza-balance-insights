@@ -62,7 +62,7 @@ describe('spending block: a pick with no spending', () => {
 
     for (const name of ['Вся семья', 'Сергей', 'Аня', 'Оля']) expect(person(w, name).exists()).toBe(true);
     expect(person(w, 'Оля').attributes('aria-pressed')).toBe('true');
-    expect(w.text()).toContain('У Оля в этом месяце нет трат');
+    expect(w.text()).toContain('Оля: в этом месяце трат нет');
     expect(category(w)).toHaveLength(0);
     expect(w.text()).not.toContain('Трат за этот месяц нет');
 
@@ -73,7 +73,7 @@ describe('spending block: a pick with no spending', () => {
     await person(w, 'Оля').trigger('click');
     await person(w, 'Вся семья').trigger('click');
     expect(person(w, 'Вся семья').attributes('aria-pressed')).toBe('true');
-    expect(w.text()).not.toContain('нет трат');
+    expect(w.text()).not.toContain('трат нет');
     expect(category(w)).toHaveLength(1);
   });
 });
