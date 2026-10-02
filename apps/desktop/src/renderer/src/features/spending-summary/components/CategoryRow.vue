@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useId } from 'vue';
 import { VIcon } from '@/shared/ui';
 import type { RowView } from '../types.ts';
 import ChangeChip from './ChangeChip.vue';
 
 const { row, expandable, open } = defineProps<{ row: RowView; expandable: boolean; open: boolean }>();
 const emit = defineEmits<{ toggle: [] }>();
+const panelId = useId();
 const OPS_TONE = {
   up: 'text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',
   down: 'text-[color-mix(in_oklch,var(--series-blue)_72%,var(--foreground))]',
@@ -18,8 +20,9 @@ const OPS_TONE = {
       :is="expandable ? 'button' : 'div'"
       :type="expandable ? 'button' : undefined"
       :aria-expanded="expandable ? open : undefined"
-      class="flex h-12 w-full items-center gap-3 rounded-xl px-2.5 text-left"
-      :class="{ 'cursor-pointer hover:bg-surface-hover': expandable }"
+      :aria-controls="expandable ? panelId : undefined"
+      class="flex min-h-12 w-full items-center gap-3 rounded-xl px-2.5 py-1.5 text-left"
+      :class="{ 'cursor-pointer hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus': expandable }"
       @click="expandable && emit('toggle')"
     >
       <VIcon :icon="row.icon" :color="row.color" class="size-4 shrink-0" />
@@ -38,12 +41,12 @@ const OPS_TONE = {
             </span>
             <span v-if="row.mark !== null" class="absolute -top-1 left-(--m) -ms-px h-3 w-0.5 rounded-sm bg-foreground" :style="{ '--m': `${row.mark}%` }" :title="row.markTitle" />
           </span>
-          <span class="w-8 shrink-0 whitespace-nowrap text-right text-[11px] text-foreground-muted tabular-nums">{{ row.share }}</span>
+          <span class="w-8 shrink-0 whitespace-nowrap text-right text-xs text-foreground-muted tabular-nums">{{ row.share }}</span>
         </span>
       </span>
       <span class="flex w-25 shrink-0 flex-col items-end gap-px">
         <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>
-        <span v-for="c in row.conv" :key="c" class="whitespace-nowrap text-[11px] text-foreground-muted tabular-nums">{{ c }}</span>
+        <span v-for="c in row.conv" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ c }}</span>
       </span>
       <span class="flex w-22.5 shrink-0 justify-end"><ChangeChip v-if="row.chip" :chip="row.chip" size="sm" /></span>
       <VIcon
@@ -53,11 +56,11 @@ const OPS_TONE = {
         :class="{ 'rotate-90': open }"
       />
     </component>
-    <div v-if="expandable && open" class="flex flex-col gap-0.5 pe-2.5 pb-2.5 ps-9">
-      <div v-for="p in row.people" :key="p.participantId" class="flex min-h-7.5 items-center gap-2 py-0.5" :class="{ 'opacity-45': p.faded }">
-        <span class="grid size-5.5 shrink-0 place-items-center rounded-full bg-(--c) text-[11px] font-extrabold text-white" :style="{ '--c': p.color }" aria-hidden="true">{{ p.initial }}</span>
-        <span class="w-13 shrink-0 truncate text-xs text-foreground-secondary" :title="p.name">{{ p.name }}</span>
-        <span class="relative h-2 min-w-12 grow rounded-full bg-surface-sunken">
+    <div v-if="expandable && open" :id="panelId" class="flex flex-col gap-0.5 pe-2.5 pb-2.5 ps-9">
+      <div v-for="p in row.people" :key="p.participantId" class="flex min-h-7.5 flex-wrap items-center gap-x-2 gap-y-1 py-0.5 @xl:flex-nowrap" :class="{ 'opacity-45': p.faded }">
+        <span class="grid size-5.5 shrink-0 place-items-center rounded-full bg-(--c) text-xs font-extrabold text-white" :style="{ '--c': p.color }" aria-hidden="true">{{ p.initial }}</span>
+        <span class="min-w-0 grow truncate text-xs text-foreground-secondary @xl:w-13 @xl:shrink-0 @xl:grow-0" :title="p.name">{{ p.name }}</span>
+        <span class="relative order-last h-2 basis-full rounded-full bg-surface-sunken @xl:order-none @xl:min-w-12 @xl:grow @xl:basis-0">
           <span class="absolute inset-y-0 left-0 w-(--w) rounded-full bg-(--c)" :style="{ '--w': `${p.width}%`, '--c': p.color }" />
           <span v-if="p.mark !== null" class="absolute -top-1 left-(--m) -ms-px h-4 w-0.5 rounded-sm bg-foreground" :style="{ '--m': `${p.mark}%` }" :title="p.markTitle" />
         </span>
@@ -66,7 +69,7 @@ const OPS_TONE = {
         </span>
         <span class="flex w-22 shrink-0 flex-col items-end gap-px">
           <span class="whitespace-nowrap font-bold tabular-nums">{{ p.amount }}</span>
-          <span v-for="c in p.conv" :key="c" class="whitespace-nowrap text-[11px] text-foreground-muted tabular-nums">{{ c }}</span>
+          <span v-for="c in p.conv" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ c }}</span>
         </span>
         <span class="flex w-21 shrink-0 justify-end"><ChangeChip v-if="p.chip" :chip="p.chip" size="sm" /></span>
       </div>

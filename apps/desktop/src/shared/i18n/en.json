@@ -283,6 +283,7 @@
       "markTitle": "In {month} — {amount}",
       "noCompare": "No data in {month} to compare",
       "noData": "No data yet: download the statement in «Import».",
+      "noneBy": "No spending by {name} this month",
       "notYet": "Data is downloaded only up to {date}: there is none for this month yet.",
       "operations": "Operations",
       "ops": "{n} operation | {n} operations | {n} operations",

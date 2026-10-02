@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { Scope, SpendingOverview } from '@contract/api.ts';
+import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
 import type { Loadable, YearMonth } from '@/shared/lib';
 
 /** A change chip: the text and its tone; `arrow` — show the up / down arrow. */
@@ -105,4 +105,31 @@ export interface UseSpendingReturn {
   pick: Ref<number | null>;
   /** The expanded category key (family view), or null. */
   open: Ref<string | null>;
+}
+
+/** The block's display state from `useSpending` and the menu choices: everything the template binds. */
+export interface UseSpendingViewReturn {
+  /** «Вся семья», the picked person, a family member of the global filter; '' — the only person. */
+  who: ComputedRef<string>;
+  /** «Сентябрь · Вся семья». */
+  subtitle: ComputedRef<string>;
+  /** The month has spending in the family view (the block shows even when a pick has none). */
+  hasData: ComputedRef<boolean>;
+  rows: ComputedRef<RowView[]>;
+  /** «У Ани в этом месяце нет трат» — a pick with no rows; '' otherwise. */
+  noneBy: ComputedRef<string>;
+  total: ComputedRef<(SpendingAmounts & { prev: SpendingAmounts | null }) | null>;
+  ring: ComputedRef<string>;
+  chip: ComputedRef<ChipView | null>;
+  conv: ComputedRef<Array<{ text: string; chip: ChipView | null; title: string }>>;
+  perDay: ComputedRef<string | null>;
+  whoRows: ComputedRef<PersonRowView[]>;
+  leftOut: ComputedRef<string[]>;
+  noCompare: ComputedRef<string>;
+  prevIn: ComputedRef<string>;
+  opsVs: ComputedRef<string>;
+  /** The member card: «46% трат семьи» and «семья — 101 830 ₴»; null — no card. */
+  memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
+  onPick: (id: number | null) => void;
+  onToggle: (key: string) => void;
 }

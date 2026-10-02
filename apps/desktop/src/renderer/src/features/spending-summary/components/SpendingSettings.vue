@@ -14,7 +14,7 @@ const hasRate = (c: number) => fx.some((f) => f.currency === c && f.rate !== nul
 
 <template>
   <VPopover icon="lucide:settings" :label="$t('home.spending.settings.button')">
-    <div class="flex w-72 flex-col">
+    <div class="flex flex-col">
       <p class="px-2 pt-2 pb-1 text-xs font-semibold text-foreground-muted">{{ $t('home.spending.settings.bars') }}</p>
       <div v-if="family" class="flex items-center gap-3 rounded-lg px-2 py-2.5">
         <label :for="`${id}-split`" class="flex grow cursor-pointer flex-col gap-0.5">

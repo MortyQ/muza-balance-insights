@@ -16,7 +16,7 @@ const scopes = computed(() => SCOPES.map((s) => ({ ...s, label: t(s.label) })));
 <template>
   <div class="flex flex-wrap items-center justify-between gap-3">
     <div class="flex min-w-0 items-baseline gap-2.5">
-      <h3 class="m-0 text-[15px] font-bold">{{ $t('home.spending.title') }}</h3>
+      <h3 class="text-base font-bold">{{ $t('home.spending.title') }}</h3>
       <span class="truncate text-sm text-foreground-muted">{{ subtitle }}</span>
     </div>
     <div class="flex items-center gap-2">
