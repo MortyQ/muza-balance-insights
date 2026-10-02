@@ -181,16 +181,16 @@ describe('rowsFor', () => {
     expect(row!.ops.diff).toBe('');
   });
 
-  it('more than seven categories → the top seven and «Остальное · N»', () => {
+  it('more than seven categories → the top seven and «N more categories»', () => {
     const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null)) };
     const rows = rowsFor(many, null, P, PREFS);
     expect(rows).toHaveLength(8);
     expect(rows[0]!.name).toBe('C0');
     expect(rows[6]!.color).toBe('var(--category-7)');
-    expect(rows[7]).toMatchObject({ key: 'rest', name: 'Остальное · 2', color: 'var(--border-strong)', icon: 'lucide:list', amount: uah(3_000) });
+    expect(rows[7]).toMatchObject({ key: 'rest', name: 'Ещё 2 категории', color: 'var(--border-strong)', icon: 'lucide:list', amount: uah(3_000) });
   });
 
-  it('«Остальное» sums the rest categories\' last month and each person\'s parts', () => {
+  it('«N more categories» sums the rest categories\' last month and each person\'s parts', () => {
     const people = (net: number) => [part(1, net, 1, { net: 100, purchases: 1 }), part(2, 0, 0, { net: 0, purchases: 0 })];
     const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, 500, people(1_000 * (9 - i)))) };
     const rest = rowsFor(many, null, P, PREFS)[7]!;

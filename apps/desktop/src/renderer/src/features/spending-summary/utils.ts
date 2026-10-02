@@ -250,7 +250,7 @@ export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, p
   if (rest.length > 0) {
     top.push({
       key: 'rest',
-      name: t('home.spending.rest', { n: rest.length }),
+      name: t('home.spending.rest', rest.length),
       icon: CATEGORY_ICON.rest,
       color: GREY,
       net: rest.reduce((s, l) => s + l.net, 0),

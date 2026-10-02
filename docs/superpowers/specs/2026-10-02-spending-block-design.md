@@ -36,7 +36,7 @@ to a future analytics block.
 
 Left column (≈236 px):
 
-- **Ring of categories**: the top 7 categories in their colours and «Other · N» (the rest, grey). In the middle:
+- **Ring of categories**: the top 7 categories in their colours and «N more categories» (the rest, grey; not «Other», which is a bank category). In the middle:
   «Whole family» (or the picked person's name), the amount, «N ₴ a day».
 - Under it, a chip comparing with last month: «14% more than in August» / «less» / «as in August» (difference under 3%).
   Orange arrow up for more, blue arrow down for less (blue/orange, not red/green).
@@ -53,7 +53,7 @@ Left column (≈236 px):
   - The pick is the block's own: it does not change the global filter and is reset when the month, the scope or the
     global filter changes.
 
-Right column — **categories** (the same 7 + «Other»), each a `<button aria-expanded>`:
+Right column — **categories** (the same 7 + «N more categories»), each a `<button aria-expanded>`:
 
 - line 1: category icon in its colour, name (shrinks with an ellipsis, full name in a tooltip), and on the right
   «38 operations +2» (the difference against last month in orange / blue; tooltip «In August — 36 operations»);
@@ -116,7 +116,7 @@ All amounts leave main as hryvnia kopecks; the renderer only converts for the «
   `people[i]` = that person's net / purchases in that category (and last month's). Only categories present in the
   family view are split; a person's total in the people list is the sum of their parts (so the people add up to the
   family's total). Participants are in `listParticipants` order; their colours come from the renderer's people store.
-- A category whose net is ≤ 0 (refunds only) is not listed; it still counts in the total («Other» in the ring takes
+- A category whose net is ≤ 0 (refunds only) is not listed; it still counts in the total («N more categories» in the ring takes
   the difference).
 - **Percentages** are of the total of the current pick (family or the picked person).
 - **Change**: amount difference and percent of last month; under 3% of last month → «as in August»; last month 0 →
@@ -157,7 +157,7 @@ No names, descriptions, card numbers or IBANs: categories, amounts, counts, ids 
 
 Categories have their own palette (`--category-1…7` in `theme.css`, both themes) by rank in the family's order, so a
 category never shares a colour with a person (people keep `--series-<key>`). People are saturated; categories are
-muted and take the hues between the people's. «Other» is grey. A picked person keeps the categories' colours.
+muted and take the hues between the people's. «N more categories» is grey. A picked person keeps the categories' colours.
 
 ## Out of scope
 

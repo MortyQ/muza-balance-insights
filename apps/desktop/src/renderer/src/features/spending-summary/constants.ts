@@ -8,7 +8,7 @@ export const SCOPES: ReadonlyArray<{ label: MessageKey; value: Scope }> = [
   { label: 'home.spending.scope.business', value: 'business' },
 ];
 
-/** Categories named one by one; the rest is one «Other · N» line. */
+/** Categories named one by one; the rest is one «N more categories» line. */
 export const TOP = 7;
 
 /** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */

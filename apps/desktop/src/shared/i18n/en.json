@@ -295,7 +295,7 @@
       "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
       "perDayShort": "{amount} a day",
       "personShare": "{pct}% · {ops}",
-      "rest": "Other · {n}",
+      "rest": "{n} more category | {n} more categories | {n} more categories",
       "scope": {
         "business": "Business",
         "personal": "Personal"
