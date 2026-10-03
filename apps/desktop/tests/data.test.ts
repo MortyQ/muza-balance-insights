@@ -529,8 +529,7 @@ describe('DataService.nowOverview', () => {
         from: '2026-03-09',
         days: [25_100, 15_000, null, null, null, null, null],
         total: { net: 40_100, purchases: 5 },
-        // The last covered day is 03-09 (Monday, today not fully synced yet): prev clips to 03-02 only, not 03-03 too.
-        prev: 6_000,
+        prev: 14_000,
         // March: travel 104 100, groceries 41 000, cafes 15 000 → groceries is second
         top: { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1 },
         pendingHolds: 0,
@@ -548,16 +547,16 @@ describe('DataService.nowOverview', () => {
     expect((await at().nowOverview({})).week.pendingHolds).toBe(2);
   });
 
-  it('a stale sync clips last week to the same covered weekdays', async () => {
-    // Thursday 2026-03-12, 10:00 Kyiv; the data ends two days before NOW (2026-03-10, 23:59:59).
+  it('a stale sync clips last week to the day the data reaches', async () => {
+    // Thursday 2026-03-12, 10:00 Kyiv; the data reaches only Tuesday 2026-03-10 (two days behind).
     const STALE_NOW = kyivStartOfDay('2026-03-12') + 10 * 3600;
     const dataEnds = kyivStartOfDay('2026-03-11') - 1;
     const stale = () => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => STALE_NOW });
     await account('uah', 'black', 980, 0);
     await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), dataEnds, dataEnds] });
-    await tx('uah', '2026-03-02', -1_000, 'продукты'); // last Monday: inside the covered range
-    await tx('uah', '2026-03-03', -2_000, 'продукты'); // last Tuesday: inside the covered range
-    await tx('uah', '2026-03-04', -4_000, 'продукты'); // last Wednesday: today's analogue is not synced yet — excluded
+    await tx('uah', '2026-03-02', -1_000, 'продукты'); // last Monday: inside [Mon, reach − 7]
+    await tx('uah', '2026-03-03', -2_000, 'продукты'); // last Tuesday: the data reaches this weekday too
+    await tx('uah', '2026-03-04', -4_000, 'продукты'); // last Wednesday: the data does not reach Wednesday — excluded
     const v = await stale().nowOverview({});
     expect(v.dataUntil).toBe('2026-03-10');
     expect(v.week.from).toBe('2026-03-09');

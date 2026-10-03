@@ -139,9 +139,8 @@ All amounts leave main as hryvnia kopecks.
 - **Week** = Monday … today (Kyiv, ISO week). `days[i]` = net of Monday + i, `null` after today. `total` = the sum of
   the week's categories (net and purchases), so the top category's share adds up.
 - **Last week** = Monday − 7 … today − 7, from the same daily groups; `null` when the first data date is after
-  Monday − 7. Clipped to the same covered weekdays when the data does not reach today (last fully covered day < today,
-  the same notion the usual day window uses): the end becomes `min(today, lastCovered) − 7`, and `null` when even
-  last week's Monday is not covered.
+  Monday − 7. Clipped to the day the data reaches when that is before today: the end becomes
+  `min(today, date(dataUntil)) − 7`, and `null` when there is no `dataUntil` or even last week's Monday is not covered.
 - **Share** of the top category = `round(net / week.total.net × 100)` %, in the renderer.
 - **Change**: percent of the base (usual day or last week), the 3 % rule; a base ≤ 0 → no chip.
 - **Currencies** (USD 840, EUR 978): `fx` as in «Spending» (`rate`, `nearest`; `prevRate` always `null`); converted =

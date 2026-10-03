@@ -286,10 +286,11 @@ export class DataService {
     const yesterday = shiftDate(today, -1);
     const usualFrom = dataFrom === null ? null : dataFrom > windowFrom ? dataFrom : windowFrom;
     const usualTo = lastCovered === null ? null : lastCovered < yesterday ? lastCovered : yesterday;
-    // Last week is clipped to the same covered weekdays as this week (lastCovered, the same notion as above):
-    // a stale sync must not compare a full week of last year against a half-empty this week.
+    // Last week is clipped to the same weekdays the data reaches: today is never fully covered, so the cap is
+    // dataUntil (capped at today), not the last fully covered day — a fresh sync must not drop a comparison day.
+    const reach = daily.period.dataUntil === null ? null : daily.period.dataUntil < today ? daily.period.dataUntil : today;
     const prevFrom = shiftDate(monday, -7);
-    const prevTo = lastCovered === null ? null : shiftDate(lastCovered, -7);
+    const prevTo = reach === null ? null : shiftDate(reach, -7);
     const top = rankedCategories(weekByCategory)[0];
     const rank = top ? monthRanked.findIndex(([k]) => k === top[0]) : -1;
 
