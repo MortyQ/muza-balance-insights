@@ -1,7 +1,7 @@
 // Pure helpers of the spending block in main: which period is compared, how account currencies fold into hryvnia.
 import { describe, expect, it } from 'vitest';
 import type { SpendingGroup } from '@mono/core/summaries';
-import { comparePeriod, foldByCategory, type CategoryGroups } from '../src/main/spending.ts';
+import { comparePeriod, foldByCategory, rankedCategories, type CategoryGroups } from '../src/main/spending.ts';
 
 describe('comparePeriod', () => {
   it('a complete month → the whole previous month', () => {
@@ -37,5 +37,18 @@ describe('foldByCategory', () => {
       ['путешествия', { net: 20_500, purchases: 1 }],
     ]);
     expect([...f.leftOut]).toEqual([[978, 300]]);
+  });
+});
+
+describe('rankedCategories', () => {
+  it('net > 0 only, net desc, a tie by the word', () => {
+    const m = new Map([
+      ['б', { net: 100, purchases: 1 }],
+      ['а', { net: 100, purchases: 2 }],
+      ['в', { net: 300, purchases: 1 }],
+      ['г', { net: -50, purchases: 0 }],
+      ['д', { net: 0, purchases: 0 }],
+    ]);
+    expect(rankedCategories(m).map(([k]) => k)).toEqual(['в', 'а', 'б']);
   });
 });

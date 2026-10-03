@@ -57,3 +57,11 @@ export function foldByCategory(
   }
   return { byCategory, leftOut };
 }
+
+/**
+ * The spending block's order of categories: net > 0 only, net desc, then the word. The «Now» strip ranks its top
+ * category by it too, so both give a category the same colour.
+ */
+export function rankedCategories(m: ReadonlyMap<string, SpendingAmounts>): Array<[string, SpendingAmounts]> {
+  return [...m].filter(([, a]) => a.net > 0).sort(([ka, a], [kb, b]) => b.net - a.net || (ka < kb ? -1 : 1));
+}

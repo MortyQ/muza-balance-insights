@@ -13,7 +13,7 @@ import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { labelPending } from './people.ts';
-import { comparePeriod, foldByCategory, monthBounds } from './spending.ts';
+import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
   CardTotal,
@@ -211,20 +211,17 @@ export class DataService {
       }
     }
 
-    const categories: SpendingCategoryView[] = [...cur.byCategory]
-      .filter(([, a]) => a.net > 0)
-      .sort(([ka, a], [kb, b]) => b.net - a.net || (ka < kb ? -1 : 1))
-      .map(([category, a]) => ({
-        category,
-        categoryId: CATEGORY_ID.get(category) ?? null,
-        ...a,
-        prev: prev ? (prev.get(category) ?? zero) : null,
-        people: parts.map((p) => ({
-          participantId: p.id,
-          ...(p.cur.get(category) ?? zero),
-          prev: p.prev ? (p.prev.get(category) ?? zero) : null,
-        })),
-      }));
+    const categories: SpendingCategoryView[] = rankedCategories(cur.byCategory).map(([category, a]) => ({
+      category,
+      categoryId: CATEGORY_ID.get(category) ?? null,
+      ...a,
+      prev: prev ? (prev.get(category) ?? zero) : null,
+      people: parts.map((p) => ({
+        participantId: p.id,
+        ...(p.cur.get(category) ?? zero),
+        prev: p.prev ? (p.prev.get(category) ?? zero) : null,
+      })),
+    }));
 
     // A person's total is their sum over the family's categories: the people add up to the family's total.
     const people: SpendingPersonPart[] = parts.map((p) => ({
