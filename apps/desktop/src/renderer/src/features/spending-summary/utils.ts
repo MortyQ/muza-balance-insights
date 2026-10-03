@@ -1,6 +1,6 @@
 import type { CategoryId } from '@contract/categories.ts';
 import type { SpendingAmounts, SpendingFx, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
-import { formatMoney, i18n, monthShortName, shortDate, t } from '@/shared/lib';
+import { formatMoney, monthName, monthShortName, shortDate, t } from '@/shared/lib';
 import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
 import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
@@ -129,8 +129,7 @@ export function comparePeriodText(compare: Readonly<NonNullable<SpendingOverview
     const to = Number(compare.to.slice(8, 10));
     return from === to ? t('home.spending.compareDay', { day: from, month }) : t('home.spending.compareRange', { from, to, month });
   }
-  // The month as a word in running text (lower case in uk / ru), by the platform's own month names.
-  const name = new Intl.DateTimeFormat(i18n.global.locale.value, { month: 'long', timeZone: 'UTC' }).format(Date.UTC(y, m - 1, 1));
+  const name = monthName(m);
   return y === thisYear ? name : `${name} ${y}`;
 }
 

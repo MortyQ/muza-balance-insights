@@ -250,7 +250,7 @@ describe('spending block: the only person in the app', () => {
 describe('spending block: the compared period and screen readers', () => {
   it('names the period compared with under the ring; while partial — its days, also as the tooltip of «В августе»', async () => {
     const w = await mountBlock();
-    expect(w.text()).toContain('Сравнение с: август');
+    expect(w.text()).toContain('Сравнение с: Август');
 
     current = { ...VIEW, compare: { from: '2026-08-01', to: '2026-08-02', partial: true } };
     const { useSyncStatusStore } = await import('@/entities/sync-status');

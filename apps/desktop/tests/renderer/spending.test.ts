@@ -307,8 +307,8 @@ describe('texts under the ring', () => {
   });
 
   it('the period compared with: the month (with the year when not this one), or its days while partial', () => {
-    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-31', partial: false }, 2026)).toBe('август');
-    expect(comparePeriodText({ from: '2025-12-01', to: '2025-12-31', partial: false }, 2026)).toBe('декабрь 2025');
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-31', partial: false }, 2026)).toBe('Август');
+    expect(comparePeriodText({ from: '2025-12-01', to: '2025-12-31', partial: false }, 2026)).toBe('Декабрь 2025');
     expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-02', partial: true }, 2026)).toBe('1–2 августа');
     expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-01', partial: true }, 2026)).toBe('1 августа');
   });
