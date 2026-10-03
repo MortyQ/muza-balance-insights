@@ -42,7 +42,7 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
 - `VPopover` — an icon-only trigger and a panel on reka-ui's `Popover` (muzakit has no popover or dropdown menu); the
-  spending block's settings menu.
+  spending block's settings menu; an optional visible `text` before the icon (the currency switch of the global filters).
 - `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
   text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
   block's chips and the now strip's.

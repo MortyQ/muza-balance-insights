@@ -40,6 +40,39 @@
   height: 1rem;
 }
 
+/* With text (the currency switch next to the month filter): reads like VMonthPicker's trigger beside it. */
+.v-popover__trigger--text {
+  display: inline-flex;
+  gap: var(--ui-control-gap);
+  width: auto;
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  box-shadow: var(--ui-shadow-xs);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--ui-input-bg);
+      border-color: var(--ui-border-strong);
+    }
+  }
+
+  &[data-state="open"],
+  &:focus-visible {
+    background: var(--ui-input-bg);
+    border-color: var(--ui-border-focus);
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
+  }
+}
+
+.v-popover__text {
+  white-space: nowrap;
+}
+
 .v-popover__content {
   z-index: 50;
   min-width: 18rem;

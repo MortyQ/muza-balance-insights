@@ -110,6 +110,16 @@
       "notYet": "Not downloaded yet",
       "partOf": "{enabled} of {total}"
     },
+    "currencyDisplay": {
+      "button": "Also show in currency: {shown}",
+      "eur": "Euro €",
+      "nearestHint": "At the rate of your nearest exchange — none this month",
+      "noRate": "No exchanges in {symbol} yet",
+      "note": "Totals stay in hryvnia",
+      "rateHint": "At the rate of your own exchanges this month",
+      "title": "Also show in currency",
+      "usd": "Dollars $"
+    },
     "participant": {
       "connection": "Connection",
       "family": "Whole family",
