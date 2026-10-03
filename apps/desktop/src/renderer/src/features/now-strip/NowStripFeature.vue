@@ -7,7 +7,7 @@ const { visible, view } = useNowStrip();
 </script>
 
 <template>
-  <VCard v-if="visible && view" as="section" variant="outlined" padding="none" :aria-label="$t('home.now.label')">
+  <VCard v-if="visible && view" as="section" padding="none" :aria-label="$t('home.now.label')">
     <div class="@container">
       <div class="grid grid-cols-1 divide-y divide-border-subtle @2xl:grid-cols-3 @2xl:divide-x @2xl:divide-y-0">
         <div class="flex min-w-0 flex-col gap-1 px-4 py-3">
