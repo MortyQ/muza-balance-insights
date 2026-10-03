@@ -3,7 +3,7 @@
 import { effectScope, nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatMoney, currencySymbol } from '@/shared/lib/money.ts';
-import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '@/shared/lib/months.ts';
+import { kyivToday, shiftMonth, shortDate } from '@/shared/lib/months.ts';
 import { throttle } from '@/shared/lib/throttle.ts';
 import { useAsyncData } from '@/shared/lib/useAsyncData.ts';
 
@@ -34,13 +34,10 @@ describe('months (Kyiv)', () => {
     expect(kyivToday(new Date('2026-09-30T20:00:00Z'))).toBe('2026-09-30');
   });
 
-  it('shift across years, ranges with the right last day, titles', () => {
+  it('shift across years', () => {
     expect(shiftMonth('2026-01', -1)).toBe('2025-12');
     expect(shiftMonth('2025-12', 1)).toBe('2026-01');
     expect(shiftMonth('2026-03', -26)).toBe('2024-01');
-    expect(monthRange('2024-02')).toEqual({ from: '2024-02-01', to: '2024-02-29' });
-    expect(monthRange('2026-09')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
-    expect(monthTitle('2026-09')).toBe('Сентябрь 2026');
   });
 
   it('short dates', () => {

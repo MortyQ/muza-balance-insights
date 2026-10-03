@@ -24,6 +24,22 @@
   `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
+- **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
+  one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
+  `main/spending.ts`) — categories in hryvnia (account currencies folded by own exchanges, `leftOut` without a rate),
+  `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
+  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils.ts` builds rows for the
+  family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
+  family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
+  3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
+  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), «≈ $ / €» lines (`convertLines`, `centerConv`). `composables/useSpending.ts` — the
+  request, the pick and the expanded category (reset on month, scope and global filter changes);
+  `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
+  segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
+  of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts`
+  (`localStorage` `spending.view`, defaults: split and mark on, $ / € off). Layout: `@container`, the columns stack
+  below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
+  `shared/ui/VPopover` — ours on reka-ui.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
@@ -106,7 +122,7 @@
     shared words in `common.*`; `uk.json` is the reference, `en.json` and `ru.json` get the same key in the same change
     (`tests/i18n.test.ts`);
   - Ukrainian and Russian texts address the user informally (ти / ты), as the screens always have; English is plain;
-  - numbers, dates and money keep their own formatters (`formatMoney`, `monthTitle`) and are passed in as placeholders;
+  - numbers, dates and money keep their own formatters (`formatMoney`, `monthName`, `shortDate`) and are passed in as placeholders;
   - bank names, the app name and the language names in the language select are not translated.
 - Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни

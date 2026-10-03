@@ -130,7 +130,7 @@ export type BalanceApi = {
   onProgress(cb: (p: ImportProgress) => void): () => void;
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
-  spendingSummary(q: SpendingQuery): Promise<SpendingView>;
+  getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -190,19 +190,31 @@ export type BalanceApi = {
 
 export type Scope = 'personal' | 'business';
 
-export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
+export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
 
-/** `category` — the core's word; `categoryId` — its CATEGORY key (null on the total line, or a word the core no longer has). */
-export type SpendingLine = { category: string; categoryId: CategoryId | null; gross: number; refunds: number; net: number };
+/** Hryvnia kopecks (account currencies folded by the user's own exchange rates) and spending lines. */
+export type SpendingAmounts = { net: number; purchases: number };
 
-export type SpendingCurrency = {
-  currency: number;
-  /** Sorted by net, largest first. */
-  categories: SpendingLine[];
-  total: SpendingLine & { netPerDay: number | null };
+export type SpendingPersonPart = SpendingAmounts & {
+  participantId: number;
+  /** The comparison period; null — no comparison. */
+  prev: SpendingAmounts | null;
 };
 
-export type SpendingView = {
+export type SpendingCategoryView = SpendingAmounts & {
+  /** The core's word; `categoryId` — its CATEGORY key (null: a word the core no longer has). */
+  category: string;
+  categoryId: CategoryId | null;
+  prev: SpendingAmounts | null;
+  /** The family view only (no participantId, more than one participant): each participant's part, in listParticipants order; else []. */
+  people: SpendingPersonPart[];
+};
+
+/** A currency the block can show «≈» lines in: kopecks per minor unit, from the user's own exchanges. */
+export type SpendingFx = { currency: 840 | 978; rate: number | null; prevRate: number | null; nearest: boolean };
+
+export type SpendingOverview = {
+  month: string;
   period: {
     from: string;
     to: string;
@@ -214,7 +226,21 @@ export type SpendingView = {
     coveredDays: number;
     pendingHolds: number;
   };
-  currencies: SpendingCurrency[];
+  /** The period compared with: last month, cut to the same day while this one is incomplete; null — not covered. */
+  compare: { from: string; to: string; partial: boolean } | null;
+  total: SpendingAmounts & { prev: SpendingAmounts | null };
+  /**
+   * Family view only (more than one participant): each participant's sum over the family's categories (they add up to `total`). With
+   * foreign-currency spending they may differ from it by a few kopecks: each group is rounded on its own.
+   */
+  people: SpendingPersonPart[];
+  /** net > 0 only, net desc; a refund-only category is left out here but counts in `total`. */
+  categories: SpendingCategoryView[];
+  fx: SpendingFx[];
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; net: number }>;
+  /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
+  familyTotal: number | null;
 };
 
 export type MonthOverviewQuery = { month: string; participantId?: number };

@@ -10,7 +10,6 @@ import { PIN_RE } from '../shared/lock.ts';
 import { IMPORT_DEPTHS } from '../shared/progress.ts';
 import { THEME_PREFS } from '../shared/theme.ts';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
@@ -51,10 +50,8 @@ export const ARG_SCHEMAS = {
   // Exactly the depths the screen offers: one list, so the two can't drift apart.
   startImport: z.tuple([z.literal(IMPORT_DEPTHS)]),
   cancelImport: z.tuple([]),
-  spendingSummary: z.tuple([
-    z.strictObject({ from: isoDate, to: isoDate, scope: z.enum(['personal', 'business']).optional(), participantId: id.optional() }),
-  ]),
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

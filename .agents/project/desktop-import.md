@@ -40,7 +40,7 @@
   'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
-  `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
+  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`
   (порог автосинхронизации) — тоже только по включённым (`ENABLED_ACCOUNT_IDS_SQL` ядра).

@@ -132,8 +132,24 @@ describe('spendingSummary', () => {
     ]);
     expect(s.totals).toEqual([
       // one operation currency → the operation block is kept; UAH mixes in commissions (no operation currency) → dropped
-      { currency: 840, lines: 1, gross: 500, refunds: 0, net: 500, netPerDay: 8, operation: { currency: 840, gross: 500, refunds: 0, net: 500 } },
-      { currency: 980, lines: 7, gross: 43_400, refunds: 1_000, net: 42_400, netPerDay: 719 },
+      { currency: 840, lines: 1, purchases: 1, gross: 500, refunds: 0, net: 500, netPerDay: 8, operation: { currency: 840, gross: 500, refunds: 0, net: 500 } },
+      { currency: 980, lines: 7, purchases: 6, gross: 43_400, refunds: 1_000, net: 42_400, netPerDay: 719 },
+    ]);
+  });
+
+  it('purchases: spending lines only — a refund is not an operation, a commission line is one', async () => {
+    const s = await spendingSummary(db, Q, NOW);
+    expect(s.groups.map(({ currency, key, lines, purchases }) => ({ currency, key, lines, purchases }))).toEqual([
+      { currency: 840, key: 'путешествия', lines: 1, purchases: 1 },
+      { currency: 980, key: 'переводы людям', lines: 1, purchases: 1 },
+      { currency: 980, key: 'продукты', lines: 1, purchases: 1 },
+      { currency: 980, key: 'налоги и госплатежи', lines: 1, purchases: 1 },
+      { currency: 980, key: 'кафе и рестораны', lines: 2, purchases: 1 },
+      { currency: 980, key: 'комиссии банка', lines: 2, purchases: 2 },
+    ]);
+    expect(s.totals.map(({ currency, purchases }) => ({ currency, purchases }))).toEqual([
+      { currency: 840, purchases: 1 },
+      { currency: 980, purchases: 6 },
     ]);
   });
 
@@ -157,7 +173,7 @@ describe('spendingSummary', () => {
 
   it('filters: scope, account, category (incl. commissions); an unknown groupBy / scope is an error', async () => {
     expect((await spendingSummary(db, { ...Q, scope: 'business' }, NOW)).totals).toEqual([
-      { currency: 980, lines: 1, gross: 7_000, refunds: 0, net: 7_000, netPerDay: 119, operation: { currency: 980, gross: 7_000, refunds: 0, net: 7_000 } },
+      { currency: 980, lines: 1, purchases: 1, gross: 7_000, refunds: 0, net: 7_000, netPerDay: 119, operation: { currency: 980, gross: 7_000, refunds: 0, net: 7_000 } },
     ]);
     expect((await spendingSummary(db, { ...Q, accountId: 'usd' }, NOW)).groups.map((g) => g.key)).toEqual(['путешествия']);
     expect((await spendingSummary(db, { ...Q, category: 'комиссии банка' }, NOW)).totals[0]?.net).toBe(2_400);

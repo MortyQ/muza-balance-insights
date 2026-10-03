@@ -244,8 +244,8 @@ app.whenReady().then(async () => {
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
     startImport: (depth) => importer.start(depth),
     cancelImport: async () => importer.cancel(),
-    spendingSummary: (q) => data.spending(q),
     getMonthOverview: (q) => data.monthOverview(q),
+    getSpendingOverview: (q) => data.spendingOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });

@@ -13,7 +13,7 @@ export const METHODS = [
   'setAccountEnabled',
   'startImport',
   'cancelImport',
-  'spendingSummary',
+  'getSpendingOverview',
   'getMonthOverview',
   'getSyncStatus',
   'deleteAllData',

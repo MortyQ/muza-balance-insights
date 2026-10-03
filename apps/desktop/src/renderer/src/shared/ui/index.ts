@@ -17,6 +17,7 @@ export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VCollapse } from "./components/layout/VCollapse.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";
 export { default as VTooltip } from "./components/overlay/VTooltip.vue";
+export { default as VPopover } from "./components/overlay/VPopover.vue";
 export type { FieldValidation } from "./types/validation";
 export { default as VSimpleTable } from "./table/VSimpleTable.vue";
 export type { TableAlign, TableColumn, TableFooterCell } from "./table/types";

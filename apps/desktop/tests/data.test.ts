@@ -27,6 +27,8 @@ type TxOpts = {
   op?: { currency: number; amount: number };
   /** An own transfer: is_internal_transfer = 1 with this transfer_rule. */
   rule?: 'pair' | 'pair_fx';
+  /** A transfer between two participants: transfer_rule = family, not internal (the core's marking). */
+  family?: boolean;
 };
 
 async function tx(accountId: string, date: string, amount: number, category: string, o: TxOpts = {}) {
@@ -36,7 +38,7 @@ async function tx(accountId: string, date: string, amount: number, category: str
           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, '{}', 0)`,
     args: [
       `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
-      o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? null, o.scope ?? 'personal',
+      o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? (o.family ? 'family' : null), o.scope ?? 'personal',
     ],
   });
 }
@@ -56,45 +58,6 @@ beforeEach(async () => {
 afterEach(() => db.close());
 
 describe('DataService (main → renderer view types)', () => {
-  it('spending: categories per account currency, net-sorted; currencies never summed; incomplete month flagged', async () => {
-    await account('uah', 'black', 980, 100_000);
-    await account('usd', 'black', 840, 5_000);
-    await synced('uah');
-    await synced('usd');
-    await tx('uah', '2026-03-02', -30_000, 'продукты');
-    await tx('uah', '2026-03-03', -50_000, 'кафе и рестораны');
-    await tx('uah', '2026-03-04', 10_000, 'кафе и рестораны'); // refund
-    await tx('usd', '2026-03-05', -2_500, 'путешествия');
-    await tx('uah', '2026-02-20', -99_900, 'продукты'); // outside the month
-
-    const v = await svc.spending({ from: '2026-03-01', to: '2026-03-31' });
-    expect(v.period).toMatchObject({ from: '2026-03-01', to: '2026-03-31', days: 31, incomplete: true, dataUntil: '2026-03-10', coveredDays: 9 });
-    expect(v.currencies.map((c) => c.currency)).toEqual([840, 980]);
-    const uah = v.currencies.find((c) => c.currency === 980)!;
-    expect(uah.categories).toEqual([
-      { category: 'кафе и рестораны', categoryId: 'cafes', gross: 50_000, refunds: 10_000, net: 40_000 },
-      { category: 'продукты', categoryId: 'groceries', gross: 30_000, refunds: 0, net: 30_000 },
-    ]);
-    expect(uah.total).toEqual({ category: '', categoryId: null, gross: 80_000, refunds: 10_000, net: 70_000, netPerDay: Math.round(70_000 / 9) });
-    expect(v.currencies.find((c) => c.currency === 840)!.total.net).toBe(2_500);
-  });
-
-  it('spending: scope filter and the commission split come from the core as is', async () => {
-    await account('uah', 'black', 980, 0);
-    await account('fop', 'fop', 980, 0);
-    await synced('uah');
-    await tx('uah', '2026-03-02', -10_000, 'продукты', { commission: 500 });
-    await tx('fop', '2026-03-02', -70_000, 'налоги и госплатежи', { scope: 'business' });
-
-    const personal = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'personal' });
-    expect(personal.currencies[0]!.categories).toEqual([
-      { category: 'продукты', categoryId: 'groceries', gross: 9_500, refunds: 0, net: 9_500 },
-      { category: 'комиссии банка', categoryId: 'fees', gross: 500, refunds: 0, net: 500 },
-    ]);
-    const business = await svc.spending({ from: '2026-03-01', to: '2026-03-31', scope: 'business' });
-    expect(business.currencies[0]!.categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
-  });
-
   it('status: empty database → no data; after an import → Kyiv date-time and date the data reaches / starts at', async () => {
     expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
     await account('uah', 'black', 980, 0);
@@ -353,7 +316,7 @@ describe('DataService.monthOverview', () => {
     await tx('uah', '2026-03-02', -10_000, 'переводы людям');
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
     const out = JSON.stringify([
-      await svc.spending({ from: '2026-03-01', to: '2026-03-31' }),
+      await svc.spendingOverview({ month: '2026-03', scope: 'personal' }),
       await svc.monthOverview({ month: '2026-03' }),
       // The person view too: account labels (jar labels included) go through the same canary check.
       await svc.monthOverview({ month: '2026-03', participantId: me }),
@@ -365,7 +328,7 @@ describe('DataService.monthOverview', () => {
 });
 
 describe('DataService: one participant or the whole family', () => {
-  it('spending takes participantId; without it — everyone', async () => {
+  it('spendingOverview takes participantId; without it — everyone', async () => {
     await account('mine', 'black', 980, 10_000);
     const her = Number((await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Вигадана', 0) RETURNING id`)).rows[0]?.id);
     const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
@@ -373,10 +336,157 @@ describe('DataService: one participant or the whole family', () => {
     await tx('mine', '2026-03-02', -1_000, 'продукты');
     await tx('hers', '2026-03-03', -400, 'продукты');
     for (const a of ['mine', 'hers']) await synced(a);
-    const q = { from: '2026-03-01', to: '2026-03-10' };
-    const total = async (participantId?: number) =>
-      (await svc.spending({ ...q, ...(participantId !== undefined ? { participantId } : {}) })).currencies[0]?.total.net;
-    expect(await total()).toBe(1_400);
-    expect(await total(her)).toBe(400);
+    const all = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    const one = await svc.spendingOverview({ month: '2026-03', scope: 'personal', participantId: her });
+    expect(all.total.net).toBe(1_400);
+    expect(one.total.net).toBe(400);
+  });
+});
+
+describe('DataService.spendingOverview', () => {
+  const sale = (date: string, uah: number, usd: number) => tx('uah', date, uah, 'свои переводы', { rule: 'pair_fx', op: { currency: 840, amount: -usd } });
+
+  it('one month: categories folded into hryvnia by own exchanges, purchases, net-sorted, fx', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await account('usd', 'black', 840, 5_000);
+    await synced('uah');
+    await synced('usd');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('uah', '2026-02-04', -10_000, 'продукты');
+    await tx('uah', '2026-02-05', -50_000, 'кафе и рестораны');
+    await tx('uah', '2026-02-06', 10_000, 'кафе и рестораны'); // refund: not an operation
+    await tx('usd', '2026-02-07', -1_000, 'путешествия');
+    await sale('2026-02-08', 41_000, 1_000); // 41 kopecks per cent
+
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.month).toBe('2026-02');
+    expect(v.categories.map(({ category, categoryId, net, purchases }) => ({ category, categoryId, net, purchases }))).toEqual([
+      { category: 'путешествия', categoryId: 'travel', net: 41_000, purchases: 1 },
+      { category: 'кафе и рестораны', categoryId: 'cafes', net: 40_000, purchases: 1 },
+      { category: 'продукты', categoryId: 'groceries', net: 40_000, purchases: 2 },
+    ]);
+    expect(v.total).toEqual({ net: 121_000, purchases: 4, prev: { net: 0, purchases: 0 } });
+    expect(v.fx).toEqual([
+      { currency: 840, rate: 41, prevRate: 41, nearest: false }, // January had no exchange: the nearest one
+      { currency: 978, rate: null, prevRate: null, nearest: false },
+    ]);
+    expect(v.leftOut).toEqual([]);
+    expect(v.familyTotal).toBeNull();
+  });
+
+  it('a currency never exchanged stays out of the sums, listed in leftOut', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'black', 840, 0);
+    await synced('uah');
+    await synced('usd');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('usd', '2026-02-07', -1_000, 'путешествия');
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.categories.map((c) => c.category)).toEqual(['продукты']);
+    expect(v.total.net).toBe(30_000);
+    expect(v.leftOut).toEqual([{ currency: 840, net: 1_000 }]);
+  });
+
+  it('compare: the whole previous month; the same days while the month is in progress; none before the data', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-01-10', -20_000, 'продукты');
+    await tx('uah', '2026-02-05', -30_000, 'продукты');
+    await tx('uah', '2026-02-20', -5_000, 'продукты'); // after the 10th: out of March's comparison
+    await tx('uah', '2026-03-02', -7_000, 'продукты');
+
+    const feb = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(feb.compare).toEqual({ from: '2026-01-01', to: '2026-01-31', partial: false });
+    expect(feb.categories[0]).toMatchObject({ net: 35_000, purchases: 2, prev: { net: 20_000, purchases: 1 } });
+    expect(feb.total.prev).toEqual({ net: 20_000, purchases: 1 });
+
+    const mar = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(mar.compare).toEqual({ from: '2026-02-01', to: '2026-02-10', partial: true });
+    expect(mar.total.prev).toEqual({ net: 30_000, purchases: 1 });
+
+    const jan = await svc.spendingOverview({ month: '2026-01', scope: 'personal' });
+    expect(jan.compare).toBeNull();
+    expect(jan.total.prev).toBeNull();
+    expect(jan.categories[0]!.prev).toBeNull();
+  });
+
+  it('family: each person part per category adds up to the total; a person view has no parts but the family total', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('hers', '2026-02-04', -20_000, 'продукты');
+    await tx('hers', '2026-02-05', -5_000, 'кафе и рестораны');
+
+    const family = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(family.categories.map((c) => [c.category, c.people.map((p) => [p.participantId, p.net, p.purchases])])).toEqual([
+      ['продукты', [[me, 30_000, 1], [her, 20_000, 1]]],
+      ['кафе и рестораны', [[me, 0, 0], [her, 5_000, 1]]],
+    ]);
+    expect(family.people.map((p) => [p.participantId, p.net, p.purchases])).toEqual([[me, 30_000, 1], [her, 25_000, 2]]);
+    expect(family.people.reduce((s, p) => s + p.net, 0)).toBe(family.total.net);
+    expect(family.familyTotal).toBeNull();
+
+    const person = await svc.spendingOverview({ month: '2026-02', scope: 'personal', participantId: her });
+    expect(person.categories.every((c) => c.people.length === 0)).toBe(true);
+    expect(person.people).toEqual([]);
+    expect(person.total.net).toBe(25_000);
+    expect(person.familyTotal).toBe(55_000);
+  });
+
+  it('a family transfer: the sender\'s spending in their own view, out of the family view; the people still add up', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('hers', '2026-02-04', -20_000, 'продукты');
+    await tx('uah', '2026-02-05', -15_000, 'семье', { family: true });
+    await tx('hers', '2026-02-05', 15_000, 'поступления', { family: true });
+
+    const mine = await svc.spendingOverview({ month: '2026-02', scope: 'personal', participantId: me });
+    expect(mine.categories.map((c) => [c.category, c.net])).toEqual([['продукты', 30_000], ['семье', 15_000]]);
+    expect(mine.total.net).toBe(45_000);
+
+    const family = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(family.categories.map((c) => c.category)).toEqual(['продукты']);
+    expect(family.total.net).toBe(50_000);
+    expect(family.people.map((p) => [p.participantId, p.net])).toEqual([[me, 30_000], [her, 20_000]]);
+    expect(family.people.reduce((s, p) => s + p.net, 0)).toBe(family.total.net);
+  });
+
+  it('a refund-only category is not listed, but its net counts in the total', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('uah', '2026-02-04', 4_000, 'кафе и рестораны'); // refund of a January purchase
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.categories.map((c) => c.category)).toEqual(['продукты']);
+    expect(v.total).toMatchObject({ net: 26_000, purchases: 1 });
+  });
+
+  it('scope: business spending only in the business view', async () => {
+    await account('uah', 'black', 980, 0);
+    await account('fop', 'fop', 980, 0);
+    await synced('uah');
+    await synced('fop');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    await tx('fop', '2026-02-03', -70_000, 'налоги и госплатежи', { scope: 'business' });
+    expect((await svc.spendingOverview({ month: '2026-02', scope: 'business' })).categories.map((c) => c.category)).toEqual(['налоги и госплатежи']);
+  });
+
+  it('never carries names, descriptions, card numbers, IBANs or jar titles', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-02-03', -30_000, 'продукты');
+    const json = JSON.stringify(await svc.spendingOverview({ month: '2026-02', scope: 'personal' }));
+    for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });

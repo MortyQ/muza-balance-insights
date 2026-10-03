@@ -32,19 +32,6 @@ export function shiftMonth(ym: YearMonth, by: number): YearMonth {
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
 }
 
-/** Inclusive local_date range of the month. */
-export function monthRange(ym: YearMonth): { from: string; to: string } {
-  const [y, m] = ym.split('-').map(Number) as [number, number];
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, '0')}` };
-}
-
-/** «September 2026». */
-export function monthTitle(ym: YearMonth): string {
-  const [y, m] = ym.split('-').map(Number) as [number, number];
-  return `${monthName(m)} ${y}`;
-}
-
 /** «2026-03-10» → «10.03»; «2026-03-10 23:00» → «10.03, 23:00». */
 export function shortDate(s: string): string {
   const [date, time] = s.split(' ');

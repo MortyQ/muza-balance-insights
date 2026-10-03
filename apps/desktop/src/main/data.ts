@@ -13,8 +13,23 @@ import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { labelPending } from './people.ts';
+import { comparePeriod, foldByCategory, monthBounds } from './spending.ts';
 import type { CategoryId } from '../shared/categories.ts';
-import type { CardTotal, DataStatus, FlowView, FxPart, MonthOverview, MonthOverviewQuery, OverviewAccount, SpendingQuery, SpendingView } from '../shared/api.ts';
+import type {
+  CardTotal,
+  DataStatus,
+  FlowView,
+  FxPart,
+  MonthOverview,
+  MonthOverviewQuery,
+  OverviewAccount,
+  SpendingAmounts,
+  SpendingCategoryView,
+  SpendingFx,
+  SpendingOverview,
+  SpendingOverviewQuery,
+  SpendingPersonPart,
+} from '../shared/api.ts';
 
 /** The core's category word → its CATEGORY key, the id the renderer translates. */
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
@@ -22,16 +37,8 @@ const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATE
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
 
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-/** `'2026-02'` → `{ from: '2026-02-01', to: '2026-02-28' }` (UTC calendar arithmetic, no timezone drift). */
-function monthBounds(month: string): { from: string; to: string } {
-  const [y, m] = month.split('-').map(Number) as [number, number];
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { from: `${month}-01`, to: `${month}-${pad2(lastDay)}` };
-}
+/** The currencies the spending block can add «≈» lines in. */
+const FX_CURRENCIES = [840, 978] as const;
 
 /** `'2026-12'` → `'2027-01-01'`: the first day after the given month, UTC calendar arithmetic. */
 function nextMonthStart(month: string): string {
@@ -76,32 +83,6 @@ export class DataService {
   /** The migrated connection, for the other services of main (people.ts, integrations.ts). */
   database(): Promise<Db> {
     return this.conn();
-  }
-
-  async spending(q: SpendingQuery): Promise<SpendingView> {
-    const s = await spendingSummary(
-      await this.conn(),
-      {
-        from: q.from,
-        to: q.to,
-        groupBy: 'category',
-        ...(q.scope ? { scope: q.scope } : {}),
-        ...(q.participantId !== undefined ? { participantId: q.participantId } : {}),
-      },
-      this.d.nowSec(),
-    );
-    const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = s.period;
-    return {
-      period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
-      currencies: s.totals.map((t) => ({
-        currency: t.currency,
-        categories: s.groups
-          .filter((g) => g.currency === t.currency)
-          .map((g) => ({ category: g.key, categoryId: CATEGORY_ID.get(g.key) ?? null, gross: g.gross, refunds: g.refunds, net: g.net }))
-          .sort((a, b) => b.net - a.net || (a.category < b.category ? -1 : 1)),
-        total: { category: '', categoryId: null, gross: t.gross, refunds: t.refunds, net: t.net, netPerDay: t.netPerDay },
-      })),
-    };
   }
 
   /**
@@ -184,6 +165,96 @@ export class DataService {
       spending: sp.groups.find((g) => g.key === a.id)?.net ?? 0,
     }));
     return { ...base, people: [], accounts };
+  }
+
+  /**
+   * The spending block: the month's categories in hryvnia (account currencies folded by the user's own exchanges),
+   * spending lines, the compared period, and — for the whole family — each participant's part of every category.
+   */
+  async spendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const period = monthBounds(q.month);
+    const status = await this.status();
+    const summary = (p: { from: string; to: string }, participantId?: number) =>
+      spendingSummary(db, { ...p, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}) }, now);
+
+    const head = await summary(period, q.participantId);
+    const compare = comparePeriod(q.month, head.period, status.dataFrom);
+    const rates = await exchangeRates(db, period);
+    // The previous period is folded by its own rates.
+    const before = compare ? { period: compare, rates: await exchangeRates(db, compare) } : null;
+    const cur = foldByCategory(head, rates);
+    const prev = before ? foldByCategory(await summary(before.period, q.participantId), before.rates).byCategory : null;
+
+    const zero: SpendingAmounts = { net: 0, purchases: 0 };
+    const sum = (m: ReadonlyMap<string, SpendingAmounts>, keys: Iterable<string> = m.keys()): SpendingAmounts => {
+      let net = 0;
+      let purchases = 0;
+      for (const k of keys) {
+        const a = m.get(k);
+        if (a) (net += a.net), (purchases += a.purchases);
+      }
+      return { net, purchases };
+    };
+
+    const participants = await listParticipants(db);
+    const parts: Array<{ id: number; cur: Map<string, SpendingAmounts>; prev: Map<string, SpendingAmounts> | null }> = [];
+    // The split only means something with more than one person: the only one's part would be the whole.
+    if (q.participantId === undefined && participants.length > 1) {
+      for (const p of participants) {
+        parts.push({
+          id: p.id,
+          cur: foldByCategory(await summary(period, p.id), rates).byCategory,
+          prev: before ? foldByCategory(await summary(before.period, p.id), before.rates).byCategory : null,
+        });
+      }
+    }
+
+    const categories: SpendingCategoryView[] = [...cur.byCategory]
+      .filter(([, a]) => a.net > 0)
+      .sort(([ka, a], [kb, b]) => b.net - a.net || (ka < kb ? -1 : 1))
+      .map(([category, a]) => ({
+        category,
+        categoryId: CATEGORY_ID.get(category) ?? null,
+        ...a,
+        prev: prev ? (prev.get(category) ?? zero) : null,
+        people: parts.map((p) => ({
+          participantId: p.id,
+          ...(p.cur.get(category) ?? zero),
+          prev: p.prev ? (p.prev.get(category) ?? zero) : null,
+        })),
+      }));
+
+    // A person's total is their sum over the family's categories: the people add up to the family's total.
+    const people: SpendingPersonPart[] = parts.map((p) => ({
+      participantId: p.id,
+      ...sum(p.cur, cur.byCategory.keys()),
+      prev: p.prev && prev ? sum(p.prev, prev.keys()) : null,
+    }));
+
+    const total = sum(cur.byCategory);
+    const fx: SpendingFx[] = FX_CURRENCIES.map((c) => ({
+      currency: c,
+      rate: rates.get(c)?.rate ?? null,
+      prevRate: before?.rates.get(c)?.rate ?? null,
+      nearest: rates.get(c)?.nearest ?? false,
+    }));
+    const familyTotal =
+      q.participantId !== undefined && participants.length > 1 ? sum(foldByCategory(await summary(period), rates).byCategory).net : null;
+
+    const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
+    return {
+      month: q.month,
+      period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
+      compare,
+      total: { ...total, prev: prev ? sum(prev) : null },
+      people,
+      categories,
+      fx,
+      leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
+      familyTotal,
+    };
   }
 
   /** Enabled accounts only (a disabled one is in no statistic): `dataUntil` agrees with `dataFrom`. */
