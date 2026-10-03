@@ -28,7 +28,7 @@ English interface.
   sync, and is shown while the current month is selected.
 - A currency button next to the month filter («Also show in currency»: «Dollars $» and «Euro €») adds amounts in
   dollars or euros next to the hryvnia ones across the home screen — in «Spending» and in the new strip — at the rate of
-  your own exchanges. Totals stay in hryvnia.
+  your own exchanges. Totals stay in hryvnia. In the strip, «Most this week» shows its amount in hryvnia only for now.
 - Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
   how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
   could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
