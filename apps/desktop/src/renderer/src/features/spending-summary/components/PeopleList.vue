@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { VChangeChip } from '@/shared/ui';
 import type { PersonRowView } from '../types.ts';
-import ChangeChip from './ChangeChip.vue';
 
 const { rows } = defineProps<{ rows: ReadonlyArray<PersonRowView> }>();
 const emit = defineEmits<{ pick: [participantId: number | null] }>();
@@ -28,7 +28,7 @@ const emit = defineEmits<{ pick: [participantId: number | null] }>();
       </span>
       <span class="flex shrink-0 flex-col items-end gap-0.5">
         <span class="whitespace-nowrap font-bold tabular-nums">{{ r.amount }}</span>
-        <ChangeChip v-if="r.chip" :chip="r.chip" size="sm" />
+        <VChangeChip v-if="r.chip" :chip="r.chip" size="sm" />
       </span>
     </button>
   </div>

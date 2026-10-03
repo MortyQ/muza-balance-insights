@@ -270,20 +270,30 @@ describe('spending block: the compared period and screen readers', () => {
   it('change chips and operation differences carry the direction for screen readers', async () => {
     const w = await mountBlock();
     const row = category(w)[0]!;
-    const sr = row.findAll('.sr-only').map((e) => e.text());
+    const sr = row.findAll('.sr-only, .v-change-chip__sr').map((e) => e.text());
     // the amount chip (+50 ₴ against 45 000 → up) and the operations difference (+1)
     expect(sr).toEqual(['больше, чем в августе', 'больше, чем в августе']);
     expect(row.text()).toContain(`+${formatMoney(5_000, 980)}`);
-    expect(person(w, 'Сергей')!.find('.sr-only').text()).toBe('больше, чем в августе');
+    expect(person(w, 'Сергей')!.find('.v-change-chip__sr').text()).toBe('больше, чем в августе');
   });
 
-  it('the settings menu: a currency rated only by the nearest exchange says so', async () => {
-    current = { ...VIEW, fx: [{ currency: 840, rate: 41, prevRate: 40, nearest: true }, VIEW.fx[1]!] };
+});
+
+describe('spending block: currencies come from the home-wide choice', () => {
+  it('publishes its month\'s rates to the currency store, converts by the shared choice, the gear has no currency switches', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    const currency = useCurrencyDisplayStore();
+    currency.set('usd', true);
     const w = await mountBlock(document.body);
+
+    expect(currency.fx).toEqual(VIEW.fx);
+    expect(w.findComponent(CategoryRing).text()).toContain(`≈ ${formatMoney(Math.round(50_000 / 41), 840)}`);
+
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();
-    expect(document.body.textContent).toContain('По курсу твоего ближайшего обмена — в этом месяце обменов не было');
-    expect(document.body.textContent).not.toContain('По курсу твоих обменов за месяц');
+    expect(document.body.textContent).toContain('Метка прошлого месяца');
+    expect(document.body.textContent).not.toContain('Доллары $');
+    expect(document.body.textContent).not.toContain('Итоги остаются в гривне');
     w.unmount();
   });
 });

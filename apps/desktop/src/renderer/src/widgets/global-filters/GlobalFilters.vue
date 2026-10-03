@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { CurrencyToggle } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
 import { firstMonthOf, MonthFilter } from '@/entities/period';
@@ -28,6 +29,7 @@ const failed = computed(() => failedConnections(importProgress.progress));
     <template v-if="syncStatus.hasData">
       <ParticipantFilter :failed />
       <MonthFilter :min="firstMonth" />
+      <CurrencyToggle />
     </template>
     <SyncStatus v-if="status.text" :view="status" />
   </header>

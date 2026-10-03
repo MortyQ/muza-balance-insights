@@ -160,6 +160,20 @@ describe('spendingSummary', () => {
     }
   });
 
+  it('day (internal, not an MCP choice): one group per Kyiv day, the same totals', async () => {
+    const s = await spendingSummary(db, { ...Q, groupBy: 'day' }, NOW);
+    expect(s.groups.filter((g) => g.currency === 980).map((g) => [g.key, g.net, g.purchases])).toEqual([
+      ['2026-02-03', 20_400, 2], // body + its commission line
+      ['2026-01-05', 10_000, 1],
+      ['2026-02-06', 7_000, 1],
+      ['2026-01-20', 4_000, 1],
+      ['2026-02-04', 2_000, 1], // an own transfer: only its commission is spending
+      ['2026-01-21', -1_000, 0], // a refund only
+    ]);
+    expect(s.totals).toEqual((await spendingSummary(db, Q, NOW)).totals);
+    expect(SPENDING_GROUP_BY).not.toContain('day');
+  });
+
   it('month / account / mcc / scope keys; account groups carry a label, never a card number', async () => {
     const keys = async (groupBy: (typeof SPENDING_GROUP_BY)[number]) =>
       (await spendingSummary(db, { ...Q, groupBy }, NOW)).groups.filter((g) => g.currency === 980).map((g) => [g.key, g.net]);

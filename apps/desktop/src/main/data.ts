@@ -7,13 +7,14 @@ import { ensureDefaultConnection } from '@mono/core/connections';
 import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
-import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
+import { kyivStartOfDay, toKyivDate, toKyivDateTime } from '@mono/core/format';
 import { exchangeRates, toUah } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { labelPending } from './people.ts';
-import { comparePeriod, foldByCategory, monthBounds } from './spending.ts';
+import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
   CardTotal,
@@ -22,6 +23,8 @@ import type {
   FxPart,
   MonthOverview,
   MonthOverviewQuery,
+  NowOverview,
+  NowOverviewQuery,
   OverviewAccount,
   SpendingAmounts,
   SpendingCategoryView,
@@ -211,20 +214,17 @@ export class DataService {
       }
     }
 
-    const categories: SpendingCategoryView[] = [...cur.byCategory]
-      .filter(([, a]) => a.net > 0)
-      .sort(([ka, a], [kb, b]) => b.net - a.net || (ka < kb ? -1 : 1))
-      .map(([category, a]) => ({
-        category,
-        categoryId: CATEGORY_ID.get(category) ?? null,
-        ...a,
-        prev: prev ? (prev.get(category) ?? zero) : null,
-        people: parts.map((p) => ({
-          participantId: p.id,
-          ...(p.cur.get(category) ?? zero),
-          prev: p.prev ? (p.prev.get(category) ?? zero) : null,
-        })),
-      }));
+    const categories: SpendingCategoryView[] = rankedCategories(cur.byCategory).map(([category, a]) => ({
+      category,
+      categoryId: CATEGORY_ID.get(category) ?? null,
+      ...a,
+      prev: prev ? (prev.get(category) ?? zero) : null,
+      people: parts.map((p) => ({
+        participantId: p.id,
+        ...(p.cur.get(category) ?? zero),
+        prev: p.prev ? (p.prev.get(category) ?? zero) : null,
+      })),
+    }));
 
     // A person's total is their sum over the family's categories: the people add up to the family's total.
     const people: SpendingPersonPart[] = parts.map((p) => ({
@@ -254,6 +254,61 @@ export class DataService {
       fx,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
+    };
+  }
+
+  /**
+   * The «Now» strip: today and this calendar week (Kyiv, from Monday) of the personal scope, folded into hryvnia by
+   * this month's own exchange rates — the same core aggregate as the spending block. Main's clock decides «today».
+   */
+  async nowOverview(q: NowOverviewQuery): Promise<NowOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const today = toKyivDate(now);
+    const weekday = isoWeekday(today);
+    const monday = shiftDate(today, 1 - weekday);
+    const windowFrom = shiftDate(today, -USUAL_WINDOW);
+    const month = monthBounds(today.slice(0, 7));
+    const { dataFrom } = await this.status();
+    const summary = (p: { from: string; to: string }, groupBy: 'day' | 'category') =>
+      spendingSummary(db, { ...p, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+
+    const rates = await exchangeRates(db, month);
+    const daily = await summary({ from: windowFrom, to: today }, 'day');
+    const week = await summary({ from: monday, to: today }, 'category');
+    // foldByCategory folds by the group key — here the Kyiv day.
+    const byDay = foldByCategory(daily, rates).byCategory;
+    const weekByCategory = foldByCategory(week, rates).byCategory;
+    const monthRanked = rankedCategories(foldByCategory(await summary(month, 'category'), rates).byCategory);
+
+    // The usual day reads only the days the data covers: from its first date to the last fully synced day.
+    const lastCovered = daily.period.coveredDays > 0 ? shiftDate(windowFrom, daily.period.coveredDays - 1) : null;
+    const yesterday = shiftDate(today, -1);
+    const usualFrom = dataFrom === null ? null : dataFrom > windowFrom ? dataFrom : windowFrom;
+    const usualTo = lastCovered === null ? null : lastCovered < yesterday ? lastCovered : yesterday;
+    // Last week is clipped to the same weekdays the data reaches: today is never fully covered, so the cap is
+    // dataUntil (capped at today), not the last fully covered day — a fresh sync must not drop a comparison day.
+    const reach = daily.period.dataUntil === null ? null : daily.period.dataUntil < today ? daily.period.dataUntil : today;
+    const prevFrom = shiftDate(monday, -7);
+    const prevTo = reach === null ? null : shiftDate(reach, -7);
+    const top = rankedCategories(weekByCategory)[0];
+    const rank = top ? monthRanked.findIndex(([k]) => k === top[0]) : -1;
+
+    return {
+      date: today,
+      weekday,
+      dataUntil: daily.period.dataUntil,
+      today: byDay.get(today) ?? { net: 0, purchases: 0 },
+      usualDay: usualFrom !== null && usualTo !== null ? usualDay(byDay, usualFrom, usualTo) : null,
+      week: {
+        from: monday,
+        days: weekDays(byDay, monday, today),
+        total: sumAmounts(weekByCategory.values()),
+        prev: dataFrom !== null && dataFrom <= prevFrom && prevTo !== null && prevTo >= prevFrom ? sumDays(byDay, prevFrom, prevTo).net : null,
+        top: top ? { category: top[0], categoryId: CATEGORY_ID.get(top[0]) ?? null, ...top[1], rank: rank >= 0 ? rank : null } : null,
+        pendingHolds: week.period.pendingHolds,
+      },
+      fx: FX_CURRENCIES.map((c) => ({ currency: c, rate: rates.get(c)?.rate ?? null, prevRate: null, nearest: rates.get(c)?.nearest ?? false })),
     };
   }
 

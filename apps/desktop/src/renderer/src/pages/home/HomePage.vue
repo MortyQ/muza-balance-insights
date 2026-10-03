@@ -2,6 +2,7 @@
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
 import { ImportFeature } from '@/features/import-statement';
+import { NowStripFeature } from '@/features/now-strip';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
 import { GlobalFilters } from '@/widgets/global-filters';
@@ -18,6 +19,7 @@ const syncStatus = useSyncStatusStore();
     <UpdateBannerFeature />
     <template v-if="syncStatus.hasData">
       <BalancesFeature />
+      <NowStripFeature />
       <SpendingFeature />
     </template>
     <ImportFeature />

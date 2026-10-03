@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { useId } from 'vue';
-import { VIcon } from '@/shared/ui';
+import { VChangeChip, VIcon } from '@/shared/ui';
 import type { RowView } from '../types.ts';
 import { OPS_TONE } from '../constants.ts';
-import ChangeChip from './ChangeChip.vue';
 
 const { row, expandable, open } = defineProps<{ row: RowView; expandable: boolean; open: boolean }>();
 const emit = defineEmits<{ toggle: [] }>();
@@ -44,7 +43,7 @@ const panelId = useId();
         <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>
         <span v-for="c in row.conv" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ c }}</span>
       </span>
-      <span class="flex w-22.5 shrink-0 justify-end"><ChangeChip v-if="row.chip" :chip="row.chip" size="sm" /></span>
+      <span class="flex w-22.5 shrink-0 justify-end"><VChangeChip v-if="row.chip" :chip="row.chip" size="sm" /></span>
       <VIcon
         v-if="expandable"
         icon="lucide:chevron-right"
@@ -67,7 +66,7 @@ const panelId = useId();
           <span class="whitespace-nowrap font-bold tabular-nums">{{ p.amount }}</span>
           <span v-for="c in p.conv" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ c }}</span>
         </span>
-        <span class="flex w-21 shrink-0 justify-end"><ChangeChip v-if="p.chip" :chip="p.chip" size="sm" /></span>
+        <span class="flex w-21 shrink-0 justify-end"><VChangeChip v-if="p.chip" :chip="p.chip" size="sm" /></span>
       </div>
     </div>
   </div>

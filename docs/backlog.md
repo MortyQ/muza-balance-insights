@@ -47,3 +47,21 @@
   код не генерирует.
 - Погода (Open-Meteo) и курсы (`/bank/currency`): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
+
+## Later: PLN and card-purchase rates
+
+- Add PLN (985) to the home currency switch next to USD / EUR: extend the `SpendingFx` currency union, `FX_CURRENCIES`
+  (main `data.ts` and `entities/currency-display`) and the dictionaries (uk / en / ru).
+- A second rate source in core `exchangeRates` (`packages/core/src/fx.ts`): card purchases in that currency from
+  hryvnia accounts (`amount` in UAH ÷ `operation_amount`), weighted by amount over the month, else the nearest in time
+  (`nearest`); enabled accounts only, not cancelled. Own exchanges (`pair_fx`) stay the primary source; purchases count
+  only for a currency with no exchanges at all.
+- Expose the source (`source: 'exchange' | 'purchase'`) and show it in the switch's hint («At the rate of your purchases
+  in złoty»).
+- Document the rule in `.agents/project/domain-rules.md`; core tests on fictional data; a `CHANGELOG.md` entry.
+- Separately, later: Monobank public rates (`/bank/currency`) only for a currency with no own operations at all, only
+  for the current period, labelled «bank rate today». A new network path → its own security review (allowlist
+  consumer, tests).
+- The `CurrencyToggle` popover and the «Spending» gear popover have no accessible name for the dialog itself: give
+  `VPopover` a `title` / `aria-labelledby` option.
+- `pendingHolds` ignores the participant and scope filters, in «Spending» and in the «Now» strip alike.

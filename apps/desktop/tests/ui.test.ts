@@ -68,6 +68,8 @@ describe('ui components copied from muzakit', () => {
       'calendarMonth.ts',
       'VPopover.vue',
       'vpopover.scss',
+      'VChangeChip.vue',
+      'vchangechip.scss',
     ]);
     for (const f of filesUnder(uiDir, /\.(vue|ts|scss|css)$/)) {
       const own = ownFiles.has(path.basename(f)) || path.relative(uiDir, f).startsWith(`table${path.sep}`);

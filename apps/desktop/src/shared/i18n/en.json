@@ -71,6 +71,15 @@
       "mac": "the macOS Keychain",
       "other": "the system store",
       "windows": "Windows secure storage"
+    },
+    "weekdayShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
     }
   },
   "entities": {
@@ -109,6 +118,16 @@
       "line": "Accounts: {count} · downloaded from {from} to {to}",
       "notYet": "Not downloaded yet",
       "partOf": "{enabled} of {total}"
+    },
+    "currencyDisplay": {
+      "button": "Also show in currency: {shown}",
+      "eur": "Euro €",
+      "nearestHint": "At the rate of your nearest exchange — none this month",
+      "noRate": "No exchanges in {symbol} yet",
+      "note": "Totals stay in hryvnia",
+      "rateHint": "At the rate of your own exchanges this month",
+      "title": "Also show in currency",
+      "usd": "Dollars $"
     },
     "participant": {
       "connection": "Connection",
@@ -242,6 +261,28 @@
       "readFailed": "Could not read the data. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
     },
+    "now": {
+      "date": "{weekday}, {month} {day}",
+      "label": "Now",
+      "noneWeek": "No spending yet this week",
+      "ops": "{n} operation | {n} operations | {n} operations",
+      "opsShort": "{n} op.",
+      "pending": "Processing at the bank: {count}",
+      "pendingTitle": "Their amounts may still change",
+      "sameUsual": "about as usual",
+      "sameWeek": "as last week",
+      "srLessUsual": "less than on a usual day",
+      "srLessWeek": "less than last week",
+      "srMoreUsual": "more than on a usual day",
+      "srMoreWeek": "more than last week",
+      "today": "Today · {date}",
+      "top": "Most this week",
+      "topShare": "{pct}% of the week · {ops}",
+      "until": "Data until {date}",
+      "vsUsual": "vs a usual day ≈ {amount}",
+      "vsWeek": "vs last week, {days}",
+      "week": "This week · {days}"
+    },
     "spending": {
       "category": {
         "beauty": "Beauty",
@@ -320,17 +361,10 @@
       "settings": {
         "bars": "Show on the bars",
         "button": "Block settings",
-        "currency": "Also show in currency",
-        "currencyNote": "Totals stay in hryvnia",
-        "eur": "Euro €",
         "mark": "Last month's mark",
         "markHint": "A tick at last month's amount",
-        "nearestHint": "At the rate of your nearest exchange — none this month",
-        "noRate": "No exchanges in {symbol} yet",
-        "rateHint": "At the rate of your own exchanges this month",
         "split": "Who spent how much",
-        "splitHint": "The bar is split by people's colours",
-        "usd": "Dollars $"
+        "splitHint": "The bar is split by people's colours"
       },
       "title": "Spending",
       "together": "together · {ops}",

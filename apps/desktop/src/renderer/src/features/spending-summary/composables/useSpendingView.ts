@@ -1,12 +1,12 @@
 import { computed, type Ref } from 'vue';
 import { monthName, t } from '@/shared/lib';
-import type { SpendingPrefs, UseSpendingReturn, UseSpendingViewReturn } from '../types.ts';
+import type { UseSpendingReturn, UseSpendingViewReturn, ViewPrefs } from '../types.ts';
 import {
   centerChip, centerConv, comparePeriodText, familyShareText, initial, leftOutLines, money, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
 } from '../utils.ts';
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
-export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
+export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<ViewPrefs>>): UseSpendingViewReturn {
   const { month, thisMonth, view, family, member, people, selected, pick, open } = base;
   /** The in-block pick counts in the family view only, and only for a person still in the view (one removed meanwhile → the family). */
   const blockPick = computed(() => {

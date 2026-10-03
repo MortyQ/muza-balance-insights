@@ -1,4 +1,5 @@
-export { currencySymbol, formatMoney } from './money.ts';
+export { change, type Change } from './change.ts';
+export { currencySymbol, formatMoney, UAH } from './money.ts';
 export { kyivToday, monthName, monthOf, monthShortName, shiftMonth, shortDate, syncedWhen, type YearMonth } from './months.ts';
 export { osStoreName } from './os.ts';
 export { failedText } from './texts.ts';

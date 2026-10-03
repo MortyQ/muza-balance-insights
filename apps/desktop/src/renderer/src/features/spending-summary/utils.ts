@@ -1,10 +1,10 @@
 import type { CategoryId } from '@contract/categories.ts';
-import type { SpendingAmounts, SpendingFx, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
-import { formatMoney, monthName, monthShortName, shortDate, t } from '@/shared/lib';
-import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
-import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
+import type { SpendingAmounts, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
+import { convertLines, ratedCurrencies } from '@/entities/currency-display';
+import { change, formatMoney, monthName, monthShortName, shortDate, t, UAH, type Change } from '@/shared/lib';
+import { CATEGORY_COLORS, CATEGORY_ICON, TOP } from './constants.ts';
+import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs, ViewPrefs } from './types.ts';
 
-const UAH = 980;
 /** «N more categories». */
 const GREY = 'var(--border-strong)';
 /** A named category ranked below the family's top 7 (shown when a person is picked): muted, apart from the rest-grey. */
@@ -36,18 +36,6 @@ export function capitalize(s: string): string {
 
 export function categoryName(c: Readonly<{ category: string; categoryId: CategoryId | null }>): string {
   return c.categoryId ? t(`home.spending.category.${c.categoryId}`) : capitalize(c.category);
-}
-
-export type Change = { kind: 'up' | 'down' | 'same' | 'new'; diff: number; pct: number };
-
-/** Against last month: under SAME_SHARE of it → same; last month 0 or less (refunds only) → new; null — no comparison. */
-export function change(now: number, prev: number | null): Change | null {
-  if (prev === null) return null;
-  if (prev <= 0) return now > 0 ? { kind: 'new', diff: now, pct: 0 } : { kind: 'same', diff: 0, pct: 0 };
-  const diff = Math.abs(now - prev);
-  const pct = Math.round((diff / prev) * 100);
-  if (diff < prev * SAME_SHARE) return { kind: 'same', diff, pct };
-  return { kind: now > prev ? 'up' : 'down', diff, pct };
 }
 
 const tone = (c: Change): ChipView['tone'] => (c.kind === 'up' ? 'up' : c.kind === 'down' ? 'down' : 'neutral');
@@ -163,18 +151,6 @@ export function ringStops(parts: ReadonlyArray<{ value: number; color: string }>
   return `conic-gradient(${stops.join(', ')})`;
 }
 
-/** The switched-on «≈» currencies that have a rate this month, in menu order. */
-function ratedCurrencies(fx: ReadonlyArray<SpendingFx>, prefs: Readonly<SpendingPrefs>): Array<SpendingFx & { rate: number }> {
-  return FX_CURRENCIES.filter((c) => prefs[c.key])
-    .map((c) => fx.find((f) => f.currency === c.currency))
-    .filter((f): f is SpendingFx & { rate: number } => !!f && f.rate !== null);
-}
-
-/** «≈ 359 $» for each switched-on currency that has a rate this month. */
-export function convertLines(kopecks: number, fx: ReadonlyArray<SpendingFx>, prefs: Readonly<SpendingPrefs>): string[] {
-  return ratedCurrencies(fx, prefs).map((f) => `≈ ${formatMoney(Math.round(kopecks / f.rate), f.currency)}`);
-}
-
 const rateFormat = new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const rateText = (rate: number) => rateFormat.format(rate);
 
@@ -183,7 +159,7 @@ export function centerConv(
   now: number,
   prev: number | null,
   view: Readonly<SpendingOverview>,
-  prefs: Readonly<SpendingPrefs>,
+  prefs: Readonly<ViewPrefs>,
 ): Array<{ text: string; chip: ChipView | null; title: string }> {
   return ratedCurrencies(view.fx, prefs).map((f) => {
     const a = Math.round(now / f.rate);
@@ -259,7 +235,7 @@ function sumPrev(prevs: ReadonlyArray<SpendingAmounts | null>): SpendingAmounts 
 }
 
 /** The rows of the list for the family (pick null) or one picked person; colours stay those of the family's rank. */
-export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>, prefs: Readonly<SpendingPrefs>): RowView[] {
+export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>, prefs: Readonly<ViewPrefs>): RowView[] {
   const lines: Line[] = view.categories
     .map((c, i): Line => {
       const own = pick === null ? c : c.people.find((p) => p.participantId === pick);
@@ -412,11 +388,11 @@ export function leftOutLines(view: Readonly<SpendingOverview>): string[] {
 }
 
 /**
- * The menu choices from storage: each field on its own, defaults for anything else. The one `as` reads a parsed
- * JSON object's fields after the object / array guard.
+ * The menu choices from storage: each field on its own, defaults for anything else (the old `usd` / `eur` fields are
+ * the currency entity's now). The one `as` reads a parsed JSON object's fields after the object / array guard.
  */
 export function parsePrefs(raw: string | null): SpendingPrefs {
-  const d: SpendingPrefs = { split: true, mark: true, usd: false, eur: false };
+  const d: SpendingPrefs = { split: true, mark: true };
   if (raw === null) return d;
   let v: unknown;
   try {
@@ -430,5 +406,5 @@ export function parsePrefs(raw: string | null): SpendingPrefs {
     const x = o[k];
     return typeof x === 'boolean' ? x : d[k];
   };
-  return { split: field('split'), mark: field('mark'), usd: field('usd'), eur: field('eur') };
+  return { split: field('split'), mark: field('mark') };
 }

@@ -2,6 +2,9 @@
 // minor units of an ISO 4217 numeric currency; the exponent (JPY 0, KWD 3) comes from the core.
 import { currencyAlpha, currencyExponent, toMajor } from '@mono/core/currency';
 
+/** Hryvnia, ISO 4217 numeric: the currency every total on screen is in. */
+export const UAH = 980;
+
 const SYMBOL: Readonly<Record<string, string>> = { UAH: '₴', USD: '$', EUR: '€', GBP: '£', PLN: 'zł' };
 
 export function currencySymbol(code: number): string {

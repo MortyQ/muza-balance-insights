@@ -14,9 +14,6 @@ export const TOP = 7;
 /** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
 export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
 
-/** Change under this share of last month reads «as in August». */
-export const SAME_SHARE = 0.03;
-
 export const CATEGORY_ICON: Readonly<Record<CategoryId | 'rest', string>> = {
   groceries: 'lucide:shopping-cart', cafes: 'lucide:coffee', transport: 'lucide:bus', health: 'lucide:heart-pulse',
   beauty: 'lucide:sparkles', clothing: 'lucide:shirt', home: 'lucide:sofa', telecom: 'lucide:smartphone',
@@ -27,12 +24,6 @@ export const CATEGORY_ICON: Readonly<Record<CategoryId | 'rest', string>> = {
   installments: 'lucide:credit-card', ownTransfers: 'lucide:arrow-left-right', income: 'lucide:wallet',
   other: 'lucide:circle-ellipsis', rest: 'lucide:list',
 };
-
-/** The «≈» currencies and their switch labels, in menu order. */
-export const FX_CURRENCIES: ReadonlyArray<{ currency: 840 | 978; key: 'usd' | 'eur'; label: MessageKey }> = [
-  { currency: 840, key: 'usd', label: 'home.spending.settings.usd' },
-  { currency: 978, key: 'eur', label: 'home.spending.settings.eur' },
-];
 
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';

@@ -7,8 +7,6 @@ import {
   centerChip,
   centerConv,
   comparePeriodText,
-  change,
-  convertLines,
   familyShareText,
   leftOutLines,
   noCompareText,
@@ -23,6 +21,7 @@ import {
   shareOf,
   totalFor,
 } from '@/features/spending-summary/utils.ts';
+import { convertLines } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
@@ -55,14 +54,6 @@ const VIEW: SpendingOverview = {
 const PREFS = { split: true, mark: false, usd: false, eur: false };
 
 describe('change', () => {
-  it('more / less with the percent and the amount; under 3% → same; last month 0 → new; no comparison → null', () => {
-    expect(change(110, 100)).toEqual({ kind: 'up', diff: 10, pct: 10 });
-    expect(change(80, 100)).toEqual({ kind: 'down', diff: 20, pct: 20 });
-    expect(change(102, 100)).toEqual({ kind: 'same', diff: 2, pct: 2 });
-    expect(change(50, 0)).toEqual({ kind: 'new', diff: 50, pct: 0 });
-    expect(change(50, null)).toBeNull();
-  });
-
   it('the chip under the ring: more / less with the percent (by this day while partial), new, same', () => {
     expect(centerChip(114, 100, '2026-09', false)).toMatchObject({ text: 'на 14% больше, чем в августе', tone: 'up', arrow: 'up' });
     expect(centerChip(86, 100, '2026-09', true)).toMatchObject({ text: 'на 14% меньше, чем к этому дню в августе', tone: 'down', arrow: 'down' });
@@ -72,8 +63,6 @@ describe('change', () => {
   });
 
   it('a refund-only last month (net below 0) reads like 0: new, or same; never a negative percent', () => {
-    expect(change(50, -10)).toEqual({ kind: 'new', diff: 50, pct: 0 });
-    expect(change(0, -10)).toEqual({ kind: 'same', diff: 0, pct: 0 });
     const texts = [centerChip(50, -10, '2026-09', false)!.text, pctChip(50, -10, '2026-09')!.text, pctChip(0, -10, '2026-09')!.text];
     expect(texts).toEqual(['новое', 'новое', 'как в августе']);
     for (const text of texts) expect(text).not.toMatch(/[-−]/);
@@ -315,11 +304,11 @@ describe('texts under the ring', () => {
 });
 
 describe('parsePrefs', () => {
-  it('defaults for nothing or garbage; each field on its own', () => {
-    expect(parsePrefs(null)).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('{"mark":false,"usd":"yes","split":false}')).toEqual({ split: false, mark: false, usd: false, eur: false });
+  it('defaults for nothing or garbage; each field on its own; currencies are no longer the block\'s', () => {
+    expect(parsePrefs(null)).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{"mark":false,"usd":true,"split":false}')).toEqual({ split: false, mark: false });
   });
 });
 
@@ -331,9 +320,9 @@ describe('useSpendingPrefsStore', () => {
     setActivePinia(createPinia());
     const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
     const s = useSpendingPrefsStore();
-    expect(s.prefs).toEqual({ split: true, mark: true, usd: false, eur: false });
-    s.set('usd', true);
-    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: true, mark: true, usd: true, eur: false });
+    expect(s.prefs).toEqual({ split: true, mark: true });
+    s.set('split', false);
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: false, mark: true });
 
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
     setActivePinia(createPinia());
