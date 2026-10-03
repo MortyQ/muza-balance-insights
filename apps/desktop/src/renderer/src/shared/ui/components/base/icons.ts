@@ -16,6 +16,7 @@ import LucideCircleAlert from "~icons/lucide/circle-alert";
 import LucideCircleCheckBig from "~icons/lucide/circle-check-big";
 import LucideCircleEllipsis from "~icons/lucide/circle-ellipsis";
 import LucideClapperboard from "~icons/lucide/clapperboard";
+import LucideClock from "~icons/lucide/clock";
 import LucideCoffee from "~icons/lucide/coffee";
 import LucideCopy from "~icons/lucide/copy";
 import LucideCreditCard from "~icons/lucide/credit-card";
@@ -96,6 +97,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:circle-alert": LucideCircleAlert,
   "lucide:circle-ellipsis": LucideCircleEllipsis,
   "lucide:clapperboard": LucideClapperboard,
+  "lucide:clock": LucideClock,
   "lucide:coffee": LucideCoffee,
   "lucide:copy": LucideCopy,
   "lucide:credit-card": LucideCreditCard,
