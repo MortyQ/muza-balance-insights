@@ -221,3 +221,29 @@
 .v-sc__item--active .v-sc__dot {
   box-shadow: 0 0 0 1.5px var(--ui-surface);
 }
+
+/* ============================================
+   ALERT DOT (ours, not in muzakit)
+
+   A small warning dot after the label: something about this option needs a
+   look (the tooltip says what). Its spoken form is the visually hidden text
+   next to it.
+   ============================================ */
+.v-sc__alert {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-warning);
+}
+
+.v-sc__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

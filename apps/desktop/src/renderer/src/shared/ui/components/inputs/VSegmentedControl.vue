@@ -22,6 +22,11 @@ export interface SegmentOption<V extends string | number = string | number> {
    * overlapping for a group of them. Decoration only — the label still names the option.
    */
   colors?: ReadonlyArray<string>
+  /**
+   * Something about this option needs attention: a warning dot after the label. The text is the screen readers'
+   * version of the dot («not updated»), read after the label; put the details in `tooltip`. Empty / unset = no dot.
+   */
+  alert?: string
 }
 
 const {
@@ -198,6 +203,13 @@ const handleSelect = (option: SegmentOption<T>) => {
             :size="iconSize"
           />
           <span>{{ option.label }}</span>
+          <template v-if="option.alert">
+            <span
+              aria-hidden="true"
+              class="v-sc__alert"
+            />
+            <span class="v-sc__sr-only">{{ option.alert }}</span>
+          </template>
         </span>
 
         <span

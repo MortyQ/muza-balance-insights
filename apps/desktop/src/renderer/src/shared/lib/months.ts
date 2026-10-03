@@ -38,3 +38,9 @@ export function shortDate(s: string): string {
   const [, mm, dd] = (date ?? '').split('-');
   return time ? `${dd}.${mm}, ${time}` : `${dd}.${mm}`;
 }
+
+/** When a sync happened (Kyiv «YYYY-MM-DD HH:mm»): today → «at 14:20», an earlier day → «10.03, 14:20». */
+export function syncedWhen(at: string, now: Date): string {
+  const [date, time] = at.split(' ');
+  return date === kyivToday(now) && time ? t('common.atTime', { time }) : shortDate(at);
+}

@@ -9,11 +9,12 @@ Replace these copies with imports once muzakit is published as a package.
 | Component | Changes against muzakit |
 |---|---|
 | `VButton` | `vue-router` removed (`to` / `replace` props, `RouterLink`): always a `<button>` |
-| `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network) |
-| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter |
+| `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network); the `loading` spin stops under `prefers-reduced-motion` |
+| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter; `SegmentOption.alert` — a warning dot after the label (`.v-sc__alert`) whose text is read by screen readers only (`.v-sc__sr-only`), the details go in `tooltip` (a person whose connection did not update) |
 | `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic) |
 | `VTooltip` | one `!` on `placements[0]` for our `noUncheckedIndexedAccess` (the array is a fixed literal) |
-| `VButtonGroup`, `VCard`, `VInfoNotice`, `VLoader`, `VProgressBar`, their `.scss` | none |
+| `VLoader`, `vloader.scss` | `aria-label` from the dictionaries (`$t('common.loading')`, as `VMonthPicker` does) instead of the literal «Loading»; the dots stand still under `prefers-reduced-motion` |
+| `VButtonGroup`, `VCard`, `VInfoNotice`, `VProgressBar`, their `.scss` | none |
 | `VCheckbox` | `ref<HTMLInputElement \| null>(null)` → `useTemplateRef` (vue-syntax.instructions.md Rule 4) |
 | `VSwitch`, `vswitch.scss` | `vswitch.scss`: focus ring on the track for `:focus-visible` (the real input is clipped) |
 | `VInput` | `useDebounceFn` from `@vueuse/core` → local `debounce()` in `components/inputs/debounce.ts` (not exported from `index.ts`); the `debounce` prop is destructured as `debounceProp` to avoid shadowing the imported helper; `ref<HTMLInputElement \| HTMLTextAreaElement \| null>(null)` → `useTemplateRef`; added `defineExpose({ focus })` so a parent can call `.focus()` on a template ref to the component (muzakit's `VInput` doesn't expose this — no screen there needed to refocus it programmatically); `vinput.scss`: a disabled field drops its resting shadow, as a disabled `VButton` does |

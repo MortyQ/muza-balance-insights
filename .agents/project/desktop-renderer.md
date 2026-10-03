@@ -24,6 +24,23 @@
   `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
+- **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
+  `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
+  (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,
+  lastSyncAt }, now, labelOf)` → `SyncStatusView` (`types.ts`: `icon`, `text`, `percent`, `note`, `tooltip`), pure and
+  tested (`tests/renderer/sync-status.test.ts`); `failedConnections(progress)` → connection id → error text for
+  `ParticipantFilter`'s `failed` prop. Phases: a user's import — spinner + `home.filters.syncing`, the windows share
+  (`home.filters.percent`) only in `windows`, `progressLine` in the tooltip; «Auto-sync» — `home.import.autoRunning`, no
+  percent, no tooltip; `retry` — `home.filters.retryAt` + the full retry line in the tooltip; otherwise the data line
+  (`syncStatus.line`) + `home.filters.updated` with `syncedWhen(lastSyncAt, now)` (`shared/lib`: today → `common.atTime`,
+  another day → `shortDate`); `done` with `failed` or `error` — a `text-warning` triangle, the reason
+  (`home.import.notLoaded` / `IMPORT_ERRORS`) in the tooltip and as sr-only text. `components/SyncStatus.vue`: `role="status"`
+  `aria-live="polite"`, the percent `aria-hidden` (a phase is announced once, not every tick), the spinner
+  `motion-reduce:animate-none`; no `aria-busy` on the header (it can hold the announcement back). People: each person's
+  tooltip — `entities.participant.updated` with the latest `lastSyncAt` of their connections (`lastSyncOf`), plus
+  «label: reason» per failed connection; such a person gets `SegmentOption.alert` (`VSegmentedControl`: a warning dot,
+  the string is the sr-only suffix, `entities.participant.syncFailed`). Segment tooltips are HTML, so names are escaped.
+  Per-connection progress is not in the IPC: no per-person spinner.
 - **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
   `main/spending.ts`) — categories in hryvnia (account currencies folded by own exchanges, `leftOut` without a rate),
