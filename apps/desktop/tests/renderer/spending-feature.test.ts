@@ -125,6 +125,15 @@ describe('spending block: edge cases', () => {
     expect(person(w, 'Вся семья')).toBeUndefined();
     expect(w.findComponent(CategoryRing).exists()).toBe(false);
   });
+
+  it('pending bank operations: a warning-toned note with a spinning icon', async () => {
+    current = { ...VIEW, period: { ...VIEW.period, pendingHolds: 2 } };
+    const w = await mountBlock();
+    const note = w.findAll('p').find((p) => p.text().includes('Операций в обработке банком'));
+    expect(note?.classes()).toContain('text-warning');
+    expect(note?.find('svg').exists()).toBe(true);
+    expect(note?.find('svg').attributes('aria-hidden')).toBe('true');
+  });
 });
 
 describe('spending block: the family view', () => {

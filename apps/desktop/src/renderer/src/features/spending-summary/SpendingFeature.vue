@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
-import { VCard, VInfoNotice } from '@/shared/ui';
+import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import CategoryRing from './components/CategoryRing.vue';
 import CategoryRow from './components/CategoryRow.vue';
 import PeopleList from './components/PeopleList.vue';
@@ -28,7 +28,8 @@ const {
       <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('home.spending.failed')" />
       <VInfoNotice v-else-if="periodNote" :card="false" icon="lucide:info" tone="info" :subtitle="periodNote" />
       <p v-if="importing" class="text-sm text-foreground-muted">{{ $t('home.spending.importing') }}</p>
-      <p v-if="view && view.period.pendingHolds > 0" class="text-sm text-foreground-muted">
+      <p v-if="view && view.period.pendingHolds > 0" class="flex items-center gap-1.5 text-sm text-warning">
+        <VIcon icon="lucide:loader-circle" class="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" />
         {{ $t('home.spending.pending', { count: view.period.pendingHolds }) }}
       </p>
       <template v-if="view && state.status !== 'error' && !hasData && view.period.dataUntil !== null">
