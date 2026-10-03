@@ -1,15 +1,10 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
 import type { Loadable, YearMonth } from '@/shared/lib';
+import type { ChangeChipModel } from '@/shared/ui';
 
-/** A change chip: the text and its tone; `arrow` — show the up / down arrow; `sr` — screen-reader-only direction ('' — the text says it). */
-export interface ChipView {
-  text: string;
-  tone: 'up' | 'down' | 'neutral';
-  arrow: 'up' | 'down' | null;
-  sr: string;
-  title?: string;
-}
+/** A change chip (shared/ui `VChangeChip`). */
+export type ChipView = ChangeChipModel;
 
 /**
  * `home.spending.ops` and its small difference («+2», `home.spending.opsSame`, `home.spending.change.new`; empty — no

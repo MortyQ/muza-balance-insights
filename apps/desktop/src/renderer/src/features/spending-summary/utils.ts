@@ -1,7 +1,7 @@
 import type { CategoryId } from '@contract/categories.ts';
 import type { SpendingAmounts, SpendingFx, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
-import { formatMoney, monthName, monthShortName, shortDate, t } from '@/shared/lib';
-import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, SAME_SHARE, TOP } from './constants.ts';
+import { change, formatMoney, monthName, monthShortName, shortDate, t, type Change } from '@/shared/lib';
+import { CATEGORY_COLORS, CATEGORY_ICON, FX_CURRENCIES, TOP } from './constants.ts';
 import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
 const UAH = 980;
@@ -36,18 +36,6 @@ export function capitalize(s: string): string {
 
 export function categoryName(c: Readonly<{ category: string; categoryId: CategoryId | null }>): string {
   return c.categoryId ? t(`home.spending.category.${c.categoryId}`) : capitalize(c.category);
-}
-
-export type Change = { kind: 'up' | 'down' | 'same' | 'new'; diff: number; pct: number };
-
-/** Against last month: under SAME_SHARE of it → same; last month 0 or less (refunds only) → new; null — no comparison. */
-export function change(now: number, prev: number | null): Change | null {
-  if (prev === null) return null;
-  if (prev <= 0) return now > 0 ? { kind: 'new', diff: now, pct: 0 } : { kind: 'same', diff: 0, pct: 0 };
-  const diff = Math.abs(now - prev);
-  const pct = Math.round((diff / prev) * 100);
-  if (diff < prev * SAME_SHARE) return { kind: 'same', diff, pct };
-  return { kind: now > prev ? 'up' : 'down', diff, pct };
 }
 
 const tone = (c: Change): ChipView['tone'] => (c.kind === 'up' ? 'up' : c.kind === 'down' ? 'down' : 'neutral');

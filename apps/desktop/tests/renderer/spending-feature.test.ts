@@ -270,11 +270,11 @@ describe('spending block: the compared period and screen readers', () => {
   it('change chips and operation differences carry the direction for screen readers', async () => {
     const w = await mountBlock();
     const row = category(w)[0]!;
-    const sr = row.findAll('.sr-only').map((e) => e.text());
+    const sr = row.findAll('.sr-only, .v-change-chip__sr').map((e) => e.text());
     // the amount chip (+50 ₴ against 45 000 → up) and the operations difference (+1)
     expect(sr).toEqual(['больше, чем в августе', 'больше, чем в августе']);
     expect(row.text()).toContain(`+${formatMoney(5_000, 980)}`);
-    expect(person(w, 'Сергей')!.find('.sr-only').text()).toBe('больше, чем в августе');
+    expect(person(w, 'Сергей')!.find('.v-change-chip__sr').text()).toBe('больше, чем в августе');
   });
 
   it('the settings menu: a currency rated only by the nearest exchange says so', async () => {

@@ -14,9 +14,6 @@ export const TOP = 7;
 /** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
 export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
 
-/** Change under this share of last month reads «as in August». */
-export const SAME_SHARE = 0.03;
-
 export const CATEGORY_ICON: Readonly<Record<CategoryId | 'rest', string>> = {
   groceries: 'lucide:shopping-cart', cafes: 'lucide:coffee', transport: 'lucide:bus', health: 'lucide:heart-pulse',
   beauty: 'lucide:sparkles', clothing: 'lucide:shirt', home: 'lucide:sofa', telecom: 'lucide:smartphone',

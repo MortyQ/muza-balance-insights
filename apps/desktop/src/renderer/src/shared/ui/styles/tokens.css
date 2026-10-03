@@ -63,6 +63,10 @@
     --ui-foreground-disabled:  var(--foreground-disabled, oklch(76% 0.004 280));
     --ui-foreground-inverted:  var(--foreground-inverted, oklch(100% 0 0));
 
+    /* Change chips (VChangeChip): more — orange, less — blue, never red / green. Ours, not muzakit's (ui/README.md). */
+    --ui-series-orange: var(--series-orange, #eb6834);
+    --ui-series-blue:   var(--series-blue, #2a78d6);
+
     /* ╔══════════════════════════════════════════════════════════╗
        ║  BORDERS (4 weights: subtle → default → strong → focus)  ║
        ╚══════════════════════════════════════════════════════════╝ */

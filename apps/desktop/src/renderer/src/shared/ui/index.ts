@@ -3,6 +3,7 @@ export { default as VButton } from "./components/base/VButton.vue";
 export { default as VButtonGroup } from "./components/base/VButtonGroup.vue";
 export { default as VIcon } from "./components/base/VIcon.vue";
 export { default as VLoader } from "./components/feedback/VLoader.vue";
+export { default as VChangeChip, type ChangeChipModel } from "./components/feedback/VChangeChip.vue";
 export { default as VProgressBar } from "./components/feedback/VProgressBar.vue";
 export { default as VCheckbox, type CheckboxModelValue, type CheckboxValue } from "./components/inputs/VCheckbox.vue";
 export { default as VComposer, type VComposerStatus } from "./components/inputs/VComposer.vue";

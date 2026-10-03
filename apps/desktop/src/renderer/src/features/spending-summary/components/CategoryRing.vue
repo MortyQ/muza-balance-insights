@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { VChangeChip } from '@/shared/ui';
 import type { ChipView } from '../types.ts';
-import ChangeChip from './ChangeChip.vue';
 
 const { stops, label, amount, perDay, chip, conv } = defineProps<{
   stops: string;
@@ -22,10 +22,10 @@ const { stops, label, amount, perDay, chip, conv } = defineProps<{
         <span v-if="perDay" class="whitespace-nowrap text-xs text-foreground-muted">{{ perDay }}</span>
         <span v-for="c in conv" :key="c.text" class="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-secondary tabular-nums" :title="c.title">
           {{ c.text }}
-          <ChangeChip v-if="c.chip" :chip="c.chip" size="sm" />
+          <VChangeChip v-if="c.chip" :chip="c.chip" size="sm" />
         </span>
       </div>
     </div>
-    <ChangeChip v-if="chip" :chip />
+    <VChangeChip v-if="chip" :chip />
   </div>
 </template>

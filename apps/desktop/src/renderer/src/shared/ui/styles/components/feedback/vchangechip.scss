@@ -1,0 +1,55 @@
+/* Ours, not copied — VChangeChip (see VChangeChip.vue header). */
+
+.v-change-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  border-radius: var(--ui-radius-full);
+  font-size: var(--ui-text-xs);
+  line-height: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  &--md {
+    height: 1.5rem;
+    padding: 0 0.625rem;
+  }
+
+  &--sm {
+    height: 1.375rem;
+    padding: 0 0.5rem;
+  }
+
+  &--up {
+    background: color-mix(in oklch, var(--ui-series-orange) 16%, var(--ui-surface));
+    color: color-mix(in oklch, var(--ui-series-orange) 72%, var(--ui-foreground));
+  }
+
+  &--down {
+    background: color-mix(in oklch, var(--ui-series-blue) 16%, var(--ui-surface));
+    color: color-mix(in oklch, var(--ui-series-blue) 72%, var(--ui-foreground));
+  }
+
+  &--neutral {
+    background: var(--ui-surface-sunken);
+    color: var(--ui-foreground-secondary);
+  }
+}
+
+.v-change-chip__icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.v-change-chip__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -11,7 +11,7 @@ Replace these copies with imports once muzakit is published as a package.
 | `VButton` | `vue-router` removed (`to` / `replace` props, `RouterLink`): always a `<button>` |
 | `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network); the `loading` spin stops under `prefers-reduced-motion` |
 | `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter; `SegmentOption.alert` — a warning dot after the label (`.v-sc__alert`) whose text is read by screen readers only (`.v-sc__sr-only`), the details go in `tooltip` (a person whose connection did not update) |
-| `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic) |
+| `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic); `--ui-series-orange` / `--ui-series-blue` (wrapping the theme's `--series-*`) for `VChangeChip` |
 | `VTooltip` | one `!` on `placements[0]` for our `noUncheckedIndexedAccess` (the array is a fixed literal) |
 | `VLoader`, `vloader.scss` | `aria-label` from the dictionaries (`$t('common.loading')`, as `VMonthPicker` does) instead of the literal «Loading»; the dots stand still under `prefers-reduced-motion` |
 | `VButtonGroup`, `VCard`, `VInfoNotice`, `VProgressBar`, their `.scss` | none |
@@ -43,6 +43,9 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
 - `VPopover` — an icon-only trigger and a panel on reka-ui's `Popover` (muzakit has no popover or dropdown menu); the
   spending block's settings menu.
+- `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
+  text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
+  block's chips and the now strip's.
 
 All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
 reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element
