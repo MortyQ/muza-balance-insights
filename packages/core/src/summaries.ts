@@ -135,8 +135,11 @@ async function labelsById(db: Db): Promise<Map<string, string>> {
 
 // ---------- spendingSummary ----------
 
+/** The MCP tools' choices (`spending_summary`, `compare_periods`). */
 export const SPENDING_GROUP_BY = ['category', 'month', 'account', 'mcc', 'scope', 'operation_currency'] as const;
-export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number];
+/** Plus `day` — one group per Kyiv local_date — for the desktop's «Now» strip only: the MCP tools do not offer it. */
+export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number] | 'day';
+const GROUP_BY: ReadonlyArray<SpendingGroupBy> = [...SPENDING_GROUP_BY, 'day'];
 
 /** Key of the commission line when grouping by MCC (it has no MCC of its own). */
 export const COMMISSION_KEY = 'commission';
@@ -195,6 +198,7 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
   mcc: `COALESCE(CAST(mcc AS TEXT), '${COMMISSION_KEY}')`,
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
+  day: 'local_date',
 };
 
 /**
@@ -209,7 +213,7 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
  */
 export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number): Promise<SpendingSummary> {
   const groupBy = q.groupBy ?? 'category';
-  if (!SPENDING_GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${SPENDING_GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
+  if (!GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
