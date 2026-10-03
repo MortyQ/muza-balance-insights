@@ -29,7 +29,7 @@ const {
       <VInfoNotice v-else-if="periodNote" :card="false" icon="lucide:info" tone="info" :subtitle="periodNote" />
       <p v-if="importing" class="text-sm text-foreground-muted">{{ $t('home.spending.importing') }}</p>
       <p v-if="view && view.period.pendingHolds > 0" class="flex items-center gap-1.5 text-sm text-warning">
-        <VIcon icon="lucide:loader-circle" class="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" />
+        <VIcon icon="lucide:clock" class="size-3.5 shrink-0" />
         {{ $t('home.spending.pending', { count: view.period.pendingHolds }) }}
       </p>
       <template v-if="view && state.status !== 'error' && !hasData && view.period.dataUntil !== null">
