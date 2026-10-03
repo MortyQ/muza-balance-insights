@@ -7,7 +7,6 @@ import {
   centerChip,
   centerConv,
   comparePeriodText,
-  convertLines,
   familyShareText,
   leftOutLines,
   noCompareText,
@@ -22,6 +21,7 @@ import {
   shareOf,
   totalFor,
 } from '@/features/spending-summary/utils.ts';
+import { convertLines } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
@@ -304,11 +304,11 @@ describe('texts under the ring', () => {
 });
 
 describe('parsePrefs', () => {
-  it('defaults for nothing or garbage; each field on its own', () => {
-    expect(parsePrefs(null)).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true, usd: false, eur: false });
-    expect(parsePrefs('{"mark":false,"usd":"yes","split":false}')).toEqual({ split: false, mark: false, usd: false, eur: false });
+  it('defaults for nothing or garbage; each field on its own; currencies are no longer the block\'s', () => {
+    expect(parsePrefs(null)).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{"mark":false,"usd":true,"split":false}')).toEqual({ split: false, mark: false });
   });
 });
 
@@ -320,9 +320,9 @@ describe('useSpendingPrefsStore', () => {
     setActivePinia(createPinia());
     const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
     const s = useSpendingPrefsStore();
-    expect(s.prefs).toEqual({ split: true, mark: true, usd: false, eur: false });
-    s.set('usd', true);
-    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: true, mark: true, usd: true, eur: false });
+    expect(s.prefs).toEqual({ split: true, mark: true });
+    s.set('split', false);
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: false, mark: true });
 
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
     setActivePinia(createPinia());

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Scope, SpendingFx } from '@contract/api.ts';
+import type { Scope } from '@contract/api.ts';
 import { t } from '@/shared/lib';
 import { VSegmentedControl } from '@/shared/ui';
 import { SCOPES } from '../constants.ts';
 import type { SpendingPrefs } from '../types.ts';
 import SpendingSettings from './SpendingSettings.vue';
 
-const { subtitle, prefs, family, fx } = defineProps<{ subtitle: string; prefs: Readonly<SpendingPrefs>; family: boolean; fx: ReadonlyArray<SpendingFx> }>();
+const { subtitle, prefs, family } = defineProps<{ subtitle: string; prefs: Readonly<SpendingPrefs>; family: boolean }>();
 const scope = defineModel<Scope>('scope', { required: true });
 const emit = defineEmits<{ set: [key: keyof SpendingPrefs, value: boolean] }>();
 const scopes = computed(() => SCOPES.map((s) => ({ ...s, label: t(s.label) })));
@@ -21,7 +21,7 @@ const scopes = computed(() => SCOPES.map((s) => ({ ...s, label: t(s.label) })));
     </div>
     <div class="flex items-center gap-2">
       <VSegmentedControl v-model="scope" :options="scopes" />
-      <SpendingSettings :prefs :family :fx @set="(k, v) => emit('set', k, v)" />
+      <SpendingSettings :prefs :family @set="(k, v) => emit('set', k, v)" />
     </div>
   </div>
 </template>

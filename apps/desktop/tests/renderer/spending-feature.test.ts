@@ -277,13 +277,23 @@ describe('spending block: the compared period and screen readers', () => {
     expect(person(w, 'Сергей')!.find('.v-change-chip__sr').text()).toBe('больше, чем в августе');
   });
 
-  it('the settings menu: a currency rated only by the nearest exchange says so', async () => {
-    current = { ...VIEW, fx: [{ currency: 840, rate: 41, prevRate: 40, nearest: true }, VIEW.fx[1]!] };
+});
+
+describe('spending block: currencies come from the home-wide choice', () => {
+  it('publishes its month\'s rates to the currency store, converts by the shared choice, the gear has no currency switches', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    const currency = useCurrencyDisplayStore();
+    currency.set('usd', true);
     const w = await mountBlock(document.body);
+
+    expect(currency.fx).toEqual(VIEW.fx);
+    expect(w.findComponent(CategoryRing).text()).toContain(`≈ ${formatMoney(Math.round(50_000 / 41), 840)}`);
+
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();
-    expect(document.body.textContent).toContain('По курсу твоего ближайшего обмена — в этом месяце обменов не было');
-    expect(document.body.textContent).not.toContain('По курсу твоих обменов за месяц');
+    expect(document.body.textContent).toContain('Метка прошлого месяца');
+    expect(document.body.textContent).not.toContain('Доллары $');
+    expect(document.body.textContent).not.toContain('Итоги остаются в гривне');
     w.unmount();
   });
 });

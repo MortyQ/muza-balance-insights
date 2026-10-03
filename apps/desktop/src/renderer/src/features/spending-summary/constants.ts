@@ -25,12 +25,6 @@ export const CATEGORY_ICON: Readonly<Record<CategoryId | 'rest', string>> = {
   other: 'lucide:circle-ellipsis', rest: 'lucide:list',
 };
 
-/** The «≈» currencies and their switch labels, in menu order. */
-export const FX_CURRENCIES: ReadonlyArray<{ currency: 840 | 978; key: 'usd' | 'eur'; label: MessageKey }> = [
-  { currency: 840, key: 'usd', label: 'home.spending.settings.usd' },
-  { currency: 978, key: 'eur', label: 'home.spending.settings.eur' },
-];
-
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';
 

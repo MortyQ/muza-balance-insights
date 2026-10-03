@@ -330,17 +330,10 @@
       "settings": {
         "bars": "Show on the bars",
         "button": "Block settings",
-        "currency": "Also show in currency",
-        "currencyNote": "Totals stay in hryvnia",
-        "eur": "Euro €",
         "mark": "Last month's mark",
         "markHint": "A tick at last month's amount",
-        "nearestHint": "At the rate of your nearest exchange — none this month",
-        "noRate": "No exchanges in {symbol} yet",
-        "rateHint": "At the rate of your own exchanges this month",
         "split": "Who spent how much",
-        "splitHint": "The bar is split by people's colours",
-        "usd": "Dollars $"
+        "splitHint": "The bar is split by people's colours"
       },
       "title": "Spending",
       "together": "together · {ops}",

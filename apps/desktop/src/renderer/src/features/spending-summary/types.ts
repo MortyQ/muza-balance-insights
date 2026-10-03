@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
+import type { CurrencyPrefs } from '@/entities/currency-display';
 import type { Loadable, YearMonth } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 
@@ -73,12 +74,14 @@ export interface PersonRowView {
   pressed: boolean;
 }
 
+/** The block's own menu choices (its gear). */
 export interface SpendingPrefs {
   split: boolean;
   mark: boolean;
-  usd: boolean;
-  eur: boolean;
 }
+
+/** What the rows and the ring read: the block's choices and the home-wide «≈ $ / €» choice. */
+export type ViewPrefs = SpendingPrefs & CurrencyPrefs;
 
 /** A person as the block shows them (from the participant store). */
 export interface BlockPerson {
