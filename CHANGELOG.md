@@ -21,6 +21,16 @@ English interface.
 - Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
   table per currency.
 
+### Home screen
+
+- Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
+  how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
+  could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
+  download or one of the connections failed, a warning sign appears; hover over it to see why.
+- In the people filter, hover over a name to see when that person's data was last updated. A person whose connection
+  did not update gets a small warning dot, and the hint says which connection and why.
+- With reduced motion turned on in your system settings, loading spinners no longer spin.
+
 ## 0.1.6 — 2026-09-29
 
 ### Languages

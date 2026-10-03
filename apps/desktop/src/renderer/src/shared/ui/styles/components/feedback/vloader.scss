@@ -38,6 +38,14 @@
     animation-direction: reverse;
   }
 
+  /* Ours: the dots stand still; role="status" and its label still say it is loading. */
+  @media (prefers-reduced-motion: reduce) {
+    &::before,
+    &::after {
+      animation: none;
+    }
+  }
+
   &--sm {
     height: 10px;
   }

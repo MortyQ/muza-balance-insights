@@ -1,23 +1,36 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { ParticipantFilter } from '@/entities/participant';
+import { useImportProgressStore } from '@/entities/import-progress';
+import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
 import { firstMonthOf, MonthFilter } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
+import SyncStatus from './components/SyncStatus.vue';
+import { failedConnections, syncStatusView } from './utils.ts';
 
 const syncStatus = useSyncStatusStore();
+const importProgress = useImportProgressStore();
+const participant = useParticipantStore();
 const firstMonth = computed(() => firstMonthOf(syncStatus.status?.dataFrom));
+// The import and the people are two entities: they meet here, and the filter gets the result as a prop.
+const status = computed(() =>
+  syncStatusView(importProgress.progress, { line: syncStatus.line, lastSyncAt: syncStatus.status?.lastSyncAt ?? null }, Date.now(), participant.labelOf),
+);
+const failed = computed(() => failedConnections(importProgress.progress));
 </script>
 
 <template>
   <!-- The filters every home block reads (person, month); the app name and the settings button live in the window's
        title bar (widgets/app-header). Sticky: the filters stay at hand while the blocks scroll under them; above the
        balance block's header (z-40). -->
-  <header class="sticky top-0 z-50 -mx-8 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-background px-8 py-2">
+  <header
+    class="sticky top-0 z-50 -mx-8 flex flex-wrap items-center gap-3 border-b border-border-subtle bg-background px-8 py-2"
+    :aria-busy="status.busy || undefined"
+  >
     <h1 class="sr-only">Balance Insights</h1>
     <template v-if="syncStatus.hasData">
-      <ParticipantFilter />
+      <ParticipantFilter :failed />
       <MonthFilter :min="firstMonth" />
     </template>
-    <span v-if="syncStatus.line" class="ml-auto text-sm text-foreground-muted tabular-nums">{{ syncStatus.line }}</span>
+    <SyncStatus v-if="status.text" :view="status" />
   </header>
 </template>

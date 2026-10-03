@@ -1,6 +1,6 @@
 import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
 import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
-import { t } from '@/shared/lib';
+import { syncedWhen, t } from '@/shared/lib';
 import type { SegmentOption } from '@/shared/ui';
 import { FAMILY } from './constants.ts';
 
@@ -58,13 +58,48 @@ export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey |
   return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
 }
 
+/** The latest sync of any of a person's connections (Kyiv «YYYY-MM-DD HH:mm» sorts as text); null = never. */
+export function lastSyncOf(p: Readonly<PersonView>): string | null {
+  let last: string | null = null;
+  for (const c of p.connections) if (c.lastSyncAt !== null && (last === null || c.lastSyncAt > last)) last = c.lastSyncAt;
+  return last;
+}
+
+/** What the people filter says about syncing, per person. */
+export type FilterSync = {
+  /** Connections that did not update in the last import → why, already worded by the caller. */
+  failed: Readonly<Record<number, string>>;
+  now: Date;
+  /** «Name · Monobank» of a connection (the store's `labelOf`). */
+  labelOf: (connectionId: number) => string;
+};
+
+// The segment tooltip renders HTML (VSegmentedControl); names come from the user and the bank.
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function syncHints(p: Readonly<PersonView>, sync: Readonly<FilterSync>): Pick<SegmentOption<number>, 'tooltip' | 'alert'> {
+  const last = lastSyncOf(p);
+  const failed = p.connections.flatMap((c) => {
+    const why = sync.failed[c.id];
+    return why === undefined ? [] : [`${sync.labelOf(c.id)}: ${why}`];
+  });
+  const lines = [...(last === null ? [] : [t('entities.participant.updated', { when: syncedWhen(last, sync.now) })]), ...failed];
+  return {
+    ...(lines.length > 0 ? { tooltip: lines.map(escapeHtml).join('<br>') } : {}),
+    ...(failed.length > 0 ? { alert: t('entities.participant.syncFailed') } : {}),
+  };
+}
+
 /**
  * The people filter: each person's colour next to the name, and everyone's on «Whole family» — charts and tables coloured
- * by person read against this header.
+ * by person read against this header. With `sync`: a person's tooltip says when they were last updated and which of their
+ * connections did not update; such a person gets a warning dot.
  */
-export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>): SegmentOption<number>[] {
+export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>, sync?: Readonly<FilterSync>): SegmentOption<number>[] {
   return [
     { label: t('entities.participant.family'), value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
-    ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)] })),
+    ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)], ...(sync ? syncHints(p, sync) : {}) })),
   ];
 }
