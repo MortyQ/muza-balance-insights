@@ -21,7 +21,7 @@
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
   Виджет `widgets/global-filters` (`GlobalFilters`, над блоками главной) — фильтры, которые читают все блоки:
-  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = `firstMonthOf(syncStatus.status.dataFrom)`
   из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
@@ -49,14 +49,29 @@
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
   family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
   3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
-  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), «≈ $ / €» lines (`convertLines`, `centerConv`). `composables/useSpending.ts` — the
+  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), «≈ $ / €» lines (`centerConv`; `convertLines` from `entities/currency-display`). `composables/useSpending.ts` — the
   request, the pick and the expanded category (reset on month, scope and global filter changes);
   `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
   segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
-  of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts`
-  (`localStorage` `spending.view`, defaults: split and mark on, $ / € off). Layout: `@container`, the columns stack
+  of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
+  «≈ $ / €» lines read the home-wide `entities/currency-display` choice. Layout: `@container`, the columns stack
   below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
   `shared/ui/VPopover` — ours on reka-ui.
+- **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
+  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
+  «today» in Kyiv) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
+  under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
+  = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; this month's own rates.
+  Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
+  `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
+  `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
+- **Currency choice** (`entities/currency-display`): the home-wide «≈ $ / €» choice — `useCurrencyDisplayStore`
+  (`prefs`, `set`, `localStorage` `home.currencies`; the old `spending.view` `usd` / `eur` read once and saved at once;
+  `fx` — the rates of the month «Spending» shows, published by `useSpending` via `setFx`), `convertLines` /
+  `convertInline` / `shownText`, and `CurrencyToggle` (in `GlobalFilters` after `MonthFilter`: `VPopover` with visible
+  text «₴ · $ €», `VSwitch` rows). «Spending» and the strip read it; balances do not.
+- **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
+  one look and one rule for «Spending» and the strip.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.

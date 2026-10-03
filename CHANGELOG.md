@@ -13,9 +13,8 @@ English interface.
 - For the whole family the block shows who spent how much: click a person to see their part of the family's spending,
   or click a category to see each person's amount and operations in it.
 - Under the ring the block names what it compares with: last month, or its first days while this month is in progress.
-- The «Block settings» gear in the block's corner chooses what the bars show — «Who spent how much» and «Last month's
-  mark» — and with «Dollars $» and «Euro €» adds amounts in dollars or euros next to the hryvnia ones, at the rate of
-  your own exchanges. Totals stay in hryvnia.
+- The «Block settings» gear in the block's corner chooses what the bars show: «Who spent how much» and «Last month's
+  mark».
 - Whether an amount went up or down against last month no longer rests on colour alone: differences carry a «+» or
   «−» sign, and screen readers say the direction.
 - Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
@@ -23,6 +22,13 @@ English interface.
 
 ### Home screen
 
+- A thin strip between the balances and «Spending» shows how today and this week are going: «Today» — today's
+  spending against a usual day, «This week» — the week so far against the same days of last week, with a bar for each
+  day, and «Most this week» — the category you spent the most on. It follows the people filter, updates with every
+  sync, and is shown while the current month is selected.
+- A currency button next to the month filter («Also show in currency»: «Dollars $» and «Euro €») adds amounts in
+  dollars or euros next to the hryvnia ones across the home screen — in «Spending» and in the new strip — at the rate of
+  your own exchanges. Totals stay in hryvnia.
 - Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
   how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
   could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
