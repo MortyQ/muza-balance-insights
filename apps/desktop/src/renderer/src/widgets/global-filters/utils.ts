@@ -22,13 +22,13 @@ export function syncStatusView(
   now: number,
   labelOf: (connectionId: number) => string,
 ): SyncStatusView {
-  const idle: SyncStatusView = { icon: null, text: dataLine(data.line, data.lastSyncAt, now), percent: '', note: '', tooltip: '', busy: false };
+  const idle: SyncStatusView = { icon: null, text: dataLine(data.line, data.lastSyncAt, now), percent: '', note: '', tooltip: '' };
   switch (p.phase) {
     case 'starting':
     case 'accounts':
     case 'windows':
     case 'rederive': {
-      if (p.auto) return { ...idle, icon: 'spinner', text: t('home.import.autoRunning'), busy: true };
+      if (p.auto) return { ...idle, icon: 'spinner', text: t('home.import.autoRunning') };
       const pct = p.phase === 'windows' && p.windowsTotal > 0 ? Math.floor((p.windowsDone / p.windowsTotal) * 100) : null;
       return {
         ...idle,
@@ -36,12 +36,11 @@ export function syncStatusView(
         text: t('home.filters.syncing'),
         percent: pct === null ? '' : t('home.filters.percent', { pct }),
         tooltip: progressLine(p, now),
-        busy: true,
       };
     }
     case 'retry': {
       const at = new Date(now + p.inSec * 1000).toLocaleTimeString(i18n.global.locale.value, { hour: '2-digit', minute: '2-digit' });
-      return { ...idle, icon: 'spinner', text: t('home.filters.retryAt', { at }), tooltip: progressLine(p, now), busy: true };
+      return { ...idle, icon: 'spinner', text: t('home.filters.retryAt', { at }), tooltip: progressLine(p, now) };
     }
     case 'done': {
       if (p.failed.length === 0) return idle;

@@ -9,6 +9,4 @@ export type SyncStatusView = {
   note: string;
   /** On hover; '' = none. */
   tooltip: string;
-  /** An import is in flight. */
-  busy: boolean;
 };

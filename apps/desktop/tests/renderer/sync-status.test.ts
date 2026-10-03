@@ -31,7 +31,7 @@ const windows = (done: number, total: number, auto?: true): ImportProgress => ({
 describe('syncStatusView', () => {
   it('idle: what the data covers and when it was last updated (today → the time)', () => {
     const v = syncStatusView({ phase: 'idle' }, data, NOW, labelOf);
-    expect(v).toEqual({ icon: null, text: 'Данные до 03.10, 11:40 · обновлено в 11:45', percent: '', note: '', tooltip: '', busy: false });
+    expect(v).toEqual({ icon: null, text: 'Данные до 03.10, 11:40 · обновлено в 11:45', percent: '', note: '', tooltip: '' });
   });
 
   it('an earlier sync shows its date; no last sync → the data line alone', () => {
@@ -44,14 +44,14 @@ describe('syncStatusView', () => {
     'a user import, $phase: spinner and «Синхронизация…», no percent yet',
     (p) => {
       const v = syncStatusView(p, data, NOW, labelOf);
-      expect([v.icon, v.text, v.percent, v.busy]).toEqual(['spinner', 'Синхронизация…', '', true]);
+      expect([v.icon, v.text, v.percent]).toEqual(['spinner', 'Синхронизация…', '']);
       expect(v.tooltip).not.toBe('');
     },
   );
 
   it('a user import, windows: the percent of windows apart from the announced text', () => {
     const v = syncStatusView(windows(3, 8), data, NOW, labelOf);
-    expect([v.icon, v.text, v.percent, v.busy]).toEqual(['spinner', 'Синхронизация…', '37%', true]);
+    expect([v.icon, v.text, v.percent]).toEqual(['spinner', 'Синхронизация…', '37%']);
     expect(v.tooltip).toContain('загружено окон 3 из 8');
     // The announced text does not change from tick to tick.
     expect(syncStatusView(windows(4, 8), data, NOW, labelOf).text).toBe(v.text);
@@ -60,7 +60,7 @@ describe('syncStatusView', () => {
 
   it('«Auto-sync» is quiet: «Обновляю данные…», no percent, no tooltip', () => {
     const v = syncStatusView(windows(3, 8, true), data, NOW, labelOf);
-    expect(v).toEqual({ icon: 'spinner', text: 'Обновляю данные…', percent: '', note: '', tooltip: '', busy: true });
+    expect(v).toEqual({ icon: 'spinner', text: 'Обновляю данные…', percent: '', note: '', tooltip: '' });
     expect(syncStatusView({ phase: 'accounts', auto: true }, data, NOW, labelOf).text).toBe('Обновляю данные…');
   });
 
@@ -68,7 +68,7 @@ describe('syncStatusView', () => {
     const p: ImportProgress = { phase: 'retry', reason: 'network', attempt: 2, inSec: 15 * 60 };
     const at = new Date(NOW + 15 * 60 * 1000).toLocaleTimeString(i18n.global.locale.value, { hour: '2-digit', minute: '2-digit' });
     const v = syncStatusView(p, data, NOW, labelOf);
-    expect([v.icon, v.text, v.percent, v.busy]).toEqual(['spinner', `Повтор в ${at}`, '', true]);
+    expect([v.icon, v.text, v.percent]).toEqual(['spinner', `Повтор в ${at}`, '']);
     expect(v.tooltip).toContain('Нет связи с Monobank');
     expect(syncStatusView({ ...p, auto: true }, data, NOW, labelOf).text).toBe(`Повтор в ${at}`);
   });
@@ -76,14 +76,14 @@ describe('syncStatusView', () => {
   it('done: back to the data line; failed connections → a warning with who and why', () => {
     expect(syncStatusView({ phase: 'done', windowsTotal: 4, transactions: 9, failed: [] }, data, NOW, labelOf)).toEqual(syncStatusView({ phase: 'idle' }, data, NOW, labelOf));
     const v = syncStatusView({ phase: 'done', windowsTotal: 4, transactions: 9, failed: [{ connectionId: 7, error: 'auth' }] }, data, NOW, labelOf);
-    expect([v.icon, v.text, v.busy]).toEqual(['warning', 'Данные до 03.10, 11:40 · обновлено в 11:45', false]);
+    expect([v.icon, v.text]).toEqual(['warning', 'Данные до 03.10, 11:40 · обновлено в 11:45']);
     expect(v.note).toBe('Не загружено — Вигадана · Monobank: Monobank не принял токен. Проверь токен и введи его заново.');
     expect(v.tooltip).toBe(v.note);
   });
 
   it('error: a warning with the error text; cancelled and needs-token: the data line', () => {
     const v = syncStatusView({ phase: 'error', error: 'network' }, data, NOW, labelOf);
-    expect([v.icon, v.busy]).toEqual(['warning', false]);
+    expect(v.icon).toBe('warning');
     expect(v.note).toContain('Нет связи с Monobank');
     expect(syncStatusView({ phase: 'cancelled' }, data, NOW, labelOf).icon).toBeNull();
     expect(syncStatusView({ phase: 'needs-token', connectionIds: [1] }, data, NOW, labelOf).icon).toBeNull();
@@ -150,16 +150,15 @@ describe('GlobalFilters', () => {
 
   const mountFilters = () => mount(GlobalFilters, { global: { plugins: [pinia, i18n] }, attachTo: document.body });
 
-  it('idle: the data line with the last sync, nothing busy', () => {
+  it('idle: the data line with the last sync', () => {
     const w = mountFilters();
     const s = w.find('[role="status"]');
     expect(s.attributes('aria-live')).toBe('polite');
     expect(s.text()).toBe('Данные до 03.10, 11:40 · обновлено в 11:45');
-    expect(w.find('header').attributes('aria-busy')).toBeUndefined();
     w.unmount();
   });
 
-  it('a running import: spinner, «Синхронизация…» and the percent outside the announcement; the header is busy', async () => {
+  it('a running import: spinner, «Синхронизация…» and the percent outside the announcement; no aria-busy (it would hold the announcement back)', async () => {
     const w = mountFilters();
     useImportProgressStore().set(windows(1, 4));
     await nextTick();
@@ -167,7 +166,7 @@ describe('GlobalFilters', () => {
     expect(s.text()).toBe('Синхронизация…25%');
     expect(s.find('[aria-hidden="true"]:not(svg)').text()).toBe('25%');
     expect(s.find('svg').classes()).toContain('motion-reduce:animate-none');
-    expect(w.find('header').attributes('aria-busy')).toBe('true');
+    expect(w.find('header').attributes('aria-busy')).toBeUndefined();
     w.unmount();
   });
 
