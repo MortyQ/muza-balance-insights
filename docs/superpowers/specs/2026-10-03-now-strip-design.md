@@ -139,7 +139,9 @@ All amounts leave main as hryvnia kopecks.
 - **Week** = Monday … today (Kyiv, ISO week). `days[i]` = net of Monday + i, `null` after today. `total` = the sum of
   the week's categories (net and purchases), so the top category's share adds up.
 - **Last week** = Monday − 7 … today − 7, from the same daily groups; `null` when the first data date is after
-  Monday − 7.
+  Monday − 7. Clipped to the same covered weekdays when the data does not reach today (last fully covered day < today,
+  the same notion the usual day window uses): the end becomes `min(today, lastCovered) − 7`, and `null` when even
+  last week's Monday is not covered.
 - **Share** of the top category = `round(net / week.total.net × 100)` %, in the renderer.
 - **Change**: percent of the base (usual day or last week), the 3 % rule; a base ≤ 0 → no chip.
 - **Currencies** (USD 840, EUR 978): `fx` as in «Spending» (`rate`, `nearest`; `prevRate` always `null`); converted =
@@ -175,6 +177,7 @@ the canaries of `tests/data.test.ts`).
 
 - A scope switch on the strip; business spending in it.
 - Analytics over time (the strip is not a chart block).
+- `pendingHolds` ignores the participant / scope filters, same as the «Spending» block — a known limitation.
 - PLN and rates from card purchases: a backlog entry («Later: PLN and card-purchase rates» in `docs/backlog.md`).
 
 ## Tests

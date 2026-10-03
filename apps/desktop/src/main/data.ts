@@ -286,7 +286,10 @@ export class DataService {
     const yesterday = shiftDate(today, -1);
     const usualFrom = dataFrom === null ? null : dataFrom > windowFrom ? dataFrom : windowFrom;
     const usualTo = lastCovered === null ? null : lastCovered < yesterday ? lastCovered : yesterday;
+    // Last week is clipped to the same covered weekdays as this week (lastCovered, the same notion as above):
+    // a stale sync must not compare a full week of last year against a half-empty this week.
     const prevFrom = shiftDate(monday, -7);
+    const prevTo = lastCovered === null ? null : shiftDate(lastCovered, -7);
     const top = rankedCategories(weekByCategory)[0];
     const rank = top ? monthRanked.findIndex(([k]) => k === top[0]) : -1;
 
@@ -300,7 +303,7 @@ export class DataService {
         from: monday,
         days: weekDays(byDay, monday, today),
         total: sumAmounts(weekByCategory.values()),
-        prev: dataFrom !== null && dataFrom <= prevFrom ? sumDays(byDay, prevFrom, shiftDate(today, -7)).net : null,
+        prev: dataFrom !== null && dataFrom <= prevFrom && prevTo !== null && prevTo >= prevFrom ? sumDays(byDay, prevFrom, prevTo).net : null,
         top: top ? { category: top[0], categoryId: CATEGORY_ID.get(top[0]) ?? null, ...top[1], rank: rank >= 0 ? rank : null } : null,
         pendingHolds: week.period.pendingHolds,
       },

@@ -529,7 +529,8 @@ describe('DataService.nowOverview', () => {
         from: '2026-03-09',
         days: [25_100, 15_000, null, null, null, null, null],
         total: { net: 40_100, purchases: 5 },
-        prev: 14_000,
+        // The last covered day is 03-09 (Monday, today not fully synced yet): prev clips to 03-02 only, not 03-03 too.
+        prev: 6_000,
         // March: travel 104 100, groceries 41 000, cafes 15 000 → groceries is second
         top: { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1 },
         pendingHolds: 0,
@@ -545,6 +546,22 @@ describe('DataService.nowOverview', () => {
     await fixture();
     await db.execute(`UPDATE transactions SET hold = 1 WHERE account_id = 'uah' AND local_date = '2026-03-10'`);
     expect((await at().nowOverview({})).week.pendingHolds).toBe(2);
+  });
+
+  it('a stale sync clips last week to the same covered weekdays', async () => {
+    // Thursday 2026-03-12, 10:00 Kyiv; the data ends two days before NOW (2026-03-10, 23:59:59).
+    const STALE_NOW = kyivStartOfDay('2026-03-12') + 10 * 3600;
+    const dataEnds = kyivStartOfDay('2026-03-11') - 1;
+    const stale = () => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => STALE_NOW });
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), dataEnds, dataEnds] });
+    await tx('uah', '2026-03-02', -1_000, 'продукты'); // last Monday: inside the covered range
+    await tx('uah', '2026-03-03', -2_000, 'продукты'); // last Tuesday: inside the covered range
+    await tx('uah', '2026-03-04', -4_000, 'продукты'); // last Wednesday: today's analogue is not synced yet — excluded
+    const v = await stale().nowOverview({});
+    expect(v.dataUntil).toBe('2026-03-10');
+    expect(v.week.from).toBe('2026-03-09');
+    expect(v.week.prev).toBe(3_000); // last Monday + last Tuesday only, not last Wednesday
   });
 
   it('data that starts late: no usual day (under 7 covered days), no last week', async () => {
@@ -579,6 +596,32 @@ describe('DataService.nowOverview', () => {
     expect(v.week.top).toBeNull();
     expect(v.week.total).toEqual({ net: 0, purchases: 0 });
     expect(v.today).toEqual({ net: 0, purchases: 0 });
+  });
+
+  it('Monday NOW: the week is just today, prev is last Monday alone', async () => {
+    // Monday 2026-03-16, 23:59:59 Kyiv, data synced through this very second: the whole day counts as covered.
+    const MONDAY_NOW = kyivStartOfDay('2026-03-16') + 86_399;
+    const monday = () => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => MONDAY_NOW });
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), MONDAY_NOW, MONDAY_NOW] });
+    await tx('uah', '2026-03-09', -2_000, 'продукты'); // last Monday
+    await tx('uah', '2026-03-16', -5_000, 'продукты'); // today
+    const v = await monday().nowOverview({});
+    expect(v.weekday).toBe(1);
+    expect(v.week.from).toBe('2026-03-16');
+    expect(v.week.days).toEqual([5_000, null, null, null, null, null, null]);
+    expect(v.week.prev).toBe(2_000);
+  });
+
+  it('Sunday NOW: the week has no nulls (today is the last weekday)', async () => {
+    const SUNDAY_NOW = kyivStartOfDay('2026-03-15') + 12 * 3600; // Sunday 2026-03-15, noon
+    const sunday = () => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => SUNDAY_NOW });
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const v = await sunday().nowOverview({});
+    expect(v.weekday).toBe(7);
+    expect(v.week.days).toHaveLength(7);
+    expect(v.week.days).not.toContain(null);
   });
 
   it('never carries names, descriptions, card numbers, IBANs or jar titles', async () => {
