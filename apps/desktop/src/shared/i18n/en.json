@@ -71,6 +71,15 @@
       "mac": "the macOS Keychain",
       "other": "the system store",
       "windows": "Windows secure storage"
+    },
+    "weekdayShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
     }
   },
   "entities": {
@@ -251,6 +260,28 @@
       "openConnections": "Open «Connections»",
       "readFailed": "Could not read the data. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
+    },
+    "now": {
+      "date": "{weekday}, {month} {day}",
+      "label": "Now",
+      "noneWeek": "No spending yet this week",
+      "ops": "{n} operation | {n} operations | {n} operations",
+      "opsShort": "{n} op.",
+      "pending": "Processing at the bank: {count}",
+      "pendingTitle": "Their amounts may still change",
+      "sameUsual": "about as usual",
+      "sameWeek": "as last week",
+      "srLessUsual": "less than on a usual day",
+      "srLessWeek": "less than last week",
+      "srMoreUsual": "more than on a usual day",
+      "srMoreWeek": "more than last week",
+      "today": "Today · {date}",
+      "top": "Most this week",
+      "topShare": "{pct}% of the week · {ops}",
+      "until": "Data until {date}",
+      "vsUsual": "vs a usual day ≈ {amount}",
+      "vsWeek": "vs last week, {days}",
+      "week": "This week · {days}"
     },
     "spending": {
       "category": {

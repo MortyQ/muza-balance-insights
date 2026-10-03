@@ -31,6 +31,17 @@ describe('month store', () => {
       expect(s.thisMonth).toBe('2026-10');
       expect(s.month).toBe('2026-06');
     });
+
+    it('today: the Kyiv date, recomputed by refresh (a new day while the app stays open)', () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-10-03T20:59:00Z')); // 23:59 in Kyiv
+      const s = useMonthStore();
+      expect(s.today).toBe('2026-10-03');
+      vi.setSystemTime(new Date('2026-10-03T21:01:00Z')); // 00:01 in Kyiv
+      expect(s.today).toBe('2026-10-03');
+      s.refresh();
+      expect(s.today).toBe('2026-10-04');
+    });
   });
 
   it('firstMonthOf: the Kyiv month of the first data date; null while unknown', () => {
