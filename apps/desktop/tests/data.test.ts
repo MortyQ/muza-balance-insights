@@ -5,6 +5,7 @@ import type { Db } from '@mono/core/db';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { DataService } from '../src/main/data.ts';
+import { shiftDate } from '../src/main/now.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
 const SYNCED_TO = kyivStartOfDay('2026-03-10') + 23 * 3600;
@@ -487,6 +488,102 @@ describe('DataService.spendingOverview', () => {
     await synced('uah');
     await tx('uah', '2026-02-03', -30_000, 'продукты');
     const json = JSON.stringify(await svc.spendingOverview({ month: '2026-02', scope: 'personal' }));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.nowOverview', () => {
+  // Tuesday 2026-03-10, 23:30 Kyiv: after the sync (23:00), so Monday 03-09 is the last fully covered day.
+  const NOW_STRIP = kyivStartOfDay('2026-03-10') + 23 * 3600 + 30 * 60;
+  const at = () => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => NOW_STRIP });
+  const sale = (date: string, uah: number, usd: number) => tx('uah', date, uah, 'свои переводы', { rule: 'pair_fx', op: { currency: 840, amount: -usd } });
+
+  async function fixture() {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'black', 840, 0);
+    await account('fop', 'fop', 980, 0);
+    for (const id of ['uah', 'usd', 'fop']) await synced(id);
+    // 1 000 every day 02-08 … 03-09: the usual day.
+    for (let i = 0; i < 30; i++) await tx('uah', shiftDate('2026-02-08', i), -1_000, 'продукты');
+    await tx('uah', '2026-03-02', -5_000, 'кафе и рестораны'); // last Monday
+    await tx('uah', '2026-03-03', -7_000, 'кафе и рестораны'); // last Tuesday
+    await tx('uah', '2026-03-04', -100_000, 'путешествия'); // last Wednesday: outside the comparison
+    await sale('2026-03-05', 41_000, 1_000); // 41 kopecks per cent
+    await tx('uah', '2026-03-09', -20_000, 'продукты');
+    await tx('usd', '2026-03-09', -100, 'путешествия'); // 1 $ → 4 100
+    await tx('fop', '2026-03-09', -50_000, 'налоги и госплатежи', { scope: 'business' }); // not in the strip
+    await tx('uah', '2026-03-10', -12_000, 'продукты');
+    await tx('uah', '2026-03-10', -3_000, 'кафе и рестораны');
+  }
+
+  it('today, the usual day, the week, last week, the top category and its rank this month, rates', async () => {
+    await fixture();
+    expect(await at().nowOverview({})).toEqual({
+      date: '2026-03-10',
+      weekday: 2,
+      dataUntil: '2026-03-10',
+      today: { net: 15_000, purchases: 2 },
+      // 26 days of 1 000 and 6 000, 8 000, 101 000, 25 100 → the middle two are 1 000
+      usualDay: 1_000,
+      week: {
+        from: '2026-03-09',
+        days: [25_100, 15_000, null, null, null, null, null],
+        total: { net: 40_100, purchases: 5 },
+        prev: 14_000,
+        // March: travel 104 100, groceries 41 000, cafes 15 000 → groceries is second
+        top: { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1 },
+        pendingHolds: 0,
+      },
+      fx: [
+        { currency: 840, rate: 41, prevRate: null, nearest: false },
+        { currency: 978, rate: null, prevRate: null, nearest: false },
+      ],
+    });
+  });
+
+  it('pending holds of the week', async () => {
+    await fixture();
+    await db.execute(`UPDATE transactions SET hold = 1 WHERE account_id = 'uah' AND local_date = '2026-03-10'`);
+    expect((await at().nowOverview({})).week.pendingHolds).toBe(2);
+  });
+
+  it('data that starts late: no usual day (under 7 covered days), no last week', async () => {
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-03-05'), SYNCED_TO, SYNCED_TO + 60] });
+    await tx('uah', '2026-03-10', -3_000, 'продукты');
+    const v = await at().nowOverview({});
+    expect(v.usualDay).toBeNull();
+    expect(v.week.prev).toBeNull();
+    expect(v.today).toEqual({ net: 3_000, purchases: 1 });
+  });
+
+  it('one person: only their accounts; the family: everyone', async () => {
+    await fixture();
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    await tx('hers', '2026-03-10', -9_000, 'продукты');
+
+    expect((await at().nowOverview({})).today).toEqual({ net: 24_000, purchases: 3 });
+    const mine = await at().nowOverview({ participantId: her });
+    expect(mine.today).toEqual({ net: 9_000, purchases: 1 });
+    expect(mine.usualDay).toBe(0);
+    expect(mine.week.top).toEqual({ category: 'продукты', categoryId: 'groceries', net: 9_000, purchases: 1, rank: 0 });
+  });
+
+  it('an empty week: no top category, zeros', async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    const v = await at().nowOverview({});
+    expect(v.week.top).toBeNull();
+    expect(v.week.total).toEqual({ net: 0, purchases: 0 });
+    expect(v.today).toEqual({ net: 0, purchases: 0 });
+  });
+
+  it('never carries names, descriptions, card numbers, IBANs or jar titles', async () => {
+    await fixture();
+    const json = JSON.stringify(await at().nowOverview({}));
     for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });

@@ -246,6 +246,7 @@ app.whenReady().then(async () => {
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),
     getSpendingOverview: (q) => data.spendingOverview(q),
+    getNowOverview: (q) => data.nowOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });

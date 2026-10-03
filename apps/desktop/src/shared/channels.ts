@@ -14,6 +14,7 @@ export const METHODS = [
   'startImport',
   'cancelImport',
   'getSpendingOverview',
+  'getNowOverview',
   'getMonthOverview',
   'getSyncStatus',
   'deleteAllData',

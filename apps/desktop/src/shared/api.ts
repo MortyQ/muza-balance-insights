@@ -131,6 +131,7 @@ export type BalanceApi = {
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
+  getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -241,6 +242,45 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
+};
+
+export type NowOverviewQuery = { participantId?: number };
+
+/**
+ * The «Now» strip: today and this calendar week (Kyiv, from Monday), personal scope, hryvnia kopecks folded by this
+ * month's own exchange rates — the same aggregate as the spending block. Main's clock decides «today».
+ */
+export type NowOverview = {
+  /** The Kyiv date main counted as today. */
+  date: string;
+  /** 1 = Monday … 7 = Sunday. */
+  weekday: number;
+  /** Kyiv date the data reaches (core periodInfo); null — never imported. */
+  dataUntil: string | null;
+  today: SpendingAmounts;
+  /**
+   * Median of daily net over the 30 days before today that the data covers (a day without spending counts as 0);
+   * null — fewer than 7 such days.
+   */
+  usualDay: number | null;
+  week: {
+    /** Monday. */
+    from: string;
+    /** Net of Monday … Sunday; null for the days after today. */
+    days: Array<number | null>;
+    /** Monday … today (the sum of the week's categories). */
+    total: SpendingAmounts;
+    /** Net of last week's Monday … the same weekday; null — the data does not reach that Monday. */
+    prev: number | null;
+    /**
+     * The category with the largest net this week; `rank` — its place in this month's categories (the spending
+     * block's colour), null — not among them. Null — no spending this week.
+     */
+    top: (SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null }) | null;
+    pendingHolds: number;
+  };
+  /** This month's rates, as the spending block's for this month; `prevRate` is always null. */
+  fx: SpendingFx[];
 };
 
 export type MonthOverviewQuery = { month: string; participantId?: number };
