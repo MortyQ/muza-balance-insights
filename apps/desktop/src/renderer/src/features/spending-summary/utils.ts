@@ -1,11 +1,10 @@
 import type { CategoryId } from '@contract/categories.ts';
 import type { SpendingAmounts, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
 import { convertLines, ratedCurrencies } from '@/entities/currency-display';
-import { change, formatMoney, monthName, monthShortName, shortDate, t, type Change } from '@/shared/lib';
+import { change, formatMoney, monthName, monthShortName, shortDate, t, UAH, type Change } from '@/shared/lib';
 import { CATEGORY_COLORS, CATEGORY_ICON, TOP } from './constants.ts';
 import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs, ViewPrefs } from './types.ts';
 
-const UAH = 980;
 /** «N more categories». */
 const GREY = 'var(--border-strong)';
 /** A named category ranked below the family's top 7 (shown when a person is picked): muted, apart from the rest-grey. */

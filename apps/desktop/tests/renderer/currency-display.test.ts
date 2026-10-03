@@ -10,11 +10,12 @@ import { formatMoney } from '@/shared/lib';
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
 // reka-ui's popover positioning reaches for ResizeObserver, which happy-dom does not provide.
-globalThis.ResizeObserver ??= class {
+class ResizeObserverStub implements ResizeObserver {
   observe(): void {}
   unobserve(): void {}
   disconnect(): void {}
-} as never;
+}
+globalThis.ResizeObserver ??= ResizeObserverStub;
 
 const FX: SpendingFx[] = [{ currency: 840, rate: 41, prevRate: null, nearest: false }, { currency: 978, rate: null, prevRate: null, nearest: false }];
 const ON = { usd: true, eur: true };
@@ -60,6 +61,14 @@ describe('useCurrencyDisplayStore', () => {
     expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ usd: true, eur: false });
   });
 
+  it('an old spending.view with corrupt JSON: the new key is written all-off, nothing throws', async () => {
+    mem.set('spending.view', '{oops');
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    expect(() => useCurrencyDisplayStore()).not.toThrow();
+    expect(useCurrencyDisplayStore().prefs).toEqual(OFF);
+    expect(JSON.parse(mem.get('home.currencies')!)).toEqual(OFF);
+  });
+
   it('its own key wins over the old one; set writes it; fx is published by setFx', async () => {
     mem.set('spending.view', '{"usd":true,"eur":true}');
     mem.set('home.currencies', '{"usd":false,"eur":true}');
@@ -68,7 +77,7 @@ describe('useCurrencyDisplayStore', () => {
     expect(s.prefs).toEqual({ usd: false, eur: true });
     s.set('usd', true);
     expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ usd: true, eur: true });
-    expect(s.fx).toEqual([]);
+    expect(s.fx).toBeNull();
     s.setFx(FX);
     expect(s.fx).toEqual(FX);
   });
@@ -89,11 +98,11 @@ describe('CurrencyToggle', () => {
     localStorage.clear();
   });
 
-  async function mountToggle(fx: SpendingFx[]) {
+  async function mountToggle(fx: SpendingFx[] | null) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const { CurrencyToggle, useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const store = useCurrencyDisplayStore();
-    store.setFx(fx);
+    if (fx) store.setFx(fx);
     const w = mount(CurrencyToggle, { global: { plugins: [i18n] }, attachTo: document.body });
     await flushPromises();
     return { w, store };
@@ -116,6 +125,31 @@ describe('CurrencyToggle', () => {
     expect(store.prefs.usd).toBe(true);
     expect(JSON.parse(localStorage.getItem('home.currencies') ?? '{}')).toEqual({ usd: true, eur: false });
     expect(document.body.querySelector('[aria-label="Показывать рядом в валюте: ₴ · $"]')).not.toBeNull();
+    w.unmount();
+  });
+
+  it('rates not loaded yet: no «no exchanges» claim, no rate hint, the switches usable and the choice saved', async () => {
+    const { w, store } = await mountToggle(null);
+    const trigger = document.body.querySelector<HTMLElement>('[aria-label="Показывать рядом в валюте: ₴"]');
+    trigger!.click();
+    await flushPromises();
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('Доллары $');
+    expect(text).not.toContain('Обменов в');
+    expect(text).not.toContain('По курсу');
+    const boxes = Array.from(document.body.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+    expect(boxes.map((b) => b.disabled)).toEqual([false, false]);
+
+    boxes[1]!.click();
+    await flushPromises();
+    expect(store.prefs.eur).toBe(true);
+    expect(JSON.parse(localStorage.getItem('home.currencies') ?? '{}')).toEqual({ usd: false, eur: true });
+    // No rate yet, so nothing is on screen in €: the button still says «₴».
+    expect(document.body.querySelector('[aria-label="Показывать рядом в валюте: ₴"]')).not.toBeNull();
+
+    store.setFx(FX);
+    await flushPromises();
+    expect(document.body.textContent).toContain('Обменов в € ещё не было');
     w.unmount();
   });
 

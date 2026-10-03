@@ -1,9 +1,8 @@
 import type { SpendingFx } from '@contract/api.ts';
-import { currencySymbol, formatMoney } from '@/shared/lib';
+import { currencySymbol, formatMoney, UAH } from '@/shared/lib';
 import { FX_CURRENCIES } from './constants.ts';
 import type { CurrencyPrefs } from './types.ts';
 
-const UAH = 980;
 
 /**
  * The choice from storage: `usd` / `eur`, each on its own, off for anything else (the old spending.view value has

@@ -2,8 +2,8 @@ import { currencyExponent } from '@mono/core/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import { accountName } from '@/entities/bank';
 import { colorVar } from '@/entities/participant';
-import { formatMoney, monthName as calendarMonthName, monthShortName, t } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
+import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
+import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
 import type { Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */

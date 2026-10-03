@@ -1,6 +1,3 @@
-/** Hryvnia: total cards and their bars. */
-export const UAH = 980;
-
 /** Row step: card width 340 + gap 16. */
 export const CARD_STEP = 356;
 /** Cards peeking out from behind the front one. */

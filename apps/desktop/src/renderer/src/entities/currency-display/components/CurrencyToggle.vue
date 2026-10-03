@@ -8,9 +8,11 @@ import { shownText } from '../utils.ts';
 
 const store = useCurrencyDisplayStore();
 const id = useId();
-const shown = computed(() => shownText(store.fx, store.prefs));
-const hasRate = (c: number) => store.fx.some((f) => f.currency === c && f.rate !== null);
-const nearest = (c: number) => store.fx.some((f) => f.currency === c && f.rate !== null && f.nearest);
+const shown = computed(() => shownText(store.fx ?? [], store.prefs));
+// Rates not loaded yet: the switches stay usable (the choice is saved either way) and no rate hint is shown.
+const loaded = computed(() => store.fx !== null);
+const hasRate = (c: number) => store.fx === null || store.fx.some((f) => f.currency === c && f.rate !== null);
+const nearest = (c: number) => !!store.fx?.some((f) => f.currency === c && f.rate !== null && f.nearest);
 </script>
 
 <template>
@@ -21,7 +23,7 @@ const nearest = (c: number) => store.fx.some((f) => f.currency === c && f.rate !
       <div v-for="c in FX_CURRENCIES" :key="c.key" class="flex items-center gap-3 rounded-lg px-2 py-2.5" :class="{ 'opacity-60': !hasRate(c.currency) }">
         <label :for="`${id}-${c.key}`" class="flex grow flex-col gap-0.5" :class="{ 'cursor-pointer': hasRate(c.currency) }">
           <span class="font-semibold">{{ $t(c.label) }}</span>
-          <span class="text-xs text-foreground-muted">
+          <span v-if="loaded" class="text-xs text-foreground-muted">
             {{
               !hasRate(c.currency)
                 ? $t('entities.currencyDisplay.noRate', { symbol: currencySymbol(c.currency) })

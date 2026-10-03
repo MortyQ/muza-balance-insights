@@ -29,11 +29,12 @@ function read(): CurrencyPrefs {
 
 /**
  * The home screen's «≈ $ / €» choice (the spending block, the now strip), remembered on this computer, and the rates
- * of the month the spending block shows — it publishes each answer's `fx`, so the switch knows which currency has one.
+ * of the month the spending block shows — it publishes each answer's `fx`, so the switch knows which currency has one
+ * (`null` until the first answer: not loaded yet, which is not «no exchanges»).
  */
 export const useCurrencyDisplayStore = defineStore('currency-display', () => {
   const prefs = ref<CurrencyPrefs>(read());
-  const fx = ref<ReadonlyArray<SpendingFx>>([]);
+  const fx = ref<ReadonlyArray<SpendingFx> | null>(null);
 
   function set(key: keyof CurrencyPrefs, value: boolean): void {
     prefs.value = { ...prefs.value, [key]: value };

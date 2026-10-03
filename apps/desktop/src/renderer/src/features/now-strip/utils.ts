@@ -1,12 +1,11 @@
 import type { CategoryId } from '@contract/categories.ts';
 import type { NowOverview } from '@contract/api.ts';
 import { convertInline, type CurrencyPrefs } from '@/entities/currency-display';
-import { change, formatMoney, monthShortName, shortDate, t } from '@/shared/lib';
+import { change, formatMoney, monthShortName, shortDate, t, UAH } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 import { COLORED, MIN_BAR } from './constants.ts';
 import type { NowStripView, TopCell, WeekBar } from './types.ts';
 
-const UAH = 980;
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 const money = (kopecks: number) => formatMoney(kopecks, UAH);
 // The contract's weekday is 1–7 by construction (main's isoWeekday).
