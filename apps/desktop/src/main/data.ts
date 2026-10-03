@@ -13,7 +13,7 @@ import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { labelPending } from './people.ts';
-import { comparePeriod, foldByCategory } from './spending.ts';
+import { comparePeriod, foldByCategory, monthBounds } from './spending.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
   CardTotal,
@@ -39,17 +39,6 @@ const UAH = 980;
 
 /** The currencies the spending block can add «≈» lines in. */
 const FX_CURRENCIES = [840, 978] as const;
-
-function pad2(n: number): string {
-  return String(n).padStart(2, '0');
-}
-
-/** `'2026-02'` → `{ from: '2026-02-01', to: '2026-02-28' }` (UTC calendar arithmetic, no timezone drift). */
-function monthBounds(month: string): { from: string; to: string } {
-  const [y, m] = month.split('-').map(Number) as [number, number];
-  const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { from: `${month}-01`, to: `${month}-${pad2(lastDay)}` };
-}
 
 /** `'2026-12'` → `'2027-01-01'`: the first day after the given month, UTC calendar arithmetic. */
 function nextMonthStart(month: string): string {
@@ -211,7 +200,8 @@ export class DataService {
 
     const participants = await listParticipants(db);
     const parts: Array<{ id: number; cur: Map<string, SpendingAmounts>; prev: Map<string, SpendingAmounts> | null }> = [];
-    if (q.participantId === undefined) {
+    // The split only means something with more than one person: the only one's part would be the whole.
+    if (q.participantId === undefined && participants.length > 1) {
       for (const p of participants) {
         parts.push({
           id: p.id,
@@ -258,7 +248,7 @@ export class DataService {
       month: q.month,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
       compare,
-      total: { ...total, netPerDay: coveredDays > 0 ? Math.round(total.net / coveredDays) : null, prev: prev ? sum(prev) : null },
+      total: { ...total, prev: prev ? sum(prev) : null },
       people,
       categories,
       fx,

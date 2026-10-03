@@ -2,20 +2,25 @@ import type { ComputedRef, Ref } from 'vue';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
 import type { Loadable, YearMonth } from '@/shared/lib';
 
-/** A change chip: the text and its tone; `arrow` — show the up / down arrow. */
+/** A change chip: the text and its tone; `arrow` — show the up / down arrow; `sr` — screen-reader-only direction ('' — the text says it). */
 export interface ChipView {
   text: string;
   tone: 'up' | 'down' | 'neutral';
   arrow: 'up' | 'down' | null;
+  sr: string;
   title?: string;
 }
 
-/** «38 операций» and its small difference («+2», «столько же», «новое»; empty — no comparison). */
+/**
+ * `home.spending.ops` and its small difference («+2», `home.spending.opsSame`, `home.spending.change.new`; empty — no
+ * comparison); `sr` — the direction for screen readers ('' — none).
+ */
 export interface OpsView {
   text: string;
   diff: string;
   tone: 'up' | 'down' | 'neutral';
   title: string;
+  sr: string;
 }
 
 export interface BarSegment {
@@ -89,6 +94,8 @@ export interface BlockPerson {
 
 export interface UseSpendingReturn {
   month: Readonly<Ref<YearMonth>>;
+  /** The current Kyiv month (the year of `compared` is shown when it differs). */
+  thisMonth: Readonly<Ref<YearMonth>>;
   scope: Ref<Scope>;
   state: Readonly<Ref<Loadable<SpendingOverview>>>;
   view: ComputedRef<SpendingOverview | null>;
@@ -126,8 +133,12 @@ export interface UseSpendingViewReturn {
   whoRows: ComputedRef<PersonRowView[]>;
   leftOut: ComputedRef<string[]>;
   noCompare: ComputedRef<string>;
+  /** `home.spending.compareFull` — the period compared with; '' — no comparison. */
+  compared: ComputedRef<string>;
   prevIn: ComputedRef<string>;
-  opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone'>>;
+  /** The period compared with while this month is in progress (the tooltip of `prevIn`); '' — the whole month. */
+  prevInTitle: ComputedRef<string>;
+  opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone' | 'sr'>>;
   /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
   memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
   onPick: (id: number | null) => void;

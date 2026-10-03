@@ -16,7 +16,7 @@ const { scope, state, view, periodNote, importing, family, open } = base;
 const prefsStore = useSpendingPrefsStore();
 const { prefs } = storeToRefs(prefsStore);
 const {
-  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, prevIn, opsVs, memberCard, onPick, onToggle,
+  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs, memberCard, onPick, onToggle,
 } = useSpendingView(base, prefs);
 </script>
 
@@ -41,16 +41,20 @@ const {
         <div class="flex w-full flex-col gap-3 @3xl:w-59 @3xl:shrink-0">
           <CategoryRing :stops="ring" :label="who || $t('home.spending.title')" :amount="money(total.net)" :per-day :chip :conv />
           <p v-if="noCompare" class="text-center text-xs text-foreground-muted">{{ noCompare }}</p>
+          <p v-else-if="compared" class="flex items-center justify-center gap-1.5 text-center text-xs font-medium text-foreground-secondary">
+            <VIcon icon="lucide:calendar-range" class="size-3.5 shrink-0" />
+            {{ compared }}
+          </p>
           <p v-for="l in leftOut" :key="l" class="text-center text-xs text-foreground-muted">{{ l }}</p>
           <div class="grid grid-cols-2 gap-3 border-t border-border-subtle pt-3.5">
             <div class="flex flex-col gap-0.5">
               <span class="text-xs text-foreground-muted">{{ $t('home.spending.operations') }}</span>
               <span class="flex items-baseline gap-1.5 whitespace-nowrap">
                 <span class="text-lg font-bold tabular-nums">{{ total.purchases }}</span>
-                <span class="text-xs font-bold tabular-nums" :class="OPS_TONE[opsVs.tone]">{{ opsVs.text }}</span>
+                <span class="text-xs font-bold tabular-nums" :class="OPS_TONE[opsVs.tone]">{{ opsVs.text }}<span v-if="opsVs.sr" class="sr-only"> {{ opsVs.sr }}</span></span>
               </span>
             </div>
-            <div v-if="total.prev" class="flex flex-col gap-0.5">
+            <div v-if="total.prev" class="flex flex-col gap-0.5" :title="prevInTitle || undefined">
               <span class="text-xs text-foreground-muted">{{ prevIn }}</span>
               <span class="whitespace-nowrap text-lg font-bold tabular-nums">{{ money(total.prev.net) }}</span>
             </div>

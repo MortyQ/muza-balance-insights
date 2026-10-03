@@ -6,7 +6,8 @@ import type { SpendingAmounts } from '../shared/api.ts';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-function bounds(month: string): { from: string; to: string } {
+/** `'2026-02'` → `{ from: '2026-02-01', to: '2026-02-28' }` (UTC calendar arithmetic, no timezone drift). */
+export function monthBounds(month: string): { from: string; to: string } {
   const [y, m] = month.split('-').map(Number) as [number, number];
   return { from: `${month}-01`, to: `${month}-${pad2(new Date(Date.UTC(y, m, 0)).getUTCDate())}` };
 }
@@ -26,7 +27,7 @@ export function comparePeriod(
   p: Pick<PeriodInfo, 'incomplete' | 'dataUntil'>,
   dataFrom: string | null,
 ): { from: string; to: string; partial: boolean } | null {
-  const prev = bounds(previous(month));
+  const prev = monthBounds(previous(month));
   if (dataFrom === null || dataFrom > prev.from) return null;
   if (p.incomplete && p.dataUntil !== null && p.dataUntil.slice(0, 7) === month) {
     const day = Math.min(Number(p.dataUntil.slice(8, 10)), Number(prev.to.slice(8, 10)));

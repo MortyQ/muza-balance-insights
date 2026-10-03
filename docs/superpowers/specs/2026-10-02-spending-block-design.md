@@ -29,6 +29,8 @@ to a future analytics block.
     - «Last month's mark» — a tick on each bar at last month's amount; default **on**;
   - «Also show in currency» (note «Totals stay in hryvnia»):
     - «Dollars $», «Euro €» — default **off** (see «Currencies»).
+  - A currency rated by the nearest exchange (none this month) says so under its switch: «At the rate of your nearest
+    exchange — none this month».
   - The choices are remembered on this computer (renderer `localStorage`, a convenience: when storage is unavailable
     the defaults apply). They are the same for the family and for one person.
 
@@ -40,6 +42,12 @@ Left column (≈236 px):
   «Whole family» (or the picked person's name), the amount, «N ₴ a day».
 - Under it, a chip comparing with last month: «14% more than in August» / «less» / «as in August» (difference under 3%).
   Orange arrow up for more, blue arrow down for less (blue/orange, not red/green).
+- Under the chip, the period compared with: a calendar icon and «Compared with: August» (the year when it is not the
+  current one), or the same days while the month is in progress: «Compared with: August 1–2». Not shown without a
+  comparison (the «No data for August to compare» line stands there). While partial, «In August» has the same text as
+  its tooltip.
+- Short differences («+1 090 ₴», «+9%», «+2») carry their sign, and screen readers also hear the direction («more than
+  in August», «less than by this day in August»); the chip under the ring says it in its own text.
 - With currencies on: under the amount, a line per currency «≈ 1 140 $ +11%» — the amount at this month's rate and the
   change in that currency (it can differ from the hryvnia change when the rate moved); the tooltip gives last month's
   amount and both rates.
@@ -59,7 +67,7 @@ Right column — **categories** (the same 7 + «N more categories»), each a `<b
   «38 operations +2» (the difference against last month in orange / blue; tooltip «In August — 36 operations»);
 - line 2: the bar (length = amount relative to the largest category; split by people when «Who spent how much» is on,
   otherwise in the category colour; the last month's tick when that switch is on) and the share «31%» to the right of it;
-- right columns: amount (with «≈ 359 $» lines under it when currencies are on) and the change chip («▲ 1 090 ₴»,
+- right columns: amount (with «≈ 359 $» lines under it when currencies are on) and the change chip («+1 090 ₴» with the arrow,
   «as in August», «new» when last month had none);
 - a chevron.
 - A click expands the category (one at a time; a second click folds it): a line per person who spent in it this or last
@@ -107,12 +115,13 @@ All amounts leave main as hryvnia kopecks; the renderer only converts for the «
 - **Currencies of accounts**: spending on foreign-currency accounts is folded into hryvnia by the month's rate of the
   user's own exchanges (`exchangeRates`, `toUah` — the same as the balance block). A currency without any rate stays out
   of the sums and is listed (`leftOut`).
-- **Per day** = total net / `coveredDays` (null when 0).
+- **Per day** = total net / `coveredDays` (not shown when 0), computed in the renderer.
 - **Last month** (`compare`): the previous calendar month. If this month is incomplete and `dataUntil` falls inside it,
   the previous month is cut to the same day (`1 … min(day, last day)`), `partial: true`. No comparison (`null`) when
   `dataFrom` is null or later than the previous period's start.
   - The previous period's numbers use that period's own rates.
-- **Family split** (family view only): for each participant, `spendingSummary` with `participantId`; a category's
+- **Family split** (family view with more than one participant; the only person gets no parts, so the bars keep the
+  category colour): for each participant, `spendingSummary` with `participantId`; a category's
   `people[i]` = that person's net / purchases in that category (and last month's). Only categories present in the
   family view are split; a person's total in the people list is the sum of their parts (so the people add up to the
   family's total). Participants are in `listParticipants` order; their colours come from the renderer's people store.
@@ -136,14 +145,14 @@ type SpendingPersonPart = SpendingAmounts & { participantId: number; prev: Spend
 type SpendingCategoryView = SpendingAmounts & {
   category: string; categoryId: CategoryId | null;
   prev: SpendingAmounts | null;
-  people: SpendingPersonPart[]; // family view only, else []
+  people: SpendingPersonPart[]; // family view with more than one participant, else []
 };
 type SpendingOverview = {
   month: string;
   period: { from; to; days; incomplete; dataUntil; coveredDays; pendingHolds };
   compare: { from: string; to: string; partial: boolean } | null;
-  total: SpendingAmounts & { netPerDay: number | null; prev: SpendingAmounts | null };
-  people: SpendingPersonPart[];          // family view only
+  total: SpendingAmounts & { prev: SpendingAmounts | null };
+  people: SpendingPersonPart[];          // family view with more than one participant, else []
   categories: SpendingCategoryView[];    // net desc
   fx: Array<{ currency: 840 | 978; rate: number | null; prevRate: number | null; nearest: boolean }>;
   leftOut: Array<{ currency: number; net: number }>;
@@ -157,7 +166,10 @@ No names, descriptions, card numbers or IBANs: categories, amounts, counts, ids 
 
 Categories have their own palette (`--category-1…7` in `theme.css`, both themes) by rank in the family's order, so a
 category never shares a colour with a person (people keep `--series-<key>`). People are saturated; categories are
-muted and take the hues between the people's. «N more categories» is grey. A picked person keeps the categories' colours.
+muted and take the hues between the people's. «N more categories» is grey (`--border-strong`). A picked person keeps the
+categories' colours; a category of theirs ranked below the family's top 7 is named in their list and takes
+`--category-other` (both themes): a low-chroma neutral, darker than the «N more categories» grey, so the two never look
+alike.
 
 ## Out of scope
 

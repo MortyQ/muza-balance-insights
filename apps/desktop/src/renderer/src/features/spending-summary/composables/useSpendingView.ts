@@ -2,12 +2,12 @@ import { computed, type Ref } from 'vue';
 import { monthName, t } from '@/shared/lib';
 import type { SpendingPrefs, UseSpendingReturn, UseSpendingViewReturn } from '../types.ts';
 import {
-  centerChip, centerConv, familyShareText, initial, leftOutLines, money, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
+  centerChip, centerConv, comparePeriodText, familyShareText, initial, leftOutLines, money, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
 } from '../utils.ts';
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
 export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
-  const { month, view, family, member, people, selected, pick, open } = base;
+  const { month, thisMonth, view, family, member, people, selected, pick, open } = base;
   /** The in-block pick counts in the family view only, and only for a person still in the view (one removed meanwhile → the family). */
   const blockPick = computed(() => {
     const id = pick.value;
@@ -39,8 +39,17 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
   const whoRows = computed(() => (view.value && family.value ? peopleRows(view.value, blockPick.value, people.value) : []));
   const leftOut = computed(() => (view.value ? leftOutLines(view.value) : []));
   const noCompare = computed(() => (view.value && !view.value.compare ? noCompareText(view.value.month) : ''));
+  const compared = computed(() => {
+    const c = view.value?.compare;
+    return c ? t('home.spending.compareFull', { period: comparePeriodText(c, Number(thisMonth.value.slice(0, 4))) }) : '';
+  });
   const prevIn = computed(() => (view.value ? prevInText(view.value.month) : ''));
-  const opsVsText = computed(() => (view.value && total.value ? opsVs(total.value.purchases, total.value.prev?.purchases ?? null, view.value.month) : { text: '', tone: 'neutral' as const }));
+  const prevInTitle = computed(() => (view.value?.compare?.partial ? compared.value : ''));
+  const opsVsText = computed(() => {
+    const v = view.value;
+    const tl = total.value;
+    return v && tl ? opsVs(tl.purchases, tl.prev?.purchases ?? null, v.month, v.compare?.partial ?? false) : { text: '', tone: 'neutral' as const, sr: '' };
+  });
   const memberCard = computed(() => {
     const v = view.value;
     const s = selected.value;
@@ -61,6 +70,6 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
   }
 
   return {
-    who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, prevIn, opsVs: opsVsText, memberCard, onPick, onToggle,
+    who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs: opsVsText, memberCard, onPick, onToggle,
   };
 }

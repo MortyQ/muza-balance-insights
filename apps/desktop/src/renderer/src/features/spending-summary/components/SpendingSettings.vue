@@ -10,6 +10,7 @@ const { prefs, family, fx } = defineProps<{ prefs: Readonly<SpendingPrefs>; fami
 const emit = defineEmits<{ set: [key: keyof SpendingPrefs, value: boolean] }>();
 const id = useId();
 const hasRate = (c: number) => fx.some((f) => f.currency === c && f.rate !== null);
+const nearest = (c: number) => fx.some((f) => f.currency === c && f.rate !== null && f.nearest);
 </script>
 
 <template>
@@ -37,7 +38,11 @@ const hasRate = (c: number) => fx.some((f) => f.currency === c && f.rate !== nul
         <label :for="`${id}-${c.key}`" class="flex grow flex-col gap-0.5" :class="{ 'cursor-pointer': hasRate(c.currency) }">
           <span class="font-semibold">{{ $t(c.label) }}</span>
           <span class="text-xs text-foreground-muted">
-            {{ hasRate(c.currency) ? $t('home.spending.settings.rateHint') : $t('home.spending.settings.noRate', { symbol: currencySymbol(c.currency) }) }}
+            {{
+              !hasRate(c.currency)
+                ? $t('home.spending.settings.noRate', { symbol: currencySymbol(c.currency) })
+                : nearest(c.currency) ? $t('home.spending.settings.nearestHint') : $t('home.spending.settings.rateHint')
+            }}
           </span>
         </label>
         <VSwitch

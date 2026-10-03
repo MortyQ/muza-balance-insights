@@ -3,8 +3,10 @@ import { describe, expect, it, vi } from 'vitest';
 import type { SpendingOverview } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import {
+  amountChip,
   centerChip,
   centerConv,
+  comparePeriodText,
   change,
   convertLines,
   familyShareText,
@@ -39,7 +41,7 @@ const VIEW: SpendingOverview = {
   month: '2026-09',
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-01', coveredDays: 30, pendingHolds: 0 },
   compare: { from: '2026-08-01', to: '2026-08-31', partial: false },
-  total: { net: 100_000, purchases: 20, netPerDay: 3_333, prev: { net: 80_000, purchases: 18 } },
+  total: { net: 100_000, purchases: 20, prev: { net: 80_000, purchases: 18 } },
   people: [part(1, 60_000, 12, { net: 50_000, purchases: 10 }), part(2, 40_000, 8, { net: 30_000, purchases: 8 })],
   categories: [
     cat('продукты', 'groceries', 50_000, 10, 40_000, [part(1, 30_000, 6, { net: 25_000, purchases: 5 }), part(2, 20_000, 4, { net: 15_000, purchases: 4 })]),
@@ -77,9 +79,18 @@ describe('change', () => {
     for (const text of texts) expect(text).not.toMatch(/[-−]/);
   });
 
+  it('amountChip: the difference with its sign («+» / «−») and the direction for screen readers', () => {
+    expect(amountChip(110_000, 100_000, '2026-09')).toEqual({ text: `+${uah(10_000)}`, tone: 'up', arrow: 'up', sr: 'больше, чем в августе' });
+    expect(amountChip(80_000, 100_000, '2026-09')).toEqual({ text: `−${uah(20_000)}`, tone: 'down', arrow: 'down', sr: 'меньше, чем в августе' });
+    expect(amountChip(80_000, 100_000, '2026-09', true)!.sr).toBe('меньше, чем к этому дню в августе');
+    // the text already says it: no screen-reader extra
+    expect(amountChip(101, 100, '2026-09')).toMatchObject({ text: 'как в августе', sr: '' });
+    expect(centerChip(114, 100, '2026-09', false)!.sr).toBe('');
+  });
+
   it('pctChip: «+10%» / «−20%» without an arrow, same, new', () => {
-    expect(pctChip(110, 100, '2026-09')).toEqual({ text: '+10%', tone: 'up', arrow: null });
-    expect(pctChip(80, 100, '2026-09')).toEqual({ text: '−20%', tone: 'down', arrow: null });
+    expect(pctChip(110, 100, '2026-09')).toEqual({ text: '+10%', tone: 'up', arrow: null, sr: 'больше, чем в августе' });
+    expect(pctChip(80, 100, '2026-09', true)).toEqual({ text: '−20%', tone: 'down', arrow: null, sr: 'меньше, чем к этому дню в августе' });
     expect(pctChip(101, 100, '2026-09')).toMatchObject({ text: 'как в августе', tone: 'neutral' });
     expect(pctChip(5, 0, '2026-09')).toMatchObject({ text: 'новое' });
     expect(pctChip(5, null, '2026-09')).toBeNull();
@@ -96,11 +107,12 @@ describe('opsView', () => {
   });
 
   it('opsVs: «+2 к авг» under the ring; neutral differences as they are', () => {
-    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up' });
-    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down' });
-    expect(opsVs(5, 5, '2026-09')).toEqual({ text: 'столько же', tone: 'neutral' });
-    expect(opsVs(2, 0, '2026-09')).toEqual({ text: 'новое', tone: 'neutral' });
-    expect(opsVs(2, null, '2026-09')).toEqual({ text: '', tone: 'neutral' });
+    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up', sr: 'больше, чем в августе' });
+    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down', sr: 'меньше, чем в декабре' });
+    expect(opsVs(5, 5, '2026-09')).toEqual({ text: 'столько же', tone: 'neutral', sr: '' });
+    expect(opsVs(2, 0, '2026-09')).toEqual({ text: 'новое', tone: 'neutral', sr: '' });
+    expect(opsVs(2, null, '2026-09')).toEqual({ text: '', tone: 'neutral', sr: '' });
+    expect(opsView(38, 36, '2026-09', true).sr).toBe('больше, чем к этому дню в августе');
   });
 });
 
@@ -115,7 +127,7 @@ describe('rowsFor', () => {
     expect(rows[0]!.name).toBe('Продукты');
     expect(rows[0]!.icon).toBe('lucide:shopping-cart');
     expect(rows[0]!.segments.map((s) => [s.value, s.color])).toEqual([[30_000, 'var(--series-blue)'], [20_000, 'var(--series-orange)']]);
-    expect(rows[0]!.chip).toMatchObject({ tone: 'up', arrow: 'up', text: uah(10_000) });
+    expect(rows[0]!.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `+${uah(10_000)}` });
     expect(rows[1]!.chip).toMatchObject({ tone: 'neutral', arrow: null, text: 'как в августе' });
     expect(rows[2]!.chip).toMatchObject({ text: 'новое' });
     expect(rows[0]!.people.map((p) => p.name)).toEqual(['Сергей', 'Аня']);
@@ -136,7 +148,7 @@ describe('rowsFor', () => {
     // the mark is the pick's own last month on the same scale (it lines up with the bright segment from 0)
     expect(rows[0]!.mark).toBe(30);
     expect(rows[1]).toMatchObject({ mark: null, markTitle: '' }); // last month 0
-    expect(rows[0]!.chip).toMatchObject({ tone: 'up', text: uah(5_000) });
+    expect(rows[0]!.chip).toMatchObject({ tone: 'up', text: `+${uah(5_000)}` });
     expect(rows[0]!.people.find((p) => p.participantId === 1)!.faded).toBe(true);
     // colours stay those of the family's rank
     expect(rows[1]!.color).toBe('var(--category-3)');
@@ -181,6 +193,31 @@ describe('rowsFor', () => {
     expect(row!.ops.diff).toBe('');
   });
 
+  it('the only person (no parts from main): split on, the bar keeps the category colour', () => {
+    const solo: SpendingOverview = { ...VIEW, people: [], categories: VIEW.categories.map((c) => ({ ...c, people: [] })) };
+    const rows = rowsFor(solo, null, [P[0]!], PREFS);
+    expect(rows.map((r) => r.segments)).toEqual([
+      [{ value: 1, color: 'var(--category-1)', title: '' }],
+      [{ value: 1, color: 'var(--category-2)', title: '' }],
+      [{ value: 1, color: 'var(--category-3)', title: '' }],
+    ]);
+    expect(rows.every((r) => r.people.length === 0)).toBe(true);
+  });
+
+  it('a person line never gets a negative width (refunds only this month)', () => {
+    const view: SpendingOverview = { ...VIEW, categories: [cat('продукты', 'groceries', 10_000, 2, 5_000, [part(1, 12_000, 2, { net: 3_000, purchases: 1 }), part(2, -2_000, 0, { net: 2_000, purchases: 1 })])] };
+    const [row] = rowsFor(view, null, P, PREFS);
+    expect(row!.people.map((p) => p.width)).toEqual([100, 0]);
+  });
+
+  it('a picked person: a named category below the family\'s top 7 gets its own muted colour, not the rest-grey', () => {
+    const people = (i: number) => (i === 8 ? [part(1, 0, 0, null), part(2, 500, 1, null)] : [part(1, 1_000 * (9 - i), 1, null), part(2, 0, 0, null)]);
+    const many: SpendingOverview = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null, people(i))) };
+    const [row] = rowsFor(many, 2, P, { ...PREFS, split: false });
+    expect(row).toMatchObject({ key: 'c8', color: 'var(--category-other)' });
+    expect(row!.color).not.toBe('var(--border-strong)');
+  });
+
   it('more than seven categories → the top seven and «N more categories»', () => {
     const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null)) };
     const rows = rowsFor(many, null, P, PREFS);
@@ -194,10 +231,10 @@ describe('rowsFor', () => {
     const people = (net: number) => [part(1, net, 1, { net: 100, purchases: 1 }), part(2, 0, 0, { net: 0, purchases: 0 })];
     const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, 500, people(1_000 * (9 - i)))) };
     const rest = rowsFor(many, null, P, PREFS)[7]!;
-    expect(rest.chip).toMatchObject({ tone: 'up', text: uah(2_000) }); // 3 000 against 500 + 500
+    expect(rest.chip).toMatchObject({ tone: 'up', text: `+${uah(2_000)}` }); // 3 000 against 500 + 500
     expect(rest.ops).toMatchObject({ text: '2 операции', diff: 'новое' }); // last month 0 + 0 purchases
     expect(rest.segments.map((s) => [s.value, s.color])).toEqual([[3_000, 'var(--series-blue)']]);
-    expect(rest.people.map((p) => [p.participantId, p.amount, p.chip?.text])).toEqual([[1, uah(3_000), uah(2_800)]]);
+    expect(rest.people.map((p) => [p.participantId, p.amount, p.chip?.text])).toEqual([[1, uah(3_000), `+${uah(2_800)}`]]);
   });
 });
 
@@ -231,10 +268,10 @@ describe('totalFor / shareOf / ringStops / convertLines', () => {
     // 41 000 kop at 41 and 40 000 kop at 40 are both 10 $: no change in dollars
     expect(centerConv(41_000, 40_000, VIEW, usd)).toEqual([{
       text: `≈ ${formatMoney(1_000, 840)}`,
-      chip: { text: 'как в августе', tone: 'neutral', arrow: null },
+      chip: { text: 'как в августе', tone: 'neutral', arrow: null, sr: '' },
       title: `В августе ≈ ${formatMoney(1_000, 840)} (курс 40,00 ₴, сейчас 41,00 ₴)`,
     }]);
-    expect(centerConv(82_000, 40_000, VIEW, usd)[0]!.chip).toEqual({ text: '+100%', tone: 'up', arrow: null });
+    expect(centerConv(82_000, 40_000, VIEW, usd)[0]!.chip).toEqual({ text: '+100%', tone: 'up', arrow: null, sr: 'больше, чем в августе' });
     expect(centerConv(82_000, null, VIEW, usd)[0]).toMatchObject({ chip: null, title: '' });
     expect(centerConv(82_000, 40_000, VIEW, PREFS)).toEqual([]);
   });
@@ -249,7 +286,7 @@ describe('peopleRows', () => {
     const rows = peopleRows(VIEW, null, P);
     expect(rows[0]).toEqual({
       participantId: null, name: 'Вся семья', initial: '', color: '', dots: ['var(--series-blue)', 'var(--series-orange)'],
-      caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: '+25%', tone: 'up', arrow: null }, pressed: true,
+      caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: '+25%', tone: 'up', arrow: null, sr: 'больше, чем в августе' }, pressed: true,
     });
     expect(rows.slice(1).map((r) => [r.participantId, r.name, r.initial, r.color, r.caption, r.amount, r.chip?.text, r.pressed])).toEqual([
       [1, 'Сергей', 'С', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), '+20%', false],
@@ -267,6 +304,13 @@ describe('texts under the ring', () => {
     expect(leftOutLines(VIEW)).toEqual([]);
     expect(familyShareText(46_000, 100_000)).toBe('46% трат семьи');
     expect(familyShareText(46_000, 0)).toBe('0% трат семьи');
+  });
+
+  it('the period compared with: the month (with the year when not this one), or its days while partial', () => {
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-31', partial: false }, 2026)).toBe('август');
+    expect(comparePeriodText({ from: '2025-12-01', to: '2025-12-31', partial: false }, 2026)).toBe('декабрь 2025');
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-02', partial: true }, 2026)).toBe('1–2 августа');
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-01', partial: true }, 2026)).toBe('1 августа');
   });
 });
 

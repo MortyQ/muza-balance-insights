@@ -18,5 +18,6 @@ const TONE = {
   >
     <VIcon v-if="chip.arrow" :icon="chip.arrow === 'up' ? 'lucide:arrow-up-right' : 'lucide:arrow-down-right'" class="size-3" />
     {{ chip.text }}
+    <span v-if="chip.sr" class="sr-only">{{ chip.sr }}</span>
   </span>
 </template>

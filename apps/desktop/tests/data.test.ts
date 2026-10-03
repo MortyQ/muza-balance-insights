@@ -346,7 +346,7 @@ describe('DataService: one participant or the whole family', () => {
 describe('DataService.spendingOverview', () => {
   const sale = (date: string, uah: number, usd: number) => tx('uah', date, uah, 'свои переводы', { rule: 'pair_fx', op: { currency: 840, amount: -usd } });
 
-  it('one month: categories folded into hryvnia by own exchanges, purchases, net-sorted, per day, fx', async () => {
+  it('one month: categories folded into hryvnia by own exchanges, purchases, net-sorted, fx', async () => {
     await account('uah', 'black', 980, 100_000);
     await account('usd', 'black', 840, 5_000);
     await synced('uah');
@@ -365,7 +365,7 @@ describe('DataService.spendingOverview', () => {
       { category: 'кафе и рестораны', categoryId: 'cafes', net: 40_000, purchases: 1 },
       { category: 'продукты', categoryId: 'groceries', net: 40_000, purchases: 2 },
     ]);
-    expect(v.total).toMatchObject({ net: 121_000, purchases: 4, netPerDay: Math.round(121_000 / 28) });
+    expect(v.total).toEqual({ net: 121_000, purchases: 4, prev: { net: 0, purchases: 0 } });
     expect(v.fx).toEqual([
       { currency: 840, rate: 41, prevRate: 41, nearest: false }, // January had no exchange: the nearest one
       { currency: 978, rate: null, prevRate: null, nearest: false },

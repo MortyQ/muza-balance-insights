@@ -19,7 +19,7 @@ export function useSpending(): UseSpendingReturn {
   const syncStatus = useSyncStatusStore();
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
-  const { month } = storeToRefs(useMonthStore());
+  const { month, thisMonth } = storeToRefs(useMonthStore());
   const scope = ref<Scope>('personal');
   const pick = ref<number | null>(null);
   const open = ref<string | null>(null);
@@ -46,6 +46,7 @@ export function useSpending(): UseSpendingReturn {
 
   return {
     month,
+    thisMonth,
     scope,
     state,
     view,

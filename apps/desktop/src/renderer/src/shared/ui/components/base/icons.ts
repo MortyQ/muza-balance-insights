@@ -6,6 +6,7 @@ import LucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import LucideBanknote from "~icons/lucide/banknote";
 import LucideBus from "~icons/lucide/bus";
 import LucideCalendar from "~icons/lucide/calendar";
+import LucideCalendarRange from "~icons/lucide/calendar-range";
 import LucideCheck from "~icons/lucide/check";
 import LucideChevronDown from "~icons/lucide/chevron-down";
 import LucideChevronLeft from "~icons/lucide/chevron-left";
@@ -84,6 +85,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:banknote": LucideBanknote,
   "lucide:bus": LucideBus,
   "lucide:calendar": LucideCalendar,
+  "lucide:calendar-range": LucideCalendarRange,
   "lucide:check": LucideCheck,
   // Lucide renamed check-circle; the key keeps the name VProgressBar (copied as is) uses.
   "lucide:check-circle": LucideCircleCheckBig,

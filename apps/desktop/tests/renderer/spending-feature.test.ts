@@ -22,7 +22,7 @@ const VIEW: SpendingOverview = {
   month: '2026-09',
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-01', coveredDays: 30, pendingHolds: 0 },
   compare: { from: '2026-08-01', to: '2026-08-31', partial: false },
-  total: { net: 50_000, purchases: 10, netPerDay: 1_667, prev: { net: 45_000, purchases: 9 } },
+  total: { net: 50_000, purchases: 10, prev: { net: 45_000, purchases: 9 } },
   people: [part(1, 30_000, 6, { net: 25_000, purchases: 5 }), part(2, 20_000, 4, { net: 15_000, purchases: 3 }), part(3, 0, 0, { net: 5_000, purchases: 1 })],
   categories: [
     {
@@ -38,7 +38,7 @@ const VIEW: SpendingOverview = {
 // The family view with nothing spent this month.
 const EMPTY: SpendingOverview = {
   ...VIEW,
-  total: { net: 0, purchases: 0, netPerDay: 0, prev: VIEW.total.prev },
+  total: { net: 0, purchases: 0, prev: VIEW.total.prev },
   people: VIEW.people.map((p) => ({ ...p, net: 0, purchases: 0 })),
   categories: VIEW.categories.map((c) => ({ ...c, net: 0, purchases: 0, people: c.people.map((p) => ({ ...p, net: 0, purchases: 0 })) })),
 };
@@ -222,5 +222,68 @@ describe('spending block: a month change', () => {
     await flushPromises();
 
     expect(person(w, 'Вся семья')?.attributes('aria-pressed')).toBe('true');
+  });
+});
+
+describe('spending block: the only person in the app', () => {
+  it('the bars keep the category colour (split on), no people list, no «who spent how much» switch', async () => {
+    // Main sends no parts for the only person; a view that still had one is guarded in the renderer as well.
+    current = { ...VIEW, people: [VIEW.people[0]!], categories: VIEW.categories.map((c) => ({ ...c, people: [c.people[0]!] })) };
+    const { useParticipantStore } = await import('@/entities/participant');
+    const w = await mountBlock(document.body);
+    useParticipantStore().view = { ...PEOPLE, people: [PEOPLE.people[0]!] };
+    await flushPromises();
+
+    expect(w.findComponent(PeopleList).exists()).toBe(false);
+    expect(category(w)).toHaveLength(0);
+    const segments = w.findAll('[title]').filter((e) => (e.attributes('style') ?? '').includes('--s:'));
+    expect(segments.length).toBeGreaterThan(0);
+    for (const seg of segments) expect(seg.attributes('style')).toContain('--s: var(--category-1)');
+
+    document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
+    await flushPromises();
+    expect(document.body.textContent).not.toContain('Кто сколько потратил');
+    w.unmount();
+  });
+});
+
+describe('spending block: the compared period and screen readers', () => {
+  it('names the period compared with under the ring; while partial — its days, also as the tooltip of «В августе»', async () => {
+    const w = await mountBlock();
+    expect(w.text()).toContain('Сравнение с: август');
+
+    current = { ...VIEW, compare: { from: '2026-08-01', to: '2026-08-02', partial: true } };
+    const { useSyncStatusStore } = await import('@/entities/sync-status');
+    useSyncStatusStore().version++;
+    await flushPromises();
+    expect(w.text()).toContain('Сравнение с: 1–2 августа');
+    expect(w.find('[title="Сравнение с: 1–2 августа"]').text()).toContain('В августе');
+  });
+
+  it('no comparison: the no-data text, no compared line', async () => {
+    current = { ...VIEW, compare: null, total: { ...VIEW.total, prev: null } };
+    const w = await mountBlock();
+    expect(w.text()).toContain('В августе нет данных для сравнения');
+    expect(w.text()).not.toContain('Сравнение с');
+  });
+
+  it('change chips and operation differences carry the direction for screen readers', async () => {
+    const w = await mountBlock();
+    const row = category(w)[0]!;
+    const sr = row.findAll('.sr-only').map((e) => e.text());
+    // the amount chip (+50 ₴ against 45 000 → up) and the operations difference (+1)
+    expect(sr).toEqual(['больше, чем в августе', 'больше, чем в августе']);
+    expect(row.text()).toContain(`+${formatMoney(5_000, 980)}`);
+    expect(person(w, 'Сергей')!.find('.sr-only').text()).toBe('больше, чем в августе');
+  });
+
+  it('the settings menu: a currency rated only by the nearest exchange says so', async () => {
+    current = { ...VIEW, fx: [{ currency: 840, rate: 41, prevRate: 40, nearest: true }, VIEW.fx[1]!] };
+    const w = await mountBlock(document.body);
+    document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
+    await flushPromises();
+    expect(document.body.textContent).toContain('По курсу твоего ближайшего обмена — в этом месяце обменов не было');
+    expect(document.body.textContent).not.toContain('По курсу твоих обменов за месяц');
+    w.unmount();
   });
 });

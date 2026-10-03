@@ -27,7 +27,7 @@ const panelId = useId();
           <span class="min-w-0 truncate font-semibold" :title="row.name">{{ row.name }}</span>
           <span class="inline-flex shrink-0 items-baseline gap-1.5 whitespace-nowrap text-xs tabular-nums" :title="row.ops.title">
             <span class="text-foreground-muted">{{ row.ops.text }}</span>
-            <span v-if="row.ops.diff" class="font-bold" :class="OPS_TONE[row.ops.tone]">{{ row.ops.diff }}</span>
+            <span v-if="row.ops.diff" class="font-bold" :class="OPS_TONE[row.ops.tone]">{{ row.ops.diff }}<span v-if="row.ops.sr" class="sr-only"> {{ row.ops.sr }}</span></span>
           </span>
         </span>
         <span class="flex items-center gap-2.5">
@@ -61,7 +61,7 @@ const panelId = useId();
           <span v-if="p.mark !== null" class="absolute -top-1 left-(--m) -ms-px h-4 w-0.5 rounded-sm bg-foreground" :style="{ '--m': `${p.mark}%` }" :title="p.markTitle" />
         </span>
         <span class="w-18 shrink-0 whitespace-nowrap text-right text-xs text-foreground-muted tabular-nums" :title="p.ops.title">
-          {{ p.ops.text }} <span v-if="p.ops.diff" class="font-bold" :class="OPS_TONE[p.ops.tone]">{{ p.ops.diff }}</span>
+          {{ p.ops.text }} <span v-if="p.ops.diff" class="font-bold" :class="OPS_TONE[p.ops.tone]">{{ p.ops.diff }}<span v-if="p.ops.sr" class="sr-only"> {{ p.ops.sr }}</span></span>
         </span>
         <span class="flex w-22 shrink-0 flex-col items-end gap-px">
           <span class="whitespace-nowrap font-bold tabular-nums">{{ p.amount }}</span>

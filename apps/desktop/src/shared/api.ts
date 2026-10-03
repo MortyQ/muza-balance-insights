@@ -206,7 +206,7 @@ export type SpendingCategoryView = SpendingAmounts & {
   category: string;
   categoryId: CategoryId | null;
   prev: SpendingAmounts | null;
-  /** The family view only (no participantId): each participant's part, in listParticipants order; else []. */
+  /** The family view only (no participantId, more than one participant): each participant's part, in listParticipants order; else []. */
   people: SpendingPersonPart[];
 };
 
@@ -228,9 +228,9 @@ export type SpendingOverview = {
   };
   /** The period compared with: last month, cut to the same day while this one is incomplete; null — not covered. */
   compare: { from: string; to: string; partial: boolean } | null;
-  total: SpendingAmounts & { netPerDay: number | null; prev: SpendingAmounts | null };
+  total: SpendingAmounts & { prev: SpendingAmounts | null };
   /**
-   * Family view only: each participant's sum over the family's categories (they add up to `total`). With
+   * Family view only (more than one participant): each participant's sum over the family's categories (they add up to `total`). With
    * foreign-currency spending they may differ from it by a few kopecks: each group is rounded on its own.
    */
   people: SpendingPersonPart[];

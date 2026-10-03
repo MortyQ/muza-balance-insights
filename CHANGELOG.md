@@ -12,8 +12,12 @@ English interface.
   with the same days of last month.
 - For the whole family the block shows who spent how much: click a person to see their part of the family's spending,
   or click a category to see each person's amount and operations in it.
-- The gear in the block's corner chooses what the bars show — split by people, a mark at last month's amount — and can
-  add amounts in dollars or euros next to the hryvnia ones, at the rate of your own exchanges. Totals stay in hryvnia.
+- Under the ring the block names what it compares with: last month, or its first days while this month is in progress.
+- The «Block settings» gear in the block's corner chooses what the bars show — «Who spent how much» and «Last month's
+  mark» — and with «Dollars $» and «Euro €» adds amounts in dollars or euros next to the hryvnia ones, at the rate of
+  your own exchanges. Totals stay in hryvnia.
+- Whether an amount went up or down against last month no longer rests on colour alone: differences carry a «+» or
+  «−» sign, and screen readers say the direction.
 - Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
   table per currency.
 

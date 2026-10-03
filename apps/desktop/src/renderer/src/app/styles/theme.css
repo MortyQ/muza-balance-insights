@@ -261,6 +261,8 @@
     --category-5: oklch(52% 0.07 265);
     --category-6: oklch(60% 0.08 185);
     --category-7: oklch(58% 0.08 10);
+    /* A named category below the top 7 (a picked person's): low-chroma, darker than the «N more categories» grey (--border-strong) */
+    --category-other: oklch(62% 0.025 250);
     --border-focus:  oklch(52% 0.27 280);
 
     --overlay: oklch(0% 0 0 / 0.5);
@@ -368,6 +370,7 @@
     --category-5: oklch(62% 0.08 265);
     --category-6: oklch(68% 0.08 185);
     --category-7: oklch(67% 0.08 10);
+    --category-other: oklch(60% 0.025 250);
     --border-focus:  oklch(65% 0.25 280);
 
     --overlay: oklch(0% 0 0 / 0.65);
