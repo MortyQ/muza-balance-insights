@@ -38,13 +38,14 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
         <CategorySummary :summary />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
-      <div class="flex flex-wrap gap-4">
-        <VCard v-if="months" padding="md" class="min-w-0 flex-[3_1_34rem]"><MonthsChart :months /></VCard>
-        <VCard v-if="people.length > 1" padding="md" class="min-w-0 flex-[2_1_20rem]"><WhoSpent :people /></VCard>
+      <!-- Side by side from the container's @3xl (the content column is at most 52rem), stacked below it. -->
+      <div class="grid items-start gap-4" :class="{ '@3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]': people.length > 1 }">
+        <VCard v-if="months" padding="md" class="min-w-0"><MonthsChart :months /></VCard>
+        <VCard v-if="people.length > 1" padding="md" class="min-w-0"><WhoSpent :people /></VCard>
       </div>
-      <div v-if="view.lines.length > 0" class="flex flex-wrap gap-4">
-        <VCard padding="md" class="min-w-0 flex-[1_1_22rem]"><MerchantList :merchants :more="moreMerchants" @pick="pickMerchant" /></VCard>
-        <VCard v-if="when" padding="md" class="min-w-0 flex-[2_1_30rem]"><WhenCharts :when /></VCard>
+      <div v-if="view.lines.length > 0" class="grid items-start gap-4 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+        <VCard padding="md" class="min-w-0"><MerchantList :merchants :more="moreMerchants" @pick="pickMerchant" /></VCard>
+        <VCard v-if="when" padding="md" class="min-w-0"><WhenCharts :when /></VCard>
       </div>
       <VCard v-if="view.lines.length > 0" padding="md">
         <TransactionList v-model:query="query" v-model:sort="sort" :rows :total :merchant-name="merchantName" @clear="merchant = null" />

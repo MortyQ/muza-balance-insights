@@ -20,10 +20,12 @@ const emit = defineEmits<{ pick: [key: string] }>();
       :class="m.pressed ? 'bg-primary-subtle ring-[1.5px] ring-primary' : 'hover:bg-surface-hover'"
       @click="emit('pick', m.key)"
     >
-      <span class="flex w-full items-baseline gap-2.5">
-        <span class="min-w-0 grow truncate font-semibold" :title="m.name">{{ m.name }}</span>
-        <span class="shrink-0 text-xs text-foreground-muted">{{ m.caption }}</span>
-        <span class="w-24 shrink-0 text-right font-bold tabular-nums">{{ m.amount }}</span>
+      <span class="flex w-full items-center gap-2.5">
+        <span class="flex min-w-0 grow flex-col">
+          <span class="truncate font-semibold" :title="m.name">{{ m.name }}</span>
+          <span class="truncate text-xs text-foreground-muted">{{ m.caption }}</span>
+        </span>
+        <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ m.amount }}</span>
       </span>
       <span class="block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
         <span class="block h-full w-(--w) rounded-full bg-(--cat)" :style="{ '--w': `${m.width}%` }" />

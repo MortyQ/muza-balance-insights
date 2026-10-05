@@ -11,7 +11,7 @@ const { when } = defineProps<{ when: WhenView }>();
       <span v-if="when.peak" class="text-xs text-foreground-secondary">{{ when.peak }}</span>
     </div>
     <div class="flex flex-wrap gap-6">
-      <div class="flex min-w-52 flex-1 flex-col gap-2">
+      <div class="flex min-w-40 flex-1 flex-col gap-2">
         <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('category.when.weekdays') }}</h3>
         <div class="flex h-24 items-end gap-1.5">
           <span v-for="b in when.weekdays" :key="b.key" class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" :title="b.title">
@@ -21,14 +21,14 @@ const { when } = defineProps<{ when: WhenView }>();
           </span>
         </div>
       </div>
-      <div class="flex min-w-60 flex-1 flex-col gap-2">
+      <div class="flex min-w-56 flex-1 flex-col gap-2">
         <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('category.when.dayParts') }}</h3>
         <div v-for="p in when.dayParts" :key="p.label" class="flex items-center gap-2.5">
-          <span class="w-24 shrink-0 text-xs text-foreground-secondary">{{ p.label }}</span>
+          <span class="w-20 shrink-0 text-xs text-foreground-secondary">{{ p.label }}</span>
           <span class="h-2 grow overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
             <span class="block h-full w-(--w) rounded-full" :class="p.strong ? 'bg-(--cat)' : 'bg-surface-active'" :style="{ '--w': `${p.width}%` }" />
           </span>
-          <span class="w-20 shrink-0 text-right text-xs font-bold tabular-nums">{{ p.amount }}</span>
+          <span class="shrink-0 whitespace-nowrap text-right text-xs font-bold tabular-nums">{{ p.amount }}</span>
         </div>
       </div>
     </div>
