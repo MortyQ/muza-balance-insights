@@ -94,7 +94,7 @@ function perDay(amount: number, info: PeriodInfo): number | null {
  * participantId: the view of one participant — only their accounts, and a family transfer counts (spending of the
  * sender, income of the receiver). Absent: the whole family — family transfers are excluded like internal ones.
  */
-type Filters = { scope?: Scope; accountId?: string; participantId?: number };
+export type Filters = { scope?: Scope; accountId?: string; participantId?: number };
 
 /** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant if one is asked for. */
 function accountWhere(f: Filters, where: string[], args: Array<string | number>): void {
@@ -116,9 +116,9 @@ const excludedTransferSql = (f: Filters) =>
 const CATEGORY_SQL = 'COALESCE(x.value, t.category)';
 
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
-type SpendingFilters = Filters & { operationCurrency?: number };
+export type SpendingFilters = Filters & { operationCurrency?: number };
 
-function validateFilters(f: Filters): void {
+export function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
   if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
 }
@@ -198,6 +198,52 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
   day: bucketKeySql('time'),
 };
 
+/** Lines that count as spending: not «поступления» / «свои переводы», not zero. Arguments: SPENDING_LINE_ARGS. */
+export const SPENDING_LINE_SQL = 'category NOT IN (?, ?) AND amount <> 0';
+export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.ownTransfers];
+
+/**
+ * `WITH … base, lines` of a spending query — the one place the line rules live (spendingSummary, categoryLines):
+ * - a row with commission_rate > 0 (amount < 0) is split: the body (`kind` body, amount + commission) keeps its
+ *   category, the commission is a separate «комиссии банка» line (`kind` commission, no operation currency);
+ * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays;
+ * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
+ * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount. The caller keeps
+ * SPENDING_LINE_SQL. With `unit`, the CTE `buckets` of the period's days or months is there too (bucketKeySql).
+ */
+export async function spendingLinesSql(
+  db: Db,
+  q: Period & SpendingFilters,
+  unit: 'day' | 'month' | null = null,
+): Promise<{ sql: string; args: Array<string | number> }> {
+  const where = ['t.is_cancelled = 0', periodSql('t')];
+  const args: Array<string | number> = [...periodArgs(q)];
+  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
+  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
+  if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
+  accountWhere(q, where, args);
+  return {
+    sql: `WITH ${CROSSING_CTE},${unit ? ` ${BUCKETS_CTE},` : ''}
+          base AS (
+            SELECT t.id, a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
+                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
+                   COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
+                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
+            FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
+            WHERE ${where.join(' AND ')}
+          ),
+          lines AS (
+            -- body: account-currency amount without the commission; the operation amount never includes it
+            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount
+            FROM base WHERE internal = 0
+            UNION ALL
+            -- commission: account currency only, no operation currency
+            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
+          )`,
+    args: [await crossingCategories(db, q), ...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees],
+  };
+}
+
 /**
  * Spending for the days [from, to] of the period's zone (by `time`):
  * - a row with commission_rate > 0 (amount < 0) is split: body = amount + commission keeps its category,
@@ -214,36 +260,15 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', periodSql('t')];
-  const args: Array<string | number> = [...periodArgs(q)];
-  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
-  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
-  if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
-  accountWhere(q, where, args);
-  const outer = ['category NOT IN (?, ?)', 'amount <> 0'];
-  const outerArgs: string[] = [CATEGORY.income, CATEGORY.ownTransfers];
+  const outer = [SPENDING_LINE_SQL];
+  const outerArgs: string[] = [...SPENDING_LINE_ARGS];
   if (q.category) (outer.push('category = ?'), outerArgs.push(q.category));
 
   // Day and month keys come from the zone's own day starts (periods.ts): SQLite knows no time zones.
   const unit = groupBy === 'day' ? 'day' : groupBy === 'month' ? 'month' : null;
+  const from = await spendingLinesSql(db, q, unit);
   const rs = await db.execute({
-    sql: `WITH ${CROSSING_CTE},${unit ? ` ${BUCKETS_CTE},` : ''}
-          base AS (
-            SELECT a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
-                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
-                   COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
-                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
-            FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
-            WHERE ${where.join(' AND ')}
-          ),
-          lines AS (
-            -- body: account-currency amount without the commission; the operation amount never includes it
-            SELECT currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount
-            FROM base WHERE internal = 0
-            UNION ALL
-            -- commission: account currency only, no operation currency
-            SELECT currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
-          )
+    sql: `${from.sql}
           SELECT currency, ${KEY_SQL[groupBy]} AS k, COUNT(*) AS lines,
                  SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
                  SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
@@ -255,7 +280,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
           WHERE ${outer.join(' AND ')}
           GROUP BY currency, k
           ORDER BY currency, gross DESC, k`,
-    args: [await crossingCategories(db, q), ...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees, ...outerArgs],
+    args: [...from.args, ...outerArgs],
   });
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;

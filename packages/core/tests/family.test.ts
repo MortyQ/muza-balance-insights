@@ -2,6 +2,7 @@
 // family) for the receiver when one person is viewed; excluded when the whole family is viewed. Fictional data only.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
+import { categoryLines } from '../src/category-lines.ts';
 import { rederiveCore } from '../src/rederive.ts';
 import { incomeSummary, spendingSummary } from '../src/summaries.ts';
 import { detectTransfers, type TransferAccount, type TransferTx } from '../src/transfers.ts';
@@ -83,5 +84,11 @@ describe('family in the database and the aggregates', () => {
     expect((await incomeSummary(db, q, NOW)).groups).toEqual([]);
     expect((await incomeSummary(db, { ...q, participantId: her }, NOW)).groups.map((g) => [g.key, g.total])).toEqual([['family', 100_000]]);
     expect((await incomeSummary(db, { ...q, participantId: me }, NOW)).groups).toEqual([]);
+  });
+
+  it('categoryLines: «семье» is the sender\'s line in their view, none for the whole family; each line names its person', async () => {
+    expect((await categoryLines(db, { ...q, category: 'семье' }, NOW)).lines).toEqual([]);
+    expect((await categoryLines(db, { ...q, category: 'семье', participantId: me }, NOW)).lines.map((l) => [l.id, l.amount, l.participantId])).toEqual([['out', -100_000, me]]);
+    expect((await categoryLines(db, { ...q, category: 'продукты' }, NOW)).lines.map((l) => [l.id, l.participantId])).toEqual([['her-food', her], ['my-food', me]]);
   });
 });

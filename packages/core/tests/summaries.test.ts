@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
+import { categoryLines } from '../src/category-lines.ts';
 import { kyivStartOfDay } from '../src/format.ts';
 import { spendingByCategory } from '../src/queries.ts';
 import { getBalances, getSyncStatus } from '../src/status.ts';
@@ -158,6 +159,30 @@ describe('spendingSummary', () => {
     for (const groupBy of SPENDING_GROUP_BY) {
       expect((await spendingSummary(db, { ...Q, groupBy }, NOW)).totals, groupBy).toEqual(base);
     }
+  });
+
+  it('categoryLines: the lines behind every category figure sum to it (net, gross, refunds, purchases), in any scope', async () => {
+    for (const scope of [undefined, 'personal', 'business'] as const) {
+      const f = scope ? { scope } : {};
+      for (const g of (await spendingSummary(db, { ...Q, ...f }, NOW)).groups) {
+        const lines = (await categoryLines(db, { ...Q, ...f, category: g.key }, NOW)).lines.filter((l) => l.currency === g.currency);
+        const gross = lines.filter((l) => l.amount < 0).reduce((s, l) => s - l.amount, 0);
+        const refunds = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+        expect({ gross, refunds, net: gross - refunds, purchases: lines.filter((l) => l.amount < 0).length }, `${scope}/${g.key}`)
+          .toEqual({ gross: g.gross, refunds: g.refunds, net: g.net, purchases: g.purchases });
+      }
+    }
+  });
+
+  it('categoryLines: a body without its commission, the commission as its own «комиссии банка» line; newest first', async () => {
+    const p2p = (await categoryLines(db, { ...Q, category: 'переводы людям' }, NOW)).lines;
+    expect(p2p.map((l) => [l.kind, l.amount, l.operationAmount])).toEqual([['body', -20_000, -20_400]]);
+    const fees = (await categoryLines(db, { ...Q, category: 'комиссии банка' }, NOW)).lines;
+    expect(fees.map((l) => [l.kind, l.amount, l.operationCurrency])).toEqual([['commission', -2_000, null], ['commission', -400, null]]);
+    expect(fees[0]!.time).toBeGreaterThan(fees[1]!.time);
+    const cafe = (await categoryLines(db, { ...Q, category: 'кафе и рестораны' }, NOW)).lines;
+    expect(cafe.map((l) => l.amount)).toEqual([1_000, -4_000]); // the refund is a positive line
+    expect((await categoryLines(db, { ...Q, category: 'свои переводы' }, NOW)).lines).toEqual([]);
   });
 
   it('day (internal, not an MCP choice): one group per Kyiv day, the same totals', async () => {
