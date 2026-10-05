@@ -5,4 +5,5 @@ import type { MessageKey } from '@contract/i18n/index.ts';
 export const SERVICE_TEXT = {
   github: { title: 'GitHub', purpose: 'settings.securityInfo.network.github' },
   monobank: { title: 'Monobank', purpose: 'settings.securityInfo.network.monobank' },
+  'monobank-rates': { title: 'Monobank', purpose: 'settings.securityInfo.network.monobankRates' },
 } as const satisfies Record<TrustedServiceView['id'], { title: string; purpose: MessageKey }>;

@@ -79,7 +79,7 @@ export type AddConnectionResult =
   | { added: false; reason: 'duplicate' };
 
 /** A service the app may reach (src/net/allowlist.ts); ids must equal its ServiceId (checked in src/main/services.ts). */
-export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
+export type TrustedServiceView = { id: 'github' | 'monobank' | 'monobank-rates'; hosts: string[] };
 
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 

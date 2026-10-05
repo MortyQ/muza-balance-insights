@@ -632,6 +632,7 @@
         "error": "Could not get the list of services.",
         "github": "Checking for and downloading updates.",
         "monobank": "Accounts and the statement. The token is sent here only.",
+        "monobankRates": "Today's exchange rates for the home screen. No token and none of your data.",
         "note": "Other addresses are blocked in the code, not by a setting. Only https and the default port; a redirect to another address is refused.",
         "title": "Network"
       },
