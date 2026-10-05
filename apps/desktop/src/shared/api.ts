@@ -6,7 +6,7 @@ import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
-import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
+import type { ImportProgress, StartImportResult } from './progress.ts';
 import type { ThemePref } from './theme.ts';
 import type { UpdateView } from './update.ts';
 
@@ -124,7 +124,8 @@ export type BalanceApi = {
    * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
    */
   setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
-  startImport(depth: ImportDepth): Promise<StartImportResult>;
+  /** From the start of the Kyiv day `from` (YYYY-MM-DD, within isImportFrom) up to now. */
+  startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
   /** Returns an unsubscribe function. */
   onProgress(cb: (p: ImportProgress) => void): () => void;

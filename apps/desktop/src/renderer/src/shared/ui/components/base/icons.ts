@@ -7,6 +7,7 @@ import LucideBanknote from "~icons/lucide/banknote";
 import LucideBus from "~icons/lucide/bus";
 import LucideCalendar from "~icons/lucide/calendar";
 import LucideCalendarRange from "~icons/lucide/calendar-range";
+import LucideCalendarX from "~icons/lucide/calendar-x";
 import LucideChartColumn from "~icons/lucide/chart-column";
 import LucideCheck from "~icons/lucide/check";
 import LucideChevronDown from "~icons/lucide/chevron-down";
@@ -32,6 +33,7 @@ import LucideGlobe from "~icons/lucide/globe";
 import LucideGraduationCap from "~icons/lucide/graduation-cap";
 import LucideHandHeart from "~icons/lucide/hand-heart";
 import LucideHeartPulse from "~icons/lucide/heart-pulse";
+import LucideInbox from "~icons/lucide/inbox";
 import LucideInfo from "~icons/lucide/info";
 import LucideKeyRound from "~icons/lucide/key-round";
 import LucideLandmark from "~icons/lucide/landmark";
@@ -89,6 +91,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:bus": LucideBus,
   "lucide:calendar": LucideCalendar,
   "lucide:calendar-range": LucideCalendarRange,
+  "lucide:calendar-x": LucideCalendarX,
   "lucide:chart-column": LucideChartColumn,
   "lucide:check": LucideCheck,
   // Lucide renamed check-circle; the key keeps the name VProgressBar (copied as is) uses.
@@ -115,6 +118,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:graduation-cap": LucideGraduationCap,
   "lucide:hand-heart": LucideHandHeart,
   "lucide:heart-pulse": LucideHeartPulse,
+  "lucide:inbox": LucideInbox,
   "lucide:info": LucideInfo,
   "lucide:key-round": LucideKeyRound,
   "lucide:landmark": LucideLandmark,

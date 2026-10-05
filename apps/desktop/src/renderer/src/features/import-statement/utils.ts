@@ -1,4 +1,5 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
+import { IMPORT_PRESETS, monthsBefore } from '@contract/import-range.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { accountName } from '@/entities/bank';
 import { i18n, t } from '@/shared/lib';
@@ -91,4 +92,9 @@ export function failureLines(p: Readonly<ImportProgress>, labelOf: (connectionId
 /** Share of windows done, or null when there is no bar to show. */
 export function windowsPercent(p: Readonly<ImportProgress>): number | null {
   return p.phase === 'windows' && p.windowsTotal > 0 ? (p.windowsDone / p.windowsTotal) * 100 : null;
+}
+
+/** The quick pick `from` stands for on `today` (months), or 0 for a date picked in the calendar. */
+export function presetOf(from: string, today: string): number {
+  return IMPORT_PRESETS.find((n) => monthsBefore(today, n) === from) ?? 0;
 }

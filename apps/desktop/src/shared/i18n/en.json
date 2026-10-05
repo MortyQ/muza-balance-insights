@@ -219,8 +219,8 @@
       "accounts": "Updating the list of accounts…",
       "autoRunning": "Updating the data…",
       "cancelled": "The import is stopped. What is downloaded is saved.",
-      "depth": "Depth",
       "depthMonths": "{n} mo.",
+      "description": "Transactions are downloaded from the chosen date up to today. What is already downloaded is not downloaded again — only the last days are refreshed.",
       "done": "Done: windows {windows}, transactions {transactions}.",
       "duration": {
         "hourMin": "≈ {hours} h {min} min",
@@ -240,8 +240,10 @@
         "otherHolder": "The token belongs to a different bank account than this connection. Nothing was changed.",
         "rateLimit": "Monobank limited the number of requests. The import continues on the next launch."
       },
+      "fromDate": "From date",
       "needsToken": "There is an unfinished import. Enter the token in «Connections» to continue.",
       "notLoaded": "Not downloaded — {line}",
+      "period": "Period",
       "rederive": "Marking transfers and categories…",
       "resuming": "Resuming the import…",
       "retry": {
@@ -255,12 +257,13 @@
       "start": "Download",
       "startError": {
         "dbUnavailable": "The database is unavailable right now — the import did not start.",
-        "noToken": "There is no token: enter one in the settings, «Connections».",
+        "noToken": "There is no token: enter one above, in the connection.",
         "running": "The import is already running."
       },
       "starting": "Starting the import…",
       "stop": "Stop",
-      "title": "Import",
+      "title": "History download",
+      "untilToday": "from {date} to today",
       "waitLimit": " · waiting for the Monobank limit {sec} s",
       "windowsLine": "{account}: window {from} … {to} ({index}/{total}) · windows downloaded {done} of {windows}, transactions {transactions} · {eta} left{wait}"
     },
@@ -272,6 +275,12 @@
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
       "enterToken": "Enter token",
+      "importing": "Downloading the history — the data will appear here bit by bit.",
+      "loadHistory": "Download history",
+      "loadMonth": "Download",
+      "monthEmpty": "{month}: no data yet — the history is downloaded from {date}.",
+      "noDataText": "Download your transaction history from the bank — at least the last few months.",
+      "noDataTitle": "No data yet",
       "noTokenAll": "No token: new transactions are not downloaded. What is downloaded stays.",
       "noTokenSome": "No token: {names}. Their new transactions are not downloaded.",
       "openConnections": "Open «Connections»",

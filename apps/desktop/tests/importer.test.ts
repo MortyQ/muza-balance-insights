@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { kyivStartOfDay } from '@mono/core/format';
-import { CANCEL_KILL_MS, Importer, JOB_FILE, sinceForDepth, type ChildLike } from '../src/main/importer.ts';
+import { CANCEL_KILL_MS, Importer, JOB_FILE, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
 import type { ImportProgress } from '../src/shared/progress.ts';
@@ -13,6 +13,9 @@ import type { ImportProgress } from '../src/shared/progress.ts';
 const TOKEN = 'uCANARY-importer-token-0123456789';
 const NOW = kyivStartOfDay('2026-03-31') + 15 * 3600; // 31 March, 15:00 Kyiv
 const DB_KEY = 'c0ffee'.padEnd(64, '0');
+// Start dates: 3 months and 1 month before NOW (the screen's quick picks).
+const FROM3 = '2025-12-31';
+const FROM1 = '2026-02-28';
 
 let dir: string;
 beforeEach(() => {
@@ -79,22 +82,22 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
 
 const job = () => path.join(dir, JOB_FILE);
 
-describe('sinceForDepth (Kyiv days, month clamp)', () => {
-  it.each([
-    [1, '2026-02-28'], // 31 Mar − 1 month → end of February
-    [3, '2025-12-31'],
-    [12, '2025-03-31'],
-    [24, '2024-03-31'],
-  ] as const)('%i month(s) before 31 Mar 2026 → %s 00:00 Kyiv', (depth, date) => {
-    expect(sinceForDepth(depth, NOW)).toBe(kyivStartOfDay(date));
-  });
-});
-
 describe('Importer', () => {
+  it('start: only a date the screen offers — from 36 months back up to today (Kyiv); anything else throws, nothing starts', async () => {
+    const { importer, children } = setup();
+    for (const bad of ['2023-03-30', '2026-04-01', '2026-02-30', 'yesterday']) {
+      await expect(importer.start(bad)).rejects.toThrow('out of range');
+    }
+    expect(children).toHaveLength(0);
+    expect(fs.existsSync(job())).toBe(false);
+    expect(await importer.start('2023-03-31')).toEqual({ started: true });
+    expect(children[0]!.sent[0]).toMatchObject({ sinceSec: kyivStartOfDay('2023-03-31') });
+  });
+
   it('start: job file, powerSaveBlocker, a fresh worker, the token only in the start message', async () => {
     const { importer, children, sent, blocker, logs } = setup();
-    expect(await importer.start(3)).toEqual({ started: true });
-    expect(JSON.parse(fs.readFileSync(job(), 'utf8'))).toEqual({ sinceSec: kyivStartOfDay('2025-12-31'), depth: 3, startedAt: NOW });
+    expect(await importer.start(FROM3)).toEqual({ started: true });
+    expect(JSON.parse(fs.readFileSync(job(), 'utf8'))).toEqual({ sinceSec: kyivStartOfDay(FROM3), startedAt: NOW });
     expect(blocker.started).toEqual(['prevent-app-suspension']);
     expect(children).toHaveLength(1);
     expect(children[0]!.sent).toEqual([
@@ -116,24 +119,24 @@ describe('Importer', () => {
     fs.writeFileSync(job(), JSON.stringify({ sinceSec: 1_700_000_000, depth: 3, startedAt: NOW }));
     const { importer, children, sent, blocker } = setup({ db: null });
     await importer.resumeOnLaunch();
-    expect(await importer.start(3)).toEqual({ started: false, reason: 'db-unavailable' });
+    expect(await importer.start(FROM3)).toEqual({ started: false, reason: 'db-unavailable' });
     expect([children.length, blocker.started.length, sent.length]).toEqual([0, 0, 0]);
     expect(JSON.parse(fs.readFileSync(job(), 'utf8')).startedAt).toBe(NOW); // the old job is kept for later
   });
 
   it('a plain database: the key is null in the start message; a malformed key never reaches a worker', async () => {
     const plain = setup({ db: { dbPath: path.join(dir, 'monobank.db'), dbKey: null } });
-    expect(await plain.importer.start(3)).toEqual({ started: true });
+    expect(await plain.importer.start(FROM3)).toEqual({ started: true });
     expect(plain.children[0]!.sent[0]).toMatchObject({ type: 'start', dbKey: null });
     const bad = setup({ db: { dbPath: path.join(dir, 'monobank.db'), dbKey: 'NOT-HEX' } });
-    expect(await bad.importer.start(3)).toEqual({ started: false, reason: 'db-unavailable' });
+    expect(await bad.importer.start(FROM3)).toEqual({ started: false, reason: 'db-unavailable' });
     expect(bad.children).toHaveLength(0);
     expect(bad.logs).toEqual(['import: start message rejected']);
   });
 
   it('forwards valid progress, drops malformed messages (logged, not forwarded)', async () => {
     const { importer, children, sent, logs } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     const c = children[0]!;
     c.reply({ type: 'progress', progress: { phase: 'accounts' } });
     c.reply({ type: 'progress', progress: { phase: 'accounts', token: TOKEN } }); // extra key → strict schema rejects
@@ -146,7 +149,7 @@ describe('Importer', () => {
 
   it('done → job removed, blocker stopped, "done" sent', async () => {
     const { importer, children, sent, blocker } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.reply({ type: 'done', windowsTotal: 2, transactions: 10, failed: [] });
     children[0]!.exit();
     expect(fs.existsSync(job())).toBe(false);
@@ -157,7 +160,7 @@ describe('Importer', () => {
 
   it('a non-cancel error keeps the job for the next launch; blocker stopped', async () => {
     const { importer, children, sent, blocker } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.reply({ type: 'error', kind: 'network' });
     children[0]!.exit();
     expect(fs.existsSync(job())).toBe(true);
@@ -167,7 +170,7 @@ describe('Importer', () => {
 
   it('the final message closes the worker from main (no reliance on the worker exiting); exit code logged', async () => {
     const { importer, children, sent, logs } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.reply({ type: 'log', message: 'error: MonoApiError status=502' });
     children[0]!.reply({ type: 'error', kind: 'bank' });
     expect(children[0]!.killed).toBe(true);
@@ -180,13 +183,13 @@ describe('Importer', () => {
 
   it('worker dies without a word → "retry: crash", blocker stopped, job kept; restarted with the same job', async () => {
     const { importer, children, sent, blocker, timers, logs } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.exit();
     expect(sent.at(-1)).toEqual({ phase: 'retry', reason: 'crash', attempt: 1, inSec: 60 });
     expect(fs.existsSync(job())).toBe(true);
     expect(blocker.stopped).toEqual([1]);
     expect(importer.running).toBe(true); // a restart is pending: «Загрузить» stays unavailable
-    expect(await importer.start(3)).toEqual({ started: false, reason: 'running' });
+    expect(await importer.start(FROM3)).toEqual({ started: false, reason: 'running' });
     expect(logs).toContain('import: worker died, restart 1 in 60 s');
 
     timers.at(-1)!();
@@ -198,7 +201,7 @@ describe('Importer', () => {
 
   it('crashes keep happening: 1 min, then every 15 min, error after 4 hours; a committed window resets the streak', async () => {
     const { importer, children, sent, timers, clock } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     const crash = async () => {
       children.at(-1)!.exit();
       const p = sent.at(-1)!;
@@ -231,7 +234,7 @@ describe('Importer', () => {
   it('sleep of the Mac during a restart pause is not counted: as many restarts as without it', async () => {
     const attemptsUntilGiveUp = async (sleepMs: number) => {
       const { importer, children, sent, timers, clock } = setup();
-      await importer.start(1);
+      await importer.start(FROM1);
       let n = 0;
       for (;;) {
         children.at(-1)!.exit();
@@ -250,7 +253,7 @@ describe('Importer', () => {
 
   it('stop() (delete all data): kills the worker at once, waits for its exit, drops the job, no restart', async () => {
     const { importer, children, sent, timers } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     expect(fs.existsSync(job())).toBe(true);
     await importer.stop();
     expect(children[0]!.killed).toBe(true);
@@ -263,7 +266,7 @@ describe('Importer', () => {
 
   it('stop() while a crash restart is pending → the restart never happens', async () => {
     const { importer, children, timers, sent } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.exit();
     expect(importer.running).toBe(true);
     await importer.stop();
@@ -281,7 +284,7 @@ describe('Importer', () => {
 
   it('«Остановить» while a restart is pending → cancelled, job removed, no restart', async () => {
     const { importer, children, sent, timers } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     children[0]!.exit();
     importer.cancel();
     expect(sent.at(-1)).toEqual({ phase: 'cancelled' });
@@ -292,7 +295,7 @@ describe('Importer', () => {
 
   it('app quit is not a crash: no restart, job kept; a pending restart is dropped', async () => {
     const a = setup();
-    await a.importer.start(1);
+    await a.importer.start(FROM1);
     a.importer.shutdown();
     expect(a.sent.at(-1)).toEqual({ phase: 'starting', resumed: false });
     expect(a.children[0]!.killed).toBe(true);
@@ -301,7 +304,7 @@ describe('Importer', () => {
     fs.rmSync(job(), { force: true });
 
     const b = setup();
-    await b.importer.start(1);
+    await b.importer.start(FROM1);
     b.children[0]!.exit(); // crash → restart pending
     b.importer.shutdown();
     expect(b.importer.running).toBe(false);
@@ -310,7 +313,7 @@ describe('Importer', () => {
 
   it('cancel: cooperative first; the job ends; if the worker hangs it is killed after 10 s', async () => {
     const { importer, children, sent, timers } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     importer.cancel();
     importer.cancel(); // idempotent
     expect(children[0]!.sent.at(-1)).toEqual({ type: 'cancel' });
@@ -325,7 +328,7 @@ describe('Importer', () => {
 
   it('cancel acknowledged by the worker → "cancelled", job removed', async () => {
     const { importer, children, sent } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     importer.cancel();
     children[0]!.reply({ type: 'error', kind: 'cancelled' });
     children[0]!.exit();
@@ -335,19 +338,19 @@ describe('Importer', () => {
 
   it('one import at a time; no token → nothing starts', async () => {
     const a = setup();
-    await a.importer.start(1);
-    expect(await a.importer.start(3)).toEqual({ started: false, reason: 'running' });
+    await a.importer.start(FROM1);
+    expect(await a.importer.start(FROM3)).toEqual({ started: false, reason: 'running' });
     expect(a.children).toHaveLength(1);
     fs.rmSync(job(), { force: true }); // a's job; b shares the temp folder
 
     const b = setup({ token: null });
-    expect(await b.importer.start(1)).toEqual({ started: false, reason: 'no-token' });
+    expect(await b.importer.start(FROM1)).toEqual({ started: false, reason: 'no-token' });
     expect(b.children).toHaveLength(0);
     expect(fs.existsSync(job())).toBe(false);
     expect(b.blocker.started).toEqual([]);
   });
 
-  it('resume on launch: token in secure storage → continues with the saved sinceSec (not recomputed)', async () => {
+  it('resume on launch: token in secure storage → continues with the saved sinceSec (not recomputed; a job file with the old `depth` still reads)', async () => {
     fs.writeFileSync(job(), JSON.stringify({ sinceSec: 1_700_000_000, depth: 12, startedAt: 1_700_000_000 }));
     const { importer, children, sent } = setup({ stored: 'secure' });
     await importer.resumeOnLaunch();
@@ -392,7 +395,7 @@ describe('Importer', () => {
         { connectionId: 3, token: `${TOKEN}-her`, stored: 'memory' },
       ],
     });
-    expect(await importer.start(1)).toEqual({ started: true });
+    expect(await importer.start(FROM1)).toEqual({ started: true });
     expect(children).toHaveLength(1);
     expect(children[0]!.sent[0]).toMatchObject({
       connections: [
@@ -433,7 +436,7 @@ describe('Importer', () => {
 
   it('shutdown (app quit) kills the worker and keeps the job for resume', async () => {
     const { importer, children } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     importer.shutdown();
     expect(children[0]!.killed).toBe(true);
     expect(fs.existsSync(job())).toBe(true);
@@ -462,7 +465,7 @@ describe('Importer: «Автосинхронизация»', () => {
 
   it('a user import is not marked auto and keeps rereadWindow off', async () => {
     const { importer, children, sent } = setup();
-    await importer.start(1);
+    await importer.start(FROM1);
     expect(children[0]!.sent[0]).toMatchObject({ rereadWindow: false });
     expect(importer.autoRunning).toBe(false);
     expect(sent).toEqual([{ phase: 'starting', resumed: false }]);
@@ -470,7 +473,7 @@ describe('Importer: «Автосинхронизация»', () => {
 
   it('not while an import runs, and not while an unfinished one waits to resume — its job file is untouched', async () => {
     const a = setup();
-    await a.importer.start(1);
+    await a.importer.start(FROM1);
     expect(await a.importer.startAuto()).toEqual({ started: false, reason: 'running' });
     expect(a.children).toHaveLength(1);
 
@@ -509,10 +512,10 @@ describe('Importer: «Автосинхронизация»', () => {
   it('a user start replaces it: the auto worker is killed, the user import starts and writes its job', async () => {
     const { importer, children, sent, logs } = setup();
     await importer.startAuto();
-    expect(await importer.start(3)).toEqual({ started: true });
+    expect(await importer.start(FROM3)).toEqual({ started: true });
     expect(children[0]!.killed).toBe(true);
     expect(children).toHaveLength(2);
-    expect(children[1]!.sent[0]).toMatchObject({ sinceSec: sinceForDepth(3, NOW), rereadWindow: false });
+    expect(children[1]!.sent[0]).toMatchObject({ sinceSec: kyivStartOfDay(FROM3), rereadWindow: false });
     expect(fs.existsSync(job())).toBe(true);
     expect(sent.at(-1)).toEqual({ phase: 'starting', resumed: false });
     expect(importer.autoRunning).toBe(false);
@@ -524,7 +527,7 @@ describe('Importer: «Автосинхронизация»', () => {
     await importer.startAuto();
     children[0]!.exit(); // crash → restart pending
     expect(importer.autoRunning).toBe(true);
-    expect(await importer.start(1)).toEqual({ started: true });
+    expect(await importer.start(FROM1)).toEqual({ started: true });
     expect(children).toHaveLength(2);
     children[1]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [] });
     children[1]!.exit();

@@ -51,13 +51,21 @@ const {
   label = "",
   disabled = false,
   range = false,
+  min = undefined,
+  max = undefined,
 } = defineProps<{
   id?: string;
   label?: string;
   disabled?: boolean;
   /** Single date (default) or a `{ start, end }` range. */
   range?: boolean;
+  /** The earliest and latest selectable dates, ISO "YYYY-MM-DD"; outside them days are disabled. */
+  min?: string;
+  max?: string;
 }>();
+
+const minValue = computed(() => isoToCalendarDate(min) ?? undefined);
+const maxValue = computed(() => isoToCalendarDate(max) ?? undefined);
 
 // Single-date value: bound with a plain v-model. Unused (and untouched) in range mode.
 const single = defineModel<string | null>({ default: null });
@@ -91,6 +99,8 @@ const WEEK_STARTS_ON_MONDAY = 1;
       :id="id"
       class="v-datepicker__root"
       :disabled="disabled"
+      :min-value="minValue"
+      :max-value="maxValue"
       locale="uk-UA"
       :week-starts-on="WEEK_STARTS_ON_MONDAY"
     >
@@ -159,6 +169,8 @@ const WEEK_STARTS_ON_MONDAY = 1;
       :id="id"
       class="v-datepicker__root"
       :disabled="disabled"
+      :min-value="minValue"
+      :max-value="maxValue"
       locale="uk-UA"
       :week-starts-on="WEEK_STARTS_ON_MONDAY"
     >

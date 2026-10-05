@@ -39,6 +39,12 @@ export function shortDate(s: string): string {
   return time ? `${dd}.${mm}, ${time}` : `${dd}.${mm}`;
 }
 
+/** «2026-03-10» → «10.03.2026». */
+export function fullDate(date: string): string {
+  const [yyyy, mm, dd] = date.split('-');
+  return `${dd}.${mm}.${yyyy}`;
+}
+
 /** When a sync happened (Kyiv «YYYY-MM-DD HH:mm»): today → «at 14:20», an earlier day → «10.03, 14:20». */
 export function syncedWhen(at: string, now: Date): string {
   const [date, time] = at.split(' ');

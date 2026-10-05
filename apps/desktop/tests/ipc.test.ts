@@ -15,7 +15,6 @@ import {
   type IpcEventLike,
 } from '../src/main/ipc.ts';
 import { CHANNEL_PREFIX, METHODS, channel } from '../src/shared/channels.ts';
-import { IMPORT_DEPTHS } from '../src/shared/progress.ts';
 
 const WC = { id: 1 };
 const WIN = { webContents: WC };
@@ -80,10 +79,10 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setConnectionToken', [1, 'has space in the token 123456', true]],
     ['setConnectionToken', [1, 'x'.repeat(201), true]],
     ['setConnectionToken', [1, 'x'.repeat(40), true, 'extra']],
-    ['startImport', [2]],
-    ['startImport', ['3']],
+    ['startImport', [3]],
+    ['startImport', ['2026-02-30']],
     ['startImport', []],
-    ['startImport', [3, 'extra']],
+    ['startImport', ['2026-01-01', 'extra']],
     ['getSpendingOverview', []],
     ['getSpendingOverview', [{ month: '2026-09' }]],
     ['getSpendingOverview', [{ month: '2026-9', scope: 'personal' }]],
@@ -208,15 +207,17 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     for (const m of METHODS) expect(covered.has(m), m).toBe(true);
   });
 
-  it('startImport accepts exactly the depths the screen offers (one list: IMPORT_DEPTHS)', () => {
-    for (const d of IMPORT_DEPTHS) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(true);
-    for (const d of [0, 2, 6, 48, 1.5, -1]) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(false);
+  it('startImport takes a real YYYY-MM-DD date (the importer checks the range)', () => {
+    for (const d of ['2026-01-01', '2024-02-29']) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(true);
+    for (const d of ['2023-02-29', '2026-13-01', '2026-1-01', '2026-01-01T00:00', '', 12]) {
+      expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(false);
+    }
   });
 
   it('valid calls reach the handler with parsed arguments', async () => {
     const ipc = fakeIpcMain();
     registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => false });
-    await expect(ipc.handlers.get('balance:startImport')!(good, 12)).resolves.toEqual({ m: 'startImport', a: [12] });
+    await expect(ipc.handlers.get('balance:startImport')!(good, '2026-01-01')).resolves.toEqual({ m: 'startImport', a: ['2026-01-01'] });
     await expect(ipc.handlers.get('balance:getSpendingOverview')!(good, { month: '2026-09', scope: 'personal' })).resolves.toEqual({
       m: 'getSpendingOverview',
       a: [{ month: '2026-09', scope: 'personal' }],

@@ -17,6 +17,15 @@ English interface.
   it to see when it was last updated. During a download, hover over it to see how many parts of the statement are
   loaded out of how many.
 
+### Downloading history
+
+- The history download moved from the home screen to «Settings» → «Connections», under «History download», next to
+  the bank's connections. Pick the period with one click — 1, 3, 6, 12, 24 or 36 months — or choose any start date in
+  the calendar, up to 36 months back; the download always runs up to today.
+- With no data yet, the home screen says so and «Download history» takes you straight there. If you pick a month on the
+  home screen from before your downloaded history, it tells you from when the data starts, and «Download» opens the
+  download with that month already chosen.
+
 ### Look and feel
 
 - On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,

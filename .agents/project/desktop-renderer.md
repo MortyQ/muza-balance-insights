@@ -21,8 +21,9 @@
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
   Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the default layout's scroll area, `app/layouts/DefaultLayout.vue`; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
-  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = `firstMonthOf(syncStatus.status.dataFrom)`
-  из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = the import's floor month
+  (`monthOf(importFloor(today))`, `src/shared/import-range.ts`), not the first data month: an older month gets the «no data
+  yet» notice of `widgets/home-notices` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
   `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`

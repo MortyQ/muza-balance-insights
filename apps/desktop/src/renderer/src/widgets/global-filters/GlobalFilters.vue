@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
+import { importFloor } from '@contract/import-range.ts';
 import { CurrencyToggle } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
-import { firstMonthOf, MonthFilter } from '@/entities/period';
+import { MonthFilter, useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
+import { monthOf } from '@/shared/lib';
 import SyncStatus from './components/SyncStatus.vue';
 import { useParticipantLayout } from './composables/useParticipantLayout.ts';
 import { failedConnections, syncStatusView } from './utils.ts';
@@ -12,7 +14,9 @@ import { failedConnections, syncStatusView } from './utils.ts';
 const syncStatus = useSyncStatusStore();
 const importProgress = useImportProgressStore();
 const participant = useParticipantStore();
-const firstMonth = computed(() => firstMonthOf(syncStatus.status?.dataFrom));
+const monthStore = useMonthStore();
+// Back to the oldest month the import reaches, not just the first with data: an older month gets HomeNotices' «download».
+const firstMonth = computed(() => monthOf(importFloor(monthStore.today)));
 // The import and the people are two entities: they meet here, and the filter gets the result as a prop.
 const status = computed(() =>
   syncStatusView(importProgress.progress, { line: syncStatus.line, lastSyncAt: syncStatus.status?.lastSyncAt ?? null }, Date.now(), participant.labelOf),
