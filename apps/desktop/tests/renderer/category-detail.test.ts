@@ -199,6 +199,18 @@ describe('category screen mounted', () => {
     expect(w.text()).toContain(`Итого по списку: ${uah(141_000)}`);
   });
 
+  it('the first load shows a skeleton in place of the cards; the answer replaces it', async () => {
+    let answer!: (v: CategoryOverview) => void;
+    getCategoryOverview.mockImplementationOnce(() => new Promise<CategoryOverview>((r) => (answer = r)));
+    const w = await mountScreen();
+    expect(w.find('[role="status"]').exists()).toBe(true);
+    expect(w.text()).not.toContain('Динамика за 12 месяцев');
+    answer(VIEW);
+    await flushPromises();
+    expect(w.find('[role="status"]').exists()).toBe(false);
+    expect(w.text()).toContain('Динамика за 12 месяцев');
+  });
+
   it('follows the global person filter; one person — no «Who spent»', async () => {
     const w = await mountScreen();
     const { useParticipantStore } = await import('@/entities/participant');

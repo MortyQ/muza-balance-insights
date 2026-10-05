@@ -5,6 +5,7 @@ import type { Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { ROUTE } from '@/shared/config';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import CategorySkeleton from './components/CategorySkeleton.vue';
 import CategorySummary from './components/CategorySummary.vue';
 import MerchantList from './components/MerchantList.vue';
 import MonthsChart from './components/MonthsChart.vue';
@@ -33,7 +34,8 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('category.failed')" />
 
-    <template v-if="view && summary">
+    <CategorySkeleton v-if="!view && state.status === 'loading'" />
+    <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
         <CategorySummary :summary />
       </VCard>
