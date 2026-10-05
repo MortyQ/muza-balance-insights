@@ -201,7 +201,7 @@
       "percent": "{pct}%",
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",
-      "updated": "updated {when}"
+      "updated": "Updated {when}"
     },
     "import": {
       "about": "All connections are downloaded. Monobank gives out the statement at most once a minute per token and at most 31 days per request: about a minute for each month of history of each account; the connections of different people go in parallel. The current month of all accounts comes first, then the history. You can stop the import and continue later. New transactions also arrive on their own — see «Auto-sync» in the settings.",

@@ -34,7 +34,8 @@ English interface.
   connection it uses the last rates it got, and the menu says so.
 - Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
   how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
-  could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
+  could not be reached. Hover over it during a download to see how many parts of the statement are loaded out of how
+  many. When it is done, the line says what the data covers; hover over it to see when it was last updated. If the
   download or one of the connections failed, a warning sign appears; hover over it to see why.
 - In the people filter, hover over a name to see when that person's data was last updated. A person whose connection
   did not update gets a small warning dot, and the hint says which connection and why.

@@ -3,18 +3,18 @@ import { IMPORT_ERRORS, progressLine } from '@/features/import-statement';
 import { i18n, syncedWhen, t } from '@/shared/lib';
 import type { SyncStatusView } from './types.ts';
 
-/** What the data covers when nothing runs: «Data up to 03.10, 14:00 · updated at 14:20». */
-function dataLine(line: string, lastSyncAt: string | null, now: number): string {
-  if (!line || lastSyncAt === null) return line;
-  return `${line} · ${t('home.filters.updated', { when: syncedWhen(lastSyncAt, new Date(now)) })}`;
+/** When the data was last updated, for the tooltip of the data line: «Updated at 14:20»; '' — never. */
+function updatedLine(line: string, lastSyncAt: string | null, now: number): string {
+  if (!line || lastSyncAt === null) return '';
+  return t('home.filters.updated', { when: syncedWhen(lastSyncAt, new Date(now)) });
 }
 
 /**
  * The status next to the home filters, built of the progress of an import and the data status. An import started by the
- * user shows a spinner, «Syncing…» and the share of windows done; «Auto-sync» only «Updating the data…»; a wait for a
- * retry — its time. Once
- * over — what the data covers and when it was last updated, with a warning when the import or one of its connections
- * failed. `now` is passed in so the retry time and «today» are testable.
+ * user shows a spinner, «Syncing…» and the share of windows done; «Auto-sync» only «Updating the data…»; both show the
+ * progress (windows done of all) on hover. A wait for a retry — its time. Once over — what the data covers, and when it
+ * was last updated on hover, with a warning when the import or one of its connections failed. `now` is passed in so the
+ * retry time and «today» are testable.
  */
 export function syncStatusView(
   p: Readonly<ImportProgress>,
@@ -22,13 +22,13 @@ export function syncStatusView(
   now: number,
   labelOf: (connectionId: number) => string,
 ): SyncStatusView {
-  const idle: SyncStatusView = { icon: null, text: dataLine(data.line, data.lastSyncAt, now), percent: '', note: '', tooltip: '' };
+  const idle: SyncStatusView = { icon: null, text: data.line, percent: '', note: '', tooltip: updatedLine(data.line, data.lastSyncAt, now) };
   switch (p.phase) {
     case 'starting':
     case 'accounts':
     case 'windows':
     case 'rederive': {
-      if (p.auto) return { ...idle, icon: 'spinner', text: t('home.import.autoRunning') };
+      if (p.auto) return { ...idle, icon: 'spinner', text: t('home.import.autoRunning'), tooltip: progressLine(p, now) };
       const pct = p.phase === 'windows' && p.windowsTotal > 0 ? Math.floor((p.windowsDone / p.windowsTotal) * 100) : null;
       return {
         ...idle,
