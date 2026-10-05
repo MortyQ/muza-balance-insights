@@ -127,7 +127,7 @@
       "mainTitle": "Main currency",
       "noRates": "Rates not loaded yet: only hryvnia for now",
       "rate": "Monobank sell rate, {date}",
-      "savedRate": "Saved rate from {date}: no connection",
+      "savedRate": "Saved rate from {date}: could not refresh",
       "uah": "Hryvnia ₴",
       "usd": "Dollars $"
     },
@@ -334,7 +334,7 @@
       "failed": "Could not count the spending. Try again or restart the app.",
       "familyShare": "{pct}% of the family's spending",
       "familyTotal": "family — {amount}",
-      "footnote": "Spending is what was charged minus refunds. Transfers between your own accounts and income are not spending. Spending in other currencies is counted in hryvnia at today's Monobank rate.",
+      "footnote": "Spending is what was charged minus refunds. Transfers between your own accounts and income are not spending. Spending in other currencies is converted at today's Monobank rate.",
       "importing": "Import in progress — the numbers fill in as the statement downloads.",
       "inMonth": "In {month}",
       "leftOut": "+ {amount} without an exchange rate — not in the totals",

@@ -2,6 +2,8 @@ export interface BalanceCardProps {
   title: string;
   caption: string;
   amount: string;
+  /** Total cards: the amount in the other picked currencies («≈ 250 $ · 200 €»), under it; '' — none. */
+  approx: string;
   /** Other currencies, one line under the amount; '' — none. */
   others: string;
   bottom: string;

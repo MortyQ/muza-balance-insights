@@ -1,6 +1,9 @@
+// @vitest-environment happy-dom
 // Pure helpers of the balance block. balanceApi is never called here: the participant slice pulls it in, so it is stubbed.
 import { describe, expect, it, vi } from 'vitest';
+import { mount } from '@vue/test-utils';
 import type { MonthOverview, PersonView, RatesView } from '@contract/api.ts';
+import { BalanceCard } from '@/entities/account';
 import { moneyFormat } from '@/entities/currency-display';
 import {
   accountsCount,
@@ -277,5 +280,31 @@ describe('balances utils', () => {
       `вкл. ${formatMoney(10_000, 840, { minorUnits: true })} по курсу 40,00 · без ${formatMoney(10_000, 826, { minorUnits: true })} — нет курса`,
     );
     expect(s[0]?.amount).toBe(formatMoney(1_000_000, 980, { minorUnits: true }));
+  });
+
+  it('slidesOf: total cards carry the «≈» line of the other picked currencies; account cards none', () => {
+    const fmt = moneyFormat(RATES, { main: 980, also: { uah: false, usd: true, eur: true } });
+    const v: MonthOverview = {
+      month: '2026-09',
+      balanceAt: 'now',
+      coverage: { from: '2026-09-01', to: '2026-09-27' },
+      total: card(1_000_000, 0, 0),
+      people: [],
+      accounts: [{ id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 }],
+      rates: RATES,
+    };
+    const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt });
+    expect(s[0]?.approx).toBe(fmt.approxInline(1_000_000));
+    expect(s[0]?.approx).not.toBe('');
+    expect(s[1]?.approx).toBe('');
+    expect(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]?.approx).toBe('');
+  });
+
+  it('BalanceCard: the «≈» line under the amount, none when empty', () => {
+    const props = { title: 'T', caption: 'C', amount: '100 ₴', others: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
+    const w = mount(BalanceCard, { props: { ...props, approx: '≈ 2,50 $ · 2,00 €' } });
+    const spans = w.findAll('span').map((x) => x.text());
+    expect(spans.indexOf('≈ 2,50 $ · 2,00 €')).toBe(spans.indexOf('100 ₴') + 1);
+    expect(mount(BalanceCard, { props: { ...props, approx: '' } }).text()).not.toContain('≈');
   });
 });

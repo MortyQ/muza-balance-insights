@@ -221,7 +221,7 @@ describe('CurrencyToggle', () => {
 
   it('a saved rate says so', async () => {
     const { w } = await openToggle({ ...RATES, saved: true });
-    expect(document.body.textContent).toContain('Сохранённый курс от 05.10, 10:00: нет соединения');
+    expect(document.body.textContent).toContain('Сохранённый курс от 05.10, 10:00: не удалось обновить');
     w.unmount();
   });
 });
