@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { CATEGORY_IDS } from '../shared/categories.ts';
 import { COLOR_KEYS } from '../shared/colors.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
@@ -53,6 +54,9 @@ export const ARG_SCHEMAS = {
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
   getNowOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  getCategoryOverview: z.tuple([
+    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
+  ]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

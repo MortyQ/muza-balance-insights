@@ -5,7 +5,11 @@
 ## Принятые решения
 
 - Холды: soft-delete через `is_cancelled`, строки не удаляются.
-- Фильтры по периоду — только по `local_date`.
+- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`,
+  `crossingCategories`) are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
+  which the MCP server keeps) and match rows by `time` in [start of `from`, start of the day after `to`). Grouping by
+  `day` / `month` reads the zone's own day starts (`periodBuckets` → CTE `buckets`), right across DST. The desktop passes
+  the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
 - Банки учитываются, если `balance > 0` ИЛИ для банки есть запись в `sync_state` (авто-правило; выбор пользователя
   `accounts.sync_choice` сильнее — см. ниже).
 - **Выключенный счёт** (`packages/core/src/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
@@ -48,7 +52,7 @@
   в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).
 - `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
   operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
-- `spendingSummary` also groups by `day` (Kyiv `local_date`) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
+- `spendingSummary` also groups by `day` (a day of the period's zone) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
   do not offer it. Its one user is the desktop's «Now» strip: personal scope; today's Monobank rates for every
   day; the usual day = the median of daily net over the 30 days before today that the data covers (from the first data
   date to the last fully synced day; a day without spending = 0; fewer than 7 such days — none); last week = Monday − 7 …
@@ -69,7 +73,7 @@
   текущий.
 - Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/fx.ts`): копейки гривны за минимальную единицу
   валюты из строк `pair_fx` на гривневых счетах. Продажи валюты; покупки — только если валюту ни разу не продавали.
-  В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца по Киеву,
+  В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца в его поясе,
   равенство → более ранний), `nearest: true`. Общий для семьи, холды входят, отменённые — нет; обменов нет → курса
   нет, `toUah` → `null`, часть не входит в суммы. Пользуется только блок балансов десктопа («Пришло / Ушло» итоговых
   карт, `CardTotal.fx`); MCP-тулы не меняются.

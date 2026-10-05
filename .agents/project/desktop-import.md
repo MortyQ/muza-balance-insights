@@ -43,6 +43,11 @@
   `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `getNowOverview` takes only `participantId` (main
   decides «today» in the system time zone); like the other data channels it is closed while locked and while the
   database is not ready.
+  `getCategoryOverview({ month, category: CategoryId, scope, participantId? })` (the category screen; main:
+  `DataService.categoryOverview`, helpers in `main/category.ts`) is the **only** data channel that carries the bank's
+  text: each line's description (a card number cut to its last 4 digits, jar titles hidden) and comment — never
+  `counter_name`, an IBAN, a card number or a jar title (canary test in `tests/data.test.ts`). Its figure is the
+  spending block's (same fold); its lines come from core `categoryLines` (the same lines by construction).
   `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`

@@ -55,3 +55,8 @@
 - The `CurrencyToggle` popover and the «Spending» gear popover have no accessible name for the dialog itself: give
   `VPopover` a `title` / `aria-labelledby` option.
 - `pendingHolds` ignores the participant and scope filters, in «Spending» and in the «Now» strip alike.
+
+## Later: home screen
+
+- «Spending»: show today's categories too — most likely a switch right by the category bars (month / today), so the
+  block answers «what did I spend on today» without a separate view.

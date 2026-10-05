@@ -15,6 +15,15 @@ const { routes } = await import('@/app/router/routes.ts');
 const { i18n } = await import('@/shared/lib');
 
 const page = (name: string) => defineComponent(() => () => h('main', { 'data-page': name }, name));
+let homeSetups = 0;
+// Named as the real home page, so MasterLayout's KEPT_ALIVE matches it.
+const homePage = defineComponent({
+  name: 'HomePage',
+  setup: () => {
+    homeSetups += 1;
+    return () => h('main', { 'data-page': 'home' }, 'home');
+  },
+});
 
 describe('layoutOf', () => {
   it('meta.layout, else default', () => {
@@ -51,16 +60,17 @@ describe('navGroups', () => {
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
   });
 });
 
 describe('MasterLayout', () => {
   async function mountAt(path: string) {
     const test: RouteRecordRaw[] = [
-      { path: '/', name: 'home', component: page('home'), meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } } },
+      { path: '/', name: 'home', component: homePage, meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } } },
       { path: '/second', name: 'second', component: page('second'), meta: { nav: { label: 'home.nav.label', icon: 'lucide:list', order: 1 } } },
       { path: '/settings', name: 'settings', component: page('settings'), meta: { layout: 'empty' } },
+      { path: '/sub', name: 'category', component: page('sub'), meta: { navParent: 'home' } },
     ];
     const router = createRouter({ history: createMemoryHistory(), routes: test });
     await router.push(path);
@@ -79,6 +89,13 @@ describe('MasterLayout', () => {
     w.unmount();
   });
 
+  it('a screen without its own item keeps its parent current (the category screen → «General»)', async () => {
+    const { w } = await mountAt('/sub');
+    expect(w.find('[data-page="sub"]').exists()).toBe(true);
+    expect(w.find('nav button[data-item="home"]').attributes('aria-current')).toBe('page');
+    w.unmount();
+  });
+
   it('a menu pick opens its route inside the same shell', async () => {
     const { w, router } = await mountAt('/');
     const filters = w.find('[data-test="filters"]').element;
@@ -88,6 +105,24 @@ describe('MasterLayout', () => {
     expect(w.find('[data-test="filters"]').element).toBe(filters);
     expect(w.find('nav button[data-item="second"]').attributes('aria-current')).toBe('page');
     w.unmount();
+  });
+
+  it('home stays alive while another screen of its layout is open: back from it, nothing is set up anew', async () => {
+    const { w, router } = await mountAt('/');
+    const before = homeSetups;
+    await router.push('/sub');
+    await flushPromises();
+    expect(w.find('[data-page="sub"]').exists()).toBe(true);
+    await router.push('/');
+    await flushPromises();
+    expect(w.find('[data-page="home"]').exists()).toBe(true);
+    expect(homeSetups).toBe(before);
+    w.unmount();
+  });
+
+  it('the real home page carries the name KEPT_ALIVE lists', async () => {
+    const { HomePage } = await import('@/pages/home');
+    expect((HomePage as { __name?: string }).__name).toBe('HomePage');
   });
 
   it('the empty layout: the screen alone', async () => {

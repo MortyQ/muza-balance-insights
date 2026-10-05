@@ -9,6 +9,7 @@ import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
+import { periodArgs, periodSql } from './periods.ts';
 import { getSettings } from './settings.ts';
 import { isScope, type Scope } from './scope.ts';
 import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './summaries.ts';
@@ -19,6 +20,8 @@ export const SEARCH_MAX_LIMIT = 200;
 export type SearchQuery = {
   from: string;
   to: string;
+  /** The zone whose days [from, to] are (periods.ts); absent → Kyiv. */
+  tz?: string;
   /** ISO numeric operation currency, e.g. 8 = ALL. */
   operationCurrency?: number;
   text?: string;
@@ -122,8 +125,8 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
   const period = await periodInfo(db, q, nowSec);
 
   // Enabled accounts only; a row crossing to a disabled account is an ordinary operation (accounts.ts).
-  const where = ['t.is_cancelled = 0', 't.local_date BETWEEN ? AND ?', `t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`];
-  const args: Array<string | number> = [await crossingCategories(db, q), q.from, q.to];
+  const where = ['t.is_cancelled = 0', periodSql('t'), `t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`];
+  const args: Array<string | number> = [await crossingCategories(db, q), ...periodArgs(q)];
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
   if (q.category) (where.push('COALESCE(x.value, t.category) = ?'), args.push(q.category));
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));

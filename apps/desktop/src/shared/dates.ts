@@ -1,8 +1,8 @@
 // The user's calendar: «today», a day's or a month's start and every date or time on screen follow the system time
 // zone — wherever the user is, not Kyiv. Instants stay epoch seconds/ms everywhere and become a date or a time only at
 // the edge, through this module (main, the import worker and the renderer). Main turns a date back into an instant
-// with the core's startOfDayIn(date, systemTimeZone()). Not covered yet: `transactions.local_date` is still the Kyiv
-// date, so sums by day and by month (core periods) count Kyiv days.
+// with the core's startOfDayIn(date, systemTimeZone()), and passes the zone to every core period (`tz`), so sums by day
+// and by month count the user's days too (`transactions.local_date` stays the Kyiv date; periods match by `time`).
 
 const formats = new Map<string, Intl.DateTimeFormat>();
 

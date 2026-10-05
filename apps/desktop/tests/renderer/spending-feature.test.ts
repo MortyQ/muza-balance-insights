@@ -3,6 +3,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { defineComponent, h } from 'vue';
+import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { PeopleView, SpendingOverview, SpendingOverviewQuery } from '@contract/api.ts';
 import CategoryRing from '@/features/spending-summary/components/CategoryRing.vue';
 import PeopleList from '@/features/spending-summary/components/PeopleList.vue';
@@ -63,17 +65,28 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+let router: Router;
+
 async function mountBlock(attachTo?: Element) {
   const { i18n } = await import('@/shared/lib/i18n.ts');
   const { useParticipantStore } = await import('@/entities/participant');
   useParticipantStore().view = PEOPLE;
   const { SpendingFeature } = await import('@/features/spending-summary');
-  const w = mount(SpendingFeature, { global: { plugins: [i18n] }, ...(attachTo ? { attachTo } : {}) });
+  router = createRouter({
+    history: createMemoryHistory(),
+    routes: [
+      { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
+      { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
+    ],
+  });
+  await router.push('/');
+  const w = mount(SpendingFeature, { global: { plugins: [i18n, router] }, ...(attachTo ? { attachTo } : {}) });
   await flushPromises();
   return w;
 }
 
-const category = (w: Awaited<ReturnType<typeof mountBlock>>) => w.findAll('button[aria-expanded]').filter((b) => b.text().includes('Продукты'));
+/** The «Продукты» row: a link to its category screen. */
+const category = (w: Awaited<ReturnType<typeof mountBlock>>) => w.findAll('a[href*="/category/"]').filter((b) => b.text().includes('Продукты'));
 const person = (w: Awaited<ReturnType<typeof mountBlock>>, name: string) => w.findAll('button[aria-pressed]').find((b) => b.text().includes(name));
 
 describe('spending block: a pick with no spending', () => {
@@ -137,7 +150,7 @@ describe('spending block: edge cases', () => {
 });
 
 describe('spending block: the family view', () => {
-  it('requests the whole family, lists people, a pick changes the amounts, and a category expands and folds', async () => {
+  it('requests the whole family, lists people, a pick changes the amounts, and a category opens its screen', async () => {
     const w = await mountBlock();
 
     expect(getSpendingOverview.mock.calls[0]?.[0]).toMatchObject({ month: expect.any(String), scope: 'personal' });
@@ -149,22 +162,15 @@ describe('spending block: the family view', () => {
     expect(ring).toContain(formatMoney(30_000, 980));
 
     const row = category(w)[0]!;
-    expect(row.attributes('aria-expanded')).toBe('false');
+    expect(row.attributes('aria-expanded')).toBeUndefined();
     await row.trigger('click');
-    expect(row.attributes('aria-expanded')).toBe('true');
-    const panelId = row.attributes('aria-controls')!;
-    const panel = w.find(`#${panelId}`);
-    expect(panel.exists()).toBe(true);
-    for (const name of ['Сергей', 'Аня', 'Оля']) expect(panel.text()).toContain(name);
-
-    await row.trigger('click');
-    expect(row.attributes('aria-expanded')).toBe('false');
-    expect(w.find(`#${panelId}`).exists()).toBe(false);
+    await flushPromises();
+    expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'groceries' }, query: { scope: 'personal' } });
   });
 });
 
 describe('spending block: one person picked in the global filter', () => {
-  it('requests that person, hides the people list and the category expansion, and shows their family share', async () => {
+  it('requests that person, hides the people list, and shows their family share', async () => {
     // The server already scopes the overview to the requested participant; only `total` and `familyTotal` matter here.
     current = { ...VIEW, total: { ...VIEW.total, net: 20_000, purchases: 4 }, familyTotal: 50_000 };
     const w = await mountBlock();
@@ -175,7 +181,7 @@ describe('spending block: one person picked in the global filter', () => {
     expect(getSpendingOverview.mock.calls.at(-1)?.[0]).toMatchObject({ participantId: 2 });
     expect(w.findComponent(PeopleList).exists()).toBe(false);
     expect(person(w, 'Вся семья')).toBeUndefined();
-    expect(category(w)).toHaveLength(0);
+    expect(category(w)).toHaveLength(1); // a row opens its screen in every view
     expect(w.text()).toContain('40% трат семьи');
     expect(w.text()).toContain(formatMoney(50_000, 980));
   });
@@ -235,7 +241,7 @@ describe('spending block: the only person in the app', () => {
     await flushPromises();
 
     expect(w.findComponent(PeopleList).exists()).toBe(false);
-    expect(category(w)).toHaveLength(0);
+    expect(category(w)).toHaveLength(1); // a row opens its screen in every view
     const segments = w.findAll('[title]').filter((e) => (e.attributes('style') ?? '').includes('--s:'));
     expect(segments.length).toBeGreaterThan(0);
     for (const seg of segments) expect(seg.attributes('style')).toContain('--s: var(--category-1)');

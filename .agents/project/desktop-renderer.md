@@ -51,13 +51,35 @@
   family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
   3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
   the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), the centre total and every amount through `MoneyFormat` (`entities/currency-display`; no per-currency chip). `composables/useSpending.ts` — the
-  request, the pick and the expanded category (reset on month, scope and global filter changes);
+  request and the pick (reset on month, scope and global filter changes);
   `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
   segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
   of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
   currency is the home-wide `entities/currency-display` choice. The footnote says «at today's Monobank rate». Layout: `@container`, the columns stack
   below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
   `shared/ui/VPopover` — ours on reka-ui.
+  A category row is a link to its screen (`categoryLink(id, scope)` in `shared/config`; «N more categories» and an
+  unknown word stay plain rows); it no longer unfolds — the per-person split is on the category screen. Category
+  icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
+  with the «Now» strip and the category screen.
+- **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
+  `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
+  unknown id → home by the route's guard; `query.scope`, read back by `categoryRequest`), default layout without its
+  own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
+  `desktop-import.md`): the month, person and currency are the global filters; quiet reload on `syncStatus.version`.
+  `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
+  merchant filter, search and order (reset with month, category and person). «When» is counted on the screen from the
+  lines (`whenTotals`), so the merchant filter narrows it too and its title names the merchant; the search does not. `utils.ts` is pure and tested
+  (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
+  the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
+  and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
+  `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
+  12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
+  is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
+  average leaves the running month out, the caption compares the picked month with it.
+  The first load (no data yet) shows `components/CategorySkeleton.vue` (`role="status"`) in place of the cards. Past
+  months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
+  colour itself.
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
   «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none

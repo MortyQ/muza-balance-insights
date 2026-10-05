@@ -12,8 +12,8 @@ import type { BlockPerson, UseSpendingReturn } from '../types.ts';
 import { periodNote } from '../utils.ts';
 
 /**
- * The spending block of one Kyiv month, scope and participant (or the whole family): reloads when any changes, and
- * quietly when the data changes. The block's own person pick and expanded category reset with them.
+ * The spending block of one month (the system time zone's), scope and participant (or the whole family): reloads when any changes, and
+ * quietly when the data changes. The block's own person pick resets with them.
  */
 export function useSpending(): UseSpendingReturn {
   const { fetchSpendingOverview } = useSpendingRequest();
@@ -23,7 +23,6 @@ export function useSpending(): UseSpendingReturn {
   const { month, thisMonth } = storeToRefs(useMonthStore());
   const scope = ref<Scope>('personal');
   const pick = ref<number | null>(null);
-  const open = ref<string | null>(null);
 
   const participantId = () => participant.selectedId;
   const { state } = useAsyncData(
@@ -36,7 +35,6 @@ export function useSpending(): UseSpendingReturn {
   );
   watch([month, scope, participantId], () => {
     pick.value = null;
-    open.value = null;
   });
 
   // Also publishes the answer's rates to the currency button of the global filters.
@@ -61,7 +59,6 @@ export function useSpending(): UseSpendingReturn {
     people,
     selected,
     pick,
-    open,
     fmt,
   };
 }

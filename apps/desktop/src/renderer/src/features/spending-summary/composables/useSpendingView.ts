@@ -7,7 +7,7 @@ import {
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
 export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
-  const { month, thisMonth, view, family, member, people, selected, pick, open, fmt } = base;
+  const { month, thisMonth, view, family, member, people, selected, pick, fmt } = base;
   /** The in-block pick counts in the family view only, and only for a person still in the view (one removed meanwhile → the family). */
   const blockPick = computed(() => {
     const id = pick.value;
@@ -67,11 +67,8 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
   function onPick(id: number | null): void {
     pick.value = id;
   }
-  function onToggle(key: string): void {
-    open.value = open.value === key ? null : key;
-  }
 
   return {
-    who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs: opsVsText, memberCard, money, onPick, onToggle,
+    who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs: opsVsText, memberCard, money, onPick,
   };
 }

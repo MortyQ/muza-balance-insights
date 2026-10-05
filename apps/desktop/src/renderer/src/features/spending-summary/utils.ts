@@ -1,9 +1,10 @@
-import type { CategoryId } from '@contract/categories.ts';
 import type { SpendingAmounts, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
+import type { CategoryId } from '@contract/categories.ts';
+import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { change, formatMoney, monthName, monthShortName, shortDate, t, type Change } from '@/shared/lib';
-import { CATEGORY_COLORS, CATEGORY_ICON, TOP } from './constants.ts';
-import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
+import { CATEGORY_COLORS, TOP } from './constants.ts';
+import type { BarSegment, BlockPerson, ChipView, OpsView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
 /** «N more categories». */
 const GREY = 'var(--border-strong)';
@@ -25,15 +26,6 @@ export function periodNote(p: Readonly<SpendingOverview['period']>): string | nu
   if (p.dataUntil < p.from) return t('home.spending.notYet', { date: shortDate(p.dataUntil) });
   if (!p.incomplete) return null;
   return t('home.spending.partial', { date: shortDate(p.dataUntil) });
-}
-
-/** A category the core no longer has comes as its bare word: shown capitalised. */
-export function capitalize(s: string): string {
-  return s.charAt(0).toLocaleUpperCase('uk') + s.slice(1);
-}
-
-export function categoryName(c: Readonly<{ category: string; categoryId: CategoryId | null }>): string {
-  return c.categoryId ? t(`home.spending.category.${c.categoryId}`) : capitalize(c.category);
 }
 
 const tone = (c: Change): ChipView['tone'] => (c.kind === 'up' ? 'up' : c.kind === 'down' ? 'down' : 'neutral');
@@ -170,6 +162,7 @@ const pctOf = (value: number, max: number) => Math.round((value / max) * 1000) /
 /** `net` / `purchases` / `prev` — the pick's (family or person); `family` — the family's, which sets the bar scale. */
 type Line = {
   key: string;
+  categoryId: CategoryId | null;
   name: string;
   icon: string;
   color: string;
@@ -227,6 +220,7 @@ export function rowsFor(
       const own = pick === null ? c : c.people.find((p) => p.participantId === pick);
       return {
         key: c.category,
+        categoryId: c.categoryId,
         name: categoryName(c),
         icon: CATEGORY_ICON[c.categoryId ?? 'other'],
         color: CATEGORY_COLORS[i] ?? OTHER,
@@ -245,6 +239,7 @@ export function rowsFor(
   if (rest.length > 0) {
     top.push({
       key: 'rest',
+      categoryId: null,
       name: t('home.spending.rest', rest.length),
       icon: CATEGORY_ICON.rest,
       color: GREY,
@@ -272,9 +267,9 @@ export function rowsFor(
     const segments: BarSegment[] = split.length > 0 ? split : [{ value: 1, color: l.color, title: '' }];
     // Split by people with a pick: the bar is the family's amount; otherwise the pick's own.
     const barNet = pick !== null && split.length > 0 ? l.family.net : l.net;
-    const pmax = Math.max(1, ...l.parts.map((p) => Math.max(p.net, p.prev?.net ?? 0)));
     return {
       key: l.key,
+      categoryId: l.categoryId,
       name: l.name,
       icon: l.icon,
       color: l.color,
@@ -287,25 +282,6 @@ export function rowsFor(
       mark: prefs.mark && l.prev && l.prev.net > 0 ? pctOf(l.prev.net, max) : null,
       markTitle: l.prev && l.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: fmt.money(l.prev.net) }) : '',
       segments,
-      people: l.parts
-        .filter((p) => p.net > 0 || (p.prev?.net ?? 0) > 0)
-        .map((p): PersonLineView => {
-          const who = personOf(people, p.participantId);
-          return {
-            participantId: p.participantId,
-            name: who.name,
-            initial: initial(who.name),
-            color: who.color,
-            amount: fmt.money(p.net),
-            conv: fmt.approx(p.net),
-            ops: { ...opsView(p.purchases, p.prev?.purchases ?? null, view.month, partial(view)), text: t('home.spending.opsShort', { n: p.purchases }) },
-            chip: amountChip(p.net, p.prev?.net ?? null, view.month, fmt, partial(view)),
-            width: pctOf(Math.max(0, p.net), pmax),
-            mark: prefs.mark && p.prev && p.prev.net > 0 ? pctOf(p.prev.net, pmax) : null,
-            markTitle: p.prev && p.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: fmt.money(p.prev.net) }) : '',
-            faded: pick !== null && pick !== p.participantId,
-          };
-        }),
     };
   });
 }

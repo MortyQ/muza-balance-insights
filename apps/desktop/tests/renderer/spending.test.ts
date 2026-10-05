@@ -122,9 +122,8 @@ describe('rowsFor', () => {
     expect(rows[0]!.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `+${uah(10_000)}` });
     expect(rows[1]!.chip).toMatchObject({ tone: 'neutral', arrow: null, text: 'как в августе' });
     expect(rows[2]!.chip).toMatchObject({ text: 'новое' });
-    expect(rows[0]!.people.map((p) => p.name)).toEqual(['Сергей', 'Аня']);
-    // a person who spent nothing in a category, now or last month, has no line in it
-    expect(rows[2]!.people.map((p) => p.participantId)).toEqual([2]);
+    // each named category opens its screen; the people split lives there, not in the row
+    expect(rows.map((r) => r.categoryId)).toEqual(['groceries', 'cafes', 'gifts']);
   });
 
   it('a picked person: their amounts, re-sorted, the others fade; categories without them drop out', () => {
@@ -141,7 +140,6 @@ describe('rowsFor', () => {
     expect(rows[0]!.mark).toBe(30);
     expect(rows[1]).toMatchObject({ mark: null, markTitle: '' }); // last month 0
     expect(rows[0]!.chip).toMatchObject({ tone: 'up', text: `+${uah(5_000)}` });
-    expect(rows[0]!.people.find((p) => p.participantId === 1)!.faded).toBe(true);
     // colours stay those of the family's rank
     expect(rows[1]!.color).toBe('var(--category-3)');
   });
@@ -169,15 +167,6 @@ describe('rowsFor', () => {
     expect(rowsFor(view, null, P, { ...PREFS, mark: true }, UAH_FMT).map((r) => [r.width, r.mark])).toEqual([[50, 100]]);
   });
 
-  it('a person line: width and mark against the largest person of the category', () => {
-    const [groceries] = rowsFor(VIEW, null, P, { ...PREFS, mark: true }, UAH_FMT);
-    expect(groceries!.people.map((p) => [p.name, p.initial, p.width, p.mark, p.amount, p.ops.text, p.ops.diff, p.faded])).toEqual([
-      ['Сергей', 'С', 100, 83.3, uah(30_000), '6 оп.', '+1', false],
-      ['Аня', 'А', 66.7, 50, uah(20_000), '4 оп.', 'столько же', false],
-    ]);
-    expect(groceries!.people[0]!.markTitle).toBe(`В августе — ${uah(25_000)}`);
-  });
-
   it('no comparison → no chips, no operation differences, no marks', () => {
     const none: SpendingOverview = { ...VIEW, compare: null, total: { ...VIEW.total, prev: null }, categories: [cat('продукты', 'groceries', 50_000, 10, null)] };
     const [row] = rowsFor(none, null, P, { ...PREFS, mark: true }, UAH_FMT);
@@ -193,13 +182,6 @@ describe('rowsFor', () => {
       [{ value: 1, color: 'var(--category-2)', title: '' }],
       [{ value: 1, color: 'var(--category-3)', title: '' }],
     ]);
-    expect(rows.every((r) => r.people.length === 0)).toBe(true);
-  });
-
-  it('a person line never gets a negative width (refunds only this month)', () => {
-    const view: SpendingOverview = { ...VIEW, categories: [cat('продукты', 'groceries', 10_000, 2, 5_000, [part(1, 12_000, 2, { net: 3_000, purchases: 1 }), part(2, -2_000, 0, { net: 2_000, purchases: 1 })])] };
-    const [row] = rowsFor(view, null, P, PREFS, UAH_FMT);
-    expect(row!.people.map((p) => p.width)).toEqual([100, 0]);
   });
 
   it('a picked person: a named category below the family\'s top 7 gets its own muted colour, not the rest-grey', () => {
@@ -216,17 +198,16 @@ describe('rowsFor', () => {
     expect(rows).toHaveLength(8);
     expect(rows[0]!.name).toBe('C0');
     expect(rows[6]!.color).toBe('var(--category-7)');
-    expect(rows[7]).toMatchObject({ key: 'rest', name: 'Ещё 2 категории', color: 'var(--border-strong)', icon: 'lucide:list', amount: uah(3_000) });
+    expect(rows[7]).toMatchObject({ key: 'rest', categoryId: null, name: 'Ещё 2 категории', color: 'var(--border-strong)', icon: 'lucide:list', amount: uah(3_000) });
   });
 
-  it('«N more categories» sums the rest categories\' last month and each person\'s parts', () => {
+  it('«N more categories» sums the rest categories\' last month and splits by people', () => {
     const people = (net: number) => [part(1, net, 1, { net: 100, purchases: 1 }), part(2, 0, 0, { net: 0, purchases: 0 })];
     const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, 500, people(1_000 * (9 - i)))) };
     const rest = rowsFor(many, null, P, PREFS, UAH_FMT)[7]!;
     expect(rest.chip).toMatchObject({ tone: 'up', text: `+${uah(2_000)}` }); // 3 000 against 500 + 500
     expect(rest.ops).toMatchObject({ text: '2 операции', diff: 'новое' }); // last month 0 + 0 purchases
     expect(rest.segments.map((s) => [s.value, s.color])).toEqual([[3_000, 'var(--series-blue)']]);
-    expect(rest.people.map((p) => [p.participantId, p.amount, p.chip?.text])).toEqual([[1, uah(3_000), `+${uah(2_800)}`]]);
   });
 });
 
@@ -266,7 +247,7 @@ describe('totalFor / shareOf / ringStops / centerConv', () => {
 });
 
 describe('euro main', () => {
-  it('rows, chips, marks and people in euros, «≈» in hryvnia', () => {
+  it('rows, chips, marks and people rows in euros, «≈» in hryvnia', () => {
     const rows = rowsFor(VIEW, null, P, { ...PREFS, mark: true }, EUR_FMT);
     expect(rows[0]!.amount).toBe(EUR_FMT.money(50_000));
     expect(rows[0]!.amount).toBe(formatMoney(1_000, 978));
@@ -274,7 +255,6 @@ describe('euro main', () => {
     expect(rows[0]!.chip).toMatchObject({ text: `+${EUR_FMT.money(10_000)}` });
     expect(rows[0]!.markTitle).toBe(`В августе — ${EUR_FMT.money(40_000)}`);
     expect(rows[0]!.segments[0]!.title).toBe(`Сергей — ${EUR_FMT.money(30_000)}`);
-    expect(rows[0]!.people[0]).toMatchObject({ amount: EUR_FMT.money(30_000), conv: EUR_FMT.approx(30_000) });
     expect(amountChip(110_000, 100_000, '2026-09', EUR_FMT)!.text).toBe(`+${EUR_FMT.money(10_000)}`);
     expect(peopleRows(VIEW, null, P, EUR_FMT).map((r) => r.amount)).toEqual([EUR_FMT.money(100_000), EUR_FMT.money(60_000), EUR_FMT.money(40_000)]);
   });

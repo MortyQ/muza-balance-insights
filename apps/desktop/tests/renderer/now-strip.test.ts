@@ -6,7 +6,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import type { NowOverview, NowOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import WeekBars from '@/features/now-strip/components/WeekBars.vue';
-import { categoryColor, daysRange, dayLabel, nowChip, nowView, weekBars } from '@/features/now-strip/utils.ts';
+import { categoryColor } from '@/entities/category';
+import { daysRange, dayLabel, nowChip, nowView, weekBars } from '@/features/now-strip/utils.ts';
 import { formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);

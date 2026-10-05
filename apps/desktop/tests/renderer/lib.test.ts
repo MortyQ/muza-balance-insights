@@ -157,7 +157,7 @@ describe('plural forms («one | few | many»)', async () => {
 });
 
 // The core groups by its own word; main adds the id, the table shows the dictionary name.
-const { categoryName } = await import('@/features/spending-summary/utils.ts');
+const { categoryName } = await import('@/entities/category');
 
 describe('spending category names', () => {
   const line = { gross: 1, refunds: 0, net: 1 };

@@ -5,6 +5,88 @@
       "title": "Analytics is coming soon"
     }
   },
+  "category": {
+    "back": "Spending",
+    "failed": "Couldn't load the category.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency.",
+    "list": {
+      "byAmount": "By amount",
+      "byDate": "By date",
+      "clear": "Clear the «{name}» filter",
+      "col": {
+        "amount": "Amount",
+        "marks": "Marks",
+        "when": "When",
+        "where": "Where",
+        "who": "Who · account"
+      },
+      "empty": "Nothing found.",
+      "mark": {
+        "cashback": "cashback +{amount}",
+        "fee": "fee",
+        "foreign": "foreign currency",
+        "noRate": "no rate",
+        "pending": "pending",
+        "refund": "refund",
+        "refunded": "refunded"
+      },
+      "noDescription": "No description",
+      "search": "Search: place, comment, amount",
+      "sort": "Sort",
+      "title": "Operations",
+      "total": "List total: {amount}"
+    },
+    "months": {
+      "above": "{month}: {amount} above the average",
+      "avg": "{amount} a month on average",
+      "below": "{month}: {amount} below the average",
+      "noData": "no data",
+      "soFar": "{amount} so far",
+      "title": "Last 12 months"
+    },
+    "none": "No spending in this category in {month}.",
+    "summary": {
+      "activeDays": "days with spending: {n} of {days}",
+      "avg": "Average",
+      "cashback": "Cashback",
+      "cashbackLines": "from {n} operation | from {n} operations | from {n} operations",
+      "gross": "Charged {gross} · refunds −{refunds}",
+      "largest": "Largest",
+      "largestWhere": "{merchant}, {date} at {time}",
+      "median": "median {amount}",
+      "ops": "Operations",
+      "opsPrev": "{n} in {month}",
+      "perDay": "Per day",
+      "rank": "#{n} this month",
+      "share": "Share of all spending",
+      "spent": "Spent this month",
+      "vsPrev": "{amount} in {month}"
+    },
+    "when": {
+      "dayParts": "By time of day",
+      "dayTitle": "{month} {day} — {amount}",
+      "days": "By day of the month",
+      "part": {
+        "0": "morning 6–12",
+        "1": "day 12–18",
+        "2": "evening 18–23",
+        "3": "night 23–6"
+      },
+      "peak": "Most: {weekday} · {part}",
+      "title": "When",
+      "titleFor": "When: {name}",
+      "weekdays": "By weekday"
+    },
+    "where": {
+      "hint": "Click to filter the list",
+      "more": "{n} more place | {n} more places | {n} more places",
+      "title": "Where"
+    },
+    "who": {
+      "avg": "avg {amount}",
+      "title": "Who spent"
+    }
+  },
   "common": {
     "atTime": "at {time}",
     "disclaimer": "Unofficial app, not affiliated with Monobank.",

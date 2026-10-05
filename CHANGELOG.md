@@ -17,6 +17,23 @@ English interface.
   it to see when it was last updated. During a download, hover over it to see how many parts of the statement are
   loaded out of how many.
 
+### Category screen
+
+- Click a category in «Spending» to open everything about it for the month: how much went there and how that compares
+  with last month, the number of operations, the average and the median, per day, its share of all spending, the
+  largest purchase and the cashback; the last 12 months; who in the family spent how much; where (each place with its
+  total and average — click one to see only its operations and when they happened); when (by weekday, time of day and day of the month); and
+  every operation with its date, time, the bank's description and comment, the card, refunds, pending holds and the
+  amount in its own currency. Search the list or sort it by amount. The month, the person and the main currency are the
+  same filters as on the home screen.
+- The split of a category by people moved there from the home screen: a category row in «Spending» now opens the
+  category instead of unfolding.
+- «Last 12 months» on the category screen runs up to the current month while the picked month is among the last 12
+  (the picked month stands out), so you see what came after it too; an older month shows the 12 months up to it. The
+  current month is not in the average until it ends.
+- Back from a category, the home screen is there at once, with the «Spending» switch as you left it. While a category
+  opens for the first time, its cards show a placeholder instead of an empty page.
+
 ### Downloading history
 
 - The history download moved from the home screen to «Settings» → «Connections», under «History download», next to
@@ -40,9 +57,8 @@ English interface.
 ### Fixes
 
 - Outside Ukraine the app no longer moves to the next day before your midnight: «today», this week and this month, the
-  dates of the history download and every time shown (last update, rates) now follow your computer's time zone.
-  Spending is still split into days and months by Kyiv time for now, so close to midnight a purchase can still count
-  towards the neighbouring day.
+  dates of the history download, every time shown (last update, rates) and the split of spending and income into days
+  and months now follow your computer's time zone. A purchase at 23:30 your time counts towards that day, not the next.
 
 ## 0.1.7 — 2026-10-05
 
