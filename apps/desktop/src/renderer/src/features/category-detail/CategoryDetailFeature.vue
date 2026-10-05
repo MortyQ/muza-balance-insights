@@ -38,14 +38,15 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
         <CategorySummary :summary />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
-      <!-- Side by side from the container's @3xl (the content column is at most 52rem), stacked below it; a row's cards share its height. -->
-      <div class="grid gap-4" :class="{ '@3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]': people.length > 1 }">
-        <VCard v-if="months" padding="md" class="min-w-0"><MonthsChart :months /></VCard>
-        <VCard v-if="people.length > 1" padding="md" class="min-w-0"><WhoSpent :people /></VCard>
-      </div>
+      <VCard v-if="months" padding="md"><MonthsChart :months /></VCard>
+      <!-- Two columns from the container's @3xl (the content column is at most 52rem): the merchants' list on the left,
+           «When» and «Who spent» stacked on the right, so the two sides come out about as tall. -->
       <div v-if="view.lines.length > 0" class="grid gap-4 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <VCard padding="md" class="min-w-0"><MerchantList :merchants :more="moreMerchants" @pick="pickMerchant" /></VCard>
-        <VCard v-if="when" padding="md" class="min-w-0"><WhenCharts :when /></VCard>
+        <div class="flex min-w-0 flex-col gap-4">
+          <VCard v-if="when" padding="md"><WhenCharts :when /></VCard>
+          <VCard v-if="people.length > 1" padding="md" class="grow"><WhoSpent :people /></VCard>
+        </div>
       </div>
       <VCard v-if="view.lines.length > 0" padding="md">
         <TransactionList v-model:query="query" v-model:sort="sort" :rows :total :merchant-name="merchantName" @clear="merchant = null" />
