@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { categoryLink } from '@/shared/config';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import CategoryRing from './components/CategoryRing.vue';
 import CategoryRow from './components/CategoryRow.vue';
@@ -11,11 +12,11 @@ import { useSpendingView } from './composables/useSpendingView.ts';
 import { useSpendingPrefsStore } from './store/useSpendingPrefsStore.ts';
 
 const base = useSpending();
-const { scope, state, view, periodNote, importing, family, open } = base;
+const { scope, state, view, periodNote, importing, family } = base;
 const prefsStore = useSpendingPrefsStore();
 const { prefs } = storeToRefs(prefsStore);
 const {
-  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs, memberCard, money, onPick, onToggle,
+  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs, memberCard, money, onPick,
 } = useSpendingView(base, prefs);
 </script>
 
@@ -71,7 +72,7 @@ const {
         </div>
         <div class="flex min-w-0 grow flex-col gap-0.5">
           <p v-if="noneBy" class="px-2.5 py-3 text-foreground-muted">{{ noneBy }}</p>
-          <CategoryRow v-for="r in rows" :key="r.key" :row="r" :expandable="family" :open="open === r.key" @toggle="onToggle(r.key)" />
+          <CategoryRow v-for="r in rows" :key="r.key" :row="r" :to="r.categoryId ? categoryLink(r.categoryId, scope) : null" />
         </div>
       </div>
 

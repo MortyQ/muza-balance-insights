@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
+import type { CategoryId } from '@contract/categories.ts';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable, YearMonth } from '@/shared/lib';
@@ -26,24 +27,10 @@ export interface BarSegment {
   title: string;
 }
 
-export interface PersonLineView {
-  participantId: number;
-  name: string;
-  initial: string;
-  color: string;
-  amount: string;
-  conv: string[];
-  ops: OpsView;
-  chip: ChipView | null;
-  /** % of the largest person's amount in this category; mark — last month's (null: no tick). */
-  width: number;
-  mark: number | null;
-  markTitle: string;
-  faded: boolean;
-}
-
 export interface RowView {
   key: string;
+  /** The category the row opens (its screen); null — «N more categories» or a word the core no longer has. */
+  categoryId: CategoryId | null;
   name: string;
   icon: string;
   color: string;
@@ -57,7 +44,6 @@ export interface RowView {
   mark: number | null;
   markTitle: string;
   segments: BarSegment[];
-  people: PersonLineView[];
 }
 
 export interface PersonRowView {
@@ -105,8 +91,6 @@ export interface UseSpendingReturn {
   selected: ComputedRef<BlockPerson | null>;
   /** The block's own pick (family view): a participant id or null. */
   pick: Ref<number | null>;
-  /** The expanded category key (family view), or null. */
-  open: Ref<string | null>;
   /** The answer's rates and the home-wide currency choice: every amount of the block goes through it. */
   fmt: ComputedRef<MoneyFormat>;
 }
@@ -142,5 +126,4 @@ export interface UseSpendingViewReturn {
   /** Hryvnia kopecks in the main currency (the ring and last month's total). */
   money: (kopecks: number) => string;
   onPick: (id: number | null) => void;
-  onToggle: (key: string) => void;
 }

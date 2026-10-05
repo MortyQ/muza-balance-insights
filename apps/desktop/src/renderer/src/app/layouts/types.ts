@@ -1,4 +1,5 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
+import type { RouteName } from '@/shared/config';
 
 /** The shells a screen can live in: `default` — the data screens (filters, side menu); `empty` — the screen alone. */
 export type LayoutName = 'default' | 'empty';
@@ -18,5 +19,7 @@ declare module 'vue-router' {
     layout?: LayoutName;
     /** Absent: not in the side menu. */
     nav?: RouteNav;
+    /** A screen without its own menu item: the item shown as current (a category screen → «General»). */
+    navParent?: RouteName;
   }
 }

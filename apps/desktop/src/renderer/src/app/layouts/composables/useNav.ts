@@ -8,7 +8,7 @@ export function useNav() {
   const router = useRouter();
   const route = useRoute();
   const groups = navGroups(router.getRoutes());
-  const current = computed(() => String(route.name) as RouteName);
+  const current = computed(() => route.meta.navParent ?? (String(route.name) as RouteName));
   const select = (name: RouteName) => {
     if (name !== route.name) void router.push({ name });
   };

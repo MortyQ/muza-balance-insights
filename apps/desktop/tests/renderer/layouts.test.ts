@@ -51,7 +51,7 @@ describe('navGroups', () => {
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
   });
 });
 
@@ -61,6 +61,7 @@ describe('MasterLayout', () => {
       { path: '/', name: 'home', component: page('home'), meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } } },
       { path: '/second', name: 'second', component: page('second'), meta: { nav: { label: 'home.nav.label', icon: 'lucide:list', order: 1 } } },
       { path: '/settings', name: 'settings', component: page('settings'), meta: { layout: 'empty' } },
+      { path: '/sub', name: 'category', component: page('sub'), meta: { navParent: 'home' } },
     ];
     const router = createRouter({ history: createMemoryHistory(), routes: test });
     await router.push(path);
@@ -76,6 +77,13 @@ describe('MasterLayout', () => {
     expect(items.map((b) => b.attributes('data-item'))).toEqual(['home', 'second']);
     expect(items[0]?.attributes('aria-current')).toBe('page');
     expect(w.find('[data-page="home"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it('a screen without its own item keeps its parent current (the category screen → «General»)', async () => {
+    const { w } = await mountAt('/sub');
+    expect(w.find('[data-page="sub"]').exists()).toBe(true);
+    expect(w.find('nav button[data-item="home"]').attributes('aria-current')).toBe('page');
     w.unmount();
   });
 

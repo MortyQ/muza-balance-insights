@@ -1,9 +1,9 @@
-import type { CategoryId } from '@contract/categories.ts';
 import type { NowOverview } from '@contract/api.ts';
+import { categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { change, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
-import { COLORED, MIN_BAR } from './constants.ts';
+import { MIN_BAR } from './constants.ts';
 import type { NowStripView, TopCell, WeekBar } from './types.ts';
 
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -44,16 +44,6 @@ export function nowChip(now: number, base: number | null, against: 'usual' | 'we
   if (c.kind === 'same') return { text: t(SAME[against]), tone: 'neutral', arrow: null, sr: '' };
   const dir = c.kind === 'up' ? 'up' : 'down';
   return { text: `${dir === 'up' ? '+' : '−'}${c.pct}%`, tone: dir, arrow: dir, sr: t(SR[against][dir]) };
-}
-
-/** Named as in the spending block (its dictionary keys); a word the core no longer has — capitalised. */
-export function categoryName(c: Readonly<{ category: string; categoryId: CategoryId | null }>): string {
-  return c.categoryId ? t(`home.spending.category.${c.categoryId}`) : c.category.charAt(0).toLocaleUpperCase('uk') + c.category.slice(1);
-}
-
-/** The spending block's colour of this month's rank (`--category-1…7`), else `--category-other`. */
-export function categoryColor(rank: number | null): string {
-  return rank !== null && rank < COLORED ? `var(--category-${rank + 1})` : 'var(--category-other)';
 }
 
 function topCell(top: NowOverview['week']['top'], weekNet: number, fmt: MoneyFormat): TopCell | null {
