@@ -1,4 +1,10 @@
 {
+  "analytics": {
+    "placeholder": {
+      "text": "Charts and comparisons of your spending and income over the months will live here.",
+      "title": "Analytics is coming soon"
+    }
+  },
   "common": {
     "atTime": "at {time}",
     "disclaimer": "Unofficial app, not affiliated with Monobank.",
@@ -259,6 +265,7 @@
       "windowsLine": "{account}: window {from} … {to} ({index}/{total}) · windows downloaded {done} of {windows}, transactions {transactions} · {eta} left{wait}"
     },
     "nav": {
+      "analytics": "Analytics",
       "general": "General",
       "label": "Home sections"
     },

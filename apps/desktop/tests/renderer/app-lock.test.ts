@@ -29,7 +29,10 @@ vi.mock('@/shared/api', () => ({ balanceApi: api.fake }));
 
 const { startGuard } = await import('@/app/router/guards.ts');
 const { listenToMain } = await import('@/app/listeners.ts');
-const guard = (name: string) => (startGuard as (to: unknown, from: unknown) => unknown)({ name }, {});
+const { routes } = await import('@/app/router/routes.ts');
+// The route's real meta: the guard reads its layout.
+const guard = (name: string) =>
+  (startGuard as (to: unknown, from: unknown) => unknown)({ name, meta: routes.find((r) => r.name === name)?.meta ?? {} }, {});
 
 beforeEach(() => setActivePinia(createPinia()));
 

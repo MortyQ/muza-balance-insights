@@ -35,7 +35,10 @@ const { listenToMain } = await import('@/app/listeners.ts');
 const { recoveryText } = await import('@/features/settings/db-recovery/utils.ts');
 const { useDbRecovery } = await import('@/features/settings/db-recovery/composables/useDbRecovery.ts');
 const { useDbStateStore } = await import('@/entities/db-state');
-const guard = (name: string) => (startGuard as (to: unknown, from: unknown) => unknown)({ name }, {});
+const { routes } = await import('@/app/router/routes.ts');
+// The route's real meta: the guard reads its layout.
+const guard = (name: string) =>
+  (startGuard as (to: unknown, from: unknown) => unknown)({ name, meta: routes.find((r) => r.name === name)?.meta ?? {} }, {});
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -64,6 +67,15 @@ describe('startGuard with the database', () => {
     expect(await guard('db-recovery')).toEqual({ name: 'home' });
     expect(await guard('settings')).toBe(true);
     expect(await guard('home')).toBe(true);
+  });
+
+  it('every data screen (the default layout) is open with home; with nothing to show they go to connect', async () => {
+    api.state.db = db('ready');
+    expect(await guard('analytics')).toBe(true);
+    expect(await guard('connect')).toEqual({ name: 'home' });
+    api.state.hasConnections = false;
+    setActivePinia(createPinia());
+    expect(await guard('analytics')).toEqual({ name: 'connect' });
   });
 
   it('main did not answer getDbState: no recovery screen (main still refuses data)', async () => {

@@ -50,6 +50,8 @@ English interface.
 - In the people filter, hover over a name to see when that person's data was last updated. A person whose connection
   did not update gets a small warning dot, and the hint says which connection and why.
 - With reduced motion turned on in your system settings, loading spinners no longer spin.
+- The menu on the left of the home screen has a second item, «Analytics». It is a placeholder for now; the filters at
+  the top stay as they are when you switch between «General» and «Analytics».
 
 ### Look and feel
 

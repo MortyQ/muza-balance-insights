@@ -11,6 +11,12 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/home').then((m) => m.HomePage),
     meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } },
   },
+  {
+    path: '/analytics',
+    name: ROUTE.analytics,
+    component: () => import('@/pages/analytics').then((m) => m.AnalyticsPage),
+    meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 1 } },
+  },
   { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage), meta: { layout: 'empty' } },
   { path: '/settings', name: ROUTE.settings, component: () => import('@/pages/settings').then((m) => m.SettingsPage), meta: { layout: 'empty' } },
   {

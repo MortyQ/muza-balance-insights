@@ -40,11 +40,18 @@ describe('navGroups', () => {
     expect(navGroups([r('x')])).toEqual([]);
   });
 
-  it('the app: «General» is home, in the default layout; the other screens are on their own', () => {
+  it('the app: «General» (home), then «Analytics», in the default layout; the other screens are on their own', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
-    expect(navGroups(router.getRoutes())).toEqual([{ items: [{ label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'home' }] }]);
+    expect(navGroups(router.getRoutes())).toEqual([
+      {
+        items: [
+          { label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'home' },
+          { label: 'home.nav.analytics', icon: 'lucide:chart-column', id: 'analytics' },
+        ],
+      },
+    ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
   });
 });
 

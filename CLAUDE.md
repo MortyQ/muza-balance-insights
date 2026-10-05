@@ -179,8 +179,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
-  top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`; one item
-  «General» = `home` for now).
+  top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`: «General» =
+  `home`, «Analytics» = `analytics`, a placeholder for now).
 - **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
   picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
   `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the
@@ -191,5 +191,5 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each
   layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. Pages and layouts have one root element
   (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
-  with `meta.nav`.
+  with `meta.nav`; the guard opens every default-layout route once home is the start (`startGuard`).
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

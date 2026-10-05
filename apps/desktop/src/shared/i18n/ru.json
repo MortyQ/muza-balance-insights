@@ -1,4 +1,10 @@
 {
+  "analytics": {
+    "placeholder": {
+      "text": "Здесь будут графики и сравнения твоих трат и доходов по месяцам.",
+      "title": "Аналитика скоро появится"
+    }
+  },
   "common": {
     "atTime": "в {time}",
     "disclaimer": "Неофициальное приложение, не связано с Monobank.",
@@ -259,6 +265,7 @@
       "windowsLine": "{account}: окно {from} … {to} ({index}/{total}) · загружено окон {done} из {windows}, операций {transactions} · осталось {eta}{wait}"
     },
     "nav": {
+      "analytics": "Аналитика",
       "general": "Общее",
       "label": "Разделы главной"
     },

@@ -4,13 +4,15 @@ import { useDbStateStore } from '@/entities/db-state';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { useParticipantStore } from '@/entities/participant';
 import { ROUTE } from '@/shared/config';
+import { layoutOf } from '../layouts/utils.ts';
 import { startRoute } from './startRoute.ts';
 
 /**
  * While locked every route is the lock screen; the lock route itself becomes home once open. Then the database: not
  * ready → every route, settings too, is the recovery screen (the lock comes first: «Start over» is not for whoever
  * sits at an unlocked computer); ready → the recovery route becomes home. Home and connect
- * otherwise swap according to startRoute; settings are always reachable (Cmd+, works on the connect screen too).
+ * otherwise swap according to startRoute; once home is the start, every data screen (the default layout's) is open too;
+ * settings are always reachable (Cmd+, works on the connect screen too).
  * The first navigation waits for the connections and data status, so no screen flashes before we know which one to show.
  */
 export const startGuard: NavigationGuard = async (to) => {
@@ -34,5 +36,6 @@ export const startGuard: NavigationGuard = async (to) => {
   }
   if (syncStatus.status === null && !syncStatus.failed) await syncStatus.refresh();
   const start = startRoute(participant.hasConnections, syncStatus.hasData);
+  if (start === ROUTE.home && layoutOf(to) === 'default') return true;
   return to.name === start ? true : { name: start };
 };
