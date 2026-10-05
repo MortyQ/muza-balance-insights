@@ -49,10 +49,12 @@
 - `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
   operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
 - `spendingSummary` also groups by `day` (Kyiv `local_date`) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
-  do not offer it. Its one user is the desktop's «Now» strip: personal scope; this month's own exchange rates for every
+  do not offer it. Its one user is the desktop's «Now» strip: personal scope; today's Monobank rates for every
   day; the usual day = the median of daily net over the 30 days before today that the data covers (from the first data
   date to the last fully synced day; a day without spending = 0; fewer than 7 such days — none); last week = Monday − 7 …
   today − 7, none when the data starts later.
+- The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
+  exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.
   6012 делится по знаку: зачисления → «поступления», списания → «рассрочки и кредиты».
   8398 → «благотворительность» (донаты в чужие банки через 4829 — позже оверрайдами).

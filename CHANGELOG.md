@@ -17,8 +17,8 @@ English interface.
   mark».
 - Whether an amount went up or down against last month no longer rests on colour alone: differences carry a «+» or
   «−» sign, and screen readers say the direction.
-- Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
-  table per currency.
+- Spending on dollar and euro cards is now counted at today's Monobank sell rate, instead of a separate table per
+  currency.
 
 ### Home screen
 
@@ -26,9 +26,12 @@ English interface.
   spending against a usual day, «This week» — the week so far against the same days of last week, with a bar for each
   day, and «Most this week» — the category you spent the most on. It follows the people filter, updates with every
   sync, and is shown while the current month is selected.
-- A currency button next to the month filter («Also show in currency»: «Dollars $» and «Euro €») adds amounts in
-  dollars or euros next to the hryvnia ones across the home screen — in «Spending» and in the new strip — at the rate of
-  your own exchanges. Totals stay in hryvnia.
+- **Main currency.** Pick hryvnia, dollars or euros in the currency menu next to the filters, and every amount on the
+  home screen — balances, «In / Out», the «Now» strip and «Spending» — is shown in it. The other currencies can still
+  be added as «≈» lines.
+- Amounts in other currencies are now converted at today's Monobank sell rate, not at the rate of your own exchanges.
+  The app asks Monobank for its public rates at launch and every few hours; nothing about you is sent. Without a
+  connection it uses the last rates it got, and the menu says so.
 - Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
   how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
   could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
