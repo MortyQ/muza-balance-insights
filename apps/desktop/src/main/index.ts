@@ -154,7 +154,7 @@ app.whenReady().then(async () => {
   void rates.refresh();
   const ratesTimer = setInterval(() => void rates.refresh(), REFRESH_EVERY_MS);
   app.on('will-quit', () => clearInterval(ratesTimer));
-  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000) });
+  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current() });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {

@@ -1,5 +1,5 @@
 // Pure helpers of the spending block in main (DataService.spendingOverview): the period compared with, and folding
-// account currencies into hryvnia by the user's own exchange rates.
+// account currencies into hryvnia by today's rates.
 import { toUah, type FxRate } from '@mono/core/fx';
 import type { PeriodInfo, SpendingSummary } from '@mono/core/summaries';
 import type { SpendingAmounts } from '../shared/api.ts';

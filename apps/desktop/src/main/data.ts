@@ -8,7 +8,7 @@ import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { kyivStartOfDay, toKyivDate, toKyivDateTime } from '@mono/core/format';
-import { exchangeRates, toUah } from '@mono/core/fx';
+import { toUah, type FxRate } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
@@ -27,8 +27,8 @@ import type {
   NowOverviewQuery,
   OverviewAccount,
   SpendingAmounts,
+  RatesView,
   SpendingCategoryView,
-  SpendingFx,
   SpendingOverview,
   SpendingOverviewQuery,
   SpendingPersonPart,
@@ -39,9 +39,6 @@ const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATE
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
-
-/** The currencies the spending block can add «≈» lines in. */
-const FX_CURRENCIES = [840, 978] as const;
 
 /** `'2026-12'` → `'2027-01-01'`: the first day after the given month, UTC calendar arithmetic. */
 function nextMonthStart(month: string): string {
@@ -57,7 +54,14 @@ export type DataServiceDeps = {
   /** After close: the files are deleted next (releaseClosedFiles — Windows holds them until collected). */
   release: () => Promise<unknown>;
   nowSec: () => number;
+  /** Today's rates (RatesService.current); null — never fetched. */
+  rates: () => Promise<RatesView | null>;
 };
+
+/** Today's rates as the core's fold expects them (one rate for every period). */
+function rateMap(r: RatesView | null): Map<number, FxRate> {
+  return new Map((r?.list ?? []).map((x) => [x.currency, { rate: x.rate, nearest: false }]));
+}
 
 export class DataService {
   private db: Promise<Db> | null = null;
@@ -102,8 +106,9 @@ export class DataService {
     const status = await this.status();
     const first = status.dataFrom;
     const period = { from, to };
-    // The month's rates are the family's (a market fact, not a person's): one lookup for every card.
-    const rates = await exchangeRates(db, period);
+    // Today's rates are the family's (a market fact, not a person's): one snapshot for every card.
+    const today = await this.d.rates();
+    const rates = rateMap(today);
     // Every currency folded into hryvnia; a currency without a rate stays out of the sums, listed in fx.
     const flowOf = (inc: IncomeSummary, sp: SpendingSummary): FlowView & { fx: FxPart[] } => {
       const currencies = [...new Set([...inc.totals.map((t) => t.currency), ...sp.totals.map((t) => t.currency)])].sort((a, b) => a - b);
@@ -116,8 +121,7 @@ export class DataService {
         const iu = toUah(i, c, rates);
         const su = toUah(s, c, rates);
         if (iu !== null && su !== null) (income += iu), (spending += su);
-        const r = rates.get(c);
-        if (c !== UAH && (i !== 0 || s !== 0)) fx.push({ currency: c, income: i, spending: s, rate: r?.rate ?? null, nearest: r?.nearest ?? false });
+        if (c !== UAH && (i !== 0 || s !== 0)) fx.push({ currency: c, income: i, spending: s, rate: rates.get(c)?.rate ?? null });
       }
       return { income, spending, fx };
     };
@@ -127,11 +131,16 @@ export class DataService {
       const balances = await balancesAt(db, { endSec, ...f });
       const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
       const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
+      const others = balances.totals
+        .filter((t) => t.currency !== UAH)
+        .map((t) => ({ currency: t.currency, ownFunds: t.own_funds, rate: rates.get(t.currency)?.rate ?? null }));
+      // A foreign part without a rate stays out of ownFunds (others says so with rate null).
+      const folded = others.reduce((s, o) => s + (toUah(o.ownFunds, o.currency, rates) ?? 0), 0);
       return {
         balances,
         total: {
-          ownFunds: balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0,
-          others: balances.totals.filter((t) => t.currency !== UAH).map((t) => ({ currency: t.currency, ownFunds: t.own_funds })),
+          ownFunds: (balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0) + folded,
+          others,
           missing: balances.missing,
           accounts: balances.accounts.length,
           ...flowOf(income, spending),
@@ -150,7 +159,7 @@ export class DataService {
       for (const p of await listParticipants(db)) {
         people.push({ participantId: p.id, label: p.label, labelPending: labelPending(p), color: p.color, total: (await cardTotal(p.id)).total });
       }
-      return { ...base, people, accounts: [] };
+      return { ...base, people, accounts: [], rates: today };
     }
     const f = { participantId: q.participantId };
     const inc = await incomeSummary(db, { ...period, groupBy: 'account', ...f }, now);
@@ -167,11 +176,11 @@ export class DataService {
       income: inc.groups.find((g) => g.key === a.id)?.total ?? 0,
       spending: sp.groups.find((g) => g.key === a.id)?.net ?? 0,
     }));
-    return { ...base, people: [], accounts };
+    return { ...base, people: [], accounts, rates: today };
   }
 
   /**
-   * The spending block: the month's categories in hryvnia (account currencies folded by the user's own exchanges),
+   * The spending block: the month's categories in hryvnia (account currencies folded by today's rates),
    * spending lines, the compared period, and — for the whole family — each participant's part of every category.
    */
   async spendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview> {
@@ -184,9 +193,10 @@ export class DataService {
 
     const head = await summary(period, q.participantId);
     const compare = comparePeriod(q.month, head.period, status.dataFrom);
-    const rates = await exchangeRates(db, period);
-    // The previous period is folded by its own rates.
-    const before = compare ? { period: compare, rates: await exchangeRates(db, compare) } : null;
+    const today = await this.d.rates();
+    const rates = rateMap(today);
+    // The previous period is folded by the same rate: the change shows spending, not the exchange rate.
+    const before = compare ? { period: compare, rates } : null;
     const cur = foldByCategory(head, rates);
     const prev = before ? foldByCategory(await summary(before.period, q.participantId), before.rates).byCategory : null;
 
@@ -234,12 +244,6 @@ export class DataService {
     }));
 
     const total = sum(cur.byCategory);
-    const fx: SpendingFx[] = FX_CURRENCIES.map((c) => ({
-      currency: c,
-      rate: rates.get(c)?.rate ?? null,
-      prevRate: before?.rates.get(c)?.rate ?? null,
-      nearest: rates.get(c)?.nearest ?? false,
-    }));
     const familyTotal =
       q.participantId !== undefined && participants.length > 1 ? sum(foldByCategory(await summary(period), rates).byCategory).net : null;
 
@@ -251,7 +255,7 @@ export class DataService {
       total: { ...total, prev: prev ? sum(prev) : null },
       people,
       categories,
-      fx,
+      rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
     };
@@ -259,7 +263,7 @@ export class DataService {
 
   /**
    * The «Now» strip: today and this calendar week (Kyiv, from Monday) of the personal scope, folded into hryvnia by
-   * this month's own exchange rates — the same core aggregate as the spending block. Main's clock decides «today».
+   * today's rates — the same core aggregate as the spending block. Main's clock decides «today».
    */
   async nowOverview(q: NowOverviewQuery): Promise<NowOverview> {
     const db = await this.conn();
@@ -273,7 +277,8 @@ export class DataService {
     const summary = (p: { from: string; to: string }, groupBy: 'day' | 'category') =>
       spendingSummary(db, { ...p, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
 
-    const rates = await exchangeRates(db, month);
+    const todayRates = await this.d.rates();
+    const rates = rateMap(todayRates);
     const daily = await summary({ from: windowFrom, to: today }, 'day');
     const week = await summary({ from: monday, to: today }, 'category');
     // foldByCategory folds by the group key — here the Kyiv day.
@@ -308,7 +313,7 @@ export class DataService {
         top: top ? { category: top[0], categoryId: CATEGORY_ID.get(top[0]) ?? null, ...top[1], rank: rank >= 0 ? rank : null } : null,
         pendingHolds: week.period.pendingHolds,
       },
-      fx: FX_CURRENCIES.map((c) => ({ currency: c, rate: rates.get(c)?.rate ?? null, prevRate: null, nearest: rates.get(c)?.nearest ?? false })),
+      rates: todayRates,
     };
   }
 
