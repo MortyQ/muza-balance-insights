@@ -44,7 +44,8 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
       <div v-if="view.lines.length > 0" class="grid gap-4 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <VCard padding="md" class="min-w-0"><MerchantList :merchants :more="moreMerchants" @pick="pickMerchant" /></VCard>
         <div class="flex min-w-0 flex-col gap-4">
-          <VCard v-if="when" padding="md"><WhenCharts :when /></VCard>
+          <!-- The column's last card takes the rest of its height: «Who spent», or «When» when there is no one else. -->
+          <VCard v-if="when" padding="md" :class="{ grow: people.length <= 1 }"><WhenCharts :when /></VCard>
           <VCard v-if="people.length > 1" padding="md" class="grow"><WhoSpent :people /></VCard>
         </div>
       </div>
