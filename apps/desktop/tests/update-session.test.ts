@@ -78,8 +78,8 @@ describe('updater network lives in one place', () => {
   }
   const files = listTs(SRC).map((f) => path.relative(SRC, f).split(path.sep).join('/'));
 
-  it('only update/electron.ts creates a session partition or imports electron-updater, and it guards the session first', () => {
-    expect(files.filter((f) => /fromPartition\(/.test(read(f)))).toEqual(['main/update/electron.ts']);
+  it('only update/electron.ts and rates-session.ts create a session partition; only update/electron.ts imports electron-updater, and it guards its session first', () => {
+    expect(files.filter((f) => /fromPartition\(/.test(read(f)))).toEqual(['main/rates-session.ts', 'main/update/electron.ts']);
     expect(files.filter((f) => /from ['"]electron-updater['"]/.test(read(f)))).toEqual(['main/update/electron.ts']);
     const src = read('main/update/electron.ts');
     const created = src.indexOf('fromPartition(UPDATE_PARTITION');
@@ -88,7 +88,7 @@ describe('updater network lives in one place', () => {
     expect(src.indexOf('guardUpdateSession(ses')).toBeLessThan(src.indexOf('new Updater('));
   });
 
-  it('session fetches only in update/session.ts', () => {
-    expect(files.filter((f) => /\bses\.fetch\(|session\.fetch\(/.test(read(f)))).toEqual(['main/update/session.ts']);
+  it('session fetches only in update/session.ts and rates-session.ts (through allowlistedFetch)', () => {
+    expect(files.filter((f) => /\bses\.fetch\(|session\.fetch\(/.test(read(f)))).toEqual(['main/rates-session.ts', 'main/update/session.ts']);
   });
 });

@@ -23,6 +23,11 @@ export const TRUSTED_SERVICES = [
     purpose: 'Statement and balances import with the personal token',
     hosts: ['api.monobank.ua'],
   },
+  {
+    id: 'monobank-rates',
+    purpose: "Today's public exchange rates for the home screen's currencies: no token, no headers, no user data",
+    hosts: ['api.monobank.ua'],
+  },
 ] as const satisfies ReadonlyArray<TrustedService>;
 
 export type ServiceId = (typeof TRUSTED_SERVICES)[number]['id'];

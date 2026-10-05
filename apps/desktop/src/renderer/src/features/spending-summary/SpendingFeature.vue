@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useCurrencyDisplayStore } from '@/entities/currency-display';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import CategoryRing from './components/CategoryRing.vue';
 import CategoryRow from './components/CategoryRow.vue';
@@ -11,18 +9,14 @@ import { OPS_TONE } from './constants.ts';
 import { useSpending } from './composables/useSpending.ts';
 import { useSpendingView } from './composables/useSpendingView.ts';
 import { useSpendingPrefsStore } from './store/useSpendingPrefsStore.ts';
-import type { ViewPrefs } from './types.ts';
-import { money } from './utils.ts';
 
 const base = useSpending();
 const { scope, state, view, periodNote, importing, family, open } = base;
 const prefsStore = useSpendingPrefsStore();
 const { prefs } = storeToRefs(prefsStore);
-const currency = useCurrencyDisplayStore();
-const shown = computed<ViewPrefs>(() => ({ ...prefs.value, ...currency.prefs }));
 const {
-  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs, memberCard, onPick, onToggle,
-} = useSpendingView(base, shown);
+  who, subtitle, hasData, rows, noneBy, total, ring, chip, conv, perDay, whoRows, leftOut, noCompare, compared, prevIn, prevInTitle, opsVs, memberCard, money, onPick, onToggle,
+} = useSpendingView(base, prefs);
 </script>
 
 <template>

@@ -1,17 +1,15 @@
 import type { CategoryId } from '@contract/categories.ts';
 import type { SpendingAmounts, SpendingOverview, SpendingPersonPart } from '@contract/api.ts';
-import { convertLines, ratedCurrencies } from '@/entities/currency-display';
-import { change, formatMoney, monthName, monthShortName, shortDate, t, UAH, type Change } from '@/shared/lib';
+import type { MoneyFormat } from '@/entities/currency-display';
+import { change, formatMoney, monthName, monthShortName, shortDate, t, type Change } from '@/shared/lib';
 import { CATEGORY_COLORS, CATEGORY_ICON, TOP } from './constants.ts';
-import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs, ViewPrefs } from './types.ts';
+import type { BarSegment, BlockPerson, ChipView, OpsView, PersonLineView, PersonRowView, RowView, SpendingPrefs } from './types.ts';
 
 /** «N more categories». */
 const GREY = 'var(--border-strong)';
 /** A named category ranked below the family's top 7 (shown when a person is picked): muted, apart from the rest-grey. */
 const OTHER = 'var(--category-other)';
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-
-export const money = (kopecks: number): string => formatMoney(kopecks, UAH);
 
 /** The month before `month` ('YYYY-MM') as a number 1–12. */
 function prevMonthNumber(month: string): MonthNumber {
@@ -58,11 +56,11 @@ export function directionText(up: boolean, month: string, partial: boolean): str
 const sign = (c: Change) => (c.kind === 'up' ? '+' : '−');
 
 /** The chip of a row or a person: the amount difference («+1 090 ₴»), `home.spending.change.same`, `home.spending.change.new`. */
-export function amountChip(now: number, prev: number | null, month: string, partial = false): ChipView | null {
+export function amountChip(now: number, prev: number | null, month: string, fmt: MoneyFormat, partial = false): ChipView | null {
   const c = change(now, prev);
   if (!c) return null;
   if (c.kind === 'same' || c.kind === 'new') return sameOrNew(c, month);
-  return { text: `${sign(c)}${money(c.diff)}`, tone: tone(c), arrow: arrow(c), sr: directionText(c.kind === 'up', month, partial) };
+  return { text: `${sign(c)}${fmt.money(c.diff)}`, tone: tone(c), arrow: arrow(c), sr: directionText(c.kind === 'up', month, partial) };
 }
 
 /** The chip under the ring: `home.spending.change.more` / `less` (`…Partial` while the month is in progress); its text says the direction. */
@@ -76,7 +74,7 @@ export function centerChip(now: number, prev: number | null, month: string, part
   return { text: t(key, { pct: c.pct, month: prevIn(month) }), tone: tone(c), arrow: arrow(c), sr: '' };
 }
 
-/** The short chip of the people list and the currency lines: «+9%». */
+/** The short chip of the people list: «+9%». */
 export function pctChip(now: number, prev: number | null, month: string, partial = false): ChipView | null {
   const c = change(now, prev);
   if (!c) return null;
@@ -151,27 +149,9 @@ export function ringStops(parts: ReadonlyArray<{ value: number; color: string }>
   return `conic-gradient(${stops.join(', ')})`;
 }
 
-const rateFormat = new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const rateText = (rate: number) => rateFormat.format(rate);
-
-/** Under the ring: the amount in each currency and its own change (this month's rate vs last month's). */
-export function centerConv(
-  now: number,
-  prev: number | null,
-  view: Readonly<SpendingOverview>,
-  prefs: Readonly<ViewPrefs>,
-): Array<{ text: string; chip: ChipView | null; title: string }> {
-  return ratedCurrencies(view.fx, prefs).map((f) => {
-    const a = Math.round(now / f.rate);
-    const p = prev !== null && f.prevRate !== null ? Math.round(prev / f.prevRate) : null;
-    return {
-      text: `≈ ${formatMoney(a, f.currency)}`,
-      chip: pctChip(a, p, view.month, partial(view)),
-      title: p === null || f.prevRate === null
-        ? ''
-        : t('home.spending.inCurrencyTitle', { month: prevIn(view.month), amount: formatMoney(p, f.currency), prevRate: rateText(f.prevRate), rate: rateText(f.rate) }),
-    };
-  });
+/** Under the ring: the amount in each picked «also» currency (no change chip: one rate for both months). */
+export function centerConv(now: number, fmt: MoneyFormat): string[] {
+  return fmt.approx(now);
 }
 
 /** The family or the picked person. */
@@ -235,7 +215,13 @@ function sumPrev(prevs: ReadonlyArray<SpendingAmounts | null>): SpendingAmounts 
 }
 
 /** The rows of the list for the family (pick null) or one picked person; colours stay those of the family's rank. */
-export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>, prefs: Readonly<ViewPrefs>): RowView[] {
+export function rowsFor(
+  view: Readonly<SpendingOverview>,
+  pick: number | null,
+  people: ReadonlyArray<BlockPerson>,
+  prefs: Readonly<SpendingPrefs>,
+  fmt: MoneyFormat,
+): RowView[] {
   const lines: Line[] = view.categories
     .map((c, i): Line => {
       const own = pick === null ? c : c.people.find((p) => p.participantId === pick);
@@ -280,7 +266,7 @@ export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, p
     const split = prefs.split && view.people.length > 1
       ? parts.filter((p) => p.net > 0).map((p): BarSegment => {
           const who = personOf(people, p.participantId);
-          return { value: p.net, color: pick === null || pick === p.participantId ? who.color : fade(who.color), title: `${who.name} — ${money(p.net)}` };
+          return { value: p.net, color: pick === null || pick === p.participantId ? who.color : fade(who.color), title: `${who.name} — ${fmt.money(p.net)}` };
         })
       : [];
     const segments: BarSegment[] = split.length > 0 ? split : [{ value: 1, color: l.color, title: '' }];
@@ -293,13 +279,13 @@ export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, p
       icon: l.icon,
       color: l.color,
       share: shareOf(l.net, total),
-      amount: money(l.net),
-      conv: convertLines(l.net, view.fx, prefs),
+      amount: fmt.money(l.net),
+      conv: fmt.approx(l.net),
       ops: opsView(l.purchases, l.prev?.purchases ?? null, view.month, partial(view)),
-      chip: amountChip(l.net, l.prev?.net ?? null, view.month, partial(view)),
+      chip: amountChip(l.net, l.prev?.net ?? null, view.month, fmt, partial(view)),
       width: pctOf(barNet, max),
       mark: prefs.mark && l.prev && l.prev.net > 0 ? pctOf(l.prev.net, max) : null,
-      markTitle: l.prev && l.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: money(l.prev.net) }) : '',
+      markTitle: l.prev && l.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: fmt.money(l.prev.net) }) : '',
       segments,
       people: l.parts
         .filter((p) => p.net > 0 || (p.prev?.net ?? 0) > 0)
@@ -310,13 +296,13 @@ export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, p
             name: who.name,
             initial: initial(who.name),
             color: who.color,
-            amount: money(p.net),
-            conv: convertLines(p.net, view.fx, prefs),
+            amount: fmt.money(p.net),
+            conv: fmt.approx(p.net),
             ops: { ...opsView(p.purchases, p.prev?.purchases ?? null, view.month, partial(view)), text: t('home.spending.opsShort', { n: p.purchases }) },
-            chip: amountChip(p.net, p.prev?.net ?? null, view.month, partial(view)),
+            chip: amountChip(p.net, p.prev?.net ?? null, view.month, fmt, partial(view)),
             width: pctOf(Math.max(0, p.net), pmax),
             mark: prefs.mark && p.prev && p.prev.net > 0 ? pctOf(p.prev.net, pmax) : null,
-            markTitle: p.prev && p.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: money(p.prev.net) }) : '',
+            markTitle: p.prev && p.prev.net > 0 ? t('home.spending.markTitle', { month: prevIn(view.month), amount: fmt.money(p.prev.net) }) : '',
             faded: pick !== null && pick !== p.participantId,
           };
         }),
@@ -325,7 +311,7 @@ export function rowsFor(view: Readonly<SpendingOverview>, pick: number | null, p
 }
 
 /** The people list: `home.spending.whole` first, then each person. */
-export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>): PersonRowView[] {
+export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null, people: ReadonlyArray<BlockPerson>, fmt: MoneyFormat): PersonRowView[] {
   const family: PersonRowView = {
     participantId: null,
     name: t('home.spending.whole'),
@@ -333,7 +319,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
     color: '',
     dots: people.map((p) => p.color),
     caption: t('home.spending.together', { ops: t('home.spending.opsShort', { n: view.total.purchases }) }),
-    amount: money(view.total.net),
+    amount: fmt.money(view.total.net),
     chip: pctChip(view.total.net, view.total.prev?.net ?? null, view.month, partial(view)),
     pressed: pick === null,
   };
@@ -348,7 +334,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
         color: who.color,
         dots: [],
         caption: t('home.spending.personShare', { pct: percentOf(p.net, view.total.net), ops: t('home.spending.opsShort', { n: p.purchases }) }),
-        amount: money(p.net),
+        amount: fmt.money(p.net),
         chip: pctChip(p.net, p.prev?.net ?? null, view.month, partial(view)),
         pressed: pick === p.participantId,
       };

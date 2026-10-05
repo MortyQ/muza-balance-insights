@@ -79,7 +79,7 @@ export type AddConnectionResult =
   | { added: false; reason: 'duplicate' };
 
 /** A service the app may reach (src/net/allowlist.ts); ids must equal its ServiceId (checked in src/main/services.ts). */
-export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
+export type TrustedServiceView = { id: 'github' | 'monobank' | 'monobank-rates'; hosts: string[] };
 
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
@@ -193,7 +193,7 @@ export type Scope = 'personal' | 'business';
 
 export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
 
-/** Hryvnia kopecks (account currencies folded by the user's own exchange rates) and spending lines. */
+/** Hryvnia kopecks (account currencies folded by today's rates) and spending lines. */
 export type SpendingAmounts = { net: number; purchases: number };
 
 export type SpendingPersonPart = SpendingAmounts & {
@@ -211,8 +211,17 @@ export type SpendingCategoryView = SpendingAmounts & {
   people: SpendingPersonPart[];
 };
 
-/** A currency the block can show «≈» lines in: kopecks per minor unit, from the user's own exchanges. */
-export type SpendingFx = { currency: 840 | 978; rate: number | null; prevRate: number | null; nearest: boolean };
+/**
+ * Today's Monobank rates (public /bank/currency): hryvnia kopecks per minor unit of each quoted currency — the bank's
+ * sell rate, or its cross rate for a currency it quotes only so. One snapshot for every amount of an answer.
+ */
+export type RatesView = {
+  list: Array<{ currency: number; rate: number }>;
+  /** Epoch seconds of the fetch these rates come from. */
+  fetchedAt: number;
+  /** The latest refresh failed: these are the saved rates. */
+  saved: boolean;
+};
 
 export type SpendingOverview = {
   month: string;
@@ -237,7 +246,8 @@ export type SpendingOverview = {
   people: SpendingPersonPart[];
   /** net > 0 only, net desc; a refund-only category is left out here but counts in `total`. */
   categories: SpendingCategoryView[];
-  fx: SpendingFx[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are in leftOut). */
+  rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
@@ -247,8 +257,8 @@ export type SpendingOverview = {
 export type NowOverviewQuery = { participantId?: number };
 
 /**
- * The «Now» strip: today and this calendar week (Kyiv, from Monday), personal scope, hryvnia kopecks folded by this
- * month's own exchange rates — the same aggregate as the spending block. Main's clock decides «today».
+ * The «Now» strip: today and this calendar week (Kyiv, from Monday), personal scope, hryvnia kopecks folded by
+ * today's rates — the same aggregate as the spending block. Main's clock decides «today».
  */
 export type NowOverview = {
   /** The Kyiv date main counted as today. */
@@ -279,8 +289,8 @@ export type NowOverview = {
     top: (SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null }) | null;
     pendingHolds: number;
   };
-  /** This month's rates, as the spending block's for this month; `prevRate` is always null. */
-  fx: SpendingFx[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */
+  rates: RatesView | null;
 };
 
 export type MonthOverviewQuery = { month: string; participantId?: number };
@@ -288,26 +298,24 @@ export type MonthOverviewQuery = { month: string; participantId?: number };
 /** Minor units: income and spending of the month (the core aggregates, all scopes). */
 export type FlowView = { income: number; spending: number };
 
-/** A foreign-currency part of a card's income / spending, converted to hryvnia by the user's own exchanges. */
+/** A foreign-currency part of a card's income / spending, converted to hryvnia at today's rate. */
 export type FxPart = {
   currency: number;
   /** Minor units of `currency`. */
   income: number;
   spending: number;
-  /** Hryvnia kopecks per minor unit; null — no exchange of this currency at all, the part is left out of the sums. */
+  /** Today's rate (hryvnia kopecks per minor unit); null — not quoted / no rates yet, the part is left out of the sums. */
   rate: number | null;
-  /** The rate is from the nearest exchange, not from this month's. */
-  nearest: boolean;
 };
 
 /** Income / spending: hryvnia, foreign parts converted by `fx`. */
 export type CardTotal = FlowView & {
   /** Foreign-currency parts of income / spending (never hryvnia; parts with nothing in either are left out). */
   fx: FxPart[];
-  /** Own funds in hryvnia at the end of the month (accounts with data only). */
+  /** Own funds in hryvnia at the end of the month, foreign accounts folded in at today's rate (accounts with data only). */
   ownFunds: number;
-  /** Other currencies — never summed with hryvnia. */
-  others: Array<{ currency: number; ownFunds: number }>;
+  /** Foreign-currency own funds, each with today's rate; rate null — left out of ownFunds. */
+  others: Array<{ currency: number; ownFunds: number; rate: number | null }>;
   /** Accounts without data at that date. */
   missing: number;
   /** All accounts behind the card, with data or without. */
@@ -336,6 +344,8 @@ export type MonthOverview = {
   people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */
+  rates: RatesView | null;
 };
 
 export type DataStatus = {

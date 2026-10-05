@@ -29,15 +29,15 @@ const windows = (done: number, total: number, auto?: true): ImportProgress => ({
 });
 
 describe('syncStatusView', () => {
-  it('idle: what the data covers and when it was last updated (today → the time)', () => {
+  it('idle: what the data covers; when it was last updated only on hover (today → the time)', () => {
     const v = syncStatusView({ phase: 'idle' }, data, NOW, labelOf);
-    expect(v).toEqual({ icon: null, text: 'Данные до 03.10, 11:40 · обновлено в 11:45', percent: '', note: '', tooltip: '' });
+    expect(v).toEqual({ icon: null, text: 'Данные до 03.10, 11:40', percent: '', note: '', tooltip: 'Обновлено в 11:45' });
   });
 
-  it('an earlier sync shows its date; no last sync → the data line alone', () => {
-    expect(syncStatusView({ phase: 'idle' }, { ...data, lastSyncAt: '2026-10-01 08:05' }, NOW, labelOf).text).toBe('Данные до 03.10, 11:40 · обновлено 01.10, 08:05');
-    expect(syncStatusView({ phase: 'idle' }, { ...data, lastSyncAt: null }, NOW, labelOf).text).toBe('Данные до 03.10, 11:40');
-    expect(syncStatusView({ phase: 'idle' }, { line: '', lastSyncAt: null }, NOW, labelOf).text).toBe('');
+  it('an earlier sync shows its date on hover; no last sync → no tooltip', () => {
+    expect(syncStatusView({ phase: 'idle' }, { ...data, lastSyncAt: '2026-10-01 08:05' }, NOW, labelOf).tooltip).toBe('Обновлено 01.10, 08:05');
+    expect(syncStatusView({ phase: 'idle' }, { ...data, lastSyncAt: null }, NOW, labelOf)).toMatchObject({ text: 'Данные до 03.10, 11:40', tooltip: '' });
+    expect(syncStatusView({ phase: 'idle' }, { line: '', lastSyncAt: null }, NOW, labelOf)).toMatchObject({ text: '', tooltip: '' });
   });
 
   it.each<ImportProgress>([{ phase: 'starting', resumed: false }, { phase: 'accounts' }, { phase: 'rederive' }])(
@@ -58,9 +58,10 @@ describe('syncStatusView', () => {
     expect(syncStatusView(windows(0, 0), data, NOW, labelOf).percent).toBe('');
   });
 
-  it('«Auto-sync» is quiet: «Обновляю данные…», no percent, no tooltip', () => {
+  it('«Auto-sync» is quiet: «Обновляю данные…», no percent; how far it got only on hover', () => {
     const v = syncStatusView(windows(3, 8, true), data, NOW, labelOf);
-    expect(v).toEqual({ icon: 'spinner', text: 'Обновляю данные…', percent: '', note: '', tooltip: '' });
+    expect(v).toMatchObject({ icon: 'spinner', text: 'Обновляю данные…', percent: '', note: '' });
+    expect(v.tooltip).toContain('загружено окон 3 из 8');
     expect(syncStatusView({ phase: 'accounts', auto: true }, data, NOW, labelOf).text).toBe('Обновляю данные…');
   });
 
@@ -76,7 +77,7 @@ describe('syncStatusView', () => {
   it('done: back to the data line; failed connections → a warning with who and why', () => {
     expect(syncStatusView({ phase: 'done', windowsTotal: 4, transactions: 9, failed: [] }, data, NOW, labelOf)).toEqual(syncStatusView({ phase: 'idle' }, data, NOW, labelOf));
     const v = syncStatusView({ phase: 'done', windowsTotal: 4, transactions: 9, failed: [{ connectionId: 7, error: 'auth' }] }, data, NOW, labelOf);
-    expect([v.icon, v.text]).toEqual(['warning', 'Данные до 03.10, 11:40 · обновлено в 11:45']);
+    expect([v.icon, v.text]).toEqual(['warning', 'Данные до 03.10, 11:40']);
     expect(v.note).toBe('Не загружено — Вигадана · Monobank: Monobank не принял токен. Проверь токен и введи его заново.');
     expect(v.tooltip).toBe(v.note);
   });
@@ -153,21 +154,21 @@ describe('GlobalFilters', () => {
   it('the currency button sits right after the month filter', () => {
     const w = mountFilters();
     const month = w.find('[aria-label^="Месяц"]');
-    const currency = w.find('[aria-label^="Показывать рядом в валюте"]');
+    const currency = w.find('[aria-label^="Валюты:"]');
     expect(month.exists()).toBe(true);
     expect(currency.exists()).toBe(true);
     expect(month.element.compareDocumentPosition(currency.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const triggers = w.findAll('button[aria-label]').map((b) => b.attributes('aria-label'));
     const at = triggers.findIndex((l) => l?.startsWith('Месяц'));
-    expect(triggers[at + 1]).toMatch(/^Показывать рядом в валюте/);
+    expect(triggers[at + 1]).toMatch(/^Валюты:/);
     w.unmount();
   });
 
-  it('idle: the data line with the last sync', () => {
+  it('idle: the data line alone (the last sync is in its tooltip)', () => {
     const w = mountFilters();
     const s = w.find('[role="status"]');
     expect(s.attributes('aria-live')).toBe('polite');
-    expect(s.text()).toBe('Данные до 03.10, 11:40 · обновлено в 11:45');
+    expect(s.text()).toBe('Данные до 03.10, 11:40');
     w.unmount();
   });
 

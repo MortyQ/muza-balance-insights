@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
-import type { CurrencyPrefs } from '@/entities/currency-display';
+import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable, YearMonth } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 
@@ -80,9 +80,6 @@ export interface SpendingPrefs {
   mark: boolean;
 }
 
-/** What the rows and the ring read: the block's choices and the home-wide «≈ $ / €» choice. */
-export type ViewPrefs = SpendingPrefs & CurrencyPrefs;
-
 /** A person as the block shows them (from the participant store). */
 export interface BlockPerson {
   id: number;
@@ -110,6 +107,8 @@ export interface UseSpendingReturn {
   pick: Ref<number | null>;
   /** The expanded category key (family view), or null. */
   open: Ref<string | null>;
+  /** The answer's rates and the home-wide currency choice: every amount of the block goes through it. */
+  fmt: ComputedRef<MoneyFormat>;
 }
 
 /** The block's display state from `useSpending` and the menu choices: everything the template binds. */
@@ -126,7 +125,8 @@ export interface UseSpendingViewReturn {
   total: ComputedRef<(SpendingAmounts & { prev: SpendingAmounts | null }) | null>;
   ring: ComputedRef<string>;
   chip: ComputedRef<ChipView | null>;
-  conv: ComputedRef<Array<{ text: string; chip: ChipView | null; title: string }>>;
+  /** «≈» lines under the ring's amount. */
+  conv: ComputedRef<string[]>;
   perDay: ComputedRef<string | null>;
   whoRows: ComputedRef<PersonRowView[]>;
   leftOut: ComputedRef<string[]>;
@@ -139,6 +139,8 @@ export interface UseSpendingViewReturn {
   opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone' | 'sr'>>;
   /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
   memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
+  /** Hryvnia kopecks in the main currency (the ring and last month's total). */
+  money: (kopecks: number) => string;
   onPick: (id: number | null) => void;
   onToggle: (key: string) => void;
 }

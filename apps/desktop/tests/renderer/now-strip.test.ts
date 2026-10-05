@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { NowOverview, NowOverviewQuery, PeopleView } from '@contract/api.ts';
+import { moneyFormat } from '@/entities/currency-display';
 import WeekBars from '@/features/now-strip/components/WeekBars.vue';
 import { categoryColor, daysRange, dayLabel, nowChip, nowView, weekBars } from '@/features/now-strip/utils.ts';
 import { formatMoney } from '@/shared/lib';
@@ -25,9 +26,10 @@ const NOW: NowOverview = {
     top: { category: 'продукты', categoryId: 'groceries', net: 125_580, purchases: 11, rank: 0 },
     pendingHolds: 0,
   },
-  fx: [{ currency: 840, rate: 41, prevRate: null, nearest: false }, { currency: 978, rate: 45, prevRate: null, nearest: false }],
+  rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 45 }], fetchedAt: 0, saved: false },
 };
-const OFF = { usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false };
+const OFF = moneyFormat(NOW.rates, { main: 980, also: NONE });
 
 let current: NowOverview = NOW;
 const getNowOverview = vi.fn(async (_q: NowOverviewQuery) => current);
@@ -80,7 +82,19 @@ describe('now strip helpers', () => {
     });
     expect(v.week).toMatchObject({ title: 'Эта неделя · пн–сб', amount: uah(322_000), context: 'к прошлой неделе, пн–сб', pending: 0 });
     expect(v.top).toEqual({ name: 'Продукты', color: 'var(--category-1)', amount: uah(125_580), caption: '39% недели · 11 оп.' });
-    expect(nowView(NOW, { usd: true, eur: true }).today.conv).toBe(`≈ ${formatMoney(Math.round(72_000 / 41), 840)} · ${formatMoney(1_600, 978)}`);
+    expect(nowView(NOW, moneyFormat(NOW.rates, { main: 980, also: { uah: true, usd: true, eur: true } })).today.conv).toBe(`≈ ${formatMoney(Math.round(72_000 / 41), 840)} · ${formatMoney(1_600, 978)}`);
+  });
+
+  it('euro main: every amount in euros (the top category too), «≈» in the other picked currencies', () => {
+    const fmt = moneyFormat(NOW.rates, { main: 978, also: { uah: true, usd: false, eur: true } });
+    const v = nowView(NOW, fmt);
+    expect(v.today.amount).toBe(fmt.money(72_000));
+    expect(v.today.amount).toBe(formatMoney(1_600, 978));
+    expect(v.today.conv).toBe(fmt.approxInline(72_000));
+    expect(v.today.conv).toBe(`≈ ${uah(72_000)}`);
+    expect(v.today.context).toBe(`к обычному дню ≈ ${fmt.money(52_000)}`);
+    expect(v.week).toMatchObject({ amount: fmt.money(322_000), conv: fmt.approxInline(322_000) });
+    expect(v.top?.amount).toBe(fmt.money(125_580));
   });
 
   it('stale data: «data until» instead of the chip; no usual day or last week: no chip, no context; an empty week: no top', () => {
@@ -161,7 +175,7 @@ describe('now strip mounted', () => {
   it('reloads quietly on new data; currencies follow the shared choice; pending holds and an empty week', async () => {
     const w = await mountStrip();
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
-    useCurrencyDisplayStore().set('usd', true);
+    useCurrencyDisplayStore().setAlso('usd', true);
     await flushPromises();
     expect(w.text()).toContain(`≈ ${formatMoney(Math.round(72_000 / 41), 840)}`);
 

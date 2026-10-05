@@ -10,6 +10,7 @@ import { DB_FILE, DB_FILES } from './db/access.ts';
 import { DB_KEY_FILE } from './db/key-vault.ts';
 import { JOB_FILE } from './importer.ts';
 import { LOCK_FILE } from './lock/store.ts';
+import { RATES_FILE } from './rates.ts';
 import { LEGACY_TOKEN_FILE, TOKENS_DIR } from './token.ts';
 
 export { DB_FILE };
@@ -21,7 +22,7 @@ const OTHER_FILES = [
   ...DB_FILES,
   // A copy of an interrupted encryption (db/encrypt.ts: encryptingFiles).
   `${DB_FILE}.encrypting`, `${DB_FILE}.encrypting-journal`, `${DB_FILE}.encrypting-wal`, `${DB_FILE}.encrypting-shm`,
-  JOB_FILE, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,
+  JOB_FILE, RATES_FILE, `${RATES_FILE}.tmp`, LEGACY_TOKEN_FILE, `${LEGACY_TOKEN_FILE}.tmp`,
 ] as const;
 /** The app lock, removed only after everything else (including APP_DIRS) is gone. */
 const LOCK_FILES = [LOCK_FILE, `${LOCK_FILE}.tmp`] as const;

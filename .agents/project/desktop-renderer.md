@@ -43,33 +43,39 @@
   Per-connection progress is not in the IPC: no per-person spinner.
 - **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
-  `main/spending.ts`) — categories in hryvnia (account currencies folded by own exchanges, `leftOut` without a rate),
+  `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
   `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
   before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils.ts` builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
   family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
   3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
-  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), «≈ $ / €» lines (`centerConv`; `convertLines` from `entities/currency-display`). `composables/useSpending.ts` — the
+  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), the centre total and every amount through `MoneyFormat` (`entities/currency-display`; no per-currency chip). `composables/useSpending.ts` — the
   request, the pick and the expanded category (reset on month, scope and global filter changes);
   `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
   segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
   of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
-  «≈ $ / €» lines read the home-wide `entities/currency-display` choice. Layout: `@container`, the columns stack
+  currency is the home-wide `entities/currency-display` choice. The footnote says «at today's Monobank rate». Layout: `@container`, the columns stack
   below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
   `shared/ui/VPopover` — ours on reka-ui.
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
   «today» in Kyiv) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
   under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
-  = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; this month's own rates.
+  = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; today's Monobank rates (the answer carries `rates`).
   Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
   `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
-- **Currency choice** (`entities/currency-display`): the home-wide «≈ $ / €» choice — `useCurrencyDisplayStore`
-  (`prefs`, `set`, `localStorage` `home.currencies`; the old `spending.view` `usd` / `eur` read once and saved at once;
-  `fx` — the rates of the month «Spending» shows, published by `useSpending` via `setFx`), `convertLines` /
-  `convertInline` / `shownText`, and `CurrencyToggle` (in `GlobalFilters` after `MonthFilter`: `VPopover` with visible
-  text «₴ · $ €», `VSwitch` rows). «Spending» and the strip read it; balances do not.
+- **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
+  `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
+  the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and
+  `rates` — the newest `RatesView` snapshot of any block's answer (`setRates`), `undefined` until the first answer
+  (not loaded yet, which is not «no rates»; `null` — main has none). Every home block calls
+  `useMoneyFormat(() => answer.rates)` and formats through the returned `MoneyFormat` (`currency`, `convert`, `money`,
+  `approx`, `approxInline`); without a rate for the main currency it falls back to ₴. Balances, «In / Out», the «Now»
+  strip and «Spending» all format this way; no block formats a hryvnia amount itself. `CurrencyToggle` (in
+  `GlobalFilters` after `MonthFilter`): a `VPopover` whose text is `shownText` («$ · ₴ €»), a `VSegmentedControl` for
+  the main currency, «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
+  main served the cached rates offline, or «no rates»).
 - **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
   one look and one rule for «Spending» and the strip.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
