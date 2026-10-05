@@ -35,6 +35,7 @@ English interface.
   narrow window the menu moves to a strip at the top.
 - On the home screen the row with the person and the month now stays at the top while you scroll. The person buttons
   sit in the middle of the row; with more than four people, or in a narrow window, they become a list next to the month.
+- Under the balance cards, the bar no longer runs over the end of «Spending» / «Income» in Ukrainian and Russian.
 
 ## 0.1.7 — 2026-10-05
 

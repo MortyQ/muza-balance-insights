@@ -32,8 +32,10 @@ const rows = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col" :class="size === 'md' ? 'gap-4' : 'gap-1.5 px-1'">
-    <div v-for="row in rows" :key="row.label" :class="size === 'md' ? 'flex flex-col gap-1.5' : 'flex items-center gap-2 text-xs'">
+  <!-- sm: one grid for both rows — the label column is as wide as the longer label in the current language, so the
+       bars start at the same place and never run under the text. -->
+  <div :class="size === 'md' ? 'flex flex-col gap-4' : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 px-1 text-xs'">
+    <div v-for="row in rows" :key="row.label" :class="size === 'md' ? 'flex flex-col gap-1.5' : 'contents'">
       <template v-if="size === 'md'">
         <div class="flex justify-between text-sm">
           <span class="text-foreground-secondary">{{ row.label }}</span>
@@ -44,11 +46,11 @@ const rows = computed(() => {
         </div>
       </template>
       <template v-else>
-        <span class="w-11 shrink-0 text-foreground-muted">{{ row.label }}</span>
-        <div class="flex h-2 grow gap-0.5" aria-hidden="true">
+        <span class="whitespace-nowrap text-foreground-muted">{{ row.label }}</span>
+        <div class="flex h-2 gap-0.5" aria-hidden="true">
           <div v-for="(p, i) in row.parts" :key="i" class="bg-(--c) w-(--w) last:rounded-r-md" :style="{ '--c': p.color, '--w': `${p.w}%` }" />
         </div>
-        <span class="min-w-21 shrink-0 whitespace-nowrap text-right font-semibold tabular-nums">{{ row.amount }}</span>
+        <span class="min-w-21 whitespace-nowrap text-right font-semibold tabular-nums">{{ row.amount }}</span>
       </template>
     </div>
   </div>
