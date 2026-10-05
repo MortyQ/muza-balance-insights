@@ -1,9 +1,11 @@
 // Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, balancesAt), mapped
 // to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave main —
-// never names, descriptions, card numbers or IBANs. The import worker writes the same file; WAL lets both work.
+// never names, card numbers or IBANs; descriptions only in categoryOverview's lines (the category screen). The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
+import { categoryLines } from '@mono/core/category-lines';
 import { ensureDefaultConnection } from '@mono/core/connections';
+import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
@@ -15,10 +17,14 @@ import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { last12Months, lineStats, merchantText } from './category.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
   CardTotal,
+  CategoryLineView,
+  CategoryOverview,
+  CategoryOverviewQuery,
   DataStatus,
   FlowView,
   FxPart,
@@ -262,6 +268,119 @@ export class DataService {
       rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
+    };
+  }
+
+  /**
+   * The category screen: one category's month — its figure as the spending block counts it, the 12 months before,
+   * and every line behind it with the bank's description and comment (the one answer that carries them).
+   */
+  async categoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const category = CATEGORY[q.category];
+    const period = monthBounds(q.month);
+    const status = await this.status();
+    const filters = { tz, scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const today = await this.d.rates();
+    const rates = rateMap(today);
+
+    // The figure, the share and the rank exactly as the spending block folds them.
+    const head = await spendingSummary(db, { ...period, ...filters, groupBy: 'category' }, now);
+    const folded = foldByCategory(head, rates);
+    const ranked = rankedCategories(folded.byCategory);
+    const mine = folded.byCategory.get(category) ?? { net: 0, purchases: 0 };
+    const scopeNet = ranked.reduce((s, [, a]) => s + a.net, 0);
+    const place = ranked.findIndex(([k]) => k === category);
+    let gross = 0;
+    let refunds = 0;
+    const leftOut: Array<{ currency: number; net: number }> = [];
+    for (const g of head.groups.filter((x) => x.key === category)) {
+      const gu = toUah(g.gross, g.currency, rates);
+      const ru = toUah(g.refunds, g.currency, rates);
+      if (gu === null || ru === null) leftOut.push({ currency: g.currency, net: g.net });
+      else (gross += gu), (refunds += ru);
+    }
+    const compare = comparePeriod(q.month, head.period, status.dataFrom);
+    const prev = compare
+      ? (foldByCategory(await spendingSummary(db, { ...compare, ...filters, groupBy: 'category', category }, now), rates).byCategory.get(category) ?? { net: 0, purchases: 0 })
+      : null;
+
+    const months12 = last12Months(q.month);
+    const history = await spendingSummary(db, { from: `${months12[0]}-01`, to: period.to, ...filters, groupBy: 'month', category }, now);
+    const byMonth = new Map<string, number>();
+    for (const g of history.groups) {
+      const u = toUah(g.net, g.currency, rates);
+      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
+    }
+    const firstMonth = status.dataFrom?.slice(0, 7) ?? null;
+    const months = months12.map((month) => ({ month, net: firstMonth === null || month < firstMonth ? null : (byMonth.get(month) ?? 0) }));
+
+    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
+    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const raw = await categoryLines(db, { ...period, ...filters, category }, now);
+    const lines: CategoryLineView[] = raw.lines.map((l) => {
+      const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+      return {
+        key: l.kind === 'body' ? l.id : `${l.id}:fee`,
+        date,
+        time,
+        weekday: isoWeekday(date),
+        merchant: merchantText(l.description, jarTitles),
+        comment: l.comment?.trim() || null,
+        participantId: l.participantId,
+        account: names.get(l.accountId) ?? { kind: 'card', type: null, currency: l.currency, tag: null },
+        uah: toUah(l.amount, l.currency, rates),
+        currency: l.currency,
+        amount: l.amount,
+        operation:
+          l.operationCurrency !== null && l.operationAmount !== null && l.operationCurrency !== l.currency
+            ? { currency: l.operationCurrency, amount: l.operationAmount }
+            : null,
+        commission: l.kind === 'commission',
+        hold: l.hold,
+        pending: l.hold && l.time >= now - RESYNC_OVERLAP_SEC,
+        refund: l.amount > 0,
+        refunded: l.refundPair && l.amount < 0,
+        cashback: l.cashback > 0 ? (toUah(l.cashback, l.currency, rates) ?? 0) : 0,
+      };
+    });
+
+    const participants = await listParticipants(db);
+    const family = q.participantId === undefined && participants.length > 1 ? participants.map((p) => p.id) : null;
+    const stats = lineStats(lines, head.period.days, family);
+    const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
+    return {
+      month: q.month,
+      category,
+      categoryId: q.category,
+      period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
+      compare,
+      summary: {
+        ...mine,
+        gross,
+        refunds,
+        prev,
+        median: stats.median,
+        perDay: coveredDays > 0 ? Math.round(mine.net / coveredDays) : null,
+        activeDays: stats.activeDays,
+        largest: stats.largest,
+        cashback: stats.cashback,
+        cashbackLines: stats.cashbackLines,
+        share: place >= 0 && scopeNet > 0 ? mine.net / scopeNet : null,
+        rank: place >= 0 ? place + 1 : null,
+      },
+      months,
+      people: stats.people,
+      merchants: stats.merchants,
+      weekdays: stats.weekdays,
+      dayParts: stats.dayParts,
+      days: stats.days,
+      lines,
+      rates: today,
+      leftOut,
     };
   }
 

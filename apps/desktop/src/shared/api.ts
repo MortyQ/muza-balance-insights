@@ -133,6 +133,7 @@ export type BalanceApi = {
   onOpenSettings(cb: () => void): () => void;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
+  getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -187,7 +188,8 @@ export type BalanceApi = {
 
 // ---------- data for the screen ----------
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
-// No names, descriptions, card numbers or IBANs: categories and account name parts only.
+// No names, descriptions, card numbers or IBANs: categories and account name parts only — except CategoryOverview's
+// lines, which carry the bank's description and comment of each operation (the category screen; nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -253,6 +255,90 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
+};
+
+export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number };
+
+/** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
+export type CategoryLineView = {
+  /** Unique per line: the transaction's id, «:fee» for its commission line. */
+  key: string;
+  /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
+  date: string;
+  time: string;
+  weekday: number;
+  /**
+   * The bank's description of the operation ('' — none; a card number cut to its last digits, a jar's title hidden)
+   * and its comment. The only place descriptions leave main: the user's own screen of one category.
+   */
+  merchant: string;
+  comment: string | null;
+  participantId: number;
+  account: AccountName;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  commission: boolean;
+  hold: boolean;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+  refund: boolean;
+  /** A purchase whose refund the bank paired with it. */
+  refunded: boolean;
+  /** Cashback in hryvnia kopecks (0 — none or no rate). */
+  cashback: number;
+};
+
+/**
+ * The category screen: one category in one month, scope and person (or the family), hryvnia kopecks by today's rates
+ * — the same lines as the spending block's figure. Weekdays, hours and days are the system time zone's.
+ */
+export type CategoryOverview = {
+  month: string;
+  category: string;
+  categoryId: CategoryId;
+  period: SpendingOverview['period'];
+  compare: SpendingOverview['compare'];
+  summary: SpendingAmounts & {
+    gross: number;
+    refunds: number;
+    /** The compared period's net and purchases; null — not covered. */
+    prev: SpendingAmounts | null;
+    /** Median spending line; null — none. */
+    median: number | null;
+    /** net per covered day; null — no covered day. */
+    perDay: number | null;
+    /** Days with a spending line. */
+    activeDays: number;
+    /** Key of the largest spending line; null — none. */
+    largest: string | null;
+    cashback: number;
+    cashbackLines: number;
+    /** Of the scope's spending this month (0…1), and the category's place among them (1 = largest); null — none. */
+    share: number | null;
+    rank: number | null;
+  };
+  /** The 12 months ending with `month`; net null before the data starts. */
+  months: Array<{ month: string; net: number | null }>;
+  /** The family view with more than one person only: each person's part. */
+  people: Array<SpendingAmounts & { participantId: number }>;
+  /** By the bank's description (case-insensitive), net desc. */
+  merchants: Array<SpendingAmounts & { name: string }>;
+  /** net by ISO weekday, Monday first (7). */
+  weekdays: number[];
+  /** net by part of day: morning 6–12, day 12–18, evening 18–23, night 23–6 (4). */
+  dayParts: number[];
+  /** net by day of the month, the 1st first. */
+  days: number[];
+  /** Newest first. */
+  lines: CategoryLineView[];
+  rates: RatesView | null;
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; net: number }>;
 };
 
 export type NowOverviewQuery = { participantId?: number };

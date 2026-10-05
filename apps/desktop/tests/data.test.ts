@@ -30,6 +30,8 @@ async function account(id: string, type: string | null, currency: number, balanc
 
 type TxOpts = {
   scope?: string; commission?: number; balance?: number; mcc?: number;
+  /** The bank's description (default — the description canary). */
+  description?: string;
   /** The other side of an exchange: operation currency and amount (default — the account's own, = amount). */
   op?: { currency: number; amount: number };
   /** An own transfer: is_internal_transfer = 1 with this transfer_rule. */
@@ -44,7 +46,7 @@ async function tx(accountId: string, date: string, amount: number, category: str
             currency_code, commission_rate, balance, category, is_internal_transfer, transfer_rule, scope, is_cancelled, raw_json, synced_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, '{}', 0)`,
     args: [
-      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
+      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
       o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? (o.family ? 'family' : null), o.scope ?? 'personal',
     ],
   });
@@ -745,5 +747,73 @@ describe('DataService in the system time zone, not Kyiv', () => {
       expect(v.weekday).toBe(7);
       expect(v.week.from).toBe('2026-03-09');
     });
+  });
+});
+
+describe('DataService.categoryOverview (the category screen)', () => {
+  const TAXI = 'такси и транспорт';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('jar1', null, 980, 0);
+    for (const id of ['uah', 'usd']) await synced(id);
+    await tx('uah', '2026-02-10', -3_000, TAXI, { description: 'Vigadane Taxi' });
+    await tx('uah', '2026-03-02', -10_000, TAXI, { description: 'Vigadane Taxi' }); // a Monday
+    await tx('uah', '2026-03-06', -4_000, TAXI, { description: 'VIGADANE  taxi', commission: 500 }); // a Friday
+    await tx('uah', '2026-03-07', 1_000, TAXI, { description: 'Vigadane Taxi' }); // a refund
+    await tx('usd', '2026-03-08', -500, TAXI, { description: 'Imaginary Metro' }); // 5 $ = 200 ₴
+    await tx('uah', '2026-03-09', -20_000, 'продукты', { description: 'Vigadanyi Market' });
+  });
+
+  it('the figure is the spending block\'s; the lines sum to it; share, rank, last month, 12 months', async () => {
+    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    const block = (await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).categories.find((c) => c.category === TAXI)!;
+    expect(v.category).toBe(TAXI);
+    expect(v.summary).toMatchObject({ net: block.net, purchases: block.purchases, gross: 3_500 + 10_000 + 20_000, refunds: 1_000 });
+    expect(v.summary.net).toBe(32_500);
+    expect(-v.lines.reduce((s, l) => s + (l.uah ?? 0), 0)).toBe(v.summary.net);
+    // The scope's spending: transport 32 500, groceries 20 000, the 500 fee.
+    expect(v.summary).toMatchObject({ rank: 1, share: 32_500 / 53_000, prev: { net: 3_000, purchases: 1 }, activeDays: 3, largest: 't5' });
+    expect(v.months.at(-1)).toEqual({ month: '2026-03', net: 32_500 });
+    expect(v.months.at(-2)).toEqual({ month: '2026-02', net: 3_000 });
+    expect(v.months[0]).toEqual({ month: '2025-04', net: null }); // before the data
+    expect(v.leftOut).toEqual([]);
+  });
+
+  it('lines: newest first, the commission apart, refund and foreign-currency marks, local date and weekday', async () => {
+    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    expect(v.lines.map((l) => [l.key, l.date, l.weekday, l.uah, l.refund, l.commission])).toEqual([
+      ['t5', '2026-03-08', 7, -20_000, false, false],
+      ['t4', '2026-03-07', 6, 1_000, true, false],
+      ['t3', '2026-03-06', 5, -3_500, false, false],
+      ['t2', '2026-03-02', 1, -10_000, false, false],
+    ]);
+    expect(v.lines[0]).toMatchObject({ currency: 840, amount: -500, account: { kind: 'card', type: 'white', currency: 840 }, time: '01:00' });
+    const fees = await svc.categoryOverview({ month: '2026-03', category: 'fees', scope: 'personal' });
+    expect(fees.lines.map((l) => [l.key, l.uah, l.commission])).toEqual([['t3:fee', -500, true]]);
+  });
+
+  it('where and when: merchants case-insensitively, weekdays, parts of day, days of the month', async () => {
+    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    expect(v.merchants).toEqual([
+      { name: 'Imaginary Metro', net: 20_000, purchases: 1 },
+      { name: 'Vigadane Taxi', net: 12_500, purchases: 2 },
+    ]);
+    expect(v.weekdays).toEqual([10_000, 0, 0, 0, 3_500, -1_000, 20_000]);
+    expect(v.dayParts).toEqual([0, 0, 0, 32_500]); // the fixtures sit at 01:00
+    expect(v.days).toHaveLength(31);
+    expect(v.days[1]).toBe(10_000);
+    expect(v.people).toEqual([]); // one person
+  });
+
+  it('the description and comment reach the renderer here only — never a name, card number, IBAN or jar title', async () => {
+    await tx('uah', '2026-03-03', -700, TAXI, { description: 'Taxi to 537541******1234 via CANARY-JAR Dream' });
+    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    expect(v.lines.find((l) => l.key === `t${seq}`)?.merchant).toBe('Taxi to •• 1234 via •••');
+    await tx('uah', '2026-03-04', -100, TAXI);
+    const json = JSON.stringify(await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' }));
+    expect(json).toContain(CANARIES[1]);
+    for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+    expect(json).not.toMatch(/\*{4}|UA\d{2}/);
   });
 });
