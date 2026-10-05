@@ -3,7 +3,7 @@ import type { Scope } from '@contract/api.ts';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
 import type { SortKey, UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
-import { lineRows, listTotal, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, summaryView, whenView } from '../utils.ts';
+import { lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
 export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<Ref<Scope>>): UseCategoryViewReturn {
@@ -25,7 +25,6 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const whoSpent = computed(() => (view.value && family.value ? peopleView(view.value, people.value, fmt.value) : []));
   const merchants = computed(() => (view.value ? merchantsView(view.value, merchant.value, fmt.value) : []));
   const moreMerchants = computed(() => (view.value ? moreMerchantsText(view.value) : ''));
-  const when = computed(() => (view.value ? whenView(view.value, fmt.value) : null));
   const list = computed(() =>
     view.value ? lineRows(view.value.lines, { merchant: merchant.value, query: query.value, sort: sort.value }, people.value, fmt.value) : { rows: [], shown: [] },
   );
@@ -33,6 +32,13 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
     view.value ? listTotal(view.value, list.value.shown, merchant.value !== null || query.value.trim() !== '', fmt.value) : '',
   );
   const merchantName = computed(() => merchants.value.find((m) => m.key === merchant.value)?.name ?? '');
+  // «When» follows the merchant filter like the list does (not the search: that is the list's own).
+  const when = computed(() => {
+    const v = view.value;
+    if (!v) return null;
+    const lines = merchant.value === null ? v.lines : v.lines.filter((l) => merchantKey(l.merchant) === merchant.value);
+    return whenView(lines, v, merchantName.value, fmt.value);
+  });
 
   function pickMerchant(key: string): void {
     merchant.value = merchant.value === key ? null : key;

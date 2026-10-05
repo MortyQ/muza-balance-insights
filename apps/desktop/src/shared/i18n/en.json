@@ -73,6 +73,7 @@
       },
       "peak": "Most: {weekday} · {part}",
       "title": "When",
+      "titleFor": "When: {name}",
       "weekdays": "By weekday"
     },
     "where": {

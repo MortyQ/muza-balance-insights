@@ -73,6 +73,7 @@
       },
       "peak": "Найбільше: {weekday} · {part}",
       "title": "Коли",
+      "titleFor": "Коли: {name}",
       "weekdays": "За днями тижня"
     },
     "where": {

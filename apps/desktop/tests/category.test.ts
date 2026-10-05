@@ -1,6 +1,6 @@
 // Pure helpers of the category screen in main (src/main/category.ts). Fictional data only.
 import { describe, expect, it } from 'vitest';
-import { dayPart, last12Months, lineStats, merchantKey, merchantText } from '../src/main/category.ts';
+import { last12Months, lineStats, merchantKey, merchantText } from '../src/main/category.ts';
 import type { CategoryLineView } from '../src/shared/api.ts';
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
@@ -20,12 +20,6 @@ describe('merchantText', () => {
   });
 });
 
-describe('dayPart', () => {
-  it.each([[5, 3], [6, 0], [11, 0], [12, 1], [17, 1], [18, 2], [22, 2], [23, 3], [0, 3]])('%i h → %i', (h, p) => {
-    expect(dayPart(h)).toBe(p);
-  });
-});
-
 describe('lineStats', () => {
   it('a line without a rate counts nowhere; refunds lower net, not purchases; the largest spending line; cashback', () => {
     const s = lineStats(
@@ -35,18 +29,14 @@ describe('lineStats', () => {
         line({ key: 'c', uah: null, currency: 985, amount: -100 }),
         line({ key: 'd', uah: -1_000, date: '2026-03-31', weekday: 2, time: '23:30', merchant: 'Imaginary Metro', participantId: 2 }),
       ],
-      31,
       [1, 2],
     );
     expect(s.merchants).toEqual([{ name: 'Vigadane Taxi', net: 2_500, purchases: 1 }, { name: 'Imaginary Metro', net: 1_000, purchases: 1 }]);
     expect(s.people).toEqual([{ participantId: 1, net: 2_500, purchases: 1 }, { participantId: 2, net: 1_000, purchases: 1 }]);
-    expect(s.weekdays.slice(0, 2)).toEqual([2_500, 1_000]);
-    expect(s.dayParts).toEqual([0, 2_500, 0, 1_000]);
-    expect(s.days[30]).toBe(1_000);
     expect(s).toMatchObject({ median: 2_000, activeDays: 2, largest: 'a', cashback: 30, cashbackLines: 1 });
   });
   it('no people asked → none; no spending → no median or largest', () => {
-    expect(lineStats([], 30, null)).toMatchObject({ people: [], median: null, largest: null, activeDays: 0 });
+    expect(lineStats([], null)).toMatchObject({ people: [], median: null, largest: null, activeDays: 0 });
   });
 });
 

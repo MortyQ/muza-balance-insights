@@ -793,16 +793,12 @@ describe('DataService.categoryOverview (the category screen)', () => {
     expect(fees.lines.map((l) => [l.key, l.uah, l.commission])).toEqual([['t3:fee', -500, true]]);
   });
 
-  it('where and when: merchants case-insensitively, weekdays, parts of day, days of the month', async () => {
+  it('where: merchants case-insensitively; one person — no people', async () => {
     const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
     expect(v.merchants).toEqual([
       { name: 'Imaginary Metro', net: 20_000, purchases: 1 },
       { name: 'Vigadane Taxi', net: 12_500, purchases: 2 },
     ]);
-    expect(v.weekdays).toEqual([10_000, 0, 0, 0, 3_500, -1_000, 20_000]);
-    expect(v.dayParts).toEqual([0, 0, 0, 32_500]); // the fixtures sit at 01:00
-    expect(v.days).toHaveLength(31);
-    expect(v.days[1]).toBe(10_000);
     expect(v.people).toEqual([]); // one person
   });
 

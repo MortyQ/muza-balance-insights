@@ -74,6 +74,8 @@ export interface DayPartView {
 }
 
 export interface WhenView {
+  /** «When», or «When: Uklon» while the list is filtered by a merchant. */
+  title: string;
   weekdays: BarView[];
   dayParts: DayPartView[];
   days: BarView[];

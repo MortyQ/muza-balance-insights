@@ -22,7 +22,7 @@ English interface.
 - Click a category in «Spending» to open everything about it for the month: how much went there and how that compares
   with last month, the number of operations, the average and the median, per day, its share of all spending, the
   largest purchase and the cashback; the last 12 months; who in the family spent how much; where (each place with its
-  total and average — click one to see only its operations); when (by weekday, time of day and day of the month); and
+  total and average — click one to see only its operations and when they happened); when (by weekday, time of day and day of the month); and
   every operation with its date, time, the bank's description and comment, the card, refunds, pending holds and the
   amount in its own currency. Search the list or sort it by amount. The month, the person and the main currency are the
   same filters as on the home screen.

@@ -68,7 +68,8 @@
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`): the month, person and currency are the global filters; quiet reload on `syncStatus.version`.
   `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
-  merchant filter, search and order (reset with month, category and person). `utils.ts` is pure and tested
+  merchant filter, search and order (reset with month, category and person). «When» is counted on the screen from the
+  lines (`whenTotals`), so the merchant filter narrows it too and its title names the merchant; the search does not. `utils.ts` is pure and tested
   (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
   and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are

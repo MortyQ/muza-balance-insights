@@ -328,13 +328,7 @@ export type CategoryOverview = {
   people: Array<SpendingAmounts & { participantId: number }>;
   /** By the bank's description (case-insensitive), net desc. */
   merchants: Array<SpendingAmounts & { name: string }>;
-  /** net by ISO weekday, Monday first (7). */
-  weekdays: number[];
-  /** net by part of day: morning 6–12, day 12–18, evening 18–23, night 23–6 (4). */
-  dayParts: number[];
-  /** net by day of the month, the 1st first. */
-  days: number[];
-  /** Newest first. */
+  /** Newest first; the screen counts «When» from them (weekday, time, date), so a merchant filter narrows it too. */
   lines: CategoryLineView[];
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */

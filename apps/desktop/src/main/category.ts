@@ -1,5 +1,5 @@
 // Pure helpers of the category screen in main (DataService.categoryOverview): the bank's text made fit for the
-// screen, and everything the screen counts from the lines (where, when, who).
+// screen, and what the screen counts from the lines (where, who; «When» the screen counts itself).
 import type { CategoryLineView, CategoryOverview, SpendingAmounts } from '../shared/api.ts';
 
 /** A masked card number (6 digits, stars, 4 digits) anywhere in the text. */
@@ -19,14 +19,6 @@ export function merchantText(description: string, jarTitles: Iterable<string>): 
 /** Merchants are told apart case- and space-insensitively. */
 export const merchantKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
 
-/** 0 morning 6–12, 1 day 12–18, 2 evening 18–23, 3 night 23–6. */
-export function dayPart(hour: number): number {
-  if (hour >= 6 && hour < 12) return 0;
-  if (hour >= 12 && hour < 18) return 1;
-  if (hour >= 18 && hour < 23) return 2;
-  return 3;
-}
-
 /** A line that is spending (a purchase or a commission), not a refund. */
 export const isSpending = (l: Pick<CategoryLineView, 'amount'>): boolean => l.amount < 0;
 
@@ -38,7 +30,7 @@ function middle(values: readonly number[]): number | null {
   return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2);
 }
 
-export type LineStats = Pick<CategoryOverview, 'merchants' | 'weekdays' | 'dayParts' | 'days' | 'people'> &
+export type LineStats = Pick<CategoryOverview, 'merchants' | 'people'> &
   Pick<CategoryOverview['summary'], 'median' | 'activeDays' | 'largest' | 'cashback' | 'cashbackLines'>;
 
 /**
@@ -46,10 +38,7 @@ export type LineStats = Pick<CategoryOverview, 'merchants' | 'weekdays' | 'dayPa
  * refunds, purchases = spending lines. `people` only when asked (the family view with more than one person), in the
  * given order.
  */
-export function lineStats(lines: readonly CategoryLineView[], daysInMonth: number, people: readonly number[] | null): LineStats {
-  const weekdays = Array<number>(7).fill(0);
-  const dayParts = Array<number>(4).fill(0);
-  const days = Array<number>(daysInMonth).fill(0);
+export function lineStats(lines: readonly CategoryLineView[], people: readonly number[] | null): LineStats {
   const byPerson = new Map<number, SpendingAmounts>((people ?? []).map((id) => [id, { net: 0, purchases: 0 }]));
   const merchants = new Map<string, SpendingAmounts & { spellings: Map<string, number> }>();
   const spent: number[] = [];
@@ -62,10 +51,6 @@ export function lineStats(lines: readonly CategoryLineView[], daysInMonth: numbe
     if (l.uah === null) continue;
     const net = -l.uah;
     const spend = isSpending(l);
-    weekdays[l.weekday - 1]! += net;
-    dayParts[dayPart(Number(l.time.slice(0, 2)))]! += net;
-    const day = Number(l.date.slice(8, 10));
-    if (day >= 1 && day <= daysInMonth) days[day - 1]! += net;
     const p = byPerson.get(l.participantId);
     if (p) (p.net += net), (p.purchases += spend ? 1 : 0);
     const key = merchantKey(l.merchant);
@@ -89,9 +74,6 @@ export function lineStats(lines: readonly CategoryLineView[], daysInMonth: numbe
       .filter((m) => m.net > 0)
       .map((m) => ({ name: name(m.spellings), net: m.net, purchases: m.purchases }))
       .sort((a, b) => b.net - a.net || (a.name < b.name ? -1 : 1)),
-    weekdays,
-    dayParts,
-    days,
     people: people ? people.map((participantId) => ({ participantId, ...byPerson.get(participantId)! })) : [],
     median: middle(spent),
     activeDays: active.size,

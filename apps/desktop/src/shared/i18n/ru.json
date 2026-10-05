@@ -73,6 +73,7 @@
       },
       "peak": "Больше всего: {weekday} · {part}",
       "title": "Когда",
+      "titleFor": "Когда: {name}",
       "weekdays": "По дням недели"
     },
     "where": {

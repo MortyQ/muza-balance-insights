@@ -49,9 +49,6 @@ const VIEW: CategoryOverview = {
   ],
   people: [{ participantId: 1, net: 81_200, purchases: 3 }, { participantId: 2, net: 59_800, purchases: 1 }],
   merchants: [{ name: 'Vigadane Taxi', net: 64_000, purchases: 2 }, { name: 'IMAGINARY  bus', net: 77_000, purchases: 2 }],
-  weekdays: [0, 0, 17_200, 59_800, 0, 64_000, 0],
-  dayParts: [77_000, 0, 0, 64_000],
-  days: Array.from({ length: 30 }, (_, i) => (i === 1 ? 17_200 : i === 9 ? 59_800 : i === 18 ? 64_000 : 0)),
   lines: LINES,
   rates: RATES,
   leftOut: [],
@@ -94,10 +91,21 @@ describe('category screen helpers', () => {
     ]);
     const where = merchantsView(VIEW, 'imaginary bus', FMT);
     expect(where.map((m) => [m.key, m.width, m.pressed])).toEqual([['vigadane taxi', 83.1, false], ['imaginary bus', 100, true]]);
-    const when = whenView(VIEW, FMT);
+    // a refund and its purchase on the same Thursday evening cancel out
+    const when = whenView(LINES, VIEW, '', FMT);
+    expect(when.title).toBe('Когда');
     expect(when.peak).toBe('Больше всего: сб · утро 6–12');
     expect(when.weekdays.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
+    expect(when.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 83.1]);
     expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
+  });
+
+  it('«When» of one merchant: only its lines, its name in the title', () => {
+    const bus = whenView(LINES.filter((l) => l.key === 'd' || l.key === 'e'), VIEW, 'IMAGINARY  bus', FMT);
+    expect(bus.title).toBe('Когда: IMAGINARY  bus');
+    expect(bus.weekdays.map((b) => b.height)).toEqual([0, 0, 28.8, 100, 0, 0, 0]);
+    expect(bus.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 0]);
+    expect(bus.peak).toBe('Больше всего: чт · утро 6–12');
   });
 
   it('the list: marks, signs, the original currency; a merchant filter case-insensitively, a search by digits, by amount', () => {
@@ -182,6 +190,7 @@ describe('category screen mounted', () => {
     const bus = w.findAll('button[aria-pressed]').find((b) => b.text().includes('IMAGINARY'))!;
     await bus.trigger('click');
     expect(bus.attributes('aria-pressed')).toBe('true');
+    expect(w.text()).toContain('Когда: IMAGINARY  bus');
     expect(w.findAll('[role="row"]')).toHaveLength(3);
     expect(w.text()).toContain(`Итого по списку: ${uah(77_000)}`);
 

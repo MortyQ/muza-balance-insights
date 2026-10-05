@@ -350,7 +350,7 @@ export class DataService {
 
     const participants = await listParticipants(db);
     const family = q.participantId === undefined && participants.length > 1 ? participants.map((p) => p.id) : null;
-    const stats = lineStats(lines, head.period.days, family);
+    const stats = lineStats(lines, family);
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
     return {
       month: q.month,
@@ -375,9 +375,6 @@ export class DataService {
       months,
       people: stats.people,
       merchants: stats.merchants,
-      weekdays: stats.weekdays,
-      dayParts: stats.dayParts,
-      days: stats.days,
       lines,
       rates: today,
       leftOut,

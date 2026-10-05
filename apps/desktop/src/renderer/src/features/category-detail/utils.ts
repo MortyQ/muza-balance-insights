@@ -169,23 +169,52 @@ export function moreMerchantsText(v: Readonly<CategoryOverview>): string {
   return rest > 0 ? t('category.where.more', rest) : '';
 }
 
-/** «When»: weekdays, parts of the day, days of the month, and the peak in words. */
-export function whenView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): WhenView {
-  const wMax = Math.max(0, ...v.weekdays);
-  const pMax = Math.max(0, ...v.dayParts);
-  const dMax = Math.max(0, ...v.days);
-  const peakDay = v.weekdays.indexOf(wMax);
-  const peakPart = v.dayParts.indexOf(pMax);
+/** 0 morning 6–12, 1 day 12–18, 2 evening 18–23, 3 night 23–6. */
+export function dayPart(hour: number): number {
+  if (hour >= 6 && hour < 12) return 0;
+  if (hour >= 12 && hour < 18) return 1;
+  if (hour >= 18 && hour < 23) return 2;
+  return 3;
+}
+
+/** Net (spending − refunds, hryvnia kopecks) by ISO weekday, part of the day and day of the month; a line without a rate counts nowhere. */
+export function whenTotals(lines: ReadonlyArray<CategoryLineView>, daysInMonth: number): { weekdays: number[]; dayParts: number[]; days: number[] } {
+  const weekdays = Array<number>(7).fill(0);
+  const dayParts = Array<number>(4).fill(0);
+  const days = Array<number>(daysInMonth).fill(0);
+  for (const l of lines) {
+    if (l.uah === null) continue;
+    weekdays[l.weekday - 1] = (weekdays[l.weekday - 1] ?? 0) - l.uah;
+    const p = dayPart(Number(l.time.slice(0, 2)));
+    dayParts[p] = (dayParts[p] ?? 0) - l.uah;
+    const day = Number(l.date.slice(8, 10));
+    if (day >= 1 && day <= daysInMonth) days[day - 1] = (days[day - 1] ?? 0) - l.uah;
+  }
+  return { weekdays, dayParts, days };
+}
+
+/**
+ * «When» of the given lines (all of the month, or one merchant's): weekdays, parts of the day, days of the month, and
+ * the peak in words; `merchant` — the filter's name for the title ('' — none).
+ */
+export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pick<CategoryOverview, 'month' | 'period'>>, merchant: string, fmt: MoneyFormat): WhenView {
+  const w = whenTotals(lines, v.period.days);
+  const wMax = Math.max(0, ...w.weekdays);
+  const pMax = Math.max(0, ...w.dayParts);
+  const dMax = Math.max(0, ...w.days);
+  const peakDay = w.weekdays.indexOf(wMax);
+  const peakPart = w.dayParts.indexOf(pMax);
   return {
-    weekdays: v.weekdays.map((n, i) => ({
+    title: merchant ? t('category.when.titleFor', { name: merchant }) : t('category.when.title'),
+    weekdays: w.weekdays.map((n, i) => ({
       key: String(i),
       label: weekdayShort(i + 1),
       height: barHeight(n, wMax),
       strong: wMax > 0 && n === wMax,
       title: `${weekdayShort(i + 1)} — ${fmt.money(n)}`,
     })),
-    dayParts: v.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
-    days: v.days.map((n, i) => ({
+    dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
+    days: w.days.map((n, i) => ({
       key: String(i + 1),
       label: String(i + 1),
       height: barHeight(n, dMax),
