@@ -12,6 +12,9 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     setupFiles: ['tests/renderer/setup-locale.ts'],
     environment: 'node',
+    // The app follows the system time zone (src/shared/dates.ts): one fixed zone keeps the suite the same on every
+    // machine. Fixtures are written in Kyiv time; tests of other zones switch it (tests/helpers/time-zone.ts).
+    env: { TZ: 'Europe/Kyiv' },
   },
   // The renderer's aliases (electron.vite.config.ts), for tests that load its modules.
   resolve: {

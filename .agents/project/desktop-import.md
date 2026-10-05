@@ -41,9 +41,10 @@
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
   `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `getNowOverview` takes only `participantId` (main
-  decides «today» in Kyiv); like the other data channels it is closed while locked and while the database is not ready.
+  decides «today» in the system time zone); like the other data channels it is closed while locked and while the
+  database is not ready.
   `DataStatus` (IPC `getSyncStatus`) несёт также
-  `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
+  `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`
   (порог автосинхронизации) — тоже только по включённым (`ENABLED_ACCOUNT_IDS_SQL` ядра).
 - **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`
@@ -59,7 +60,7 @@
   Под замком — запускается. Настройки — `preferences.json` (`src/main/prefs.ts`: у каждого поля своё значение по умолчанию,
   запись по очереди через `updatePrefs`), IPC `getAutoSync` / `setAutoSync`, карточка «Автосинхронизация» в настройках.
   - Прогон: вся семья — подключения, у которых сейчас есть токен (без токена — молча пропускаются, их показывает плашка на
-    главной); `sinceSec` — начало текущего месяца по Киеву; `rereadWindow` — у загруженного счёта одно окно на всю длину
+    главной); `sinceSec` — the start of this month in the system time zone; `rereadWindow` — у загруженного счёта одно окно на всю длину
     до «сейчас» (последний 31 день у Monobank; разрыв больше окна − 3 дня — обычный план). Так подтягиваются холды,
     завершённые позже 3 дней. `RESYNC_OVERLAP_SEC` (3 дня) в ядре не менялся: на нём `pendingHolds` и синк `apps/mcp`.
   - Без файла задачи, без `needs-token`, без `no-token` в `done`; каждое состояние помечено `auto: true`

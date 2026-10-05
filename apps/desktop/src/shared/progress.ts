@@ -7,7 +7,7 @@ export type WindowProgress = {
   phase: 'windows';
   /** Never a card number or a jar title; null before the accounts are known. */
   account: AccountName | null;
-  /** Window dates, Kyiv, YYYY-MM-DD. */
+  /** Window dates, YYYY-MM-DD in the system time zone. */
   from: string;
   to: string;
   /** Round-robin round (1 = the freshest window of every account). */

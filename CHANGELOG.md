@@ -37,6 +37,13 @@ English interface.
   sit in the middle of the row; with more than four people, or in a narrow window, they become a list next to the month.
 - Under the balance cards, the bar no longer runs over the end of «Spending» / «Income» in Ukrainian and Russian.
 
+### Fixes
+
+- Outside Ukraine the app no longer moves to the next day before your midnight: «today», this week and this month, the
+  dates of the history download and every time shown (last update, rates) now follow your computer's time zone.
+  Spending is still split into days and months by Kyiv time for now, so close to midnight a purchase can still count
+  towards the neighbouring day.
+
 ## 0.1.7 — 2026-10-05
 
 ### Spending

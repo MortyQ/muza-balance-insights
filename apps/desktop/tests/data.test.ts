@@ -7,6 +7,7 @@ import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { DataService } from '../src/main/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/main/now.ts';
+import { inTimeZone } from './helpers/time-zone.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
 const SYNCED_TO = kyivStartOfDay('2026-03-10') + 23 * 3600;
@@ -685,5 +686,52 @@ describe('DataService.nowOverview', () => {
     await fixture();
     const json = JSON.stringify(await at().nowOverview({}));
     for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService in the system time zone, not Kyiv', () => {
+  const service = (nowSec: number) => new DataService({ open: async () => db, release: async () => undefined, nowSec: () => nowSec, rates: todayRates });
+
+  describe('Europe/Berlin', () => {
+    inTimeZone('Europe/Berlin');
+
+    it('now strip: Monday 23:10 in Berlin is still Monday (Kyiv is already on Tuesday)', async () => {
+      await account('uah', 'black', 980, 0);
+      await synced('uah');
+      await tx('uah', '2026-03-16', -5_000, 'продукты');
+      const v = await service(Date.UTC(2026, 2, 16, 22, 10) / 1000).nowOverview({});
+      expect(v.date).toBe('2026-03-16');
+      expect(v.weekday).toBe(1);
+      expect(v.week.from).toBe('2026-03-16');
+      expect(v.today).toEqual({ net: 5_000, purchases: 1 });
+    });
+
+    it('status: the times and the first date on the Berlin clock', async () => {
+      await account('uah', 'black', 980, 0);
+      await synced('uah');
+      // SYNCED_TO is 23:00 in Kyiv = 22:00 in Berlin; the data starts at 00:00 on 1 Jan in Kyiv = 23:00 on 31 Dec in Berlin.
+      expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 22:00', dataFrom: '2025-12-31', lastSyncAt: '2026-03-10 22:01' });
+    });
+
+    it('month overview: at 23:10 on the month\'s last day the month is still the current one (balance «now»)', async () => {
+      await account('uah', 'black', 980, 0);
+      await synced('uah');
+      // 31 Mar 2026, 23:10 in Berlin (CEST) = 00:10 on 1 Apr in Kyiv.
+      const v = await service(Date.UTC(2026, 2, 31, 21, 10) / 1000).monthOverview({ month: '2026-03' });
+      expect(v.balanceAt).toBe('now');
+    });
+  });
+
+  describe('America/Bogota (UTC−5)', () => {
+    inTimeZone('America/Bogota');
+
+    it('now strip: Sunday 21:00 is still Sunday (Kyiv is already on Monday morning)', async () => {
+      await account('uah', 'black', 980, 0);
+      await synced('uah');
+      const v = await service(Date.UTC(2026, 2, 16, 2, 0) / 1000).nowOverview({});
+      expect(v.date).toBe('2026-03-15');
+      expect(v.weekday).toBe(7);
+      expect(v.week.from).toBe('2026-03-09');
+    });
   });
 });

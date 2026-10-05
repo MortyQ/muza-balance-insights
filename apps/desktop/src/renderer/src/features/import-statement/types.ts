@@ -1,7 +1,7 @@
 import type { Ref } from 'vue';
 
 export interface UseImportReturn {
-  /** The start date, Kyiv YYYY-MM-DD; the import runs from it up to today. */
+  /** The start date, local YYYY-MM-DD; the import runs from it up to today. */
   from: Ref<string>;
   /** `from` is a date the import accepts today (isImportFrom). */
   valid: Readonly<Ref<boolean>>;

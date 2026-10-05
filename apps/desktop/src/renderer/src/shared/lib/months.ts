@@ -1,4 +1,5 @@
-// Calendar months for the spending screen, in Kyiv time (the same zone the core uses for local_date).
+// Calendar months and dates for the screens, in the system time zone (@contract/dates.ts).
+import { localDate } from '@contract/dates.ts';
 import { t } from './i18n.ts';
 
 export type YearMonth = `${number}-${string}`;
@@ -15,11 +16,9 @@ export function monthShortName(month: number): string {
 
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-const kyivDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' });
-
-/** Today's Kyiv date, YYYY-MM-DD. */
-export function kyivToday(now: Date): string {
-  return kyivDate.format(now);
+/** Today's date in the system time zone, YYYY-MM-DD. */
+export function localToday(now: Date): string {
+  return localDate(now.getTime());
 }
 
 export function monthOf(date: string): YearMonth {
@@ -45,8 +44,8 @@ export function fullDate(date: string): string {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-/** When a sync happened (Kyiv «YYYY-MM-DD HH:mm»): today → «at 14:20», an earlier day → «10.03, 14:20». */
+/** When a sync happened (local «YYYY-MM-DD HH:mm» from main): today → «at 14:20», an earlier day → «10.03, 14:20». */
 export function syncedWhen(at: string, now: Date): string {
   const [date, time] = at.split(' ');
-  return date === kyivToday(now) && time ? t('common.atTime', { time }) : shortDate(at);
+  return date === localToday(now) && time ? t('common.atTime', { time }) : shortDate(at);
 }

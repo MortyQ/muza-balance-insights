@@ -5,7 +5,7 @@ import { useImportRequest } from '../api/useImportRequest.ts';
 import { DEFAULT_PRESET, START_ERRORS } from '../constants.ts';
 import type { UseImportReturn } from '../types.ts';
 
-/** `today`: the Kyiv date the period is counted back from. */
+/** `today`: the local date the period is counted back from. */
 export function useImport(today: Readonly<Ref<string>>): UseImportReturn {
   const { startImport, cancelImport } = useImportRequest();
   const from = ref(monthsBefore(today.value, DEFAULT_PRESET));

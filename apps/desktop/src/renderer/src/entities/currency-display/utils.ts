@@ -1,4 +1,5 @@
 import type { RatesView } from '@contract/api.ts';
+import { localDateTime } from '@contract/dates.ts';
 import { currencySymbol, formatMoney, shortDate, UAH } from '@/shared/lib';
 import { CURRENCIES } from './constants.ts';
 import type { CurrencyChoice, CurrencyKey, MainCurrency, MoneyFormat } from './types.ts';
@@ -73,18 +74,7 @@ export function shownText(rates: RatesView | null, choice: Readonly<CurrencyChoi
   return also.length === 0 ? main : `${main} · ${also.map((c) => currencySymbol(c.currency)).join(' ')}`;
 }
 
-const kyivDateTime = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Kyiv',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-});
-
-/** When the rates were fetched (epoch seconds), in Kyiv time: «05.10, 10:00». */
+/** When the rates were fetched (epoch seconds), in the system time zone: «05.10, 10:00». */
 export function rateDate(epochSec: number): string {
-  const p = Object.fromEntries(kyivDateTime.formatToParts(new Date(epochSec * 1000)).map((x) => [x.type, x.value]));
-  return shortDate(`${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`);
+  return shortDate(localDateTime(epochSec * 1000));
 }

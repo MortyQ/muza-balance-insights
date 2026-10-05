@@ -1,5 +1,6 @@
 // How far back a user's import may start: one rule for the screen (presets, the calendar's bounds) and for main (which
-// checks the date the renderer sends). Kyiv dates, YYYY-MM-DD; plain calendar arithmetic, no time zones here.
+// checks the date the renderer sends). The user's calendar dates (system time zone, dates.ts), YYYY-MM-DD; plain calendar
+// arithmetic, no time zones here.
 
 /** The oldest start the screen offers and main accepts: this many months before today. */
 export const IMPORT_MAX_MONTHS = 36;

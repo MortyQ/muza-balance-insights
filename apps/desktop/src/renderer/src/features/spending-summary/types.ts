@@ -89,7 +89,7 @@ export interface BlockPerson {
 
 export interface UseSpendingReturn {
   month: Readonly<Ref<YearMonth>>;
-  /** The current Kyiv month (the year of `compared` is shown when it differs). */
+  /** The current local month (the year of `compared` is shown when it differs). */
   thisMonth: Readonly<Ref<YearMonth>>;
   scope: Ref<Scope>;
   state: Readonly<Ref<Loadable<SpendingOverview>>>;

@@ -25,7 +25,7 @@ export function settingsSection(q: unknown): SettingsSection {
 }
 
 /**
- * A link to «Connections», scrolled to the history download (`query.focus`), its start date set to `from` (Kyiv
+ * A link to «Connections», scrolled to the history download (`query.focus`), its start date set to `from` (local
  * YYYY-MM-DD) when given. The section ignores a date it would not accept.
  */
 export function importLink(from?: string): { name: typeof ROUTE.settings; query: Record<string, string> } {

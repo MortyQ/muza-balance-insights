@@ -5,6 +5,7 @@ import { ColorTakenError, type ColorKey as CoreColorKey } from '@mono/core/color
 import type { Db } from '@mono/core/db';
 import { BANK_LABEL_PLACEHOLDER, listConnections, listParticipants, renameParticipant, restoreBankLabel, setParticipantColor } from '@mono/core/participants';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { systemTimeZone } from '../shared/dates.ts';
 import type { ColorChangeResult, ColorKey, PeopleView, TokenStatus } from '../shared/api.ts';
 
 /** The core's stand-in label until the bank sends the holder's name. */
@@ -29,7 +30,7 @@ export class PeopleService {
 
   async list(): Promise<PeopleView> {
     const db = await this.d.db();
-    const [participants, connections] = [await listParticipants(db), await listConnections(db)];
+    const [participants, connections] = [await listParticipants(db), await listConnections(db, systemTimeZone())];
     const people = [];
     for (const p of participants) {
       const own = [];
