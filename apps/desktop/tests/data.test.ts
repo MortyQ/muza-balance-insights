@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/db';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
+import { last12Months } from '../src/main/category.ts';
 import { DataService } from '../src/main/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/main/now.ts';
@@ -777,7 +778,16 @@ describe('DataService.categoryOverview (the category screen)', () => {
     expect(v.months.at(-1)).toEqual({ month: '2026-03', net: 32_500 });
     expect(v.months.at(-2)).toEqual({ month: '2026-02', net: 3_000 });
     expect(v.months[0]).toEqual({ month: '2025-04', net: null }); // before the data
+    expect(v.thisMonth).toBe('2026-03');
     expect(v.leftOut).toEqual([]);
+  });
+
+  it('12 months reach today while the picked month is among them, else end with it', async () => {
+    const recent = await svc.categoryOverview({ month: '2026-02', category: 'transport', scope: 'personal' });
+    expect(recent.months.map((m) => m.month)).toEqual(last12Months('2026-03'));
+    expect(recent.months.at(-1)).toEqual({ month: '2026-03', net: 32_500 });
+    const old = await svc.categoryOverview({ month: '2025-03', category: 'transport', scope: 'personal' });
+    expect(old.months.map((m) => m.month)).toEqual(last12Months('2025-03'));
   });
 
   it('lines: newest first, the commission apart, refund and foreign-currency marks, local date and weekday', async () => {

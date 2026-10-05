@@ -74,6 +74,9 @@
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
   and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
   `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
+  12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
+  is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
+  average leaves the running month out, the caption compares the picked month with it.
   The first load (no data yet) shows `components/CategorySkeleton.vue` (`role="status"`) in place of the cards. Past
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.

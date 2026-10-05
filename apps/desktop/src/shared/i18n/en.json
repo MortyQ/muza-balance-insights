@@ -41,6 +41,7 @@
       "avg": "{amount} a month on average",
       "below": "{month}: {amount} below the average",
       "noData": "no data",
+      "soFar": "{amount} so far",
       "title": "Last 12 months"
     },
     "none": "No spending in this category in {month}.",

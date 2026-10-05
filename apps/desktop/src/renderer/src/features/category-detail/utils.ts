@@ -95,22 +95,26 @@ export function noneText(v: Readonly<CategoryOverview>): string {
 
 /** The 12 months: bars on one scale, the average of the months with data, how the shown month stands against it. */
 export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): MonthsView {
-  const known = v.months.filter((m) => m.net !== null).map((m) => Math.max(0, m.net ?? 0));
-  const max = Math.max(0, ...known);
-  const avg = known.length > 0 ? Math.round(known.reduce((a, b) => a + b, 0) / known.length) : null;
-  const last = v.months.at(-1);
-  const bars = v.months.map((m, i): BarView => ({
-    key: m.month,
-    label: monthShortName(monthNo(m.month)),
-    height: m.net === null ? 0 : barHeight(m.net, max),
-    strong: i === v.months.length - 1,
-    title: `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.net === null ? t('category.months.noData') : fmt.money(m.net)}`,
-  }));
+  const max = Math.max(0, ...v.months.map((m) => m.net ?? 0));
+  // The running month is not in the average: it is not over yet.
+  const done = v.months.filter((m) => m.net !== null && m.month !== v.thisMonth).map((m) => Math.max(0, m.net ?? 0));
+  const avg = done.length > 0 ? Math.round(done.reduce((a, b) => a + b, 0) / done.length) : null;
+  const picked = v.months.find((m) => m.month === v.month);
+  const bars = v.months.map((m): BarView => {
+    const amount = m.net === null ? t('category.months.noData') : fmt.money(m.net);
+    return {
+      key: m.month,
+      label: monthShortName(monthNo(m.month)),
+      height: m.net === null ? 0 : barHeight(m.net, max),
+      strong: m.month === v.month,
+      title: `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.month === v.thisMonth ? t('category.months.soFar', { amount }) : amount}`,
+    };
+  });
   if (avg === null) return { bars, avg: null, caption: '' };
   const parts = [t('category.months.avg', { amount: fmt.money(avg) })];
-  const c = last === undefined || last.net === null ? null : change(last.net, avg);
-  if (last && c && (c.kind === 'up' || c.kind === 'down')) {
-    parts.push(t(c.kind === 'up' ? 'category.months.above' : 'category.months.below', { month: monthName(monthNo(last.month)), amount: fmt.money(c.diff) }));
+  const c = picked === undefined || picked.net === null ? null : change(picked.net, avg);
+  if (picked && c && (c.kind === 'up' || c.kind === 'down')) {
+    parts.push(t(c.kind === 'up' ? 'category.months.above' : 'category.months.below', { month: monthName(monthNo(picked.month)), amount: fmt.money(c.diff) }));
   }
   return { bars, avg: max > 0 ? pct(avg, max) : null, caption: parts.join(' · ') };
 }

@@ -28,6 +28,9 @@ English interface.
   same filters as on the home screen.
 - The split of a category by people moved there from the home screen: a category row in «Spending» now opens the
   category instead of unfolding.
+- «Last 12 months» on the category screen runs up to the current month while the picked month is among the last 12
+  (the picked month stands out), so you see what came after it too; an older month shows the 12 months up to it. The
+  current month is not in the average until it ends.
 - Back from a category, the home screen is there at once, with the «Spending» switch as you left it. While a category
   opens for the first time, its cards show a placeholder instead of an empty page.
 

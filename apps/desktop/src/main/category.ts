@@ -83,6 +83,15 @@ export function lineStats(lines: readonly CategoryLineView[], people: readonly n
   };
 }
 
+/**
+ * The 12 months of «Last 12 months», oldest first: up to the current month while the picked one is among its last 12
+ * (the picked month and what came after it, to today), else up to the picked month.
+ */
+export function monthsWindow(month: string, thisMonth: string): string[] {
+  const window = last12Months(thisMonth);
+  return window.includes(month) ? window : last12Months(month);
+}
+
 /** The 12 months ending with `month`, oldest first. */
 export function last12Months(month: string): string[] {
   const [y, m] = month.split('-').map(Number) as [number, number];

@@ -322,8 +322,13 @@ export type CategoryOverview = {
     share: number | null;
     rank: number | null;
   };
-  /** The 12 months ending with `month`; net null before the data starts. */
+  /**
+   * 12 months up to the current one while `month` is among its last 12, else up to `month`; net null before the data
+   * starts.
+   */
   months: Array<{ month: string; net: number | null }>;
+  /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
+  thisMonth: string;
   /** The family view with more than one person only: each person's part. */
   people: Array<SpendingAmounts & { participantId: number }>;
   /** By the bank's description (case-insensitive), net desc. */

@@ -47,6 +47,7 @@ const VIEW: CategoryOverview = {
     { month: '2026-08', net: 100_000 },
     { month: '2026-09', net: 141_000 },
   ],
+  thisMonth: '2026-09',
   people: [{ participantId: 1, net: 81_200, purchases: 3 }, { participantId: 2, net: 59_800, purchases: 1 }],
   merchants: [{ name: 'Vigadane Taxi', net: 64_000, purchases: 2 }, { name: 'IMAGINARY  bus', net: 77_000, purchases: 2 }],
   lines: LINES,
@@ -80,8 +81,17 @@ describe('category screen helpers', () => {
     expect(m.bars).toHaveLength(12);
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[56.7, false], [70.9, false], [100, true]]);
     expect(m.bars[0]!.height).toBe(0);
-    expect(m.avg).toBe(75.9); // (800 + 1 000 + 1 410) / 3 = 1 070 of 1 410
-    expect(m.caption).toBe(`в среднем ${uah(107_000)} в месяц · Сентябрь: на ${uah(34_000)} больше среднего`);
+    expect(m.avg).toBe(63.8); // the running September is not in it: (800 + 1 000) / 2 = 900 of 1 410
+    expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Сентябрь: на ${uah(51_000)} больше среднего`);
+    expect(m.bars.at(-1)!.title).toBe(`Сентябрь 2026 — ${uah(141_000)} на сегодня`);
+  });
+
+  it('12 months up to today: the picked month is the strong bar and the caption compares it', () => {
+    const v = { ...VIEW, month: '2026-08', thisMonth: '2026-09' };
+    const m = monthsView(v, FMT);
+    expect(m.bars.slice(-3).map((b) => b.strong)).toEqual([false, true, false]);
+    expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Август: на ${uah(10_000)} больше среднего`);
+    expect(m.bars.at(-2)!.title).toBe(`Август 2026 — ${uah(100_000)}`);
   });
 
   it('who, where, when', () => {

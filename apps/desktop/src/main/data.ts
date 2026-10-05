@@ -17,7 +17,7 @@ import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
-import { last12Months, lineStats, merchantText } from './category.ts';
+import { lineStats, merchantText, monthsWindow } from './category.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
@@ -307,8 +307,9 @@ export class DataService {
       ? (foldByCategory(await spendingSummary(db, { ...compare, ...filters, groupBy: 'category', category }, now), rates).byCategory.get(category) ?? { net: 0, purchases: 0 })
       : null;
 
-    const months12 = last12Months(q.month);
-    const history = await spendingSummary(db, { from: `${months12[0]}-01`, to: period.to, ...filters, groupBy: 'month', category }, now);
+    const thisMonth = localDate(now * 1000, tz).slice(0, 7);
+    const months12 = monthsWindow(q.month, thisMonth);
+    const history = await spendingSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month', category }, now);
     const byMonth = new Map<string, number>();
     for (const g of history.groups) {
       const u = toUah(g.net, g.currency, rates);
@@ -373,6 +374,7 @@ export class DataService {
         rank: place >= 0 ? place + 1 : null,
       },
       months,
+      thisMonth,
       people: stats.people,
       merchants: stats.merchants,
       lines,

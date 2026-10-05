@@ -1,6 +1,6 @@
 // Pure helpers of the category screen in main (src/main/category.ts). Fictional data only.
 import { describe, expect, it } from 'vitest';
-import { last12Months, lineStats, merchantKey, merchantText } from '../src/main/category.ts';
+import { last12Months, lineStats, merchantKey, merchantText, monthsWindow } from '../src/main/category.ts';
 import type { CategoryLineView } from '../src/shared/api.ts';
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
@@ -37,6 +37,14 @@ describe('lineStats', () => {
   });
   it('no people asked → none; no spending → no median or largest', () => {
     expect(lineStats([], null)).toMatchObject({ people: [], median: null, largest: null, activeDays: 0 });
+  });
+});
+
+describe('monthsWindow', () => {
+  it('up to the current month while the picked one is among its last 12, else up to the picked one', () => {
+    expect(monthsWindow('2026-10', '2026-10')).toEqual(last12Months('2026-10'));
+    expect(monthsWindow('2025-11', '2026-10')).toEqual(last12Months('2026-10'));
+    expect(monthsWindow('2025-10', '2026-10')).toEqual(last12Months('2025-10'));
   });
 });
 
