@@ -30,7 +30,7 @@ const VIEW: SpendingOverview = {
       people: [part(1, 30_000, 6, { net: 25_000, purchases: 5 }), part(2, 20_000, 4, { net: 15_000, purchases: 3 }), part(3, 0, 0, { net: 5_000, purchases: 1 })],
     },
   ],
-  fx: [{ currency: 840, rate: 41, prevRate: 40, nearest: false }, { currency: 978, rate: null, prevRate: null, nearest: false }],
+  rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
   leftOut: [],
   familyTotal: null,
 };
@@ -283,17 +283,25 @@ describe('spending block: currencies come from the home-wide choice', () => {
   it('publishes its month\'s rates to the currency store, converts by the shared choice, the gear has no currency switches', async () => {
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const currency = useCurrencyDisplayStore();
-    currency.set('usd', true);
+    currency.setAlso('usd', true);
     const w = await mountBlock(document.body);
 
-    expect(currency.fx).toEqual(VIEW.fx);
+    expect(currency.rates).toEqual(VIEW.rates);
     expect(w.findComponent(CategoryRing).text()).toContain(`≈ ${formatMoney(Math.round(50_000 / 41), 840)}`);
 
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();
     expect(document.body.textContent).toContain('Метка прошлого месяца');
     expect(document.body.textContent).not.toContain('Доллары $');
-    expect(document.body.textContent).not.toContain('Итоги остаются в гривне');
     w.unmount();
+  });
+
+  it('a main currency other than hryvnia: the ring\'s amount in it, «≈» in hryvnia under it', async () => {
+    localStorage.setItem('home.currencies', '{"main":978,"also":{"uah":true}}');
+    const w = await mountBlock();
+    const ring = w.findComponent(CategoryRing).text();
+    expect(ring).toContain(formatMoney(1_000, 978));
+    expect(ring).toContain(`≈ ${formatMoney(50_000, 980)}`);
+    expect(ring).not.toContain('₴ ≈');
   });
 });

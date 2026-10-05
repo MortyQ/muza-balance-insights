@@ -1,7 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import type { Scope } from '@contract/api.ts';
-import { useCurrencyDisplayStore } from '@/entities/currency-display';
+import { useMoneyFormat } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useMonthStore } from '@/entities/period';
 import { colorVar, useParticipantStore } from '@/entities/participant';
@@ -39,15 +39,8 @@ export function useSpending(): UseSpendingReturn {
     open.value = null;
   });
 
-  // The currency button of the global filters shows which currency has a rate for the month this block shows.
-  const currency = useCurrencyDisplayStore();
-  watch(
-    () => state.value.data?.fx,
-    (fx) => {
-      if (fx) currency.setFx(fx);
-    },
-    { immediate: true },
-  );
+  // Also publishes the answer's rates to the currency button of the global filters.
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
 
   const view = computed(() => state.value.data);
   const family = computed(() => participant.multiple && participant.selectedId === null);
@@ -69,5 +62,6 @@ export function useSpending(): UseSpendingReturn {
     selected,
     pick,
     open,
+    fmt,
   };
 }
