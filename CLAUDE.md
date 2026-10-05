@@ -127,11 +127,11 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
-  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…». It sits outside the home
-  screen's own scroll area (the page is a column: the filters, then a scroll area with the grid), so it never scrolls
-  and the scroll bar starts under it. Month on the left, «Обновлено…» on the right; the person switch is buttons centred
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
+  outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
+  so it never scrolls and the scroll bar starts under it. Month and currency on the left, the sync status on the right; the person switch is buttons centred
   in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
-  `ResizeObserver` on the row, the month, «Обновлено…» and a hidden copy of the buttons; `fitsCenter`), otherwise a
+  `ResizeObserver` on the row, the month with the currency, the sync status and a hidden copy of the buttons; `fitsCenter`), otherwise a
   `VSelect` before the month (`ParticipantFilter` `mode`).
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
@@ -179,7 +179,17 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
-  top below 45rem. Used by settings (`NAV_GROUPS`) and home (`HOME_NAV` in `pages/home/constants.ts`: one item «General»
-  for now). Home uses the settings grid (menu on the left, blocks on the right) inside its scroll area, under the
-  pinned `GlobalFilters`.
+  top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`; one item
+  «General» = `home` for now).
+- **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
+  picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
+  `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the
+  settings grid: `SideNav` on the left (`useNav`: `navGroups(router.getRoutes())` — routes with `meta.nav { label, icon,
+  order }`; current = the open route, a pick pushes it), the screen on the right. `EmptyLayout` — the screen alone (lock,
+  recovery, connect, settings: `meta.layout: 'empty'`). The routes are `app/router/routes.ts`. The screen goes into the
+  layout's slot (MasterLayout's `RouterView` slot), not a `RouterView` inside the layout: a leaving layout keeps its old
+  screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each
+  layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. Pages and layouts have one root element
+  (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
+  with `meta.nav`.
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

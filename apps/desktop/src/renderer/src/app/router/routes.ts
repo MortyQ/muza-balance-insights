@@ -1,0 +1,24 @@
+import type { RouteRecordRaw } from 'vue-router';
+import { ROUTE } from '@/shared/config';
+import '../layouts/types.ts';
+
+// Pages are separate chunks, served by app:// like every other asset. `meta.layout` picks the shell (absent: the data
+// screens' one); `meta.nav` puts the route into that shell's side menu.
+export const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    name: ROUTE.home,
+    component: () => import('@/pages/home').then((m) => m.HomePage),
+    meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } },
+  },
+  { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage), meta: { layout: 'empty' } },
+  { path: '/settings', name: ROUTE.settings, component: () => import('@/pages/settings').then((m) => m.SettingsPage), meta: { layout: 'empty' } },
+  {
+    path: '/db-recovery',
+    name: ROUTE.dbRecovery,
+    component: () => import('@/pages/db-recovery').then((m) => m.DbRecoveryPage),
+    meta: { layout: 'empty' },
+  },
+  { path: '/lock', name: ROUTE.lock, component: () => import('@/pages/lock').then((m) => m.LockPage), meta: { layout: 'empty' } },
+  { path: '/:rest(.*)*', redirect: { name: ROUTE.home } },
+];
