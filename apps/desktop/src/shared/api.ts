@@ -214,6 +214,18 @@ export type SpendingCategoryView = SpendingAmounts & {
 /** A currency the block can show «≈» lines in: kopecks per minor unit, from the user's own exchanges. */
 export type SpendingFx = { currency: 840 | 978; rate: number | null; prevRate: number | null; nearest: boolean };
 
+/**
+ * Today's Monobank rates (public /bank/currency): hryvnia kopecks per minor unit of each quoted currency — the bank's
+ * sell rate, or its cross rate for a currency it quotes only so. One snapshot for every amount of an answer.
+ */
+export type RatesView = {
+  list: Array<{ currency: number; rate: number }>;
+  /** Epoch seconds of the fetch these rates come from. */
+  fetchedAt: number;
+  /** The latest refresh failed: these are the saved rates. */
+  saved: boolean;
+};
+
 export type SpendingOverview = {
   month: string;
   period: {
