@@ -153,13 +153,13 @@ describe('GlobalFilters', () => {
   it('the currency button sits right after the month filter', () => {
     const w = mountFilters();
     const month = w.find('[aria-label^="Месяц"]');
-    const currency = w.find('[aria-label^="Показывать рядом в валюте"]');
+    const currency = w.find('[aria-label^="Валюты:"]');
     expect(month.exists()).toBe(true);
     expect(currency.exists()).toBe(true);
     expect(month.element.compareDocumentPosition(currency.element) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const triggers = w.findAll('button[aria-label]').map((b) => b.attributes('aria-label'));
     const at = triggers.findIndex((l) => l?.startsWith('Месяц'));
-    expect(triggers[at + 1]).toMatch(/^Показывать рядом в валюте/);
+    expect(triggers[at + 1]).toMatch(/^Валюты:/);
     w.unmount();
   });
 

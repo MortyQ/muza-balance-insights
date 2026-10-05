@@ -1,49 +1,55 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { SpendingFx } from '@contract/api.ts';
+import type { RatesView } from '@contract/api.ts';
 import { LEGACY_KEY, STORAGE_KEY } from '../constants.ts';
-import type { CurrencyPrefs } from '../types.ts';
-import { parseCurrencyPrefs } from '../utils.ts';
+import type { CurrencyChoice, CurrencyKey, MainCurrency } from '../types.ts';
+import { parseCurrencyChoice } from '../utils.ts';
 
-function save(prefs: CurrencyPrefs): void {
+function save(choice: CurrencyChoice): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(choice));
   } catch {
     // Storage unavailable: the choice holds until the app restarts.
   }
 }
 
-function read(): CurrencyPrefs {
+function read(): CurrencyChoice {
   try {
     const own = localStorage.getItem(STORAGE_KEY);
-    if (own !== null) return parseCurrencyPrefs(own);
+    if (own !== null) return parseCurrencyChoice(own);
     const legacy = localStorage.getItem(LEGACY_KEY);
-    const prefs = parseCurrencyPrefs(legacy);
+    const choice = parseCurrencyChoice(legacy);
     // Carried over once and saved at once: the spending block's store drops usd / eur from its key on its next write.
-    if (legacy !== null) save(prefs);
-    return prefs;
+    if (legacy !== null) save(choice);
+    return choice;
   } catch {
-    return parseCurrencyPrefs(null);
+    return parseCurrencyChoice(null);
   }
 }
 
 /**
- * The home screen's «≈ $ / €» choice (the spending block, the now strip), remembered on this computer, and the rates
- * of the month the spending block shows — it publishes each answer's `fx`, so the switch knows which currency has one
- * (`null` until the first answer: not loaded yet, which is not «no exchanges»).
+ * The home screen's currency choice (main + «≈»), remembered on this computer, and the newest rates any block's
+ * answer carried — for the switch's footer (`undefined` until the first answer: not loaded yet, which is not «no rates»).
  */
 export const useCurrencyDisplayStore = defineStore('currency-display', () => {
-  const prefs = ref<CurrencyPrefs>(read());
-  const fx = ref<ReadonlyArray<SpendingFx> | null>(null);
+  const choice = ref<CurrencyChoice>(read());
+  const rates = ref<RatesView | null | undefined>(undefined);
 
-  function set(key: keyof CurrencyPrefs, value: boolean): void {
-    prefs.value = { ...prefs.value, [key]: value };
-    save(prefs.value);
+  function setMain(main: MainCurrency): void {
+    choice.value = { ...choice.value, main };
+    save(choice.value);
   }
 
-  function setFx(next: ReadonlyArray<SpendingFx>): void {
-    fx.value = next;
+  function setAlso(key: CurrencyKey, value: boolean): void {
+    choice.value = { ...choice.value, also: { ...choice.value.also, [key]: value } };
+    save(choice.value);
   }
 
-  return { prefs, fx, set, setFx };
+  /** The newest snapshot wins; null (never fetched) only until a real one arrives. */
+  function setRates(next: RatesView | null): void {
+    const cur = rates.value;
+    if (cur === undefined || cur === null || (next !== null && next.fetchedAt >= cur.fetchedAt)) rates.value = next ?? cur ?? null;
+  }
+
+  return { choice, rates, setMain, setAlso, setRates };
 });

@@ -1,15 +1,15 @@
 // @vitest-environment happy-dom
-// The home-wide «≈ $ / €» choice: parsing, carrying the old spending.view choice over, conversions, the button.
+// The home-wide currency choice: parsing, carrying the old spending.view choice over, the money format, the switch.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import type { SpendingFx } from '@contract/api.ts';
-import { convertInline, convertLines, parseCurrencyPrefs, ratedCurrencies, shownText } from '@/entities/currency-display';
+import type { RatesView } from '@contract/api.ts';
+import { moneyFormat, parseCurrencyChoice, rateDate, shownText } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
-// reka-ui's popover positioning reaches for ResizeObserver, which happy-dom does not provide.
+// reka-ui's popover positioning and the segmented control's pill reach for ResizeObserver, which happy-dom does not provide.
 class ResizeObserverStub implements ResizeObserver {
   observe(): void {}
   unobserve(): void {}
@@ -17,31 +17,57 @@ class ResizeObserverStub implements ResizeObserver {
 }
 globalThis.ResizeObserver ??= ResizeObserverStub;
 
-const FX: SpendingFx[] = [{ currency: 840, rate: 41, prevRate: null, nearest: false }, { currency: 978, rate: null, prevRate: null, nearest: false }];
-const ON = { usd: true, eur: true };
-const OFF = { usd: false, eur: false };
+// 2026-10-05 10:00 Kyiv (UTC+3).
+const FETCHED = Date.UTC(2026, 9, 5, 7, 0) / 1000;
+const RATES: RatesView = { list: [{ currency: 840, rate: 40 }, { currency: 978, rate: 50 }], fetchedAt: FETCHED, saved: false };
+const NONE = { uah: false, usd: false, eur: false };
 
-describe('parseCurrencyPrefs', () => {
-  it('off for nothing or garbage; each field on its own; the old spending.view value works as is', () => {
-    expect(parseCurrencyPrefs(null)).toEqual(OFF);
-    expect(parseCurrencyPrefs('{oops')).toEqual(OFF);
-    expect(parseCurrencyPrefs('[true]')).toEqual(OFF);
-    expect(parseCurrencyPrefs('{"usd":true,"eur":"yes"}')).toEqual({ usd: true, eur: false });
-    expect(parseCurrencyPrefs('{"split":false,"mark":true,"usd":false,"eur":true}')).toEqual({ usd: false, eur: true });
+describe('parseCurrencyChoice', () => {
+  it('hryvnia and nothing else by default, for garbage too', () => {
+    for (const raw of [null, '{oops', '[1]', '{"main":123}']) expect(parseCurrencyChoice(raw)).toEqual({ main: 980, also: NONE });
+  });
+  it('the new shape; each «also» field on its own', () => {
+    expect(parseCurrencyChoice('{"main":978,"also":{"uah":true,"usd":"x"}}')).toEqual({ main: 978, also: { uah: true, usd: false, eur: false } });
+  });
+  it('the old { usd, eur } (and spending.view) value: hryvnia main, the same «≈» currencies', () => {
+    expect(parseCurrencyChoice('{"usd":true,"eur":false}')).toEqual({ main: 980, also: { uah: false, usd: true, eur: false } });
+    expect(parseCurrencyChoice('{"split":false,"mark":true,"usd":false,"eur":true}')).toEqual({ main: 980, also: { uah: false, usd: false, eur: true } });
   });
 });
 
-describe('conversions and the button text', () => {
-  it('only switched-on currencies with a rate, in menu order', () => {
-    expect(ratedCurrencies(FX, ON).map((f) => f.currency)).toEqual([840]);
-    expect(convertLines(41_000, FX, ON)).toEqual([`≈ ${formatMoney(1_000, 840)}`]);
-    expect(convertLines(41_000, FX, OFF)).toEqual([]);
-    const both: SpendingFx[] = [FX[0]!, { currency: 978, rate: 45, prevRate: null, nearest: true }];
-    expect(convertInline(90_000, both, ON)).toBe(`≈ ${formatMoney(Math.round(90_000 / 41), 840)} · ${formatMoney(2_000, 978)}`);
-    expect(convertInline(90_000, both, OFF)).toBe('');
-    expect(shownText(both, ON)).toBe('₴ · $ €');
-    expect(shownText(FX, ON)).toBe('₴ · $');
-    expect(shownText(FX, OFF)).toBe('₴');
+describe('moneyFormat', () => {
+  it('hryvnia main: as is, «≈» lines in the other picked currencies', () => {
+    const f = moneyFormat(RATES, { main: 980, also: { uah: true, usd: true, eur: true } });
+    expect(f.currency).toBe(980);
+    expect(f.money(4_000_00)).toBe(formatMoney(4_000_00, 980));
+    expect(f.approx(4_000_00)).toEqual([`≈ ${formatMoney(100_00, 840)}`, `≈ ${formatMoney(80_00, 978)}`]);
+    expect(f.approxInline(4_000_00)).toBe(`≈ ${formatMoney(100_00, 840)} · ${formatMoney(80_00, 978)}`);
+  });
+  it('euro main: amounts in euros, hryvnia as a «≈» line; convert gives euro cents', () => {
+    const f = moneyFormat(RATES, { main: 978, also: { uah: true, usd: false, eur: true } });
+    expect(f.currency).toBe(978);
+    expect(f.convert(5_000_00)).toBe(100_00);
+    expect(f.money(5_000_00)).toBe(formatMoney(100_00, 978));
+    expect(f.approx(5_000_00)).toEqual([`≈ ${formatMoney(5_000_00, 980)}`]);
+  });
+  it('no rates: back to hryvnia, no «≈» lines', () => {
+    const f = moneyFormat(null, { main: 840, also: { uah: true, usd: true, eur: true } });
+    expect(f.currency).toBe(980);
+    expect(f.money(100)).toBe(formatMoney(100, 980));
+    expect(f.approx(100)).toEqual([]);
+    expect(f.approxInline(100)).toBe('');
+  });
+});
+
+describe('shownText and rateDate', () => {
+  it('main first, then the «≈» currencies that have a rate', () => {
+    expect(shownText(RATES, { main: 840, also: { uah: true, usd: true, eur: true } })).toBe('$ · ₴ €');
+    expect(shownText(RATES, { main: 980, also: NONE })).toBe('₴');
+    expect(shownText(null, { main: 978, also: { uah: false, usd: true, eur: false } })).toBe('₴');
+  });
+  it('the fetch time in Kyiv: «05.10, 10:00»', () => {
+    expect(rateDate(FETCHED)).toBe('05.10, 10:00');
+    expect(rateDate(Date.UTC(2026, 0, 31, 22, 5) / 1000)).toBe('01.02, 00:05');
   });
 });
 
@@ -57,38 +83,78 @@ describe('useCurrencyDisplayStore', () => {
   it('carries the old spending.view choice over once, writing the new key at once', async () => {
     mem.set('spending.view', '{"split":true,"mark":false,"usd":true,"eur":false}');
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
-    expect(useCurrencyDisplayStore().prefs).toEqual({ usd: true, eur: false });
-    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ usd: true, eur: false });
+    const expected = { main: 980, also: { uah: false, usd: true, eur: false } };
+    expect(useCurrencyDisplayStore().choice).toEqual(expected);
+    expect(JSON.parse(mem.get('home.currencies')!)).toEqual(expected);
   });
 
-  it('an old spending.view with corrupt JSON: the new key is written all-off, nothing throws', async () => {
+  it('an old spending.view with corrupt JSON: the new key is written with defaults, nothing throws', async () => {
     mem.set('spending.view', '{oops');
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     expect(() => useCurrencyDisplayStore()).not.toThrow();
-    expect(useCurrencyDisplayStore().prefs).toEqual(OFF);
-    expect(JSON.parse(mem.get('home.currencies')!)).toEqual(OFF);
+    expect(useCurrencyDisplayStore().choice).toEqual({ main: 980, also: NONE });
+    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ main: 980, also: NONE });
   });
 
-  it('its own key wins over the old one; set writes it; fx is published by setFx', async () => {
+  it('its own key wins over the old one; setMain / setAlso write it', async () => {
     mem.set('spending.view', '{"usd":true,"eur":true}');
-    mem.set('home.currencies', '{"usd":false,"eur":true}');
+    mem.set('home.currencies', '{"main":840,"also":{"eur":true}}');
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const s = useCurrencyDisplayStore();
-    expect(s.prefs).toEqual({ usd: false, eur: true });
-    s.set('usd', true);
-    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ usd: true, eur: true });
-    expect(s.fx).toBeNull();
-    s.setFx(FX);
-    expect(s.fx).toEqual(FX);
+    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true } });
+    s.setMain(978);
+    s.setAlso('uah', true);
+    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ main: 978, also: { uah: true, usd: false, eur: true } });
   });
 
-  it('a storage that throws: defaults, and set still works', async () => {
+  it('setRates: undefined until the first answer, the newest snapshot wins, null never replaces a real one', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    const s = useCurrencyDisplayStore();
+    expect(s.rates).toBeUndefined();
+    s.setRates(null);
+    expect(s.rates).toBeNull();
+    s.setRates(RATES);
+    expect(s.rates).toEqual(RATES);
+    s.setRates(null);
+    expect(s.rates).toEqual(RATES);
+    s.setRates({ ...RATES, fetchedAt: FETCHED - 60 });
+    expect(s.rates).toEqual(RATES);
+    const newer = { ...RATES, fetchedAt: FETCHED + 60 };
+    s.setRates(newer);
+    expect(s.rates).toEqual(newer);
+  });
+
+  it('a storage that throws: defaults, and the setters still work', async () => {
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const s = useCurrencyDisplayStore();
-    expect(s.prefs).toEqual(OFF);
-    expect(() => s.set('eur', true)).not.toThrow();
-    expect(s.prefs.eur).toBe(true);
+    expect(s.choice).toEqual({ main: 980, also: NONE });
+    expect(() => s.setAlso('eur', true)).not.toThrow();
+    expect(() => s.setMain(840)).not.toThrow();
+    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true } });
+  });
+});
+
+describe('useMoneyFormat', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it('formats by the answer\'s own rates and the choice, and publishes the rates to the switch', async () => {
+    const { ref } = await import('vue');
+    const { useCurrencyDisplayStore, useMoneyFormat } = await import('@/entities/currency-display');
+    const store = useCurrencyDisplayStore();
+    const rates = ref<RatesView | null | undefined>(undefined);
+    const f = useMoneyFormat(() => rates.value);
+    expect(store.rates).toBeUndefined();
+    expect(f.value.currency).toBe(980);
+    store.setMain(840);
+    expect(f.value.currency).toBe(980);
+    rates.value = RATES;
+    await flushPromises();
+    expect(store.rates).toEqual(RATES);
+    expect(f.value.money(4_000_00)).toBe(formatMoney(100_00, 840));
   });
 });
 
@@ -98,66 +164,64 @@ describe('CurrencyToggle', () => {
     localStorage.clear();
   });
 
-  async function mountToggle(fx: SpendingFx[] | null) {
+  async function openToggle(rates?: RatesView | null) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const { CurrencyToggle, useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const store = useCurrencyDisplayStore();
-    if (fx) store.setFx(fx);
+    if (rates !== undefined) store.setRates(rates);
     const w = mount(CurrencyToggle, { global: { plugins: [i18n] }, attachTo: document.body });
+    await flushPromises();
+    document.body.querySelector<HTMLElement>('[aria-label^="Валюты:"]')!.click();
     await flushPromises();
     return { w, store };
   }
 
-  it('the button names the currencies on screen; the switches, the note and a disabled one without a rate', async () => {
-    const { w, store } = await mountToggle(FX);
-    const trigger = document.body.querySelector<HTMLElement>('[aria-label="Показывать рядом в валюте: ₴"]');
-    expect(trigger?.textContent).toContain('₴');
-    trigger!.click();
-    await flushPromises();
-    expect(document.body.textContent).toContain('Итоги остаются в гривне');
-    expect(document.body.textContent).toContain('По курсу твоих обменов за месяц');
-    expect(document.body.textContent).toContain('Обменов в € ещё не было');
-    const boxes = Array.from(document.body.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
-    expect(boxes.map((b) => b.disabled)).toEqual([false, true]);
+  const segments = () =>
+    Array.from(document.body.querySelectorAll<HTMLButtonElement>('[aria-label="Основная валюта"] button')).map((b) => b.textContent?.trim());
 
-    boxes[0]!.click();
-    await flushPromises();
-    expect(store.prefs.usd).toBe(true);
-    expect(JSON.parse(localStorage.getItem('home.currencies') ?? '{}')).toEqual({ usd: true, eur: false });
-    expect(document.body.querySelector('[aria-label="Показывать рядом в валюте: ₴ · $"]')).not.toBeNull();
+  it('no answer yet: no footer, only hryvnia to pick', async () => {
+    const { w } = await openToggle();
+    expect(document.body.querySelector('[aria-label="Валюты: ₴"]')).not.toBeNull();
+    expect(segments()).toEqual(['Гривна ₴']);
+    const text = document.body.textContent ?? '';
+    expect(text).toContain('Все суммы на главном экране');
+    expect(text).not.toContain('Курс');
+    expect(text).not.toContain('Показывать также');
     w.unmount();
   });
 
-  it('rates not loaded yet: no «no exchanges» claim, no rate hint, the switches usable and the choice saved', async () => {
-    const { w, store } = await mountToggle(null);
-    const trigger = document.body.querySelector<HTMLElement>('[aria-label="Показывать рядом в валюте: ₴"]');
-    trigger!.click();
-    await flushPromises();
-    const text = document.body.textContent ?? '';
-    expect(text).toContain('Доллары $');
-    expect(text).not.toContain('Обменов в');
-    expect(text).not.toContain('По курсу');
-    const boxes = Array.from(document.body.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
-    expect(boxes.map((b) => b.disabled)).toEqual([false, false]);
+  it('no rates: says hryvnia only for now', async () => {
+    const { w } = await openToggle(null);
+    expect(segments()).toEqual(['Гривна ₴']);
+    expect(document.body.textContent).toContain('Курсы ещё не загружены: пока только гривна');
+    w.unmount();
+  });
 
+  it('with rates: ₴ $ €; picking $ saves it, «also» lists hryvnia and euro, the footer names the rate', async () => {
+    const { w, store } = await openToggle(RATES);
+    expect(segments()).toEqual(['Гривна ₴', 'Доллары $', 'Евро €']);
+    expect(document.body.textContent).toContain('Курс продажи Monobank, 05.10, 10:00');
+
+    const dollars = Array.from(document.body.querySelectorAll<HTMLButtonElement>('[aria-label="Основная валюта"] button'))[1]!;
+    dollars.click();
+    await flushPromises();
+    expect(store.choice.main).toBe(840);
+    expect(JSON.parse(localStorage.getItem('home.currencies') ?? '{}')).toEqual({ main: 840, also: NONE });
+    expect(document.body.querySelector('[aria-label="Валюты: $"]')).not.toBeNull();
+
+    const labels = Array.from(document.body.querySelectorAll('label:not(.v-switch)')).map((l) => l.textContent?.trim());
+    expect(labels).toEqual(['Гривна ₴', 'Евро €']);
+    const boxes = Array.from(document.body.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
     boxes[1]!.click();
     await flushPromises();
-    expect(store.prefs.eur).toBe(true);
-    expect(JSON.parse(localStorage.getItem('home.currencies') ?? '{}')).toEqual({ usd: false, eur: true });
-    // No rate yet, so nothing is on screen in €: the button still says «₴».
-    expect(document.body.querySelector('[aria-label="Показывать рядом в валюте: ₴"]')).not.toBeNull();
-
-    store.setFx(FX);
-    await flushPromises();
-    expect(document.body.textContent).toContain('Обменов в € ещё не было');
+    expect(store.choice.also.eur).toBe(true);
+    expect(document.body.querySelector('[aria-label="Валюты: $ · €"]')).not.toBeNull();
     w.unmount();
   });
 
-  it('a currency rated only by the nearest exchange says so', async () => {
-    const { w } = await mountToggle([{ currency: 840, rate: 41, prevRate: null, nearest: true }, FX[1]!]);
-    document.body.querySelector<HTMLElement>('[aria-label^="Показывать рядом в валюте"]')!.click();
-    await flushPromises();
-    expect(document.body.textContent).toContain('По курсу твоего ближайшего обмена — в этом месяце обменов не было');
+  it('a saved rate says so', async () => {
+    const { w } = await openToggle({ ...RATES, saved: true });
+    expect(document.body.textContent).toContain('Сохранённый курс от 05.10, 10:00: нет соединения');
     w.unmount();
   });
 });

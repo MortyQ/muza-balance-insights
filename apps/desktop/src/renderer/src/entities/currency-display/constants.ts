@@ -1,8 +1,9 @@
-import type { SpendingFx } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
+import type { CurrencyKey, MainCurrency } from './types.ts';
 
-/** The «≈» currencies and their switch labels, in menu order. */
-export const FX_CURRENCIES: ReadonlyArray<{ currency: SpendingFx['currency']; key: 'usd' | 'eur'; label: MessageKey }> = [
+/** The currencies of the switch, in menu order. */
+export const CURRENCIES: ReadonlyArray<{ currency: MainCurrency; key: CurrencyKey; label: MessageKey }> = [
+  { currency: 980, key: 'uah', label: 'entities.currencyDisplay.uah' },
   { currency: 840, key: 'usd', label: 'entities.currencyDisplay.usd' },
   { currency: 978, key: 'eur', label: 'entities.currencyDisplay.eur' },
 ];

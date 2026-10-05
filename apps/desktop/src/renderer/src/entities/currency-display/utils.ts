@@ -1,16 +1,17 @@
-import type { SpendingFx } from '@contract/api.ts';
-import { currencySymbol, formatMoney, UAH } from '@/shared/lib';
-import { FX_CURRENCIES } from './constants.ts';
-import type { CurrencyPrefs } from './types.ts';
+import type { RatesView } from '@contract/api.ts';
+import { currencySymbol, formatMoney, shortDate, UAH } from '@/shared/lib';
+import { CURRENCIES } from './constants.ts';
+import type { CurrencyChoice, CurrencyKey, MainCurrency, MoneyFormat } from './types.ts';
 
+const MAINS: ReadonlyArray<number> = CURRENCIES.map((c) => c.currency);
 
 /**
- * The choice from storage: `usd` / `eur`, each on its own, off for anything else (the old spending.view value has
- * them too; its other fields are ignored). The one `as` reads a parsed JSON object's fields after the object / array
- * guard.
+ * The choice from storage. The new shape `{ main, also }`; the old `{ usd, eur }` (also spending.view's, whose other
+ * fields are ignored) reads as hryvnia main with the same «≈» currencies. Anything else — defaults. The `as` casts read
+ * a parsed JSON object's fields after the object / array guard.
  */
-export function parseCurrencyPrefs(raw: string | null): CurrencyPrefs {
-  const d: CurrencyPrefs = { usd: false, eur: false };
+export function parseCurrencyChoice(raw: string | null): CurrencyChoice {
+  const d: CurrencyChoice = { main: UAH as MainCurrency, also: { uah: false, usd: false, eur: false } };
   if (raw === null) return d;
   let v: unknown;
   try {
@@ -20,34 +21,70 @@ export function parseCurrencyPrefs(raw: string | null): CurrencyPrefs {
   }
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return d;
   const o = v as Record<string, unknown>;
-  const field = (k: keyof CurrencyPrefs): boolean => {
-    const x = o[k];
-    return typeof x === 'boolean' ? x : d[k];
+  const flags = (src: unknown): Record<CurrencyKey, boolean> => {
+    const s = typeof src === 'object' && src !== null && !Array.isArray(src) ? (src as Record<string, unknown>) : {};
+    const f = (k: CurrencyKey) => s[k] === true;
+    return { uah: f('uah'), usd: f('usd'), eur: f('eur') };
   };
-  return { usd: field('usd'), eur: field('eur') };
+  if ('main' in o) {
+    return typeof o.main === 'number' && MAINS.includes(o.main) ? { main: o.main as MainCurrency, also: flags(o.also) } : d;
+  }
+  return { main: d.main, also: { ...flags(o), uah: false } };
 }
 
-/** The switched-on currencies that have a rate, in menu order. */
-export function ratedCurrencies(fx: ReadonlyArray<SpendingFx>, prefs: Readonly<CurrencyPrefs>): Array<SpendingFx & { rate: number }> {
-  return FX_CURRENCIES.filter((c) => prefs[c.key])
-    .map((c) => fx.find((f) => f.currency === c.currency))
-    .filter((f): f is SpendingFx & { rate: number } => !!f && f.rate !== null);
+/** Kopecks per minor unit of `currency`; hryvnia 1; null — no rate. */
+function rateOf(rates: RatesView | null, currency: number): number | null {
+  if (currency === UAH) return 1;
+  return rates?.list.find((r) => r.currency === currency)?.rate ?? null;
 }
 
-/** «≈ 359 $» for each switched-on currency that has a rate. */
-export function convertLines(kopecks: number, fx: ReadonlyArray<SpendingFx>, prefs: Readonly<CurrencyPrefs>): string[] {
-  return ratedCurrencies(fx, prefs).map((f) => `≈ ${formatMoney(Math.round(kopecks / f.rate), f.currency)}`);
+/** Whether `currency` can be shown: hryvnia always, any other one only with a rate. */
+export function hasRate(rates: RatesView | null, currency: number): boolean {
+  return rateOf(rates, currency) !== null;
 }
 
-/** The same on one line: «≈ 15 $ · 13 €»; '' — none. */
-export function convertInline(kopecks: number, fx: ReadonlyArray<SpendingFx>, prefs: Readonly<CurrencyPrefs>): string {
-  const rated = ratedCurrencies(fx, prefs);
-  return rated.length === 0 ? '' : `≈ ${rated.map((f) => formatMoney(Math.round(kopecks / f.rate), f.currency)).join(' · ')}`;
+export function moneyFormat(rates: RatesView | null, choice: Readonly<CurrencyChoice>): MoneyFormat {
+  const mainRate = rateOf(rates, choice.main);
+  const currency = mainRate === null ? UAH : choice.main;
+  const rate = mainRate ?? 1;
+  const also = CURRENCIES.filter((c) => choice.also[c.key] && c.currency !== currency).flatMap((c) => {
+    const r = rateOf(rates, c.currency);
+    return r === null ? [] : [{ currency: c.currency, rate: r }];
+  });
+  const parts = (k: number) => also.map((c) => formatMoney(Math.round(k / c.rate), c.currency));
+  const convert = (k: number) => Math.round(k / rate);
+  return {
+    currency,
+    convert,
+    money: (k) => formatMoney(convert(k), currency),
+    approx: (k) => parts(k).map((p) => `≈ ${p}`),
+    approxInline: (k) => {
+      const p = parts(k);
+      return p.length === 0 ? '' : `≈ ${p.join(' · ')}`;
+    },
+  };
 }
 
-/** The button's text: «₴», or «₴ · $ €» with the currencies on screen. */
-export function shownText(fx: ReadonlyArray<SpendingFx>, prefs: Readonly<CurrencyPrefs>): string {
-  const rated = ratedCurrencies(fx, prefs);
-  const uah = currencySymbol(UAH);
-  return rated.length === 0 ? uah : `${uah} · ${rated.map((f) => currencySymbol(f.currency)).join(' ')}`;
+/** The button's text: the currency on screen, then the «≈» ones — «$ · ₴ €», or just «₴». */
+export function shownText(rates: RatesView | null, choice: Readonly<CurrencyChoice>): string {
+  const f = moneyFormat(rates, choice);
+  const also = CURRENCIES.filter((c) => choice.also[c.key] && c.currency !== f.currency && hasRate(rates, c.currency));
+  const main = currencySymbol(f.currency);
+  return also.length === 0 ? main : `${main} · ${also.map((c) => currencySymbol(c.currency)).join(' ')}`;
+}
+
+const kyivDateTime = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Kyiv',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** When the rates were fetched (epoch seconds), in Kyiv time: «05.10, 10:00». */
+export function rateDate(epochSec: number): string {
+  const p = Object.fromEntries(kyivDateTime.formatToParts(new Date(epochSec * 1000)).map((x) => [x.type, x.value]));
+  return shortDate(`${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`);
 }
