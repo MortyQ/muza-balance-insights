@@ -1,5 +1,6 @@
 // Route names, so any layer can navigate without importing app/router.
 export const ROUTE = {
+  analytics: 'analytics',
   connect: 'connect',
   dbRecovery: 'db-recovery',
   home: 'home',

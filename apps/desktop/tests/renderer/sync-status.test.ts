@@ -191,7 +191,8 @@ describe('GlobalFilters', () => {
     const s = w.find('[role="status"]');
     expect(s.find('svg.text-warning').exists()).toBe(true);
     expect(s.find('.sr-only').text()).toContain('Вигадана · Monobank: Monobank не принял токен');
-    const items = w.findAll('.v-sc__item');
+    // Not the hidden copy that measures the buttons' width (inert).
+    const items = w.findAll('.v-sc__item').filter((i) => !i.element.closest('[inert]'));
     expect(items.map((i) => i.find('.v-sc__alert').exists())).toEqual([false, false, true]);
     expect(items[2]?.text()).toContain('не обновлено');
     w.unmount();

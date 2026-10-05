@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
-import { ImportFeature } from '@/features/import-statement';
 import { NowStripFeature } from '@/features/now-strip';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
-import { GlobalFilters } from '@/widgets/global-filters';
 import { HomeNotices } from '@/widgets/home-notices';
 
 const syncStatus = useSyncStatusStore();
 </script>
 
 <template>
-  <main class="mx-auto flex max-w-4xl flex-col gap-4 px-8 pt-1 pb-6">
-    <GlobalFilters />
+  <main class="flex flex-col gap-4">
+    <!-- «General»: the blocks only; the filters and the side menu are the default layout's (app/layouts). The history
+         download is in settings, «Connections»: HomeNotices links there while there is no data. -->
     <HomeNotices />
     <AppLockHintFeature />
     <UpdateBannerFeature />
@@ -22,6 +21,5 @@ const syncStatus = useSyncStatusStore();
       <NowStripFeature />
       <SpendingFeature />
     </template>
-    <ImportFeature />
   </main>
 </template>

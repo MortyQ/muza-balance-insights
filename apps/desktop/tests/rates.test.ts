@@ -222,6 +222,8 @@ describe('RatesService', () => {
     nowMs += REFRESH_EVERY_MS;
     tick!();
     expect(calls).toHaveLength(2);
+    // Let the tick's refresh finish writing the cache before afterEach removes the folder.
+    await s.refresh();
     s.stop();
     expect(stopped).toBe(1);
   });

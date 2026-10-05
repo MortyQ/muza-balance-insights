@@ -11,24 +11,15 @@ import { z } from 'zod';
 import { kyivStartOfDay, toKyivDate } from '@mono/core/format';
 import type { ProviderId } from '@mono/core/providers/types';
 import { FromWorker, StartMessage, type ToWorker } from '../shared/import-protocol.ts';
-import type { ImportDepth, ImportFailure, ImportProgress, StartImportResult } from '../shared/progress.ts';
+import { isImportFrom } from '../shared/import-range.ts';
+import type { ImportFailure, ImportProgress, StartImportResult } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
 
 export const JOB_FILE = 'import-job.json';
 export const CANCEL_KILL_MS = 10_000;
 
-/** Start of the Kyiv day `depth` months before today (day clamped: 31 Mar − 1 month = 28/29 Feb). */
-export function sinceForDepth(depth: ImportDepth, nowSec: number): number {
-  const [y, m, d] = toKyivDate(nowSec).split('-').map(Number) as [number, number, number];
-  const total = y * 12 + (m - 1) - depth;
-  const ty = Math.floor(total / 12);
-  const tm = (total % 12) + 1;
-  const lastDay = new Date(Date.UTC(ty, tm, 0)).getUTCDate();
-  const td = Math.min(d, lastDay);
-  return kyivStartOfDay(`${ty}-${String(tm).padStart(2, '0')}-${String(td).padStart(2, '0')}`);
-}
-
-const JobSchema = z.strictObject({ sinceSec: z.number().int().positive(), depth: z.number().int(), startedAt: z.number().int() });
+// `depth` (months) is only in job files written before the start became a date: still read, no longer written.
+const JobSchema = z.strictObject({ sinceSec: z.number().int().positive(), depth: z.number().int().optional(), startedAt: z.number().int() });
 type Job = z.infer<typeof JobSchema> & { auto?: true };
 
 export type ChildLike = {
@@ -95,13 +86,19 @@ export class Importer {
     return this.running && this.current?.auto === true;
   }
 
-  /** A user's import. An automatic refresh in progress is stopped first: this plan covers its windows too. */
-  async start(depth: ImportDepth): Promise<StartImportResult> {
+  /**
+   * A user's import from the start of the Kyiv day `from` (YYYY-MM-DD) up to now. A date the screen could not offer
+   * (isImportFrom) is refused with an error. An automatic refresh in progress is stopped first: this plan covers its
+   * windows too.
+   */
+  async start(from: string): Promise<StartImportResult> {
+    const now = this.d.nowSec();
+    if (!isImportFrom(from, toKyivDate(now))) throw new Error('import: start date out of range');
     if (this.autoRunning) {
       this.d.log('import: auto refresh replaced by a user import');
       await this.halt();
     }
-    return this.launch({ sinceSec: sinceForDepth(depth, this.d.nowSec()), depth, startedAt: this.d.nowSec() }, false);
+    return this.launch({ sinceSec: kyivStartOfDay(from), startedAt: now }, false);
   }
 
   /**
@@ -113,7 +110,7 @@ export class Importer {
     if (this.running) return { started: false, reason: 'running' };
     if (this.readJob()) return { started: false, reason: 'running' };
     const now = this.d.nowSec();
-    return this.launch({ sinceSec: kyivStartOfDay(`${toKyivDate(now).slice(0, 8)}01`), depth: 0, startedAt: now, auto: true }, false);
+    return this.launch({ sinceSec: kyivStartOfDay(`${toKyivDate(now).slice(0, 8)}01`), startedAt: now, auto: true }, false);
   }
 
   /**

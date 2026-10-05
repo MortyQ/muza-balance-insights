@@ -7,7 +7,7 @@ import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { COLOR_KEYS } from '../shared/colors.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
-import { IMPORT_DEPTHS } from '../shared/progress.ts';
+import { isIsoDate } from '../shared/import-range.ts';
 import { THEME_PREFS } from '../shared/theme.ts';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
@@ -47,8 +47,8 @@ export const ARG_SCHEMAS = {
   removeConnection: z.tuple([id]),
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
-  // Exactly the depths the screen offers: one list, so the two can't drift apart.
-  startImport: z.tuple([z.literal(IMPORT_DEPTHS)]),
+  // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
+  startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),

@@ -1,9 +1,9 @@
-import type { ImportDepth, StartImportResult } from '@contract/progress.ts';
+import type { StartImportResult } from '@contract/progress.ts';
 import { balanceApi } from '@/shared/api';
 
-export function useImportRequest(): { startImport: (depth: ImportDepth) => Promise<StartImportResult>; cancelImport: () => Promise<void> } {
+export function useImportRequest(): { startImport: (from: string) => Promise<StartImportResult>; cancelImport: () => Promise<void> } {
   return {
-    startImport: (depth) => balanceApi.startImport(depth),
+    startImport: (from) => balanceApi.startImport(from),
     cancelImport: () => balanceApi.cancelImport(),
   };
 }

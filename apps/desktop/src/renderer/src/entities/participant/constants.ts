@@ -4,6 +4,9 @@ import type { MessageKey } from '@contract/i18n/index.ts';
 /** The switch value of «Whole family» (participant ids are positive). */
 export const FAMILY = 0;
 
+/** Up to this many people the switch is buttons; with more it is a select (so is a row too narrow for the buttons). */
+export const MAX_PARTICIPANT_BUTTONS = 4;
+
 /** Remembered switch position: a convenience of this computer only, never data. */
 export const SELECTED_KEY = 'balance.participant';
 

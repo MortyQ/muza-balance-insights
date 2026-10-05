@@ -36,7 +36,8 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VDatepicker` keeps a single-date v-model and adds a named `range` v-model (`{ start, end }`), both as ISO
   `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
   holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
-  Locale is fixed to `uk-UA`, week starts Monday. No consumer yet.
+  Locale is fixed to `uk-UA`, week starts Monday. `min` / `max` (ISO) bound the selectable days (reka-ui's
+  `minValue` / `maxValue`). Used by the import's «From date».
 - `VMonthPicker` — a month/year picker on reka-ui's `MonthPicker` in a `Popover` (muzakit has no month picker at all).
   `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`

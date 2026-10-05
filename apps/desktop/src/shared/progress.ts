@@ -3,9 +3,6 @@
 
 import type { AccountName } from './account-name.ts';
 
-export const IMPORT_DEPTHS = [1, 3, 12, 24, 36] as const;
-export type ImportDepth = (typeof IMPORT_DEPTHS)[number];
-
 export type WindowProgress = {
   phase: 'windows';
   /** Never a card number or a jar title; null before the accounts are known. */
