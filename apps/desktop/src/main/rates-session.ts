@@ -13,6 +13,15 @@ export type RatesSessionLike = {
   fetch: (url: string, init: Parameters<InnerFetch>[1]) => ReturnType<InnerFetch>;
 };
 
+export type RatesPartitionFactory = (partition: string, opts: { cache: boolean }) => RatesSessionLike;
+
+/** The only way the rates session is made: created and guarded in one step, so nothing can use it unguarded. */
+export function createRatesSession(fromPartition: RatesPartitionFactory, onBlocked?: (host: string) => void): RatesSessionLike {
+  const ses = fromPartition(RATES_PARTITION, { cache: false });
+  guardRatesSession(ses, onBlocked);
+  return ses;
+}
+
 export function guardRatesSession(ses: RatesSessionLike, onBlocked?: (host: string) => void): void {
   ses.webRequest.onBeforeRequest((details, cb) => {
     const ok = isAllowedUrl(details.url, ['monobank-rates']);

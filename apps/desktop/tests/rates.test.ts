@@ -3,9 +3,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FetchLike, ResponseLike } from '@mono/core/platform';
-import { MIN_GAP_MS, RATES_FILE, RATES_URL, RatesService, parseBankRates } from '../src/main/rates.ts';
+import { FIRST_WAIT_MS, FRESH_WAIT_MS, MAX_BYTES, MIN_GAP_MS, RATES_FILE, RATES_URL, REFRESH_EVERY_MS, RatesService, parseBankRates } from '../src/main/rates.ts';
 
 const ANSWER = [
   { currencyCodeA: 840, currencyCodeB: 980, date: 1_790_000_000, rateBuy: 41.1, rateSell: 41.6 },
@@ -16,6 +16,7 @@ const ANSWER = [
 ];
 
 const res = (status: number, body: string): ResponseLike => ({ status, ok: status === 200, headers: { get: () => null }, text: async () => body });
+const NEWER = [{ currencyCodeA: 840, currencyCodeB: 980, date: 1_790_000_300, rateBuy: 41.5, rateSell: 42 }];
 
 describe('parseBankRates', () => {
   it('pairs to hryvnia only; sell rate, else cross; kopecks per minor unit (yen has no minor unit)', () => {
@@ -131,4 +132,113 @@ describe('RatesService', () => {
     await refreshing;
     expect((await reading)?.list.length).toBe(4);
   });
+
+  it('saved rates and a refresh in flight: current() waits for it and serves the fresh rates', async () => {
+    await make().refresh();
+    const s = make();
+    nowMs += MIN_GAP_MS;
+    let release!: () => void;
+    reply = () => new Promise((r) => (release = () => r(res(200, JSON.stringify(NEWER)))));
+    const refreshing = s.refresh();
+    const reading = s.current();
+    release();
+    await refreshing;
+    expect(await reading).toEqual({ list: [{ currency: 840, rate: 42 }], fetchedAt: 1_790_000_300, saved: false });
+  });
+
+  describe('a refresh that hangs', () => {
+    beforeEach(() => void vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] }));
+    afterEach(() => void vi.useRealTimers());
+    const hang = () => new Promise<ResponseLike>(() => undefined);
+
+    it('saved rates: current() gives up after FRESH_WAIT_MS and serves them', async () => {
+      await make().refresh();
+      const s = make();
+      nowMs += MIN_GAP_MS;
+      reply = hang;
+      void s.refresh();
+      let got: unknown = 'pending';
+      void s.current().then((v) => (got = v));
+      await vi.advanceTimersByTimeAsync(FRESH_WAIT_MS - 1);
+      expect(got).toBe('pending');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(got).toMatchObject({ fetchedAt: 1_790_000_000 });
+    });
+
+    it('nothing saved: current() gives up after FIRST_WAIT_MS with null', async () => {
+      reply = hang;
+      const s = make();
+      void s.refresh();
+      let got: unknown = 'pending';
+      void s.current().then((v) => (got = v));
+      await vi.advanceTimersByTimeAsync(FIRST_WAIT_MS - 1);
+      expect(got).toBe('pending');
+      await vi.advanceTimersByTimeAsync(1);
+      expect(got).toBeNull();
+    });
+  });
+
+  it('a clock that went backwards counts as elapsed', async () => {
+    const s = make();
+    await s.refresh();
+    nowMs -= 1;
+    await s.refresh();
+    expect(calls).toHaveLength(2);
+  });
+
+  it('a Content-Length over MAX_BYTES fails before the body is read', async () => {
+    await make().refresh();
+    nowMs += MIN_GAP_MS;
+    reply = async () => ({
+      status: 200,
+      ok: true,
+      headers: { get: (n: string) => (n.toLowerCase() === 'content-length' ? String(MAX_BYTES + 1) : null) },
+      text: async () => {
+        throw new Error('body read');
+      },
+    });
+    const logs: string[] = [];
+    const t = new RatesService({ fetch, userDataDir: dir, nowMs: () => nowMs, log: (m) => logs.push(m) });
+    await t.refresh();
+    expect(logs).toEqual(['rates not refreshed: response too large']);
+    expect(await t.current()).toMatchObject({ fetchedAt: 1_790_000_000, saved: true });
+  });
+
+  it('start: one refresh now and one per tick; stop stops the timer', async () => {
+    const s = make();
+    let tick: (() => void) | null = null;
+    let every = 0;
+    let stopped = 0;
+    s.start({
+      every: (fn, ms) => {
+        tick = fn;
+        every = ms;
+        return () => void stopped++;
+      },
+    });
+    expect(calls).toHaveLength(1);
+    expect(every).toBe(REFRESH_EVERY_MS);
+    await s.current();
+    nowMs += REFRESH_EVERY_MS;
+    tick!();
+    expect(calls).toHaveLength(2);
+    s.stop();
+    expect(stopped).toBe(1);
+  });
+
+  it('forget: no rates and no failure flag; a refresh that finishes after it writes nothing', async () => {
+    await make().refresh();
+    const s = make();
+    nowMs += MIN_GAP_MS;
+    let release!: () => void;
+    reply = () => new Promise((r) => (release = () => r(res(200, JSON.stringify(NEWER)))));
+    const refreshing = s.refresh();
+    fs.rmSync(path.join(dir, RATES_FILE));
+    s.forget();
+    release();
+    await refreshing;
+    expect(await s.current()).toBeNull();
+    expect(fs.existsSync(path.join(dir, RATES_FILE))).toBe(false);
+  });
+
 });

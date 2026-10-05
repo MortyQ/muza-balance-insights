@@ -31,8 +31,8 @@ import { trustedServicesView } from './services.ts';
 import { runDbSmoke } from './smoke.ts';
 import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
-import { RatesService, REFRESH_EVERY_MS } from './rates.ts';
-import { RATES_PARTITION, guardRatesSession, ratesFetch, type RatesSessionLike } from './rates-session.ts';
+import { RatesService } from './rates.ts';
+import { createRatesSession, ratesFetch } from './rates-session.ts';
 import { titleBarOverlay, windowOptions } from './window.ts';
 import { deleteAllData } from './wipe.ts';
 
@@ -143,17 +143,20 @@ app.whenReady().then(async () => {
   await access.init().catch((err: unknown) => process.stderr.write(`[db] init failed: ${err instanceof Error ? err.name : 'error'}\n`));
   // Today's public rates: their own guarded session, asked at launch (the request carries nothing of the user's, so
   // the lock does not matter) and every few hours while the app runs.
-  const ratesSession: RatesSessionLike = session.fromPartition(RATES_PARTITION, { cache: false });
-  guardRatesSession(ratesSession, (host) => process.stderr.write(`[rates] blocked request to ${host}\n`));
+  const ratesSession = createRatesSession(session.fromPartition.bind(session), (host) => process.stderr.write(`[rates] blocked request to ${host}\n`));
   const rates = new RatesService({
     fetch: ratesFetch(ratesSession),
     userDataDir: userData,
     nowMs: () => Date.now(),
     log: (msg) => process.stderr.write(`[rates] ${msg}\n`),
   });
-  void rates.refresh();
-  const ratesTimer = setInterval(() => void rates.refresh(), REFRESH_EVERY_MS);
-  app.on('will-quit', () => clearInterval(ratesTimer));
+  rates.start({
+    every: (fn, ms) => {
+      const id = setInterval(fn, ms);
+      return () => clearInterval(id);
+    },
+  });
+  app.on('will-quit', () => rates.stop());
   const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current() });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
@@ -267,6 +270,7 @@ app.whenReady().then(async () => {
       const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
+        rates.forget();
         await access.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));
       }
       return r;
