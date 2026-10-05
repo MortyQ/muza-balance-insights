@@ -1,6 +1,6 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useCurrencyDisplayStore } from '@/entities/currency-display';
+import { useMoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
 import { useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
@@ -17,7 +17,6 @@ export function useNowStrip(): UseNowStripReturn {
   const { fetchNowOverview } = useNowRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
-  const currency = useCurrencyDisplayStore();
   const { month, thisMonth, today } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
@@ -30,6 +29,7 @@ export function useNowStrip(): UseNowStripReturn {
     { quiet: [() => syncStatus.version, today] },
   );
 
-  const view = computed(() => (state.value.data ? nowView(state.value.data, currency.prefs) : null));
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
+  const view = computed(() => (state.value.data ? nowView(state.value.data, fmt.value) : null));
   return { visible: computed(() => month.value === thisMonth.value && view.value !== null), view };
 }
