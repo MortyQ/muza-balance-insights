@@ -720,6 +720,18 @@ describe('DataService in the system time zone, not Kyiv', () => {
       const v = await service(Date.UTC(2026, 2, 31, 21, 10) / 1000).monthOverview({ month: '2026-03' });
       expect(v.balanceAt).toBe('now');
     });
+
+    it('spending: a purchase at 23:30 in Berlin on 31 Mar counts for March, though its Kyiv date is 1 Apr', async () => {
+      await account('uah', 'black', 980, 0);
+      await synced('uah');
+      await tx('uah', '2026-04-01', -5_000, 'продукты');
+      await db.execute({ sql: 'UPDATE transactions SET time = ? WHERE id = ?', args: [Date.UTC(2026, 2, 31, 21, 30) / 1000, `t${seq}`] });
+      const s = service(Date.UTC(2026, 3, 10, 10, 0) / 1000);
+      const groceries = async (month: string) =>
+        (await s.spendingOverview({ month, scope: 'personal' })).categories.find((c) => c.category === 'продукты')?.net ?? 0;
+      expect(await groceries('2026-03')).toBe(5_000);
+      expect(await groceries('2026-04')).toBe(0);
+    });
   });
 
   describe('America/Bogota (UTC−5)', () => {

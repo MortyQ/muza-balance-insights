@@ -102,12 +102,13 @@ export class DataService {
     const db = await this.conn();
     const now = this.d.nowSec();
     const { from, to } = monthBounds(q.month);
-    // The month's end as an instant in the user's zone: the balance and «current» follow the user's calendar.
-    const endSec = startOfDayIn(nextMonthStart(q.month), systemTimeZone());
+    // The month's end as an instant in the user's zone: the balance, «current» and the sums follow the user's calendar.
+    const tz = systemTimeZone();
+    const endSec = startOfDayIn(nextMonthStart(q.month), tz);
     const current = endSec > now;
     const status = await this.status();
     const first = status.dataFrom;
-    const period = { from, to };
+    const period = { from, to, tz };
     // Today's rates are the family's (a market fact, not a person's): one snapshot for every card.
     const today = await this.d.rates();
     const rates = rateMap(today);
@@ -190,8 +191,9 @@ export class DataService {
     const now = this.d.nowSec();
     const period = monthBounds(q.month);
     const status = await this.status();
+    const tz = systemTimeZone();
     const summary = (p: { from: string; to: string }, participantId?: number) =>
-      spendingSummary(db, { ...p, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}) }, now);
+      spendingSummary(db, { ...p, tz, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}) }, now);
 
     const head = await summary(period, q.participantId);
     const compare = comparePeriod(q.month, head.period, status.dataFrom);
@@ -270,20 +272,21 @@ export class DataService {
   async nowOverview(q: NowOverviewQuery): Promise<NowOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
-    const today = localDate(now * 1000);
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
     const weekday = isoWeekday(today);
     const monday = shiftDate(today, 1 - weekday);
     const windowFrom = shiftDate(today, -USUAL_WINDOW);
     const month = monthBounds(today.slice(0, 7));
     const { dataFrom } = await this.status();
     const summary = (p: { from: string; to: string }, groupBy: 'day' | 'category') =>
-      spendingSummary(db, { ...p, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+      spendingSummary(db, { ...p, tz, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
 
     const todayRates = await this.d.rates();
     const rates = rateMap(todayRates);
     const daily = await summary({ from: windowFrom, to: today }, 'day');
     const week = await summary({ from: monday, to: today }, 'category');
-    // foldByCategory folds by the group key — here the day (local_date, still the Kyiv date).
+    // foldByCategory folds by the group key — here the day of the system time zone.
     const byDay = foldByCategory(daily, rates).byCategory;
     const weekByCategory = foldByCategory(week, rates).byCategory;
     const monthRanked = rankedCategories(foldByCategory(await summary(month, 'category'), rates).byCategory);

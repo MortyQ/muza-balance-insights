@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { recategorize } from '../src/categories.ts';
 import type { Db } from '../src/db.ts';
+import { kyivStartOfDay, toKyivDate } from '../src/format.ts';
 import { spendingByCategory, transferDiagnostics } from '../src/queries.ts';
 import { detectTransfers, markInternalTransfers, type TransferAccount, type TransferTx } from '../src/transfers.ts';
 import { insertAccount, memoryDb } from './helpers.ts';
@@ -20,6 +21,8 @@ const FEE_TRANSFERS: Array<{ t: number; out: number; fee: number; dtIn?: number 
 ];
 
 let db: Db;
+/** 15 Jan 2026, 00:00 Kyiv: rows at JAN15 + n s fall on that day. */
+const JAN15 = kyivStartOfDay('2026-01-15');
 
 beforeEach(async () => {
   db = await memoryDb();
@@ -35,14 +38,14 @@ async function insertTx(
   accountId: string,
   time: number,
   amount: number,
-  opts: { mcc?: number; description?: string; commission?: number; category?: string; localDate?: string } = {},
+  opts: { mcc?: number; description?: string; commission?: number; category?: string } = {},
 ) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
             currency_code, commission_rate, category, raw_json, synced_at)
           VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 980, ?, ?, '{}', 0)`,
     args: [
-      id, accountId, time, opts.localDate ?? '2026-01-15', opts.description ?? '', opts.mcc ?? 4829,
+      id, accountId, time, toKyivDate(time), opts.description ?? '', opts.mcc ?? 4829,
       amount, amount, opts.commission ?? 0, opts.category ?? 'другое',
     ],
   });
@@ -93,7 +96,7 @@ describe('pair_fee', () => {
 
 describe('spendingByCategory', () => {
   it('splits a P2P transfer with a commission into body and commission', async () => {
-    await insertTx('p2p', 'black', 1, -72_312, { commission: 2_312, description: 'Вигаданий О.' });
+    await insertTx('p2p', 'black', JAN15 + 1, -72_312, { commission: 2_312, description: 'Вигаданий О.' });
     await recategorize(db);
     const rows = await spendingByCategory(db, '2026-01-01', '2026-01-31');
     expect(rows).toEqual([
@@ -103,11 +106,11 @@ describe('spendingByCategory', () => {
   });
 
   it('keeps gross, refunds and net per category; income and internal transfers are excluded', async () => {
-    await insertTx('buy', 'black', 1, -100_000, { mcc: 5411 });
-    await insertTx('refund', 'black', 2, 30_000, { mcc: 5411 });
-    await insertTx('salary', 'white', 3, 500_000, { description: 'Від: Компанія' });
-    await insertTx('own', 'black', 4, -7_000, { description: 'На білу картку' });
-    await insertTx('ownIn', 'white', 4, 7_000, { description: 'З Чорної картки' });
+    await insertTx('buy', 'black', JAN15 + 1, -100_000, { mcc: 5411 });
+    await insertTx('refund', 'black', JAN15 + 2, 30_000, { mcc: 5411 });
+    await insertTx('salary', 'white', JAN15 + 3, 500_000, { description: 'Від: Компанія' });
+    await insertTx('own', 'black', JAN15 + 4, -7_000, { description: 'На білу картку' });
+    await insertTx('ownIn', 'white', JAN15 + 4, 7_000, { description: 'З Чорної картки' });
     await markInternalTransfers(db);
     await recategorize(db);
     const rows = await spendingByCategory(db, '2026-01-01', '2026-01-31');
@@ -115,9 +118,9 @@ describe('spendingByCategory', () => {
   });
 
   it('never sums different account currencies and respects the date range', async () => {
-    await insertTx('uah', 'black', 1, -10_000, { mcc: 5411 });
-    await insertTx('usd', 'usd', 2, -2_500, { mcc: 5411 });
-    await insertTx('later', 'black', 3, -99_999, { mcc: 5411, localDate: '2026-02-01' });
+    await insertTx('uah', 'black', JAN15 + 1, -10_000, { mcc: 5411 });
+    await insertTx('usd', 'usd', JAN15 + 2, -2_500, { mcc: 5411 });
+    await insertTx('later', 'black', kyivStartOfDay('2026-02-01') + 3, -99_999, { mcc: 5411 });
     await recategorize(db);
     const rows = await spendingByCategory(db, '2026-01-01', '2026-01-31');
     expect(rows).toEqual([
@@ -129,7 +132,7 @@ describe('spendingByCategory', () => {
 
 describe('migration v5', () => {
   it("accepts transfer_rule 'pair_fee' and still rejects unknown rules", async () => {
-    await insertTx('a', 'black', 1, -100);
+    await insertTx('a', 'black', JAN15 + 1, -100);
     await db.execute(`UPDATE transactions SET transfer_rule = 'pair_fee' WHERE id = 'a'`);
     await expect(db.execute(`UPDATE transactions SET transfer_rule = 'bogus' WHERE id = 'a'`)).rejects.toThrow();
   });

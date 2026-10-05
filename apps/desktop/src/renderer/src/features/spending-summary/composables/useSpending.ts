@@ -12,7 +12,7 @@ import type { BlockPerson, UseSpendingReturn } from '../types.ts';
 import { periodNote } from '../utils.ts';
 
 /**
- * The spending block of one Kyiv month, scope and participant (or the whole family): reloads when any changes, and
+ * The spending block of one month (the system time zone's), scope and participant (or the whole family): reloads when any changes, and
  * quietly when the data changes. The block's own person pick and expanded category reset with them.
  */
 export function useSpending(): UseSpendingReturn {

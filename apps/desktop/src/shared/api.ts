@@ -232,7 +232,7 @@ export type SpendingOverview = {
     days: number;
     /** The period ends after the last sync (or in the future): numbers will still grow. */
     incomplete: boolean;
-    /** Kyiv date the data reaches (see core periodInfo); null = never imported. */
+    /** Date the data reaches in the system time zone (see core periodInfo); null = never imported. */
     dataUntil: string | null;
     coveredDays: number;
     pendingHolds: number;
@@ -266,7 +266,7 @@ export type NowOverview = {
   date: string;
   /** 1 = Monday … 7 = Sunday. */
   weekday: number;
-  /** Kyiv date the data reaches (core periodInfo); null — never imported. */
+  /** Date the data reaches in the system time zone (core periodInfo); null — never imported. */
   dataUntil: string | null;
   today: SpendingAmounts;
   /**

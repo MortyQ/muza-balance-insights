@@ -40,9 +40,8 @@ English interface.
 ### Fixes
 
 - Outside Ukraine the app no longer moves to the next day before your midnight: «today», this week and this month, the
-  dates of the history download and every time shown (last update, rates) now follow your computer's time zone.
-  Spending is still split into days and months by Kyiv time for now, so close to midnight a purchase can still count
-  towards the neighbouring day.
+  dates of the history download, every time shown (last update, rates) and the split of spending and income into days
+  and months now follow your computer's time zone. A purchase at 23:30 your time counts towards that day, not the next.
 
 ## 0.1.7 — 2026-10-05
 
