@@ -1,4 +1,5 @@
 import { computed } from 'vue';
+import { useMoneyFormat } from '@/entities/currency-display';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
@@ -29,11 +30,12 @@ export function useMonthOverview(): UseMonthOverviewReturn {
     { quiet: [() => syncStatus.version] },
   );
   const view = computed(() => state.value.data?.overview ?? null);
+  const fmt = useMoneyFormat(() => state.value.data?.overview.rates);
   const shownId = computed<number | null>(() => state.value.data?.participantId ?? null);
   const monthName = computed(() => monthNameOf(view.value?.month ?? monthStore.month, currentYear.value));
   const isFamily = computed(() => shownId.value === null);
   const slides = computed(() =>
-    view.value ? slidesOf(view.value, { people: participant.people, selectedId: shownId.value, currentYear: currentYear.value }) : [],
+    view.value ? slidesOf(view.value, { people: participant.people, selectedId: shownId.value, currentYear: currentYear.value, fmt: fmt.value }) : [],
   );
   const legend = computed(() =>
     (view.value?.people ?? []).map((p) => ({ participantId: p.participantId, label: p.label, color: colorVar(p.color) })),

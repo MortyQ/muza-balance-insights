@@ -19,7 +19,7 @@ export interface Flow {
   color: string;
   /** The family: one part per person, in their colours. */
   segments?: ReadonlyArray<FlowSegment>;
-  /** Total cards: part of the income / spending is another currency counted in hryvnia by the user's own exchange rate. */
+  /** Total cards: part of the income / spending is another currency counted in at today's Monobank rate. */
   approxIncome?: boolean;
   approxSpending?: boolean;
   /** Total cards: the rate line under the bars («incl. 3 162 $ at the rate 44,36»); '' — none. */
