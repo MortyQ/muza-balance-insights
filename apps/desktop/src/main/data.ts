@@ -7,11 +7,12 @@ import { ensureDefaultConnection } from '@mono/core/connections';
 import { migrate, type Db } from '@mono/core/db';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
-import { kyivStartOfDay, toKyivDate, toKyivDateTime } from '@mono/core/format';
+import { startOfDayIn } from '@mono/core/format';
 import { toUah, type FxRate } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
+import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
@@ -101,7 +102,8 @@ export class DataService {
     const db = await this.conn();
     const now = this.d.nowSec();
     const { from, to } = monthBounds(q.month);
-    const endSec = kyivStartOfDay(nextMonthStart(q.month));
+    // The month's end as an instant in the user's zone: the balance and «current» follow the user's calendar.
+    const endSec = startOfDayIn(nextMonthStart(q.month), systemTimeZone());
     const current = endSec > now;
     const status = await this.status();
     const first = status.dataFrom;
@@ -262,13 +264,13 @@ export class DataService {
   }
 
   /**
-   * The «Now» strip: today and this calendar week (Kyiv, from Monday) of the personal scope, folded into hryvnia by
-   * today's rates — the same core aggregate as the spending block. Main's clock decides «today».
+   * The «Now» strip: today and this calendar week (from Monday) of the personal scope, folded into hryvnia by today's
+   * rates — the same core aggregate as the spending block. Main's clock in the system time zone decides «today».
    */
   async nowOverview(q: NowOverviewQuery): Promise<NowOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
-    const today = toKyivDate(now);
+    const today = localDate(now * 1000);
     const weekday = isoWeekday(today);
     const monday = shiftDate(today, 1 - weekday);
     const windowFrom = shiftDate(today, -USUAL_WINDOW);
@@ -281,7 +283,7 @@ export class DataService {
     const rates = rateMap(todayRates);
     const daily = await summary({ from: windowFrom, to: today }, 'day');
     const week = await summary({ from: monday, to: today }, 'category');
-    // foldByCategory folds by the group key — here the Kyiv day.
+    // foldByCategory folds by the group key — here the day (local_date, still the Kyiv date).
     const byDay = foldByCategory(daily, rates).byCategory;
     const weekByCategory = foldByCategory(week, rates).byCategory;
     const monthRanked = rankedCategories(foldByCategory(await summary(month, 'category'), rates).byCategory);
@@ -329,9 +331,9 @@ export class DataService {
     const last = num(r?.last);
     return {
       hasData: Number(r?.n ?? 0) > 0,
-      dataUntil: newest === null ? null : toKyivDateTime(newest),
-      dataFrom: await firstDataDate(db),
-      lastSyncAt: last === null ? null : toKyivDateTime(last),
+      dataUntil: newest === null ? null : localDateTime(newest * 1000),
+      dataFrom: await firstDataDate(db, systemTimeZone()),
+      lastSyncAt: last === null ? null : localDateTime(last * 1000),
     };
   }
 

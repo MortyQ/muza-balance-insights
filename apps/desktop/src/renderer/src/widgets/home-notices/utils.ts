@@ -21,7 +21,7 @@ export function noTokenText(
 }
 
 /**
- * The month picked on home is before the first data (`dataFrom`, Kyiv date): where to download it from — the month's
+ * The month picked on home is before the first data (`dataFrom`, a local date): where to download it from — the month's
  * first day, or the oldest date the import allows on `today`. null when the month has data or nothing is known yet.
  */
 export function emptyMonth(month: YearMonth, dataFrom: string | null, today: string): { from: string; dataFrom: string } | null {

@@ -117,4 +117,9 @@ describe('firstDataDate', () => {
     await account('a', 0, { oldest: Date.UTC(2025, 4, 31, 23, 30) / 1000 }); // 1 June 02:30 in Kyiv
     expect(await firstDataDate(db)).toBe('2025-06-01');
   });
+
+  it('in the zone the app passes: the same second is still 31 May in New York', async () => {
+    await account('a', 0, { oldest: Date.UTC(2025, 4, 31, 23, 30) / 1000 }); // 19:30 on 31 May in New York
+    expect(await firstDataDate(db, 'America/New_York')).toBe('2025-05-31');
+  });
 });

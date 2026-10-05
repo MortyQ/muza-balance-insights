@@ -1,4 +1,4 @@
-// Pure helpers of the «Now» strip in main (DataService.nowOverview): Kyiv calendar days, the week from Monday, and the
+// Pure helpers of the «Now» strip in main (DataService.nowOverview): calendar days, the week from Monday, and the
 // usual day — the median of daily spending.
 import type { SpendingAmounts } from '../shared/api.ts';
 
@@ -7,7 +7,7 @@ export const USUAL_WINDOW = 30;
 /** Fewer covered days than this — no usual day: a median of a few days says little. */
 export const USUAL_MIN_DAYS = 7;
 
-// 'YYYY-MM-DD' holds three numbers by construction (Kyiv dates of the core).
+// 'YYYY-MM-DD' holds three numbers by construction (calendar dates of main and the core).
 const ymd = (date: string) => date.split('-').map(Number) as [number, number, number];
 
 /** 'YYYY-MM-DD' shifted by `n` days (UTC calendar arithmetic, no timezone drift). */

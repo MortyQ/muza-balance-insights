@@ -2,8 +2,8 @@
 // accounts are identified by id and a "type/CUR" label.
 import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from './accounts.ts';
 import type { Db } from './db.ts';
-import { accountLabels, toKyivDate, toKyivDateTime } from './format.ts';
-import { RESYNC_OVERLAP_SEC } from './constants.ts';
+import { accountLabels, dateIn, toKyivDate, toKyivDateTime } from './format.ts';
+import { RESYNC_OVERLAP_SEC, TIMEZONE } from './constants.ts';
 import { parseProviderId } from './connections.ts';
 import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
 import { transferDiagnostics, type TransferDiagnostics } from './queries.ts';
@@ -163,11 +163,11 @@ async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number 
   return r.balance - Number(after.rows[0]?.s ?? 0);
 }
 
-/** Kyiv date of the oldest covered second over every enabled account; null — nothing imported. */
-export async function firstDataDate(db: Db): Promise<string | null> {
+/** Date (in `timeZone`, Kyiv by default) of the oldest covered second over every enabled account; null — nothing imported. */
+export async function firstDataDate(db: Db, timeZone: string = TIMEZONE): Promise<string | null> {
   const rs = await db.execute(`SELECT MIN(oldest_synced_time) AS t FROM sync_state WHERE account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
   const t = rs.rows[0]?.t;
-  return t === null || t === undefined ? null : toKyivDate(Number(t));
+  return t === null || t === undefined ? null : dateIn(Number(t), timeZone);
 }
 
 // ---------- getSyncStatus ----------

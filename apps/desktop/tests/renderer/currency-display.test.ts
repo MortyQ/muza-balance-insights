@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import type { RatesView } from '@contract/api.ts';
 import { moneyFormat, parseCurrencyChoice, rateDate, shownText } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
+import { inTimeZone } from '../helpers/time-zone.ts';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
@@ -65,9 +66,15 @@ describe('shownText and rateDate', () => {
     expect(shownText(RATES, { main: 980, also: NONE })).toBe('₴');
     expect(shownText(null, { main: 978, also: { uah: false, usd: true, eur: false } })).toBe('₴');
   });
-  it('the fetch time in Kyiv: «05.10, 10:00»', () => {
+  it('the fetch time in the system time zone (Kyiv in this suite): «05.10, 10:00»', () => {
     expect(rateDate(FETCHED)).toBe('05.10, 10:00');
     expect(rateDate(Date.UTC(2026, 0, 31, 22, 5) / 1000)).toBe('01.02, 00:05');
+  });
+  describe('in Berlin', () => {
+    inTimeZone('Europe/Berlin');
+    it('the same instant on the Berlin clock', () => {
+      expect(rateDate(Date.UTC(2026, 9, 5, 21, 10) / 1000)).toBe('05.10, 23:10');
+    });
   });
 });
 

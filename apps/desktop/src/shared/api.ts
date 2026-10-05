@@ -37,7 +37,7 @@ export type ConnectionView = {
   accounts: number;
   /** Of `accounts`, the ones imported and counted («Счета» toggles). */
   enabledAccounts: number;
-  /** Kyiv dates covered by all its imported accounts; null = not imported yet. */
+  /** Dates (system time zone, see dates.ts) covered by all its imported accounts; null = not imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
@@ -124,7 +124,7 @@ export type BalanceApi = {
    * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
    */
   setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
-  /** From the start of the Kyiv day `from` (YYYY-MM-DD, within isImportFrom) up to now. */
+  /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
   /** Returns an unsubscribe function. */
@@ -258,11 +258,11 @@ export type SpendingOverview = {
 export type NowOverviewQuery = { participantId?: number };
 
 /**
- * The «Now» strip: today and this calendar week (Kyiv, from Monday), personal scope, hryvnia kopecks folded by
- * today's rates — the same aggregate as the spending block. Main's clock decides «today».
+ * The «Now» strip: today and this calendar week (from Monday), personal scope, hryvnia kopecks folded by today's
+ * rates — the same aggregate as the spending block. Main's clock in the system time zone decides «today».
  */
 export type NowOverview = {
-  /** The Kyiv date main counted as today. */
+  /** The date main counted as today (system time zone). */
   date: string;
   /** 1 = Monday … 7 = Sunday. */
   weekday: number;
@@ -338,7 +338,7 @@ export type MonthOverview = {
   month: string;
   /** 'now' for the current month, else the month's last day YYYY-MM-DD. */
   balanceAt: 'now' | string;
-  /** Kyiv dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
+  /** Dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
   coverage: { from: string; to: string };
   total: CardTotal;
   /** The whole family only: each person in their own view of transfers. */
@@ -352,9 +352,9 @@ export type MonthOverview = {
 export type DataStatus = {
   /** At least one account has been imported. */
   hasData: boolean;
-  /** Kyiv «YYYY-MM-DD HH:mm» up to which every imported account is covered. */
+  /** «YYYY-MM-DD HH:mm» (system time zone) up to which every imported account is covered. */
   dataUntil: string | null;
-  /** Kyiv date the data starts at; null = never imported. */
+  /** Date (system time zone) the data starts at; null = never imported. */
   dataFrom: string | null;
   lastSyncAt: string | null;
 };

@@ -8,9 +8,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { kyivStartOfDay, toKyivDate } from '@mono/core/format';
+import { startOfDayIn } from '@mono/core/format';
 import type { ProviderId } from '@mono/core/providers/types';
 import { FromWorker, StartMessage, type ToWorker } from '../shared/import-protocol.ts';
+import { localDate, systemTimeZone } from '../shared/dates.ts';
 import { isImportFrom } from '../shared/import-range.ts';
 import type { ImportFailure, ImportProgress, StartImportResult } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
@@ -87,30 +88,32 @@ export class Importer {
   }
 
   /**
-   * A user's import from the start of the Kyiv day `from` (YYYY-MM-DD) up to now. A date the screen could not offer
-   * (isImportFrom) is refused with an error. An automatic refresh in progress is stopped first: this plan covers its
-   * windows too.
+   * A user's import from the start of the day `from` (YYYY-MM-DD, the system time zone) up to now. A date the screen
+   * could not offer (isImportFrom) is refused with an error. An automatic refresh in progress is stopped first: this
+   * plan covers its windows too.
    */
   async start(from: string): Promise<StartImportResult> {
     const now = this.d.nowSec();
-    if (!isImportFrom(from, toKyivDate(now))) throw new Error('import: start date out of range');
+    const zone = systemTimeZone();
+    if (!isImportFrom(from, localDate(now * 1000, zone))) throw new Error('import: start date out of range');
     if (this.autoRunning) {
       this.d.log('import: auto refresh replaced by a user import');
       await this.halt();
     }
-    return this.launch({ sinceSec: kyivStartOfDay(from), startedAt: now }, false);
+    return this.launch({ sinceSec: startOfDayIn(from, zone), startedAt: now }, false);
   }
 
   /**
-   * «Автосинхронизация»: every connection with a token, from the start of this Kyiv month, each covered account re-reading
-   * one whole window up to now. Not while an import runs or an unfinished one waits to resume. Writes no job file
+   * «Автосинхронизация»: every connection with a token, from the start of this month (system time zone), each covered
+   * account re-reading one whole window up to now. Not while an import runs or an unfinished one waits to resume. Writes no job file
    * (the next launch refreshes again) and asks for no token: a connection without one is left to the home notice.
    */
   async startAuto(): Promise<StartImportResult> {
     if (this.running) return { started: false, reason: 'running' };
     if (this.readJob()) return { started: false, reason: 'running' };
     const now = this.d.nowSec();
-    return this.launch({ sinceSec: kyivStartOfDay(`${toKyivDate(now).slice(0, 8)}01`), startedAt: now, auto: true }, false);
+    const zone = systemTimeZone();
+    return this.launch({ sinceSec: startOfDayIn(`${localDate(now * 1000, zone).slice(0, 8)}01`, zone), startedAt: now, auto: true }, false);
   }
 
   /**

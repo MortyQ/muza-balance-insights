@@ -4,7 +4,8 @@ import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
 import { ConnectionError, PARTICIPANT_LABEL_MAX, parseProviderId } from './connections.ts';
 import type { Db } from './db.ts';
-import { toKyivDate, toKyivDateTime } from './format.ts';
+import { TIMEZONE } from './constants.ts';
+import { dateIn, dateTimeIn } from './format.ts';
 import type { ProviderId } from './providers/types.ts';
 import { rederiveCore } from './rederive.ts';
 
@@ -22,7 +23,7 @@ export type ConnectionInfo = {
   accounts: number;
   /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
   enabledAccounts: number;
-  /** Kyiv dates of the range covered by all its imported enabled accounts; null = nothing imported yet. */
+  /** Dates (in listConnections' zone) of the range covered by all its imported enabled accounts; null = not imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
@@ -101,8 +102,11 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
   return setColor(db, 'participants', id, color, 'Такого участника нет');
 }
 
-/** Every connection with what the UI shows about it. The bank's holder id is not part of it. */
-export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
+/**
+ * Every connection with what the UI shows about it. The bank's holder id is not part of it. Dates and times are in
+ * `timeZone` (the desktop passes the system's; Kyiv by default).
+ */
+export async function listConnections(db: Db, timeZone: string = TIMEZONE): Promise<ConnectionInfo[]> {
   const rs = await db.execute(
     `SELECT c.id, c.participant_id, c.provider, COUNT(a.id) AS accounts,
             SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
@@ -112,7 +116,7 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
      LEFT JOIN sync_state s ON s.account_id = a.id AND ${accountEnabledSql('a')}
      GROUP BY c.id ORDER BY c.id`,
   );
-  const date = (v: unknown) => (v === null || v === undefined ? null : toKyivDate(Number(v)));
+  const date = (v: unknown) => (v === null || v === undefined ? null : dateIn(Number(v), timeZone));
   return rs.rows.map((r) => ({
     id: Number(r.id),
     participantId: Number(r.participant_id),
@@ -121,7 +125,7 @@ export async function listConnections(db: Db): Promise<ConnectionInfo[]> {
     enabledAccounts: Number(r.enabled_accounts ?? 0),
     coveredFrom: date(r.oldest),
     coveredTo: date(r.newest),
-    lastSyncAt: r.last_sync === null ? null : toKyivDateTime(Number(r.last_sync)),
+    lastSyncAt: r.last_sync === null ? null : dateTimeIn(Number(r.last_sync), timeZone),
   }));
 }
 

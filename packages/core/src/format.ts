@@ -20,23 +20,38 @@ export function parseLocalDate(s: string): { y: number; m: number; d: number } |
   return { y, m, d };
 }
 
-/** Unix seconds of 00:00 of the given Kyiv calendar date. */
-export function kyivStartOfDay(date: string): number {
+/** Unix seconds of 00:00 of the given calendar date in `timeZone` (an IANA name the app passes in). */
+export function startOfDayIn(date: string, timeZone: string): number {
   const p = parseLocalDate(date);
   if (!p) throw new RangeError(`Некорректная дата "${date}", ожидается YYYY-MM-DD`);
-  return Math.floor(new TZDate(p.y, p.m - 1, p.d, TIMEZONE).getTime() / 1000);
+  return Math.floor(new TZDate(p.y, p.m - 1, p.d, timeZone).getTime() / 1000);
 }
 
-/** Kyiv calendar date (`YYYY-MM-DD`) of a unix-seconds instant. */
-export function toKyivDate(unixSec: number): string {
-  const t = new TZDate(unixSec * 1000, TIMEZONE);
+/** Calendar date (`YYYY-MM-DD`) of a unix-seconds instant in `timeZone`. */
+export function dateIn(unixSec: number, timeZone: string): string {
+  const t = new TZDate(unixSec * 1000, timeZone);
   return `${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}`;
+}
+
+/** Local date-time `YYYY-MM-DD HH:mm` of a unix-seconds instant in `timeZone`. */
+export function dateTimeIn(unixSec: number, timeZone: string): string {
+  const t = new TZDate(unixSec * 1000, timeZone);
+  return `${dateIn(unixSec, timeZone)} ${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+}
+
+/** Unix seconds of 00:00 of the given Kyiv calendar date. */
+export function kyivStartOfDay(date: string): number {
+  return startOfDayIn(date, TIMEZONE);
+}
+
+/** Kyiv calendar date (`YYYY-MM-DD`) of a unix-seconds instant (what `local_date` stores). */
+export function toKyivDate(unixSec: number): string {
+  return dateIn(unixSec, TIMEZONE);
 }
 
 /** Kyiv local date-time `YYYY-MM-DD HH:mm` for human-readable output. */
 export function toKyivDateTime(unixSec: number): string {
-  const t = new TZDate(unixSec * 1000, TIMEZONE);
-  return `${toKyivDate(unixSec)} ${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+  return dateTimeIn(unixSec, TIMEZONE);
 }
 
 /** Human-readable duration for progress output: "45 с", "3 мин", "1 ч 20 мин". */

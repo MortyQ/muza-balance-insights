@@ -60,7 +60,7 @@
   `shared/ui/VPopover` — ours on reka-ui.
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
-  «today» in Kyiv) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
+  «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
   under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
   = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; today's Monobank rates (the answer carries `rates`).
   Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on

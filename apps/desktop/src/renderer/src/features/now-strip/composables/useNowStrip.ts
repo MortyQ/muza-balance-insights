@@ -11,7 +11,7 @@ import { nowView } from '../utils.ts';
 
 /**
  * Today and this week for the global filter's person (or the family): reloads with the person, quietly on new data
- * and on a new Kyiv day; shown only while the month filter is this month (the strip is always about now).
+ * and on a new local day; shown only while the month filter is this month (the strip is always about now).
  */
 export function useNowStrip(): UseNowStripReturn {
   const { fetchNowOverview } = useNowRequest();

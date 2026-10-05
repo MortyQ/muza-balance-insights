@@ -58,7 +58,7 @@ export function firstFreeColor(taken: ReadonlyMap<ColorKey, string>): ColorKey |
   return COLOR_KEYS.find((k) => !taken.has(k)) ?? null;
 }
 
-/** The latest sync of any of a person's connections (Kyiv «YYYY-MM-DD HH:mm» sorts as text); null = never. */
+/** The latest sync of any of a person's connections (local «YYYY-MM-DD HH:mm» sorts as text); null = never. */
 export function lastSyncOf(p: Readonly<PersonView>): string | null {
   let last: string | null = null;
   for (const c of p.connections) if (c.lastSyncAt !== null && (last === null || c.lastSyncAt > last)) last = c.lastSyncAt;

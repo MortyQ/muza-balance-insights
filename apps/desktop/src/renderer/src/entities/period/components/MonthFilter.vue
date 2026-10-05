@@ -5,7 +5,7 @@ import { VMonthPicker } from '@/shared/ui';
 import { useMonthStore } from '../store/useMonthStore.ts';
 
 const { min } = defineProps<{
-  /** The first month with data (Kyiv), or null while unknown. */
+  /** The first month with data (local), or null while unknown. */
   min: YearMonth | null;
 }>();
 

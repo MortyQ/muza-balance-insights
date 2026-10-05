@@ -9,6 +9,7 @@ import { CANCEL_KILL_MS, Importer, JOB_FILE, type ChildLike } from '../src/main/
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
 import type { ImportProgress } from '../src/shared/progress.ts';
+import { inTimeZone } from './helpers/time-zone.ts';
 
 const TOKEN = 'uCANARY-importer-token-0123456789';
 const NOW = kyivStartOfDay('2026-03-31') + 15 * 3600; // 31 March, 15:00 Kyiv
@@ -83,7 +84,7 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
 const job = () => path.join(dir, JOB_FILE);
 
 describe('Importer', () => {
-  it('start: only a date the screen offers — from 36 months back up to today (Kyiv); anything else throws, nothing starts', async () => {
+  it('start: only a date the screen offers — from 36 months back up to today (the system zone, Kyiv here); anything else throws, nothing starts', async () => {
     const { importer, children } = setup();
     for (const bad of ['2023-03-30', '2026-04-01', '2026-02-30', 'yesterday']) {
       await expect(importer.start(bad)).rejects.toThrow('out of range');
@@ -446,7 +447,7 @@ describe('Importer', () => {
 describe('Importer: «Автосинхронизация»', () => {
   const MONTH_START = kyivStartOfDay('2026-03-01');
 
-  it('from the start of this Kyiv month, one whole window re-read; no job file; every state marked auto', async () => {
+  it('from the start of this month (the system zone, Kyiv here), one whole window re-read; no job file; every state marked auto', async () => {
     const { importer, children, sent } = setup();
     expect(await importer.startAuto()).toEqual({ started: true });
     expect(children[0]!.sent[0]).toMatchObject({ type: 'start', sinceSec: MONTH_START, rereadWindow: true });
@@ -554,5 +555,39 @@ describe('Importer: «Автосинхронизация»', () => {
     children[0]!.reply({ type: 'error', kind: 'cancelled' });
     expect(sent.at(-1)).toEqual({ phase: 'cancelled', auto: true });
     expect(fs.existsSync(job())).toBe(true);
+  });
+});
+
+describe('Importer in the system time zone, not Kyiv', () => {
+  describe('America/Bogota (UTC−5)', () => {
+    inTimeZone('America/Bogota');
+    // 31 March 2026, 20:00 in Bogota = 04:00 on 1 April in Kyiv.
+    const EVENING = Date.UTC(2026, 3, 1, 1, 0) / 1000;
+
+    it('start: today is the local date — the Kyiv «today» is still tomorrow here; the day starts at the local midnight', async () => {
+      const { importer, children, clock } = setup();
+      clock.now = EVENING;
+      await expect(importer.start('2026-04-01')).rejects.toThrow('out of range');
+      expect(await importer.start('2026-03-31')).toEqual({ started: true });
+      expect(children[0]!.sent[0]).toMatchObject({ sinceSec: Date.UTC(2026, 2, 31, 5, 0) / 1000 });
+    });
+
+    it('startAuto: from the start of the local month (March), not the Kyiv April', async () => {
+      const { importer, children, clock } = setup();
+      clock.now = EVENING;
+      expect(await importer.startAuto()).toEqual({ started: true });
+      expect(children[0]!.sent[0]).toMatchObject({ type: 'start', sinceSec: Date.UTC(2026, 2, 1, 5, 0) / 1000 });
+    });
+  });
+
+  describe('Europe/Berlin', () => {
+    inTimeZone('Europe/Berlin');
+
+    it('startAuto at 23:10 on 31 March: from 00:00 on 1 March in Berlin', async () => {
+      const { importer, children, clock } = setup();
+      clock.now = Date.UTC(2026, 2, 31, 21, 10) / 1000;
+      expect(await importer.startAuto()).toEqual({ started: true });
+      expect(children[0]!.sent[0]).toMatchObject({ sinceSec: Date.UTC(2026, 1, 28, 23, 0) / 1000 });
+    });
   });
 });
