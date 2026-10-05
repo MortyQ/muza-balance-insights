@@ -15,7 +15,7 @@ const { when } = defineProps<{ when: WhenView }>();
         <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('category.when.weekdays') }}</h3>
         <div class="flex h-24 items-end gap-1.5">
           <span v-for="b in when.weekdays" :key="b.key" class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" :title="b.title">
-            <span class="block h-(--h) w-full rounded-t" :class="b.strong ? 'bg-(--cat)' : 'bg-surface-active'" :style="{ '--h': `${b.height}%` }" aria-hidden="true" />
+            <span class="block h-(--h) w-full rounded-t" :class="b.strong ? 'bg-(--cat)' : 'bg-[color-mix(in_oklch,var(--cat)_45%,var(--surface))]'" :style="{ '--h': `${b.height}%` }" aria-hidden="true" />
             <span class="text-[11px] text-foreground-secondary">{{ b.label }}</span>
             <span class="sr-only">{{ b.title }}</span>
           </span>
@@ -26,7 +26,7 @@ const { when } = defineProps<{ when: WhenView }>();
         <div v-for="p in when.dayParts" :key="p.label" class="flex items-center gap-2.5">
           <span class="w-20 shrink-0 text-xs text-foreground-secondary">{{ p.label }}</span>
           <span class="h-2 grow overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
-            <span class="block h-full w-(--w) rounded-full" :class="p.strong ? 'bg-(--cat)' : 'bg-surface-active'" :style="{ '--w': `${p.width}%` }" />
+            <span class="block h-full w-(--w) rounded-full" :class="p.strong ? 'bg-(--cat)' : 'bg-[color-mix(in_oklch,var(--cat)_45%,var(--surface))]'" :style="{ '--w': `${p.width}%` }" />
           </span>
           <span class="shrink-0 whitespace-nowrap text-right text-xs font-bold tabular-nums">{{ p.amount }}</span>
         </div>
