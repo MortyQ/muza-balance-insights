@@ -1,5 +1,5 @@
 import { change, monthName, monthShortName, t } from '@/shared/lib';
-import type { ChangeChipModel } from '@/shared/ui';
+import type { ChangeChipModel, ChartOption } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
 import type { BarView, DayPartView, Money, MonthsView, PersonRef, PersonView, ShareItemView, WhenLine, WhenView } from './types.ts';
 
@@ -197,4 +197,55 @@ export function whenView<L extends WhenLine>(
 /** What a search reads in a line: its text, comment and amounts as shown and as bare digits. */
 export function searchText(text: string, comment: string | null, amount: string): string {
   return nameKey([text, comment ?? '', amount, amount.replace(/\D/g, '')].join(' '));
+}
+
+/** A bar that is not the highlighted one: the colour mixed into the surface. */
+export const SOFT_BAR = 'color-mix(in oklch, var(--cat) 45%, var(--surface))';
+
+/** The tooltip every chart shows: drawn on the canvas (no HTML), in the card's colours. */
+const TOOLTIP = {
+  renderMode: 'richText',
+  backgroundColor: 'var(--surface-raised)',
+  borderColor: 'var(--border-subtle)',
+  textStyle: { color: 'var(--foreground)', fontSize: 12 },
+} as const;
+
+/** «Last 12 months» for VChart: the bars' heights (% of the chart), the strong one in the colour, the dashed average. */
+export function monthsChartOption(m: Readonly<MonthsView>): ChartOption {
+  return {
+    grid: { left: 0, right: 0, top: 6, bottom: 22 },
+    xAxis: {
+      type: 'category',
+      data: m.bars.map((b) => b.label),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        interval: 0,
+        fontSize: 11,
+        color: 'var(--foreground-muted)',
+        formatter: (label: string, i: number) => (m.bars[i]?.strong ? `{strong|${label}}` : label),
+        rich: { strong: { fontSize: 11, fontWeight: 'bold', color: 'var(--foreground)' } },
+      },
+    },
+    yAxis: { type: 'value', min: 0, max: 100, show: false },
+    tooltip: { ...TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => m.bars[p.dataIndex]?.title ?? '' },
+    series: [
+      {
+        type: 'bar',
+        barCategoryGap: '12%',
+        data: m.bars.map((b) => ({ value: b.height, itemStyle: { color: b.strong ? 'var(--cat)' : SOFT_BAR, borderRadius: [6, 6, 0, 0] } })),
+        ...(m.avg === null
+          ? {}
+          : {
+              markLine: {
+                silent: true,
+                symbol: 'none',
+                label: { show: false },
+                lineStyle: { type: 'dashed', width: 1.5, color: 'var(--foreground-muted)' },
+                data: [{ yAxis: m.avg }],
+              },
+            }),
+      },
+    ],
+  };
 }

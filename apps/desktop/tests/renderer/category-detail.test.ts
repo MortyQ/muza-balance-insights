@@ -8,6 +8,7 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
+import { monthsChartOption, SOFT_BAR } from '@/entities/operations';
 import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
@@ -84,6 +85,24 @@ describe('category screen helpers', () => {
     expect(m.avg).toBe(63.8); // the running September is not in it: (800 + 1 000) / 2 = 900 of 1 410
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Сентябрь: на ${uah(51_000)} больше среднего`);
     expect(m.bars.at(-1)!.title).toBe(`Сентябрь 2026 — ${uah(141_000)} на сегодня`);
+  });
+
+  it('12 months as an ECharts option: the bars\' heights and colours, the dashed average, the strong label, the tooltip', () => {
+    const m = monthsView(VIEW, FMT);
+    const o = monthsChartOption(m) as {
+      xAxis: { data: string[]; axisLabel: { formatter: (l: string, i: number) => string } };
+      tooltip: { renderMode: string; formatter: (p: { dataIndex: number }) => string };
+      series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }>; markLine: { data: Array<{ yAxis: number }> } }>;
+    };
+    expect(o.xAxis.data).toEqual(m.bars.map((b) => b.label));
+    const bars = o.series[0]!.data;
+    expect(bars.slice(-3).map((b) => [b.value, b.itemStyle.color])).toEqual([[56.7, SOFT_BAR], [70.9, SOFT_BAR], [100, 'var(--cat)']]);
+    expect(o.series[0]!.markLine.data).toEqual([{ yAxis: 63.8 }]);
+    expect(o.xAxis.axisLabel.formatter('сен', 11)).toBe('{strong|сен}');
+    expect(o.xAxis.axisLabel.formatter('авг', 10)).toBe('авг');
+    expect(o.tooltip.renderMode).toBe('richText');
+    expect(o.tooltip.formatter({ dataIndex: 11 })).toBe(m.bars[11]!.title);
+    expect(monthsChartOption({ ...m, avg: null }).series).toEqual([expect.not.objectContaining({ markLine: expect.anything() })]);
   });
 
   it('12 months up to today: the picked month is the strong bar and the caption compares it', () => {
@@ -196,6 +215,7 @@ describe('category screen mounted', () => {
     expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ month: '2026-09', category: 'transport', scope: 'personal' });
     for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Операции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
+    expect(w.findAll('.v-chart').length).toBeGreaterThan(0);
 
     const bus = w.findAll('button[aria-pressed]').find((b) => b.text().includes('IMAGINARY'))!;
     await bus.trigger('click');
