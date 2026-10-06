@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
+import { incomeLines } from '../src/income-lines.ts';
 import { kyivStartOfDay } from '../src/format.ts';
 import { spendingByCategory } from '../src/queries.ts';
 import { getBalances, getSyncStatus } from '../src/status.ts';
@@ -272,6 +273,32 @@ describe('incomeSummary', () => {
       'black/USD', 'black/UAH',
     ]);
     expect(incomeSource(5411, '', 'monobank')).toBe('other');
+  });
+
+  it('incomeLines: the rows behind incomeSummary, newest first, with source and sender; same filters', async () => {
+    await tx('black', '2026-02-01', 10_000, { category: 'поступления', mcc: 6012, description: 'Вигаданий Банк' });
+    await tx('black', '2026-02-02', 2_000, { category: 'поступления', mcc: 4829, description: 'Від: Вигадана Особа' });
+    await tx('usd', '2026-02-04', 5_000, { category: 'поступления', mcc: 4829, scope: 'business', opCurrency: 978, opAmount: 4_600 });
+    await tx('black', '2026-02-05', 50_000, { category: 'поступления', mcc: 4829, internal: true });
+    await tx('black', '2026-02-06', 700, { category: 'кафе и рестораны', mcc: 4829 });
+    await tx('black', '2026-02-07', 900, { category: 'поступления', mcc: 4829, cancelled: true });
+    for (const scope of [undefined, 'personal', 'business'] as const) {
+      const q = { from: '2026-02-01', to: '2026-02-28', ...(scope ? { scope } : {}) };
+      const lines = (await incomeLines(db, q, NOW)).lines;
+      const sums = new Map<number, { lines: number; total: number }>();
+      for (const l of lines) {
+        const t = sums.get(l.currency) ?? { lines: 0, total: 0 };
+        sums.set(l.currency, { lines: t.lines + 1, total: t.total + l.amount });
+      }
+      expect([...sums].map(([currency, t]) => ({ currency, ...t })).sort((a, b) => a.currency - b.currency), String(scope))
+        .toEqual((await incomeSummary(db, q, NOW)).totals.map(({ currency, lines, total }) => ({ currency, lines, total })));
+    }
+    const all = (await incomeLines(db, { from: '2026-02-01', to: '2026-02-28' }, NOW)).lines;
+    expect(all.map((l) => [l.amount, l.source, l.sender, l.operationCurrency, l.operationAmount])).toEqual([
+      [5_000, 'transfer', null, 978, 4_600],
+      [2_000, 'named_sender', 'Вигадана Особа', 980, 2_000],
+      [10_000, 'other_bank', null, 980, 10_000],
+    ]);
   });
 });
 
