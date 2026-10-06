@@ -63,6 +63,10 @@ describe('analytics view builders', () => {
     expect(rows[6]).toMatchObject({ key: 'travel', color: 'var(--category-7)' });
     expect(rows[7]).toMatchObject({ key: 'other', name: 'Другие 2', color: 'var(--category-other)', prev: k(108) });
     expect(rows[7]!.net[0]).toBe(k(8));
+    const all = categoryRows(RANGE.categories, 12, Infinity);
+    expect(all).toHaveLength(9);
+    expect(all.some((r) => r.key === 'other')).toBe(false);
+    expect(all[8]).toMatchObject({ color: 'var(--category-other)' });
   });
 
   it('weeks of a month: Monday to Sunday, clipped to the month', () => {
@@ -208,7 +212,8 @@ describe('the analytics screen mounted', () => {
     for (const s of ['Доход и расходы', 'Что изменилось', 'Для сравнения: окт 2024 – сен 2025', 'Категории']) expect(w.text()).toContain(s);
     expect(w.findAll('[data-test="change"]')).toHaveLength(5);
     expect(w.find('[role="table"][aria-label="Тепловая карта"]').exists()).toBe(true);
-    expect(w.findAll('[role="table"] [role="row"]')).toHaveLength(9);
+    // The heatmap shows every category (9) under its header row, no «Other N».
+    expect(w.findAll('[role="table"] [role="row"]')).toHaveLength(10);
     // Every grid item takes a track (an sr-only item is absolutely placed and would shift the rows); names stay pinned left, the average right.
     const heat = w.find('[role="table"][aria-label="Тепловая карта"]');
     expect(heat.findAll('[role="row"] > *').filter((c) => c.classes('sr-only'))).toHaveLength(0);

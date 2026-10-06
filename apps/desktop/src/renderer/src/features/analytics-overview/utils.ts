@@ -41,10 +41,13 @@ export function comparedText(c: Readonly<{ from: string; to: string }>): string 
   return from === to ? bucketTitle(from, 'month').toLowerCase() : `${short(from)} – ${short(to)}`;
 }
 
-/** The top categories by the period's ranking (one colour per category on every view) and «Other N» for the rest. */
-export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number): CategoryRow[] {
+/**
+ * The top `limit` categories by the period's ranking (one colour per category on every view; past the colours, the
+ * «other» one) and «Other N» for the rest.
+ */
+export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number, limit = TOP_ROWS): CategoryRow[] {
   const spent = cats.filter((c) => c.total > 0);
-  const top: CategoryRow[] = spent.slice(0, TOP_ROWS).map((c, i) => ({
+  const top: CategoryRow[] = spent.slice(0, limit).map((c, i) => ({
     key: c.categoryId ?? c.category,
     name: categoryName(c),
     color: categoryColor(i),
@@ -52,7 +55,7 @@ export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number
     total: c.total,
     prev: c.prev,
   }));
-  const rest = spent.slice(TOP_ROWS);
+  const rest = spent.slice(limit);
   if (rest.length === 0) return top;
   const net = Array.from({ length: buckets }, (_, i) => sum(rest.map((c) => c.net[i] ?? 0)));
   const prev = rest.every((c) => c.prev === null) ? null : sum(rest.map((c) => c.prev ?? 0));

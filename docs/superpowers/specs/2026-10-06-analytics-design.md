@@ -20,7 +20,7 @@ Top to bottom, inside the default layout (global filters + side menu):
      then the largest decrease if any, else the 5th increase), each with the amount and the percent change and where its
      peak was («peak — June» / «peak — 14 Oct»). A row click switches the views below to «Lines» with only that category on.
 3. **«Categories»** with a `VSegmentedControl` of four views (default «Heatmap»):
-   - **Heatmap** — rows: the top 7 categories of the period + «Other N» (the rest summed); columns: months (range) or
+   - **Heatmap** — rows: every category of the period by rank (changed after review: no «Other N» here); columns: months (range) or
      calendar weeks Mon–Sun clipped to the month (one month, labelled «1–5», «6–12», …). The cell shows the sum; its
      colour says how far the cell is from the row's usual level: the row's mean per day over its full columns (a week
      of 2 days is not «low» for being short). Warmer = above usual, cooler = below, neutral within ±12%. The running
