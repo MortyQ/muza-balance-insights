@@ -83,6 +83,7 @@ describe('category screen helpers', () => {
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[56.7, false], [70.9, false], [100, true]]);
     expect(m.bars[0]!.height).toBe(0);
     expect(m.avg).toBe(63.8); // the running September is not in it: (800 + 1 000) / 2 = 900 of 1 410
+    expect(m.avgLabel).toBe(`ср. ${uah(90_000)}`);
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Сентябрь: на ${uah(51_000)} больше среднего`);
     expect(m.bars.at(-1)!.title).toBe(`Сентябрь 2026 — ${uah(141_000)} на сегодня`);
   });
@@ -92,12 +93,14 @@ describe('category screen helpers', () => {
     const o = monthsChartOption(m) as {
       xAxis: { data: string[]; axisLabel: { formatter: (l: string, i: number) => string } };
       tooltip: { renderMode: string; formatter: (p: { dataIndex: number }) => string };
-      series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }>; markLine: { data: Array<{ yAxis: number }> } }>;
+      series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }>; markLine: { data: Array<{ yAxis: number }>; label: { show: boolean; position: string; formatter: () => string } } }>;
     };
     expect(o.xAxis.data).toEqual(m.bars.map((b) => b.label));
     const bars = o.series[0]!.data;
     expect(bars.slice(-3).map((b) => [b.value, b.itemStyle.color])).toEqual([[56.7, SOFT_BAR], [70.9, SOFT_BAR], [100, 'var(--cat)']]);
     expect(o.series[0]!.markLine.data).toEqual([{ yAxis: 63.8 }]);
+    expect(o.series[0]!.markLine.label).toMatchObject({ show: true, position: 'insideEndTop' });
+    expect(o.series[0]!.markLine.label.formatter()).toBe(`ср. ${uah(90_000)}`);
     expect(o.xAxis.axisLabel.formatter('сен', 11)).toBe('{strong|сен}');
     expect(o.xAxis.axisLabel.formatter('авг', 10)).toBe('авг');
     expect(o.tooltip.renderMode).toBe('richText');

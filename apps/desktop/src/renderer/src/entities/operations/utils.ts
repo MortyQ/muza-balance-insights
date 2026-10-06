@@ -62,13 +62,13 @@ export function monthsView(
       title: `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.month === thisMonth ? t('entities.operations.months.soFar', { amount }) : amount}`,
     };
   });
-  if (avg === null) return { bars, avg: null, caption: '' };
+  if (avg === null) return { bars, avg: null, avgLabel: '', caption: '' };
   const parts = [t('entities.operations.months.avg', { amount: fmt.money(avg) })];
   const c = shown === undefined || shown.value === null ? null : change(shown.value, avg);
   if (shown && c && (c.kind === 'up' || c.kind === 'down')) {
     parts.push(t(c.kind === 'up' ? 'entities.operations.months.above' : 'entities.operations.months.below', { month: monthName(monthNo(shown.month)), amount: fmt.money(c.diff) }));
   }
-  return { bars, avg: max > 0 ? pct(avg, max) : null, caption: parts.join(' · ') };
+  return { bars, avg: max > 0 ? pct(avg, max) : null, avgLabel: t('entities.operations.avg', { amount: fmt.money(avg) }), caption: parts.join(' · ') };
 }
 
 /** «N ops · avg X», the caption of a person or a name. */
@@ -255,7 +255,16 @@ export function monthsChartOption(m: Readonly<MonthsView>): ChartOption {
               markLine: {
                 silent: true,
                 symbol: 'none',
-                label: { show: false },
+                label: {
+                  show: m.avgLabel !== '',
+                  position: 'insideEndTop',
+                  formatter: () => m.avgLabel,
+                  fontSize: 11,
+                  color: 'var(--foreground-secondary)',
+                  backgroundColor: 'var(--surface)',
+                  padding: [1, 4],
+                  borderRadius: 4,
+                },
                 lineStyle: { type: 'dashed', width: 1.5, color: 'var(--foreground-muted)' },
                 data: [{ yAxis: m.avg }],
               },

@@ -88,7 +88,7 @@
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
   each other).
   Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
-  chart, the dashed average as a mark line, the picked month's label bold) and «When»'s weekdays and days
+  chart, the dashed average as a mark line with its amount at the right end (`avgLabel`), the picked month's label bold) and «When»'s weekdays and days
   (`weekdaysChartOption`, `daysChartOption`); options are pure and tested, colours stay CSS (`var(--cat)`, `SOFT_BAR`)
   and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
 - **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,

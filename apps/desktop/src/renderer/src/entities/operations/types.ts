@@ -16,6 +16,8 @@ export interface MonthsView {
   bars: BarView[];
   /** The average line in % of the chart height; null — no month with data. */
   avg: number | null;
+  /** The average written on its line («avg 9 000 ₴»); '' — no average. */
+  avgLabel: string;
   caption: string;
 }
 
