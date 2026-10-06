@@ -33,6 +33,8 @@ English interface.
   current month is not in the average until it ends.
 - Back from a category, the home screen is there at once, with the «Spending» switch as you left it. While a category
   opens for the first time, its cards show a placeholder instead of an empty page.
+- The charts of the category and income screens («Last 12 months», «When») are drawn anew: hover over a bar to see its
+  month or day and the amount at once.
 
 ### Income screen
 

@@ -8,7 +8,7 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { monthsChartOption, SOFT_BAR } from '@/entities/operations';
+import { daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
 import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
@@ -127,6 +127,20 @@ describe('category screen helpers', () => {
     expect(when.weekdays.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
     expect(when.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 83.1]);
     expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
+  });
+
+  it('«When» as ECharts options: the weekday peak in the colour; days with spending coloured, the rest a thin line; tooltips', () => {
+    type Bars = { xAxis: { axisLabel: { interval: (i: number) => boolean } }; tooltip: { formatter: (p: { dataIndex: number }) => string }; series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }> }> };
+    const when = whenView(LINES, VIEW, '', FMT);
+    const w = weekdaysChartOption(when) as Bars;
+    expect(w.series[0]!.data.map((d) => [d.value, d.itemStyle.color])).toEqual([
+      [0, SOFT_BAR], [0, SOFT_BAR], [26.9, SOFT_BAR], [93.4, SOFT_BAR], [0, SOFT_BAR], [100, 'var(--cat)'], [0, SOFT_BAR],
+    ]);
+    expect(w.tooltip.formatter({ dataIndex: 5 })).toBe(when.weekdays[5]!.title);
+    const d = daysChartOption(when) as Bars;
+    expect(d.series[0]!.data.filter((x) => x.itemStyle.color === 'var(--cat)')).toHaveLength(3);
+    expect(d.series[0]!.data[0]).toEqual({ value: 4, itemStyle: { color: 'var(--border)', borderRadius: [2, 2, 0, 0] } });
+    expect(Array.from({ length: 30 }, (_, i) => i).filter((i) => d.xAxis.axisLabel.interval(i))).toEqual([0, 9, 19, 29]);
   });
 
   it('«When» of one merchant: only its lines, its name in the title', () => {

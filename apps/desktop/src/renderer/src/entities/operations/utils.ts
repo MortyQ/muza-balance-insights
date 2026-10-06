@@ -249,3 +249,46 @@ export function monthsChartOption(m: Readonly<MonthsView>): ChartOption {
     ],
   };
 }
+
+/** A row of plain bars: no axes but the labels under it, every bar's tooltip. `label` — which labels to write. */
+function barsOption(bars: ReadonlyArray<BarView>, o: { color: (b: BarView) => string; value: (b: BarView) => number; radius: number; gap: string; label: (i: number) => boolean; bottom: number }): ChartOption {
+  return {
+    grid: { left: 0, right: 0, top: 4, bottom: o.bottom },
+    xAxis: {
+      type: 'category',
+      data: bars.map((b) => b.label),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: o.bottom > 0, interval: (i: number) => o.label(i), fontSize: 11, color: 'var(--foreground-secondary)', hideOverlap: false },
+    },
+    yAxis: { type: 'value', min: 0, max: 100, show: false },
+    tooltip: { ...TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => bars[p.dataIndex]?.title ?? '' },
+    series: [
+      {
+        type: 'bar',
+        barCategoryGap: o.gap,
+        data: bars.map((b) => ({ value: o.value(b), itemStyle: { color: o.color(b), borderRadius: [o.radius, o.radius, 0, 0] } })),
+      },
+    ],
+  };
+}
+
+/** «By weekday» of «When»: the peak in the colour, the rest softer. */
+export function weekdaysChartOption(w: Readonly<WhenView>): ChartOption {
+  return barsOption(w.weekdays, { color: (b) => (b.strong ? 'var(--cat)' : SOFT_BAR), value: (b) => b.height, radius: 4, gap: '18%', label: () => true, bottom: 20 });
+}
+
+/** A day without a value still shows as a thin line (% of the chart). */
+const EMPTY_DAY = 4;
+
+/** «By day of the month» of «When»: days with a value in the colour, the others a thin line; labels under the chart. */
+export function daysChartOption(w: Readonly<WhenView>): ChartOption {
+  return barsOption(w.days, {
+    color: (b) => (b.strong ? 'var(--cat)' : 'var(--border)'),
+    value: (b) => (b.strong ? b.height : EMPTY_DAY),
+    radius: 2,
+    gap: '15%',
+    label: (i) => i === 0 || i === 9 || i === 19 || i === w.days.length - 1,
+    bottom: 18,
+  });
+}

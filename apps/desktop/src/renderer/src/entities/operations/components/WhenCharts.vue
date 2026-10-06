@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
+import { VChart } from '@/shared/ui';
 import type { WhenView } from '../types.ts';
+import { daysChartOption, weekdaysChartOption } from '../utils.ts';
 
 const { when } = defineProps<{ when: WhenView }>();
+const weekdays = computed(() => weekdaysChartOption(when));
+const days = computed(() => daysChartOption(when));
 </script>
 
 <template>
@@ -13,13 +18,10 @@ const { when } = defineProps<{ when: WhenView }>();
     <div class="flex flex-wrap gap-6">
       <div class="flex min-w-40 flex-1 flex-col gap-2">
         <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('entities.operations.when.weekdays') }}</h3>
-        <div class="flex h-24 items-end gap-1.5">
-          <span v-for="b in when.weekdays" :key="b.key" class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" :title="b.title">
-            <span class="block h-(--h) w-full rounded-t" :class="b.strong ? 'bg-(--cat)' : 'bg-[color-mix(in_oklch,var(--cat)_45%,var(--surface))]'" :style="{ '--h': `${b.height}%` }" aria-hidden="true" />
-            <span class="text-[11px] text-foreground-secondary">{{ b.label }}</span>
-            <span class="sr-only">{{ b.title }}</span>
-          </span>
-        </div>
+        <div class="h-28"><VChart :option="weekdays" /></div>
+        <ul class="sr-only">
+          <li v-for="b in when.weekdays" :key="b.key">{{ b.title }}</li>
+        </ul>
       </div>
       <div class="flex min-w-56 flex-1 flex-col gap-2">
         <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('entities.operations.when.dayParts') }}</h3>
@@ -34,19 +36,7 @@ const { when } = defineProps<{ when: WhenView }>();
     </div>
     <div class="flex flex-col gap-1.5">
       <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('entities.operations.when.days') }}</h3>
-      <div class="flex h-12 items-end gap-0.5" aria-hidden="true">
-        <span
-          v-for="b in when.days"
-          :key="b.key"
-          class="block min-w-0 flex-1 rounded-sm"
-          :class="b.strong ? 'h-(--h) bg-(--cat)' : 'h-0.5 bg-border'"
-          :style="{ '--h': `${b.height}%` }"
-          :title="b.title"
-        />
-      </div>
-      <div class="flex justify-between text-[10px] text-foreground-muted" aria-hidden="true">
-        <span>1</span><span>10</span><span>20</span><span>{{ when.days.length }}</span>
-      </div>
+      <div class="h-16"><VChart :option="days" /></div>
     </div>
   </section>
 </template>

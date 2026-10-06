@@ -52,7 +52,7 @@ describe('ui components copied from muzakit', () => {
     }
   });
 
-  it('every copied file carries the provenance header (icons.ts, index.ts, table/ and VSelect/VDatepicker/VMonthPicker are ours)', () => {
+  it('every copied file carries the provenance header (icons.ts, index.ts, table/, VSelect/VDatepicker/VMonthPicker and the charts are ours)', () => {
     // VSelect, VDatepicker and VMonthPicker are built fresh on reka-ui, not copied from muzakit (see ui/README.md) —
     // their header says so instead of "copied from muzakit".
     const ownFiles = new Set([
@@ -70,6 +70,10 @@ describe('ui components copied from muzakit', () => {
       'vpopover.scss',
       'VChangeChip.vue',
       'vchangechip.scss',
+      'VChart.vue',
+      'vchart.scss',
+      'echarts.ts',
+      'resolveCssColors.ts',
     ]);
     for (const f of filesUnder(uiDir, /\.(vue|ts|scss|css)$/)) {
       const own = ownFiles.has(path.basename(f)) || path.relative(uiDir, f).startsWith(`table${path.sep}`);
