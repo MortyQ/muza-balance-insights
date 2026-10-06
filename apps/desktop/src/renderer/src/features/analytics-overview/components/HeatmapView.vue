@@ -24,18 +24,19 @@ const SWATCHES = [
       <div
         role="table"
         :aria-label="$t('analytics.views.heat')"
-        class="grid min-w-[52rem] grid-cols-[10rem_repeat(var(--cols),minmax(2.75rem,1fr))_4.5rem] gap-0.75 text-xs"
+        class="grid w-max min-w-full grid-cols-[max-content_repeat(var(--cols),minmax(2.75rem,1fr))_4.5rem] gap-0.75 text-xs"
         :style="{ '--cols': cols.length }"
       >
         <div role="row" class="contents">
-          <span role="columnheader" class="sr-only">{{ $t('analytics.views.category') }}</span>
+          <!-- A real cell (not sr-only itself): an absolutely placed item would take no grid track and shift every row. -->
+          <span role="columnheader" class="sticky left-0 z-1 bg-surface"><span class="sr-only">{{ $t('analytics.views.category') }}</span></span>
           <span v-for="c in cols" :key="c.label" role="columnheader" class="pb-1 text-center whitespace-nowrap text-foreground-muted">{{ c.label }}</span>
           <span role="columnheader" class="pb-1 text-right text-foreground-muted">{{ $t('analytics.views.avg') }}</span>
         </div>
         <div v-for="r in rows" :key="r.key" role="row" class="contents">
-          <span role="rowheader" class="flex min-w-0 items-center gap-2 pr-2 text-sm">
+          <span role="rowheader" class="sticky left-0 z-1 flex items-center gap-2 bg-surface pr-3 text-sm">
             <span class="size-2 shrink-0 rounded-full bg-(--dot)" :style="{ '--dot': r.color }" aria-hidden="true" />
-            <span class="truncate" :title="r.name">{{ r.name }}</span>
+            <span class="max-w-56 truncate" :title="r.name">{{ r.name }}</span>
           </span>
           <span
             v-for="(c, j) in r.cells"
