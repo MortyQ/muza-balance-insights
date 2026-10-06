@@ -15,7 +15,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/analytics',
     name: ROUTE.analytics,
     component: () => import('@/pages/analytics').then((m) => m.AnalyticsPage),
-    meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 1 } },
+    meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 1 }, periodFilter: 'range' },
   },
   {
     // Opened from a row of «Spending»; an unknown category goes home.

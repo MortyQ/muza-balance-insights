@@ -263,6 +263,18 @@
       "none": "No token",
       "secure": "Token in the system keychain",
       "unreadable": "The saved token can no longer be read — enter it again."
+    },
+    "period": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "yearAgo": "Same month last year",
+      "months": "{n} month | {n} months | {n} months",
+      "sinceJanuary": "Since January",
+      "lastYear": "{year}",
+      "all": "All time",
+      "compare": "Compared with {period}",
+      "noCompare": "Not enough history to compare",
+      "running": "{month} is still running — amounts are incomplete"
     }
   },
   "header": {

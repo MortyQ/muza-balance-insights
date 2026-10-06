@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
+import { useRoute } from 'vue-router';
 import { importFloor } from '@contract/import-range.ts';
 import { CurrencyToggle } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
-import { MonthFilter, useMonthStore } from '@/entities/period';
+import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { monthOf } from '@/shared/lib';
 import SyncStatus from './components/SyncStatus.vue';
@@ -22,6 +23,9 @@ const status = computed(() =>
   syncStatusView(importProgress.progress, { line: syncStatus.line, lastSyncAt: syncStatus.status?.lastSyncAt ?? null }, Date.now(), participant.labelOf),
 );
 const failed = computed(() => failedConnections(importProgress.progress));
+// Analytics picks whole months (a range or one), home one month: the route says which.
+const route = useRoute();
+const ranged = computed(() => route.meta.periodFilter === 'range');
 const { mode } = useParticipantLayout({
   row: useTemplateRef<HTMLElement>('row'),
   left: useTemplateRef<HTMLElement>('left'),
@@ -46,7 +50,8 @@ const { mode } = useParticipantLayout({
       <template v-if="syncStatus.hasData">
         <ParticipantFilter v-if="mode === 'select'" mode="select" :failed />
         <div ref="left" class="flex items-center gap-3">
-          <MonthFilter :min="firstMonth" />
+          <PeriodRangeFilter v-if="ranged" :min="firstMonth" :data-from="syncStatus.status?.dataFrom ?? null" />
+          <MonthFilter v-else :min="firstMonth" />
           <CurrencyToggle />
         </div>
       </template>
