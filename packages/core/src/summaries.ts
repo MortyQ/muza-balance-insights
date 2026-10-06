@@ -320,6 +320,40 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   };
 }
 
+/** One cell of spendingGrid: one account currency, one day (YYYY-MM-DD) or month (YYYY-MM) of the period's zone, one category. */
+export type SpendingCell = { currency: number; bucket: string; category: string; purchases: number; gross: number; refunds: number; net: number };
+export type SpendingGrid = { period: PeriodInfo; unit: 'day' | 'month'; cells: SpendingCell[] };
+
+/**
+ * Spending by category × day or month of the period's zone in one query, over the lines of spendingSummary
+ * (spendingLinesSql + SPENDING_LINE_SQL): per currency the cells add up to its groups by category, day or month.
+ * For the desktop's analytics screen; the MCP tools do not offer it.
+ */
+export async function spendingGrid(db: Db, q: Period & SpendingFilters & { unit: 'day' | 'month' }, nowSec: number): Promise<SpendingGrid> {
+  if (q.unit !== 'day' && q.unit !== 'month') throw new SummaryError(`unit: day | month, получено «${String(q.unit)}»`);
+  validateFilters(q);
+  const period = await periodInfo(db, q, nowSec);
+  const from = await spendingLinesSql(db, q, q.unit);
+  const rs = await db.execute({
+    sql: `${from.sql}
+          SELECT currency, ${bucketKeySql('time')} AS b, category,
+                 SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
+                 SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
+                 SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds
+          FROM lines
+          WHERE ${SPENDING_LINE_SQL}
+          GROUP BY currency, b, category
+          ORDER BY currency, b, category`,
+    args: [...from.args, ...SPENDING_LINE_ARGS],
+  });
+  const cells = rs.rows.map((r) => {
+    const gross = Number(r.gross);
+    const refunds = Number(r.refunds);
+    return { currency: Number(r.currency), bucket: String(r.b), category: String(r.category), purchases: Number(r.purchases), gross, refunds, net: gross - refunds };
+  });
+  return { period, unit: q.unit, cells };
+}
+
 /** Per account currency. The operation block survives only if every group of that currency has one and the same operation currency. */
 function currencyTotals(groups: readonly SpendingGroup[], period: PeriodInfo): CurrencyTotal[] {
   const by = new Map<number, CurrencyTotal & { opOk: boolean }>();
@@ -419,7 +453,9 @@ export async function comparePeriods(
 // ---------- incomeSummary ----------
 
 export const INCOME_GROUP_BY = ['source', 'month', 'account', 'scope'] as const;
-export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number];
+/** Plus `day` — one group per date of the period's zone — for the desktop's analytics screen only: the MCP tools do not offer it. */
+export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number] | 'day';
+const INCOME_GROUPS: ReadonlyArray<IncomeGroupBy> = [...INCOME_GROUP_BY, 'day'];
 
 /** The provider's sources, plus `family`: money from another participant (participant view only). */
 export type IncomeSource = ProviderIncomeSource | 'family';
@@ -476,7 +512,7 @@ export async function incomeSummary(
   nowSec: number,
 ): Promise<IncomeSummary> {
   const groupBy = q.groupBy ?? 'source';
-  if (!INCOME_GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${INCOME_GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
+  if (!INCOME_GROUPS.includes(groupBy)) throw new SummaryError(`groupBy: ${INCOME_GROUPS.join(' | ')}, получено «${String(groupBy)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
@@ -491,6 +527,7 @@ export async function incomeSummary(
         ? r.transfer_rule === 'family'
           ? ('family' satisfies IncomeSource)
           : incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
+      : groupBy === 'day' ? dateIn(Number(r.time), zoneOf(q))
       : groupBy === 'month' ? dateIn(Number(r.time), zoneOf(q)).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)
       : String(r.scope);
