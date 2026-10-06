@@ -267,6 +267,7 @@ app.whenReady().then(async () => {
     getNowOverview: (q) => data.nowOverview(q),
     getCategoryOverview: (q) => data.categoryOverview(q),
     getIncomeOverview: (q) => data.incomeOverview(q),
+    getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });

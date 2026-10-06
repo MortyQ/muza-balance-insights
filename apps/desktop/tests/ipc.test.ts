@@ -107,6 +107,13 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getIncomeOverview', [{ month: '2026-9' }]],
     ['getIncomeOverview', [{ month: '2026-09', participantId: 0 }]],
     ['getIncomeOverview', [{ month: '2026-09', scope: 'personal' }]],
+    ['getAnalyticsOverview', []],
+    ['getAnalyticsOverview', [{ from: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-9', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-10', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2023-08', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', participantId: 0 }]],
+    ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', scope: 'personal' }]],
     ['getMonthOverview', []],
     ['getMonthOverview', [{}]],
     ['getMonthOverview', [{ month: '2026-13' }]],
@@ -243,6 +250,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
     const inc = { month: '2026-09', participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
+    const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most
+    await expect(ipc.handlers.get('balance:getAnalyticsOverview')!(good, an)).resolves.toEqual({ m: 'getAnalyticsOverview', a: [an] });
     await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09' })).resolves.toEqual({
       m: 'getMonthOverview',
       a: [{ month: '2026-09' }],
@@ -293,6 +302,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
   it('connections have no colour: there is no method to set one', () => {
     expect(METHODS).not.toContain('setConnectionColor');
     expect(Object.keys(ARG_SCHEMAS)).not.toContain('setConnectionColor');
+  });
+
+  it('the analytics data is neither allowed while locked nor while the database is not ready', () => {
+    expect(METHODS).toContain('getAnalyticsOverview');
+    expect(ALLOWED_WHEN_LOCKED as readonly string[]).not.toContain('getAnalyticsOverview');
+    expect(ALLOWED_WHEN_DB_UNAVAILABLE as readonly string[]).not.toContain('getAnalyticsOverview');
   });
 
   it('the account toggle is neither allowed while locked nor while the database is not ready', () => {
