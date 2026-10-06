@@ -47,6 +47,14 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
   text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
   block's chips and the now strip's.
+- `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
+  `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
+  `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option
+  (`var(--x)`, `color-mix(…)`) are resolved against the chart's element (`resolveCssColors`) and again when
+  `data-theme` changes; the font is the element's. Resizes with its box, disposed on unmount, no animation under
+  `prefers-reduced-motion`. The canvas is `aria-hidden`: the consumer gives the same data as text. Tooltips use
+  `renderMode: 'richText'` (drawn on the canvas, no HTML). Renderer tests replace ECharts with a recorder
+  (`tests/renderer/setup-charts.ts`).
 
 All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
 reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element
