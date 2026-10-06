@@ -135,6 +135,7 @@ export type BalanceApi = {
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
+  getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -416,6 +417,47 @@ export type IncomeOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; total: number }>;
+};
+
+/** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */
+export type AnalyticsQuery = { from: string; to: string; participantId?: number };
+
+/** full — data for the whole bucket; running — the current month / today; none — before the first data or after today (values 0, not drawn). */
+export type AnalyticsBucketState = 'full' | 'running' | 'none';
+
+export type AnalyticsCategory = {
+  category: string;
+  categoryId: CategoryId | null;
+  /** Hryvnia kopecks per bucket, in `buckets` order. */
+  net: number[];
+  total: number;
+  /** The comparison period's spending; null — no comparison. */
+  prev: number | null;
+};
+
+/**
+ * The analytics screen: income and spending (all scopes, the balances' fold) of a person or the family, hryvnia kopecks by
+ * today's rates, per day (one month) or month (a range). Categories, numbers and dates only — no bank text.
+ */
+export type AnalyticsOverview = {
+  from: string;
+  to: string;
+  unit: 'day' | 'month';
+  /** `YYYY-MM-DD` (day) or `YYYY-MM` (month), oldest first. */
+  buckets: Array<{ key: string; state: AnalyticsBucketState }>;
+  income: number[];
+  /** The sum of the listed categories per bucket. */
+  spending: number[];
+  totals: { income: number; spending: number; prev: { income: number; spending: number } | null };
+  /** Dates; one month — last month (cut to the same day while this one runs); a range — the same number of months before. */
+  compare: { from: string; to: string; partial: boolean } | null;
+  /** Day only: the usual month's running spending by day — the mean of up to 3 whole months before; null without them. */
+  usual: number[] | null;
+  /** Spending categories of either period: this period's ranking first (net > 0, net desc), then the others by `prev`. */
+  categories: AnalyticsCategory[];
+  rates: RatesView | null;
+  /** Account currencies left out (no rate today). */
+  leftOut: number[];
 };
 
 export type NowOverviewQuery = { participantId?: number };
