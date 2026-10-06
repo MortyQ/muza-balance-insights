@@ -6,7 +6,7 @@ import { t } from '@/shared/lib';
 import { VSegmentedControl } from '@/shared/ui';
 import { VIEW_ICON, VIEW_IDS } from '../constants.ts';
 import type { CategoryRow, LinesMode, ViewId } from '../types.ts';
-import { categoryRows, columns, compareRows, heatRows, miniCards } from '../utils.ts';
+import { columns, compareRows, heatRows, miniCards } from '../utils.ts';
 import CompareView from './CompareView.vue';
 import HeatmapView from './HeatmapView.vue';
 import LinesView from './LinesView.vue';
@@ -31,8 +31,7 @@ const HINTS: Readonly<Record<ViewId, 'analytics.views.heatHint' | 'analytics.vie
   compare: 'analytics.views.compareHint',
 };
 const options = computed(() => VIEW_IDS.map((id) => ({ value: id, label: t(NAMES[id]), icon: VIEW_ICON[id] })));
-// The heatmap has room for every category: no «Other N».
-const heat = computed(() => (current.value === 'heat' ? heatRows(categoryRows(view.categories, view.buckets.length, Infinity), columns(view), fmt) : []));
+const heat = computed(() => (current.value === 'heat' ? heatRows(rows, columns(view), fmt) : []));
 const cols = computed(() => columns(view));
 const cards = computed(() => (current.value === 'small' ? miniCards(view, rows, fmt) : []));
 const compare = computed(() => (current.value === 'compare' ? compareRows(view, fmt) : []));

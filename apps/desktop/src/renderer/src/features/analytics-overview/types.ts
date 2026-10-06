@@ -6,7 +6,7 @@ import type { Loadable } from '@/shared/lib';
 export type ViewId = 'heat' | 'small' | 'lines' | 'compare';
 export type LinesMode = 'amount' | 'share';
 
-/** One row of the heatmap, the small charts and the lines: a top category or «Other N». */
+/** One row of the heatmap, the small charts and the lines: one category with spending in the period. */
 export type CategoryRow = { key: string; name: string; color: string; net: number[]; total: number; prev: number | null };
 
 /** A column of the heatmap: one month, or one calendar week clipped to the month. `days` — the days it has data for. */

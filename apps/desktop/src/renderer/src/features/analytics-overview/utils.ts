@@ -4,7 +4,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { CHART_TOOLTIP, dayMonth } from '@/entities/operations';
 import { monthName, monthShortName, t } from '@/shared/lib';
 import type { ChartOption } from '@/shared/ui';
-import { HEAT_EVEN, TOP_ROWS } from './constants.ts';
+import { HEAT_EVEN } from './constants.ts';
 import type { CategoryRow, ChangeRow, Column, CompareRow, GapPolygon, HeatRow, KpiView, LinesMode, MiniCard } from './types.ts';
 
 const sum = (xs: readonly number[]): number => xs.reduce((s, x) => s + x, 0);
@@ -41,13 +41,9 @@ export function comparedText(c: Readonly<{ from: string; to: string }>): string 
   return from === to ? bucketTitle(from, 'month').toLowerCase() : `${short(from)} – ${short(to)}`;
 }
 
-/**
- * The top `limit` categories by the period's ranking (one colour per category on every view; past the colours, the
- * «other» one) and «Other N» for the rest.
- */
-export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number, limit = TOP_ROWS): CategoryRow[] {
-  const spent = cats.filter((c) => c.total > 0);
-  const top: CategoryRow[] = spent.slice(0, limit).map((c, i) => ({
+/** Every category with spending, by the period's ranking: one colour per category on every view (past the rank colours, the «other» one). */
+export function categoryRows(cats: readonly AnalyticsCategory[]): CategoryRow[] {
+  return cats.filter((c) => c.total > 0).map((c, i) => ({
     key: c.categoryId ?? c.category,
     name: categoryName(c),
     color: categoryColor(i),
@@ -55,11 +51,6 @@ export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number
     total: c.total,
     prev: c.prev,
   }));
-  const rest = spent.slice(limit);
-  if (rest.length === 0) return top;
-  const net = Array.from({ length: buckets }, (_, i) => sum(rest.map((c) => c.net[i] ?? 0)));
-  const prev = rest.every((c) => c.prev === null) ? null : sum(rest.map((c) => c.prev ?? 0));
-  return [...top, { key: 'other', name: t('analytics.views.other', { n: rest.length }), color: categoryColor(null), net, total: sum(net), prev }];
 }
 
 /** Calendar weeks Monday to Sunday of consecutive dates, labelled by their first and last day numbers. */

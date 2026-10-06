@@ -56,17 +56,14 @@ const MONTH_VIEW: AnalyticsOverview = {
 };
 
 describe('analytics view builders', () => {
-  it('rows: the top 7 by name and rank colour, the rest summed as «Other N»', () => {
-    const rows = categoryRows(RANGE.categories, 12);
-    expect(rows).toHaveLength(8);
+  it('rows: every category with spending by rank, rank colours for the top 7, the «other» colour past them', () => {
+    const rows = categoryRows(RANGE.categories);
+    expect(rows).toHaveLength(9);
+    expect(rows.some((r) => r.key === 'other')).toBe(false);
     expect(rows[0]).toMatchObject({ key: 'groceries', name: 'Продукты', color: 'var(--category-1)' });
     expect(rows[6]).toMatchObject({ key: 'travel', color: 'var(--category-7)' });
-    expect(rows[7]).toMatchObject({ key: 'other', name: 'Другие 2', color: 'var(--category-other)', prev: k(108) });
-    expect(rows[7]!.net[0]).toBe(k(8));
-    const all = categoryRows(RANGE.categories, 12, Infinity);
-    expect(all).toHaveLength(9);
-    expect(all.some((r) => r.key === 'other')).toBe(false);
-    expect(all[8]).toMatchObject({ color: 'var(--category-other)' });
+    expect(rows[7]).toMatchObject({ color: 'var(--category-other)' });
+    expect(rows[8]).toMatchObject({ color: 'var(--category-other)' });
   });
 
   it('weeks of a month: Monday to Sunday, clipped to the month', () => {
@@ -82,7 +79,7 @@ describe('analytics view builders', () => {
 
   it('heatmap: colour by the per-day level against the row mean; the running column outlined and out of the mean', () => {
     const view = { ...RANGE, buckets: RANGE.buckets.map((b, i) => (i === 11 ? { ...b, state: 'running' as const } : b)) };
-    const rows = heatRows(categoryRows(view.categories, 12), columns(view), FMT);
+    const rows = heatRows(categoryRows(view.categories), columns(view), FMT);
     const travel = rows.find((r) => r.key === 'travel')!;
     expect(travel.cells[8]).toMatchObject({ text: '26', strong: true });
     expect(travel.cells[8]!.background).toContain('var(--heat-hot)');
@@ -129,7 +126,7 @@ describe('analytics view builders', () => {
   });
 
   it('small chart cards: total, average per month, the change', () => {
-    const cards = miniCards(RANGE, categoryRows(RANGE.categories, 12), FMT);
+    const cards = miniCards(RANGE, categoryRows(RANGE.categories), FMT);
     expect(cards[0]).toMatchObject({ key: 'groceries', total: FMT.money(k(211)), chip: '+12%', up: true });
     expect(cards[0]!.avg).toContain('в месяц');
   });
@@ -166,7 +163,7 @@ describe('analytics chart options', () => {
   });
 
   it('lines: one series per row that is on; hovering fades the others; the share in percent', () => {
-    const rows = categoryRows(RANGE.categories, 12);
+    const rows = categoryRows(RANGE.categories);
     const o = linesOption(RANGE, rows, new Set(['groceries', 'cafes']), 'cafes', 'share', FMT) as unknown as Option;
     expect(o.series.map((s) => s.id)).toEqual(['groceries', 'cafes']);
     expect(o.series[0]!.lineStyle!.opacity).toBeLessThan(0.5);
@@ -174,7 +171,7 @@ describe('analytics chart options', () => {
   });
 
   it('a small chart: the bars, the peak solid, the dashed mean', () => {
-    const row = categoryRows(RANGE.categories, 12).find((r) => r.key === 'travel')!;
+    const row = categoryRows(RANGE.categories).find((r) => r.key === 'travel')!;
     const o = miniOption(RANGE, row) as unknown as { series: Array<{ data: Array<{ itemStyle: { opacity: number } }>; markLine: { data: Array<{ yAxis: number }> } }> };
     expect(o.series[0]!.data[8]!.itemStyle.opacity).toBe(1);
     expect(o.series[0]!.data[0]!.itemStyle.opacity).toBe(0.45);
@@ -236,7 +233,7 @@ describe('the analytics screen mounted', () => {
   it('the segmented control switches the views; a «What changed» row opens «Lines» with that category alone', async () => {
     const w = await mountScreen();
     await segment(w, 'Мини-графики').trigger('click');
-    expect(w.findAll('[data-test="mini"]')).toHaveLength(8);
+    expect(w.findAll('[data-test="mini"]')).toHaveLength(9);
     await segment(w, 'Сравнение').trigger('click');
     expect(w.find('[role="table"][aria-label="Сравнение"]').exists()).toBe(true);
     await w.findAll('[data-test="change"]')[0]!.trigger('click');

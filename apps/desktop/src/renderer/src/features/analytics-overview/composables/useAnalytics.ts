@@ -30,7 +30,7 @@ export function useAnalytics(): UseAnalyticsReturn {
   // Also publishes the answer's rates to the currency button of the global filters.
   const fmt = useMoneyFormat(() => state.value.data?.rates);
   const view = computed(() => state.value.data);
-  const rows = computed(() => (view.value ? categoryRows(view.value.categories, view.value.buckets.length) : []));
+  const rows = computed(() => (view.value ? categoryRows(view.value.categories) : []));
 
   const current = ref<ViewId>('heat');
   const on = ref<ReadonlySet<string>>(new Set());

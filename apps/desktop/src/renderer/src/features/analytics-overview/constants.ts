@@ -1,8 +1,5 @@
-import { COLORED } from '@/entities/category';
 import type { ViewId } from './types.ts';
 
-/** Rows the views show by name (one rank colour each); the rest is one «Other N» row. */
-export const TOP_ROWS = COLORED;
 /** Lines on by default. */
 export const DEFAULT_LINES = 5;
 /** Within ±12% of the row's usual level a heatmap cell is neutral. */
