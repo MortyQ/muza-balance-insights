@@ -220,6 +220,17 @@ describe('the analytics screen mounted', () => {
     expect(heat.findAll('[role="rowheader"]').every((c) => c.classes('sticky'))).toBe(true);
     expect(heat.findAll('[role="row"] > :last-child').every((c) => c.classes('sticky') && c.classes('right-0'))).toBe(true);
     expect(w.find('.v-sc__item[aria-pressed="true"]').text()).toContain('Тепловая карта');
+
+    // Hover: the cell lights its row and column and fades the rest; leaving the table clears it.
+    const rowsOf = () => heat.findAll('[role="row"]').slice(1);
+    await rowsOf()[1]!.findAll('[role="cell"]')[2]!.trigger('mouseenter');
+    expect(heat.findAll('[role="columnheader"]')[3]!.classes()).toContain('font-semibold');
+    expect(rowsOf()[1]!.findAll('[role="cell"]')[2]!.classes()).toContain('ring-2');
+    expect(rowsOf()[1]!.findAll('[role="cell"]')[0]!.classes()).not.toContain('opacity-40');
+    expect(rowsOf()[0]!.findAll('[role="cell"]')[2]!.classes()).not.toContain('opacity-40');
+    expect(rowsOf()[0]!.findAll('[role="cell"]')[0]!.classes()).toContain('opacity-40');
+    await heat.trigger('mouseleave');
+    expect(heat.findAll('.opacity-40')).toHaveLength(0);
   });
 
   it('the segmented control switches the views; a «What changed» row opens «Lines» with that category alone', async () => {

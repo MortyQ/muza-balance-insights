@@ -115,7 +115,7 @@
   mean), small charts, lines (chips toggle, top 5 by default, hover fades the others, amount / share), compare
   (diverging bars). Rows = the top 7 categories by the period (rank colours) + «Other N»; the heatmap lists every
   category instead (`categoryRows(…, Infinity)`; past the 7 colours the «other» one), names pinned left and «Average»
-  right while the cells scroll. `utils.ts` is pure and tested
+  right while the cells scroll; hovering a cell lights its row and column and fades the rest. `utils.ts` is pure and tested
   (`tests/renderer/analytics.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
