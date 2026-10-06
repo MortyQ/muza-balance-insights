@@ -51,6 +51,13 @@
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
   block's (same fold), its lines come from core `categoryLines`; the income figure is the balances' «In» (all scopes,
   same fold), its lines come from core `incomeLines` (the same rows as `incomeSummary`, one query: `incomeRowsSql`).
+  `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
+  in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:
+  the import's 36 + the current one; zod refuses more, main refuses a range ending after this month). One month → per
+  day, a range → per month; all scopes, the balances' fold (core `spendingGrid` + `incomeSummary` by day / month, today's
+  rates, a currency without a rate in `leftOut`); the period before (`comparePeriod` for a month, the same number of
+  months before a range; null before the data); for one month the usual month's running spending (mean of up to 3
+  covered months before). Categories, numbers and dates only — no bank text (canary test in `tests/data.test.ts`).
   `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`

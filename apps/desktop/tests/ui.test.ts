@@ -52,7 +52,7 @@ describe('ui components copied from muzakit', () => {
     }
   });
 
-  it('every copied file carries the provenance header (icons.ts, index.ts, table/, VSelect/VDatepicker/VMonthPicker and the charts are ours)', () => {
+  it('every copied file carries the provenance header (icons.ts, index.ts, table/, VSelect/VDatepicker/VMonthPicker/VMonthRangePicker and the charts are ours)', () => {
     // VSelect, VDatepicker and VMonthPicker are built fresh on reka-ui, not copied from muzakit (see ui/README.md) —
     // their header says so instead of "copied from muzakit".
     const ownFiles = new Set([
@@ -65,6 +65,8 @@ describe('ui components copied from muzakit', () => {
       'calendarDate.ts',
       'VMonthPicker.vue',
       'vmonthpicker.scss',
+      'VMonthRangePicker.vue',
+      'vmonthrangepicker.scss',
       'calendarMonth.ts',
       'VPopover.vue',
       'vpopover.scss',
@@ -143,6 +145,7 @@ describe('ui components copied from muzakit', () => {
       ['inputs/vselect', '.v-select__trigger'],
       ['inputs/vdatepicker', '.v-datepicker__field-row'],
       ['inputs/vmonthpicker', '.v-month-picker__trigger'],
+      ['inputs/vmonthrangepicker', '.v-month-range-picker__trigger'],
       ['inputs/vinput', '.v-input-container'],
     ] as const) {
       expect(decl(rule(scss(file), selector), 'box-shadow'), selector).toBe(resting);
@@ -151,16 +154,19 @@ describe('ui components copied from muzakit', () => {
     // VMonthPicker's trigger must read exactly like VSelect's closed trigger, not as a pill of its own.
     const selectTrigger = rule(scss('inputs/vselect'), '.v-select__trigger');
     const monthTrigger = rule(scss('inputs/vmonthpicker'), '.v-month-picker__trigger');
+    const rangeTrigger = rule(scss('inputs/vmonthrangepicker'), '.v-month-range-picker__trigger');
     for (const prop of ['border-radius', 'background', 'border', 'height']) {
       const expected = decl(selectTrigger, prop);
       expect(expected, prop).toBeDefined();
       expect(decl(monthTrigger, prop), prop).toBe(expected);
+      expect(decl(rangeTrigger, prop), prop).toBe(expected);
     }
 
     const panels = [
       rule(scss('inputs/vselect'), '.v-select__content'),
       rule(scss('inputs/vdatepicker'), '.v-datepicker__calendar'),
       rule(scss('inputs/vmonthpicker'), '.v-month-picker__content'),
+      rule(scss('inputs/vmonthrangepicker'), '.v-month-range-picker__content'),
     ];
     for (const prop of ['background-color', 'border', 'border-radius', 'box-shadow']) {
       const values = panels.map((p) => decl(p, prop));

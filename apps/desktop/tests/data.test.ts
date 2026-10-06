@@ -920,3 +920,83 @@ describe('DataService.incomeOverview (the income screen)', () => {
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);
   });
 });
+
+describe('DataService.analyticsOverview (the analytics screen)', () => {
+  const IN = 'поступления';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    for (const id of ['uah', 'usd']) await synced(id);
+    await tx('uah', '2026-01-10', -10_000, 'продукты');
+    await tx('uah', '2026-02-03', -20_000, 'продукты');
+    await tx('uah', '2026-02-05', 50_000, IN, { mcc: 4829 });
+    await tx('uah', '2026-02-20', -5_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-01', 60_000, IN, { mcc: 4829 });
+    await tx('uah', '2026-03-02', -30_000, 'продукты');
+    await tx('uah', '2026-03-05', -8_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-05', 2_000, 'кафе и рестораны'); // a refund
+    await tx('usd', '2026-03-06', -100, 'продукты'); // 1 $ = 40 ₴
+    await tx('uah', '2026-03-08', -5_000, 'свои переводы', { rule: 'pair' });
+  });
+
+  it('a range: months, states, income and spending per month, ranked categories, no comparison before the data', async () => {
+    const v = await svc.analyticsOverview({ from: '2026-01', to: '2026-03' });
+    expect(v.unit).toBe('month');
+    expect(v.buckets).toEqual([{ key: '2026-01', state: 'full' }, { key: '2026-02', state: 'full' }, { key: '2026-03', state: 'running' }]);
+    expect(v.spending).toEqual([10_000, 25_000, 40_000]);
+    expect(v.income).toEqual([0, 50_000, 60_000]);
+    expect(v.categories.map((c) => [c.categoryId, c.net, c.total, c.prev])).toEqual([
+      ['groceries', [10_000, 20_000, 34_000], 64_000, null],
+      ['cafes', [0, 5_000, 6_000], 11_000, null],
+    ]);
+    expect(v.compare).toBeNull();
+    expect(v.totals).toEqual({ income: 110_000, spending: 75_000, prev: null });
+    expect(v.usual).toBeNull();
+    expect(v.leftOut).toEqual([]);
+  });
+
+  it("one month: days, the month's figures equal the balances, last month to the same day, the usual month", async () => {
+    const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03' });
+    const month = await svc.monthOverview({ month: '2026-03' });
+    expect(v.unit).toBe('day');
+    expect(v.buckets).toHaveLength(31);
+    expect(v.buckets[14]).toEqual({ key: '2026-03-15', state: 'running' });
+    expect(v.buckets[15]!.state).toBe('none');
+    expect(v.totals.spending).toBe(month.total.spending);
+    expect(v.totals.income).toBe(month.total.income);
+    expect(v.spending.slice(0, 6)).toEqual([0, 30_000, 0, 0, 6_000, 4_000]);
+    expect(v.compare).toEqual({ from: '2026-02-01', to: '2026-02-10', partial: true });
+    expect(v.totals.prev).toEqual({ income: 50_000, spending: 20_000 });
+    expect(v.categories.find((c) => c.categoryId === 'cafes')!.prev).toBe(0);
+    // January and February are covered; December is not: the mean of two.
+    expect(v.usual![2]).toBe(10_000);
+    expect(v.usual![9]).toBe(15_000);
+    expect(v.usual![30]).toBe(17_500);
+  });
+
+  it('a category spent only in the comparison period is listed after the ranked ones', async () => {
+    await tx('uah', '2026-02-07', -3_000, 'спорт');
+    const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03' });
+    expect(v.categories.at(-1)).toMatchObject({ categoryId: 'sport', total: 0, prev: 3_000 });
+  });
+
+  it('a person: only their accounts', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03', participantId: her });
+    expect(v.totals).toMatchObject({ income: 0, spending: 0 });
+    expect(v.categories).toEqual([]);
+  });
+
+  it('a currency without a rate is left out; a range ending after this month is refused', async () => {
+    rates = { list: [], fetchedAt: NOW, saved: false };
+    const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03' });
+    expect(v.leftOut).toEqual([840]);
+    expect(v.totals.spending).toBe(36_000);
+    await expect(svc.analyticsOverview({ from: '2026-03', to: '2026-04' })).rejects.toThrow();
+  });
+
+  it('carries no bank text', async () => {
+    const json = JSON.stringify(await svc.analyticsOverview({ from: '2026-01', to: '2026-03' }));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});

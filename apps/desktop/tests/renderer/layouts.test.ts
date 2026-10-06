@@ -61,6 +61,8 @@ describe('navGroups', () => {
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
     expect(layouts).toMatchObject({ home: 'default', analytics: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    // The global filters offer whole months on analytics, one month elsewhere.
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
   });
 });
 

@@ -8,6 +8,7 @@ import { CATEGORY_IDS } from '../shared/categories.ts';
 import { COLOR_KEYS } from '../shared/colors.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
+import { ANALYTICS_MAX_MONTHS, monthSpan } from '../shared/analytics.ts';
 import { isIsoDate } from '../shared/import-range.ts';
 import { THEME_PREFS } from '../shared/theme.ts';
 
@@ -58,6 +59,12 @@ export const ARG_SCHEMAS = {
     z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
   ]),
   getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
+  getAnalyticsOverview: z.tuple([
+    z
+      .strictObject({ from: month, to: month, participantId: id.optional() })
+      .refine((q) => q.from <= q.to && monthSpan(q.from, q.to) <= ANALYTICS_MAX_MONTHS),
+  ]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

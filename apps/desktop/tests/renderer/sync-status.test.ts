@@ -5,7 +5,8 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia, type Pinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick } from 'vue';
+import { defineComponent, nextTick } from 'vue';
+import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { ConnectionView, DataStatus, PersonView } from '@contract/api.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 
@@ -149,7 +150,30 @@ describe('GlobalFilters', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  const mountFilters = () => mount(GlobalFilters, { global: { plugins: [pinia, i18n] }, attachTo: document.body });
+  const screen = defineComponent({ render: () => null });
+  let router: Router;
+  beforeEach(async () => {
+    router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: screen },
+        { path: '/analytics', name: 'analytics', component: screen, meta: { periodFilter: 'range' } },
+      ],
+    });
+    await router.push('/');
+  });
+  const mountFilters = () => mount(GlobalFilters, { global: { plugins: [pinia, i18n, router] }, attachTo: document.body });
+
+  it('analytics: the period button instead of the month, before the currency', async () => {
+    await router.push('/analytics');
+    const w = mountFilters();
+    expect(w.find('[aria-label^="Месяц"]').exists()).toBe(false);
+    const triggers = w.findAll('button[aria-label]').map((b) => b.attributes('aria-label'));
+    const at = triggers.findIndex((l) => l?.startsWith('Период:'));
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(triggers[at + 1]).toMatch(/^Валюты:/);
+    w.unmount();
+  });
 
   it('the currency button sits right after the month filter', () => {
     const w = mountFilters();

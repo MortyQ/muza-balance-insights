@@ -56,6 +56,14 @@
   `VPopover` a `title` / `aria-labelledby` option.
 - `pendingHolds` ignores the participant and scope filters, in «Spending» and in the «Now» strip alike.
 
+## Later: analytics
+
+- Open the category screen from analytics: that screen is one scope and one month, analytics is all scopes over a range,
+  so the figures would not match. Needs a scope filter on analytics or a range on the category screen.
+- A personal / business switch on analytics; weeks or quarters as the unit of a range; keeping the period between
+  launches.
+- Not checked on a live system: the analytics screen (layout, the charts' look, the period picker's hover preview).
+
 ## Later: home screen
 
 - «Spending»: show today's categories too — most likely a switch right by the category bars (month / today), so the

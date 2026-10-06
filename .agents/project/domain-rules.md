@@ -57,6 +57,9 @@
   day; the usual day = the median of daily net over the 30 days before today that the data covers (from the first data
   date to the last fully synced day; a day without spending = 0; fewer than 7 such days — none); last week = Monday − 7 …
   today − 7, none when the data starts later.
+- `spendingGrid` (category × day or month of the period's zone, one query over `spendingLinesSql` + `SPENDING_LINE_SQL`,
+  so per currency its cells add up to `spendingSummary`'s groups) and `incomeSummary` `groupBy: 'day'` — internal, for the
+  desktop's analytics screen only (not in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`, the MCP tools do not offer them).
 - The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
   exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.

@@ -1,9 +1,68 @@
 {
   "analytics": {
-    "placeholder": {
-      "text": "Charts and comparisons of your spending and income over the months will live here.",
-      "title": "Analytics is coming soon"
-    }
+    "kpi": {
+      "income": "Income",
+      "spending": "Spending",
+      "left": "Left",
+      "rate": "Savings rate",
+      "vsPrev": "{change} vs the period before",
+      "wasRate": "was {rate}",
+      "perMonth": "{amount} a month on average",
+      "perDay": "{amount} a day on average"
+    },
+    "flow": {
+      "title": "Income and spending",
+      "months": "Green — the month ended in plus, red — in minus",
+      "days": "Running totals from the 1st",
+      "income": "Income",
+      "spending": "Spending",
+      "usual": "Usual month",
+      "row": "{when}: income {income}, spending {spending}"
+    },
+    "changes": {
+      "title": "What changed",
+      "vs": "Compared with {period}",
+      "peak": "peak — {when}",
+      "none": "Nothing changed much",
+      "noCompare": "Not enough history to compare",
+      "all": "All categories in «Compare»",
+      "more": "more",
+      "less": "less"
+    },
+    "views": {
+      "title": "Categories",
+      "heat": "Heatmap",
+      "small": "Small charts",
+      "lines": "Lines",
+      "compare": "Compare",
+      "heatHint": "Colour — how far above or below the category's usual. Hover a cell to see the exact amount.",
+      "linesHint": "Click a category to show or hide its line.",
+      "compareHint": "Right — spent more, left — less.",
+      "less": "below usual",
+      "more": "above usual",
+      "avg": "average",
+      "amount": "Amount",
+      "share": "Share of spending",
+      "top": "Top 5",
+      "allLines": "All",
+      "was": "{was} → {now}",
+      "fewer": "← less",
+      "greater": "more →",
+      "category": "Category",
+      "change": "Change",
+      "wasNow": "Was → now",
+      "perMonth": "{amount} a month",
+      "perDay": "{amount} a day",
+      "noCompare": "Not enough history to compare: download older data in the settings.",
+      "heatUnitMonth": "Amounts in thousands of {currency} per month",
+      "heatUnitWeek": "Amounts in thousands of {currency} per week",
+      "smallHintMonth": "A bar is the month's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount.",
+      "smallHintDay": "A bar is the day's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount."
+    },
+    "leftOut": "No rate for today, left out: {currencies}",
+    "failed": "Could not load the analytics.",
+    "empty": "No data for this period.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate."
   },
   "category": {
     "back": "Spending",
@@ -132,6 +191,17 @@
       "5": "Fri",
       "6": "Sat",
       "7": "Sun"
+    },
+    "monthRangePicker": {
+      "label": "Period",
+      "one": "One month",
+      "range": "Range",
+      "quick": "Quick picks",
+      "hintOne": "Pick a month",
+      "hintRange": "Pick the first and the last month",
+      "months": "{n} month | {n} months | {n} months",
+      "cancel": "Cancel",
+      "apply": "Show"
     }
   },
   "entities": {
@@ -252,6 +322,18 @@
       "none": "No token",
       "secure": "Token in the system keychain",
       "unreadable": "The saved token can no longer be read — enter it again."
+    },
+    "period": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "yearAgo": "Same month last year",
+      "months": "{n} month | {n} months | {n} months",
+      "sinceJanuary": "Since January",
+      "lastYear": "{year}",
+      "all": "All time",
+      "compare": "Compared with {period}",
+      "noCompare": "Not enough history to compare",
+      "running": "{month} is still running — amounts are incomplete"
     }
   },
   "header": {

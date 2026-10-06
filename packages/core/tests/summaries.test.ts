@@ -6,12 +6,14 @@ import { kyivStartOfDay } from '../src/format.ts';
 import { spendingByCategory } from '../src/queries.ts';
 import { getBalances, getSyncStatus } from '../src/status.ts';
 import {
+  INCOME_GROUP_BY,
   SPENDING_GROUP_BY,
   SummaryError,
   comparePeriods,
   incomeSource,
   incomeSummary,
   periodInfo,
+  spendingGrid,
   spendingSummary,
 } from '../src/summaries.ts';
 import { insertAccountRow, memoryDb } from './helpers.ts';
@@ -342,5 +344,59 @@ describe('getSyncStatus', () => {
 
     await db.execute('DELETE FROM api_calls');
     expect((await getSyncStatus(db, NOW * 1000)).next_request_at).toBeNull();
+  });
+});
+
+describe('spendingGrid (category × day / month, the analytics screen)', () => {
+  beforeEach(async () => {
+    await tx('black', '2026-02-03', -20_000);
+    await tx('black', '2026-02-20', -5_000, { category: 'кафе и рестораны' });
+    await tx('black', '2026-03-02', -30_000);
+    await tx('black', '2026-03-05', -8_000, { category: 'кафе и рестораны' });
+    await tx('black', '2026-03-05', 2_000, { category: 'кафе и рестораны' }); // a refund
+    await tx('black', '2026-03-06', -1_000, { commission: 100 }); // body 900 + a «комиссии банка» line of 100
+    await tx('usd', '2026-03-06', -100);
+    await tx('black', '2026-03-08', -5_000, { category: 'свои переводы', internal: true });
+  });
+
+  it('months: one cell per currency × month × category; refunds net out; commission is its own category', async () => {
+    const g = await spendingGrid(db, { from: '2026-02-01', to: '2026-03-31', unit: 'month' }, NOW);
+    expect(g.unit).toBe('month');
+    expect(g.cells.map((c) => [c.currency, c.bucket, c.category, c.net])).toEqual([
+      [840, '2026-03', 'продукты', 100],
+      [980, '2026-02', 'кафе и рестораны', 5_000],
+      [980, '2026-02', 'продукты', 20_000],
+      [980, '2026-03', 'кафе и рестораны', 6_000],
+      [980, '2026-03', 'комиссии банка', 100],
+      [980, '2026-03', 'продукты', 30_900],
+    ]);
+    expect(g.cells.find((c) => c.bucket === '2026-03' && c.category === 'кафе и рестораны')).toMatchObject({ gross: 8_000, refunds: 2_000, purchases: 1 });
+  });
+
+  it("days: keys are the zone's dates; per currency the cells add up to spendingSummary by category", async () => {
+    const g = await spendingGrid(db, { from: '2026-03-01', to: '2026-03-31', unit: 'day' }, NOW);
+    expect([...new Set(g.cells.map((c) => c.bucket))].sort()).toEqual(['2026-03-02', '2026-03-05', '2026-03-06']);
+    const s = await spendingSummary(db, { from: '2026-03-01', to: '2026-03-31', groupBy: 'category' }, NOW);
+    for (const t of s.totals) {
+      expect(g.cells.filter((c) => c.currency === t.currency).reduce((n, c) => n + c.net, 0)).toBe(t.net);
+    }
+  });
+
+  it('refuses an unknown unit', async () => {
+    await expect(spendingGrid(db, { from: '2026-03-01', to: '2026-03-31', unit: 'week' as 'day' }, NOW)).rejects.toThrow(SummaryError);
+  });
+});
+
+describe('incomeSummary groupBy day (desktop only)', () => {
+  it('one group per currency and local date', async () => {
+    await tx('black', '2026-03-02', 40_000, { category: 'поступления', mcc: 4829 });
+    await tx('black', '2026-03-02', 10_000, { category: 'поступления', mcc: 4829 });
+    await tx('black', '2026-03-04', 5_000, { category: 'поступления', mcc: 4829 });
+    const s = await incomeSummary(db, { from: '2026-03-01', to: '2026-03-31', groupBy: 'day' }, NOW);
+    expect(s.groups.map((g) => [g.key, g.total, g.lines])).toEqual([['2026-03-02', 50_000, 2], ['2026-03-04', 5_000, 1]]);
+  });
+
+  it('is not offered to the MCP tools', () => {
+    expect(INCOME_GROUP_BY).not.toContain('day');
   });
 });
