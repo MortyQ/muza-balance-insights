@@ -1,5 +1,5 @@
 export { MIN_BAR, SORTS } from './constants.ts';
-export { changeChip, dayMonth, daysChartOption, dayPart, initial, monthIn, monthNo, monthsChartOption, monthsView, nameKey, SOFT_BAR, pct, peopleBars, searchText, shareItems, weekdayShort, weekdaysChartOption, whenTotals, whenView } from './utils.ts';
+export { besidePointer, changeChip, dayMonth, daysChartOption, dayPart, initial, monthIn, monthNo, monthsChartOption, monthsView, nameKey, SOFT_BAR, pct, peopleBars, searchText, shareItems, weekdayShort, weekdaysChartOption, whenTotals, whenView } from './utils.ts';
 export type { BarView, DayPartView, LineRowView, MarkView, Money, MonthsView, PersonRef, PersonView, ShareItemView, SortKey, StatView, SummaryView, WhenLine, WhenView } from './types.ts';
 export { default as DetailSkeleton } from './components/DetailSkeleton.vue';
 export { default as DetailSummary } from './components/DetailSummary.vue';

@@ -15,12 +15,22 @@ let chart: EChartsType | null = null;
 let resize: ResizeObserver | null = null;
 let theme: MutationObserver | null = null;
 
-/** A CSS colour as the browser computes it here (the probe inherits this element's custom properties). */
+// One pixel to turn any CSS colour into rgba: ECharts parses only hex, rgb and hsl — an oklch() fill loses its colour
+// when the hover lightens it. No 2D context only under a test DOM; there the computed colour is kept.
+const pixel = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+
+/** A CSS colour as the browser computes it here (the probe inherits this element's custom properties), as rgba. */
 function cssColor(value: string): string {
   const el = probe.value;
   if (!el) return value;
   el.style.color = value;
-  return getComputedStyle(el).color || value;
+  const computed = getComputedStyle(el).color || value;
+  if (!pixel) return computed;
+  pixel.clearRect(0, 0, 1, 1);
+  pixel.fillStyle = computed;
+  pixel.fillRect(0, 0, 1, 1);
+  const [r = 0, g = 0, b = 0, a = 0] = pixel.getImageData(0, 0, 1, 1).data;
+  return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 1000) / 1000})`;
 }
 
 function draw(): void {

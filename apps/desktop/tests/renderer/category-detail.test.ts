@@ -8,7 +8,7 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
+import { besidePointer, daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
 import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
@@ -127,6 +127,16 @@ describe('category screen helpers', () => {
     expect(when.weekdays.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
     expect(when.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 83.1]);
     expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
+  });
+
+  it('a chart tooltip sits beside the pointer, never under it: right, or left when it does not fit; inside the chart', () => {
+    const size = (w: number, h: number) => ({ contentSize: [w, h] as [number, number], viewSize: [300, 120] as [number, number] });
+    expect(besidePointer([50, 60], size(100, 30))).toEqual([64, 45]);
+    expect(besidePointer([250, 60], size(100, 30))).toEqual([136, 45]);
+    expect(besidePointer([250, 5], size(100, 30))).toEqual([136, 0]);
+    expect(besidePointer([10, 118], size(100, 30))).toEqual([24, 90]);
+    const o = monthsChartOption(monthsView(VIEW, FMT)) as { tooltip: { position: (...a: unknown[]) => [number, number] } };
+    expect(o.tooltip.position([50, 60], null, null, null, size(100, 30))).toEqual([64, 45]);
   });
 
   it('«When» as ECharts options: the weekday peak in the colour; days with spending coloured, the rest a thin line; tooltips', () => {

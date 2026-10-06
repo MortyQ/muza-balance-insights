@@ -50,10 +50,12 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
   `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
   `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option
-  (`var(--x)`, `color-mix(…)`) are resolved against the chart's element (`resolveCssColors`) and again when
+  (`var(--x)`, `color-mix(…)`) are resolved against the chart's element (`resolveCssColors`) to rgba through a
+  one-pixel canvas (ECharts parses only hex / rgb / hsl: an oklch fill lost its colour on hover), and again when
   `data-theme` changes; the font is the element's. Resizes with its box, disposed on unmount, no animation under
   `prefers-reduced-motion`. The canvas is `aria-hidden`: the consumer gives the same data as text. Tooltips use
-  `renderMode: 'richText'` (drawn on the canvas, no HTML). Renderer tests replace ECharts with a recorder
+  `renderMode: 'richText'` (drawn on the canvas, no HTML), placed beside the pointer (`besidePointer` of
+  `entities/operations`): a canvas tooltip catches the pointer, and one under it made the hover blink. Renderer tests replace ECharts with a recorder
   (`tests/renderer/setup-charts.ts`).
 
 All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:

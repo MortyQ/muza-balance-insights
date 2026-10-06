@@ -202,13 +202,28 @@ export function searchText(text: string, comment: string | null, amount: string)
 /** A bar that is not the highlighted one: the colour mixed into the surface. */
 export const SOFT_BAR = 'color-mix(in oklch, var(--cat) 45%, var(--surface))';
 
+/**
+ * Where the tooltip goes: beside the pointer (right, or left when it does not fit), never under it — a canvas tooltip
+ * catches the pointer itself, and one under it would take the hover from the bar and blink.
+ */
+export function besidePointer(point: [number, number], size: { contentSize: [number, number]; viewSize: [number, number] }): [number, number] {
+  const GAP = 14;
+  const [x, y] = point;
+  const [w, h] = size.contentSize;
+  const [vw, vh] = size.viewSize;
+  const left = x + GAP + w > vw ? x - GAP - w : x + GAP;
+  return [left, Math.max(0, Math.min(y - h / 2, vh - h))];
+}
+
 /** The tooltip every chart shows: drawn on the canvas (no HTML), in the card's colours. */
 const TOOLTIP = {
   renderMode: 'richText',
+  position: (point: [number, number], _params: unknown, _dom: unknown, _rect: unknown, size: { contentSize: [number, number]; viewSize: [number, number] }) =>
+    besidePointer(point, size),
   backgroundColor: 'var(--surface-raised)',
   borderColor: 'var(--border-subtle)',
   textStyle: { color: 'var(--foreground)', fontSize: 12 },
-} as const;
+};
 
 /** «Last 12 months» for VChart: the bars' heights (% of the chart), the strong one in the colour, the dashed average. */
 export function monthsChartOption(m: Readonly<MonthsView>): ChartOption {

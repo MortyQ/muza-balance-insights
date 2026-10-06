@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // VChart (shared/ui): one ECharts chart; CSS colours resolved for the canvas, redrawn on a theme change, disposed on
 // unmount. ECharts itself is the recorder of setup-charts.ts.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import { resolveCssColors } from '@/shared/ui/components/charts/resolveCssColors.ts';
@@ -38,5 +38,15 @@ describe('VChart', () => {
 
     w.unmount();
     expect(chart.disposed).toBe(true);
+  });
+
+  it('every CSS colour reaches ECharts as rgba (its parser knows no oklch: the hover would lose the colour)', () => {
+    const ctx = { clearRect: () => undefined, fillRect: () => undefined, fillStyle: '', getImageData: () => ({ data: [10, 20, 30, 128] }) };
+    const spy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    const before = chartCalls.length;
+    const w = mount(VChart, { props: { option: { series: [{ type: 'bar', itemStyle: { color: 'var(--cat)' }, data: [1] }] } } });
+    expect(chartCalls[before]!.options[0]).toMatchObject({ series: [{ itemStyle: { color: 'rgba(10, 20, 30, 0.502)' } }] });
+    w.unmount();
+    spy.mockRestore();
   });
 });
