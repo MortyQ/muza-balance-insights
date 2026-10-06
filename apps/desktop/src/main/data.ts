@@ -14,15 +14,20 @@ import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/format';
 import { toUah, type FxRate } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
-import { incomeSummary, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
+import { incomeSummary, spendingGrid, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
+import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
+import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
+  AnalyticsCategory,
+  AnalyticsOverview,
+  AnalyticsQuery,
   CardTotal,
   CategoryLineView,
   CategoryOverview,
@@ -483,6 +488,90 @@ export class DataService {
       lines,
       rates: today,
       leftOut,
+    };
+  }
+
+  /**
+   * The analytics screen: income and spending of a month (per day) or a range of months (per month), all scopes — the
+   * balances' fold — with the period before, per category, and for one month the usual month's running spending.
+   */
+  async analyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    if (q.to > today.slice(0, 7)) throw new Error('analytics: the range ends after this month');
+    const { dataFrom } = await this.status();
+    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const todayRates = await this.d.rates();
+    const rates = rateMap(todayRates);
+    const sum = (xs: Iterable<number>) => [...xs].reduce((s, x) => s + x, 0);
+
+    const unit = q.from === q.to ? 'day' : 'month';
+    const period = { from: monthBounds(q.from).from, to: monthBounds(q.to).to };
+    const keys = unit === 'day' ? daysOf(q.from) : monthsBetween(q.from, q.to);
+    const grid = await spendingGrid(db, { ...period, ...filters, unit }, now);
+    const cur = foldCells(grid.cells, keys, rates);
+    const inc = foldIncome((await incomeSummary(db, { ...period, ...filters, groupBy: unit }, now)).groups, keys, rates);
+
+    let compare: AnalyticsOverview['compare'] = null;
+    if (unit === 'day') compare = comparePeriod(q.from, grid.period, dataFrom);
+    else {
+      const p = previousRange(q.from, q.to);
+      if (dataFrom !== null && dataFrom <= p.from) compare = { ...p, partial: false };
+    }
+    let prevBy: Map<string, SpendingAmounts> | null = null;
+    let prevTotals: { income: number; spending: number } | null = null;
+    if (compare) {
+      prevBy = foldByCategory(await spendingSummary(db, { ...compare, ...filters, groupBy: 'category' }, now), rates).byCategory;
+      const prevIncome = (await incomeSummary(db, { ...compare, ...filters }, now)).totals.map((t) => toUah(t.total, t.currency, rates) ?? 0);
+      prevTotals = { income: sum(prevIncome), spending: sum([...prevBy.values()].map((a) => a.net)) };
+    }
+
+    const amounts = new Map([...cur.net].map(([k, row]) => [k, { net: sum(row), purchases: cur.purchases.get(k) ?? 0 }]));
+    const ranked = rankedCategories(amounts).map(([k]) => k);
+    const prevOnly = prevBy
+      ? [...prevBy].filter(([k, a]) => a.net > 0 && !amounts.has(k)).sort(([, a], [, b]) => b.net - a.net).map(([k]) => k)
+      : [];
+    const categories: AnalyticsCategory[] = [...ranked, ...prevOnly].map((category) => {
+      const net = cur.net.get(category) ?? keys.map(() => 0);
+      return { category, categoryId: CATEGORY_ID.get(category) ?? null, net, total: sum(net), prev: prevBy ? (prevBy.get(category)?.net ?? 0) : null };
+    });
+    // Every category, a net-negative one too: the balances' «Spent».
+    const spending = keys.map((_, i) => sum([...cur.net.values()].map((row) => row[i]!)));
+
+    let usual: number[] | null = null;
+    if (unit === 'day') {
+      const before = [1, 2, 3].map((n) => addMonths(q.from, -n)).filter((m) => dataFrom !== null && dataFrom <= `${m}-01`);
+      const curves: number[][] = [];
+      for (const m of before) {
+        const days = daysOf(m);
+        const s = await spendingSummary(db, { ...monthBounds(m), ...filters, groupBy: 'day' }, now);
+        const at = new Map(days.map((d, i) => [d, i]));
+        const daily = days.map(() => 0);
+        for (const g of s.groups) {
+          const i = at.get(g.key);
+          const u = toUah(g.net, g.currency, rates);
+          if (i !== undefined && u !== null) daily[i]! += u;
+        }
+        curves.push(runningTotals(daily));
+      }
+      usual = usualCurve(curves, keys.length);
+    }
+
+    return {
+      from: q.from,
+      to: q.to,
+      unit,
+      buckets: keys.map((key) => ({ key, state: bucketState(key, unit, { today, dataFrom }) })),
+      income: inc.values,
+      spending,
+      totals: { income: sum(inc.values), spending: sum(spending), prev: prevTotals },
+      compare,
+      usual,
+      categories,
+      rates: todayRates,
+      leftOut: [...new Set([...cur.leftOut, ...inc.leftOut])].sort((a, b) => a - b),
     };
   }
 
