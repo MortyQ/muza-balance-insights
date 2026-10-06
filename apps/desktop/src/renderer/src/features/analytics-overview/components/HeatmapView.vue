@@ -31,7 +31,7 @@ const SWATCHES = [
           <!-- A real cell (not sr-only itself): an absolutely placed item would take no grid track and shift every row. -->
           <span role="columnheader" class="sticky left-0 z-1 bg-surface"><span class="sr-only">{{ $t('analytics.views.category') }}</span></span>
           <span v-for="c in cols" :key="c.label" role="columnheader" class="pb-1 text-center whitespace-nowrap text-foreground-muted">{{ c.label }}</span>
-          <span role="columnheader" class="pb-1 text-right text-foreground-muted">{{ $t('analytics.views.avg') }}</span>
+          <span role="columnheader" class="sticky right-0 z-1 bg-surface pb-1 pl-2 text-right text-foreground-muted">{{ $t('analytics.views.avg') }}</span>
         </div>
         <div v-for="r in rows" :key="r.key" role="row" class="contents">
           <span role="rowheader" class="sticky left-0 z-1 flex items-center gap-2 bg-surface pr-3 text-sm">
@@ -49,7 +49,7 @@ const SWATCHES = [
           >
             {{ c.text }}
           </span>
-          <span role="cell" class="grid place-items-center justify-end text-foreground-secondary tabular-nums">{{ r.avg }}</span>
+          <span role="cell" class="sticky right-0 z-1 grid place-items-center justify-end bg-surface pl-2 text-foreground-secondary tabular-nums">{{ r.avg }}</span>
         </div>
       </div>
     </div>

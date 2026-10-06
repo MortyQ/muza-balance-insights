@@ -209,10 +209,11 @@ describe('the analytics screen mounted', () => {
     expect(w.findAll('[data-test="change"]')).toHaveLength(5);
     expect(w.find('[role="table"][aria-label="Тепловая карта"]').exists()).toBe(true);
     expect(w.findAll('[role="table"] [role="row"]')).toHaveLength(9);
-    // Every grid item takes a track (an sr-only item is absolutely placed and would shift the rows); names stay pinned.
+    // Every grid item takes a track (an sr-only item is absolutely placed and would shift the rows); names stay pinned left, the average right.
     const heat = w.find('[role="table"][aria-label="Тепловая карта"]');
     expect(heat.findAll('[role="row"] > *').filter((c) => c.classes('sr-only'))).toHaveLength(0);
     expect(heat.findAll('[role="rowheader"]').every((c) => c.classes('sticky'))).toBe(true);
+    expect(heat.findAll('[role="row"] > :last-child').every((c) => c.classes('sticky') && c.classes('right-0'))).toBe(true);
     expect(w.find('.v-sc__item[aria-pressed="true"]').text()).toContain('Тепловая карта');
   });
 
