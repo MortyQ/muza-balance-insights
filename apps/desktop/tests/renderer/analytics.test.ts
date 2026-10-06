@@ -8,7 +8,7 @@ import type { AnalyticsCategory, AnalyticsOverview, AnalyticsQuery } from '@cont
 import type { CategoryId } from '@contract/categories.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import {
-  categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
+  bucketTitle, categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
 } from '@/features/analytics-overview/utils.ts';
 
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
@@ -170,9 +170,13 @@ describe('analytics chart options', () => {
     expect((o.series[1]!.data[0] as [number, number])[1]).toBeCloseTo(12.5);
   });
 
-  it('a small chart: the bars, the peak solid, the dashed mean', () => {
+  it('a small chart: the bars, the peak solid, the dashed mean; a bar\'s tooltip says its month and amount', () => {
     const row = categoryRows(RANGE.categories).find((r) => r.key === 'travel')!;
-    const o = miniOption(RANGE, row) as unknown as { series: Array<{ data: Array<{ itemStyle: { opacity: number } }>; markLine: { data: Array<{ yAxis: number }> } }> };
+    const o = miniOption(RANGE, row, FMT) as unknown as {
+      series: Array<{ data: Array<{ itemStyle: { opacity: number } }>; markLine: { data: Array<{ yAxis: number }> } }>;
+      tooltip: { formatter: (p: { dataIndex: number }) => string };
+    };
+    expect(o.tooltip.formatter({ dataIndex: 8 })).toBe(`${bucketTitle(RANGE.buckets[8]!.key, 'month')}: ${FMT.money(row.net[8]!)}`);
     expect(o.series[0]!.data[8]!.itemStyle.opacity).toBe(1);
     expect(o.series[0]!.data[0]!.itemStyle.opacity).toBe(0.45);
     expect(o.series[0]!.markLine.data[0]!.yAxis).toBe(row.total / 12);
@@ -214,6 +218,7 @@ describe('the analytics screen mounted', () => {
     // Every grid item takes a track (an sr-only item is absolutely placed and would shift the rows); names stay pinned left, the average right.
     const heat = w.find('[role="table"][aria-label="Тепловая карта"]');
     expect(heat.findAll('[role="row"] > *').filter((c) => c.classes('sr-only'))).toHaveLength(0);
+    expect(w.find('[data-test="heat-unit"]').text()).toBe('Суммы в тыс. ₴ за месяц');
     expect(heat.findAll('[role="rowheader"]').every((c) => c.classes('sticky'))).toBe(true);
     expect(heat.findAll('[role="row"] > :last-child').every((c) => c.classes('sticky') && c.classes('right-0'))).toBe(true);
     expect(w.find('.v-sc__item[aria-pressed="true"]').text()).toContain('Тепловая карта');

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { AnalyticsOverview } from '@contract/api.ts';
+import type { MoneyFormat } from '@/entities/currency-display';
 import { VChart } from '@/shared/ui';
 import type { CategoryRow, MiniCard } from '../types.ts';
 import { miniOption } from '../utils.ts';
 
-const { view, rows, cards } = defineProps<{ view: AnalyticsOverview; rows: ReadonlyArray<CategoryRow>; cards: ReadonlyArray<MiniCard> }>();
+const { view, rows, cards, fmt } = defineProps<{ view: AnalyticsOverview; rows: ReadonlyArray<CategoryRow>; cards: ReadonlyArray<MiniCard>; fmt: MoneyFormat }>();
 </script>
 
 <template>
@@ -23,7 +24,7 @@ const { view, rows, cards } = defineProps<{ view: AnalyticsOverview; rows: Reado
       </div>
       <div class="mt-2 text-lg font-bold tabular-nums">{{ c.total }}</div>
       <div class="text-xs text-foreground-muted">{{ c.avg }}</div>
-      <div class="mt-2 h-20" aria-hidden="true"><VChart v-if="rows[i]" :option="miniOption(view, rows[i])" /></div>
+      <div class="mt-2 h-20" aria-hidden="true"><VChart v-if="rows[i]" :option="miniOption(view, rows[i], fmt)" /></div>
     </li>
   </ul>
 </template>

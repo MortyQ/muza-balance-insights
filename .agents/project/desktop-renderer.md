@@ -114,7 +114,8 @@
   row's mean over full columns, `--heat-hot` / `--heat-cold` in `theme.css`, a running column dashed and out of the
   mean), small charts, lines (chips toggle, top 5 by default, hover fades the others, amount / share), compare
   (diverging bars). Rows = every category with spending, by the period's rank (no «Other N»; rank colours for the
-  top 7, `--category-other` past them). Heatmap: names pinned left and «Average» right while the cells scroll; hovering a cell lights its row and column and fades the rest. `utils.ts` is pure and tested
+  top 7, `--category-other` past them). Heatmap: names pinned left and «Average» right while the cells scroll; hovering a cell lights its row and column and fades the rest. The heatmap says its unit next to the legend (thousands of the shown
+  currency per month, or per week); a small chart's bar has a tooltip with its bucket and amount. `utils.ts` is pure and tested
   (`tests/renderer/analytics.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides

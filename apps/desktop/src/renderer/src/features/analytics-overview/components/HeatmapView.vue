@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import type { Column, HeatRow } from '../types.ts';
 
-const { rows, cols } = defineProps<{ rows: ReadonlyArray<HeatRow>; cols: ReadonlyArray<Column> }>();
+const { rows, cols, unit } = defineProps<{ rows: ReadonlyArray<HeatRow>; cols: ReadonlyArray<Column>; unit: string }>();
 const SWATCHES = [
   'color-mix(in oklch, var(--heat-cold) 60%, var(--surface))',
   'color-mix(in oklch, var(--heat-cold) 25%, var(--surface))',
@@ -19,12 +19,15 @@ const faded = (i: number, j: number): boolean => at.value !== null && !lit(i, j)
 
 <template>
   <div class="flex flex-col gap-3">
-    <div class="flex items-center gap-2 text-xs text-foreground-secondary" aria-hidden="true">
-      <span>{{ $t('analytics.views.less') }}</span>
-      <span class="flex gap-0.5">
-        <span v-for="s in SWATCHES" :key="s" class="h-3 w-5 rounded-sm bg-(--swatch)" :style="{ '--swatch': s }" />
-      </span>
-      <span>{{ $t('analytics.views.more') }}</span>
+    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-xs text-foreground-secondary">
+      <div class="flex items-center gap-2" aria-hidden="true">
+        <span>{{ $t('analytics.views.less') }}</span>
+        <span class="flex gap-0.5">
+          <span v-for="s in SWATCHES" :key="s" class="h-3 w-5 rounded-sm bg-(--swatch)" :style="{ '--swatch': s }" />
+        </span>
+        <span>{{ $t('analytics.views.more') }}</span>
+      </div>
+      <span data-test="heat-unit" class="font-medium">{{ unit }}</span>
     </div>
     <div class="overflow-x-auto">
       <div

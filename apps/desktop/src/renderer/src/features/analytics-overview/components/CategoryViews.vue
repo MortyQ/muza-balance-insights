@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { AnalyticsOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { t } from '@/shared/lib';
+import { currencySymbol, t } from '@/shared/lib';
 import { VSegmentedControl } from '@/shared/ui';
 import { VIEW_ICON, VIEW_IDS } from '../constants.ts';
 import type { CategoryRow, LinesMode, ViewId } from '../types.ts';
@@ -24,12 +24,15 @@ const NAMES: Readonly<Record<ViewId, 'analytics.views.heat' | 'analytics.views.s
   lines: 'analytics.views.lines',
   compare: 'analytics.views.compare',
 };
-const HINTS: Readonly<Record<ViewId, 'analytics.views.heatHint' | 'analytics.views.smallHint' | 'analytics.views.linesHint' | 'analytics.views.compareHint'>> = {
-  heat: 'analytics.views.heatHint',
-  small: 'analytics.views.smallHint',
-  lines: 'analytics.views.linesHint',
-  compare: 'analytics.views.compareHint',
-};
+const hint = computed(() => {
+  if (current.value === 'heat') return t('analytics.views.heatHint');
+  if (current.value === 'small') return t(view.unit === 'day' ? 'analytics.views.smallHintDay' : 'analytics.views.smallHintMonth');
+  return t(current.value === 'lines' ? 'analytics.views.linesHint' : 'analytics.views.compareHint');
+});
+// What the heatmap's numbers are: thousands of the shown currency per column (a month, or a week of one month).
+const heatUnit = computed(() =>
+  t(view.unit === 'day' ? 'analytics.views.heatUnitWeek' : 'analytics.views.heatUnitMonth', { currency: currencySymbol(fmt.currency) }),
+);
 const options = computed(() => VIEW_IDS.map((id) => ({ value: id, label: t(NAMES[id]), icon: VIEW_ICON[id] })));
 const heat = computed(() => (current.value === 'heat' ? heatRows(rows, columns(view), fmt) : []));
 const cols = computed(() => columns(view));
@@ -42,12 +45,12 @@ const compare = computed(() => (current.value === 'compare' ? compareRows(view, 
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="min-w-0">
         <h2 class="text-base font-bold">{{ $t('analytics.views.title') }}</h2>
-        <p class="text-sm text-foreground-muted">{{ $t(HINTS[current]) }}</p>
+        <p class="text-sm text-foreground-muted">{{ hint }}</p>
       </div>
       <VSegmentedControl v-model="current" :options size="md" />
     </div>
-    <HeatmapView v-if="current === 'heat'" :rows="heat" :cols />
-    <SmallChartsView v-else-if="current === 'small'" :view :rows :cards />
+    <HeatmapView v-if="current === 'heat'" :rows="heat" :cols :unit="heatUnit" />
+    <SmallChartsView v-else-if="current === 'small'" :view :rows :cards :fmt />
     <LinesView
       v-else-if="current === 'lines'"
       v-model:hover="hover"

@@ -392,7 +392,7 @@ export function linesOption(
 }
 
 /** A small chart: the row's bars, the peak solid, the dashed average over the shown buckets. */
-export function miniOption(v: Readonly<AnalyticsOverview>, row: Readonly<CategoryRow>): ChartOption {
+export function miniOption(v: Readonly<AnalyticsOverview>, row: Readonly<CategoryRow>, fmt: MoneyFormat): ChartOption {
   const shown = v.buckets.map((b) => b.state !== 'none');
   const peak = row.net.indexOf(Math.max(...row.net));
   const n = shown.filter(Boolean).length || 1;
@@ -400,11 +400,15 @@ export function miniOption(v: Readonly<AnalyticsOverview>, row: Readonly<Categor
     grid: { left: 0, right: 0, top: 4, bottom: 0 },
     xAxis: { type: 'category', show: false, data: v.buckets.map((b) => b.key) },
     yAxis: { type: 'value', show: false },
+    tooltip: {
+      ...CHART_TOOLTIP,
+      trigger: 'item',
+      formatter: (p: { dataIndex: number }) => `${bucketTitle(v.buckets[p.dataIndex]?.key ?? '', v.unit)}: ${fmt.money(row.net[p.dataIndex] ?? 0)}`,
+    },
     series: [
       {
         type: 'bar',
         barWidth: '60%',
-        silent: true,
         data: row.net.map((y, i) => ({ value: shown[i] ? y : null, itemStyle: { color: row.color, opacity: i === peak ? 1 : 0.45, borderRadius: [2, 2, 0, 0] } })),
         markLine: {
           silent: true,

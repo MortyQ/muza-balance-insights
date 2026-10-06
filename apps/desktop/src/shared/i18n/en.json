@@ -35,8 +35,7 @@
       "small": "Small charts",
       "lines": "Lines",
       "compare": "Compare",
-      "heatHint": "Colour — how far above or below the category's usual. Amounts in thousands.",
-      "smallHint": "Each category has its own scale. Dashed — the average, the dark bar — the largest.",
+      "heatHint": "Colour — how far above or below the category's usual. Hover a cell to see the exact amount.",
       "linesHint": "Click a category to show or hide its line.",
       "compareHint": "Right — spent more, left — less.",
       "less": "below usual",
@@ -54,7 +53,11 @@
       "wasNow": "Was → now",
       "perMonth": "{amount} a month",
       "perDay": "{amount} a day",
-      "noCompare": "Not enough history to compare: download older data in the settings."
+      "noCompare": "Not enough history to compare: download older data in the settings.",
+      "heatUnitMonth": "Amounts in thousands of {currency} per month",
+      "heatUnitWeek": "Amounts in thousands of {currency} per week",
+      "smallHintMonth": "A bar is the month's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount.",
+      "smallHintDay": "A bar is the day's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount."
     },
     "leftOut": "No rate for today, left out: {currencies}",
     "failed": "Could not load the analytics.",
