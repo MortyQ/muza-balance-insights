@@ -3,10 +3,9 @@ import { toRef } from 'vue';
 import { RouterLink } from 'vue-router';
 import type { Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
-import { DetailSkeleton, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { ROUTE } from '@/shared/config';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
-import CategorySummary from './components/CategorySummary.vue';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
@@ -32,7 +31,7 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
     <DetailSkeleton v-if="!view && state.status === 'loading'" />
     <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
-        <CategorySummary :summary />
+        <DetailSummary :summary :label="$t('category.summary.spent')" />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>

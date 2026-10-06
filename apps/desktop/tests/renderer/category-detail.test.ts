@@ -63,7 +63,7 @@ describe('category screen helpers', () => {
     expect(s).toMatchObject({ name: 'Такси и транспорт', icon: 'lucide:bus', color: 'var(--category-4)', subtitle: 'Сентябрь 2026 · Вся семья · Личное', amount: uah(141_000) });
     expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: 'на 41% больше, чем в августе' });
     expect(s.prev).toBe(`в августе было ${uah(100_000)}`);
-    expect(s.gross).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
+    expect(s.note).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
     expect(s.stats.map((x) => [x.label, x.value])).toEqual([
       ['Операций', '4'],
       ['Средний чек', uah(41_000)],

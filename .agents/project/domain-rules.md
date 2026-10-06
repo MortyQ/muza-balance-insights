@@ -121,5 +121,8 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
+- `incomeLines` (`packages/core/src/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
+  from the same query (`incomeRowsSql`), with source and the «Від: …» sender's name; carries the bank's text, never for
+  an MCP tool or the anonymised copy.
 - Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
   (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.

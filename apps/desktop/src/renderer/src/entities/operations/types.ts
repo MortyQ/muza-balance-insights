@@ -1,3 +1,4 @@
+import type { ChangeChipModel } from '@/shared/ui';
 import type { SORTS } from './constants.ts';
 
 export type SortKey = (typeof SORTS)[number];
@@ -95,4 +96,27 @@ export interface PersonRef {
 /** How an amount is written: the home-wide currency choice (MoneyFormat of entities/currency-display fits). */
 export interface Money {
   money(kopecks: number): string;
+}
+
+/** One figure of the summary grid: its label, value and the small line under it ('' — none). */
+export interface StatView {
+  label: string;
+  value: string;
+  note: string;
+  tone?: 'good';
+}
+
+export interface SummaryView {
+  name: string;
+  icon: string;
+  color: string;
+  subtitle: string;
+  amount: string;
+  conv: string;
+  chip: ChangeChipModel | null;
+  /** «in August — 3 920 ₴»; '' — no comparison. */
+  prev: string;
+  /** A small line under the figure (charged and refunded); '' — none. */
+  note: string;
+  stats: StatView[];
 }

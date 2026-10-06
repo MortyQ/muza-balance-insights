@@ -1,4 +1,5 @@
 import { change, monthName, monthShortName, t } from '@/shared/lib';
+import type { ChangeChipModel } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
 import type { BarView, DayPartView, Money, MonthsView, PersonRef, PersonView, ShareItemView, WhenLine, WhenView } from './types.ts';
 
@@ -22,6 +23,20 @@ const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.m
 export const nameKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
 
 export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
+
+/** The change against the compared period, the spending block's words (`home.spending.change.*`). */
+export function changeChip(value: number, prev: number | null, compare: Readonly<{ from: string; partial: boolean }> | null): ChangeChipModel | null {
+  const c = change(value, prev);
+  if (!c || !compare) return null;
+  const month = monthIn(compare.from);
+  if (c.kind === 'new') return { text: t('home.spending.change.new'), tone: 'neutral', arrow: null, sr: '' };
+  if (c.kind === 'same') return { text: t('home.spending.change.same', { month }), tone: 'neutral', arrow: null, sr: '' };
+  const up = c.kind === 'up';
+  const key = up
+    ? (compare.partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
+    : (compare.partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
+  return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
+}
 
 /**
  * The 12 months: bars on one scale, the average of the finished months with data (the running one, `thisMonth`, is

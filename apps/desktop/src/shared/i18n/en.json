@@ -486,6 +486,49 @@
       "whole": "Whole family"
     }
   },
+  "income": {
+    "back": "Balance",
+    "failed": "Couldn't load the income.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency. Refunds for purchases and transfers between your own accounts are not counted here.",
+    "from": {
+      "more": "{n} more sender | {n} more senders | {n} more senders",
+      "title": "From"
+    },
+    "list": {
+      "from": "From",
+      "search": "Search: sender, comment, amount"
+    },
+    "none": "No income in {month}.",
+    "open": "Open income",
+    "sources": {
+      "source": {
+        "family": "From family",
+        "named_sender": "From people and clients",
+        "other": "Other",
+        "other_bank": "From other banks",
+        "transfer": "Transfers"
+      },
+      "title": "Where from"
+    },
+    "summary": {
+      "activeDays": "days with income: {n} of {days}",
+      "avg": "Average payment",
+      "largest": "Largest",
+      "largestWhere": "{sender}, {date} at {time}",
+      "lines": "Payments in",
+      "linesPrev": "{n} in {month}",
+      "median": "median {amount}",
+      "perDay": "Per day",
+      "received": "Received this month",
+      "spent": "Spent",
+      "spentShare": "{pct}% of the income",
+      "vsPrev": "{amount} in {month}"
+    },
+    "title": "Income",
+    "who": {
+      "title": "Who received"
+    }
+  },
   "integrations": {
     "accounts": {
       "button": "Accounts · {count}",

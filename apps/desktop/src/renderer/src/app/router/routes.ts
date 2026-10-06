@@ -25,6 +25,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { navParent: ROUTE.home },
     beforeEnter: (to) => (isCategoryId(to.params.id) ? true : { name: ROUTE.home }),
   },
+  {
+    // Opened from «Income» of the balances' month panel.
+    path: '/income',
+    name: ROUTE.income,
+    component: () => import('@/pages/income').then((m) => m.IncomePage),
+    meta: { navParent: ROUTE.home },
+  },
   { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage), meta: { layout: 'empty' } },
   { path: '/settings', name: ROUTE.settings, component: () => import('@/pages/settings').then((m) => m.SettingsPage), meta: { layout: 'empty' } },
   {

@@ -3,33 +3,17 @@ import { accountName } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import {
-  dayMonth, monthIn, monthNo, monthsView as monthBars, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
-  type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type WhenView,
+  changeChip, dayMonth, monthIn, monthNo, monthsView as monthBars, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
+  type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
 } from '@/entities/operations';
-import { change, formatMoney, monthName, t } from '@/shared/lib';
-import type { ChangeChipModel } from '@/shared/ui';
+import { formatMoney, monthName, t } from '@/shared/lib';
 import { TOP_MERCHANTS } from './constants.ts';
-import type { StatView, SummaryView } from './types.ts';
 
 /** Spending of a line, positive (a refund is negative); null — no rate. */
 const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah);
 
 /** Merchants match regardless of case and spaces (as main groups them). */
 export const merchantKey = nameKey;
-
-/** The change against the compared period, the spending block's words (`home.spending.change.*`). */
-export function summaryChip(net: number, prev: number | null, compare: CategoryOverview['compare']): ChangeChipModel | null {
-  const c = change(net, prev);
-  if (!c || !compare) return null;
-  const month = monthIn(compare.from);
-  if (c.kind === 'new') return { text: t('home.spending.change.new'), tone: 'neutral', arrow: null, sr: '' };
-  if (c.kind === 'same') return { text: t('home.spending.change.same', { month }), tone: 'neutral', arrow: null, sr: '' };
-  const up = c.kind === 'up';
-  const key = up
-    ? (compare.partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
-    : (compare.partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
-  return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
-}
 
 /** The header and the figures of the month. `who` — «Whole family» or a person ('' — the only one). */
 export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: string, fmt: MoneyFormat): SummaryView {
@@ -71,9 +55,9 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     subtitle: [`${monthName(monthNo(v.month))} ${v.month.slice(0, 4)}`, who, scope].filter(Boolean).join(' · '),
     amount: fmt.money(s.net),
     conv: fmt.approxInline(s.net),
-    chip: summaryChip(s.net, s.prev?.net ?? null, v.compare),
+    chip: changeChip(s.net, s.prev?.net ?? null, v.compare),
     prev: s.prev ? t('category.summary.vsPrev', { month: prevMonth, amount: fmt.money(s.prev.net) }) : '',
-    gross: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
+    note: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
     stats,
   };
 }
