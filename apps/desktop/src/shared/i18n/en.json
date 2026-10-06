@@ -132,6 +132,17 @@
       "5": "Fri",
       "6": "Sat",
       "7": "Sun"
+    },
+    "monthRangePicker": {
+      "label": "Period",
+      "one": "One month",
+      "range": "Range",
+      "quick": "Quick picks",
+      "hintOne": "Pick a month",
+      "hintRange": "Pick the first and the last month",
+      "months": "{n} month | {n} months | {n} months",
+      "cancel": "Cancel",
+      "apply": "Show"
     }
   },
   "entities": {
