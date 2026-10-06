@@ -557,6 +557,7 @@ describe('DataService.nowOverview', () => {
     await account('uah', 'black', 980, 0);
     await account('usd', 'black', 840, 0);
     await account('fop', 'fop', 980, 0);
+    await account('jar1', null, 980, 0);
     for (const id of ['uah', 'usd', 'fop']) await synced(id);
     // 1 000 every day 02-08 … 03-09: the usual day.
     for (let i = 0; i < 30; i++) await tx('uah', shiftDate('2026-02-08', i), -1_000, 'продукты');
@@ -818,6 +819,102 @@ describe('DataService.categoryOverview (the category screen)', () => {
     expect(v.lines.find((l) => l.key === `t${seq}`)?.merchant).toBe('Taxi to •• 1234 via •••');
     await tx('uah', '2026-03-04', -100, TAXI);
     const json = JSON.stringify(await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' }));
+    expect(json).toContain(CANARIES[1]);
+    for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+    expect(json).not.toMatch(/\*{4}|UA\d{2}/);
+  });
+});
+
+describe('DataService.incomeOverview (the income screen)', () => {
+  const IN = 'поступления';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('fop', 'fop', 980, 0);
+    await account('jar1', null, 980, 0);
+    for (const id of ['uah', 'usd', 'fop']) await synced(id);
+    await tx('uah', '2026-02-05', 30_000, IN, { mcc: 4829, description: 'Від: Vigadana Osoba' });
+    await tx('uah', '2026-03-02', 40_000, IN, { mcc: 4829, description: 'Від: Vigadana Osoba' }); // a Monday
+    await tx('uah', '2026-03-04', 10_000, IN, { mcc: 4829, description: 'Від:  VIGADANA osoba' });
+    await tx('usd', '2026-03-06', 100, IN, { mcc: 4829, description: 'Imaginary Client' }); // 1 $ = 40 ₴
+    await tx('fop', '2026-03-07', 50_000, IN, { mcc: 6012, scope: 'business', description: 'Vigadanyi Bank' });
+    await tx('uah', '2026-03-08', 5_000, IN, { mcc: 4829, rule: 'pair' }); // an own transfer: not income
+    await tx('uah', '2026-03-09', 2_000, 'кафе и рестораны', { mcc: 4829 }); // a refund: not income
+    await tx('uah', '2026-03-09', -20_000, 'продукты', { description: 'Vigadanyi Market' });
+  });
+
+  it('the figure is the balances\' «Income», all scopes; the lines sum to it; last month, 12 months, the spending', async () => {
+    const v = await svc.incomeOverview({ month: '2026-03' });
+    const month = await svc.monthOverview({ month: '2026-03' });
+    expect(v.summary.total).toBe(month.total.income);
+    expect(v.summary).toMatchObject({ total: 40_000 + 10_000 + 4_000 + 50_000, lines: 4, prev: { total: 30_000, lines: 1 }, activeDays: 4, largest: 't5' });
+    expect(v.summary.spending).toBe(month.total.spending);
+    expect(v.lines.reduce((s, l) => s + (l.uah ?? 0), 0)).toBe(v.summary.total);
+    expect(v.summary.median).toBe(25_000);
+    expect(v.months.at(-1)).toEqual({ month: '2026-03', total: 104_000 });
+    expect(v.months.at(-2)).toEqual({ month: '2026-02', total: 30_000 });
+    expect(v.months[0]).toEqual({ month: '2025-04', total: null });
+    expect(v.thisMonth).toBe('2026-03');
+    expect(v.leftOut).toEqual([]);
+  });
+
+  it('lines: newest first, source, sender, local date and weekday; senders case-insensitively; sources; one person — no people', async () => {
+    const v = await svc.incomeOverview({ month: '2026-03' });
+    expect(v.lines.map((l) => [l.key, l.date, l.weekday, l.uah, l.source, l.sender])).toEqual([
+      ['t5', '2026-03-07', 6, 50_000, 'other_bank', 'Vigadanyi Bank'],
+      ['t4', '2026-03-06', 5, 4_000, 'transfer', 'Imaginary Client'],
+      ['t3', '2026-03-04', 3, 10_000, 'named_sender', 'VIGADANA osoba'],
+      ['t2', '2026-03-02', 1, 40_000, 'named_sender', 'Vigadana Osoba'],
+    ]);
+    expect(v.lines[1]).toMatchObject({ currency: 840, amount: 100, account: { kind: 'card', type: 'white', currency: 840 }, time: '01:00' });
+    // A tie of spellings → the newest one names the sender; a tie of totals → by name.
+    expect(v.senders).toEqual([
+      { name: 'VIGADANA osoba', total: 50_000, lines: 2 },
+      { name: 'Vigadanyi Bank', total: 50_000, lines: 1 },
+      { name: 'Imaginary Client', total: 4_000, lines: 1 },
+    ]);
+    expect(v.sources).toEqual([
+      { source: 'named_sender', total: 50_000, lines: 2 },
+      { source: 'other_bank', total: 50_000, lines: 1 },
+      { source: 'transfer', total: 4_000, lines: 1 },
+    ]);
+    expect(v.people).toEqual([]);
+  });
+
+  it('the family: each person\'s part; a family transfer is income of the receiver only in their own view', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
+    await tx('hers', '2026-03-03', 7_000, IN, { mcc: 4829, description: 'Imaginary Salary' });
+    await tx('uah', '2026-03-05', -15_000, 'семье', { family: true });
+    await tx('hers', '2026-03-05', 15_000, IN, { family: true, mcc: 4829 });
+
+    const family = await svc.incomeOverview({ month: '2026-03' });
+    expect(family.people).toEqual([{ participantId: me, total: 104_000, lines: 4 }, { participantId: her, total: 7_000, lines: 1 }]);
+    const hers = await svc.incomeOverview({ month: '2026-03', participantId: her });
+    expect(hers.summary.total).toBe(22_000);
+    expect(hers.lines.find((l) => l.source === 'family')?.uah).toBe(15_000);
+    expect(hers.people).toEqual([]);
+  });
+
+  it('a currency the bank does not quote stays out of the sums, listed in leftOut', async () => {
+    await account('pln', 'white', 985, 0);
+    await synced('pln');
+    await tx('pln', '2026-03-03', 3_000, IN, { mcc: 4829 });
+    const v = await svc.incomeOverview({ month: '2026-03' });
+    expect(v.leftOut).toEqual([{ currency: 985, total: 3_000 }]);
+    expect(v.summary.total).toBe(104_000);
+    expect(v.lines.find((l) => l.currency === 985)?.uah).toBeNull();
+  });
+
+  it('the description and comment reach the renderer — never a name, card number, IBAN or jar title', async () => {
+    await tx('uah', '2026-03-03', 700, IN, { mcc: 4829, description: 'From 537541******1234 to CANARY-JAR Dream' });
+    const v = await svc.incomeOverview({ month: '2026-03' });
+    expect(v.lines.find((l) => l.key === `t${seq}`)?.sender).toBe('From •• 1234 to •••');
+    await tx('uah', '2026-03-04', 100, IN, { mcc: 4829 });
+    const json = JSON.stringify(await svc.incomeOverview({ month: '2026-03' }));
     expect(json).toContain(CANARIES[1]);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);

@@ -57,6 +57,7 @@ export const ARG_SCHEMAS = {
   getCategoryOverview: z.tuple([
     z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
   ]),
+  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

@@ -1,7 +1,7 @@
 // Pure helpers of the category screen in main (src/main/category.ts). Fictional data only.
 import { describe, expect, it } from 'vitest';
-import { last12Months, lineStats, merchantKey, merchantText, monthsWindow } from '../src/main/category.ts';
-import type { CategoryLineView } from '../src/shared/api.ts';
+import { incomeStats, last12Months, lineStats, merchantKey, merchantText, monthsWindow } from '../src/main/category.ts';
+import type { CategoryLineView, IncomeLineView } from '../src/shared/api.ts';
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
   key: 'k', date: '2026-03-02', time: '12:00', weekday: 1, merchant: 'Vigadane Taxi', comment: null, participantId: 1,
@@ -37,6 +37,32 @@ describe('lineStats', () => {
   });
   it('no people asked → none; no spending → no median or largest', () => {
     expect(lineStats([], null)).toMatchObject({ people: [], median: null, largest: null, activeDays: 0 });
+  });
+});
+
+describe('incomeStats', () => {
+  const income = (o: Partial<IncomeLineView>): IncomeLineView => ({
+    key: 'k', date: '2026-03-02', time: '10:00', weekday: 1, sender: 'Vigadana Osoba', comment: null, source: 'named_sender', participantId: 1,
+    account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: 10_000, currency: 980, amount: 10_000, operation: null,
+    hold: false, pending: false, ...o,
+  });
+  it('a line without a rate counts nowhere; senders case-insensitively, sources, people, median, the largest line', () => {
+    const s = incomeStats(
+      [
+        income({ key: 'a', uah: 30_000 }),
+        income({ key: 'b', sender: 'VIGADANA  osoba', uah: 2_000, date: '2026-03-05' }),
+        income({ key: 'c', uah: null, currency: 985, amount: 100 }),
+        income({ key: 'd', sender: 'Vigadanyi Bank', source: 'other_bank', uah: 6_000, participantId: 2 }),
+      ],
+      [1, 2],
+    );
+    expect(s.senders).toEqual([{ name: 'Vigadana Osoba', total: 32_000, lines: 2 }, { name: 'Vigadanyi Bank', total: 6_000, lines: 1 }]);
+    expect(s.sources).toEqual([{ source: 'named_sender', total: 32_000, lines: 2 }, { source: 'other_bank', total: 6_000, lines: 1 }]);
+    expect(s.people).toEqual([{ participantId: 1, total: 32_000, lines: 2 }, { participantId: 2, total: 6_000, lines: 1 }]);
+    expect(s).toMatchObject({ median: 6_000, activeDays: 2, largest: 'a' });
+  });
+  it('no people asked → none; no lines → no median or largest', () => {
+    expect(incomeStats([], null)).toEqual({ people: [], sources: [], senders: [], median: null, activeDays: 0, largest: null });
   });
 });
 
