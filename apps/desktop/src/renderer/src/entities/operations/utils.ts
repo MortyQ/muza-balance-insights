@@ -216,7 +216,7 @@ export function besidePointer(point: [number, number], size: { contentSize: [num
 }
 
 /** The tooltip every chart shows: drawn on the canvas (no HTML), in the card's colours. */
-const TOOLTIP = {
+export const CHART_TOOLTIP = {
   renderMode: 'richText',
   position: (point: [number, number], _params: unknown, _dom: unknown, _rect: unknown, size: { contentSize: [number, number]; viewSize: [number, number] }) =>
     besidePointer(point, size),
@@ -243,7 +243,7 @@ export function monthsChartOption(m: Readonly<MonthsView>): ChartOption {
       },
     },
     yAxis: { type: 'value', min: 0, max: 100, show: false },
-    tooltip: { ...TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => m.bars[p.dataIndex]?.title ?? '' },
+    tooltip: { ...CHART_TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => m.bars[p.dataIndex]?.title ?? '' },
     series: [
       {
         type: 'bar',
@@ -286,7 +286,7 @@ function barsOption(bars: ReadonlyArray<BarView>, o: { color: (b: BarView) => st
       axisLabel: { show: o.bottom > 0, interval: (i: number) => o.label(i), fontSize: 11, color: 'var(--foreground-secondary)', hideOverlap: false },
     },
     yAxis: { type: 'value', min: 0, max: 100, show: false },
-    tooltip: { ...TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => bars[p.dataIndex]?.title ?? '' },
+    tooltip: { ...CHART_TOOLTIP, trigger: 'item', formatter: (p: { dataIndex: number }) => bars[p.dataIndex]?.title ?? '' },
     series: [
       {
         type: 'bar',
