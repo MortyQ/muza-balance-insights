@@ -1,9 +1,5 @@
 {
   "analytics": {
-    "placeholder": {
-      "text": "Charts and comparisons of your spending and income over the months will live here.",
-      "title": "Analytics is coming soon"
-    },
     "kpi": {
       "income": "Income",
       "spending": "Spending",
@@ -25,7 +21,7 @@
     },
     "changes": {
       "title": "What changed",
-      "vs": "Against {period}",
+      "vs": "Compared with {period}",
       "peak": "peak — {when}",
       "none": "Nothing changed much",
       "noCompare": "Not enough history to compare",

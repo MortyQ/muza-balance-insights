@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 // The analytics screen (features/analytics-overview): pure view builders, chart options, then the screen mounted.
 // Fictional fixtures only. Typechecked with the renderer (tsconfig.web.json).
-import { describe, expect, it } from 'vitest';
-import type { AnalyticsCategory, AnalyticsOverview } from '@contract/api.ts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
+import type { AnalyticsCategory, AnalyticsOverview, AnalyticsQuery } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import {
-  categoryRows, changesView, columns, compareRows, flowChartOption, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
+  categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
 } from '@/features/analytics-overview/utils.ts';
 
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
@@ -17,7 +19,7 @@ const cat = (id: CategoryId, net: number[], prev: number): AnalyticsCategory => 
   category: id, categoryId: id, net: net.map(k), total: k(net.reduce((s, x) => s + x, 0)), prev: k(prev),
 });
 
-export const RANGE: AnalyticsOverview = {
+const RANGE: AnalyticsOverview = {
   from: '2025-10', to: '2026-09', unit: 'month',
   buckets: MONTHS.map((key) => ({ key, state: 'full' as const })),
   income: [82, 84, 118, 80, 82, 85, 86, 88, 90, 92, 90, 95].map(k),
@@ -41,7 +43,7 @@ export const RANGE: AnalyticsOverview = {
 };
 
 const SEPTEMBER = Array.from({ length: 30 }, (_, i) => `2026-09-${String(i + 1).padStart(2, '0')}`);
-export const MONTH_VIEW: AnalyticsOverview = {
+const MONTH_VIEW: AnalyticsOverview = {
   ...RANGE,
   from: '2026-09', to: '2026-09', unit: 'day',
   buckets: SEPTEMBER.map((key, i) => ({ key, state: i < 20 ? ('full' as const) : i === 20 ? ('running' as const) : ('none' as const) })),
@@ -106,6 +108,11 @@ describe('analytics view builders', () => {
     expect(changesView(MONTH_VIEW, FMT)[0]!.why).toBe('пик — 1 сен');
   });
 
+  it('the comparison period in words', () => {
+    expect(comparedText(RANGE.compare!)).toBe('окт 2024 – сен 2025');
+    expect(comparedText(MONTH_VIEW.compare!)).toBe('август 2026');
+  });
+
   it('compare: every category, sorted by the change, bars from the centre', () => {
     const v = compareRows(RANGE, FMT);
     expect(v).toHaveLength(9);
@@ -168,5 +175,79 @@ describe('analytics chart options', () => {
     expect(o.series[0]!.data[8]!.itemStyle.opacity).toBe(1);
     expect(o.series[0]!.data[0]!.itemStyle.opacity).toBe(0.45);
     expect(o.series[0]!.markLine.data[0]!.yAxis).toBe(row.total / 12);
+  });
+});
+
+let answer: AnalyticsOverview = RANGE;
+const getAnalyticsOverview = vi.fn(async (_q: AnalyticsQuery) => answer);
+vi.mock('@/shared/api', () => ({ balanceApi: { getAnalyticsOverview: (...a: unknown[]) => getAnalyticsOverview(...(a as [AnalyticsQuery])) } }));
+
+describe('the analytics screen mounted', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    getAnalyticsOverview.mockClear();
+    answer = RANGE;
+    localStorage.clear();
+  });
+
+  async function mountScreen() {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { AnalyticsFeature } = await import('@/features/analytics-overview');
+    const w = mount(AnalyticsFeature, { global: { plugins: [i18n] } });
+    await flushPromises();
+    return w;
+  }
+  const segment = (w: Awaited<ReturnType<typeof mountScreen>>, text: string) => w.findAll('.v-sc__item').find((b) => b.text().includes(text))!;
+
+  it('asks for the period store\'s range; shows the KPIs, the chart, what changed and the heatmap by default', async () => {
+    const { useRangeStore } = await import('@/entities/period');
+    const w = await mountScreen();
+    const { from, to } = useRangeStore().range;
+    expect(getAnalyticsOverview.mock.calls[0]?.[0]).toEqual({ from, to });
+    expect(w.findAll('[data-test="kpi"]')).toHaveLength(4);
+    for (const s of ['Доход и расходы', 'Что изменилось', 'Для сравнения: окт 2024 – сен 2025', 'Категории']) expect(w.text()).toContain(s);
+    expect(w.findAll('[data-test="change"]')).toHaveLength(5);
+    expect(w.find('[role="table"][aria-label="Тепловая карта"]').exists()).toBe(true);
+    expect(w.findAll('[role="table"] [role="row"]')).toHaveLength(9);
+    expect(w.find('.v-sc__item[aria-pressed="true"]').text()).toContain('Тепловая карта');
+  });
+
+  it('the segmented control switches the views; a «What changed» row opens «Lines» with that category alone', async () => {
+    const w = await mountScreen();
+    await segment(w, 'Мини-графики').trigger('click');
+    expect(w.findAll('[data-test="mini"]')).toHaveLength(8);
+    await segment(w, 'Сравнение').trigger('click');
+    expect(w.find('[role="table"][aria-label="Сравнение"]').exists()).toBe(true);
+    await w.findAll('[data-test="change"]')[0]!.trigger('click');
+    expect(w.find('.v-sc__item[aria-pressed="true"]').text()).toContain('Линии');
+    const pressed = w.findAll('[data-test="line-chip"][aria-pressed="true"]');
+    expect(pressed.map((c) => c.text())).toEqual([expect.stringContaining('Путешествия')]);
+  });
+
+  it('lines: the top 5 on by default; a chip toggles its line; «All» turns every row on', async () => {
+    const w = await mountScreen();
+    await segment(w, 'Линии').trigger('click');
+    const chips = () => w.findAll('[data-test="line-chip"]');
+    expect(chips().filter((c) => c.attributes('aria-pressed') === 'true')).toHaveLength(5);
+    await chips()[0]!.trigger('click');
+    expect(chips()[0]!.attributes('aria-pressed')).toBe('false');
+    await w.findAll('button').find((b) => b.text() === 'Все')!.trigger('click');
+    expect(chips().every((c) => c.attributes('aria-pressed') === 'true')).toBe(true);
+  });
+
+  it('one month: the running-totals subtitle; the heatmap columns are weeks', async () => {
+    answer = MONTH_VIEW;
+    const w = await mountScreen();
+    expect(w.text()).toContain('Нарастающим итогом с 1-го числа');
+    expect(w.findAll('[role="columnheader"]').map((c) => c.text())).toContain('1–6');
+  });
+
+  it('a failure and an empty period have their texts', async () => {
+    getAnalyticsOverview.mockRejectedValueOnce(new Error('x'));
+    expect((await mountScreen()).text()).toContain('Не удалось загрузить аналитику');
+    answer = { ...RANGE, totals: { income: 0, spending: 0, prev: null }, categories: [] };
+    const w = await mountScreen();
+    expect(w.text()).toContain('За этот период данных нет.');
+    expect(w.text()).not.toContain('Что изменилось');
   });
 });

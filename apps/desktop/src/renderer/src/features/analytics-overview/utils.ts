@@ -33,6 +33,14 @@ export function bucketTitle(key: string, unit: 'day' | 'month'): string {
   return unit === 'day' ? dayMonth(key) : `${monthName(monthOfKey(key))} ${key.slice(0, 4)}`;
 }
 
+/** The comparison period in words: one month in full («август 2026»), months short («окт 2024 – сен 2025»). */
+export function comparedText(c: Readonly<{ from: string; to: string }>): string {
+  const from = c.from.slice(0, 7);
+  const to = c.to.slice(0, 7);
+  const short = (ym: string) => `${monthShortName(monthOfKey(ym))} ${ym.slice(0, 4)}`;
+  return from === to ? bucketTitle(from, 'month').toLowerCase() : `${short(from)} – ${short(to)}`;
+}
+
 /** The top categories by the period's ranking (one colour per category on every view) and «Other N» for the rest. */
 export function categoryRows(cats: readonly AnalyticsCategory[], buckets: number): CategoryRow[] {
   const spent = cats.filter((c) => c.total > 0);
@@ -119,6 +127,15 @@ export function heatRows(rows: readonly CategoryRow[], cols: readonly Column[], 
       }),
     };
   });
+}
+
+/** The flow chart said in text (the canvas is aria-hidden): one line per bucket with data. */
+export function flowList(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): Array<{ key: string; text: string }> {
+  return v.buckets.flatMap((b, i) =>
+    b.state === 'none'
+      ? []
+      : [{ key: b.key, text: t('analytics.flow.row', { when: bucketTitle(b.key, v.unit), income: fmt.money(v.income[i] ?? 0), spending: fmt.money(v.spending[i] ?? 0) }) }],
+  );
 }
 
 /** Income, spending, what is left and the savings rate, each against the comparison period. */
