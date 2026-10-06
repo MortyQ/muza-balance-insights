@@ -99,6 +99,22 @@
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
   tested (`tests/renderer/income-detail.test.ts`).
+- **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
+  `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
+  global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole
+  ones, independent of the home month; `rangePresets`, `compareText` for the picker's note; `dataFrom` comes as a prop)
+  over `shared/ui/VMonthRangePicker` (ours on reka-ui `MonthPicker` / `MonthRangePicker`: «One month | Range», quick
+  picks, the first click of a range is already one month, a draft applied on «Show», a `note` slot). One IPC
+  `getAnalyticsOverview` (see `desktop-import.md`); person and currency are the global filters; quiet reload on
+  `syncStatus.version`. Blocks: KPIs (income, spending, left, savings rate vs the period before), «Income and spending»
+  (ECharts lines on a value axis by bucket index, the area between them as two `custom` polygon series split exactly at
+  crossings — `gapPolygons`; one month: running totals + the dashed usual month), «What changed» (4 largest increases +
+  the largest decrease; a row opens «Lines» with that category alone), «Categories» with a `VSegmentedControl` of four
+  views: heatmap (`role="table"`; months, or calendar weeks of one month; colour = the cell's per-day level against the
+  row's mean over full columns, `--heat-hot` / `--heat-cold` in `theme.css`, a running column dashed and out of the
+  mean), small charts, lines (chips toggle, top 5 by default, hover fades the others, amount / share), compare
+  (diverging bars). Rows = the top 7 categories by the period (rank colours) + «Other N». `utils.ts` is pure and tested
+  (`tests/renderer/analytics.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
   «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none

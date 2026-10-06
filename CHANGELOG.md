@@ -47,6 +47,18 @@ English interface.
   between your own accounts are not income. The month, the person and the main currency are the same filters as on the
   home screen.
 
+### Analytics
+
+- «Analytics» in the menu on the left is now a screen of its own. Pick one month or a range of months — up to 36 back —
+  and see your income, spending, what is left and the savings rate, each compared with the period before; income and
+  spending month by month, with the months that ended in minus in red (for one month: day by day as running totals,
+  next to your usual month); the categories that changed most; and every category as a heatmap of unusual months,
+  small charts, lines you can switch on and off, or a comparison with the period before. Click a category in «What
+  changed» to see its line alone. The person and the main currency are the same filters as on the home screen.
+- On that screen the month button becomes a period button: quick picks (this month, last month, 3–36 months, since
+  January, last year, all time) or any months in the calendar; one click picks a single month, a second one a range.
+  The picker says what the period is compared with, and warns when it includes the current month, which is not over.
+
 ### Downloading history
 
 - The history download moved from the home screen to «Settings» → «Connections», under «History download», next to
@@ -61,7 +73,7 @@ English interface.
 - On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,
   instead of the grey system ones with arrows.
 - The home screen has a menu on the left, like the settings screen: «General» with everything the home screen showed
-  before, and «Analytics», a placeholder for now. Switching between them keeps the filters at the top in place. In a
+  before, and «Analytics» (see above). Switching between them keeps the filters at the top in place. In a
   narrow window the menu moves to a strip at the top.
 - On the home screen the row with the person and the month now stays at the top while you scroll. The person buttons
   sit in the middle of the row; with more than four people, or in a narrow window, they become a list next to the month.
