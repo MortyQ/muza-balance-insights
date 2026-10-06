@@ -1,39 +1,64 @@
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import type { Scope } from '@contract/api.ts';
+import { useMoneyFormat } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useMonthStore } from '@/entities/period';
-import { useParticipantStore } from '@/entities/participant';
+import { colorVar, useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
-import { monthRange, useAsyncData } from '@/shared/lib';
+import { useAsyncData } from '@/shared/lib';
 import { useSpendingRequest } from '../api/useSpendingRequest.ts';
-import type { UseSpendingReturn } from '../types.ts';
+import type { BlockPerson, UseSpendingReturn } from '../types.ts';
 import { periodNote } from '../utils.ts';
 
 /**
- * Spending of one Kyiv month, scope and participant (or the whole family); reloads when any changes, and in the background when the data changes
- * (sync-status version: every imported window and the end of an import).
+ * The spending block of one month (the system time zone's), scope and participant (or the whole family): reloads when any changes, and
+ * quietly when the data changes. The block's own person pick resets with them.
  */
 export function useSpending(): UseSpendingReturn {
-  const { fetchSpending } = useSpendingRequest();
+  const { fetchSpendingOverview } = useSpendingRequest();
   const syncStatus = useSyncStatusStore();
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
-  const monthStore = useMonthStore();
-  const { month } = storeToRefs(monthStore);
+  const { month, thisMonth } = storeToRefs(useMonthStore());
   const scope = ref<Scope>('personal');
+  const pick = ref<number | null>(null);
 
   const participantId = () => participant.selectedId;
-  const query = () => {
-    const id = participantId();
-    return { ...monthRange(month.value), scope: scope.value, ...(id !== null ? { participantId: id } : {}) };
-  };
-  const { state } = useAsyncData(() => fetchSpending(query()), [month, scope, participantId], {
-    quiet: [() => syncStatus.version],
+  const { state } = useAsyncData(
+    () => {
+      const id = participantId();
+      return fetchSpendingOverview({ month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}) });
+    },
+    [month, scope, participantId],
+    { quiet: [() => syncStatus.version] },
+  );
+  watch([month, scope, participantId], () => {
+    pick.value = null;
   });
-  const view = computed(() => state.value.data);
-  const note = computed(() => (view.value ? periodNote(view.value.period) : null));
-  const importing = computed(() => importProgress.running && !importProgress.auto);
 
-  return { month, scope, state, view, periodNote: note, importing };
+  // Also publishes the answer's rates to the currency button of the global filters.
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
+
+  const view = computed(() => state.value.data);
+  const family = computed(() => participant.multiple && participant.selectedId === null);
+  const member = computed(() => participant.multiple && participant.selectedId !== null);
+  const people = computed<ReadonlyArray<BlockPerson>>(() => participant.people.map((p) => ({ id: p.id, name: p.label, color: colorVar(p.color) })));
+  const selected = computed<BlockPerson | null>(() => people.value.find((p) => p.id === participant.selectedId) ?? null);
+
+  return {
+    month,
+    thisMonth,
+    scope,
+    state,
+    view,
+    periodNote: computed(() => (view.value ? periodNote(view.value.period) : null)),
+    importing: computed(() => importProgress.running && !importProgress.auto),
+    family,
+    member,
+    people,
+    selected,
+    pick,
+    fmt,
+  };
 }

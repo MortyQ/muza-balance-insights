@@ -1,4 +1,5 @@
-// Calendar months for the spending screen, in Kyiv time (the same zone the core uses for local_date).
+// Calendar months and dates for the screens, in the system time zone (@contract/dates.ts).
+import { localDate } from '@contract/dates.ts';
 import { t } from './i18n.ts';
 
 export type YearMonth = `${number}-${string}`;
@@ -15,11 +16,9 @@ export function monthShortName(month: number): string {
 
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-const kyivDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' });
-
-/** Today's Kyiv date, YYYY-MM-DD. */
-export function kyivToday(now: Date): string {
-  return kyivDate.format(now);
+/** Today's date in the system time zone, YYYY-MM-DD. */
+export function localToday(now: Date): string {
+  return localDate(now.getTime());
 }
 
 export function monthOf(date: string): YearMonth {
@@ -32,22 +31,21 @@ export function shiftMonth(ym: YearMonth, by: number): YearMonth {
   return `${Math.floor(total / 12)}-${String((total % 12) + 1).padStart(2, '0')}`;
 }
 
-/** Inclusive local_date range of the month. */
-export function monthRange(ym: YearMonth): { from: string; to: string } {
-  const [y, m] = ym.split('-').map(Number) as [number, number];
-  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  return { from: `${ym}-01`, to: `${ym}-${String(last).padStart(2, '0')}` };
-}
-
-/** «September 2026». */
-export function monthTitle(ym: YearMonth): string {
-  const [y, m] = ym.split('-').map(Number) as [number, number];
-  return `${monthName(m)} ${y}`;
-}
-
 /** «2026-03-10» → «10.03»; «2026-03-10 23:00» → «10.03, 23:00». */
 export function shortDate(s: string): string {
   const [date, time] = s.split(' ');
   const [, mm, dd] = (date ?? '').split('-');
   return time ? `${dd}.${mm}, ${time}` : `${dd}.${mm}`;
+}
+
+/** «2026-03-10» → «10.03.2026». */
+export function fullDate(date: string): string {
+  const [yyyy, mm, dd] = date.split('-');
+  return `${dd}.${mm}.${yyyy}`;
+}
+
+/** When a sync happened (local «YYYY-MM-DD HH:mm» from main): today → «at 14:20», an earlier day → «10.03, 14:20». */
+export function syncedWhen(at: string, now: Date): string {
+  const [date, time] = at.split(' ');
+  return date === localToday(now) && time ? t('common.atTime', { time }) : shortDate(at);
 }

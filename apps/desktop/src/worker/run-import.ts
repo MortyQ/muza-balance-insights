@@ -5,8 +5,8 @@
 import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
 import type { Db } from '@mono/core/db';
 import { RateLimitError } from '@mono/core/errors';
-import { toKyivDate } from '@mono/core/format';
 import { accountNames, type AccountName } from '../shared/account-name.ts';
+import { localDate } from '../shared/dates.ts';
 import type { Clock, FetchLike } from '@mono/core/platform';
 import { rulesFor } from '@mono/core/providers/rules';
 import type { ProviderId } from '@mono/core/providers/types';
@@ -151,8 +151,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
             last = {
               phase: 'windows',
               account: names.get(e.accountId) ?? null,
-              from: toKyivDate(e.window.from),
-              to: toKyivDate(e.window.to),
+              from: localDate(e.window.from * 1000),
+              to: localDate(e.window.to * 1000),
               round: e.round,
               index: e.index,
               total: e.total,

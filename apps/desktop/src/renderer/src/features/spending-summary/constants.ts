@@ -6,3 +6,19 @@ export const SCOPES: ReadonlyArray<{ label: MessageKey; value: Scope }> = [
   { label: 'home.spending.scope.personal', value: 'personal' },
   { label: 'home.spending.scope.business', value: 'business' },
 ];
+
+/** Categories named one by one; the rest is one «N more categories» line. */
+export const TOP = 7;
+
+/** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
+export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
+
+/** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
+export const PREFS_KEY = 'spending.view';
+
+/** The tone of an operations difference: more — orange, fewer — blue (as the change chips). */
+export const OPS_TONE = {
+  up: 'text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',
+  down: 'text-[color-mix(in_oklch,var(--series-blue)_72%,var(--foreground))]',
+  neutral: 'text-foreground-muted',
+} as const;

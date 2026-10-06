@@ -1,8 +1,145 @@
 {
+  "analytics": {
+    "kpi": {
+      "income": "Income",
+      "spending": "Spending",
+      "left": "Left",
+      "rate": "Savings rate",
+      "vsPrev": "{change} vs the period before",
+      "wasRate": "was {rate}",
+      "perMonth": "{amount} a month on average",
+      "perDay": "{amount} a day on average"
+    },
+    "flow": {
+      "title": "Income and spending",
+      "months": "Green — the month ended in plus, red — in minus",
+      "days": "Running totals from the 1st",
+      "income": "Income",
+      "spending": "Spending",
+      "usual": "Usual month",
+      "row": "{when}: income {income}, spending {spending}"
+    },
+    "changes": {
+      "title": "What changed",
+      "vs": "Compared with {period}",
+      "peak": "peak — {when}",
+      "none": "Nothing changed much",
+      "noCompare": "Not enough history to compare",
+      "all": "All categories in «Compare»",
+      "more": "more",
+      "less": "less"
+    },
+    "views": {
+      "title": "Categories",
+      "heat": "Heatmap",
+      "small": "Small charts",
+      "lines": "Lines",
+      "compare": "Compare",
+      "heatHint": "Colour — how far above or below the category's usual. Hover a cell to see the exact amount.",
+      "linesHint": "Click a category to show or hide its line.",
+      "compareHint": "Right — spent more, left — less.",
+      "less": "below usual",
+      "more": "above usual",
+      "avg": "average",
+      "amount": "Amount",
+      "share": "Share of spending",
+      "top": "Top 5",
+      "allLines": "All",
+      "was": "{was} → {now}",
+      "fewer": "← less",
+      "greater": "more →",
+      "category": "Category",
+      "change": "Change",
+      "wasNow": "Was → now",
+      "perMonth": "{amount} a month",
+      "perDay": "{amount} a day",
+      "noCompare": "Not enough history to compare: download older data in the settings.",
+      "heatUnitMonth": "Amounts in thousands of {currency} per month",
+      "heatUnitWeek": "Amounts in thousands of {currency} per week",
+      "smallHintMonth": "A bar is the month's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount.",
+      "smallHintDay": "A bar is the day's spending; each category has its own scale. Dashed — the average, the dark bar — the largest. Hover a bar to see the amount."
+    },
+    "leftOut": "No rate for today, left out: {currencies}",
+    "failed": "Could not load the analytics.",
+    "empty": "No data for this period.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate."
+  },
+  "category": {
+    "back": "Spending",
+    "failed": "Couldn't load the category.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency.",
+    "list": {
+      "col": {
+        "where": "Where"
+      },
+      "mark": {
+        "cashback": "cashback +{amount}",
+        "fee": "fee",
+        "refund": "refund",
+        "refunded": "refunded"
+      },
+      "search": "Search: place, comment, amount"
+    },
+    "none": "No spending in this category in {month}.",
+    "summary": {
+      "activeDays": "days with spending: {n} of {days}",
+      "avg": "Average",
+      "cashback": "Cashback",
+      "cashbackLines": "from {n} operation | from {n} operations | from {n} operations",
+      "gross": "Charged {gross} · refunds −{refunds}",
+      "largest": "Largest",
+      "largestWhere": "{merchant}, {date} at {time}",
+      "median": "median {amount}",
+      "ops": "Operations",
+      "opsPrev": "{n} in {month}",
+      "perDay": "Per day",
+      "rank": "#{n} this month",
+      "share": "Share of all spending",
+      "spent": "Spent this month",
+      "vsPrev": "{amount} in {month}"
+    },
+    "where": {
+      "more": "{n} more place | {n} more places | {n} more places",
+      "title": "Where"
+    },
+    "who": {
+      "title": "Who spent"
+    }
+  },
   "common": {
+    "atTime": "at {time}",
     "disclaimer": "Unofficial app, not affiliated with Monobank.",
     "failed": "Something went wrong. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
+    "loading": "Loading",
     "month": {
+      "1": "January",
+      "10": "October",
+      "11": "November",
+      "12": "December",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September"
+    },
+    "monthGen": {
+      "1": "January",
+      "10": "October",
+      "11": "November",
+      "12": "December",
+      "2": "February",
+      "3": "March",
+      "4": "April",
+      "5": "May",
+      "6": "June",
+      "7": "July",
+      "8": "August",
+      "9": "September"
+    },
+    "monthIn": {
       "1": "January",
       "10": "October",
       "11": "November",
@@ -45,6 +182,26 @@
     "sideNav": {
       "later": "Coming later",
       "soon": "Soon"
+    },
+    "weekdayShort": {
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat",
+      "7": "Sun"
+    },
+    "monthRangePicker": {
+      "label": "Period",
+      "one": "One month",
+      "range": "Range",
+      "quick": "Quick picks",
+      "hintOne": "Pick a month",
+      "hintRange": "Pick the first and the last month",
+      "months": "{n} month | {n} months | {n} months",
+      "cancel": "Cancel",
+      "apply": "Show"
     }
   },
   "entities": {
@@ -84,11 +241,73 @@
       "notYet": "Not downloaded yet",
       "partOf": "{enabled} of {total}"
     },
+    "currencyDisplay": {
+      "alsoTitle": "Also show",
+      "button": "Currencies: {shown}",
+      "eur": "Euro €",
+      "mainNote": "Every amount on the home screen",
+      "mainTitle": "Main currency",
+      "noRates": "Rates not loaded yet: only hryvnia for now",
+      "rate": "Monobank sell rate, {date}",
+      "savedRate": "Saved rate from {date}: could not refresh",
+      "uah": "Hryvnia ₴",
+      "usd": "Dollars $"
+    },
+    "operations": {
+      "avg": "avg {amount}",
+      "filterHint": "Click to filter the list",
+      "list": {
+        "byAmount": "By amount",
+        "byDate": "By date",
+        "clear": "Clear the «{name}» filter",
+        "col": {
+          "amount": "Amount",
+          "marks": "Marks",
+          "when": "When",
+          "who": "Who · account"
+        },
+        "empty": "Nothing found.",
+        "sort": "Sort",
+        "title": "Operations",
+        "total": "List total: {amount}"
+      },
+      "mark": {
+        "foreign": "foreign currency",
+        "noRate": "no rate",
+        "pending": "pending"
+      },
+      "months": {
+        "above": "{month}: {amount} above the average",
+        "avg": "{amount} a month on average",
+        "below": "{month}: {amount} below the average",
+        "noData": "no data",
+        "soFar": "{amount} so far",
+        "title": "Last 12 months"
+      },
+      "noDescription": "No description",
+      "when": {
+        "dayParts": "By time of day",
+        "dayTitle": "{month} {day} — {amount}",
+        "days": "By day of the month",
+        "part": {
+          "0": "morning 6–12",
+          "1": "day 12–18",
+          "2": "evening 18–23",
+          "3": "night 23–6"
+        },
+        "peak": "Most: {weekday} · {part}",
+        "title": "When",
+        "titleFor": "When: {name}",
+        "weekdays": "By weekday"
+      }
+    },
     "participant": {
       "connection": "Connection",
       "family": "Whole family",
       "label": "Whose data",
-      "pending": "New person"
+      "pending": "New person",
+      "syncFailed": "not updated",
+      "updated": "Updated {when}"
     },
     "syncStatus": {
       "none": "No data yet",
@@ -103,6 +322,18 @@
       "none": "No token",
       "secure": "Token in the system keychain",
       "unreadable": "The saved token can no longer be read — enter it again."
+    },
+    "period": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "yearAgo": "Same month last year",
+      "months": "{n} month | {n} months | {n} months",
+      "sinceJanuary": "Since January",
+      "lastYear": "{year}",
+      "all": "All time",
+      "compare": "Compared with {period}",
+      "noCompare": "Not enough history to compare",
+      "running": "{month} is still running — amounts are incomplete"
     }
   },
   "header": {
@@ -124,8 +355,7 @@
       "expandHint": "Click a card to expand it",
       "familyCards": "Family cards",
       "familySubtitle": "the total and each person",
-      "fxNearestRate": "incl. {amount} at the nearest exchange rate {rate}",
-      "fxNoRate": "without {amount} — no exchange",
+      "fxNoRate": "without {amount} — no rate",
       "fxRate": "incl. {amount} at the rate {rate}",
       "inMonth": "in {month}{year}",
       "income": "In",
@@ -136,34 +366,6 @@
         "jar": "Jar"
       },
       "limit": "limit {amount}",
-      "monthGen": {
-        "1": "January",
-        "10": "October",
-        "11": "November",
-        "12": "December",
-        "2": "February",
-        "3": "March",
-        "4": "April",
-        "5": "May",
-        "6": "June",
-        "7": "July",
-        "8": "August",
-        "9": "September"
-      },
-      "monthIn": {
-        "1": "January",
-        "10": "October",
-        "11": "November",
-        "12": "December",
-        "2": "February",
-        "3": "March",
-        "4": "April",
-        "5": "May",
-        "6": "June",
-        "7": "July",
-        "8": "August",
-        "9": "September"
-      },
       "next": "Next",
       "noDataOnDate": "No data for this date",
       "ownFunds": "Own money",
@@ -178,13 +380,19 @@
       "wholeMonth": "whole month",
       "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
     },
+    "filters": {
+      "percent": "{pct}%",
+      "retryAt": "Retrying at {at}",
+      "syncing": "Syncing…",
+      "updated": "Updated {when}"
+    },
     "import": {
       "about": "All connections are downloaded. Monobank gives out the statement at most once a minute per token and at most 31 days per request: about a minute for each month of history of each account; the connections of different people go in parallel. The current month of all accounts comes first, then the history. You can stop the import and continue later. New transactions also arrive on their own — see «Auto-sync» in the settings.",
       "accounts": "Updating the list of accounts…",
       "autoRunning": "Updating the data…",
       "cancelled": "The import is stopped. What is downloaded is saved.",
-      "depth": "Depth",
       "depthMonths": "{n} mo.",
+      "description": "Transactions are downloaded from the chosen date up to today. What is already downloaded is not downloaded again — only the last days are refreshed.",
       "done": "Done: windows {windows}, transactions {transactions}.",
       "duration": {
         "hourMin": "≈ {hours} h {min} min",
@@ -204,8 +412,10 @@
         "otherHolder": "The token belongs to a different bank account than this connection. Nothing was changed.",
         "rateLimit": "Monobank limited the number of requests. The import continues on the next launch."
       },
+      "fromDate": "From date",
       "needsToken": "There is an unfinished import. Enter the token in «Connections» to continue.",
       "notLoaded": "Not downloaded — {line}",
+      "period": "Period",
       "rederive": "Marking transfers and categories…",
       "resuming": "Resuming the import…",
       "retry": {
@@ -219,30 +429,59 @@
       "start": "Download",
       "startError": {
         "dbUnavailable": "The database is unavailable right now — the import did not start.",
-        "noToken": "There is no token: enter one in the settings, «Connections».",
+        "noToken": "There is no token: enter one above, in the connection.",
         "running": "The import is already running."
       },
       "starting": "Starting the import…",
       "stop": "Stop",
-      "title": "Import",
+      "title": "History download",
+      "untilToday": "from {date} to today",
       "waitLimit": " · waiting for the Monobank limit {sec} s",
       "windowsLine": "{account}: window {from} … {to} ({index}/{total}) · windows downloaded {done} of {windows}, transactions {transactions} · {eta} left{wait}"
     },
     "nav": {
+      "analytics": "Analytics",
       "general": "General",
       "label": "Home sections"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
       "enterToken": "Enter token",
+      "importing": "Downloading the history — the data will appear here bit by bit.",
+      "loadHistory": "Download history",
+      "loadMonth": "Download",
+      "monthEmpty": "{month}: no data yet — the history is downloaded from {date}.",
+      "noDataText": "Download your transaction history from the bank — at least the last few months.",
+      "noDataTitle": "No data yet",
       "noTokenAll": "No token: new transactions are not downloaded. What is downloaded stays.",
       "noTokenSome": "No token: {names}. Their new transactions are not downloaded.",
       "openConnections": "Open «Connections»",
       "readFailed": "Could not read the data. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
     },
+    "now": {
+      "date": "{weekday}, {month} {day}",
+      "label": "Now",
+      "noneWeek": "No spending yet this week",
+      "ops": "{n} operation | {n} operations | {n} operations",
+      "opsShort": "{n} op.",
+      "pending": "Processing at the bank: {count}",
+      "pendingTitle": "Their amounts may still change",
+      "sameUsual": "about as usual",
+      "sameWeek": "as last week",
+      "srLessUsual": "less than on a usual day",
+      "srLessWeek": "less than last week",
+      "srMoreUsual": "more than on a usual day",
+      "srMoreWeek": "more than last week",
+      "today": "Today · {date}",
+      "top": "Most this week",
+      "topShare": "{pct}% of the week · {ops}",
+      "until": "Data until {date}",
+      "vsUsual": "vs a usual day ≈ {amount}",
+      "vsWeek": "vs last week, {days}",
+      "week": "This week · {days}"
+    },
     "spending": {
-      "accountsIn": "Accounts in {currency}",
       "category": {
         "beauty": "Beauty",
         "cafes": "Cafes and restaurants",
@@ -273,29 +512,103 @@
         "travel": "Travel",
         "utilities": "Utilities"
       },
-      "column": {
-        "category": "Category",
-        "gross": "Gross",
-        "net": "Net",
-        "refunds": "Refunds",
-        "share": "Share"
+      "change": {
+        "less": "{pct}% less than in {month}",
+        "lessPartial": "{pct}% less than by this day in {month}",
+        "more": "{pct}% more than in {month}",
+        "morePartial": "{pct}% more than by this day in {month}",
+        "new": "new",
+        "same": "as in {month}",
+        "srLess": "less than in {month}",
+        "srLessPartial": "less than by this day in {month}",
+        "srMore": "more than in {month}",
+        "srMorePartial": "more than by this day in {month}"
       },
+      "compareDay": "{month} {day}",
+      "compareFull": "Compared with: {period}",
+      "compareRange": "{month} {from}–{to}",
       "empty": "No spending this month.",
       "failed": "Could not count the spending. Try again or restart the app.",
-      "footnote": "Gross is everything charged, refunds is the money that came back, net = gross − refunds. Transfers between your own accounts and income are not counted as spending. Different currencies are not added up.",
+      "familyShare": "{pct}% of the family's spending",
+      "familyTotal": "family — {amount}",
+      "footnote": "Spending is what was charged minus refunds. Transfers between your own accounts and income are not spending. Spending in other currencies is converted at today's Monobank rate.",
       "importing": "Import in progress — the numbers fill in as the statement downloads.",
+      "inMonth": "In {month}",
+      "leftOut": "+ {amount} without an exchange rate — not in the totals",
+      "markTitle": "In {month} — {amount}",
+      "noCompare": "No data in {month} to compare",
       "noData": "No data yet: download the statement in «Import».",
+      "noneBy": "{name}: no spending this month",
       "notYet": "Data is downloaded only up to {date}: there is none for this month yet.",
+      "operations": "Operations",
+      "ops": "{n} operation | {n} operations | {n} operations",
+      "opsPrev": "In {month} — {ops}",
+      "opsSame": "same",
+      "opsShort": "{n} op.",
+      "opsVs": "{diff} vs {month}",
       "partial": "The month is not complete: data up to {date}, the numbers will still grow.",
       "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
-      "perDay": "On average {amount} a day",
-      "perDayCovered": "(over {days} full days with data)",
+      "perDayShort": "{amount} a day",
+      "personShare": "{pct}% · {ops}",
+      "rest": "{n} more category | {n} more categories | {n} more categories",
       "scope": {
         "business": "Business",
         "personal": "Personal"
       },
+      "settings": {
+        "bars": "Show on the bars",
+        "button": "Block settings",
+        "mark": "Last month's mark",
+        "markHint": "A tick at last month's amount",
+        "split": "Who spent how much",
+        "splitHint": "The bar is split by people's colours"
+      },
       "title": "Spending",
-      "total": "Total"
+      "together": "together · {ops}",
+      "whole": "Whole family"
+    }
+  },
+  "income": {
+    "back": "Balance",
+    "failed": "Couldn't load the income.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency. Refunds for purchases and transfers between your own accounts are not counted here.",
+    "from": {
+      "more": "{n} more sender | {n} more senders | {n} more senders",
+      "title": "From"
+    },
+    "list": {
+      "from": "From",
+      "search": "Search: sender, comment, amount"
+    },
+    "none": "No income in {month}.",
+    "open": "Open income",
+    "sources": {
+      "source": {
+        "family": "From family",
+        "named_sender": "From people and clients",
+        "other": "Other",
+        "other_bank": "From other banks",
+        "transfer": "Transfers"
+      },
+      "title": "Where from"
+    },
+    "summary": {
+      "activeDays": "days with income: {n} of {days}",
+      "avg": "Average payment",
+      "largest": "Largest",
+      "largestWhere": "{sender}, {date} at {time}",
+      "lines": "Payments in",
+      "linesPrev": "{n} in {month}",
+      "median": "median {amount}",
+      "perDay": "Per day",
+      "received": "Received this month",
+      "spent": "Spent",
+      "spentShare": "{pct}% of the income",
+      "vsPrev": "{amount} in {month}"
+    },
+    "title": "Income",
+    "who": {
+      "title": "Who received"
     }
   },
   "integrations": {
@@ -557,6 +870,7 @@
         "error": "Could not get the list of services.",
         "github": "Checking for and downloading updates.",
         "monobank": "Accounts and the statement. The token is sent here only.",
+        "monobankRates": "Today's exchange rates for the home screen. No token and none of your data.",
         "note": "Other addresses are blocked in the code, not by a setting. Only https and the default port; a redirect to another address is refused.",
         "title": "Network"
       },

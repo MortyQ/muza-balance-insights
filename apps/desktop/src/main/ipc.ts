@@ -4,13 +4,14 @@ import { z } from 'zod';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { CATEGORY_IDS } from '../shared/categories.ts';
 import { COLOR_KEYS } from '../shared/colors.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { PIN_RE } from '../shared/lock.ts';
-import { IMPORT_DEPTHS } from '../shared/progress.ts';
+import { ANALYTICS_MAX_MONTHS, monthSpan } from '../shared/analytics.ts';
+import { isIsoDate } from '../shared/import-range.ts';
 import { THEME_PREFS } from '../shared/theme.ts';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
@@ -48,13 +49,22 @@ export const ARG_SCHEMAS = {
   removeConnection: z.tuple([id]),
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
-  // Exactly the depths the screen offers: one list, so the two can't drift apart.
-  startImport: z.tuple([z.literal(IMPORT_DEPTHS)]),
+  // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
+  startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),
-  spendingSummary: z.tuple([
-    z.strictObject({ from: isoDate, to: isoDate, scope: z.enum(['personal', 'business']).optional(), participantId: id.optional() }),
-  ]),
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
+  getNowOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  getCategoryOverview: z.tuple([
+    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
+  ]),
+  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
+  getAnalyticsOverview: z.tuple([
+    z
+      .strictObject({ from: month, to: month, participantId: id.optional() })
+      .refine((q) => q.from <= q.to && monthSpan(q.from, q.to) <= ANALYTICS_MAX_MONTHS),
+  ]),
   getSyncStatus: z.tuple([]),
   deleteAllData: z.tuple([]),
   getUpdate: z.tuple([]),

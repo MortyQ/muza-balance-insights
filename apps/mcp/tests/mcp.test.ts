@@ -126,6 +126,11 @@ describe('MCP tools (in-memory client)', () => {
     expect(r.notes.join('\n')).toMatch(/Последняя синхронизация 109 ч назад/);
   });
 
+  it('spending_summary rejects group_by "day" (an internal core value, not an MCP one)', async () => {
+    const bad = await client.callTool({ name: 'spending_summary', arguments: { from: '2026-02-01', to: '2026-02-28', group_by: 'day' } });
+    expect(bad.isError).toBe(true);
+  });
+
   it('an incomplete period is flagged in period and notes; bad input comes back as a tool error', async () => {
     const r = await call('spending_summary', { from: '2026-03-01', to: '2026-03-31', group_by: 'month' });
     expect(r.period).toMatchObject({ incomplete: true, covered_days: 9 });

@@ -1,9 +1,10 @@
 import { currencyExponent } from '@mono/core/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import { accountName } from '@/entities/bank';
+import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
-import { formatMoney, monthName as calendarMonthName, monthShortName, t } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, UAH, VISIBLE_CARDS } from './constants.ts';
+import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
+import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
 import type { Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
@@ -27,7 +28,7 @@ const yearSuffix = (y: number, current: number) => (y === current ? '' : ` ${y}`
 
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 /** The month after a day number: «31 July» (genitive in uk / ru). */
-const monthOfDay = (m: number) => t(`home.balances.monthGen.${m as MonthNumber}`);
+const monthOfDay = (m: number) => t(`common.monthGen.${m as MonthNumber}`);
 
 /** «Own money · today» / «Own money · on 31 July [2025]»; `label` replaces «Own money» on an account's card. */
 export function balanceCaption(balanceAt: 'now' | string, currentYear: number, label = t('home.balances.ownFunds')): string {
@@ -45,7 +46,7 @@ export function monthName(month: string, currentYear: number): string {
 /** «in September», «in December 2025». */
 export function monthIn(month: string, currentYear: number): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
-  return t('home.balances.inMonth', { month: t(`home.balances.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
+  return t('home.balances.inMonth', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
 }
 
 /** «1 person», «3 people». */
@@ -109,21 +110,28 @@ export function fxNote(fx: ReadonlyArray<FxPart>): string {
     .map((p) => {
       const amount = formatMoney(Math.abs(p.income !== 0 ? p.income : p.spending), p.currency);
       if (p.rate === null) return t('home.balances.fxNoRate', { amount });
-      return t(p.nearest ? 'home.balances.fxNearestRate' : 'home.balances.fxRate', { amount, rate: rateText(p.rate, p.currency) });
+      return t('home.balances.fxRate', { amount, rate: rateText(p.rate, p.currency) });
     })
     .join(' · ');
 }
 
-function others(total: CardTotal): string {
-  return total.others.map((o) => formatMoney(o.ownFunds, o.currency, { minorUnits: true })).join(' · ');
+/** The foreign own funds of a total card: each with today's rate it was folded in at, or left out without one. */
+function othersNote(total: CardTotal): string {
+  return total.others
+    .map((o) => {
+      const amount = formatMoney(o.ownFunds, o.currency, { minorUnits: true });
+      return o.rate === null ? t('home.balances.fxNoRate', { amount }) : t('home.balances.fxRate', { amount, rate: rateText(o.rate, o.currency) });
+    })
+    .join(' · ');
 }
 
 export function slidesOf(
   v: MonthOverview,
-  ctx: { people: ReadonlyArray<Readonly<PersonView>>; selectedId: number | null; currentYear: number },
+  ctx: { people: ReadonlyArray<Readonly<PersonView>>; selectedId: number | null; currentYear: number; fmt: MoneyFormat },
 ): Slide[] {
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
+  const { fmt } = ctx;
   const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string): Slide => {
     const approxIncome = total.fx.some((p) => p.rate !== null && p.income !== 0);
     const approxSpending = total.fx.some((p) => p.rate !== null && p.spending !== 0);
@@ -133,18 +141,27 @@ export function slidesOf(
       caption,
       accents,
       dim: false,
-      amount: formatMoney(total.ownFunds, UAH, { minorUnits: true }),
-      others: others(total),
+      amount: formatMoney(fmt.convert(total.ownFunds), fmt.currency, { minorUnits: true }),
+      approx: fmt.approxInline(total.ownFunds),
+      others: othersNote(total),
       bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
       net: total.income - total.spending,
-      netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(total.income - total.spending, UAH)} ${month}`,
-      flow: { currency: UAH, income: total.income, spending: total.spending, color: accents[0] ?? colorVar(null), approxIncome, approxSpending, note: fxNote(total.fx) },
+      netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
+      flow: {
+        currency: fmt.currency,
+        income: fmt.convert(total.income),
+        spending: fmt.convert(total.spending),
+        color: accents[0] ?? colorVar(null),
+        approxIncome,
+        approxSpending,
+        note: fxNote(total.fx),
+      },
     };
   };
   if (ctx.selectedId === null) {
     const accents = v.people.map((p) => colorVar(p.color));
     const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`);
-    family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: p.total.income, spending: p.total.spending }));
+    family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: fmt.convert(p.total.income), spending: fmt.convert(p.total.spending) }));
     return [family, ...v.people.map((p) => totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts)))];
   }
   const person = ctx.people.find((p) => p.id === ctx.selectedId);
@@ -161,6 +178,7 @@ export function slidesOf(
         dim: a.ownFunds === null,
         caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
         amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
+        approx: '',
         others: '',
         bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
         net: a.ownFunds === null ? null : a.income - a.spending,

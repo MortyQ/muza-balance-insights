@@ -15,7 +15,6 @@ import {
   type IpcEventLike,
 } from '../src/main/ipc.ts';
 import { CHANNEL_PREFIX, METHODS, channel } from '../src/shared/channels.ts';
-import { IMPORT_DEPTHS } from '../src/shared/progress.ts';
 
 const WC = { id: 1 };
 const WIN = { webContents: WC };
@@ -80,22 +79,47 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setConnectionToken', [1, 'has space in the token 123456', true]],
     ['setConnectionToken', [1, 'x'.repeat(201), true]],
     ['setConnectionToken', [1, 'x'.repeat(40), true, 'extra']],
-    ['startImport', [2]],
-    ['startImport', ['3']],
+    ['startImport', [3]],
+    ['startImport', ['2026-02-30']],
     ['startImport', []],
-    ['startImport', [3, 'extra']],
-    ['spendingSummary', [{ from: '2026-09-01' }]],
-    ['spendingSummary', [{ from: '2026-9-1', to: '2026-09-30' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', sql: 'DROP TABLE x' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', scope: 'all' }]],
+    ['startImport', ['2026-01-01', 'extra']],
+    ['getSpendingOverview', []],
+    ['getSpendingOverview', [{ month: '2026-09' }]],
+    ['getSpendingOverview', [{ month: '2026-9', scope: 'personal' }]],
+    ['getSpendingOverview', [{ month: '2026-09', scope: 'all' }]],
+    ['getSpendingOverview', [{ month: '2026-09', scope: 'personal', participantId: 0 }]],
+    ['getSpendingOverview', [{ month: '2026-09', scope: 'personal', participantId: 1.5 }]],
+    ['getSpendingOverview', [{ month: '2026-09', scope: 'personal', extra: 1 }]],
+    ['getNowOverview', []],
+    ['getNowOverview', [{ participantId: 0 }]],
+    ['getNowOverview', [{ participantId: 1.5 }]],
+    ['getNowOverview', [{ month: '2026-09' }]],
+    ['getNowOverview', [{}, {}]],
+    ['getCategoryOverview', []],
+    ['getCategoryOverview', [{ month: '2026-09', scope: 'personal' }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'такси', scope: 'personal' }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'all' }]],
+    ['getCategoryOverview', [{ month: '2026-9', category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', participantId: 0 }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', extra: 1 }]],
+    ['getIncomeOverview', []],
+    ['getIncomeOverview', [{}]],
+    ['getIncomeOverview', [{ month: '2026-9' }]],
+    ['getIncomeOverview', [{ month: '2026-09', participantId: 0 }]],
+    ['getIncomeOverview', [{ month: '2026-09', scope: 'personal' }]],
+    ['getAnalyticsOverview', []],
+    ['getAnalyticsOverview', [{ from: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-9', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-10', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2023-08', to: '2026-09' }]],
+    ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', participantId: 0 }]],
+    ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', scope: 'personal' }]],
     ['getMonthOverview', []],
     ['getMonthOverview', [{}]],
     ['getMonthOverview', [{ month: '2026-13' }]],
     ['getMonthOverview', [{ month: '2026-9' }]],
     ['getMonthOverview', [{ month: '2026-09', participantId: 1.5 }]],
     ['getMonthOverview', [{ month: '2026-09', extra: 1 }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: '1' }]],
-    ['spendingSummary', [{ from: '2026-09-01', to: '2026-09-30', participantId: 1.5 }]],
     ['listPeople', [1]],
     ['addConnection', []],
     ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'short', remember: true }]],
@@ -202,19 +226,32 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     for (const m of METHODS) expect(covered.has(m), m).toBe(true);
   });
 
-  it('startImport accepts exactly the depths the screen offers (one list: IMPORT_DEPTHS)', () => {
-    for (const d of IMPORT_DEPTHS) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(true);
-    for (const d of [0, 2, 6, 48, 1.5, -1]) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(false);
+  it('startImport takes a real YYYY-MM-DD date (the importer checks the range)', () => {
+    for (const d of ['2026-01-01', '2024-02-29']) expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(true);
+    for (const d of ['2023-02-29', '2026-13-01', '2026-1-01', '2026-01-01T00:00', '', 12]) {
+      expect(ARG_SCHEMAS.startImport.safeParse([d]).success).toBe(false);
+    }
   });
 
   it('valid calls reach the handler with parsed arguments', async () => {
     const ipc = fakeIpcMain();
     registerIpc(ipc, allHandlers, { trusted: () => true, dbReady: () => true, locked: () => false });
-    await expect(ipc.handlers.get('balance:startImport')!(good, 12)).resolves.toEqual({ m: 'startImport', a: [12] });
-    await expect(ipc.handlers.get('balance:spendingSummary')!(good, { from: '2026-09-01', to: '2026-09-30' })).resolves.toEqual({
-      m: 'spendingSummary',
-      a: [{ from: '2026-09-01', to: '2026-09-30' }],
+    await expect(ipc.handlers.get('balance:startImport')!(good, '2026-01-01')).resolves.toEqual({ m: 'startImport', a: ['2026-01-01'] });
+    await expect(ipc.handlers.get('balance:getSpendingOverview')!(good, { month: '2026-09', scope: 'personal' })).resolves.toEqual({
+      m: 'getSpendingOverview',
+      a: [{ month: '2026-09', scope: 'personal' }],
     });
+    await expect(ipc.handlers.get('balance:getNowOverview')!(good, {})).resolves.toEqual({ m: 'getNowOverview', a: [{}] });
+    await expect(ipc.handlers.get('balance:getNowOverview')!(good, { participantId: 2 })).resolves.toEqual({
+      m: 'getNowOverview',
+      a: [{ participantId: 2 }],
+    });
+    const cat = { month: '2026-09', category: 'transport', scope: 'personal', participantId: 2 };
+    await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
+    const inc = { month: '2026-09', participantId: 2 };
+    await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
+    const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most
+    await expect(ipc.handlers.get('balance:getAnalyticsOverview')!(good, an)).resolves.toEqual({ m: 'getAnalyticsOverview', a: [an] });
     await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09' })).resolves.toEqual({
       m: 'getMonthOverview',
       a: [{ month: '2026-09' }],
@@ -265,6 +302,12 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
   it('connections have no colour: there is no method to set one', () => {
     expect(METHODS).not.toContain('setConnectionColor');
     expect(Object.keys(ARG_SCHEMAS)).not.toContain('setConnectionColor');
+  });
+
+  it('the analytics data is neither allowed while locked nor while the database is not ready', () => {
+    expect(METHODS).toContain('getAnalyticsOverview');
+    expect(ALLOWED_WHEN_LOCKED as readonly string[]).not.toContain('getAnalyticsOverview');
+    expect(ALLOWED_WHEN_DB_UNAVAILABLE as readonly string[]).not.toContain('getAnalyticsOverview');
   });
 
   it('the account toggle is neither allowed while locked nor while the database is not ready', () => {

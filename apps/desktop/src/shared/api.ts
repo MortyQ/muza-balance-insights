@@ -6,7 +6,7 @@ import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
 import type { DisableAuth, LockResult, LockTriggers, LockView } from './lock.ts';
-import type { ImportDepth, ImportProgress, StartImportResult } from './progress.ts';
+import type { ImportProgress, StartImportResult } from './progress.ts';
 import type { ThemePref } from './theme.ts';
 import type { UpdateView } from './update.ts';
 
@@ -37,7 +37,7 @@ export type ConnectionView = {
   accounts: number;
   /** Of `accounts`, the ones imported and counted («Счета» toggles). */
   enabledAccounts: number;
-  /** Kyiv dates covered by all its imported accounts; null = not imported yet. */
+  /** Dates (system time zone, see dates.ts) covered by all its imported accounts; null = not imported yet. */
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
@@ -79,7 +79,7 @@ export type AddConnectionResult =
   | { added: false; reason: 'duplicate' };
 
 /** A service the app may reach (src/net/allowlist.ts); ids must equal its ServiceId (checked in src/main/services.ts). */
-export type TrustedServiceView = { id: 'github' | 'monobank'; hosts: string[] };
+export type TrustedServiceView = { id: 'github' | 'monobank' | 'monobank-rates'; hosts: string[] };
 
 export type RemoveConnectionResult = { removed: true } | { removed: false; reason: 'import-running' | 'cancelled' };
 
@@ -124,13 +124,18 @@ export type BalanceApi = {
    * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
    */
   setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
-  startImport(depth: ImportDepth): Promise<StartImportResult>;
+  /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
+  startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
   /** Returns an unsubscribe function. */
   onProgress(cb: (p: ImportProgress) => void): () => void;
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
-  spendingSummary(q: SpendingQuery): Promise<SpendingView>;
+  getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
+  getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
+  getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
+  getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
+  getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -185,36 +190,313 @@ export type BalanceApi = {
 
 // ---------- data for the screen ----------
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
-// No names, descriptions, card numbers or IBANs: categories and account name parts only.
+// No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
+// CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
+// and income screens; nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
 
-export type SpendingQuery = { from: string; to: string; scope?: Scope; participantId?: number };
+export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
 
-/** `category` — the core's word; `categoryId` — its CATEGORY key (null on the total line, or a word the core no longer has). */
-export type SpendingLine = { category: string; categoryId: CategoryId | null; gross: number; refunds: number; net: number };
+/** Hryvnia kopecks (account currencies folded by today's rates) and spending lines. */
+export type SpendingAmounts = { net: number; purchases: number };
 
-export type SpendingCurrency = {
-  currency: number;
-  /** Sorted by net, largest first. */
-  categories: SpendingLine[];
-  total: SpendingLine & { netPerDay: number | null };
+export type SpendingPersonPart = SpendingAmounts & {
+  participantId: number;
+  /** The comparison period; null — no comparison. */
+  prev: SpendingAmounts | null;
 };
 
-export type SpendingView = {
+export type SpendingCategoryView = SpendingAmounts & {
+  /** The core's word; `categoryId` — its CATEGORY key (null: a word the core no longer has). */
+  category: string;
+  categoryId: CategoryId | null;
+  prev: SpendingAmounts | null;
+  /** The family view only (no participantId, more than one participant): each participant's part, in listParticipants order; else []. */
+  people: SpendingPersonPart[];
+};
+
+/**
+ * Today's Monobank rates (public /bank/currency): hryvnia kopecks per minor unit of each quoted currency — the bank's
+ * sell rate, or its cross rate for a currency it quotes only so. One snapshot for every amount of an answer.
+ */
+export type RatesView = {
+  list: Array<{ currency: number; rate: number }>;
+  /** Epoch seconds of the fetch these rates come from. */
+  fetchedAt: number;
+  /** The latest refresh failed: these are the saved rates. */
+  saved: boolean;
+};
+
+export type SpendingOverview = {
+  month: string;
   period: {
     from: string;
     to: string;
     days: number;
     /** The period ends after the last sync (or in the future): numbers will still grow. */
     incomplete: boolean;
-    /** Kyiv date the data reaches (see core periodInfo); null = never imported. */
+    /** Date the data reaches in the system time zone (see core periodInfo); null = never imported. */
     dataUntil: string | null;
     coveredDays: number;
     pendingHolds: number;
   };
-  currencies: SpendingCurrency[];
+  /** The period compared with: last month, cut to the same day while this one is incomplete; null — not covered. */
+  compare: { from: string; to: string; partial: boolean } | null;
+  total: SpendingAmounts & { prev: SpendingAmounts | null };
+  /**
+   * Family view only (more than one participant): each participant's sum over the family's categories (they add up to `total`). With
+   * foreign-currency spending they may differ from it by a few kopecks: each group is rounded on its own.
+   */
+  people: SpendingPersonPart[];
+  /** net > 0 only, net desc; a refund-only category is left out here but counts in `total`. */
+  categories: SpendingCategoryView[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are in leftOut). */
+  rates: RatesView | null;
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; net: number }>;
+  /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
+  familyTotal: number | null;
+};
+
+export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number };
+
+/** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
+export type CategoryLineView = {
+  /** Unique per line: the transaction's id, «:fee» for its commission line. */
+  key: string;
+  /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
+  date: string;
+  time: string;
+  weekday: number;
+  /**
+   * The bank's description of the operation ('' — none; a card number cut to its last digits, a jar's title hidden)
+   * and its comment. Descriptions leave main only here and in IncomeLineView: the user's own category and income screens.
+   */
+  merchant: string;
+  comment: string | null;
+  participantId: number;
+  account: AccountName;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  commission: boolean;
+  hold: boolean;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+  refund: boolean;
+  /** A purchase whose refund the bank paired with it. */
+  refunded: boolean;
+  /** Cashback in hryvnia kopecks (0 — none or no rate). */
+  cashback: number;
+};
+
+/**
+ * The category screen: one category in one month, scope and person (or the family), hryvnia kopecks by today's rates
+ * — the same lines as the spending block's figure. Weekdays, hours and days are the system time zone's.
+ */
+export type CategoryOverview = {
+  month: string;
+  category: string;
+  categoryId: CategoryId;
+  period: SpendingOverview['period'];
+  compare: SpendingOverview['compare'];
+  summary: SpendingAmounts & {
+    gross: number;
+    refunds: number;
+    /** The compared period's net and purchases; null — not covered. */
+    prev: SpendingAmounts | null;
+    /** Median spending line; null — none. */
+    median: number | null;
+    /** net per covered day; null — no covered day. */
+    perDay: number | null;
+    /** Days with a spending line. */
+    activeDays: number;
+    /** Key of the largest spending line; null — none. */
+    largest: string | null;
+    cashback: number;
+    cashbackLines: number;
+    /** Of the scope's spending this month (0…1), and the category's place among them (1 = largest); null — none. */
+    share: number | null;
+    rank: number | null;
+  };
+  /**
+   * 12 months up to the current one while `month` is among its last 12, else up to `month`; net null before the data
+   * starts.
+   */
+  months: Array<{ month: string; net: number | null }>;
+  /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
+  thisMonth: string;
+  /** The family view with more than one person only: each person's part. */
+  people: Array<SpendingAmounts & { participantId: number }>;
+  /** By the bank's description (case-insensitive), net desc. */
+  merchants: Array<SpendingAmounts & { name: string }>;
+  /** Newest first; the screen counts «When» from them (weekday, time, date), so a merchant filter narrows it too. */
+  lines: CategoryLineView[];
+  rates: RatesView | null;
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; net: number }>;
+};
+
+export type IncomeOverviewQuery = { month: string; participantId?: number };
+
+/** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
+export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
+
+/** Hryvnia kopecks (account currencies folded by today's rates) and income lines. */
+export type IncomeAmounts = { total: number; lines: number };
+
+/** One line of the income screen. */
+export type IncomeLineView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
+  date: string;
+  time: string;
+  weekday: number;
+  /**
+   * Who sent it: a named transfer's name, else the bank's description (a card number cut to its last digits, a jar's
+   * title hidden); '' — none. With the comment, the only text of the income screen.
+   */
+  sender: string;
+  comment: string | null;
+  source: IncomeSourceId;
+  participantId: number;
+  account: AccountName;
+  /** Hryvnia kopecks by today's rate, > 0; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  hold: boolean;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+};
+
+/**
+ * The income screen: one month's income of a person (or the family), all scopes, hryvnia kopecks by today's rates —
+ * the balances' «Income» figure. Weekdays, hours and days are the system time zone's.
+ */
+export type IncomeOverview = {
+  month: string;
+  period: SpendingOverview['period'];
+  compare: SpendingOverview['compare'];
+  summary: IncomeAmounts & {
+    /** The compared period's; null — not covered. */
+    prev: IncomeAmounts | null;
+    /** Median line; null — none. */
+    median: number | null;
+    /** total per covered day; null — no covered day. */
+    perDay: number | null;
+    /** Days with income. */
+    activeDays: number;
+    /** Key of the largest line; null — none. */
+    largest: string | null;
+    /** The month's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
+    spending: number;
+  };
+  /** As CategoryOverview's months: up to the current month while `month` is among its last 12; null before the data. */
+  months: Array<{ month: string; total: number | null }>;
+  /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
+  thisMonth: string;
+  /** The family view with more than one person only: each person's part. */
+  people: Array<IncomeAmounts & { participantId: number }>;
+  /** By source, total desc. */
+  sources: Array<IncomeAmounts & { source: IncomeSourceId }>;
+  /** By sender (case-insensitive), total desc. */
+  senders: Array<IncomeAmounts & { name: string }>;
+  /** Newest first; the screen counts «When» from them. */
+  lines: IncomeLineView[];
+  rates: RatesView | null;
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; total: number }>;
+};
+
+/** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */
+export type AnalyticsQuery = { from: string; to: string; participantId?: number };
+
+/** full — data for the whole bucket; running — the current month / today; none — before the first data or after today (values 0, not drawn). */
+export type AnalyticsBucketState = 'full' | 'running' | 'none';
+
+export type AnalyticsCategory = {
+  category: string;
+  categoryId: CategoryId | null;
+  /** Hryvnia kopecks per bucket, in `buckets` order. */
+  net: number[];
+  total: number;
+  /** The comparison period's spending; null — no comparison. */
+  prev: number | null;
+};
+
+/**
+ * The analytics screen: income and spending (all scopes, the balances' fold) of a person or the family, hryvnia kopecks by
+ * today's rates, per day (one month) or month (a range). Categories, numbers and dates only — no bank text.
+ */
+export type AnalyticsOverview = {
+  from: string;
+  to: string;
+  unit: 'day' | 'month';
+  /** `YYYY-MM-DD` (day) or `YYYY-MM` (month), oldest first. */
+  buckets: Array<{ key: string; state: AnalyticsBucketState }>;
+  income: number[];
+  /** The sum of the listed categories per bucket. */
+  spending: number[];
+  totals: { income: number; spending: number; prev: { income: number; spending: number } | null };
+  /** Dates; one month — last month (cut to the same day while this one runs); a range — the same number of months before. */
+  compare: { from: string; to: string; partial: boolean } | null;
+  /** Day only: the usual month's running spending by day — the mean of up to 3 whole months before; null without them. */
+  usual: number[] | null;
+  /** Spending categories of either period: this period's ranking first (net > 0, net desc), then the others by `prev`. */
+  categories: AnalyticsCategory[];
+  rates: RatesView | null;
+  /** Account currencies left out (no rate today). */
+  leftOut: number[];
+};
+
+export type NowOverviewQuery = { participantId?: number };
+
+/**
+ * The «Now» strip: today and this calendar week (from Monday), personal scope, hryvnia kopecks folded by today's
+ * rates — the same aggregate as the spending block. Main's clock in the system time zone decides «today».
+ */
+export type NowOverview = {
+  /** The date main counted as today (system time zone). */
+  date: string;
+  /** 1 = Monday … 7 = Sunday. */
+  weekday: number;
+  /** Date the data reaches in the system time zone (core periodInfo); null — never imported. */
+  dataUntil: string | null;
+  today: SpendingAmounts;
+  /**
+   * Median of daily net over the 30 days before today that the data covers (a day without spending counts as 0);
+   * null — fewer than 7 such days.
+   */
+  usualDay: number | null;
+  week: {
+    /** Monday. */
+    from: string;
+    /** Net of Monday … Sunday; null for the days after today. */
+    days: Array<number | null>;
+    /** Monday … today (the sum of the week's categories). */
+    total: SpendingAmounts;
+    /** Net of last week's Monday … the same weekday; null — the data does not reach that Monday. */
+    prev: number | null;
+    /**
+     * The category with the largest net this week; `rank` — its place in this month's categories (the spending
+     * block's colour), null — not among them. Null — no spending this week.
+     */
+    top: (SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null }) | null;
+    pendingHolds: number;
+  };
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */
+  rates: RatesView | null;
 };
 
 export type MonthOverviewQuery = { month: string; participantId?: number };
@@ -222,26 +504,24 @@ export type MonthOverviewQuery = { month: string; participantId?: number };
 /** Minor units: income and spending of the month (the core aggregates, all scopes). */
 export type FlowView = { income: number; spending: number };
 
-/** A foreign-currency part of a card's income / spending, converted to hryvnia by the user's own exchanges. */
+/** A foreign-currency part of a card's income / spending, converted to hryvnia at today's rate. */
 export type FxPart = {
   currency: number;
   /** Minor units of `currency`. */
   income: number;
   spending: number;
-  /** Hryvnia kopecks per minor unit; null — no exchange of this currency at all, the part is left out of the sums. */
+  /** Today's rate (hryvnia kopecks per minor unit); null — not quoted / no rates yet, the part is left out of the sums. */
   rate: number | null;
-  /** The rate is from the nearest exchange, not from this month's. */
-  nearest: boolean;
 };
 
 /** Income / spending: hryvnia, foreign parts converted by `fx`. */
 export type CardTotal = FlowView & {
   /** Foreign-currency parts of income / spending (never hryvnia; parts with nothing in either are left out). */
   fx: FxPart[];
-  /** Own funds in hryvnia at the end of the month (accounts with data only). */
+  /** Own funds in hryvnia at the end of the month, foreign accounts folded in at today's rate (accounts with data only). */
   ownFunds: number;
-  /** Other currencies — never summed with hryvnia. */
-  others: Array<{ currency: number; ownFunds: number }>;
+  /** Foreign-currency own funds, each with today's rate; rate null — left out of ownFunds. */
+  others: Array<{ currency: number; ownFunds: number; rate: number | null }>;
   /** Accounts without data at that date. */
   missing: number;
   /** All accounts behind the card, with data or without. */
@@ -263,21 +543,23 @@ export type MonthOverview = {
   month: string;
   /** 'now' for the current month, else the month's last day YYYY-MM-DD. */
   balanceAt: 'now' | string;
-  /** Kyiv dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
+  /** Dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
   coverage: { from: string; to: string };
   total: CardTotal;
   /** The whole family only: each person in their own view of transfers. */
   people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */
+  rates: RatesView | null;
 };
 
 export type DataStatus = {
   /** At least one account has been imported. */
   hasData: boolean;
-  /** Kyiv «YYYY-MM-DD HH:mm» up to which every imported account is covered. */
+  /** «YYYY-MM-DD HH:mm» (system time zone) up to which every imported account is covered. */
   dataUntil: string | null;
-  /** Kyiv date the data starts at; null = never imported. */
+  /** Date (system time zone) the data starts at; null = never imported. */
   dataFrom: string | null;
   lastSyncAt: string | null;
 };

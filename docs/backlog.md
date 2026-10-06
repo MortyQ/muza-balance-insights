@@ -45,5 +45,26 @@
 - Остальные экраны: сравнение месяцев, поездки по валюте операции, доходы, поиск операций.
 - AI-режим со своим API-ключом: ключ в main через safeStorage, модель выбирает график из белого списка компонентов,
   код не генерирует.
-- Погода (Open-Meteo) и курсы (`/bank/currency`): запросы из main по списку разрешённых адресов.
+- Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
+
+## Later: currencies
+
+- PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the
+  dictionaries; the rate is already in the Monobank answer.
+- The `CurrencyToggle` popover and the «Spending» gear popover have no accessible name for the dialog itself: give
+  `VPopover` a `title` / `aria-labelledby` option.
+- `pendingHolds` ignores the participant and scope filters, in «Spending» and in the «Now» strip alike.
+
+## Later: analytics
+
+- Open the category screen from analytics: that screen is one scope and one month, analytics is all scopes over a range,
+  so the figures would not match. Needs a scope filter on analytics or a range on the category screen.
+- A personal / business switch on analytics; weeks or quarters as the unit of a range; keeping the period between
+  launches.
+- Not checked on a live system: the analytics screen (layout, the charts' look, the period picker's hover preview).
+
+## Later: home screen
+
+- «Spending»: show today's categories too — most likely a switch right by the category bars (month / today), so the
+  block answers «what did I spend on today» without a separate view.

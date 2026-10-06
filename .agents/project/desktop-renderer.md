@@ -20,10 +20,124 @@
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
-  Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the home screen's scroll area; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
-  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), `min` = `firstMonthOf(syncStatus.status.dataFrom)`
-  из `entities/period` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
+  Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the default layout's scroll area, `app/layouts/DefaultLayout.vue`; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = the import's floor month
+  (`monthOf(importFloor(today))`, `src/shared/import-range.ts`), not the first data month: an older month gets the «no data
+  yet» notice of `widgets/home-notices` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
+- **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
+  `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
+  (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,
+  lastSyncAt }, now, labelOf)` → `SyncStatusView` (`types.ts`: `icon`, `text`, `percent`, `note`, `tooltip`), pure and
+  tested (`tests/renderer/sync-status.test.ts`); `failedConnections(progress)` → connection id → error text for
+  `ParticipantFilter`'s `failed` prop. Phases: a user's import — spinner + `home.filters.syncing`, the windows share
+  (`home.filters.percent`) only in `windows`, `progressLine` in the tooltip; «Auto-sync» — `home.import.autoRunning`, no
+  percent, no tooltip; `retry` — `home.filters.retryAt` + the full retry line in the tooltip; otherwise the data line
+  (`syncStatus.line`) + `home.filters.updated` with `syncedWhen(lastSyncAt, now)` (`shared/lib`: today → `common.atTime`,
+  another day → `shortDate`); `done` with `failed` or `error` — a `text-warning` triangle, the reason
+  (`home.import.notLoaded` / `IMPORT_ERRORS`) in the tooltip and as sr-only text. `components/SyncStatus.vue`: `role="status"`
+  `aria-live="polite"`, the percent `aria-hidden` (a phase is announced once, not every tick), the spinner
+  `motion-reduce:animate-none`; no `aria-busy` on the header (it can hold the announcement back). People: each person's
+  tooltip — `entities.participant.updated` with the latest `lastSyncAt` of their connections (`lastSyncOf`), plus
+  «label: reason» per failed connection; such a person gets `SegmentOption.alert` (`VSegmentedControl`: a warning dot,
+  the string is the sr-only suffix, `entities.participant.syncFailed`). Segment tooltips are HTML, so names are escaped.
+  Per-connection progress is not in the IPC: no per-person spinner.
+- **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
+  one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
+  `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
+  `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
+  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils.ts` builds rows for the
+  family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
+  family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
+  3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
+  the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), the centre total and every amount through `MoneyFormat` (`entities/currency-display`; no per-currency chip). `composables/useSpending.ts` — the
+  request and the pick (reset on month, scope and global filter changes);
+  `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
+  segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
+  of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
+  currency is the home-wide `entities/currency-display` choice. The footnote says «at today's Monobank rate». Layout: `@container`, the columns stack
+  below `@3xl`; only the category name shrinks (ellipsis + title); numbers have fixed widths and never wrap.
+  `shared/ui/VPopover` — ours on reka-ui.
+  A category row is a link to its screen (`categoryLink(id, scope)` in `shared/config`; «N more categories» and an
+  unknown word stay plain rows); it no longer unfolds — the per-person split is on the category screen. Category
+  icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
+  with the «Now» strip and the category screen.
+- **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
+  `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
+  unknown id → home by the route's guard; `query.scope`, read back by `categoryRequest`), default layout without its
+  own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
+  `desktop-import.md`): the month, person and currency are the global filters; quiet reload on `syncStatus.version`.
+  `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
+  merchant filter, search and order (reset with month, category and person). «When» is counted on the screen from the
+  lines (`whenTotals`), so the merchant filter narrows it too and its title names the merchant; the search does not. `utils.ts` is pure and tested
+  (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
+  the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
+  and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
+  `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
+  12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
+  is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
+  average leaves the running month out, the caption compares the picked month with it.
+  The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
+  months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
+  colour itself.
+- **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
+  `DetailSummary` (header, figure, change chip, stats grid; `SummaryView`), `MonthsChart`, `WhenCharts`, `PeopleBars`,
+  `ShareList` (merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and
+  order; column and search texts come as props), `DetailSkeleton`; pure helpers in `utils.ts` (`monthsView`,
+  `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
+  Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
+  each other).
+  Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
+  chart, the dashed average as a mark line with its amount at the right end (`avgLabel`), the picked month's label bold) and «When»'s weekdays and days
+  (`weekdaysChartOption`, `daysChartOption`); options are pure and tested, colours stay CSS (`var(--cat)`, `SOFT_BAR`)
+  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
+- **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,
+  `meta.navParent: 'home'`), opened from the «In» row of the balances' month panel (`FlowBars` `incomeTo`, md only). One
+  IPC `getIncomeOverview({ month, participantId? })` — all scopes, the balances' figure; month, person and currency are
+  the global filters; quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
+  summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
+  «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
+  (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
+  tested (`tests/renderer/income-detail.test.ts`).
+- **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
+  `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
+  global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole
+  ones, independent of the home month; `rangePresets`, `compareText` for the picker's note; `dataFrom` comes as a prop)
+  over `shared/ui/VMonthRangePicker` (ours on reka-ui `MonthPicker` / `MonthRangePicker`: «One month | Range», quick
+  picks, the first click of a range is already one month, a draft applied on «Show», a `note` slot). One IPC
+  `getAnalyticsOverview` (see `desktop-import.md`); person and currency are the global filters; quiet reload on
+  `syncStatus.version`. Blocks: KPIs (income, spending, left, savings rate vs the period before), «Income and spending»
+  (ECharts lines on a value axis by bucket index, the area between them as two `custom` polygon series split exactly at
+  crossings — `gapPolygons`; one month: running totals + the dashed usual month), «What changed» (4 largest increases +
+  the largest decrease; a row opens «Lines» with that category alone), «Categories» with a `VSegmentedControl` of four
+  views: heatmap (`role="table"`; months, or calendar weeks of one month; colour = the cell's per-day level against the
+  row's mean over full columns, `--heat-hot` / `--heat-cold` in `theme.css`, a running column dashed and out of the
+  mean), small charts, lines (chips toggle, top 5 by default, hover fades the others, amount / share), compare
+  (diverging bars). Rows = every category with spending, by the period's rank (no «Other N»; rank colours for the
+  top 7, `--category-other` past them). Heatmap: names pinned left and «Average» right while the cells scroll; hovering a cell lights its row and column and fades the rest. The heatmap says its unit next to the legend (thousands of the shown
+  currency per month, or per week); a small chart's bar has a tooltip with its bucket and amount. `utils.ts` is pure and tested
+  (`tests/renderer/analytics.test.ts`).
+- **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
+  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
+  «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
+  under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
+  = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; today's Monobank rates (the answer carries `rates`).
+  Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
+  `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
+  `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
+- **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
+  `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
+  the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and
+  `rates` — the newest `RatesView` snapshot of any block's answer (`setRates`), `undefined` until the first answer
+  (not loaded yet, which is not «no rates»; `null` — main has none). Every home block calls
+  `useMoneyFormat(() => answer.rates)` and formats through the returned `MoneyFormat` (`currency`, `convert`, `money`,
+  `approx`, `approxInline`); without a rate for the main currency it falls back to ₴. Balances, «In / Out», the «Now»
+  strip and «Spending» all format this way; no block formats a hryvnia amount itself. `CurrencyToggle` (in
+  `GlobalFilters` after `MonthFilter`): a `VPopover` whose text is `shownText` («$ · ₴ €»), a `VSegmentedControl` for
+  the main currency, «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
+  main served the cached rates offline, or «no rates»).
+- **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
+  one look and one rule for «Spending» and the strip.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.
@@ -106,9 +220,10 @@
     shared words in `common.*`; `uk.json` is the reference, `en.json` and `ru.json` get the same key in the same change
     (`tests/i18n.test.ts`);
   - Ukrainian and Russian texts address the user informally (ти / ты), as the screens always have; English is plain;
-  - numbers, dates and money keep their own formatters (`formatMoney`, `monthTitle`) and are passed in as placeholders;
+  - numbers, dates and money keep their own formatters (`formatMoney`, `monthName`, `shortDate`) and are passed in as placeholders;
   - bank names, the app name and the language names in the language select are not translated.
-- Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в `app/router`,
+- Навигация — `vue-router` с memory history (адрес страницы всегда `app://renderer/index.html`), маршруты в
+  `app/router/routes.ts` (`meta.layout` / `meta.nav` — лаяут и пункт бокового меню, см. «Layouts» в корневом `CLAUDE.md`),
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
   Банки — `entities/bank`, только отображение (`BANKS`: `id`, `name`, монограмма / логотип, `status` — доступен / «Скоро»;

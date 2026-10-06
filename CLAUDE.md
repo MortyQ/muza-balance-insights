@@ -127,11 +127,11 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
   hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
-  filters every home block reads (`ParticipantFilter`, `MonthFilter`) and «Обновлено…». It sits outside the home
-  screen's own scroll area (the page is a column: the filters, then a scroll area with the grid), so it never scrolls
-  and the scroll bar starts under it. Month on the left, «Обновлено…» on the right; the person switch is buttons centred
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
+  outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
+  so it never scrolls and the scroll bar starts under it. Month and currency on the left, the sync status on the right; the person switch is buttons centred
   in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
-  `ResizeObserver` on the row, the month, «Обновлено…» and a hidden copy of the buttons; `fitsCenter`), otherwise a
+  `ResizeObserver` on the row, the month with the currency, the sync status and a hidden copy of the buttons; `fitsCenter`), otherwise a
   `VSelect` before the month (`ParticipantFilter` `mode`).
 - **Theme** — in main: `nativeTheme.themeSource` = `system | light | dark` (`src/shared/theme.ts`, default `system`), set
   before the window. The frame, native dialogs and menus and the page's `prefers-color-scheme` follow it. IPC
@@ -165,13 +165,22 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
   - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
-    `tokenBadge`, adding);
+    `tokenBadge`, adding; then «History download» — `ImportFeature` from `features/import-statement`, composed in the
+    widget: a list per bank (Monobank only for now), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
+    `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
+    back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
+    `Importer` throws on a date out of range. No arbitrary end date: coverage is one span per account (`sync_state`));
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Language and time» (`LanguageSelectFeature`), «О программе».
-  Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`.
+  Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`. The history download is
+  reached by `importLink(from?)` (`shared/config`: `section=connections`, `focus=import`, optional `from`); the page
+  reads it back with `importRequest` and the section scrolls to itself, focuses and takes the date. Home has no import
+  block: `widgets/home-notices` shows «No data yet» → «Download history» while nothing is imported (a line instead while
+  the user's import runs), and, for a month picked before `dataFrom`, «{month}: no data yet» → «Download» from that
+  month (`emptyMonth`). For that the month filter's lower bound is the import's floor month, not the first data month.
 - **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
   the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
@@ -179,7 +188,19 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
-  top below 45rem. Used by settings (`NAV_GROUPS`) and home (`HOME_NAV` in `pages/home/constants.ts`: one item «General»
-  for now). Home uses the settings grid (menu on the left, blocks on the right) inside its scroll area, under the
-  pinned `GlobalFilters`.
+  top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`: «General» =
+  `home`, «Analytics» = `analytics`, `features/analytics-overview`). On a route with `meta.periodFilter: 'range'`
+  (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`.
+- **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
+  picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
+  `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the
+  settings grid: `SideNav` on the left (`useNav`: `navGroups(router.getRoutes())` — routes with `meta.nav { label, icon,
+  order }`; current = the open route, a pick pushes it), the screen on the right. `EmptyLayout` — the screen alone (lock,
+  recovery, connect, settings: `meta.layout: 'empty'`). The routes are `app/router/routes.ts`. The screen goes into the
+  layout's slot (MasterLayout's `RouterView` slot), not a `RouterView` inside the layout: a leaving layout keeps its old
+  screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each
+  layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. A default-layout screen without its own
+  menu item names the item to keep current with `meta.navParent` (the category and income screens → `home`). `MasterLayout` keeps the screens in `KEPT_ALIVE` (`HomePage`) alive while another screen of their layout is open (back from a category, home is there at once, reloading quietly). Pages and layouts have one root element
+  (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
+  with `meta.nav`; the guard opens every default-layout route once home is the start (`startGuard`).
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

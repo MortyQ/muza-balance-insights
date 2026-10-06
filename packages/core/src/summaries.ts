@@ -1,12 +1,13 @@
 // Spending / income aggregates over the real database — the core of the phase 5 MCP tools.
 // All amounts are minor units of the ACCOUNT currency; different currencies are never summed.
-// Periods are local_date ranges [from, to], inclusive. No counterparty names or descriptions in any output.
+// Periods are calendar days [from, to], inclusive, of a time zone (periods.ts; Kyiv by default), matched by `time`. No counterparty names or descriptions in any output.
 import { CROSSING_CTE, CROSSING_JOIN, ENABLED_ACCOUNT_IDS_SQL, crossingCategories } from './accounts.ts';
 import { CATEGORY } from './categories.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
 import { currencyAlpha } from './currency.ts';
-import { accountLabels, kyivStartOfDay, parseLocalDate, toKyivDate } from './format.ts';
+import { accountLabels, dateIn, parseLocalDate } from './format.ts';
+import { BUCKETS_CTE, addDays, bucketKeySql, isTimeZone, periodArgs, periodBuckets, periodRange, periodSql, zoneOf, type ZonedPeriod } from './periods.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId, ProviderIncomeSource } from './providers/types.ts';
@@ -18,7 +19,7 @@ export class SummaryError extends Error {
 
 // ---------- periods ----------
 
-export type Period = { from: string; to: string };
+export type Period = ZonedPeriod;
 
 export type PeriodInfo = Period & {
   /** Calendar days in [from, to]. */
@@ -28,7 +29,7 @@ export type PeriodInfo = Period & {
    * "Last sync" = the least recent newest_synced_time over synced accounts, so no account is ahead of it.
    */
   incomplete: boolean;
-  /** Kyiv date of that last sync; null if nothing was ever synced. That day is usually only partly covered. */
+  /** Date of that last sync in the period's zone; null if nothing was ever synced. That day is usually only partly covered. */
   dataUntil: string | null;
   /**
    * Fully covered days of the period: from … min(to, last complete day before the sync), inclusive.
@@ -42,12 +43,6 @@ export type PeriodInfo = Period & {
   pendingHolds: number;
 };
 
-function addDays(date: string, n: number): string {
-  const p = parseLocalDate(date)!;
-  const d = new Date(Date.UTC(p.y, p.m - 1, p.d + n));
-  return d.toISOString().slice(0, 10);
-}
-
 function daysBetween(from: string, to: string): number {
   const a = parseLocalDate(from)!;
   const b = parseLocalDate(to)!;
@@ -59,23 +54,25 @@ export function validatePeriod(p: Period): Period {
     if (!parseLocalDate(d)) throw new SummaryError(`Некорректная дата «${d}», ожидается YYYY-MM-DD`);
   }
   if (p.from > p.to) throw new SummaryError(`Начало периода ${p.from} позже конца ${p.to}`);
+  if (p.tz !== undefined && !isTimeZone(p.tz)) throw new SummaryError(`Неизвестный часовой пояс «${p.tz}»`);
   return p;
 }
 
 export async function periodInfo(db: Db, period: Period, nowSec: number): Promise<PeriodInfo> {
   const { from, to } = validatePeriod(period);
+  const tz = zoneOf(period);
   const rs = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
   const newest = rs.rows[0]?.newest === null || rs.rows[0]?.newest === undefined ? null : Number(rs.rows[0].newest);
-  const endSec = kyivStartOfDay(addDays(to, 1)); // exclusive end of the period
-  const dataUntil = newest === null ? null : toKyivDate(newest);
+  const { endSec } = periodRange(period); // exclusive end of the period
+  const dataUntil = newest === null ? null : dateIn(newest, tz);
   // A day is complete once its last second is synced: newest + 1 s falls on the next day.
-  const lastFullDay = newest === null ? null : addDays(toKyivDate(newest + 1), -1);
+  const lastFullDay = newest === null ? null : addDays(dateIn(newest + 1, tz), -1);
   const lastCovered = lastFullDay === null ? null : lastFullDay < to ? lastFullDay : to;
   const holds = await db.execute({
     sql: `SELECT COUNT(*) AS n FROM transactions
-          WHERE is_cancelled = 0 AND hold = 1 AND local_date BETWEEN ? AND ? AND time >= ?
+          WHERE is_cancelled = 0 AND hold = 1 AND ${periodSql('transactions')} AND time >= ?
             AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
-    args: [from, to, nowSec - RESYNC_OVERLAP_SEC],
+    args: [...periodArgs(period), nowSec - RESYNC_OVERLAP_SEC],
   });
   return {
     from,
@@ -97,7 +94,7 @@ function perDay(amount: number, info: PeriodInfo): number | null {
  * participantId: the view of one participant — only their accounts, and a family transfer counts (spending of the
  * sender, income of the receiver). Absent: the whole family — family transfers are excluded like internal ones.
  */
-type Filters = { scope?: Scope; accountId?: string; participantId?: number };
+export type Filters = { scope?: Scope; accountId?: string; participantId?: number };
 
 /** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant if one is asked for. */
 function accountWhere(f: Filters, where: string[], args: Array<string | number>): void {
@@ -119,9 +116,9 @@ const excludedTransferSql = (f: Filters) =>
 const CATEGORY_SQL = 'COALESCE(x.value, t.category)';
 
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
-type SpendingFilters = Filters & { operationCurrency?: number };
+export type SpendingFilters = Filters & { operationCurrency?: number };
 
-function validateFilters(f: Filters): void {
+export function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
   if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
 }
@@ -135,8 +132,11 @@ async function labelsById(db: Db): Promise<Map<string, string>> {
 
 // ---------- spendingSummary ----------
 
+/** The MCP tools' choices (`spending_summary`, `compare_periods`). */
 export const SPENDING_GROUP_BY = ['category', 'month', 'account', 'mcc', 'scope', 'operation_currency'] as const;
-export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number];
+/** Plus `day` — one group per day of the period's zone — for the desktop's «Now» strip only: the MCP tools do not offer it. */
+export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number] | 'day';
+const GROUP_BY: ReadonlyArray<SpendingGroupBy> = [...SPENDING_GROUP_BY, 'day'];
 
 /** Key of the commission line when grouping by MCC (it has no MCC of its own). */
 export const COMMISSION_KEY = 'commission';
@@ -156,6 +156,8 @@ export type SpendingGroup = {
   label?: string;
   /** Ledger lines: a row with a commission counts as two lines (body + commission). */
   lines: number;
+  /** Spending lines (amount < 0): a refund is not an operation; a commission is a line of its own. */
+  purchases: number;
   /** All ≥ 0. net = gross − refunds. */
   gross: number;
   refunds: number;
@@ -167,6 +169,7 @@ export type SpendingGroup = {
 export type CurrencyTotal = {
   currency: number;
   lines: number;
+  purchases: number;
   gross: number;
   refunds: number;
   net: number;
@@ -187,15 +190,62 @@ export type SpendingQuery = Period & SpendingFilters & { groupBy?: SpendingGroup
 
 const KEY_SQL: Record<SpendingGroupBy, string> = {
   category: 'category',
-  month: 'substr(local_date, 1, 7)',
+  month: bucketKeySql('time'),
   account: 'account_id',
   mcc: `COALESCE(CAST(mcc AS TEXT), '${COMMISSION_KEY}')`,
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
+  day: bucketKeySql('time'),
 };
 
+/** Lines that count as spending: not «поступления» / «свои переводы», not zero. Arguments: SPENDING_LINE_ARGS. */
+export const SPENDING_LINE_SQL = 'category NOT IN (?, ?) AND amount <> 0';
+export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.ownTransfers];
+
 /**
- * Spending for local_date in [from, to]:
+ * `WITH … base, lines` of a spending query — the one place the line rules live (spendingSummary, categoryLines):
+ * - a row with commission_rate > 0 (amount < 0) is split: the body (`kind` body, amount + commission) keeps its
+ *   category, the commission is a separate «комиссии банка» line (`kind` commission, no operation currency);
+ * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays;
+ * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
+ * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount. The caller keeps
+ * SPENDING_LINE_SQL. With `unit`, the CTE `buckets` of the period's days or months is there too (bucketKeySql).
+ */
+export async function spendingLinesSql(
+  db: Db,
+  q: Period & SpendingFilters,
+  unit: 'day' | 'month' | null = null,
+): Promise<{ sql: string; args: Array<string | number> }> {
+  const where = ['t.is_cancelled = 0', periodSql('t')];
+  const args: Array<string | number> = [...periodArgs(q)];
+  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
+  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
+  if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
+  accountWhere(q, where, args);
+  return {
+    sql: `WITH ${CROSSING_CTE},${unit ? ` ${BUCKETS_CTE},` : ''}
+          base AS (
+            SELECT t.id, a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
+                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
+                   COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
+                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
+            FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
+            WHERE ${where.join(' AND ')}
+          ),
+          lines AS (
+            -- body: account-currency amount without the commission; the operation amount never includes it
+            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount
+            FROM base WHERE internal = 0
+            UNION ALL
+            -- commission: account currency only, no operation currency
+            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
+          )`,
+    args: [await crossingCategories(db, q), ...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees],
+  };
+}
+
+/**
+ * Spending for the days [from, to] of the period's zone (by `time`):
  * - a row with commission_rate > 0 (amount < 0) is split: body = amount + commission keeps its category,
  *   the commission is a separate «комиссии банка» line;
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays
@@ -206,39 +256,21 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
  */
 export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number): Promise<SpendingSummary> {
   const groupBy = q.groupBy ?? 'category';
-  if (!SPENDING_GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${SPENDING_GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
+  if (!GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', 't.local_date BETWEEN ? AND ?'];
-  const args: Array<string | number> = [q.from, q.to];
-  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
-  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
-  if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
-  accountWhere(q, where, args);
-  const outer = ['category NOT IN (?, ?)', 'amount <> 0'];
-  const outerArgs: string[] = [CATEGORY.income, CATEGORY.ownTransfers];
+  const outer = [SPENDING_LINE_SQL];
+  const outerArgs: string[] = [...SPENDING_LINE_ARGS];
   if (q.category) (outer.push('category = ?'), outerArgs.push(q.category));
 
+  // Day and month keys come from the zone's own day starts (periods.ts): SQLite knows no time zones.
+  const unit = groupBy === 'day' ? 'day' : groupBy === 'month' ? 'month' : null;
+  const from = await spendingLinesSql(db, q, unit);
   const rs = await db.execute({
-    sql: `WITH ${CROSSING_CTE},
-          base AS (
-            SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
-                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
-                   COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
-                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
-            FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
-            WHERE ${where.join(' AND ')}
-          ),
-          lines AS (
-            -- body: account-currency amount without the commission; the operation amount never includes it
-            SELECT currency, account_id, local_date, mcc, scope, category, amount + commission AS amount, op_currency, op_amount
-            FROM base WHERE internal = 0
-            UNION ALL
-            -- commission: account currency only, no operation currency
-            SELECT currency, account_id, local_date, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
-          )
+    sql: `${from.sql}
           SELECT currency, ${KEY_SQL[groupBy]} AS k, COUNT(*) AS lines,
+                 SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
                  SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
                  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds,
                  COUNT(DISTINCT op_currency) AS op_currencies, SUM(op_currency IS NULL) AS op_missing, MIN(op_currency) AS op_currency,
@@ -248,7 +280,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
           WHERE ${outer.join(' AND ')}
           GROUP BY currency, k
           ORDER BY currency, gross DESC, k`,
-    args: [await crossingCategories(db, q), ...args, CATEGORY.fees, ...outerArgs],
+    args: [...from.args, ...outerArgs],
   });
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;
@@ -265,6 +297,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
       key,
       ...(labels ? { label: labels.get(rawKey) ?? rawKey } : {}),
       lines: Number(r.lines),
+      purchases: Number(r.purchases),
       gross,
       refunds,
       net: gross - refunds,
@@ -287,12 +320,47 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   };
 }
 
+/** One cell of spendingGrid: one account currency, one day (YYYY-MM-DD) or month (YYYY-MM) of the period's zone, one category. */
+export type SpendingCell = { currency: number; bucket: string; category: string; purchases: number; gross: number; refunds: number; net: number };
+export type SpendingGrid = { period: PeriodInfo; unit: 'day' | 'month'; cells: SpendingCell[] };
+
+/**
+ * Spending by category × day or month of the period's zone in one query, over the lines of spendingSummary
+ * (spendingLinesSql + SPENDING_LINE_SQL): per currency the cells add up to its groups by category, day or month.
+ * For the desktop's analytics screen; the MCP tools do not offer it.
+ */
+export async function spendingGrid(db: Db, q: Period & SpendingFilters & { unit: 'day' | 'month' }, nowSec: number): Promise<SpendingGrid> {
+  if (q.unit !== 'day' && q.unit !== 'month') throw new SummaryError(`unit: day | month, получено «${String(q.unit)}»`);
+  validateFilters(q);
+  const period = await periodInfo(db, q, nowSec);
+  const from = await spendingLinesSql(db, q, q.unit);
+  const rs = await db.execute({
+    sql: `${from.sql}
+          SELECT currency, ${bucketKeySql('time')} AS b, category,
+                 SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
+                 SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
+                 SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds
+          FROM lines
+          WHERE ${SPENDING_LINE_SQL}
+          GROUP BY currency, b, category
+          ORDER BY currency, b, category`,
+    args: [...from.args, ...SPENDING_LINE_ARGS],
+  });
+  const cells = rs.rows.map((r) => {
+    const gross = Number(r.gross);
+    const refunds = Number(r.refunds);
+    return { currency: Number(r.currency), bucket: String(r.b), category: String(r.category), purchases: Number(r.purchases), gross, refunds, net: gross - refunds };
+  });
+  return { period, unit: q.unit, cells };
+}
+
 /** Per account currency. The operation block survives only if every group of that currency has one and the same operation currency. */
 function currencyTotals(groups: readonly SpendingGroup[], period: PeriodInfo): CurrencyTotal[] {
   const by = new Map<number, CurrencyTotal & { opOk: boolean }>();
   for (const g of groups) {
-    const t = by.get(g.currency) ?? { currency: g.currency, lines: 0, gross: 0, refunds: 0, net: 0, netPerDay: null, opOk: true };
+    const t = by.get(g.currency) ?? { currency: g.currency, lines: 0, purchases: 0, gross: 0, refunds: 0, net: 0, netPerDay: null, opOk: true };
     t.lines += g.lines;
+    t.purchases += g.purchases;
     t.gross += g.gross;
     t.refunds += g.refunds;
     t.net += g.net;
@@ -385,7 +453,9 @@ export async function comparePeriods(
 // ---------- incomeSummary ----------
 
 export const INCOME_GROUP_BY = ['source', 'month', 'account', 'scope'] as const;
-export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number];
+/** Plus `day` — one group per date of the period's zone — for the desktop's analytics screen only: the MCP tools do not offer it. */
+export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number] | 'day';
+const INCOME_GROUPS: ReadonlyArray<IncomeGroupBy> = [...INCOME_GROUP_BY, 'day'];
 
 /** The provider's sources, plus `family`: money from another participant (participant view only). */
 export type IncomeSource = ProviderIncomeSource | 'family';
@@ -406,7 +476,32 @@ export type IncomeSummary = {
 };
 
 /**
- * Income = non-internal rows in «поступления» for local_date in [from, to]. Refunds are not income
+ * `WITH … SELECT` of the income rows in the period — the one place the income rules live (incomeSummary, incomeLines):
+ * non-internal «поступления» rows; family transfers only in a participant's view; only enabled accounts.
+ * Columns: id, currency (the account's), account_id, participant_id, time, mcc, scope, description, comment, counter_name,
+ * hold, amount, op_currency, op_amount, transfer_rule (null for a row crossing to a disabled account). Newest first.
+ */
+export async function incomeRowsSql(db: Db, q: Period & Filters): Promise<{ sql: string; args: Array<string | number> }> {
+  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, periodSql('t')];
+  const args: Array<string | number> = [await crossingCategories(db, q), CATEGORY.income, ...periodArgs(q)];
+  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
+  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
+  accountWhere(q, where, args);
+  return {
+    sql: `WITH ${CROSSING_CTE}
+          SELECT t.id, a.currency_code AS currency, t.account_id, c.participant_id, t.time, t.mcc, t.scope, t.description,
+                 t.comment, t.counter_name, t.hold, t.amount, t.currency_code AS op_currency,
+                 COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
+                 CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
+          FROM transactions t JOIN accounts a ON a.id = t.account_id JOIN connections c ON c.id = a.connection_id ${CROSSING_JOIN}
+          WHERE ${where.join(' AND ')}
+          ORDER BY t.time DESC, t.id`,
+    args,
+  };
+}
+
+/**
+ * Income = non-internal rows in «поступления» for the days [from, to] of the period's zone. Refunds are not income
  * (they sit in the purchase's category), internal transfers neither. Cashback is not included.
  * A family transfer is income of the receiver (source `family`) in a participant's view, and not income of the family.
  * Only enabled accounts (accounts.ts); a credit from a disabled one is ordinary income (its own source).
@@ -417,23 +512,11 @@ export async function incomeSummary(
   nowSec: number,
 ): Promise<IncomeSummary> {
   const groupBy = q.groupBy ?? 'source';
-  if (!INCOME_GROUP_BY.includes(groupBy)) throw new SummaryError(`groupBy: ${INCOME_GROUP_BY.join(' | ')}, получено «${String(groupBy)}»`);
+  if (!INCOME_GROUPS.includes(groupBy)) throw new SummaryError(`groupBy: ${INCOME_GROUPS.join(' | ')}, получено «${String(groupBy)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, 't.local_date BETWEEN ? AND ?'];
-  const args: Array<string | number> = [await crossingCategories(db, q), CATEGORY.income, q.from, q.to];
-  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
-  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
-  accountWhere(q, where, args);
-  const rs = await db.execute({
-    sql: `WITH ${CROSSING_CTE}
-          SELECT a.currency_code AS currency, t.account_id, t.local_date, t.mcc, t.scope, t.description, t.amount,
-                 CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
-          FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
-          WHERE ${where.join(' AND ')}`,
-    args,
-  });
+  const rs = await db.execute(await incomeRowsSql(db, q));
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;
   const providers = await accountProviders(db);
@@ -444,7 +527,8 @@ export async function incomeSummary(
         ? r.transfer_rule === 'family'
           ? ('family' satisfies IncomeSource)
           : incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
-      : groupBy === 'month' ? String(r.local_date).slice(0, 7)
+      : groupBy === 'day' ? dateIn(Number(r.time), zoneOf(q))
+      : groupBy === 'month' ? dateIn(Number(r.time), zoneOf(q)).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)
       : String(r.scope);
     const currency = Number(r.currency);

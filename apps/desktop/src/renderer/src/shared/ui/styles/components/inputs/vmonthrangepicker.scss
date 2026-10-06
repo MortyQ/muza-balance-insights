@@ -1,0 +1,353 @@
+/* Ours, not copied — VMonthRangePicker is built on reka-ui, not on any muzakit component (see VMonthRangePicker.vue header).
+   The trigger and the month grid read exactly like VMonthPicker's (vmonthpicker.scss); the rest is the range's own. */
+
+.v-month-range-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ui-control-gap);
+  height: var(--ui-control-h);
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-xs);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover {
+    border-color: var(--ui-border-strong);
+  }
+
+  &[data-state="open"],
+  &:focus-visible {
+    border-color: var(--ui-border-focus);
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
+    outline: none;
+  }
+}
+
+.v-month-range-picker__icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  flex-shrink: 0;
+  color: var(--ui-foreground-muted);
+}
+
+.v-month-range-picker__caret-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+  color: var(--ui-foreground-muted);
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+.v-month-range-picker__trigger[data-state="open"] .v-month-range-picker__caret-icon {
+  transform: rotate(180deg);
+  color: var(--ui-primary);
+}
+
+/* The panel: our own <div> under `as-child` (the scope attribute survives Teleport; see vmonthpicker.scss). */
+.v-month-range-picker__content {
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  width: min(40rem, calc(100vw - 2rem));
+  background-color: var(--ui-surface-overlay);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-lg);
+  animation: v-month-range-picker-in 160ms ease-out;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: v-month-range-picker-in-reduced 160ms ease-out;
+  }
+}
+
+@keyframes v-month-range-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes v-month-range-picker-in-reduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.v-month-range-picker__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-md);
+  padding: var(--ui-space-md) var(--ui-space-lg);
+  border-bottom: 1px solid var(--ui-border-subtle);
+}
+
+.v-month-range-picker__hint {
+  color: var(--ui-foreground-muted);
+  font-size: var(--ui-text-sm);
+}
+
+.v-month-range-picker__body {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.v-month-range-picker__quick {
+  display: flex;
+  flex: 1 1 11rem;
+  flex-direction: column;
+  gap: var(--ui-space-2xs);
+  max-width: 13rem;
+  padding: var(--ui-space-sm);
+  border-right: 1px solid var(--ui-border-subtle);
+}
+
+.v-month-range-picker__preset {
+  min-height: var(--ui-control-h-md);
+  padding: 0 var(--ui-control-px);
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground);
+  font-family: inherit;
+  font-size: var(--ui-text-base);
+  text-align: left;
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+
+  &--on,
+  &--on:hover {
+    background-color: var(--ui-primary-subtle);
+    color: var(--ui-primary);
+    font-weight: 600;
+  }
+}
+
+.v-month-range-picker__calendar {
+  flex: 999 1 18rem;
+  min-width: 0;
+  padding: var(--ui-space-md) var(--ui-space-lg);
+}
+
+.v-month-range-picker__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ui-space-sm);
+}
+
+.v-month-range-picker__nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-h-sm);
+  height: var(--ui-control-h-sm);
+  background: transparent;
+  border: none;
+  border-radius: var(--ui-radius);
+  color: var(--ui-foreground-muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    color: var(--ui-primary);
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-disabled);
+    background-color: transparent;
+  }
+
+  svg {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+}
+
+.v-month-range-picker__heading {
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 600;
+}
+
+.v-month-range-picker__grid {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* reka-ui's grid.rows chunks the year's 12 months by 4 (vmonthpicker.scss). No gap between cells: a range reads as one band. */
+.v-month-range-picker__row {
+  display: flex;
+
+  & + & {
+    margin-top: var(--ui-space-xs);
+  }
+}
+
+.v-month-range-picker__cell-wrap {
+  display: flex;
+  flex: 1;
+}
+
+.v-month-range-picker__cell {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  height: var(--ui-control-h-lg);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-sm);
+  border-radius: var(--ui-radius);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--ui-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+
+  /* This month: still running. */
+  &[data-today]::after {
+    content: "";
+    position: absolute;
+    bottom: var(--ui-space-xs);
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    margin-left: -2px;
+    border-radius: var(--ui-radius-full);
+    background: currentColor;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    color: var(--ui-foreground-subtle);
+    background-color: transparent;
+  }
+
+  /* Inside the range and the hover preview of it. */
+  &[data-selected],
+  &[data-highlighted] {
+    background-color: var(--ui-primary-muted);
+    border-radius: 0;
+  }
+
+  &[data-selection-start],
+  &[data-selection-end],
+  &[data-highlighted-start],
+  &[data-highlighted-end] {
+    background-color: var(--ui-primary);
+    color: var(--ui-primary-foreground);
+    font-weight: 600;
+  }
+
+  &[data-selection-start],
+  &[data-highlighted-start] {
+    border-radius: var(--ui-radius) 0 0 var(--ui-radius);
+  }
+
+  &[data-selection-end],
+  &[data-highlighted-end] {
+    border-radius: 0 var(--ui-radius) var(--ui-radius) 0;
+  }
+
+  &[data-selection-start][data-selection-end] {
+    border-radius: var(--ui-radius);
+  }
+}
+
+.v-month-range-picker__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-md) var(--ui-space-lg);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+.v-month-range-picker__summary {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-size: var(--ui-text-sm);
+}
+
+.v-month-range-picker__picked {
+  color: var(--ui-foreground);
+  font-weight: 600;
+}
+
+.v-month-range-picker__cancel,
+.v-month-range-picker__apply {
+  height: var(--ui-control-h-md);
+  padding: 0 var(--ui-space-lg);
+  border-radius: var(--ui-radius-lg);
+  font-family: inherit;
+  font-size: var(--ui-text-base);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring-offset), 0 0 0 4px var(--ui-ring);
+  }
+}
+
+.v-month-range-picker__cancel {
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  color: var(--ui-foreground);
+
+  &:hover {
+    background: var(--ui-surface-hover);
+  }
+}
+
+.v-month-range-picker__apply {
+  background: var(--ui-primary);
+  border: none;
+  color: var(--ui-primary-foreground);
+
+  &:hover {
+    background: var(--ui-primary-hover);
+  }
+}

@@ -3,16 +3,121 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
-## 0.1.7 — unreleased
+## 0.1.8 — unreleased
+
+### Home screen
+
+- **Main currency.** Pick hryvnia, dollars or euros in the currency menu next to the filters, and every amount on the
+  home screen — balances, «In / Out», the «Now» strip and «Spending» — is shown in it. The other currencies can still
+  be added as «≈» lines.
+- Amounts in other currencies, «Spending» on dollar and euro cards included, are now converted at today's Monobank sell
+  rate, not at the rate of your own exchanges. The app asks Monobank for its public rates at launch and every few hours;
+  nothing about you is sent. Without a connection it uses the last rates it got, and the menu says so.
+- The sync status next to the filters is shorter: when a download is done it says only what the data covers; hover over
+  it to see when it was last updated. During a download, hover over it to see how many parts of the statement are
+  loaded out of how many.
+
+### Category screen
+
+- Click a category in «Spending» to open everything about it for the month: how much went there and how that compares
+  with last month, the number of operations, the average and the median, per day, its share of all spending, the
+  largest purchase and the cashback; the last 12 months; who in the family spent how much; where (each place with its
+  total and average — click one to see only its operations and when they happened); when (by weekday, time of day and day of the month); and
+  every operation with its date, time, the bank's description and comment, the card, refunds, pending holds and the
+  amount in its own currency. Search the list or sort it by amount. The month, the person and the main currency are the
+  same filters as on the home screen.
+- The split of a category by people moved there from the home screen: a category row in «Spending» now opens the
+  category instead of unfolding.
+- «Last 12 months» on the category screen runs up to the current month while the picked month is among the last 12
+  (the picked month stands out), so you see what came after it too; an older month shows the 12 months up to it. The
+  current month is not in the average until it ends.
+- Back from a category, the home screen is there at once, with the «Spending» switch as you left it. While a category
+  opens for the first time, its cards show a placeholder instead of an empty page.
+- The charts of the category and income screens («Last 12 months», «When») are drawn anew: hover over a bar to see its
+  month or day and the amount at once. The dashed average line of «Last 12 months» shows its amount.
+
+### Income screen
+
+- Click «In» in the month panel next to the balance cards to open the month's income, laid out like a category:
+  how much came in and how that compares with last month, the number of payments, the average and the median, per day,
+  how much of it was spent, the largest payment; the last 12 months; where it came from (other banks, people and
+  clients, transfers, family); from whom (click a sender to see only their payments and when they came); who in the
+  family received how much; when (by weekday, time of day and day of the month); and every payment with its date, time,
+  the bank's description and comment, the card and the amount in its own currency. Refunds for purchases and transfers
+  between your own accounts are not income. The month, the person and the main currency are the same filters as on the
+  home screen.
+
+### Analytics
+
+- «Analytics» in the menu on the left is now a screen of its own. Pick one month or a range of months — up to 36 back —
+  and see your income, spending, what is left and the savings rate, each compared with the period before; income and
+  spending month by month, with the months that ended in minus in red (for one month: day by day as running totals,
+  next to your usual month); the categories that changed most; and every category as a heatmap of unusual months,
+  small charts, lines you can switch on and off, or a comparison with the period before. Click a category in «What
+  changed» to see its line alone. The person and the main currency are the same filters as on the home screen.
+- On that screen the month button becomes a period button: quick picks (this month, last month, 3–36 months, since
+  January, last year, all time) or any months in the calendar; one click picks a single month, a second one a range.
+  The picker says what the period is compared with, and warns when it includes the current month, which is not over.
+
+### Downloading history
+
+- The history download moved from the home screen to «Settings» → «Connections», under «History download», next to
+  the bank's connections. Pick the period with one click — 1, 3, 6, 12, 24 or 36 months — or choose any start date in
+  the calendar, up to 36 months back; the download always runs up to today.
+- With no data yet, the home screen says so and «Download history» takes you straight there. If you pick a month on the
+  home screen from before your downloaded history, it tells you from when the data starts, and «Download» opens the
+  download with that month already chosen.
 
 ### Look and feel
 
 - On Windows, scroll bars are now slim rounded bars in the app's colours, in both the light and the dark theme,
   instead of the grey system ones with arrows.
-- The home screen has a menu on the left, like the settings screen. For now it has one item, «General», with everything
-  the home screen showed before. In a narrow window the menu moves to a strip at the top.
+- The home screen has a menu on the left, like the settings screen: «General» with everything the home screen showed
+  before, and «Analytics» (see above). Switching between them keeps the filters at the top in place. In a
+  narrow window the menu moves to a strip at the top.
 - On the home screen the row with the person and the month now stays at the top while you scroll. The person buttons
   sit in the middle of the row; with more than four people, or in a narrow window, they become a list next to the month.
+- Under the balance cards, the bar no longer runs over the end of «Spending» / «Income» in Ukrainian and Russian.
+
+### Fixes
+
+- Outside Ukraine the app no longer moves to the next day before your midnight: «today», this week and this month, the
+  dates of the history download, every time shown (last update, rates) and the split of spending and income into days
+  and months now follow your computer's time zone. A purchase at 23:30 your time counts towards that day, not the next.
+
+## 0.1.7 — 2026-10-05
+
+### Spending
+
+- The «Spending» block is new: a ring of categories with the month's total, and for each category its share, the
+  number of operations and how much more or less it is than last month. While a month is in progress it is compared
+  with the same days of last month.
+- For the whole family the block shows who spent how much: click a person to see their part of the family's spending,
+  or click a category to see each person's amount and operations in it.
+- Under the ring the block names what it compares with: last month, or its first days while this month is in progress.
+- The «Block settings» gear in the block's corner chooses what the bars show: «Who spent how much» and «Last month's
+  mark».
+- Whether an amount went up or down against last month no longer rests on colour alone: differences carry a «+» or
+  «−» sign, and screen readers say the direction.
+- Spending on dollar and euro cards is now counted in hryvnia at the rate of your own exchanges, instead of a separate
+  table per currency.
+
+### Home screen
+
+- A thin strip between the balances and «Spending» shows how today and this week are going: «Today» — today's
+  spending against a usual day, «This week» — the week so far against the same days of last week, with a bar for each
+  day, and «Most this week» — the category you spent the most on. It follows the people filter, updates with every
+  sync, and is shown while the current month is selected.
+- A currency button next to the month filter («Also show in currency»: «Dollars $» and «Euro €») adds amounts in
+  dollars or euros next to the hryvnia ones across the home screen — in «Spending» and in the new strip — at the rate of
+  your own exchanges. Totals stay in hryvnia. In the strip, «Most this week» shows its amount in hryvnia only for now.
+- Next to the filters at the top of the home screen you now see how the data is syncing: a spinner with «Syncing…» and
+  how far along a download is, «Updating the data…» while «Auto-sync» runs, and when the next attempt is due if the bank
+  could not be reached. When it is done, the line says what the data covers and when it was last updated. If the
+  download or one of the connections failed, a warning sign appears; hover over it to see why.
+- In the people filter, hover over a name to see when that person's data was last updated. A person whose connection
+  did not update gets a small warning dot, and the hint says which connection and why.
+- With reduced motion turned on in your system settings, loading spinners no longer spin.
 
 ## 0.1.6 — 2026-09-29
 

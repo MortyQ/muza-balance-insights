@@ -6,11 +6,16 @@ import { useParticipantStore } from '../store/useParticipantStore.ts';
 import type { ParticipantFilterMode } from '../types.ts';
 import { filterOptions } from '../utils.ts';
 
-const { mode = 'buttons' } = defineProps<{ mode?: ParticipantFilterMode }>();
+// `failed`: connections that did not update in the last sync → why, worded by the caller (the error texts belong to
+// the import, not to this entity). The tooltip of each person also says when they were last updated.
+const { mode = 'buttons', failed = {} } = defineProps<{
+  mode?: ParticipantFilterMode
+  failed?: Readonly<Record<number, string>>
+}>();
 
 const participant = useParticipantStore();
 const id = useId();
-const options = computed(() => filterOptions(participant.people));
+const options = computed(() => filterOptions(participant.people, { failed, now: new Date(), labelOf: participant.labelOf }));
 const selectOptions = computed(() => options.value.map(({ label, value }) => ({ label, value })));
 const value = computed<number>({
   get: () => participant.selectedId ?? FAMILY,

@@ -1,7 +1,11 @@
-// The home filter row: when the person buttons fit centred between the month and «Updated …».
+// The home filter row: when the person buttons fit centred between the month and the sync status.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
-import { describe, expect, it } from 'vitest';
-import { fitsCenter } from '@/widgets/global-filters/utils.ts';
+import { describe, expect, it, vi } from 'vitest';
+
+// utils.ts reaches the import feature, whose api module reads `window`.
+vi.mock('@/shared/api', () => ({ balanceApi: {} }));
+
+const { fitsCenter } = await import('@/widgets/global-filters/utils.ts');
 
 describe('fitsCenter', () => {
   it('the middle column is the row minus two of the wider side and two gaps', () => {

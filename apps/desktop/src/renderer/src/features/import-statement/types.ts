@@ -1,8 +1,10 @@
 import type { Ref } from 'vue';
-import type { ImportDepth } from '@contract/progress.ts';
 
 export interface UseImportReturn {
-  depth: Ref<ImportDepth>;
+  /** The start date, local YYYY-MM-DD; the import runs from it up to today. */
+  from: Ref<string>;
+  /** `from` is a date the import accepts today (isImportFrom). */
+  valid: Readonly<Ref<boolean>>;
   error: Readonly<Ref<string>>;
   start: () => Promise<void>;
   cancel: () => Promise<void>;

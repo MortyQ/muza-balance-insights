@@ -9,11 +9,12 @@ Replace these copies with imports once muzakit is published as a package.
 | Component | Changes against muzakit |
 |---|---|
 | `VButton` | `vue-router` removed (`to` / `replace` props, `RouterLink`): always a `<button>` |
-| `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network) |
-| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter |
-| `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic) |
+| `VIcon` | `@iconify/vue` → `icons.ts`, a static registry of unplugin-icons components (build-time, no network); the `loading` spin stops under `prefers-reduced-motion` |
+| `VSegmentedControl` | `useResizeObserver` from `@vueuse/core` → native `ResizeObserver`; `SegmentOption.colors` — colour dots before the label (`.v-sc__dots` / `.v-sc__dot` in its `.scss`), for the people filter; `SegmentOption.alert` — a warning dot after the label (`.v-sc__alert`) whose text is read by screen readers only (`.v-sc__sr-only`), the details go in `tooltip` (a person whose connection did not update) |
+| `styles/tokens.css` | `font-family: var(--font-sans)` (Manrope) instead of Plus Jakarta Sans (no basic Cyrillic); `--ui-series-orange` / `--ui-series-blue` (wrapping the theme's `--series-*`) for `VChangeChip` |
 | `VTooltip` | one `!` on `placements[0]` for our `noUncheckedIndexedAccess` (the array is a fixed literal) |
-| `VButtonGroup`, `VCard`, `VInfoNotice`, `VLoader`, `VProgressBar`, their `.scss` | none |
+| `VLoader`, `vloader.scss` | `aria-label` from the dictionaries (`$t('common.loading')`, as `VMonthPicker` does) instead of the literal «Loading»; the dots stand still under `prefers-reduced-motion` |
+| `VButtonGroup`, `VCard`, `VInfoNotice`, `VProgressBar`, their `.scss` | none |
 | `VCheckbox` | `ref<HTMLInputElement \| null>(null)` → `useTemplateRef` (vue-syntax.instructions.md Rule 4) |
 | `VSwitch`, `vswitch.scss` | `vswitch.scss`: focus ring on the track for `:focus-visible` (the real input is clipped) |
 | `VInput` | `useDebounceFn` from `@vueuse/core` → local `debounce()` in `components/inputs/debounce.ts` (not exported from `index.ts`); the `debounce` prop is destructured as `debounceProp` to avoid shadowing the imported helper; `ref<HTMLInputElement \| HTMLTextAreaElement \| null>(null)` → `useTemplateRef`; added `defineExpose({ focus })` so a parent can call `.focus()` on a template ref to the component (muzakit's `VInput` doesn't expose this — no screen there needed to refocus it programmatically); `vinput.scss`: a disabled field drops its resting shadow, as a disabled `VButton` does |
@@ -35,11 +36,29 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VDatepicker` keeps a single-date v-model and adds a named `range` v-model (`{ start, end }`), both as ISO
   `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
   holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
-  Locale is fixed to `uk-UA`, week starts Monday. No consumer yet.
+  Locale is fixed to `uk-UA`, week starts Monday. `min` / `max` (ISO) bound the selectable days (reka-ui's
+  `minValue` / `maxValue`). Used by the import's «From date».
 - `VMonthPicker` — a month/year picker on reka-ui's `MonthPicker` in a `Popover` (muzakit has no month picker at all).
+- `VMonthRangePicker` — one month or a range of months on reka-ui's `MonthPicker` / `MonthRangePicker` in a `Popover`:
+  a «One month | Range» switch, the caller's quick picks, a draft applied on «Show», a `note` slot under the pick.
   `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
+- `VPopover` — an icon-only trigger and a panel on reka-ui's `Popover` (muzakit has no popover or dropdown menu); the
+  spending block's settings menu; an optional visible `text` before the icon (the currency switch of the global filters).
+- `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
+  text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
+  block's chips and the now strip's.
+- `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
+  `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
+  `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option
+  (`var(--x)`, `color-mix(…)`) are resolved against the chart's element (`resolveCssColors`) to rgba through a
+  one-pixel canvas (ECharts parses only hex / rgb / hsl: an oklch fill lost its colour on hover), and again when
+  `data-theme` changes; the font is the element's. Resizes with its box, disposed on unmount, no animation under
+  `prefers-reduced-motion`. The canvas is `aria-hidden`: the consumer gives the same data as text. Tooltips use
+  `renderMode: 'richText'` (drawn on the canvas, no HTML), placed beside the pointer (`besidePointer` of
+  `entities/operations`): a canvas tooltip catches the pointer, and one under it made the hover blink. Renderer tests replace ECharts with a recorder
+  (`tests/renderer/setup-charts.ts`).
 
 All three pass `as-child` to their reka-ui `*Content` and put the panel's class on a `<div>` of their own template:
 reka-ui's `PopperContent` (`inheritAttrs: false`) puts `class` on an inner element that is not its root, so that element

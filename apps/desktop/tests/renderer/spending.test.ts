@@ -1,0 +1,325 @@
+// Pure helpers of the spending block. balanceApi is never called here: the participant slice pulls it in, so it is stubbed.
+import { describe, expect, it, vi } from 'vitest';
+import type { SpendingOverview } from '@contract/api.ts';
+import type { CategoryId } from '@contract/categories.ts';
+import {
+  amountChip,
+  centerChip,
+  centerConv,
+  comparePeriodText,
+  familyShareText,
+  leftOutLines,
+  noCompareText,
+  opsView,
+  opsVs,
+  parsePrefs,
+  pctChip,
+  peopleRows,
+  ringOf,
+  ringStops,
+  rowsFor,
+  shareOf,
+  totalFor,
+} from '@/features/spending-summary/utils.ts';
+import { moneyFormat } from '@/entities/currency-display';
+import { formatMoney } from '@/shared/lib';
+
+vi.mock('@/shared/api', () => ({ balanceApi: {} }));
+
+const uah = (kopecks: number) => formatMoney(kopecks, 980);
+
+const P = [
+  { id: 1, name: 'Сергей', color: 'var(--series-blue)' },
+  { id: 2, name: 'Аня', color: 'var(--series-orange)' },
+];
+const part = (participantId: number, net: number, purchases: number, prev: { net: number; purchases: number } | null) => ({ participantId, net, purchases, prev });
+const cat = (category: string, categoryId: CategoryId | null, net: number, purchases: number, prevNet: number | null, people: ReturnType<typeof part>[] = []): SpendingOverview['categories'][number] =>
+  ({ category, categoryId, net, purchases, prev: prevNet === null ? null : { net: prevNet, purchases: purchases - 1 }, people });
+
+const VIEW: SpendingOverview = {
+  month: '2026-09',
+  period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-01', coveredDays: 30, pendingHolds: 0 },
+  compare: { from: '2026-08-01', to: '2026-08-31', partial: false },
+  total: { net: 100_000, purchases: 20, prev: { net: 80_000, purchases: 18 } },
+  people: [part(1, 60_000, 12, { net: 50_000, purchases: 10 }), part(2, 40_000, 8, { net: 30_000, purchases: 8 })],
+  categories: [
+    cat('продукты', 'groceries', 50_000, 10, 40_000, [part(1, 30_000, 6, { net: 25_000, purchases: 5 }), part(2, 20_000, 4, { net: 15_000, purchases: 4 })]),
+    cat('кафе и рестораны', 'cafes', 30_000, 6, 30_000, [part(1, 30_000, 6, { net: 30_000, purchases: 5 }), part(2, 0, 0, { net: 0, purchases: 0 })]),
+    cat('подарки', 'gifts', 20_000, 4, 0, [part(1, 0, 0, { net: 0, purchases: 0 }), part(2, 20_000, 4, { net: 0, purchases: 0 })]),
+  ],
+  rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
+  leftOut: [],
+  familyTotal: null,
+};
+const PREFS = { split: true, mark: false };
+const NONE = { uah: false, usd: false, eur: false };
+const UAH_FMT = moneyFormat(VIEW.rates, { main: 980, also: NONE });
+const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: false, eur: false } });
+
+describe('change', () => {
+  it('the chip under the ring: more / less with the percent (by this day while partial), new, same', () => {
+    expect(centerChip(114, 100, '2026-09', false)).toMatchObject({ text: 'на 14% больше, чем в августе', tone: 'up', arrow: 'up' });
+    expect(centerChip(86, 100, '2026-09', true)).toMatchObject({ text: 'на 14% меньше, чем к этому дню в августе', tone: 'down', arrow: 'down' });
+    expect(centerChip(101, 100, '2026-09', false)).toMatchObject({ text: 'как в августе', tone: 'neutral', arrow: null });
+    expect(centerChip(50, 0, '2026-09', false)).toMatchObject({ text: 'новое', tone: 'neutral', arrow: null });
+    expect(centerChip(50, null, '2026-09', false)).toBeNull();
+  });
+
+  it('a refund-only last month (net below 0) reads like 0: new, or same; never a negative percent', () => {
+    const texts = [centerChip(50, -10, '2026-09', false)!.text, pctChip(50, -10, '2026-09')!.text, pctChip(0, -10, '2026-09')!.text];
+    expect(texts).toEqual(['новое', 'новое', 'как в августе']);
+    for (const text of texts) expect(text).not.toMatch(/[-−]/);
+  });
+
+  it('amountChip: the difference with its sign («+» / «−») and the direction for screen readers', () => {
+    expect(amountChip(110_000, 100_000, '2026-09', UAH_FMT)).toEqual({ text: `+${uah(10_000)}`, tone: 'up', arrow: 'up', sr: 'больше, чем в августе' });
+    expect(amountChip(80_000, 100_000, '2026-09', UAH_FMT)).toEqual({ text: `−${uah(20_000)}`, tone: 'down', arrow: 'down', sr: 'меньше, чем в августе' });
+    expect(amountChip(80_000, 100_000, '2026-09', UAH_FMT, true)!.sr).toBe('меньше, чем к этому дню в августе');
+    // the text already says it: no screen-reader extra
+    expect(amountChip(101, 100, '2026-09', UAH_FMT)).toMatchObject({ text: 'как в августе', sr: '' });
+    expect(centerChip(114, 100, '2026-09', false)!.sr).toBe('');
+  });
+
+  it('pctChip: «+10%» / «−20%» without an arrow, same, new', () => {
+    expect(pctChip(110, 100, '2026-09')).toEqual({ text: '+10%', tone: 'up', arrow: null, sr: 'больше, чем в августе' });
+    expect(pctChip(80, 100, '2026-09', true)).toEqual({ text: '−20%', tone: 'down', arrow: null, sr: 'меньше, чем к этому дню в августе' });
+    expect(pctChip(101, 100, '2026-09')).toMatchObject({ text: 'как в августе', tone: 'neutral' });
+    expect(pctChip(5, 0, '2026-09')).toMatchObject({ text: 'новое' });
+    expect(pctChip(5, null, '2026-09')).toBeNull();
+  });
+});
+
+describe('opsView', () => {
+  it('the count with its plural; the difference against last month', () => {
+    expect(opsView(38, 36, '2026-09')).toMatchObject({ text: '38 операций', diff: '+2', tone: 'up', title: 'В августе — 36 операций' });
+    expect(opsView(21, 24, '2026-09')).toMatchObject({ text: '21 операция', diff: '−3', tone: 'down' });
+    expect(opsView(5, 5, '2026-09')).toMatchObject({ diff: 'столько же', tone: 'neutral' });
+    expect(opsView(2, 0, '2026-09')).toMatchObject({ diff: 'новое' });
+    expect(opsView(2, null, '2026-09')).toMatchObject({ diff: '', title: '' });
+  });
+
+  it('opsVs: «+2 к авг» under the ring; neutral differences as they are', () => {
+    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up', sr: 'больше, чем в августе' });
+    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down', sr: 'меньше, чем в декабре' });
+    expect(opsVs(5, 5, '2026-09')).toEqual({ text: 'столько же', tone: 'neutral', sr: '' });
+    expect(opsVs(2, 0, '2026-09')).toEqual({ text: 'новое', tone: 'neutral', sr: '' });
+    expect(opsVs(2, null, '2026-09')).toEqual({ text: '', tone: 'neutral', sr: '' });
+    expect(opsView(38, 36, '2026-09', true).sr).toBe('больше, чем к этому дню в августе');
+  });
+});
+
+describe('rowsFor', () => {
+  it('the family: colours by rank, people segments, share of the total, change chips', () => {
+    const rows = rowsFor(VIEW, null, P, PREFS, UAH_FMT);
+    expect(rows.map((r) => [r.key, r.color, r.share])).toEqual([
+      ['продукты', 'var(--category-1)', '50%'],
+      ['кафе и рестораны', 'var(--category-2)', '30%'],
+      ['подарки', 'var(--category-3)', '20%'],
+    ]);
+    expect(rows[0]!.name).toBe('Продукты');
+    expect(rows[0]!.icon).toBe('lucide:shopping-cart');
+    expect(rows[0]!.segments.map((s) => [s.value, s.color])).toEqual([[30_000, 'var(--series-blue)'], [20_000, 'var(--series-orange)']]);
+    expect(rows[0]!.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `+${uah(10_000)}` });
+    expect(rows[1]!.chip).toMatchObject({ tone: 'neutral', arrow: null, text: 'как в августе' });
+    expect(rows[2]!.chip).toMatchObject({ text: 'новое' });
+    // each named category opens its screen; the people split lives there, not in the row
+    expect(rows.map((r) => r.categoryId)).toEqual(['groceries', 'cafes', 'gifts']);
+  });
+
+  it('a picked person: their amounts, re-sorted, the others fade; categories without them drop out', () => {
+    const rows = rowsFor(VIEW, 2, P, { ...PREFS, mark: true }, UAH_FMT);
+    expect(rows.map((r) => [r.key, r.amount, r.share])).toEqual([['продукты', uah(20_000), '50%'], ['подарки', uah(20_000), '50%']]);
+    // the bar is the family's amount on the family's scale; the pick's segment first and bright, the others faded
+    expect(rows.map((r) => r.width)).toEqual([100, 40]);
+    expect(rows[0]!.segments.map((s) => [s.value, s.color])).toEqual([
+      [20_000, 'var(--series-orange)'],
+      [30_000, 'color-mix(in oklch, var(--series-blue) 22%, var(--surface))'],
+    ]);
+    expect(rows[1]!.segments.map((s) => s.color)).toEqual(['var(--series-orange)']);
+    // the mark is the pick's own last month on the same scale (it lines up with the bright segment from 0)
+    expect(rows[0]!.mark).toBe(30);
+    expect(rows[1]).toMatchObject({ mark: null, markTitle: '' }); // last month 0
+    expect(rows[0]!.chip).toMatchObject({ tone: 'up', text: `+${uah(5_000)}` });
+    // colours stay those of the family's rank
+    expect(rows[1]!.color).toBe('var(--category-3)');
+  });
+
+  it('split off → one segment in the category colour; mark on → last month position', () => {
+    const rows = rowsFor(VIEW, null, P, { ...PREFS, split: false, mark: true }, UAH_FMT);
+    expect(rows[0]!.segments).toEqual([{ value: 1, color: 'var(--category-1)', title: '' }]);
+    expect(rows.map((r) => r.width)).toEqual([100, 60, 40]);
+    expect(rows[0]!.mark).toBe(80);
+    expect(rows[0]!.markTitle).toBe(`В августе — ${uah(40_000)}`);
+    expect(rows[2]).toMatchObject({ mark: null, markTitle: '' }); // nothing last month
+  });
+
+  it('split off with a person picked: the category colour, the person\'s own amount on the family\'s scale', () => {
+    const rows = rowsFor(VIEW, 2, P, { ...PREFS, split: false, mark: true }, UAH_FMT);
+    expect(rows.map((r) => r.segments)).toEqual([
+      [{ value: 1, color: 'var(--category-1)', title: '' }],
+      [{ value: 1, color: 'var(--category-3)', title: '' }],
+    ]);
+    expect(rows.map((r) => [r.width, r.mark])).toEqual([[40, 30], [40, null]]);
+  });
+
+  it('last month larger than this one sets the scale', () => {
+    const view: SpendingOverview = { ...VIEW, categories: [cat('продукты', 'groceries', 30_000, 3, 60_000)] };
+    expect(rowsFor(view, null, P, { ...PREFS, mark: true }, UAH_FMT).map((r) => [r.width, r.mark])).toEqual([[50, 100]]);
+  });
+
+  it('no comparison → no chips, no operation differences, no marks', () => {
+    const none: SpendingOverview = { ...VIEW, compare: null, total: { ...VIEW.total, prev: null }, categories: [cat('продукты', 'groceries', 50_000, 10, null)] };
+    const [row] = rowsFor(none, null, P, { ...PREFS, mark: true }, UAH_FMT);
+    expect(row).toMatchObject({ chip: null, mark: null, markTitle: '' });
+    expect(row!.ops.diff).toBe('');
+  });
+
+  it('the only person (no parts from main): split on, the bar keeps the category colour', () => {
+    const solo: SpendingOverview = { ...VIEW, people: [], categories: VIEW.categories.map((c) => ({ ...c, people: [] })) };
+    const rows = rowsFor(solo, null, [P[0]!], PREFS, UAH_FMT);
+    expect(rows.map((r) => r.segments)).toEqual([
+      [{ value: 1, color: 'var(--category-1)', title: '' }],
+      [{ value: 1, color: 'var(--category-2)', title: '' }],
+      [{ value: 1, color: 'var(--category-3)', title: '' }],
+    ]);
+  });
+
+  it('a picked person: a named category below the family\'s top 7 gets its own muted colour, not the rest-grey', () => {
+    const people = (i: number) => (i === 8 ? [part(1, 0, 0, null), part(2, 500, 1, null)] : [part(1, 1_000 * (9 - i), 1, null), part(2, 0, 0, null)]);
+    const many: SpendingOverview = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null, people(i))) };
+    const [row] = rowsFor(many, 2, P, { ...PREFS, split: false }, UAH_FMT);
+    expect(row).toMatchObject({ key: 'c8', color: 'var(--category-other)' });
+    expect(row!.color).not.toBe('var(--border-strong)');
+  });
+
+  it('more than seven categories → the top seven and «N more categories»', () => {
+    const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null)) };
+    const rows = rowsFor(many, null, P, PREFS, UAH_FMT);
+    expect(rows).toHaveLength(8);
+    expect(rows[0]!.name).toBe('C0');
+    expect(rows[6]!.color).toBe('var(--category-7)');
+    expect(rows[7]).toMatchObject({ key: 'rest', categoryId: null, name: 'Ещё 2 категории', color: 'var(--border-strong)', icon: 'lucide:list', amount: uah(3_000) });
+  });
+
+  it('«N more categories» sums the rest categories\' last month and splits by people', () => {
+    const people = (net: number) => [part(1, net, 1, { net: 100, purchases: 1 }), part(2, 0, 0, { net: 0, purchases: 0 })];
+    const many = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, 500, people(1_000 * (9 - i)))) };
+    const rest = rowsFor(many, null, P, PREFS, UAH_FMT)[7]!;
+    expect(rest.chip).toMatchObject({ tone: 'up', text: `+${uah(2_000)}` }); // 3 000 against 500 + 500
+    expect(rest.ops).toMatchObject({ text: '2 операции', diff: 'новое' }); // last month 0 + 0 purchases
+    expect(rest.segments.map((s) => [s.value, s.color])).toEqual([[3_000, 'var(--series-blue)']]);
+  });
+});
+
+describe('totalFor / shareOf / ringStops / centerConv', () => {
+  it('the family or a person', () => {
+    expect(totalFor(VIEW, null)).toEqual({ net: 100_000, purchases: 20, prev: { net: 80_000, purchases: 18 } });
+    expect(totalFor(VIEW, 2)).toEqual({ net: 40_000, purchases: 8, prev: { net: 30_000, purchases: 8 } });
+  });
+  it('share in whole percent', () => {
+    expect(shareOf(1, 3)).toBe('33%');
+    expect(shareOf(1, 0)).toBe('0%');
+  });
+  it('ring stops: each part with a gap', () => {
+    expect(ringStops([{ value: 1, color: 'a' }, { value: 1, color: 'b' }])).toBe(
+      'conic-gradient(a 0.00deg 178.60deg, var(--surface) 178.60deg 180.00deg, b 180.00deg 358.60deg, var(--surface) 358.60deg 360.00deg)',
+    );
+    expect(ringStops([])).toBe('conic-gradient(var(--surface-sunken) 0deg 360deg)');
+  });
+  it('ringOf: the rows own nets in their colours', () => {
+    expect(ringOf(rowsFor(VIEW, null, P, PREFS, UAH_FMT), VIEW, null)).toBe(
+      ringStops([{ value: 50_000, color: 'var(--category-1)' }, { value: 30_000, color: 'var(--category-2)' }, { value: 20_000, color: 'var(--category-3)' }]),
+    );
+  });
+  it('ringOf: «Other» takes the rest of the total (a refund-only category counts in the total, not in the rows)', () => {
+    const many: SpendingOverview = { ...VIEW, total: { ...VIEW.total, net: 44_000 }, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null)) };
+    const named = Array.from({ length: 7 }, (_, i) => ({ value: 1_000 * (9 - i), color: `var(--category-${i + 1})` }));
+    expect(ringOf(rowsFor(many, null, P, PREFS, UAH_FMT), many, null)).toBe(ringStops([...named, { value: 44_000 - 42_000, color: 'var(--border-strong)' }]));
+  });
+  it('currency lines under the ring: the «≈» lines of the picked currencies, no chip (one rate for both months)', () => {
+    expect(centerConv(41_000, moneyFormat(VIEW.rates, { main: 980, also: { uah: false, usd: true, eur: true } }))).toEqual([
+      `≈ ${formatMoney(1_000, 840)}`,
+      `≈ ${formatMoney(820, 978)}`,
+    ]);
+    expect(centerConv(41_000, UAH_FMT)).toEqual([]);
+    expect(centerConv(41_000, EUR_FMT)).toEqual([`≈ ${uah(41_000)}`]);
+  });
+});
+
+describe('euro main', () => {
+  it('rows, chips, marks and people rows in euros, «≈» in hryvnia', () => {
+    const rows = rowsFor(VIEW, null, P, { ...PREFS, mark: true }, EUR_FMT);
+    expect(rows[0]!.amount).toBe(EUR_FMT.money(50_000));
+    expect(rows[0]!.amount).toBe(formatMoney(1_000, 978));
+    expect(rows[0]!.conv).toEqual(EUR_FMT.approx(50_000));
+    expect(rows[0]!.chip).toMatchObject({ text: `+${EUR_FMT.money(10_000)}` });
+    expect(rows[0]!.markTitle).toBe(`В августе — ${EUR_FMT.money(40_000)}`);
+    expect(rows[0]!.segments[0]!.title).toBe(`Сергей — ${EUR_FMT.money(30_000)}`);
+    expect(amountChip(110_000, 100_000, '2026-09', EUR_FMT)!.text).toBe(`+${EUR_FMT.money(10_000)}`);
+    expect(peopleRows(VIEW, null, P, EUR_FMT).map((r) => r.amount)).toEqual([EUR_FMT.money(100_000), EUR_FMT.money(60_000), EUR_FMT.money(40_000)]);
+  });
+});
+
+describe('peopleRows', () => {
+  it('«Вся семья» first with every colour, then each person with their share; pressed follows the pick', () => {
+    const rows = peopleRows(VIEW, null, P, UAH_FMT);
+    expect(rows[0]).toEqual({
+      participantId: null, name: 'Вся семья', initial: '', color: '', dots: ['var(--series-blue)', 'var(--series-orange)'],
+      caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: '+25%', tone: 'up', arrow: null, sr: 'больше, чем в августе' }, pressed: true,
+    });
+    expect(rows.slice(1).map((r) => [r.participantId, r.name, r.initial, r.color, r.caption, r.amount, r.chip?.text, r.pressed])).toEqual([
+      [1, 'Сергей', 'С', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), '+20%', false],
+      [2, 'Аня', 'А', 'var(--series-orange)', '40% · 8 оп.', uah(40_000), '+33%', false],
+    ]);
+    expect(peopleRows(VIEW, 2, P, UAH_FMT).map((r) => r.pressed)).toEqual([false, false, true]);
+  });
+});
+
+describe('texts under the ring', () => {
+  it('no comparison, money left out, the family share', () => {
+    expect(noCompareText('2026-09')).toBe('В августе нет данных для сравнения');
+    expect(noCompareText('2026-01')).toBe('В декабре нет данных для сравнения');
+    expect(leftOutLines({ ...VIEW, leftOut: [{ currency: 840, net: 2_500 }] })).toEqual([`+ ${formatMoney(2_500, 840)} без курса — не в итогах`]);
+    expect(leftOutLines(VIEW)).toEqual([]);
+    expect(familyShareText(46_000, 100_000)).toBe('46% трат семьи');
+    expect(familyShareText(46_000, 0)).toBe('0% трат семьи');
+  });
+
+  it('the period compared with: the month (with the year when not this one), or its days while partial', () => {
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-31', partial: false }, 2026)).toBe('Август');
+    expect(comparePeriodText({ from: '2025-12-01', to: '2025-12-31', partial: false }, 2026)).toBe('Декабрь 2025');
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-02', partial: true }, 2026)).toBe('1–2 августа');
+    expect(comparePeriodText({ from: '2026-08-01', to: '2026-08-01', partial: true }, 2026)).toBe('1 августа');
+  });
+});
+
+describe('parsePrefs', () => {
+  it('defaults for nothing or garbage; each field on its own; currencies are no longer the block\'s', () => {
+    expect(parsePrefs(null)).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true });
+    expect(parsePrefs('{"mark":false,"usd":true,"split":false}')).toEqual({ split: false, mark: false });
+  });
+});
+
+describe('useSpendingPrefsStore', () => {
+  it('reads defaults, writes each change, survives a storage that throws', async () => {
+    const { createPinia, setActivePinia } = await import('pinia');
+    const mem = new Map<string, string>();
+    vi.stubGlobal('localStorage', { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v) });
+    setActivePinia(createPinia());
+    const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
+    const s = useSpendingPrefsStore();
+    expect(s.prefs).toEqual({ split: true, mark: true });
+    s.set('split', false);
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: false, mark: true });
+
+    vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
+    setActivePinia(createPinia());
+    const s2 = useSpendingPrefsStore();
+    expect(s2.prefs.split).toBe(true);
+    expect(() => s2.set('mark', false)).not.toThrow();
+    expect(s2.prefs.mark).toBe(false);
+    vi.unstubAllGlobals();
+  });
+});

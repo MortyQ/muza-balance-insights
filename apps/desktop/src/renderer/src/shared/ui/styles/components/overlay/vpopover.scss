@@ -1,0 +1,86 @@
+/* Ours, not copied — VPopover is built on reka-ui (see VPopover.vue header). */
+
+.v-popover__trigger {
+  display: grid;
+  place-items: center;
+  width: var(--ui-control-h);
+  height: var(--ui-control-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-lg);
+  background: transparent;
+  color: var(--ui-foreground-secondary);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--ui-surface-hover);
+      color: var(--ui-foreground);
+    }
+  }
+
+  &[data-state="open"] {
+    background: var(--ui-surface-hover);
+    color: var(--ui-foreground);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring);
+  }
+}
+
+.v-popover__icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* With text (the currency switch next to the month filter): reads like VMonthPicker's trigger beside it. */
+.v-popover__trigger--text {
+  display: inline-flex;
+  gap: var(--ui-control-gap);
+  width: auto;
+  padding: 0 var(--ui-control-px);
+  background: var(--ui-input-bg);
+  border: 1px solid var(--ui-input-border);
+  box-shadow: var(--ui-shadow-xs);
+  color: var(--ui-foreground);
+  font-size: var(--ui-text-base);
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: var(--ui-input-bg);
+      border-color: var(--ui-border-strong);
+    }
+  }
+
+  &[data-state="open"],
+  &:focus-visible {
+    background: var(--ui-input-bg);
+    border-color: var(--ui-border-focus);
+    box-shadow: var(--ui-shadow-xs), inset 0 0 0 1px var(--ui-border-focus);
+  }
+}
+
+.v-popover__text {
+  white-space: nowrap;
+}
+
+.v-popover__content {
+  z-index: 50;
+  min-width: 18rem;
+  max-width: 20rem;
+  padding: var(--ui-space-xs);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-lg);
+  color: var(--ui-foreground);
+}

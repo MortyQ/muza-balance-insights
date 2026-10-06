@@ -21,6 +21,7 @@ describe('allowlist', () => {
     expect(TRUSTED_SERVICES.map((s) => [s.id, [...s.hosts]])).toEqual([
       ['github', ['github.com', 'release-assets.githubusercontent.com']],
       ['monobank', ['api.monobank.ua']],
+      ['monobank-rates', ['api.monobank.ua']],
     ]);
     for (const s of TRUSTED_SERVICES) expect(s.purpose.length, s.id).toBeGreaterThan(10);
   });
@@ -33,6 +34,14 @@ describe('allowlist', () => {
     expect(isAllowedUrl('https://release-assets.githubusercontent.com/x', ['github'])).toBe(true);
     expect(isAllowedUrl('https://api.github.com/repos/x', ['github'])).toBe(false);
     expect(isAllowedUrl('https://objects.githubusercontent.com/x', ['github'])).toBe(false);
+  });
+
+  it('monobank-rates: the same host, its own scope (the rates request never borrows the import scope)', () => {
+    expect(hostsOf(['monobank-rates'])).toEqual(['api.monobank.ua']);
+    expect(isAllowedUrl('https://api.monobank.ua/bank/currency', ['monobank-rates'])).toBe(true);
+    expect(isAllowedUrl('https://github.com/x', ['monobank-rates'])).toBe(false);
+    // The import's scope is unchanged: still exactly one host.
+    expect(hostsOf(['monobank'])).toEqual(['api.monobank.ua']);
   });
 
   it.each([

@@ -1,14 +1,129 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { Scope, SpendingView } from '@contract/api.ts';
+import type { CategoryId } from '@contract/categories.ts';
+import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
+import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable, YearMonth } from '@/shared/lib';
+import type { ChangeChipModel } from '@/shared/ui';
+
+/** A change chip (shared/ui `VChangeChip`). */
+export type ChipView = ChangeChipModel;
+
+/**
+ * `home.spending.ops` and its small difference («+2», `home.spending.opsSame`, `home.spending.change.new`; empty — no
+ * comparison); `sr` — the direction for screen readers ('' — none).
+ */
+export interface OpsView {
+  text: string;
+  diff: string;
+  tone: 'up' | 'down' | 'neutral';
+  title: string;
+  sr: string;
+}
+
+export interface BarSegment {
+  /** flex-grow weight */
+  value: number;
+  color: string;
+  title: string;
+}
+
+export interface RowView {
+  key: string;
+  /** The category the row opens (its screen); null — «N more categories» or a word the core no longer has. */
+  categoryId: CategoryId | null;
+  name: string;
+  icon: string;
+  color: string;
+  share: string;
+  amount: string;
+  conv: string[];
+  ops: OpsView;
+  chip: ChipView | null;
+  /** % of the largest row (this month or last); mark — last month's position. */
+  width: number;
+  mark: number | null;
+  markTitle: string;
+  segments: BarSegment[];
+}
+
+export interface PersonRowView {
+  /** null — «Whole family». */
+  participantId: number | null;
+  name: string;
+  initial: string;
+  color: string;
+  /** The family row: every person's colour. */
+  dots: string[];
+  caption: string;
+  amount: string;
+  chip: ChipView | null;
+  pressed: boolean;
+}
+
+/** The block's own menu choices (its gear). */
+export interface SpendingPrefs {
+  split: boolean;
+  mark: boolean;
+}
+
+/** A person as the block shows them (from the participant store). */
+export interface BlockPerson {
+  id: number;
+  name: string;
+  color: string;
+}
 
 export interface UseSpendingReturn {
-  /** The home screen's month (entities/period); chosen in the global filters. */
   month: Readonly<Ref<YearMonth>>;
+  /** The current local month (the year of `compared` is shown when it differs). */
+  thisMonth: Readonly<Ref<YearMonth>>;
   scope: Ref<Scope>;
-  state: Readonly<Ref<Loadable<SpendingView>>>;
-  view: ComputedRef<SpendingView | null>;
+  state: Readonly<Ref<Loadable<SpendingOverview>>>;
+  view: ComputedRef<SpendingOverview | null>;
   periodNote: ComputedRef<string | null>;
-  /** An import is running: the numbers grow window by window. */
   importing: ComputedRef<boolean>;
+  /** The global filter is «Whole family» and there is more than one person. */
+  family: ComputedRef<boolean>;
+  /** One person of a family is picked in the global filter. */
+  member: ComputedRef<boolean>;
+  people: ComputedRef<ReadonlyArray<BlockPerson>>;
+  /** The person the global filter shows (one person of a family, or the only one); null — the whole family. */
+  selected: ComputedRef<BlockPerson | null>;
+  /** The block's own pick (family view): a participant id or null. */
+  pick: Ref<number | null>;
+  /** The answer's rates and the home-wide currency choice: every amount of the block goes through it. */
+  fmt: ComputedRef<MoneyFormat>;
+}
+
+/** The block's display state from `useSpending` and the menu choices: everything the template binds. */
+export interface UseSpendingViewReturn {
+  /** «Whole family», the picked person, a family member of the global filter; '' — the only person. */
+  who: ComputedRef<string>;
+  /** «September · Whole family». */
+  subtitle: ComputedRef<string>;
+  /** The month has spending in the family view (the block shows even when a pick has none). */
+  hasData: ComputedRef<boolean>;
+  rows: ComputedRef<RowView[]>;
+  /** «Olya: no spending this month» — a pick with no rows; '' otherwise. */
+  noneBy: ComputedRef<string>;
+  total: ComputedRef<(SpendingAmounts & { prev: SpendingAmounts | null }) | null>;
+  ring: ComputedRef<string>;
+  chip: ComputedRef<ChipView | null>;
+  /** «≈» lines under the ring's amount. */
+  conv: ComputedRef<string[]>;
+  perDay: ComputedRef<string | null>;
+  whoRows: ComputedRef<PersonRowView[]>;
+  leftOut: ComputedRef<string[]>;
+  noCompare: ComputedRef<string>;
+  /** `home.spending.compareFull` — the period compared with; '' — no comparison. */
+  compared: ComputedRef<string>;
+  prevIn: ComputedRef<string>;
+  /** The period compared with while this month is in progress (the tooltip of `prevIn`); '' — the whole month. */
+  prevInTitle: ComputedRef<string>;
+  opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone' | 'sr'>>;
+  /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
+  memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
+  /** Hryvnia kopecks in the main currency (the ring and last month's total). */
+  money: (kopecks: number) => string;
+  onPick: (id: number | null) => void;
 }

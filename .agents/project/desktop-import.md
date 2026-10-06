@@ -40,8 +40,26 @@
   'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
-  `spendingSummary` / `getMonthOverview` принимают `participantId`. `DataStatus` (IPC `getSyncStatus`) несёт также
-  `dataFrom` — дату по Киеву от `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
+  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `getNowOverview` takes only `participantId` (main
+  decides «today» in the system time zone); like the other data channels it is closed while locked and while the
+  database is not ready.
+  `getCategoryOverview({ month, category: CategoryId, scope, participantId? })` (the category screen; main:
+  `DataService.categoryOverview`, helpers in `main/category.ts`) and `getIncomeOverview({ month, participantId? })` (the
+  income screen; `DataService.incomeOverview`, `incomeStats` in `main/category.ts`) are the **only** data channels that
+  carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
+  income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
+  IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
+  block's (same fold), its lines come from core `categoryLines`; the income figure is the balances' «In» (all scopes,
+  same fold), its lines come from core `incomeLines` (the same rows as `incomeSummary`, one query: `incomeRowsSql`).
+  `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
+  in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:
+  the import's 36 + the current one; zod refuses more, main refuses a range ending after this month). One month → per
+  day, a range → per month; all scopes, the balances' fold (core `spendingGrid` + `incomeSummary` by day / month, today's
+  rates, a currency without a rate in `leftOut`); the period before (`comparePeriod` for a month, the same number of
+  months before a range; null before the data); for one month the usual month's running spending (mean of up to 3
+  covered months before). Categories, numbers and dates only — no bank text (canary test in `tests/data.test.ts`).
+  `DataStatus` (IPC `getSyncStatus`) несёт также
+  `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`
   (порог автосинхронизации) — тоже только по включённым (`ENABLED_ACCOUNT_IDS_SQL` ядра).
 - **Живое обновление при импорте — реализовано** (`app/listeners.ts`): каждый новый `windowsDone` → `syncStatus.refresh()`
@@ -57,7 +75,7 @@
   Под замком — запускается. Настройки — `preferences.json` (`src/main/prefs.ts`: у каждого поля своё значение по умолчанию,
   запись по очереди через `updatePrefs`), IPC `getAutoSync` / `setAutoSync`, карточка «Автосинхронизация» в настройках.
   - Прогон: вся семья — подключения, у которых сейчас есть токен (без токена — молча пропускаются, их показывает плашка на
-    главной); `sinceSec` — начало текущего месяца по Киеву; `rereadWindow` — у загруженного счёта одно окно на всю длину
+    главной); `sinceSec` — the start of this month in the system time zone; `rereadWindow` — у загруженного счёта одно окно на всю длину
     до «сейчас» (последний 31 день у Monobank; разрыв больше окна − 3 дня — обычный план). Так подтягиваются холды,
     завершённые позже 3 дней. `RESYNC_OVERLAP_SEC` (3 дня) в ядре не менялся: на нём `pendingHolds` и синк `apps/mcp`.
   - Без файла задачи, без `needs-token`, без `no-token` в `done`; каждое состояние помечено `auto: true`

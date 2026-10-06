@@ -25,6 +25,13 @@
   `github.com`, `release-assets.githubusercontent.com`), `monobank` (`api.monobank.ua`). Каждый потребитель ограничен своими
   сервисами (`allowlistedFetch(fetch, ['monobank'])` — X-Token не уйдёт на другой хост); https, порт по умолчанию, без
   редиректов. Добавлять — только надёжные известные сервисы, отдельным шагом, с правкой `tests/allowlist.test.ts`.
+  `monobank-rates` (`api.monobank.ua`, only `GET /bank/currency`): today's public Monobank rates for the home screen,
+  fetched by main (`main/rates.ts`, `main/rates-session.ts`) through its own Electron session, partition
+  `monobank-rates`, created and guarded in one step by `createRatesSession` (the only `fromPartition(` besides the
+  updater's, `tests/update-session.test.ts`). It sends no headers, so the import's `X-Token` cannot reach it. The
+  answer is capped at 64 KiB (by `Content-Length` before reading, and after) and zod-checked. Rates are cached in
+  `userData/rates.json`, removed by «Delete all data», after which `RatesService.forget()` drops them from memory and
+  discards a refresh still in flight.
 - **Шифрование базы** (0.1.4 вместе с блокировкой, спека `docs/superpowers/specs/2026-09-26-db-encryption-design.md`):
   - вся база — AES-256-CBC (sqlite3mc в `@libsql/client`, `openLibsql(url, { encryptionKey })`); ключ — случайные 32 байта
     hex в `userData/db-key.bin` через `safeStorage` (как токены), для всех, независимо от PIN (из PIN не берём: импорт под

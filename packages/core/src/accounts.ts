@@ -5,6 +5,7 @@
 import { categorize, loadOverrides } from './categories.ts';
 import { ConnectionError, accountProviders, providerOf } from './connections.ts';
 import type { Db } from './db.ts';
+import { periodArgs, periodSql, type ZonedPeriod } from './periods.ts';
 import { rulesFor } from './providers/rules.ts';
 
 /** SQL: the auto rule for account alias `a` — a card always; a jar with money or already imported (has coverage). */
@@ -43,7 +44,7 @@ export const CROSSING_JOIN = 'LEFT JOIN crossing x ON x.key = t.id';
 type TextRow = { id: string; accountId: string; description: string; mcc: number; amount: number; counterName: string | null };
 
 /**
- * Non-cancelled rows of enabled accounts with local_date in [from, to] that cross to a disabled account, with the
+ * Non-cancelled rows of enabled accounts in the period (by `time`, periods.ts) that cross to a disabled account, with the
  * category they get as ordinary operations (overrides, the provider's hint, MCC — as without the transfer mark). JSON
  * {id: category} for CROSSING_CTE / CROSSING_JOIN: `x.key IS NOT NULL` = crossing, `COALESCE(x.value, t.category)` =
  * the category to count. One argument whatever the number of rows.
@@ -51,10 +52,10 @@ type TextRow = { id: string; accountId: string; description: string; mcc: number
  * turned off has no pair) whose other side, as the provider reads the text, is only disabled accounts of the same
  * connection. A text that names nothing, or fits an enabled account too, stays internal.
  */
-export async function crossingCategories(db: Db, range: { from: string; to: string }): Promise<string> {
+export async function crossingCategories(db: Db, range: ZonedPeriod): Promise<string> {
   const cols = 't.id, t.account_id, t.description, t.mcc, t.amount, t.counter_name';
-  const inRange = `t.is_cancelled = 0 AND t.local_date BETWEEN ? AND ? AND t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`;
-  const paired = await db.execute({ sql: `SELECT ${cols} FROM transactions t WHERE ${inRange} AND ${crossesDisabledSql('t')}`, args: [range.from, range.to] });
+  const inRange = `t.is_cancelled = 0 AND ${periodSql('t')} AND t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`;
+  const paired = await db.execute({ sql: `SELECT ${cols} FROM transactions t WHERE ${inRange} AND ${crossesDisabledSql('t')}`, args: periodArgs(range) });
   const found = paired.rows.map(textRow);
   found.push(...(await crossingTexts(db, range, cols, inRange)));
   if (found.length === 0) return '{}';
@@ -88,7 +89,7 @@ function textRow(r: Record<string, unknown>): TextRow {
   };
 }
 
-async function crossingTexts(db: Db, range: { from: string; to: string }, cols: string, inRange: string): Promise<TextRow[]> {
+async function crossingTexts(db: Db, range: ZonedPeriod, cols: string, inRange: string): Promise<TextRow[]> {
   const acc = await db.execute(`SELECT a.id, a.connection_id, a.kind, a.type, a.currency_code, a.title, ${accountEnabledSql('a')} AS enabled FROM accounts a`);
   const accounts = acc.rows.map((r) => ({
     id: String(r.id),
@@ -102,7 +103,7 @@ async function crossingTexts(db: Db, range: { from: string; to: string }, cols: 
   if (accounts.every((a) => a.enabled)) return [];
   const rs = await db.execute({
     sql: `SELECT ${cols} FROM transactions t WHERE ${inRange} AND t.transfer_rule = 'text' AND t.transfer_pair_id IS NULL`,
-    args: [range.from, range.to],
+    args: periodArgs(range),
   });
   if (rs.rows.length === 0) return [];
   const providers = await accountProviders(db);

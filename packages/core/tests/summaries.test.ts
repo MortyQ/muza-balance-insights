@@ -1,15 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
+import { categoryLines } from '../src/category-lines.ts';
+import { incomeLines } from '../src/income-lines.ts';
 import { kyivStartOfDay } from '../src/format.ts';
 import { spendingByCategory } from '../src/queries.ts';
 import { getBalances, getSyncStatus } from '../src/status.ts';
 import {
+  INCOME_GROUP_BY,
   SPENDING_GROUP_BY,
   SummaryError,
   comparePeriods,
   incomeSource,
   incomeSummary,
   periodInfo,
+  spendingGrid,
   spendingSummary,
 } from '../src/summaries.ts';
 import { insertAccountRow, memoryDb } from './helpers.ts';
@@ -132,8 +136,24 @@ describe('spendingSummary', () => {
     ]);
     expect(s.totals).toEqual([
       // one operation currency → the operation block is kept; UAH mixes in commissions (no operation currency) → dropped
-      { currency: 840, lines: 1, gross: 500, refunds: 0, net: 500, netPerDay: 8, operation: { currency: 840, gross: 500, refunds: 0, net: 500 } },
-      { currency: 980, lines: 7, gross: 43_400, refunds: 1_000, net: 42_400, netPerDay: 719 },
+      { currency: 840, lines: 1, purchases: 1, gross: 500, refunds: 0, net: 500, netPerDay: 8, operation: { currency: 840, gross: 500, refunds: 0, net: 500 } },
+      { currency: 980, lines: 7, purchases: 6, gross: 43_400, refunds: 1_000, net: 42_400, netPerDay: 719 },
+    ]);
+  });
+
+  it('purchases: spending lines only — a refund is not an operation, a commission line is one', async () => {
+    const s = await spendingSummary(db, Q, NOW);
+    expect(s.groups.map(({ currency, key, lines, purchases }) => ({ currency, key, lines, purchases }))).toEqual([
+      { currency: 840, key: 'путешествия', lines: 1, purchases: 1 },
+      { currency: 980, key: 'переводы людям', lines: 1, purchases: 1 },
+      { currency: 980, key: 'продукты', lines: 1, purchases: 1 },
+      { currency: 980, key: 'налоги и госплатежи', lines: 1, purchases: 1 },
+      { currency: 980, key: 'кафе и рестораны', lines: 2, purchases: 1 },
+      { currency: 980, key: 'комиссии банка', lines: 2, purchases: 2 },
+    ]);
+    expect(s.totals.map(({ currency, purchases }) => ({ currency, purchases }))).toEqual([
+      { currency: 840, purchases: 1 },
+      { currency: 980, purchases: 6 },
     ]);
   });
 
@@ -142,6 +162,44 @@ describe('spendingSummary', () => {
     for (const groupBy of SPENDING_GROUP_BY) {
       expect((await spendingSummary(db, { ...Q, groupBy }, NOW)).totals, groupBy).toEqual(base);
     }
+  });
+
+  it('categoryLines: the lines behind every category figure sum to it (net, gross, refunds, purchases), in any scope', async () => {
+    for (const scope of [undefined, 'personal', 'business'] as const) {
+      const f = scope ? { scope } : {};
+      for (const g of (await spendingSummary(db, { ...Q, ...f }, NOW)).groups) {
+        const lines = (await categoryLines(db, { ...Q, ...f, category: g.key }, NOW)).lines.filter((l) => l.currency === g.currency);
+        const gross = lines.filter((l) => l.amount < 0).reduce((s, l) => s - l.amount, 0);
+        const refunds = lines.filter((l) => l.amount > 0).reduce((s, l) => s + l.amount, 0);
+        expect({ gross, refunds, net: gross - refunds, purchases: lines.filter((l) => l.amount < 0).length }, `${scope}/${g.key}`)
+          .toEqual({ gross: g.gross, refunds: g.refunds, net: g.net, purchases: g.purchases });
+      }
+    }
+  });
+
+  it('categoryLines: a body without its commission, the commission as its own «комиссии банка» line; newest first', async () => {
+    const p2p = (await categoryLines(db, { ...Q, category: 'переводы людям' }, NOW)).lines;
+    expect(p2p.map((l) => [l.kind, l.amount, l.operationAmount])).toEqual([['body', -20_000, -20_400]]);
+    const fees = (await categoryLines(db, { ...Q, category: 'комиссии банка' }, NOW)).lines;
+    expect(fees.map((l) => [l.kind, l.amount, l.operationCurrency])).toEqual([['commission', -2_000, null], ['commission', -400, null]]);
+    expect(fees[0]!.time).toBeGreaterThan(fees[1]!.time);
+    const cafe = (await categoryLines(db, { ...Q, category: 'кафе и рестораны' }, NOW)).lines;
+    expect(cafe.map((l) => l.amount)).toEqual([1_000, -4_000]); // the refund is a positive line
+    expect((await categoryLines(db, { ...Q, category: 'свои переводы' }, NOW)).lines).toEqual([]);
+  });
+
+  it('day (internal, not an MCP choice): one group per Kyiv day, the same totals', async () => {
+    const s = await spendingSummary(db, { ...Q, groupBy: 'day' }, NOW);
+    expect(s.groups.filter((g) => g.currency === 980).map((g) => [g.key, g.net, g.purchases])).toEqual([
+      ['2026-02-03', 20_400, 2], // body + its commission line
+      ['2026-01-05', 10_000, 1],
+      ['2026-02-06', 7_000, 1],
+      ['2026-01-20', 4_000, 1],
+      ['2026-02-04', 2_000, 1], // an own transfer: only its commission is spending
+      ['2026-01-21', -1_000, 0], // a refund only
+    ]);
+    expect(s.totals).toEqual((await spendingSummary(db, Q, NOW)).totals);
+    expect(SPENDING_GROUP_BY).not.toContain('day');
   });
 
   it('month / account / mcc / scope keys; account groups carry a label, never a card number', async () => {
@@ -157,7 +215,7 @@ describe('spendingSummary', () => {
 
   it('filters: scope, account, category (incl. commissions); an unknown groupBy / scope is an error', async () => {
     expect((await spendingSummary(db, { ...Q, scope: 'business' }, NOW)).totals).toEqual([
-      { currency: 980, lines: 1, gross: 7_000, refunds: 0, net: 7_000, netPerDay: 119, operation: { currency: 980, gross: 7_000, refunds: 0, net: 7_000 } },
+      { currency: 980, lines: 1, purchases: 1, gross: 7_000, refunds: 0, net: 7_000, netPerDay: 119, operation: { currency: 980, gross: 7_000, refunds: 0, net: 7_000 } },
     ]);
     expect((await spendingSummary(db, { ...Q, accountId: 'usd' }, NOW)).groups.map((g) => g.key)).toEqual(['путешествия']);
     expect((await spendingSummary(db, { ...Q, category: 'комиссии банка' }, NOW)).totals[0]?.net).toBe(2_400);
@@ -218,6 +276,32 @@ describe('incomeSummary', () => {
     ]);
     expect(incomeSource(5411, '', 'monobank')).toBe('other');
   });
+
+  it('incomeLines: the rows behind incomeSummary, newest first, with source and sender; same filters', async () => {
+    await tx('black', '2026-02-01', 10_000, { category: 'поступления', mcc: 6012, description: 'Вигаданий Банк' });
+    await tx('black', '2026-02-02', 2_000, { category: 'поступления', mcc: 4829, description: 'Від: Вигадана Особа' });
+    await tx('usd', '2026-02-04', 5_000, { category: 'поступления', mcc: 4829, scope: 'business', opCurrency: 978, opAmount: 4_600 });
+    await tx('black', '2026-02-05', 50_000, { category: 'поступления', mcc: 4829, internal: true });
+    await tx('black', '2026-02-06', 700, { category: 'кафе и рестораны', mcc: 4829 });
+    await tx('black', '2026-02-07', 900, { category: 'поступления', mcc: 4829, cancelled: true });
+    for (const scope of [undefined, 'personal', 'business'] as const) {
+      const q = { from: '2026-02-01', to: '2026-02-28', ...(scope ? { scope } : {}) };
+      const lines = (await incomeLines(db, q, NOW)).lines;
+      const sums = new Map<number, { lines: number; total: number }>();
+      for (const l of lines) {
+        const t = sums.get(l.currency) ?? { lines: 0, total: 0 };
+        sums.set(l.currency, { lines: t.lines + 1, total: t.total + l.amount });
+      }
+      expect([...sums].map(([currency, t]) => ({ currency, ...t })).sort((a, b) => a.currency - b.currency), String(scope))
+        .toEqual((await incomeSummary(db, q, NOW)).totals.map(({ currency, lines, total }) => ({ currency, lines, total })));
+    }
+    const all = (await incomeLines(db, { from: '2026-02-01', to: '2026-02-28' }, NOW)).lines;
+    expect(all.map((l) => [l.amount, l.source, l.sender, l.operationCurrency, l.operationAmount])).toEqual([
+      [5_000, 'transfer', null, 978, 4_600],
+      [2_000, 'named_sender', 'Вигадана Особа', 980, 2_000],
+      [10_000, 'other_bank', null, 980, 10_000],
+    ]);
+  });
 });
 
 describe('getBalances', () => {
@@ -260,5 +344,59 @@ describe('getSyncStatus', () => {
 
     await db.execute('DELETE FROM api_calls');
     expect((await getSyncStatus(db, NOW * 1000)).next_request_at).toBeNull();
+  });
+});
+
+describe('spendingGrid (category × day / month, the analytics screen)', () => {
+  beforeEach(async () => {
+    await tx('black', '2026-02-03', -20_000);
+    await tx('black', '2026-02-20', -5_000, { category: 'кафе и рестораны' });
+    await tx('black', '2026-03-02', -30_000);
+    await tx('black', '2026-03-05', -8_000, { category: 'кафе и рестораны' });
+    await tx('black', '2026-03-05', 2_000, { category: 'кафе и рестораны' }); // a refund
+    await tx('black', '2026-03-06', -1_000, { commission: 100 }); // body 900 + a «комиссии банка» line of 100
+    await tx('usd', '2026-03-06', -100);
+    await tx('black', '2026-03-08', -5_000, { category: 'свои переводы', internal: true });
+  });
+
+  it('months: one cell per currency × month × category; refunds net out; commission is its own category', async () => {
+    const g = await spendingGrid(db, { from: '2026-02-01', to: '2026-03-31', unit: 'month' }, NOW);
+    expect(g.unit).toBe('month');
+    expect(g.cells.map((c) => [c.currency, c.bucket, c.category, c.net])).toEqual([
+      [840, '2026-03', 'продукты', 100],
+      [980, '2026-02', 'кафе и рестораны', 5_000],
+      [980, '2026-02', 'продукты', 20_000],
+      [980, '2026-03', 'кафе и рестораны', 6_000],
+      [980, '2026-03', 'комиссии банка', 100],
+      [980, '2026-03', 'продукты', 30_900],
+    ]);
+    expect(g.cells.find((c) => c.bucket === '2026-03' && c.category === 'кафе и рестораны')).toMatchObject({ gross: 8_000, refunds: 2_000, purchases: 1 });
+  });
+
+  it("days: keys are the zone's dates; per currency the cells add up to spendingSummary by category", async () => {
+    const g = await spendingGrid(db, { from: '2026-03-01', to: '2026-03-31', unit: 'day' }, NOW);
+    expect([...new Set(g.cells.map((c) => c.bucket))].sort()).toEqual(['2026-03-02', '2026-03-05', '2026-03-06']);
+    const s = await spendingSummary(db, { from: '2026-03-01', to: '2026-03-31', groupBy: 'category' }, NOW);
+    for (const t of s.totals) {
+      expect(g.cells.filter((c) => c.currency === t.currency).reduce((n, c) => n + c.net, 0)).toBe(t.net);
+    }
+  });
+
+  it('refuses an unknown unit', async () => {
+    await expect(spendingGrid(db, { from: '2026-03-01', to: '2026-03-31', unit: 'week' as 'day' }, NOW)).rejects.toThrow(SummaryError);
+  });
+});
+
+describe('incomeSummary groupBy day (desktop only)', () => {
+  it('one group per currency and local date', async () => {
+    await tx('black', '2026-03-02', 40_000, { category: 'поступления', mcc: 4829 });
+    await tx('black', '2026-03-02', 10_000, { category: 'поступления', mcc: 4829 });
+    await tx('black', '2026-03-04', 5_000, { category: 'поступления', mcc: 4829 });
+    const s = await incomeSummary(db, { from: '2026-03-01', to: '2026-03-31', groupBy: 'day' }, NOW);
+    expect(s.groups.map((g) => [g.key, g.total, g.lines])).toEqual([['2026-03-02', 50_000, 2], ['2026-03-04', 5_000, 1]]);
+  });
+
+  it('is not offered to the MCP tools', () => {
+    expect(INCOME_GROUP_BY).not.toContain('day');
   });
 });

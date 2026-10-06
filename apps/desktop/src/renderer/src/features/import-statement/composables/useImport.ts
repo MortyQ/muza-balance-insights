@@ -1,19 +1,22 @@
-import { ref } from 'vue';
-import type { ImportDepth } from '@contract/progress.ts';
+import { computed, ref, type Ref } from 'vue';
+import { isImportFrom, monthsBefore } from '@contract/import-range.ts';
 import { failedText, t } from '@/shared/lib';
 import { useImportRequest } from '../api/useImportRequest.ts';
-import { START_ERRORS } from '../constants.ts';
+import { DEFAULT_PRESET, START_ERRORS } from '../constants.ts';
 import type { UseImportReturn } from '../types.ts';
 
-export function useImport(): UseImportReturn {
+/** `today`: the local date the period is counted back from. */
+export function useImport(today: Readonly<Ref<string>>): UseImportReturn {
   const { startImport, cancelImport } = useImportRequest();
-  const depth = ref<ImportDepth>(3);
+  const from = ref(monthsBefore(today.value, DEFAULT_PRESET));
+  const valid = computed(() => isImportFrom(from.value, today.value));
   const error = ref('');
 
   async function start(): Promise<void> {
     error.value = '';
+    if (!valid.value) return;
     try {
-      const r = await startImport(depth.value);
+      const r = await startImport(from.value);
       if (!r.started) error.value = t(START_ERRORS[r.reason]);
     } catch {
       error.value = failedText();
@@ -28,5 +31,5 @@ export function useImport(): UseImportReturn {
     }
   }
 
-  return { depth, error, start, cancel };
+  return { from, valid, error, start, cancel };
 }

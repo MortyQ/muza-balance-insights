@@ -7,7 +7,6 @@ import type { SideNavItem } from '@/shared/layout';
 const { settingsSection } = await import('@/shared/config');
 const { nextItem, SIDE_NAV_LABEL_CLASS } = await import('@/shared/layout');
 const { NAV_GROUPS } = await import('@/widgets/settings/constants.ts');
-const { HOME_NAV } = await import('@/pages/home/constants.ts');
 const nextSection = (s: SettingsSection, delta: 1 | -1) => nextItem(NAV_GROUPS, s, delta);
 const { osStoreName } = await import('@/shared/lib');
 const { tokensStorage } = await import('@/features/settings/security-info/utils.ts');
@@ -103,14 +102,6 @@ describe('side menu arrows', () => {
     expect(nextItem(groups, 'a', 1)).toBe('b');
     expect(nextItem(groups, 'b', 1)).toBe('a');
     expect(nextItem(groups, 'a', -1)).toBe('b');
-  });
-});
-
-describe('home menu', () => {
-  it('one untitled group with «General» only; the arrows stay on it', () => {
-    expect(HOME_NAV).toEqual([{ items: [{ label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'general' }] }]);
-    expect(nextItem(HOME_NAV, 'general', 1)).toBe('general');
-    expect(nextItem(HOME_NAV, 'general', -1)).toBe('general');
   });
 });
 

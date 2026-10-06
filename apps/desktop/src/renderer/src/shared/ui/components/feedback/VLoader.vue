@@ -22,7 +22,7 @@ const {
 <template>
   <div
     :class="{ 'v-loader--fullscreen': fullscreen }"
-    aria-label="Loading"
+    :aria-label="$t('common.loading')"
     class="v-loader-container"
     role="status"
   >

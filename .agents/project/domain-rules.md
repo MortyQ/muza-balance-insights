@@ -5,7 +5,11 @@
 ## Принятые решения
 
 - Холды: soft-delete через `is_cancelled`, строки не удаляются.
-- Фильтры по периоду — только по `local_date`.
+- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`,
+  `crossingCategories`) are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
+  which the MCP server keeps) and match rows by `time` in [start of `from`, start of the day after `to`). Grouping by
+  `day` / `month` reads the zone's own day starts (`periodBuckets` → CTE `buckets`), right across DST. The desktop passes
+  the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
 - Банки учитываются, если `balance > 0` ИЛИ для банки есть запись в `sync_state` (авто-правило; выбор пользователя
   `accounts.sync_choice` сильнее — см. ниже).
 - **Выключенный счёт** (`packages/core/src/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
@@ -46,6 +50,18 @@
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
   в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).
+- `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
+  operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
+- `spendingSummary` also groups by `day` (a day of the period's zone) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
+  do not offer it. Its one user is the desktop's «Now» strip: personal scope; today's Monobank rates for every
+  day; the usual day = the median of daily net over the 30 days before today that the data covers (from the first data
+  date to the last fully synced day; a day without spending = 0; fewer than 7 such days — none); last week = Monday − 7 …
+  today − 7, none when the data starts later.
+- `spendingGrid` (category × day or month of the period's zone, one query over `spendingLinesSql` + `SPENDING_LINE_SQL`,
+  so per currency its cells add up to `spendingSummary`'s groups) and `incomeSummary` `groupBy: 'day'` — internal, for the
+  desktop's analytics screen only (not in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`, the MCP tools do not offer them).
+- The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
+  exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.
   6012 делится по знаку: зачисления → «поступления», списания → «рассрочки и кредиты».
   8398 → «благотворительность» (донаты в чужие банки через 4829 — позже оверрайдами).
@@ -60,7 +76,7 @@
   текущий.
 - Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/fx.ts`): копейки гривны за минимальную единицу
   валюты из строк `pair_fx` на гривневых счетах. Продажи валюты; покупки — только если валюту ни разу не продавали.
-  В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца по Киеву,
+  В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца в его поясе,
   равенство → более ранний), `nearest: true`. Общий для семьи, холды входят, отменённые — нет; обменов нет → курса
   нет, `toUah` → `null`, часть не входит в суммы. Пользуется только блок балансов десктопа («Пришло / Ушло» итоговых
   карт, `CardTotal.fx`); MCP-тулы не меняются.
@@ -108,5 +124,8 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
+- `incomeLines` (`packages/core/src/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
+  from the same query (`incomeRowsSql`), with source and the «Від: …» sender's name; carries the bank's text, never for
+  an MCP tool or the anonymised copy.
 - Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
   (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.

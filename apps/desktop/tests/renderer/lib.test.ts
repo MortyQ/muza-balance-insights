@@ -1,12 +1,13 @@
-// Pure helpers of the screen: money formatting and Kyiv months.
+// Pure helpers of the screen: money formatting and months in the system time zone.
 // Typechecked with the renderer (tsconfig.web.json): months read the dictionaries through the renderer aliases.
 import { effectScope, nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { formatMoney, currencySymbol } from '@/shared/lib/money.ts';
-import { kyivToday, monthRange, monthTitle, shiftMonth, shortDate } from '@/shared/lib/months.ts';
+import { localToday, shiftMonth, shortDate, syncedWhen } from '@/shared/lib/months.ts';
 import { osFamily } from '@/shared/lib/os.ts';
 import { throttle } from '@/shared/lib/throttle.ts';
 import { useAsyncData } from '@/shared/lib/useAsyncData.ts';
+import { inTimeZone } from '../helpers/time-zone.ts';
 
 // Intl puts a no-break space between thousands; compare with plain spaces.
 const plain = (s: string) => s.replace(/[  ]/g, ' ');
@@ -29,19 +30,33 @@ describe('formatMoney', () => {
   });
 });
 
-describe('months (Kyiv)', () => {
-  it('today is the Kyiv date, not UTC', () => {
-    expect(kyivToday(new Date('2026-09-30T22:30:00Z'))).toBe('2026-10-01'); // 01:30 in Kyiv
-    expect(kyivToday(new Date('2026-09-30T20:00:00Z'))).toBe('2026-09-30');
+describe('months', () => {
+  it('today is the date in the system time zone (Kyiv in this suite), not UTC', () => {
+    expect(localToday(new Date('2026-09-30T22:30:00Z'))).toBe('2026-10-01'); // 01:30 in Kyiv
+    expect(localToday(new Date('2026-09-30T20:00:00Z'))).toBe('2026-09-30');
   });
 
-  it('shift across years, ranges with the right last day, titles', () => {
+  describe('in Berlin', () => {
+    inTimeZone('Europe/Berlin');
+    it('23:10 is still today (Kyiv is past midnight already)', () => {
+      expect(localToday(new Date('2026-10-05T21:10:00Z'))).toBe('2026-10-05');
+    });
+    it('a sync earlier today reads «at HH:mm» until the local midnight', () => {
+      expect(syncedWhen('2026-10-05 22:40', new Date('2026-10-05T21:10:00Z'))).toBe('в 22:40');
+    });
+  });
+
+  describe('in New York (UTC−5 in winter)', () => {
+    inTimeZone('America/New_York');
+    it('the evening is not tomorrow', () => {
+      expect(localToday(new Date('2026-01-15T03:30:00Z'))).toBe('2026-01-14'); // 22:30 on the 14th
+    });
+  });
+
+  it('shift across years', () => {
     expect(shiftMonth('2026-01', -1)).toBe('2025-12');
     expect(shiftMonth('2025-12', 1)).toBe('2026-01');
     expect(shiftMonth('2026-03', -26)).toBe('2024-01');
-    expect(monthRange('2024-02')).toEqual({ from: '2024-02-01', to: '2024-02-29' });
-    expect(monthRange('2026-09')).toEqual({ from: '2026-09-01', to: '2026-09-30' });
-    expect(monthTitle('2026-09')).toBe('Сентябрь 2026');
   });
 
   it('short dates', () => {
@@ -142,7 +157,7 @@ describe('plural forms («one | few | many»)', async () => {
 });
 
 // The core groups by its own word; main adds the id, the table shows the dictionary name.
-const { categoryName } = await import('@/features/spending-summary/utils.ts');
+const { categoryName } = await import('@/entities/category');
 
 describe('spending category names', () => {
   const line = { gross: 1, refunds: 0, net: 1 };
