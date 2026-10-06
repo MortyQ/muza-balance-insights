@@ -1,8 +1,9 @@
 import { computed, ref, watch, type Ref } from 'vue';
 import type { Scope } from '@contract/api.ts';
+import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
-import type { SortKey, UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
+import type { UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
 import { lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */

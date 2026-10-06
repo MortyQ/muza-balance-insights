@@ -10,39 +10,16 @@
     "failed": "Couldn't load the category.",
     "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency.",
     "list": {
-      "byAmount": "By amount",
-      "byDate": "By date",
-      "clear": "Clear the «{name}» filter",
       "col": {
-        "amount": "Amount",
-        "marks": "Marks",
-        "when": "When",
-        "where": "Where",
-        "who": "Who · account"
+        "where": "Where"
       },
-      "empty": "Nothing found.",
       "mark": {
         "cashback": "cashback +{amount}",
         "fee": "fee",
-        "foreign": "foreign currency",
-        "noRate": "no rate",
-        "pending": "pending",
         "refund": "refund",
         "refunded": "refunded"
       },
-      "noDescription": "No description",
-      "search": "Search: place, comment, amount",
-      "sort": "Sort",
-      "title": "Operations",
-      "total": "List total: {amount}"
-    },
-    "months": {
-      "above": "{month}: {amount} above the average",
-      "avg": "{amount} a month on average",
-      "below": "{month}: {amount} below the average",
-      "noData": "no data",
-      "soFar": "{amount} so far",
-      "title": "Last 12 months"
+      "search": "Search: place, comment, amount"
     },
     "none": "No spending in this category in {month}.",
     "summary": {
@@ -62,28 +39,11 @@
       "spent": "Spent this month",
       "vsPrev": "{amount} in {month}"
     },
-    "when": {
-      "dayParts": "By time of day",
-      "dayTitle": "{month} {day} — {amount}",
-      "days": "By day of the month",
-      "part": {
-        "0": "morning 6–12",
-        "1": "day 12–18",
-        "2": "evening 18–23",
-        "3": "night 23–6"
-      },
-      "peak": "Most: {weekday} · {part}",
-      "title": "When",
-      "titleFor": "When: {name}",
-      "weekdays": "By weekday"
-    },
     "where": {
-      "hint": "Click to filter the list",
       "more": "{n} more place | {n} more places | {n} more places",
       "title": "Where"
     },
     "who": {
-      "avg": "avg {amount}",
       "title": "Who spent"
     }
   },
@@ -222,6 +182,54 @@
       "savedRate": "Saved rate from {date}: could not refresh",
       "uah": "Hryvnia ₴",
       "usd": "Dollars $"
+    },
+    "operations": {
+      "avg": "avg {amount}",
+      "filterHint": "Click to filter the list",
+      "list": {
+        "byAmount": "By amount",
+        "byDate": "By date",
+        "clear": "Clear the «{name}» filter",
+        "col": {
+          "amount": "Amount",
+          "marks": "Marks",
+          "when": "When",
+          "who": "Who · account"
+        },
+        "empty": "Nothing found.",
+        "sort": "Sort",
+        "title": "Operations",
+        "total": "List total: {amount}"
+      },
+      "mark": {
+        "foreign": "foreign currency",
+        "noRate": "no rate",
+        "pending": "pending"
+      },
+      "months": {
+        "above": "{month}: {amount} above the average",
+        "avg": "{amount} a month on average",
+        "below": "{month}: {amount} below the average",
+        "noData": "no data",
+        "soFar": "{amount} so far",
+        "title": "Last 12 months"
+      },
+      "noDescription": "No description",
+      "when": {
+        "dayParts": "By time of day",
+        "dayTitle": "{month} {day} — {amount}",
+        "days": "By day of the month",
+        "part": {
+          "0": "morning 6–12",
+          "1": "day 12–18",
+          "2": "evening 18–23",
+          "3": "night 23–6"
+        },
+        "peak": "Most: {weekday} · {part}",
+        "title": "When",
+        "titleFor": "When: {name}",
+        "weekdays": "By weekday"
+      }
     },
     "participant": {
       "connection": "Connection",

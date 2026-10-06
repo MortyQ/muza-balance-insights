@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { PersonView } from '../types.ts';
 
-const { people } = defineProps<{ people: ReadonlyArray<PersonView> }>();
+const { people, title } = defineProps<{ people: ReadonlyArray<PersonView>; title: string }>();
 </script>
 
 <template>
   <section class="flex flex-col gap-3">
-    <h2 class="text-base font-bold">{{ $t('category.who.title') }}</h2>
+    <h2 class="text-base font-bold">{{ title }}</h2>
     <div v-for="p in people" :key="p.participantId" class="flex flex-col gap-1.5" :style="{ '--c': p.color }">
       <div class="flex items-center gap-2.5">
         <span class="grid size-6.5 shrink-0 place-items-center rounded-full bg-(--c) text-xs font-extrabold text-white" aria-hidden="true">{{ p.initial }}</span>

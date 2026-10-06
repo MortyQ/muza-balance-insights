@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import type { MonthsView } from '../types.ts';
 
-const { months } = defineProps<{ months: MonthsView }>();
+const { months, title } = defineProps<{ months: MonthsView; title: string }>();
 </script>
 
 <template>
   <section class="flex flex-col gap-3">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-base font-bold">{{ $t('category.months.title') }}</h2>
+      <h2 class="text-base font-bold">{{ title }}</h2>
       <span v-if="months.caption" class="text-xs text-foreground-secondary">{{ months.caption }}</span>
     </div>
     <div class="relative flex h-36 items-end gap-1.5" aria-hidden="true">

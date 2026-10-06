@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import type { MerchantView } from '../types.ts';
+import type { ShareItemView } from '../types.ts';
 
-const { merchants, more } = defineProps<{ merchants: ReadonlyArray<MerchantView>; more: string }>();
+const { items, more, title } = defineProps<{ items: ReadonlyArray<ShareItemView>; more: string; title: string }>();
 const emit = defineEmits<{ pick: [key: string] }>();
 </script>
 
 <template>
   <section class="flex flex-col gap-2">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-base font-bold">{{ $t('category.where.title') }}</h2>
-      <span class="text-xs text-foreground-muted">{{ $t('category.where.hint') }}</span>
+      <h2 class="text-base font-bold">{{ title }}</h2>
+      <span class="text-xs text-foreground-muted">{{ $t('entities.operations.filterHint') }}</span>
     </div>
     <button
-      v-for="m in merchants"
+      v-for="m in items"
       :key="m.key"
       type="button"
       :aria-pressed="m.pressed"
