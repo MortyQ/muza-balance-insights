@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { RouterLink, type RouteLocationRaw } from 'vue-router';
 import { t } from '@/shared/lib';
+import { VIcon } from '@/shared/ui';
 import type { Flow } from '../types.ts';
 import { flowWidths, signedMoney } from '../utils.ts';
 
-const { flow, size = 'sm' } = defineProps<{
+const { flow, size = 'sm', incomeTo = null } = defineProps<{
   flow: Flow;
   /** sm — the thin bars under a card of the row; md — the month panel. */
   size?: 'sm' | 'md';
+  /** md only: the income row opens this screen; null — a plain row. */
+  incomeTo?: RouteLocationRaw | null;
 }>();
 
 /** A bar part; zero-width parts are dropped (the 2 px gap and the rounded end belong to visible parts only). */
@@ -25,8 +29,8 @@ const rows = computed(() => {
     return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
-    { label: t('home.balances.income'), amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income') },
-    { label: t('home.balances.spending'), amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending') },
+    { label: t('home.balances.income'), amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income'), to: incomeTo },
+    { label: t('home.balances.spending'), amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending'), to: null },
   ];
 });
 </script>
@@ -36,15 +40,24 @@ const rows = computed(() => {
        bars start at the same place and never run under the text. -->
   <div :class="size === 'md' ? 'flex flex-col gap-4' : 'grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1.5 px-1 text-xs'">
     <div v-for="row in rows" :key="row.label" :class="size === 'md' ? 'flex flex-col gap-1.5' : 'contents'">
-      <template v-if="size === 'md'">
+      <component
+        :is="row.to ? RouterLink : 'div'"
+        v-if="size === 'md'"
+        :to="row.to ?? undefined"
+        :aria-label="row.to ? `${$t('income.open')}: ${row.amount}` : undefined"
+        class="flex flex-col gap-1.5"
+        :class="{ '-m-1.5 rounded-lg p-1.5 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus': row.to }"
+      >
         <div class="flex justify-between text-sm">
-          <span class="text-foreground-secondary">{{ row.label }}</span>
+          <span class="inline-flex items-center gap-0.5 text-foreground-secondary">
+            {{ row.label }}<VIcon v-if="row.to" icon="lucide:chevron-right" class="size-3.5" />
+          </span>
           <span class="font-bold tabular-nums">{{ row.amount }}</span>
         </div>
         <div class="flex h-3 gap-0.5" aria-hidden="true">
           <div v-for="(p, i) in row.parts" :key="i" class="bg-(--c) w-(--w) last:rounded-r-md" :style="{ '--c': p.color, '--w': `${p.w}%` }" />
         </div>
-      </template>
+      </component>
       <template v-else>
         <span class="whitespace-nowrap text-foreground-muted">{{ row.label }}</span>
         <div class="flex h-2 gap-0.5" aria-hidden="true">

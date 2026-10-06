@@ -8,6 +8,7 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
+import { besidePointer, daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
 import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
@@ -63,7 +64,7 @@ describe('category screen helpers', () => {
     expect(s).toMatchObject({ name: 'Такси и транспорт', icon: 'lucide:bus', color: 'var(--category-4)', subtitle: 'Сентябрь 2026 · Вся семья · Личное', amount: uah(141_000) });
     expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: 'на 41% больше, чем в августе' });
     expect(s.prev).toBe(`в августе было ${uah(100_000)}`);
-    expect(s.gross).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
+    expect(s.note).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
     expect(s.stats.map((x) => [x.label, x.value])).toEqual([
       ['Операций', '4'],
       ['Средний чек', uah(41_000)],
@@ -82,8 +83,29 @@ describe('category screen helpers', () => {
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[56.7, false], [70.9, false], [100, true]]);
     expect(m.bars[0]!.height).toBe(0);
     expect(m.avg).toBe(63.8); // the running September is not in it: (800 + 1 000) / 2 = 900 of 1 410
+    expect(m.avgLabel).toBe(`ср. ${uah(90_000)}`);
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Сентябрь: на ${uah(51_000)} больше среднего`);
     expect(m.bars.at(-1)!.title).toBe(`Сентябрь 2026 — ${uah(141_000)} на сегодня`);
+  });
+
+  it('12 months as an ECharts option: the bars\' heights and colours, the dashed average, the strong label, the tooltip', () => {
+    const m = monthsView(VIEW, FMT);
+    const o = monthsChartOption(m) as {
+      xAxis: { data: string[]; axisLabel: { formatter: (l: string, i: number) => string } };
+      tooltip: { renderMode: string; formatter: (p: { dataIndex: number }) => string };
+      series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }>; markLine: { data: Array<{ yAxis: number }>; label: { show: boolean; position: string; formatter: () => string } } }>;
+    };
+    expect(o.xAxis.data).toEqual(m.bars.map((b) => b.label));
+    const bars = o.series[0]!.data;
+    expect(bars.slice(-3).map((b) => [b.value, b.itemStyle.color])).toEqual([[56.7, SOFT_BAR], [70.9, SOFT_BAR], [100, 'var(--cat)']]);
+    expect(o.series[0]!.markLine.data).toEqual([{ yAxis: 63.8 }]);
+    expect(o.series[0]!.markLine.label).toMatchObject({ show: true, position: 'insideEndTop' });
+    expect(o.series[0]!.markLine.label.formatter()).toBe(`ср. ${uah(90_000)}`);
+    expect(o.xAxis.axisLabel.formatter('сен', 11)).toBe('{strong|сен}');
+    expect(o.xAxis.axisLabel.formatter('авг', 10)).toBe('авг');
+    expect(o.tooltip.renderMode).toBe('richText');
+    expect(o.tooltip.formatter({ dataIndex: 11 })).toBe(m.bars[11]!.title);
+    expect(monthsChartOption({ ...m, avg: null }).series).toEqual([expect.not.objectContaining({ markLine: expect.anything() })]);
   });
 
   it('12 months up to today: the picked month is the strong bar and the caption compares it', () => {
@@ -108,6 +130,30 @@ describe('category screen helpers', () => {
     expect(when.weekdays.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
     expect(when.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 83.1]);
     expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
+  });
+
+  it('a chart tooltip sits beside the pointer, never under it: right, or left when it does not fit; inside the chart', () => {
+    const size = (w: number, h: number) => ({ contentSize: [w, h] as [number, number], viewSize: [300, 120] as [number, number] });
+    expect(besidePointer([50, 60], size(100, 30))).toEqual([64, 45]);
+    expect(besidePointer([250, 60], size(100, 30))).toEqual([136, 45]);
+    expect(besidePointer([250, 5], size(100, 30))).toEqual([136, 0]);
+    expect(besidePointer([10, 118], size(100, 30))).toEqual([24, 90]);
+    const o = monthsChartOption(monthsView(VIEW, FMT)) as { tooltip: { position: (...a: unknown[]) => [number, number] } };
+    expect(o.tooltip.position([50, 60], null, null, null, size(100, 30))).toEqual([64, 45]);
+  });
+
+  it('«When» as ECharts options: the weekday peak in the colour; days with spending coloured, the rest a thin line; tooltips', () => {
+    type Bars = { xAxis: { axisLabel: { interval: (i: number) => boolean } }; tooltip: { formatter: (p: { dataIndex: number }) => string }; series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }> }> };
+    const when = whenView(LINES, VIEW, '', FMT);
+    const w = weekdaysChartOption(when) as Bars;
+    expect(w.series[0]!.data.map((d) => [d.value, d.itemStyle.color])).toEqual([
+      [0, SOFT_BAR], [0, SOFT_BAR], [26.9, SOFT_BAR], [93.4, SOFT_BAR], [0, SOFT_BAR], [100, 'var(--cat)'], [0, SOFT_BAR],
+    ]);
+    expect(w.tooltip.formatter({ dataIndex: 5 })).toBe(when.weekdays[5]!.title);
+    const d = daysChartOption(when) as Bars;
+    expect(d.series[0]!.data.filter((x) => x.itemStyle.color === 'var(--cat)')).toHaveLength(3);
+    expect(d.series[0]!.data[0]).toEqual({ value: 4, itemStyle: { color: 'var(--border)', borderRadius: [2, 2, 0, 0] } });
+    expect(Array.from({ length: 30 }, (_, i) => i).filter((i) => d.xAxis.axisLabel.interval(i))).toEqual([0, 9, 19, 29]);
   });
 
   it('«When» of one merchant: only its lines, its name in the title', () => {
@@ -196,6 +242,7 @@ describe('category screen mounted', () => {
     expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ month: '2026-09', category: 'transport', scope: 'personal' });
     for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Операции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
+    expect(w.findAll('.v-chart').length).toBeGreaterThan(0);
 
     const bus = w.findAll('button[aria-pressed]').find((b) => b.text().includes('IMAGINARY'))!;
     await bus.trigger('click');

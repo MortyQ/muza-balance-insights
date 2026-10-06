@@ -45,12 +45,13 @@ describe('renderer architecture', () => {
     expect(violations(ok())).toEqual([]);
   });
 
-  it('reka-ui and @internationalized/date are allowed inside shared/ui', () => {
+  it('reka-ui, @internationalized/date and ECharts\' tree-shaken entry points are allowed inside shared/ui', () => {
     expect(
       violations(
         ok({
           'shared/ui/index.ts': "export { s } from './s.ts';\n",
-          'shared/ui/s.ts': "import { SelectRoot } from 'reka-ui';\nimport { CalendarDate } from '@internationalized/date';\nexport const s = [SelectRoot, CalendarDate];\n",
+          'shared/ui/s.ts':
+            "import { SelectRoot } from 'reka-ui';\nimport { CalendarDate } from '@internationalized/date';\nimport { use } from 'echarts/core';\nimport { BarChart } from 'echarts/charts';\nexport const s = [SelectRoot, CalendarDate, use, BarChart];\n",
         }),
       ),
     ).toEqual([]);
@@ -87,6 +88,8 @@ describe('renderer architecture', () => {
     ['a file outside the layers', { 'helpers.ts': 'export const x = 1;\n' }, 'not inside a slice'],
     ['a package that is not allowed', { 'features/f/u.ts': "import { ipcRenderer } from 'electron';\n" }, 'package not allowed'],
     ['reka-ui outside shared/ui', { 'features/f/u.ts': "import { SelectRoot } from 'reka-ui';\n" }, 'package not allowed'],
+    ['ECharts outside shared/ui', { 'features/f/u.ts': "import { use } from 'echarts/core';\n" }, 'package not allowed'],
+    ['the whole ECharts, even in shared/ui', { 'shared/ui/c.ts': "import * as echarts from 'echarts';\n" }, 'package not allowed'],
     ['node inside the renderer', { 'shared/lib/b.ts': "import fs from 'node:fs';\n" }, 'package not allowed'],
     ['main called outside api/', { 'features/f/u.ts': "import { balanceApi } from '@/shared/api';\n" }, 'through an api/ segment'],
     ['window.balance outside the bridge', { 'features/f/u.ts': 'const api = window.balance;\n' }, 'reads window.balance'],

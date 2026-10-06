@@ -18,7 +18,13 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
 ];
 
 /** Packages allowed only inside shared/ui — the muzakit-copy component library — never elsewhere in the renderer. */
-export const UI_ONLY_PACKAGES: ReadonlyArray<RegExp> = [/^reka-ui$/, /^@internationalized\/date$/];
+export const UI_ONLY_PACKAGES: ReadonlyArray<RegExp> = [
+  /^reka-ui$/,
+  /^@internationalized\/date$/,
+  // ECharts by its tree-shaken entry points only: the whole `echarts` would pull in its map code, which builds code
+  // from strings (`new Function`) — the prod CSP has no 'unsafe-eval'.
+  /^echarts\/(core|charts|components|renderers)$/,
+];
 
 /**
  * Domain slices: one slice split into sub-features, one per first-level folder, plus `shared/` for what they have in
@@ -109,7 +115,7 @@ export function violations(files: Files): string[] {
         if (!/^@contract\/[a-z0-9-]+(\/index)?\.ts$/.test(spec)) found.push(`${where}: @contract/ is for the files of src/shared only`);
       } else if (!ALLOWED_PACKAGES.some((re) => re.test(spec))) {
         if (UI_ONLY_PACKAGES.some((re) => re.test(spec)) && file.startsWith('shared/ui/')) {
-          // reka-ui and @internationalized/date are allowed, but only inside shared/ui.
+          // reka-ui, @internationalized/date and ECharts are allowed, but only inside shared/ui.
         } else {
           found.push(`${where}: package not allowed in the renderer`);
         }

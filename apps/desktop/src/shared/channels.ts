@@ -16,6 +16,7 @@ export const METHODS = [
   'getSpendingOverview',
   'getNowOverview',
   'getCategoryOverview',
+  'getIncomeOverview',
   'getMonthOverview',
   'getSyncStatus',
   'deleteAllData',

@@ -33,6 +33,19 @@ English interface.
   current month is not in the average until it ends.
 - Back from a category, the home screen is there at once, with the «Spending» switch as you left it. While a category
   opens for the first time, its cards show a placeholder instead of an empty page.
+- The charts of the category and income screens («Last 12 months», «When») are drawn anew: hover over a bar to see its
+  month or day and the amount at once. The dashed average line of «Last 12 months» shows its amount.
+
+### Income screen
+
+- Click «In» in the month panel next to the balance cards to open the month's income, laid out like a category:
+  how much came in and how that compares with last month, the number of payments, the average and the median, per day,
+  how much of it was spent, the largest payment; the last 12 months; where it came from (other banks, people and
+  clients, transfers, family); from whom (click a sender to see only their payments and when they came); who in the
+  family received how much; when (by weekday, time of day and day of the month); and every payment with its date, time,
+  the bank's description and comment, the card and the amount in its own currency. Refunds for purchases and transfers
+  between your own accounts are not income. The month, the person and the main currency are the same filters as on the
+  home screen.
 
 ### Downloading history
 

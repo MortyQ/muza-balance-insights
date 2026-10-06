@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
+import { incomeLines } from '../src/income-lines.ts';
 import { rederiveCore } from '../src/rederive.ts';
 import { incomeSummary, spendingSummary } from '../src/summaries.ts';
 import { detectTransfers, type TransferAccount, type TransferTx } from '../src/transfers.ts';
@@ -84,6 +85,12 @@ describe('family in the database and the aggregates', () => {
     expect((await incomeSummary(db, q, NOW)).groups).toEqual([]);
     expect((await incomeSummary(db, { ...q, participantId: her }, NOW)).groups.map((g) => [g.key, g.total])).toEqual([['family', 100_000]]);
     expect((await incomeSummary(db, { ...q, participantId: me }, NOW)).groups).toEqual([]);
+  });
+
+  it('incomeLines: the family transfer is the receiver\'s line (source family) in their view, none for the whole family', async () => {
+    expect((await incomeLines(db, q, NOW)).lines).toEqual([]);
+    expect((await incomeLines(db, { ...q, participantId: her }, NOW)).lines.map((l) => [l.id, l.amount, l.source, l.participantId])).toEqual([['in', 100_000, 'family', her]]);
+    expect((await incomeLines(db, { ...q, participantId: me }, NOW)).lines).toEqual([]);
   });
 
   it('categoryLines: «семье» is the sender\'s line in their view, none for the whole family; each line names its person', async () => {

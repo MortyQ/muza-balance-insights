@@ -2,44 +2,18 @@ import type { CategoryLineView, CategoryOverview } from '@contract/api.ts';
 import { accountName } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { change, formatMoney, monthName, monthShortName, t } from '@/shared/lib';
-import type { ChangeChipModel } from '@/shared/ui';
-import { MIN_BAR, TOP_MERCHANTS } from './constants.ts';
-import type { BarView, DayPartView, LineRowView, MarkView, MerchantView, MonthsView, PersonView, SortKey, StatView, SummaryView, WhenView } from './types.ts';
+import {
+  changeChip, dayMonth, monthIn, monthNo, monthsView as monthBars, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
+  type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
+} from '@/entities/operations';
+import { formatMoney, monthName, t } from '@/shared/lib';
+import { TOP_MERCHANTS } from './constants.ts';
 
-type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
-type DayPart = 0 | 1 | 2 | 3;
-
-// 'YYYY-MM…' holds a month 01–12 and the contract's weekday is 1–7 (main's isoWeekday): the casts only name that.
-const monthNo = (date: string) => Number(date.slice(5, 7)) as MonthNumber;
-const monthIn = (date: string) => t(`common.monthIn.${monthNo(date)}`);
-const weekdayShort = (n: number) => t(`common.weekdayShort.${n as Weekday}`);
-const partName = (i: number) => t(`category.when.part.${i as DayPart}`);
-/** «8 сен». */
-const dayMonth = (date: string) => `${Number(date.slice(8, 10))} ${monthShortName(monthNo(date))}`;
-const pct = (value: number, max: number) => (max > 0 ? Math.round((value / max) * 1000) / 10 : 0);
-/** A bar with a value never vanishes; one without stays flat. */
-const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.max(MIN_BAR, pct(value, max)) : 0);
+/** Spending of a line, positive (a refund is negative); null — no rate. */
+const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah);
 
 /** Merchants match regardless of case and spaces (as main groups them). */
-export const merchantKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
-
-export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
-
-/** The change against the compared period, the spending block's words (`home.spending.change.*`). */
-export function summaryChip(net: number, prev: number | null, compare: CategoryOverview['compare']): ChangeChipModel | null {
-  const c = change(net, prev);
-  if (!c || !compare) return null;
-  const month = monthIn(compare.from);
-  if (c.kind === 'new') return { text: t('home.spending.change.new'), tone: 'neutral', arrow: null, sr: '' };
-  if (c.kind === 'same') return { text: t('home.spending.change.same', { month }), tone: 'neutral', arrow: null, sr: '' };
-  const up = c.kind === 'up';
-  const key = up
-    ? (compare.partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
-    : (compare.partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
-  return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
-}
+export const merchantKey = nameKey;
 
 /** The header and the figures of the month. `who` — «Whole family» or a person ('' — the only one). */
 export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: string, fmt: MoneyFormat): SummaryView {
@@ -68,7 +42,7 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     stats.push({
       label: t('category.summary.largest'),
       value: fmt.money(-largest.uah),
-      note: t('category.summary.largestWhere', { merchant: largest.merchant || t('category.list.noDescription'), date: dayMonth(largest.date), time: largest.time }),
+      note: t('category.summary.largestWhere', { merchant: largest.merchant || t('entities.operations.noDescription'), date: dayMonth(largest.date), time: largest.time }),
     });
   }
   if (s.cashback > 0) {
@@ -81,9 +55,9 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     subtitle: [`${monthName(monthNo(v.month))} ${v.month.slice(0, 4)}`, who, scope].filter(Boolean).join(' · '),
     amount: fmt.money(s.net),
     conv: fmt.approxInline(s.net),
-    chip: summaryChip(s.net, s.prev?.net ?? null, v.compare),
+    chip: changeChip(s.net, s.prev?.net ?? null, v.compare),
     prev: s.prev ? t('category.summary.vsPrev', { month: prevMonth, amount: fmt.money(s.prev.net) }) : '',
-    gross: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
+    note: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
     stats,
   };
 }
@@ -93,78 +67,19 @@ export function noneText(v: Readonly<CategoryOverview>): string {
   return v.lines.length === 0 ? t('category.none', { month: monthIn(v.month) }) : '';
 }
 
-/** The 12 months: bars on one scale, the average of the months with data, how the shown month stands against it. */
+/** The 12 months: bars on one scale, the average of the finished months with data, how the picked month stands against it. */
 export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): MonthsView {
-  const max = Math.max(0, ...v.months.map((m) => m.net ?? 0));
-  // The running month is not in the average: it is not over yet.
-  const done = v.months.filter((m) => m.net !== null && m.month !== v.thisMonth).map((m) => Math.max(0, m.net ?? 0));
-  const avg = done.length > 0 ? Math.round(done.reduce((a, b) => a + b, 0) / done.length) : null;
-  const picked = v.months.find((m) => m.month === v.month);
-  const bars = v.months.map((m): BarView => {
-    const amount = m.net === null ? t('category.months.noData') : fmt.money(m.net);
-    return {
-      key: m.month,
-      label: monthShortName(monthNo(m.month)),
-      height: m.net === null ? 0 : barHeight(m.net, max),
-      strong: m.month === v.month,
-      title: `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.month === v.thisMonth ? t('category.months.soFar', { amount }) : amount}`,
-    };
-  });
-  if (avg === null) return { bars, avg: null, caption: '' };
-  const parts = [t('category.months.avg', { amount: fmt.money(avg) })];
-  const c = picked === undefined || picked.net === null ? null : change(picked.net, avg);
-  if (picked && c && (c.kind === 'up' || c.kind === 'down')) {
-    parts.push(t(c.kind === 'up' ? 'category.months.above' : 'category.months.below', { month: monthName(monthNo(picked.month)), amount: fmt.money(c.diff) }));
-  }
-  return { bars, avg: max > 0 ? pct(avg, max) : null, caption: parts.join(' · ') };
+  return monthBars(v.months.map((m) => ({ month: m.month, value: m.net })), v.month, v.thisMonth, fmt);
 }
 
 /** «Who spent» (the family view): each person with spending, on the largest one's scale. */
-export function peopleView(
-  v: Readonly<CategoryOverview>,
-  people: ReadonlyArray<{ id: number; name: string; color: string }>,
-  fmt: MoneyFormat,
-): PersonView[] {
-  const max = Math.max(0, ...v.people.map((p) => p.net));
-  return v.people
-    .filter((p) => p.net > 0)
-    .map((p) => {
-      const who = people.find((x) => x.id === p.participantId) ?? { id: p.participantId, name: '?', color: 'var(--border-strong)' };
-      return {
-        participantId: p.participantId,
-        name: who.name,
-        initial: initial(who.name),
-        color: who.color,
-        amount: fmt.money(p.net),
-        caption: [t('home.spending.opsShort', { n: p.purchases }), p.purchases > 0 ? t('category.who.avg', { amount: fmt.money(Math.round(p.net / p.purchases)) }) : '']
-          .filter(Boolean)
-          .join(' · '),
-        width: pct(p.net, max),
-      };
-    })
-    .sort((a, b) => b.width - a.width);
+export function peopleView(v: Readonly<CategoryOverview>, people: ReadonlyArray<PersonRef>, fmt: MoneyFormat): PersonView[] {
+  return peopleBars(v.people.map((p) => ({ participantId: p.participantId, value: p.net, count: p.purchases })), people, fmt);
 }
 
 /** «Where»: the top merchants on the largest one's scale; `picked` — the list's filter. */
-export function merchantsView(v: Readonly<CategoryOverview>, picked: string | null, fmt: MoneyFormat): MerchantView[] {
-  const top = v.merchants.slice(0, TOP_MERCHANTS);
-  const max = Math.max(0, ...top.map((m) => m.net));
-  return top.map((m) => {
-    const key = merchantKey(m.name);
-    const share = v.summary.net > 0 ? Math.round((m.net / v.summary.net) * 100) : 0;
-    return {
-      key,
-      name: m.name || t('category.list.noDescription'),
-      amount: fmt.money(m.net),
-      caption: [
-        t('home.spending.opsShort', { n: m.purchases }),
-        m.purchases > 0 ? t('category.who.avg', { amount: fmt.money(Math.round(m.net / m.purchases)) }) : '',
-        `${share}%`,
-      ].filter(Boolean).join(' · '),
-      width: pct(m.net, max),
-      pressed: picked === key,
-    };
-  });
+export function merchantsView(v: Readonly<CategoryOverview>, picked: string | null, fmt: MoneyFormat): ShareItemView[] {
+  return shareItems(v.merchants.map((m) => ({ name: m.name, value: m.net, count: m.purchases })), v.summary.net, picked, TOP_MERCHANTS, fmt);
 }
 
 /** «N more places»; '' — none. */
@@ -173,92 +88,38 @@ export function moreMerchantsText(v: Readonly<CategoryOverview>): string {
   return rest > 0 ? t('category.where.more', rest) : '';
 }
 
-/** 0 morning 6–12, 1 day 12–18, 2 evening 18–23, 3 night 23–6. */
-export function dayPart(hour: number): number {
-  if (hour >= 6 && hour < 12) return 0;
-  if (hour >= 12 && hour < 18) return 1;
-  if (hour >= 18 && hour < 23) return 2;
-  return 3;
-}
-
-/** Net (spending − refunds, hryvnia kopecks) by ISO weekday, part of the day and day of the month; a line without a rate counts nowhere. */
-export function whenTotals(lines: ReadonlyArray<CategoryLineView>, daysInMonth: number): { weekdays: number[]; dayParts: number[]; days: number[] } {
-  const weekdays = Array<number>(7).fill(0);
-  const dayParts = Array<number>(4).fill(0);
-  const days = Array<number>(daysInMonth).fill(0);
-  for (const l of lines) {
-    if (l.uah === null) continue;
-    weekdays[l.weekday - 1] = (weekdays[l.weekday - 1] ?? 0) - l.uah;
-    const p = dayPart(Number(l.time.slice(0, 2)));
-    dayParts[p] = (dayParts[p] ?? 0) - l.uah;
-    const day = Number(l.date.slice(8, 10));
-    if (day >= 1 && day <= daysInMonth) days[day - 1] = (days[day - 1] ?? 0) - l.uah;
-  }
-  return { weekdays, dayParts, days };
-}
-
 /**
  * «When» of the given lines (all of the month, or one merchant's): weekdays, parts of the day, days of the month, and
  * the peak in words; `merchant` — the filter's name for the title ('' — none).
  */
 export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pick<CategoryOverview, 'month' | 'period'>>, merchant: string, fmt: MoneyFormat): WhenView {
-  const w = whenTotals(lines, v.period.days);
-  const wMax = Math.max(0, ...w.weekdays);
-  const pMax = Math.max(0, ...w.dayParts);
-  const dMax = Math.max(0, ...w.days);
-  const peakDay = w.weekdays.indexOf(wMax);
-  const peakPart = w.dayParts.indexOf(pMax);
-  return {
-    title: merchant ? t('category.when.titleFor', { name: merchant }) : t('category.when.title'),
-    weekdays: w.weekdays.map((n, i) => ({
-      key: String(i),
-      label: weekdayShort(i + 1),
-      height: barHeight(n, wMax),
-      strong: wMax > 0 && n === wMax,
-      title: `${weekdayShort(i + 1)} — ${fmt.money(n)}`,
-    })),
-    dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
-    days: w.days.map((n, i) => ({
-      key: String(i + 1),
-      label: String(i + 1),
-      height: barHeight(n, dMax),
-      strong: n > 0,
-      title: t('category.when.dayTitle', { day: i + 1, month: monthShortName(monthNo(v.month)), amount: fmt.money(n) }),
-    })),
-    peak: wMax > 0 && pMax > 0 ? t('category.when.peak', { weekday: weekdayShort(peakDay + 1), part: partName(peakPart) }) : '',
-  };
+  return whenBars(lines, v.month, v.period.days, merchant, fmt, spent);
 }
 
 function marksOf(l: Readonly<CategoryLineView>, fmt: MoneyFormat): MarkView[] {
   const marks: MarkView[] = [];
-  if (l.pending) marks.push({ text: t('category.list.mark.pending'), tone: 'warning' });
+  if (l.pending) marks.push({ text: t('entities.operations.mark.pending'), tone: 'warning' });
   if (l.refund) marks.push({ text: t('category.list.mark.refund'), tone: 'good' });
   if (l.refunded) marks.push({ text: t('category.list.mark.refunded'), tone: 'neutral' });
   if (l.commission) marks.push({ text: t('category.list.mark.fee'), tone: 'neutral' });
-  if (l.operation) marks.push({ text: t('category.list.mark.foreign'), tone: 'accent' });
+  if (l.operation) marks.push({ text: t('entities.operations.mark.foreign'), tone: 'accent' });
   if (l.cashback > 0) marks.push({ text: t('category.list.mark.cashback', { amount: fmt.money(l.cashback) }), tone: 'good' });
-  if (l.uah === null) marks.push({ text: t('category.list.mark.noRate'), tone: 'warning' });
+  if (l.uah === null) marks.push({ text: t('entities.operations.mark.noRate'), tone: 'warning' });
   return marks;
-}
-
-/** What a search reads in a line: its text, comment and amounts as shown and as bare digits. */
-function haystack(l: Readonly<CategoryLineView>, amount: string): string {
-  const digits = amount.replace(/\D/g, '');
-  return merchantKey([l.merchant, l.comment ?? '', amount, digits].join(' '));
 }
 
 /** The list: the merchant filter, the search and the order applied (main sends the lines newest first). */
 export function lineRows(
   lines: ReadonlyArray<CategoryLineView>,
   o: { merchant: string | null; query: string; sort: SortKey },
-  people: ReadonlyArray<{ id: number; name: string; color: string }>,
+  people: ReadonlyArray<PersonRef>,
   fmt: MoneyFormat,
 ): { rows: LineRowView[]; shown: CategoryLineView[] } {
   const needle = merchantKey(o.query);
   const amountOf = (l: Readonly<CategoryLineView>) =>
     l.uah === null ? formatMoney(Math.abs(l.amount), l.currency) : fmt.money(Math.abs(l.uah));
   const shown = lines.filter(
-    (l) => (o.merchant === null || merchantKey(l.merchant) === o.merchant) && (needle === '' || haystack(l, amountOf(l)).includes(needle)),
+    (l) => (o.merchant === null || merchantKey(l.merchant) === o.merchant) && (needle === '' || searchText(l.merchant, l.comment, amountOf(l)).includes(needle)),
   );
   if (o.sort === 'amount') shown.sort((a, b) => Math.abs(b.uah ?? b.amount) - Math.abs(a.uah ?? a.amount));
   const rows = shown.map((l): LineRowView => {
@@ -267,14 +128,14 @@ export function lineRows(
       key: l.key,
       date: dayMonth(l.date),
       time: `${weekdayShort(l.weekday)}, ${l.time}`,
-      merchant: l.merchant || t('category.list.noDescription'),
+      merchant: l.merchant || t('entities.operations.noDescription'),
       comment: l.comment ?? '',
       person: who?.name ?? '',
       personColor: who?.color ?? 'var(--border-strong)',
       account: accountName(l.account),
       marks: marksOf(l, fmt),
       amount: `${l.refund ? '+' : '−'}${amountOf(l)}`,
-      refund: l.refund,
+      incoming: l.refund,
       original: l.operation ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
     };
   });

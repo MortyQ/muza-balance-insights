@@ -2,7 +2,7 @@
 import { VChangeChip, VIcon } from '@/shared/ui';
 import type { SummaryView } from '../types.ts';
 
-const { summary } = defineProps<{ summary: SummaryView }>();
+const { summary, label } = defineProps<{ summary: SummaryView; label: string }>();
 </script>
 
 <template>
@@ -18,13 +18,13 @@ const { summary } = defineProps<{ summary: SummaryView }>();
     </div>
     <div class="flex flex-wrap gap-x-8 gap-y-5">
       <div class="flex min-w-56 flex-1 flex-col gap-1.5">
-        <span class="text-xs font-bold uppercase tracking-wide text-foreground-muted">{{ $t('category.summary.spent') }}</span>
+        <span class="text-xs font-bold uppercase tracking-wide text-foreground-muted">{{ label }}</span>
         <span class="text-4xl font-extrabold tabular-nums">{{ summary.amount }}</span>
         <span v-if="summary.chip || summary.prev" class="flex flex-wrap items-center gap-2">
           <VChangeChip v-if="summary.chip" :chip="summary.chip" size="sm" />
           <span class="text-sm text-foreground-secondary">{{ summary.prev }}</span>
         </span>
-        <span v-if="summary.gross || summary.conv" class="text-xs text-foreground-muted tabular-nums">{{ [summary.gross, summary.conv].filter(Boolean).join(' · ') }}</span>
+        <span v-if="summary.note || summary.conv" class="text-xs text-foreground-muted tabular-nums">{{ [summary.note, summary.conv].filter(Boolean).join(' · ') }}</span>
       </div>
       <dl class="grid flex-[3_1_32rem] grid-cols-2 gap-x-6 gap-y-4 @2xl:grid-cols-3">
         <div v-for="s in summary.stats" :key="s.label" class="flex min-w-0 flex-col gap-0.5">

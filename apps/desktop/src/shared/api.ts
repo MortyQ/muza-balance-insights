@@ -134,6 +134,7 @@ export type BalanceApi = {
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
+  getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
   /** Asks for confirmation in a system dialog first; false = the user said no. */
@@ -188,8 +189,9 @@ export type BalanceApi = {
 
 // ---------- data for the screen ----------
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
-// No names, descriptions, card numbers or IBANs: categories and account name parts only — except CategoryOverview's
-// lines, which carry the bank's description and comment of each operation (the category screen; nothing else).
+// No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
+// CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
+// and income screens; nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -269,7 +271,7 @@ export type CategoryLineView = {
   weekday: number;
   /**
    * The bank's description of the operation ('' — none; a card number cut to its last digits, a jar's title hidden)
-   * and its comment. The only place descriptions leave main: the user's own screen of one category.
+   * and its comment. Descriptions leave main only here and in IncomeLineView: the user's own category and income screens.
    */
   merchant: string;
   comment: string | null;
@@ -338,6 +340,82 @@ export type CategoryOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; net: number }>;
+};
+
+export type IncomeOverviewQuery = { month: string; participantId?: number };
+
+/** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
+export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
+
+/** Hryvnia kopecks (account currencies folded by today's rates) and income lines. */
+export type IncomeAmounts = { total: number; lines: number };
+
+/** One line of the income screen. */
+export type IncomeLineView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
+  date: string;
+  time: string;
+  weekday: number;
+  /**
+   * Who sent it: a named transfer's name, else the bank's description (a card number cut to its last digits, a jar's
+   * title hidden); '' — none. With the comment, the only text of the income screen.
+   */
+  sender: string;
+  comment: string | null;
+  source: IncomeSourceId;
+  participantId: number;
+  account: AccountName;
+  /** Hryvnia kopecks by today's rate, > 0; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  hold: boolean;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+};
+
+/**
+ * The income screen: one month's income of a person (or the family), all scopes, hryvnia kopecks by today's rates —
+ * the balances' «Income» figure. Weekdays, hours and days are the system time zone's.
+ */
+export type IncomeOverview = {
+  month: string;
+  period: SpendingOverview['period'];
+  compare: SpendingOverview['compare'];
+  summary: IncomeAmounts & {
+    /** The compared period's; null — not covered. */
+    prev: IncomeAmounts | null;
+    /** Median line; null — none. */
+    median: number | null;
+    /** total per covered day; null — no covered day. */
+    perDay: number | null;
+    /** Days with income. */
+    activeDays: number;
+    /** Key of the largest line; null — none. */
+    largest: string | null;
+    /** The month's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
+    spending: number;
+  };
+  /** As CategoryOverview's months: up to the current month while `month` is among its last 12; null before the data. */
+  months: Array<{ month: string; total: number | null }>;
+  /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
+  thisMonth: string;
+  /** The family view with more than one person only: each person's part. */
+  people: Array<IncomeAmounts & { participantId: number }>;
+  /** By source, total desc. */
+  sources: Array<IncomeAmounts & { source: IncomeSourceId }>;
+  /** By sender (case-insensitive), total desc. */
+  senders: Array<IncomeAmounts & { name: string }>;
+  /** Newest first; the screen counts «When» from them. */
+  lines: IncomeLineView[];
+  rates: RatesView | null;
+  /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
+  leftOut: Array<{ currency: number; total: number }>;
 };
 
 export type NowOverviewQuery = { participantId?: number };

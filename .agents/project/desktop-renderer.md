@@ -77,9 +77,28 @@
   12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
-  The first load (no data yet) shows `components/CategorySkeleton.vue` (`role="status"`) in place of the cards. Past
+  The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.
+- **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
+  `DetailSummary` (header, figure, change chip, stats grid; `SummaryView`), `MonthsChart`, `WhenCharts`, `PeopleBars`,
+  `ShareList` (merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and
+  order; column and search texts come as props), `DetailSkeleton`; pure helpers in `utils.ts` (`monthsView`,
+  `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
+  Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
+  each other).
+  Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
+  chart, the dashed average as a mark line with its amount at the right end (`avgLabel`), the picked month's label bold) and «When»'s weekdays and days
+  (`weekdaysChartOption`, `daysChartOption`); options are pure and tested, colours stay CSS (`var(--cat)`, `SOFT_BAR`)
+  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
+- **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,
+  `meta.navParent: 'home'`), opened from the «In» row of the balances' month panel (`FlowBars` `incomeTo`, md only). One
+  IPC `getIncomeOverview({ month, participantId? })` — all scopes, the balances' figure; month, person and currency are
+  the global filters; quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
+  summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
+  «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
+  (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
+  tested (`tests/renderer/income-detail.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
   one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
   «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none

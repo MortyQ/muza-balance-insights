@@ -5,6 +5,7 @@ export const ROUTE = {
   connect: 'connect',
   dbRecovery: 'db-recovery',
   home: 'home',
+  income: 'income',
   lock: 'lock',
   settings: 'settings',
 } as const satisfies Record<string, string>;

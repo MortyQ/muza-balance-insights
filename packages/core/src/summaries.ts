@@ -440,6 +440,31 @@ export type IncomeSummary = {
 };
 
 /**
+ * `WITH … SELECT` of the income rows in the period — the one place the income rules live (incomeSummary, incomeLines):
+ * non-internal «поступления» rows; family transfers only in a participant's view; only enabled accounts.
+ * Columns: id, currency (the account's), account_id, participant_id, time, mcc, scope, description, comment, counter_name,
+ * hold, amount, op_currency, op_amount, transfer_rule (null for a row crossing to a disabled account). Newest first.
+ */
+export async function incomeRowsSql(db: Db, q: Period & Filters): Promise<{ sql: string; args: Array<string | number> }> {
+  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, periodSql('t')];
+  const args: Array<string | number> = [await crossingCategories(db, q), CATEGORY.income, ...periodArgs(q)];
+  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
+  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
+  accountWhere(q, where, args);
+  return {
+    sql: `WITH ${CROSSING_CTE}
+          SELECT t.id, a.currency_code AS currency, t.account_id, c.participant_id, t.time, t.mcc, t.scope, t.description,
+                 t.comment, t.counter_name, t.hold, t.amount, t.currency_code AS op_currency,
+                 COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
+                 CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
+          FROM transactions t JOIN accounts a ON a.id = t.account_id JOIN connections c ON c.id = a.connection_id ${CROSSING_JOIN}
+          WHERE ${where.join(' AND ')}
+          ORDER BY t.time DESC, t.id`,
+    args,
+  };
+}
+
+/**
  * Income = non-internal rows in «поступления» for the days [from, to] of the period's zone. Refunds are not income
  * (they sit in the purchase's category), internal transfers neither. Cashback is not included.
  * A family transfer is income of the receiver (source `family`) in a participant's view, and not income of the family.
@@ -455,19 +480,7 @@ export async function incomeSummary(
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
 
-  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, periodSql('t')];
-  const args: Array<string | number> = [await crossingCategories(db, q), CATEGORY.income, ...periodArgs(q)];
-  if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
-  if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
-  accountWhere(q, where, args);
-  const rs = await db.execute({
-    sql: `WITH ${CROSSING_CTE}
-          SELECT a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, t.description, t.amount,
-                 CASE WHEN x.key IS NULL THEN t.transfer_rule END AS transfer_rule
-          FROM transactions t JOIN accounts a ON a.id = t.account_id ${CROSSING_JOIN}
-          WHERE ${where.join(' AND ')}`,
-    args,
-  });
+  const rs = await db.execute(await incomeRowsSql(db, q));
 
   const labels = groupBy === 'account' ? await labelsById(db) : null;
   const providers = await accountProviders(db);

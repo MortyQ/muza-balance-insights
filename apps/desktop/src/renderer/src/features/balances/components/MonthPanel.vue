@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { ROUTE } from '@/shared/config';
 import { VButton } from '@/shared/ui';
 import type { Flow, LegendItem } from '../types.ts';
 import { spentShare } from '../utils.ts';
@@ -27,7 +28,7 @@ const spent = computed(() => spentShare(flow.income, flow.spending));
       <span class="text-xs text-foreground-muted">{{ note }}<template v-if="spent !== null"> · {{ $t('home.balances.spentShare', { spent }) }}</template></span>
     </div>
     <div class="flex flex-col gap-2">
-      <FlowBars :flow size="md" />
+      <FlowBars :flow size="md" :income-to="{ name: ROUTE.income }" />
       <p v-if="flow.note" class="line-clamp-2 text-xs text-foreground-muted" :title="flow.note">{{ flow.note }}</p>
     </div>
     <ul v-if="legend.length > 0" class="flex flex-wrap gap-x-4.5 gap-y-2" :aria-label="$t('home.balances.people')">

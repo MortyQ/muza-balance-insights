@@ -10,7 +10,7 @@ export default defineConfig({
   define: VUE_I18N_FLAGS,
   test: {
     include: ['tests/**/*.test.ts'],
-    setupFiles: ['tests/renderer/setup-locale.ts'],
+    setupFiles: ['tests/renderer/setup-locale.ts', 'tests/renderer/setup-charts.ts'],
     environment: 'node',
     // The app follows the system time zone (src/shared/dates.ts): one fixed zone keeps the suite the same on every
     // machine. Fixtures are written in Kyiv time; tests of other zones switch it (tests/helpers/time-zone.ts).

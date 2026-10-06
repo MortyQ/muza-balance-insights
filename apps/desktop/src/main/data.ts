@@ -1,9 +1,11 @@
 // Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, balancesAt), mapped
 // to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave main —
-// never names, card numbers or IBANs; descriptions only in categoryOverview's lines (the category screen). The import worker writes the same file; WAL lets both work.
+// never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
+// and income screens). The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
+import { incomeLines } from '@mono/core/income-lines';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
@@ -17,7 +19,7 @@ import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
-import { lineStats, merchantText, monthsWindow } from './category.ts';
+import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
@@ -25,6 +27,10 @@ import type {
   CategoryLineView,
   CategoryOverview,
   CategoryOverviewQuery,
+  IncomeAmounts,
+  IncomeLineView,
+  IncomeOverview,
+  IncomeOverviewQuery,
   DataStatus,
   FlowView,
   FxPart,
@@ -377,6 +383,103 @@ export class DataService {
       thisMonth,
       people: stats.people,
       merchants: stats.merchants,
+      lines,
+      rates: today,
+      leftOut,
+    };
+  }
+
+  /**
+   * The income screen: one month's income of a person (or the family), all scopes, folded into hryvnia by today's rates
+   * — the balances' «Income» figure (same core aggregate, same fold); its lines come from core incomeLines (the same rows).
+   */
+  async incomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const period = monthBounds(q.month);
+    const status = await this.status();
+    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const today = await this.d.rates();
+    const rates = rateMap(today);
+
+    // Per currency → hryvnia; a currency without a rate stays out (leftOut).
+    const fold = (totals: ReadonlyArray<{ currency: number; lines: number; total: number }>) => {
+      const sum: IncomeAmounts = { total: 0, lines: 0 };
+      const leftOut: Array<{ currency: number; total: number }> = [];
+      for (const t of totals) {
+        const u = toUah(t.total, t.currency, rates);
+        if (u === null) leftOut.push({ currency: t.currency, total: t.total });
+        else (sum.total += u), (sum.lines += t.lines);
+      }
+      return { sum, leftOut };
+    };
+    const head = await incomeSummary(db, { ...period, ...filters }, now);
+    const { sum, leftOut } = fold(head.totals);
+    const compare = comparePeriod(q.month, head.period, status.dataFrom);
+    const prev = compare ? fold((await incomeSummary(db, { ...compare, ...filters }, now)).totals).sum : null;
+    const spent = await spendingSummary(db, { ...period, ...filters }, now);
+    const spending = spent.totals.reduce((s, t) => s + (toUah(t.net, t.currency, rates) ?? 0), 0);
+
+    const thisMonth = localDate(now * 1000, tz).slice(0, 7);
+    const months12 = monthsWindow(q.month, thisMonth);
+    const history = await incomeSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month' }, now);
+    const byMonth = new Map<string, number>();
+    for (const g of history.groups) {
+      const u = toUah(g.total, g.currency, rates);
+      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
+    }
+    const firstMonth = status.dataFrom?.slice(0, 7) ?? null;
+    const months = months12.map((month) => ({ month, total: firstMonth === null || month < firstMonth ? null : (byMonth.get(month) ?? 0) }));
+
+    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
+    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const raw = await incomeLines(db, { ...period, ...filters }, now);
+    const lines: IncomeLineView[] = raw.lines.map((l) => {
+      const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+      return {
+        key: l.id,
+        date,
+        time,
+        weekday: isoWeekday(date),
+        sender: merchantText(l.sender ?? l.description, jarTitles),
+        comment: l.comment?.trim() || null,
+        source: l.source,
+        participantId: l.participantId,
+        account: names.get(l.accountId) ?? { kind: 'card', type: null, currency: l.currency, tag: null },
+        uah: toUah(l.amount, l.currency, rates),
+        currency: l.currency,
+        amount: l.amount,
+        operation:
+          l.operationAmount !== null && l.operationCurrency !== l.currency ? { currency: l.operationCurrency, amount: l.operationAmount } : null,
+        hold: l.hold,
+        pending: l.hold && l.time >= now - RESYNC_OVERLAP_SEC,
+      };
+    });
+
+    const participants = await listParticipants(db);
+    const family = q.participantId === undefined && participants.length > 1 ? participants.map((p) => p.id) : null;
+    const stats = incomeStats(lines, family);
+    const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
+    return {
+      month: q.month,
+      period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
+      compare,
+      summary: {
+        ...sum,
+        prev,
+        median: stats.median,
+        perDay: coveredDays > 0 ? Math.round(sum.total / coveredDays) : null,
+        activeDays: stats.activeDays,
+        largest: stats.largest,
+        spending,
+      },
+      months,
+      thisMonth,
+      people: stats.people,
+      sources: stats.sources,
+      senders: stats.senders,
       lines,
       rates: today,
       leftOut,
