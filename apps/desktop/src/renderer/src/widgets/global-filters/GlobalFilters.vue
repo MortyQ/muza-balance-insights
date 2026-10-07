@@ -23,9 +23,9 @@ const status = computed(() =>
   syncStatusView(importProgress.progress, { line: syncStatus.line, lastSyncAt: syncStatus.status?.lastSyncAt ?? null }, Date.now(), participant.labelOf),
 );
 const failed = computed(() => failedConnections(importProgress.progress));
-// Analytics picks whole months (a range or one), home one month: the route says which.
+// Analytics picks whole months (a range or one), home one month, regular payments none: the route says which.
 const route = useRoute();
-const ranged = computed(() => route.meta.periodFilter === 'range');
+const periodFilter = computed(() => route.meta.periodFilter ?? 'month');
 const { mode } = useParticipantLayout({
   row: useTemplateRef<HTMLElement>('row'),
   left: useTemplateRef<HTMLElement>('left'),
@@ -50,8 +50,8 @@ const { mode } = useParticipantLayout({
       <template v-if="syncStatus.hasData">
         <ParticipantFilter v-if="mode === 'select'" mode="select" :failed />
         <div ref="left" class="flex items-center gap-3">
-          <PeriodRangeFilter v-if="ranged" :min="firstMonth" :data-from="syncStatus.status?.dataFrom ?? null" />
-          <MonthFilter v-else :min="firstMonth" />
+          <PeriodRangeFilter v-if="periodFilter === 'range'" :min="firstMonth" :data-from="syncStatus.status?.dataFrom ?? null" />
+          <MonthFilter v-else-if="periodFilter === 'month'" :min="firstMonth" />
           <CurrencyToggle />
         </div>
       </template>

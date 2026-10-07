@@ -190,7 +190,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
   top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`: «General» =
   `home`, «Analytics» = `analytics`, `features/analytics-overview`). On a route with `meta.periodFilter: 'range'`
-  (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`.
+  (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`; with
+  `'none'` (regular payments) no period at all.
 - **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
   picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
   `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the

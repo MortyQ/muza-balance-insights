@@ -21,7 +21,10 @@ declare module 'vue-router' {
     nav?: RouteNav;
     /** A screen without its own menu item: the item shown as current (a category screen → «General»). */
     navParent?: RouteName;
-    /** The period the global filters offer: absent — one month (home); `range` — whole months (analytics). */
-    periodFilter?: 'range';
+    /**
+     * The period the global filters offer: absent — one month (home); `range` — whole months (analytics); `none` — no
+     * period (the screen has its own: regular payments).
+     */
+    periodFilter?: 'range' | 'none';
   }
 }

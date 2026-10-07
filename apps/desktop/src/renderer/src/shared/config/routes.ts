@@ -7,6 +7,7 @@ export const ROUTE = {
   home: 'home',
   income: 'income',
   lock: 'lock',
+  recurring: 'recurring',
   settings: 'settings',
 } as const satisfies Record<string, string>;
 

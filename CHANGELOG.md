@@ -16,6 +16,11 @@ English interface.
 - **What went into jars.** The month panel next to the balance cards has a new line: how much the jars grew over the
   month («Into jars»), or how much came out of them («Out of jars»). Money taken back out of a jar counts against what
   was put in. Jars in dollars or euros are counted at today's rate.
+- **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
+  subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
+  payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
+  when the next payment is due, with the monthly total on top. Payments that stopped in the last few months are listed
+  apart.
 - **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
   back to the top.
 

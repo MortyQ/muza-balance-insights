@@ -57,6 +57,7 @@ import LucidePlug from "~icons/lucide/plug";
 import LucidePlus from "~icons/lucide/plus";
 import LucideRefreshCcw from "~icons/lucide/refresh-ccw";
 import LucideRefreshCw from "~icons/lucide/refresh-cw";
+import LucideRepeat from "~icons/lucide/repeat";
 import LucideSearch from "~icons/lucide/search";
 import LucideSend from "~icons/lucide/send";
 import LucideSettings from "~icons/lucide/settings";
@@ -144,6 +145,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:plus": LucidePlus,
   "lucide:refresh-ccw": LucideRefreshCcw,
   "lucide:refresh-cw": LucideRefreshCw,
+  "lucide:repeat": LucideRepeat,
   "lucide:search": LucideSearch,
   "lucide:send": LucideSend,
   "lucide:settings": LucideSettings,

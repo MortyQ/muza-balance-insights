@@ -119,6 +119,15 @@
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
   tested (`tests/renderer/income-detail.test.ts`).
+- **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route
+  `recurring` (`/recurring`), its own side menu item (`home.nav.recurring`, after «Analytics») and
+  `meta.periodFilter: 'none'` — the global filters show the person and the currency, no period (the screen always
+  looks at the last 13 months). One IPC `getRecurringOverview({ participantId? })`, reloaded on the person, quietly on
+  `syncStatus.version`. `useRecurring` loads, `useRecurringView` builds `RecurringSummaryView` (the monthly total, the
+  count, since when) and `RecurringRowView`s (`utils.ts`: `summaryView`, `rowView`, `dayText`); the person is in a row
+  only in the family view of several. Components: `RecurringSummary`, `RecurringList` → `RecurringRow` (the category's
+  icon, the name, category · person with `VAvatar`, the usual amount, the operation currency, «next» or «last»); the
+  stopped ones in a second list. Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole
