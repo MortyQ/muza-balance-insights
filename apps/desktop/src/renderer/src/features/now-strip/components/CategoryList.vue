@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { VChangeChip } from '@/shared/ui';
+import { VChangeChip, VShareBar } from '@/shared/ui';
 import type { CategoryBreakdown } from '../types.ts';
 
 const { list, empty } = defineProps<{ list: CategoryBreakdown; empty: string }>();
@@ -21,9 +21,7 @@ const { list, empty } = defineProps<{ list: CategoryBreakdown; empty: string }>(
           <span class="size-2.5 shrink-0 rounded-full bg-(--c)" aria-hidden="true" />
           <span class="truncate" :title="r.name">{{ r.name }}</span>
         </span>
-        <span class="h-1.5 overflow-hidden rounded-full bg-surface-sunken [grid-area:bar]" aria-hidden="true">
-          <span class="block h-full rounded-full bg-(--c)" :style="{ width: `${r.share}%` }" />
-        </span>
+        <VShareBar :value="r.share" color="var(--c)" size="sm" class="[grid-area:bar]" />
         <span class="whitespace-nowrap text-right font-semibold tabular-nums [grid-area:amount]">{{ r.amount }}</span>
         <span class="whitespace-nowrap text-right text-xs text-foreground-muted tabular-nums [grid-area:ops]">{{ r.ops }}</span>
         <span class="flex justify-end [grid-area:chip]">

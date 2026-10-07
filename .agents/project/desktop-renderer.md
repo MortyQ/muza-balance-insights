@@ -101,7 +101,7 @@
   Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
   chart, the dashed average as a mark line with its amount at the right end (`avgLabel`), the picked month's label bold) and «When»'s weekdays and days
   (`weekdaysChartOption`, `daysChartOption`); options are pure and tested, colours stay CSS (`var(--cat)`, `SOFT_BAR`)
-  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
+  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day, the spending rows, the «Now» panel) are `VShareBar` of `shared/ui`.
 - **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,
   `meta.navParent: 'home'`), opened from the «In» row of the balances' month panel (`FlowBars` `incomeTo`, md only). One
   IPC `getIncomeOverview({ period, participantId? })` — all scopes, the balances' figure; person and currency are the

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VShareBar } from '@/shared/ui';
 import type { PersonView } from '../types.ts';
 
 const { person } = defineProps<{ person: PersonView }>();
@@ -14,6 +15,6 @@ const { person } = defineProps<{ person: PersonView }>();
       </span>
       <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ person.amount }}</span>
     </div>
-    <span class="h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true"><span class="block h-full w-(--w) rounded-full bg-(--c)" :style="{ '--w': `${person.width}%` }" /></span>
+    <VShareBar :value="person.width" color="var(--c)" />
   </div>
 </template>

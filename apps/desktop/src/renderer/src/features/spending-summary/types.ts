@@ -3,7 +3,7 @@ import type { CategoryId } from '@contract/categories.ts';
 import type { Scope, SpendingAmounts, SpendingOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable, YearMonth } from '@/shared/lib';
-import type { ChangeChipModel } from '@/shared/ui';
+import type { ChangeChipModel, ShareBarSegment } from '@/shared/ui';
 
 /** A change chip (shared/ui `VChangeChip`). */
 export type ChipView = ChangeChipModel;
@@ -20,12 +20,8 @@ export interface OpsView {
   sr: string;
 }
 
-export interface BarSegment {
-  /** flex-grow weight */
-  value: number;
-  color: string;
-  title: string;
-}
+/** A coloured part of a row's bar (`VShareBar`). */
+export type BarSegment = ShareBarSegment;
 
 export interface RowView {
   key: string;

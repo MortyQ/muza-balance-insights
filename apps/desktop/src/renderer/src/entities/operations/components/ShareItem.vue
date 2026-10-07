@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VShareBar } from '@/shared/ui';
 import type { ShareItemView } from '../types.ts';
 
 const { item } = defineProps<{ item: ShareItemView }>();
@@ -20,8 +21,6 @@ const emit = defineEmits<{ pick: [key: string] }>();
       </span>
       <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ item.amount }}</span>
     </span>
-    <span class="block h-1.5 w-full overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
-      <span class="block h-full w-(--w) rounded-full bg-(--cat)" :style="{ '--w': `${item.width}%` }" />
-    </span>
+    <VShareBar :value="item.width" color="var(--cat)" size="sm" class="w-full" />
   </button>
 </template>

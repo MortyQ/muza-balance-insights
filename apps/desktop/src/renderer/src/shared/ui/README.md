@@ -49,6 +49,11 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
   text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
   block's chips and the now strip's.
+- `VShareBar` — a share of a whole as a bar (`value` %, clamped): one fill (`color`) or coloured `segments`
+  (`ShareBarSegment`: flex weight, colour, title), an optional `mark` (where the value stood before), `xs | sm | md`,
+  the grey track on or off. muzakit's `VMeter` is a value against a threshold (state icon, label), not a share.
+  `aria-hidden`: the value is always beside it as text. Every progress-like bar of the data screens (categories, people,
+  sources, parts of the day).
 - `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
   `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
   `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option

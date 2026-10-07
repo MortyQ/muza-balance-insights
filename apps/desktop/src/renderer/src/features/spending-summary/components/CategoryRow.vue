@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router';
 import { RouterLink } from 'vue-router';
-import { VChangeChip, VIcon } from '@/shared/ui';
+import { VChangeChip, VIcon, VShareBar } from '@/shared/ui';
 import type { RowView } from '../types.ts';
 import { OPS_TONE } from '../constants.ts';
 
@@ -26,12 +26,7 @@ const { row, to } = defineProps<{ row: RowView; to: RouteLocationRaw | null }>()
         </span>
       </span>
       <span class="flex items-center gap-2.5">
-        <span class="relative block h-1 grow">
-          <span class="absolute inset-y-0 left-0 flex w-(--w) gap-0.5" :style="{ '--w': `${row.width}%` }">
-            <span v-for="(s, i) in row.segments" :key="i" class="block grow-(--g) basis-0 rounded-sm bg-(--s)" :style="{ '--g': s.value, '--s': s.color }" :title="s.title" />
-          </span>
-          <span v-if="row.mark !== null" class="absolute -top-1 left-(--m) -ms-px h-3 w-0.5 rounded-sm bg-foreground" :style="{ '--m': `${row.mark}%` }" :title="row.markTitle" />
-        </span>
+        <VShareBar :value="row.width" :segments="row.segments" :mark="row.mark" :mark-title="row.markTitle" size="xs" :track="false" class="grow" />
         <span class="w-8 shrink-0 whitespace-nowrap text-right text-xs text-foreground-muted tabular-nums">{{ row.share }}</span>
       </span>
     </span>
