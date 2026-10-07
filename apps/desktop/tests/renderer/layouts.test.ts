@@ -49,7 +49,7 @@ describe('navGroups', () => {
     expect(navGroups([r('x')])).toEqual([]);
   });
 
-  it('the app: «General» (home), «Analytics», «Regular payments», in the default layout; the other screens are on their own', () => {
+  it('the app: «General» (home), «Analytics», «Regular payments», «Planning», in the default layout; the other screens are on their own', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     expect(navGroups(router.getRoutes())).toEqual([
       {
@@ -57,14 +57,15 @@ describe('navGroups', () => {
           { label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'home' },
           { label: 'home.nav.analytics', icon: 'lucide:chart-column', id: 'analytics' },
           { label: 'home.nav.recurring', icon: 'lucide:repeat', id: 'recurring' },
+          { label: 'home.nav.planning', icon: 'lucide:calculator', id: 'planning' },
         ],
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', recurring: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
-    // The global filters offer whole months on analytics, no period on regular payments, one month elsewhere.
+    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
-    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring']);
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning']);
   });
 });
 

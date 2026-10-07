@@ -125,12 +125,14 @@
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
   tested (`tests/renderer/income-detail.test.ts`).
-- **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on home between the balances and the
-  «Now» strip, only while the month filter is this month. One IPC `getAllowanceOverview({ participantId? })`, reloaded
+- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
+  `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
+- **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about
+  now (the month filter does not apply). One IPC `getAllowanceOverview({ participantId? })`, reloaded
   on the person, quietly on `syncStatus.version` and a new day (`useAllowance`). `utils.ts`: `allowanceView` — the sum
   per day (or what is short), «until … · n days», the income line (next / late / none) and the count's lines
   (`AllowanceBreakdown`: money, reserve, each mandatory payment, free, per day); `reserveKopecks` — the reserve typed in
-  whole hryvnias. «How it's counted» folds open (`VCollapse`) with `ReserveField` (`VInput` + «Save»; IPC
+  whole hryvnias. «How it's counted» is always open, with `ReserveField` (`VInput` + «Save»; IPC
   `setAllowanceReserve`, then a reload). `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route

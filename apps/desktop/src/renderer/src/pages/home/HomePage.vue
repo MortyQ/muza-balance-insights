@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
-import { AllowanceFeature } from '@/features/daily-allowance';
 import { NowStripFeature } from '@/features/now-strip';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
@@ -19,7 +18,6 @@ const syncStatus = useSyncStatusStore();
     <UpdateBannerFeature />
     <template v-if="syncStatus.hasData">
       <BalancesFeature />
-      <AllowanceFeature />
       <NowStripFeature />
       <SpendingFeature />
     </template>

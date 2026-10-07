@@ -12,13 +12,13 @@ import { allowanceView } from '../utils.ts';
 
 /**
  * «Available per day» for the global filter's person (or the family): reloads with the person, quietly on new data and
- * on a new local day; shown only while the month filter is this month (it is always about now).
+ * on a new local day. Always about now: the planning screen has no period filter.
  */
 export function useAllowance(): UseAllowanceReturn {
   const { fetchAllowance, saveReserve } = useAllowanceRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
-  const { month, thisMonth, today } = storeToRefs(useMonthStore());
+  const { today } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
   const { state, reload } = useAsyncData(
@@ -47,7 +47,7 @@ export function useAllowance(): UseAllowanceReturn {
 
   return {
     state,
-    visible: computed(() => month.value === thisMonth.value && view.value !== null),
+    visible: computed(() => view.value !== null),
     view,
     reserve: computed(() => Math.round((state.value.data?.reserve ?? 0) / 100)),
     setReserve,

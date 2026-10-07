@@ -5,6 +5,7 @@ import LucideArrowLeftRight from "~icons/lucide/arrow-left-right";
 import LucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import LucideBanknote from "~icons/lucide/banknote";
 import LucideBus from "~icons/lucide/bus";
+import LucideCalculator from "~icons/lucide/calculator";
 import LucideCalendar from "~icons/lucide/calendar";
 import LucideCalendarRange from "~icons/lucide/calendar-range";
 import LucideCalendarX from "~icons/lucide/calendar-x";
@@ -94,6 +95,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:arrow-up-right": LucideArrowUpRight,
   "lucide:banknote": LucideBanknote,
   "lucide:bus": LucideBus,
+  "lucide:calculator": LucideCalculator,
   "lucide:calendar": LucideCalendar,
   "lucide:calendar-range": LucideCalendarRange,
   "lucide:calendar-x": LucideCalendarX,

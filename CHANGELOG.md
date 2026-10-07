@@ -20,11 +20,11 @@ English interface.
   median of up to six months before. For a month that is over, it shows the categories that are clearly up or down,
   and your income against its usual level. While the month is still running, it shows only the categories where you
   have already spent more than in a usual whole month.
-- **Available per day.** A new block on the home screen says how much you can spend a day until your next income:
-  the money on your cards, minus a reserve you choose and the mandatory regular payments due before that income,
-  divided by the days left. The app finds your regular income in the statement by itself; if it is late or there is
-  none, it counts to the end of the month. «How it's counted» shows every step and lets you set the reserve. Jars are
-  not counted.
+- **Planning and «Available per day».** A new «Planning» section in the side menu, for planners and their settings.
+  The first one is «Available per day»: how much you can spend a day until your next income — the money on your
+  cards, minus a reserve you choose and the mandatory regular payments due before that income, divided by the days
+  left. The app finds your regular income in the statement by itself; if it is late or there is none, it counts to
+  the end of the month. Every step of the count is shown, and the reserve is set right there. Jars are not counted.
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and

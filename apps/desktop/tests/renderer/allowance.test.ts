@@ -91,27 +91,22 @@ describe('available per day: the block mounted', () => {
     return w;
   }
 
-  it('this month: the sum per day and the income; the count opens with the reserve field', async () => {
+  it('the sum per day, the income, the count and the reserve field, all open', async () => {
     const w = await mountBlock();
     expect(getAllowanceOverview.mock.calls[0]?.[0]).toEqual({});
     expect(w.text()).toContain('Доступно в день');
     expect(w.text()).toContain(uah(70_000));
-    expect(w.text()).not.toContain('Деньги на картах');
-    await w.find('button[aria-expanded]').trigger('click');
-    await flushPromises();
     expect(w.text()).toContain('Деньги на картах');
     expect((w.find('input').element as HTMLInputElement).value).toBe('3000');
   });
 
-  it('another month picked: nothing shown', async () => {
+  it('another month picked on home: still shown, it is always about now', async () => {
     const w = await mountBlock('past');
-    expect(w.find('section').exists()).toBe(false);
+    expect(w.find('section').exists()).toBe(true);
   });
 
   it('saving the reserve sends kopecks and reloads; a bad value is refused on the spot; a failed save says so', async () => {
     const w = await mountBlock();
-    await w.find('button[aria-expanded]').trigger('click');
-    await flushPromises();
     const input = w.find('input');
 
     await input.setValue('5 000');
