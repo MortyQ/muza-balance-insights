@@ -16,3 +16,7 @@ dist/
 
 # brainstorming mockups (superpowers visual companion)
 .superpowers/
+
+# bank statements: real data never goes into git; invented test fixtures do
+*.csv
+!packages/core/tests/**/fixtures/*.csv
