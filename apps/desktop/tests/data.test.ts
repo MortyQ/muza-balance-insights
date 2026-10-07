@@ -1244,7 +1244,7 @@ describe('DataService.spendingOverview: usual', () => {
   async function history() {
     for (const [i, m] of MONTHS.entries()) {
       await tx('uah', `${m}-05`, -10_000, 'продукты');
-      await tx('uah', `${m}-20`, -50_000, 'продукты'); // after the 10th: out of a running month's span
+      await tx('uah', `${m}-20`, -50_000, 'продукты'); // after the 10th: still in the usual (whole months)
       await tx('uah', `${m}-03`, -(i + 1) * 1_000, 'доставка');
       await tx('uah', `${m}-08`, 100_000, 'поступления', { mcc: 4829 });
     }
@@ -1252,24 +1252,30 @@ describe('DataService.spendingOverview: usual', () => {
     await tx('uah', '2026-03-08', 100_000, 'поступления', { mcc: 4829 });
   }
 
-  it('the running month: medians up to the day the data reaches (the 10th) over the 6 covered months before', async () => {
+  it('the running month: whole-month medians over the 6 covered months before, no income', async () => {
     await covered('2025-09-01');
     await history();
     const v = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
     expect(v.usual).toEqual({
       months: 6,
-      cutDay: 10,
-      total: 13_500,
-      categories: [{ category: 'продукты', categoryId: 'groceries', net: 10_000 }, { category: 'доставка', categoryId: 'delivery', net: 3_500 }],
-      income: { now: 100_000, usual: 100_000 },
+      running: true,
+      total: 63_500,
+      categories: [{ category: 'продукты', categoryId: 'groceries', net: 60_000 }, { category: 'доставка', categoryId: 'delivery', net: 3_500 }],
+      income: null,
     });
   });
 
-  it('a past month: whole months, only the covered ones (August is not)', async () => {
+  it('a past month: whole months, only the covered ones (August is not), income against its median', async () => {
     await covered('2025-09-01');
     await history();
     const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
-    expect(v.usual).toMatchObject({ months: 5, cutDay: null, total: 63_000, categories: [{ categoryId: 'groceries', net: 60_000 }, { categoryId: 'delivery', net: 3_000 }] });
+    expect(v.usual).toMatchObject({
+      months: 5,
+      running: false,
+      total: 63_000,
+      categories: [{ categoryId: 'groceries', net: 60_000 }, { categoryId: 'delivery', net: 3_000 }],
+      income: { now: 100_000, usual: 100_000 },
+    });
   });
 
   it('fewer than 3 covered months before: none', async () => {

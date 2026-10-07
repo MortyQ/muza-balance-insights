@@ -23,6 +23,8 @@ export const BELOW_TOP_COLOR = 'var(--category-other)';
 export const INSIGHT_SHARE = 0.2;
 export const INSIGHT_MIN = 50_000;
 export const INSIGHT_MAX = 3;
+/** A usual under this many kopecks is too small a base for a share: the line says the amount alone. */
+export const INSIGHT_BASE = 100_000;
 
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';

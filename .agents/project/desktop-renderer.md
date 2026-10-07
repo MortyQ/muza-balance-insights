@@ -71,9 +71,11 @@
   icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
   with the «Now» strip and the category screen.
   «What's unusual» (`SpendingInsights`, above the body): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
-  — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the largest differences
-  first, at most `INSIGHT_MAX` (3); then income (said beside a category, or alone when off itself); the note says the
-  median of how many months, to which day. None while a person is picked inside the block (the usual is the view's).
+  (whole-month medians) — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the
+  largest differences first, at most `INSIGHT_MAX` (3). A usual under `INSIGHT_BASE` (1 000 ₴) is too small a base for a
+  share: only «more», said by the amount. While the month runs (`usual.running`) only categories already over a whole
+  usual month, no income; a month that is over then says income (beside a category, or alone when off itself). The
+  note says the median of how many months. None while a person is picked inside the block (the usual is the view's).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),

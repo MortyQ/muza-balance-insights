@@ -270,19 +270,20 @@ export type SpendingOverview = {
 };
 
 /**
- * The medians of the same span (whole months, or up to `cutDay` while the month runs) over the covered months before
- * the shown one, hryvnia kopecks by today's rates; the same person and scope as the block.
+ * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same
+ * person and scope as the block. Whole months even while the shown one runs: a few days of lumpy spending (transfers,
+ * rent) or a salary a day early make any «up to the same day» median meaningless.
  */
 export type SpendingUsual = {
   /** How many months the medians are over (3 … 6). */
   months: number;
-  /** The day of the month the span ends on; null — whole months. */
-  cutDay: number | null;
+  /** The shown month is still running: only what already exceeds a whole usual month says anything. */
+  running: boolean;
   total: number;
   /** Categories with a usual net > 0, usual desc. */
   categories: Array<{ category: string; categoryId: CategoryId | null; net: number }>;
-  /** Income over the same span: the shown month's, and the median before. */
-  income: { now: number; usual: number };
+  /** Income: the shown month's and the median before; null while the month runs (the salary's day decides it then). */
+  income: { now: number; usual: number } | null;
 };
 
 /**

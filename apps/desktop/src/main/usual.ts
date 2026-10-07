@@ -1,8 +1,6 @@
-// «Usual» spending for the spending block: per category, the median of the same span of the months before — whole
-// months, or up to the same day while the shown month is still running — over the last USUAL_MONTHS fully covered
-// months. Pure: DataService.spendingOverview gathers the sums.
+// «Usual» spending for the spending block: per category, the median of whole months over the last USUAL_MONTHS fully
+// covered months before the shown one. Pure: DataService.spendingOverview gathers the sums.
 import { addMonths } from '../shared/analytics.ts';
-import { monthBounds } from './spending.ts';
 import { median } from './now.ts';
 
 /** How many months back the usual looks at, and how many of them it needs. */
@@ -13,14 +11,6 @@ export const USUAL_MIN_MONTHS = 3;
 export function usualMonths(month: string, dataFrom: string | null): string[] {
   if (dataFrom === null) return [];
   return Array.from({ length: USUAL_MONTHS }, (_, i) => addMonths(month, -(i + 1))).filter((m) => `${m}-01` >= dataFrom);
-}
-
-/** The span of `month` compared: the whole month, or its days 1 … `cutDay` (a shorter month: all of it). */
-export function monthSpan(month: string, cutDay: number | null): { from: string; to: string } {
-  const b = monthBounds(month);
-  if (cutDay === null) return b;
-  const last = Number(b.to.slice(8, 10));
-  return { from: b.from, to: `${month}-${String(Math.min(cutDay, last)).padStart(2, '0')}` };
 }
 
 /**

@@ -316,7 +316,7 @@ describe('spending block: currencies come from the home-wide choice', () => {
 describe('spending block: what is unusual', () => {
   const USUAL = {
     months: 6,
-    cutDay: null,
+    running: false,
     total: 60_000,
     categories: [
       { category: 'продукты', categoryId: 'groceries' as const, net: 100_000 },
