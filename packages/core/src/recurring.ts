@@ -33,10 +33,9 @@ export type RecurringPayment = {
   operationCurrency: number;
   operationAmount: number;
   payments: number;
-  /** Unix seconds: the first and the last payment of the series; `next` — when the next one is due. */
+  /** Unix seconds: the first and the last payment of the series (the next is due a calendar month after the last). */
   first: number;
   last: number;
-  next: number;
   /** The last payment is at most ACTIVE_DAYS old. */
   active: boolean;
 };
@@ -151,7 +150,6 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
       const series = trailingSeries(group);
       if (!series) continue;
       const last = series[series.length - 1]!;
-      const gaps = series.slice(1).map((l, i) => l.time - series[i]!.time).filter((s) => within(s / DAY, MONTH_GAP));
       found.push({
         id: last.id,
         description: last.description,
@@ -166,7 +164,6 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
         payments: series.length,
         first: series[0]!.time,
         last: last.time,
-        next: last.time + median(gaps),
         active: nowSec - last.time <= ACTIVE_DAYS * DAY,
       });
     }

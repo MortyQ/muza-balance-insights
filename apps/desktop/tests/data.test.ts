@@ -5,7 +5,7 @@ import type { Db } from '@mono/core/db';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/main/category.ts';
-import { DataService } from '../src/main/data.ts';
+import { DataService, nextMonthDay } from '../src/main/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/main/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
@@ -1105,6 +1105,62 @@ describe('DataService.analyticsOverview (the analytics screen)', () => {
 
   it('carries no bank text', async () => {
     const json = JSON.stringify(await svc.analyticsOverview({ from: '2026-01', to: '2026-03' }));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.recurringOverview (the regular payments screen)', () => {
+  const STREAM = { mcc: 5815, description: `Streamio ${CANARIES[4]}` };
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden
+    for (const id of ['uah', 'usd']) await synced(id);
+    for (const d of ['2026-01-05', '2026-02-05', '2026-03-05']) await tx('uah', d, -19_900, 'связь и цифровые сервисы', STREAM);
+    for (const d of ['2026-01-02', '2026-02-02', '2026-03-02']) await tx('usd', d, -1_000, 'связь и цифровые сервисы', { mcc: 5815, description: 'Codehub' });
+    // Stopped in January: the last payment is 70 days before now.
+    for (const d of ['2025-11-04', '2025-12-04', '2026-01-04']) await tx('uah', d, -50_000, 'спорт', { mcc: 7997, description: 'Gym Fictional' });
+    // Ended long ago: over 120 days, not listed.
+    for (const d of ['2025-05-10', '2025-06-10', '2025-07-10']) await tx('uah', d, -9_900, 'развлечения', { mcc: 7832, description: 'Cinema Club' });
+  });
+
+  it('active by hryvnia desc, the dollar one at today\'s rate; ended within 120 days; monthly = the active together', async () => {
+    const v = await svc.recurringOverview({});
+    expect(v.since).toBe('2025-03-01');
+    expect(v.active.map((p) => [p.name, p.categoryId, p.uah, p.currency, p.amount, p.payments, p.last])).toEqual([
+      ['Codehub', 'telecom', 40_000, 840, 1_000, 3, '2026-03-02'],
+      ['Streamio •••', 'telecom', 19_900, 980, 19_900, 3, '2026-03-05'],
+    ]);
+    expect(v.active[1]!.next).toBe('2026-04-05');
+    expect(v.active[0]!.account).toEqual({ kind: 'card', type: 'white', currency: 840, tag: null });
+    expect(v.ended.map((p) => [p.name, p.categoryId, p.last])).toEqual([['Gym Fictional', 'sport', '2026-01-04']]);
+    expect(v.monthly).toBe(40_000 + 19_900);
+    expect(v.rates).toEqual(RATES);
+  });
+
+  it('nextMonthDay: the same day a month on, the last day of a shorter month', () => {
+    expect(nextMonthDay('2026-03-05')).toBe('2026-04-05');
+    expect(nextMonthDay('2026-01-31')).toBe('2026-02-28');
+    expect(nextMonthDay('2026-12-15')).toBe('2027-01-15');
+  });
+
+  it('a currency without a rate: no hryvnia figure, left out of monthly, listed last', async () => {
+    rates = null;
+    const v = await svc.recurringOverview({});
+    expect(v.active.map((p) => [p.name, p.uah])).toEqual([['Streamio •••', 19_900], ['Codehub', null]]);
+    expect(v.monthly).toBe(19_900);
+  });
+
+  it('a person sees their own payments only', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const v = await svc.recurringOverview({ participantId: her });
+    expect(v.active).toEqual([]);
+    expect(v.ended).toEqual([]);
+    expect(v.monthly).toBe(0);
+  });
+
+  it('carries the description only — never a name, card number, IBAN or jar title', async () => {
+    const json = JSON.stringify(await svc.recurringOverview({}));
     for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });

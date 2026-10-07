@@ -6,6 +6,7 @@ import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
+import { findRecurring } from '@mono/core/recurring';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
@@ -37,6 +38,9 @@ import type {
   IncomeLineView,
   IncomeOverview,
   IncomeOverviewQuery,
+  RecurringOverview,
+  RecurringOverviewQuery,
+  RecurringPaymentView,
   DataStatus,
   FlowView,
   FxPart,
@@ -55,6 +59,16 @@ import type {
 } from '../shared/api.ts';
 
 /** The core's category word → its CATEGORY key, the id the renderer translates. */
+/** The same day a calendar month on (YYYY-MM-DD), the last day of a shorter month: 31 Jan → 28 Feb. */
+export function nextMonthDay(date: string): string {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m, Math.min(d, last))).toISOString().slice(0, 10);
+}
+
+/** A stopped regular payment is still listed this long after its last payment. */
+const ENDED_DAYS = 120;
+
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
@@ -442,6 +456,48 @@ export class DataService {
     }
     const firstMonth = dataFrom?.slice(0, 7) ?? null;
     return months12.map((m) => ({ month: m, total: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
+  /**
+   * The regular payments screen: core findRecurring over the last 13 months (from the first day of the month a year
+   * back), all scopes. The only text is each payment's description, through merchantText.
+   */
+  async recurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const since = `${addMonths(today.slice(0, 7), -12)}-01`;
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const found = await findRecurring(db, { from: since, to: today, tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+
+    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
+    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const day = (sec: number) => localDate(sec * 1000, tz);
+    const view = (p: (typeof found)[number]): RecurringPaymentView => ({
+      key: p.id,
+      name: merchantText(p.description, jarTitles),
+      category: p.category,
+      categoryId: CATEGORY_ID.get(p.category) ?? null,
+      participantId: p.participantId,
+      account: names.get(p.accountId) ?? { kind: 'card', type: null, currency: p.currency, tag: null },
+      uah: toUah(p.amount, p.currency, fx),
+      currency: p.currency,
+      amount: p.amount,
+      operation: p.operationCurrency !== p.currency ? { currency: p.operationCurrency, amount: p.operationAmount } : null,
+      payments: p.payments,
+      first: day(p.first),
+      last: day(p.last),
+      next: nextMonthDay(day(p.last)),
+    });
+    const active = found.filter((p) => p.active).map(view).sort((a, b) => (b.uah ?? -1) - (a.uah ?? -1) || a.key.localeCompare(b.key));
+    const ended = found
+      .filter((p) => !p.active && now - p.last <= ENDED_DAYS * 86_400)
+      .sort((a, b) => b.last - a.last || a.id.localeCompare(b.id))
+      .map(view);
+    return { since, active, ended, monthly: active.reduce((s, p) => s + (p.uah ?? 0), 0), rates };
   }
 
   /**

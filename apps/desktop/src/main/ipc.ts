@@ -66,6 +66,7 @@ export const ARG_SCHEMAS = {
     z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
   ]),
   getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional() })]),
+  getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z

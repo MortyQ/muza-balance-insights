@@ -135,6 +135,7 @@ export type BalanceApi = {
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
+  getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
   getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
@@ -192,7 +193,7 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens; nothing else).
+// and income screens), and RecurringOverview, which carries each regular payment's description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -348,6 +349,45 @@ export type CategoryOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; net: number }>;
+};
+
+export type RecurringOverviewQuery = { participantId?: number };
+
+/** A regular payment found in the statement (core findRecurring): about once a month to one payee, about one amount. */
+export type RecurringPaymentView = {
+  /** The id of the series' last payment. */
+  key: string;
+  /** The last payment's bank description (a card number cut to its last digits, a jar's title hidden). */
+  name: string;
+  category: string;
+  categoryId: CategoryId | null;
+  participantId: number;
+  account: AccountName;
+  /** The usual payment in hryvnia kopecks by today's rate; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and the usual payment in its minor units, > 0. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and usual amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  payments: number;
+  /** System time zone, YYYY-MM-DD: the first and the last payment, and when the next one is due. */
+  first: string;
+  last: string;
+  next: string;
+};
+
+/** Regular payments of the last 13 months, all scopes, of a person (or the family). */
+export type RecurringOverview = {
+  /** The first day looked at (YYYY-MM-DD). */
+  since: string;
+  /** Paid within the last 40 days, the largest (hryvnia) first. */
+  active: RecurringPaymentView[];
+  /** Stopped: the last payment 40 to 120 days ago, the newest first. */
+  ended: RecurringPaymentView[];
+  /** The active ones' usual payments together, hryvnia kopecks (a payment without a rate counts nowhere). */
+  monthly: number;
+  rates: RatesView | null;
 };
 
 export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number };

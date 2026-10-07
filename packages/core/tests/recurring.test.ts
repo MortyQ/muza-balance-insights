@@ -83,7 +83,7 @@ describe('amountGroups / trailingSeries', () => {
 });
 
 describe('findRecurring', () => {
-  it('a monthly subscription: usual amount, payments, first and last, next due a month on, active', async () => {
+  it('a monthly subscription: usual amount, payments, first and last, active', async () => {
     const ids = await monthly('uah', '2026-03', 4, -19_900);
     const [p] = await findRecurring(db, PERIOD, NOW);
     expect(p).toMatchObject({
@@ -92,8 +92,6 @@ describe('findRecurring', () => {
     });
     expect(p!.first).toBe(kyivStartOfDay('2025-12-05') + 3600);
     expect(p!.last).toBe(kyivStartOfDay('2026-03-05') + 3600);
-    expect((p!.next - p!.last) / DAY).toBeGreaterThanOrEqual(28);
-    expect((p!.next - p!.last) / DAY).toBeLessThanOrEqual(31);
   });
 
   it('an amount that drifts within ±10% stays one series; the usual amount is the median', async () => {
