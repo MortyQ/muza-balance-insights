@@ -1,17 +1,17 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import type { Scope } from '@contract/api.ts';
+import type { DetailPeriod, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
-const { categoryId, scope } = defineProps<{ categoryId: CategoryId; scope: Scope }>();
+const { categoryId, scope, period } = defineProps<{ categoryId: CategoryId; scope: Scope; period: DetailPeriod }>();
 
-const base = useCategoryDetail(() => categoryId, () => scope);
+const base = useCategoryDetail(() => categoryId, () => scope, () => period);
 const { state, view } = base;
-const { summary, none, months, people, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
+const { summary, label, none, months, people, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
 </script>
 
 <template>
@@ -20,10 +20,10 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('category.failed')" />
 
-    <DetailSkeleton v-if="!view && state.status === 'loading'" />
+    <DetailSkeleton v-if="!view && state.status === 'loading'" :months="period.kind === 'month'" />
     <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
-        <DetailSummary :summary :label="$t('category.summary.spent')" />
+        <DetailSummary :summary :label />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>

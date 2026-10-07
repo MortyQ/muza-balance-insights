@@ -1,4 +1,5 @@
 import type { ComputedRef } from 'vue';
+import type { categoryLink } from '@/shared/config';
 import type { ChangeChipModel } from '@/shared/ui';
 
 export interface WeekBar {
@@ -51,6 +52,8 @@ export interface CategoryRow {
   share: number;
   /** Against the same days last week (the week only); null — none. */
   chip: ChangeChipModel | null;
+  /** The category's screen for this day or week; null — a category the app does not know. */
+  to: ReturnType<typeof categoryLink> | null;
 }
 
 export interface CategoryBreakdown {

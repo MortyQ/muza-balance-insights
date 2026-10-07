@@ -35,3 +35,18 @@ export function localDateTime(ms: number, timeZone: string = systemTimeZone()): 
   const p = partsOf(ms, timeZone);
   return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
 }
+
+// 'YYYY-MM-DD' holds three numbers by construction (calendar dates of main, the core and the renderer).
+const ymd = (date: string) => date.split('-').map(Number) as [number, number, number];
+
+/** 'YYYY-MM-DD' shifted by `n` days (UTC calendar arithmetic, no timezone drift). */
+export function shiftDate(date: string, n: number): string {
+  const [y, m, d] = ymd(date);
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+}
+
+/** 1 = Monday … 7 = Sunday. */
+export function isoWeekday(date: string): number {
+  const [y, m, d] = ymd(date);
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay() || 7;
+}

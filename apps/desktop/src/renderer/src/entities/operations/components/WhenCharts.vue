@@ -14,9 +14,9 @@ const { when } = defineProps<{ when: WhenView }>();
       <span v-if="when.peak" class="text-xs text-foreground-secondary">{{ when.peak }}</span>
     </div>
     <div class="flex flex-wrap gap-6">
-      <WeekdayBars :bars="when.weekdays" />
+      <WeekdayBars v-if="when.weekdays" :bars="when.weekdays" />
       <DayPartBars :parts="when.dayParts" />
     </div>
-    <MonthDayBars :bars="when.days" />
+    <MonthDayBars v-if="when.days" :bars="when.days" />
   </section>
 </template>

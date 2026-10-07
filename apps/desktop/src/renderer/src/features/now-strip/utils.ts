@@ -1,6 +1,7 @@
 import type { NowCategory, NowOverview, SpendingAmounts } from '@contract/api.ts';
 import { categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
+import { categoryLink, type LinkPeriod } from '@/shared/config';
 import { change, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
@@ -57,10 +58,14 @@ export function categoryChip(net: number, prev: number | null): ChangeChipModel 
   return nowChip(net, prev, 'week');
 }
 
-/** One period's list; the share of a category stops at 100% (refunds elsewhere can pull the total below it). */
+/**
+ * One period's list, each row a link to its category's screen for that day or week (personal, as the strip); the share
+ * of a category stops at 100% (refunds elsewhere can pull the total below it).
+ */
 export function breakdown(
   cats: ReadonlyArray<NowCategory & { prev?: number | null }>,
   total: SpendingAmounts,
+  period: LinkPeriod,
   fmt: MoneyFormat,
   note = '',
 ): CategoryBreakdown {
@@ -73,6 +78,7 @@ export function breakdown(
       ops: t('home.now.opsShort', { n: c.purchases }),
       share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
       chip: categoryChip(c.net, c.prev ?? null),
+      to: c.categoryId ? categoryLink(c.categoryId, 'personal', period) : null,
     }),
   );
   if (rows.length === 0) return { rows, summary: '', note: '' };
@@ -131,8 +137,8 @@ export function nowView(o: Readonly<NowOverview>, fmt: MoneyFormat): NowStripVie
     },
     top: topCell(o.week.top, o.week.total.net, fmt),
     categories: {
-      today: breakdown(o.todayCategories, o.today, fmt),
-      week: breakdown(o.week.categories, o.week.total, fmt, o.week.prev !== null ? t('home.now.cats.vsWeek', { days }) : ''),
+      today: breakdown(o.todayCategories, o.today, { kind: 'day', date: o.date }, fmt),
+      week: breakdown(o.week.categories, o.week.total, { kind: 'week', from: o.week.from }, fmt, o.week.prev !== null ? t('home.now.cats.vsWeek', { days }) : ''),
     },
   };
 }

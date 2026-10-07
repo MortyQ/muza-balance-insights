@@ -4,7 +4,7 @@ import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
 import type { UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
-import { lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, summaryView, whenView } from '../utils.ts';
+import { lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, spentLabel, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
 export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<Ref<Scope>>): UseCategoryViewReturn {
@@ -13,7 +13,7 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const merchant = ref<string | null>(null);
   const query = ref('');
   const sort = ref<SortKey>('date');
-  // Another month, person or category is another list: the filter and the search start over.
+  // Another period, person or category is another list: the filter and the search start over.
   watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId], () => {
     merchant.value = null;
     query.value = '';
@@ -21,6 +21,7 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
 
   const people = computed(() => participant.people.map((p) => ({ id: p.id, name: p.label, color: colorVar(p.color) })));
   const summary = computed(() => (view.value ? summaryView(view.value, who.value, t(`home.spending.scope.${scope.value}`), fmt.value) : null));
+  const label = computed(() => (view.value ? spentLabel(view.value.range) : ''));
   const none = computed(() => (view.value ? noneText(view.value) : ''));
   const months = computed(() => (view.value ? monthsView(view.value, fmt.value) : null));
   const whoSpent = computed(() => (view.value && family.value ? peopleView(view.value, people.value, fmt.value) : []));
@@ -46,6 +47,6 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   }
 
   return {
-    summary, none, months, people: whoSpent, merchants, moreMerchants, when, rows: computed(() => list.value.rows), total, merchant, merchantName, query, sort, pickMerchant,
+    summary, label, none, months, people: whoSpent, merchants, moreMerchants, when, rows: computed(() => list.value.rows), total, merchant, merchantName, query, sort, pickMerchant,
   };
 }

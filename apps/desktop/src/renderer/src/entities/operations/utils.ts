@@ -24,17 +24,39 @@ export const nameKey = (s: string): string => s.toLocaleLowerCase('uk').replace(
 
 export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
 
-/** The change against the compared period, the spending block's words (`home.spending.change.*`). */
-export function changeChip(value: number, prev: number | null, compare: Readonly<{ from: string; partial: boolean }> | null): ChangeChipModel | null {
+const WEEK_CHANGE = {
+  same: 'entities.operations.change.week.same',
+  more: 'entities.operations.change.week.more',
+  less: 'entities.operations.change.week.less',
+  morePartial: 'entities.operations.change.week.morePartial',
+  lessPartial: 'entities.operations.change.week.lessPartial',
+} as const;
+const MONTH_CHANGE = {
+  same: 'home.spending.change.same',
+  more: 'home.spending.change.more',
+  less: 'home.spending.change.less',
+  morePartial: 'home.spending.change.morePartial',
+  lessPartial: 'home.spending.change.lessPartial',
+} as const;
+
+/**
+ * The change against the compared period: last month (the spending block's words, `home.spending.change.*`) or last
+ * week (`entities.operations.change.week.*`).
+ */
+export function changeChip(
+  value: number,
+  prev: number | null,
+  compare: Readonly<{ from: string; partial: boolean }> | null,
+  against: 'month' | 'week' = 'month',
+): ChangeChipModel | null {
   const c = change(value, prev);
   if (!c || !compare) return null;
+  const words = against === 'week' ? WEEK_CHANGE : MONTH_CHANGE;
   const month = monthIn(compare.from);
   if (c.kind === 'new') return { text: t('home.spending.change.new'), tone: 'neutral', arrow: null, sr: '' };
-  if (c.kind === 'same') return { text: t('home.spending.change.same', { month }), tone: 'neutral', arrow: null, sr: '' };
+  if (c.kind === 'same') return { text: t(words.same, { month }), tone: 'neutral', arrow: null, sr: '' };
   const up = c.kind === 'up';
-  const key = up
-    ? (compare.partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
-    : (compare.partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
+  const key = up ? (compare.partial ? words.morePartial : words.more) : (compare.partial ? words.lessPartial : words.less);
   return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
 }
 
@@ -155,9 +177,17 @@ export function whenTotals<L extends WhenLine>(
   return { weekdays, dayParts, days };
 }
 
+/** Which charts of «When» a period has: one day — the parts of the day only; a week — no days of the month. */
+export interface WhenParts {
+  weekdays: boolean;
+  days: boolean;
+}
+
+const ALL_PARTS: WhenParts = { weekdays: true, days: true };
+
 /**
- * «When» of the given lines (all of the month, or one name's): weekdays, parts of the day, days of the month, and the
- * peak in words; `name` — the filter's name for the title ('' — none).
+ * «When» of the given lines (all of the period, or one name's): weekdays, parts of the day, days of the month (those of
+ * `parts`), and the peak in words; `name` — the filter's name for the title ('' — none).
  */
 export function whenView<L extends WhenLine>(
   lines: ReadonlyArray<L>,
@@ -166,6 +196,7 @@ export function whenView<L extends WhenLine>(
   name: string,
   fmt: Money,
   value: (l: L) => number | null,
+  parts: Readonly<WhenParts> = ALL_PARTS,
 ): WhenView {
   const w = whenTotals(lines, daysInMonth, value);
   const wMax = Math.max(0, ...w.weekdays);
@@ -175,7 +206,7 @@ export function whenView<L extends WhenLine>(
   const peakPart = w.dayParts.indexOf(pMax);
   return {
     title: name ? t('entities.operations.when.titleFor', { name }) : t('entities.operations.when.title'),
-    weekdays: w.weekdays.map((n, i) => ({
+    weekdays: !parts.weekdays ? null : w.weekdays.map((n, i) => ({
       key: String(i),
       label: weekdayShort(i + 1),
       height: barHeight(n, wMax),
@@ -183,14 +214,19 @@ export function whenView<L extends WhenLine>(
       title: `${weekdayShort(i + 1)} — ${fmt.money(n)}`,
     })),
     dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
-    days: w.days.map((n, i) => ({
+    days: !parts.days ? null : w.days.map((n, i) => ({
       key: String(i + 1),
       label: String(i + 1),
       height: barHeight(n, dMax),
       strong: n > 0,
       title: t('entities.operations.when.dayTitle', { day: i + 1, month: monthShortName(monthNo(month)), amount: fmt.money(n) }),
     })),
-    peak: wMax > 0 && pMax > 0 ? t('entities.operations.when.peak', { weekday: weekdayShort(peakDay + 1), part: partName(peakPart) }) : '',
+    peak:
+      pMax <= 0
+        ? ''
+        : parts.weekdays
+          ? (wMax > 0 ? t('entities.operations.when.peak', { weekday: weekdayShort(peakDay + 1), part: partName(peakPart) }) : '')
+          : t('entities.operations.when.peakPart', { part: partName(peakPart) }),
   };
 }
 

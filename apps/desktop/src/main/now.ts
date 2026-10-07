@@ -1,26 +1,15 @@
 // Pure helpers of the «Now» strip in main (DataService.nowOverview): calendar days, the week from Monday, and the
 // usual day — the median of daily spending.
 import type { SpendingAmounts } from '../shared/api.ts';
+import { isoWeekday, shiftDate } from '../shared/dates.ts';
+
+// The calendar helpers live in shared/dates.ts (the renderer counts weeks too); main's callers keep importing them here.
+export { isoWeekday, shiftDate };
 
 /** The usual day looks back this many days (today not included). */
 export const USUAL_WINDOW = 30;
 /** Fewer covered days than this — no usual day: a median of a few days says little. */
 export const USUAL_MIN_DAYS = 7;
-
-// 'YYYY-MM-DD' holds three numbers by construction (calendar dates of main and the core).
-const ymd = (date: string) => date.split('-').map(Number) as [number, number, number];
-
-/** 'YYYY-MM-DD' shifted by `n` days (UTC calendar arithmetic, no timezone drift). */
-export function shiftDate(date: string, n: number): string {
-  const [y, m, d] = ymd(date);
-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
-}
-
-/** 1 = Monday … 7 = Sunday. */
-export function isoWeekday(date: string): number {
-  const [y, m, d] = ymd(date);
-  return new Date(Date.UTC(y, m - 1, d)).getUTCDay() || 7;
-}
 
 /** The middle value; for an even count the mean of the two middle ones, rounded to a kopeck. */
 export function median(values: readonly number[]): number {

@@ -1,4 +1,5 @@
 import type { CategoryLineView, CategoryOverview, DetailPeriod } from '@contract/api.ts';
+import { isoWeekday, shiftDate } from '@contract/dates.ts';
 import { accountName } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
@@ -7,9 +8,9 @@ import {
   type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
-import { TOP_MERCHANTS } from './constants.ts';
+import { PERIOD_BLOCKS, PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
 
-/** The month a period lies in (a week: the month of its Monday). */
+/** The month a period lies in (a week: the month of its Monday); «When»'s days of the month read it. */
 export const monthOf = (r: DetailPeriod): string => (r.kind === 'month' ? r.month : r.kind === 'day' ? r.date : r.from).slice(0, 7);
 
 /** Spending of a line, positive (a refund is negative); null — no rate. */
@@ -18,29 +19,50 @@ const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah
 /** Merchants match regardless of case and spaces (as main groups them). */
 export const merchantKey = nameKey;
 
-/** The header and the figures of the month. `who` — «Whole family» or a person ('' — the only one). */
+/** «Сентябрь 2026», «Неделя 5 окт – 11 окт», «ср, 7 окт». */
+export function periodTitle(r: DetailPeriod): string {
+  if (r.kind === 'month') return `${monthName(monthNo(r.month))} ${r.month.slice(0, 4)}`;
+  if (r.kind === 'week') return t('category.period.week', { from: dayMonth(r.from), to: dayMonth(shiftDate(r.from, 6)) });
+  return t('category.period.day', { weekday: weekdayShort(isoWeekday(r.date)), date: dayMonth(r.date) });
+}
+
+/** The figure's label: «Spent this month», «Spent that week», «Spent that day». */
+export const spentLabel = (r: DetailPeriod): string => t(PERIOD_TEXT[r.kind].spent);
+
+/** The compared period in words: last month's name, or last week; for the operations and the figure. */
+function prevWords(v: Readonly<CategoryOverview>): { ops: (n: number) => string; amount: (amount: string) => string } {
+  if (v.range.kind === 'week') {
+    return { ops: (n) => t('category.summary.opsPrevWeek', { n }), amount: (amount) => t('category.summary.vsPrevWeek', { amount }) };
+  }
+  const month = v.compare ? monthIn(v.compare.from) : '';
+  return { ops: (n) => t('category.summary.opsPrev', { month, n }), amount: (amount) => t('category.summary.vsPrev', { month, amount }) };
+}
+
+/** The header and the figures of the period. `who` — «Whole family» or a person ('' — the only one). */
 export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: string, fmt: MoneyFormat): SummaryView {
   const s = v.summary;
-  const prevMonth = v.compare ? monthIn(v.compare.from) : '';
+  const prev = prevWords(v);
   const largest = s.largest === null ? undefined : v.lines.find((l) => l.key === s.largest);
   const stats: StatView[] = [
-    { label: t('category.summary.ops'), value: String(s.purchases), note: s.prev ? t('category.summary.opsPrev', { month: prevMonth, n: s.prev.purchases }) : '' },
+    { label: t('category.summary.ops'), value: String(s.purchases), note: s.prev ? prev.ops(s.prev.purchases) : '' },
     {
       label: t('category.summary.avg'),
       value: s.purchases > 0 ? fmt.money(Math.round(s.gross / s.purchases)) : '—',
       note: s.median === null ? '' : t('category.summary.median', { amount: fmt.money(s.median) }),
     },
-    {
+  ];
+  if (PERIOD_BLOCKS[v.range.kind].perDay) {
+    stats.push({
       label: t('category.summary.perDay'),
       value: s.perDay === null ? '—' : fmt.money(s.perDay),
       note: t('category.summary.activeDays', { n: s.activeDays, days: v.period.days }),
-    },
-    {
-      label: t('category.summary.share'),
-      value: s.share === null ? '—' : `${Math.round(s.share * 100)}%`,
-      note: s.rank === null ? '' : t('category.summary.rank', { n: s.rank }),
-    },
-  ];
+    });
+  }
+  stats.push({
+    label: t('category.summary.share'),
+    value: s.share === null ? '—' : `${Math.round(s.share * 100)}%`,
+    note: s.rank === null ? '' : t(PERIOD_TEXT[v.range.kind].rank, { n: s.rank }),
+  });
   if (largest && largest.uah !== null) {
     stats.push({
       label: t('category.summary.largest'),
@@ -55,24 +77,26 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     name: categoryName(v),
     icon: CATEGORY_ICON[v.categoryId],
     color: categoryColor(s.rank === null ? null : s.rank - 1),
-    subtitle: [`${monthName(monthNo(monthOf(v.range)))} ${monthOf(v.range).slice(0, 4)}`, who, scope].filter(Boolean).join(' · '),
+    subtitle: [periodTitle(v.range), who, scope].filter(Boolean).join(' · '),
     amount: fmt.money(s.net),
     conv: fmt.approxInline(s.net),
-    chip: changeChip(s.net, s.prev?.net ?? null, v.compare),
-    prev: s.prev ? t('category.summary.vsPrev', { month: prevMonth, amount: fmt.money(s.prev.net) }) : '',
+    chip: changeChip(s.net, s.prev?.net ?? null, v.compare, v.range.kind === 'week' ? 'week' : 'month'),
+    prev: s.prev ? prev.amount(fmt.money(s.prev.net)) : '',
     note: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
     stats,
   };
 }
 
-/** «No spending in this category in September.»; '' — there are lines. */
+/** «No spending in this category in September.» (that week, that day); '' — there are lines. */
 export function noneText(v: Readonly<CategoryOverview>): string {
-  return v.lines.length === 0 ? t('category.none', { month: monthIn(monthOf(v.range)) }) : '';
+  if (v.lines.length > 0) return '';
+  return v.range.kind === 'month' ? t('category.none', { month: monthIn(v.range.month) }) : t(PERIOD_TEXT[v.range.kind].none);
 }
 
-/** The 12 months: bars on one scale, the average of the finished months with data, how the picked month stands against it. */
-export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): MonthsView {
-  return monthBars(v.months.map((m) => ({ month: m.month, value: m.net })), monthOf(v.range), v.thisMonth, fmt);
+/** The 12 months (a month only, else null): bars on one scale, the average of the finished months with data, how the picked month stands against it. */
+export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): MonthsView | null {
+  if (v.range.kind !== 'month') return null;
+  return monthBars(v.months.map((m) => ({ month: m.month, value: m.net })), v.range.month, v.thisMonth, fmt);
 }
 
 /** «Who spent» (the family view): each person with spending, on the largest one's scale. */
@@ -92,11 +116,11 @@ export function moreMerchantsText(v: Readonly<CategoryOverview>): string {
 }
 
 /**
- * «When» of the given lines (all of the month, or one merchant's): weekdays, parts of the day, days of the month, and
- * the peak in words; `merchant` — the filter's name for the title ('' — none).
+ * «When» of the given lines (all of the period, or one merchant's): the charts the period has (PERIOD_BLOCKS) and the
+ * peak in words; `merchant` — the filter's name for the title ('' — none).
  */
 export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pick<CategoryOverview, 'range' | 'period'>>, merchant: string, fmt: MoneyFormat): WhenView {
-  return whenBars(lines, monthOf(v.range), v.period.days, merchant, fmt, spent);
+  return whenBars(lines, monthOf(v.range), v.period.days, merchant, fmt, spent, PERIOD_BLOCKS[v.range.kind]);
 }
 
 function marksOf(l: Readonly<CategoryLineView>, fmt: MoneyFormat): MarkView[] {

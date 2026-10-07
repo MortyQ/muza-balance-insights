@@ -81,6 +81,12 @@
       "search": "Search: place, comment, amount"
     },
     "none": "No spending in this category in {month}.",
+    "noneDay": "No spending in this category that day.",
+    "noneWeek": "No spending in this category that week.",
+    "period": {
+      "day": "{weekday}, {date}",
+      "week": "Week {from} – {to}"
+    },
     "summary": {
       "activeDays": "days with spending: {n} of {days}",
       "avg": "Average",
@@ -92,11 +98,17 @@
       "median": "median {amount}",
       "ops": "Operations",
       "opsPrev": "{n} in {month}",
+      "opsPrevWeek": "{n} last week",
       "perDay": "Per day",
       "rank": "#{n} this month",
+      "rankDay": "#{n} that day",
+      "rankWeek": "#{n} that week",
       "share": "Share of all spending",
       "spent": "Spent this month",
-      "vsPrev": "{amount} in {month}"
+      "spentDay": "Spent that day",
+      "spentWeek": "Spent that week",
+      "vsPrev": "{amount} in {month}",
+      "vsPrevWeek": "{amount} last week"
     },
     "where": {
       "more": "{n} more place | {n} more places | {n} more places",
@@ -255,6 +267,15 @@
     },
     "operations": {
       "avg": "avg {amount}",
+      "change": {
+        "week": {
+          "less": "{pct}% less than last week",
+          "lessPartial": "{pct}% less than by this day last week",
+          "more": "{pct}% more than last week",
+          "morePartial": "{pct}% more than by this day last week",
+          "same": "as last week"
+        }
+      },
       "filterHint": "Click to filter the list",
       "list": {
         "byAmount": "By amount",
@@ -296,6 +317,7 @@
           "3": "night 23–6"
         },
         "peak": "Most: {weekday} · {part}",
+        "peakPart": "Most: {part}",
         "title": "When",
         "titleFor": "When: {name}",
         "weekdays": "By weekday"

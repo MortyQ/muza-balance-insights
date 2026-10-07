@@ -3,6 +3,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
+import { defineComponent, h } from 'vue';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import type { NowOverview, NowOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import WeekBars from '@/features/now-strip/components/WeekBars.vue';
@@ -143,6 +145,14 @@ describe('now strip categories', () => {
     expect(w.note).toBe('Сравнение с теми же днями прошлой недели, пн–сб');
   });
 
+  it('each row opens its category\'s screen for that day or week, personal spending; an unknown category — no link', () => {
+    const v = nowView(NOW, OFF);
+    expect(v.categories.week.rows[0]?.to).toEqual({ name: 'category', params: { id: 'groceries' }, query: { scope: 'personal', week: '2026-09-28' } });
+    expect(v.categories.today.rows[1]?.to).toEqual({ name: 'category', params: { id: 'cafes' }, query: { scope: 'personal', day: '2026-10-03' } });
+    const unknown = breakdown([{ category: 'новая', categoryId: null, net: 1_000, purchases: 1, rank: null }], { net: 1_000, purchases: 1 }, { kind: 'day', date: '2026-10-03' }, OFF);
+    expect(unknown.rows[0]?.to).toBeNull();
+  });
+
   it('today: no chips, no note; without last week the week has neither', () => {
     const v = nowView(NOW, OFF);
     expect(v.categories.today.rows.map((r) => [r.name, r.share, r.chip])).toEqual([
@@ -156,8 +166,8 @@ describe('now strip categories', () => {
   });
 
   it('an empty period: no rows, no summary; a share stops at 100%', () => {
-    expect(breakdown([], { net: 0, purchases: 0 }, OFF)).toEqual({ rows: [], summary: '', note: '' });
-    const over = breakdown([{ category: 'продукты', categoryId: 'groceries', net: 10_000, purchases: 1, rank: 0 }], { net: 8_000, purchases: 2 }, OFF);
+    expect(breakdown([], { net: 0, purchases: 0 }, { kind: 'day', date: '2026-10-03' }, OFF)).toEqual({ rows: [], summary: '', note: '' });
+    const over = breakdown([{ category: 'продукты', categoryId: 'groceries', net: 10_000, purchases: 1, rank: 0 }], { net: 8_000, purchases: 2 }, { kind: 'day', date: '2026-10-03' }, OFF);
     expect(over.rows[0]?.share).toBe(100);
   });
 
@@ -190,7 +200,15 @@ describe('now strip mounted', () => {
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().view = PEOPLE;
     const { NowStripFeature } = await import('@/features/now-strip');
-    const w = mount(NowStripFeature, { global: { plugins: [i18n] } });
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
+        { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
+      ],
+    });
+    await router.push('/');
+    const w = mount(NowStripFeature, { global: { plugins: [i18n, router] } });
     await flushPromises();
     return w;
   }
@@ -261,6 +279,7 @@ describe('now strip mounted', () => {
     expect(panel.text()).toContain('Доставка');
     expect(panel.text()).toContain('4 категории');
     expect(panel.text()).toContain('Сравнение с теми же днями прошлой недели, пн–сб');
+    expect(panel.find('a').attributes('href')).toBe('/category/groceries?scope=personal&week=2026-09-28');
 
     const today = panel.findAll('button').find((b) => b.text() === 'Сегодня');
     await today?.trigger('click');

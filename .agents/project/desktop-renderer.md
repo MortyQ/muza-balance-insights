@@ -64,11 +64,18 @@
   with the «Now» strip and the category screen.
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
-  unknown id → home by the route's guard; `query.scope`, read back by `categoryRequest`), default layout without its
+  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
+  written by `categoryLink(id, scope, period?)` and read back by `categoryRequest`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
-  `desktop-import.md`): the month, person and currency are the global filters; quiet reload on `syncStatus.version`.
+  `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
+  The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week, else the global filter's
+  month; picking a month in the filter while a day or a week is open replaces the route with the month's. What a
+  period shows is one table, `PERIOD_BLOCKS` (a day: no 12 months, no «per day», «When» only by part of the day; a week:
+  no 12 months and no days of the month), its words `PERIOD_TEXT` (the figure's label, the rank, «no spending»); a
+  week is compared with last week (`changeChip(…, 'week')`, `entities.operations.change.week.*`), a day with nothing.
+  The «Now» strip's category rows link here for their day or week (personal).
   `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
-  merchant filter, search and order (reset with month, category and person). «When» is counted on the screen from the
+  merchant filter, search and order (reset with period, category and person). «When» is counted on the screen from the
   lines (`whenTotals`), so the merchant filter narrows it too and its title names the merchant; the search does not. `utils.ts` is pure and tested
   (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
@@ -131,7 +138,8 @@
   every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
   operations; the week's rows carry a chip against the same days of last week — `categoryChip`: %, «same», «new»).
   Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
-  default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen.
+  default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen,
+  which each row opens for that day or week.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

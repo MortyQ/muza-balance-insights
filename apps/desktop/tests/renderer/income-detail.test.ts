@@ -84,7 +84,7 @@ describe('income screen helpers', () => {
     ]);
     const when = whenView(LINES, VIEW, '', FMT);
     expect(when.peak).toBe('Больше всего: пт · утро 6–12');
-    expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '17', '25']);
+    expect(when.days!.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '17', '25']);
     expect(whenView(LINES.filter((l) => l.key === 'b' || l.key === 'd'), VIEW, 'Vigadana Osoba', FMT).title).toBe('Когда: Vigadana Osoba');
   });
 
