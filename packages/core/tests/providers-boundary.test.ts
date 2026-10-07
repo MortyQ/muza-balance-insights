@@ -32,8 +32,8 @@ function localImports(file: string, text: string): string[] {
 const providerOf = (file: string): string | null => /^providers\/([^/]+)\//.exec(file)?.[1] ?? null;
 const isDomain = (file: string) => !file.startsWith('providers/');
 
-/** The domain's two doors into providers: the contract and the rules registry. */
-const DOMAIN_MAY_IMPORT = new Set(['providers/types.ts', 'providers/rules.ts']);
+/** The domain's doors into providers: the contract, the rules registry and the statement parsers registry. */
+const DOMAIN_MAY_IMPORT = new Set(['providers/types.ts', 'providers/rules.ts', 'providers/statements.ts']);
 
 /**
  * Bank-specific values that must not appear in domain code (comments stripped).
@@ -63,6 +63,13 @@ function violations(files: Files): string[] {
       for (const target of localImports(file, text)) {
         if (target !== 'providers/types.ts' && !/^providers\/[^/]+\/rules\.ts$/.test(target)) {
           out.push(`${file}: the rules registry imports ${target} (only <id>/rules.ts and types.ts)`);
+        }
+      }
+    }
+    if (file === 'providers/statements.ts') {
+      for (const target of localImports(file, text)) {
+        if (target !== 'providers/types.ts' && !/^providers\/[^/]+\/statement\.ts$/.test(target)) {
+          out.push(`${file}: the statements registry imports ${target} (only <id>/statement.ts and types.ts)`);
         }
       }
     }
@@ -109,7 +116,10 @@ describe('provider boundary', () => {
     ['providers/x/descriptions.ts', 'export const TEXTS = [];'],
     ['providers/x/client.ts', "import { acquireSlot } from '../../ratelimit.ts';"],
     ['ratelimit.ts', 'export const acquireSlot = 1;'],
+    ['providers/statements.ts', "import { xStatement } from './x/statement.ts';\nimport type { ProviderId } from './types.ts';"],
+    ['providers/x/statement.ts', "import type { StatementFileParser } from '../types.ts';\nimport { TEXTS } from './descriptions.ts';"],
     ['categories.ts', "import { rulesFor } from './providers/rules.ts';"],
+    ['statement-import.ts', "import { statementParserOf } from './providers/statements.ts';"],
     ['rederive.ts', "import { recategorize } from './categories.ts';"],
   ];
   const broken = (edits: Array<[string, string]>) => violations(new Map([...legal, ...edits]));
@@ -123,6 +133,7 @@ describe('provider boundary', () => {
     ['a provider imports another provider', [['providers/y/rules.ts', "import { TEXTS } from '../x/descriptions.ts';"]], 'provider y imports provider x'],
     ['the contract imports something', [['providers/types.ts', "import type { Db } from '../db.ts';"]], 'the contract imports something'],
     ['the registry imports a client', [['providers/rules.ts', "import { c } from './x/client.ts';"]], 'the rules registry imports providers/x/client.ts'],
+    ['the statements registry imports a client', [['providers/statements.ts', "import { c } from './x/client.ts';"]], 'the statements registry imports providers/x/client.ts'],
     ['rederive reaches a client', [['providers/x/rules.ts', "import { c } from './client.ts';"]], 'rederive.ts reaches providers/x/client.ts'],
     ['MCC in the domain', [['categories.ts', 'const T = 4829;']], 'categories.ts: MCC 4829'],
     ['6012 in the domain', [['summaries.ts', 'if (mcc === 6012) {}']], 'summaries.ts: MCC 6012'],
