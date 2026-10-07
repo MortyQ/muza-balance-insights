@@ -177,6 +177,18 @@ describe('ui components copied from muzakit', () => {
     }
   });
 
+  it('labels above a field: VInput, VSelect and VDatepicker set the same type and line height, so fields stand level in a row', () => {
+    const rule = (file: string, selector: string) => {
+      const css = read(path.join(uiDir, 'styles/components/inputs', file));
+      const body = css.slice(css.indexOf(`${selector} {`)).split('}')[0] ?? '';
+      return ['color', 'font-size', 'line-height', 'font-weight'].map((p) => body.match(new RegExp(`\\b${p}:\\s*([^;]+);`))?.[1]?.trim() ?? null);
+    };
+    const input = rule('vinput.scss', '.v-input-top-label');
+    expect(input).toEqual(['var(--ui-foreground-secondary)', 'var(--ui-text-sm)', 'var(--ui-leading-sm)', '500']);
+    expect(rule('vselect.scss', '.v-select__label')).toEqual(input);
+    expect(rule('vdatepicker.scss', '.v-datepicker__label')).toEqual(input);
+  });
+
   it('every exported component has a row in ui/README.md', () => {
     const readme = read(path.join(uiDir, 'README.md'));
     const exported = [...read(path.join(uiDir, 'index.ts')).matchAll(/export \{ default as (V\w+)/g)].map((m) => m[1] ?? '');

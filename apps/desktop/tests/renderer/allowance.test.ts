@@ -152,6 +152,11 @@ describe('available per day: the block mounted', () => {
     expect(addReserve).not.toHaveBeenCalled();
 
     const [name, amount] = form.findAll('input[type="text"]');
+    // VInput's label above the field names it.
+    for (const [text, input] of [['Название', name!], ['Сумма', amount!]] as const) {
+      const label = form.findAll('label').find((l) => l.text() === text)!;
+      expect(label.attributes('for')).toBe(input.attributes('id'));
+    }
     await name!.setValue('  Квартира ');
     await amount!.setValue('1 200');
     await form.find('input[type="checkbox"]').setValue(false);

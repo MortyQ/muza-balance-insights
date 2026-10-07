@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue';
+import { computed, ref } from 'vue';
 import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX, type ReserveCurrency, type ReserveInput } from '@contract/allowance.ts';
 import { currencySymbol, t } from '@/shared/lib';
 import { VButton, VCheckbox, VDatepicker, VInput, VSelect, type VSelectOption } from '@/shared/ui';
@@ -15,8 +15,6 @@ const { start, today, failed = false } = defineProps<{
 }>();
 const emit = defineEmits<{ save: [r: ReserveInput]; cancel: [] }>();
 
-const nameId = useId();
-const amountId = useId();
 const name = ref(start.name);
 const amount = ref(start.amount > 0 ? String(start.amount / 100) : '');
 const currency = ref<ReserveCurrency>(start.currency);
@@ -43,14 +41,17 @@ function save() {
 
 <template>
   <form class="flex flex-col gap-3 rounded-lg border border-border-subtle p-3" @submit.prevent="save">
-    <div class="flex flex-col gap-1">
-      <label :for="nameId" class="text-sm font-semibold">{{ $t('home.allowance.reserves.name') }}</label>
-      <VInput :id="nameId" v-model="name" size="sm" :placeholder="$t('home.allowance.reserves.namePlaceholder')" :show-clear-button="false" :error="nameError" />
-    </div>
+    <VInput
+      v-model="name"
+      :label="$t('home.allowance.reserves.name')"
+      :placeholder="$t('home.allowance.reserves.namePlaceholder')"
+      :show-clear-button="false"
+      :error="nameError"
+    />
     <div class="flex flex-wrap items-start gap-2">
-      <div class="flex flex-col gap-1">
-        <label :for="amountId" class="text-sm font-semibold">{{ $t('home.allowance.reserves.amount') }}</label>
-        <VInput :id="amountId" v-model="amount" size="sm" class="w-36" :show-clear-button="false" :error="amountError" />
+      <!-- VInput's own wrapper takes the full width: the width is set here. -->
+      <div class="w-36">
+        <VInput v-model="amount" :label="$t('home.allowance.reserves.amount')" :show-clear-button="false" :error="amountError" />
       </div>
       <VSelect v-model="currency" :options="currencies" :label="$t('home.allowance.reserves.currency')" class="w-24" />
     </div>

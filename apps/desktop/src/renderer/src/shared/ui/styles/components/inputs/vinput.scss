@@ -217,6 +217,17 @@
 }
 
 /* ============================================
+   TOP LABEL — the same as .v-select__label and .v-datepicker__label (tests/ui.test.ts), so fields stand level in a row
+   ============================================ */
+.v-input-top-label {
+  display: block;
+  color: var(--ui-foreground-secondary);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-sm);
+  font-weight: 500;
+}
+
+/* ============================================
    FLOATING LABEL
    ============================================ */
 .v-label {
