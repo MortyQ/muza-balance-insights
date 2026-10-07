@@ -46,7 +46,6 @@ export interface PersonRowView {
   /** null — «Whole family». */
   participantId: number | null;
   name: string;
-  initial: string;
   color: string;
   /** The family row: every person's colour. */
   dots: string[];
@@ -118,7 +117,7 @@ export interface UseSpendingViewReturn {
   prevInTitle: ComputedRef<string>;
   opsVs: ComputedRef<Pick<OpsView, 'text' | 'tone' | 'sr'>>;
   /** The member card: «46% of the family's spending» and «family — 101 830 ₴»; null — no card. */
-  memberCard: ComputedRef<{ initial: string; color: string; share: string; family: string } | null>;
+  memberCard: ComputedRef<{ name: string; color: string; share: string; family: string } | null>;
   /** Hryvnia kopecks in the main currency (the ring and last month's total). */
   money: (kopecks: number) => string;
   onPick: (id: number | null) => void;

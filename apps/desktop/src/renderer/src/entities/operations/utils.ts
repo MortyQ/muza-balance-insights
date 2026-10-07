@@ -34,7 +34,6 @@ const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.m
 /** Names (merchants, senders) match regardless of case and spaces (as main groups them). */
 export const nameKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
 
-export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
 
 const WEEK_CHANGE = {
   same: 'entities.operations.change.week.same',
@@ -126,7 +125,6 @@ export function peopleBars(
       return {
         participantId: p.participantId,
         name: who.name,
-        initial: initial(who.name),
         color: who.color,
         amount: fmt.money(p.value),
         caption: countCaption(p.value, p.count, fmt),

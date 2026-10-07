@@ -24,7 +24,6 @@ export interface MonthsView {
 export interface PersonView {
   participantId: number;
   name: string;
-  initial: string;
   color: string;
   amount: string;
   caption: string;

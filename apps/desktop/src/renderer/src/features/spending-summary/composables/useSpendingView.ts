@@ -2,7 +2,7 @@ import { computed, type Ref } from 'vue';
 import { monthName, t } from '@/shared/lib';
 import type { SpendingPrefs, UseSpendingReturn, UseSpendingViewReturn } from '../types.ts';
 import {
-  centerChip, centerConv, comparePeriodText, familyShareText, initial, leftOutLines, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
+  centerChip, centerConv, comparePeriodText, familyShareText, leftOutLines, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
 } from '../utils.ts';
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
@@ -55,7 +55,7 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
     const s = selected.value;
     if (!member.value || !s || !v || !total.value || v.familyTotal === null) return null;
     return {
-      initial: initial(s.name),
+      name: s.name,
       color: s.color,
       share: familyShareText(total.value.net, v.familyTotal),
       family: t('home.spending.familyTotal', { amount: fmt.value.money(v.familyTotal) }),

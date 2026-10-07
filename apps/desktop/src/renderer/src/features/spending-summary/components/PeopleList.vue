@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VChangeChip } from '@/shared/ui';
+import { VAvatar, VChangeChip } from '@/shared/ui';
 import type { PersonRowView } from '../types.ts';
 
 const { rows } = defineProps<{ rows: ReadonlyArray<PersonRowView> }>();
@@ -21,7 +21,7 @@ const emit = defineEmits<{ pick: [participantId: number | null] }>();
       <span v-if="r.participantId === null" class="flex w-7 shrink-0 ps-1" aria-hidden="true">
         <span v-for="(d, i) in r.dots" :key="i" class="-ms-1 size-3 rounded-full bg-(--d) ring-2 ring-surface" :style="{ '--d': d }" />
       </span>
-      <span v-else class="grid size-7 shrink-0 place-items-center rounded-full bg-(--c) text-base font-extrabold text-white" aria-hidden="true">{{ r.initial }}</span>
+      <VAvatar v-else :name="r.name" :color="r.color" size="lg" :custom-size="28" aria-hidden="true" />
       <span class="flex min-w-0 grow flex-col">
         <span class="truncate font-semibold" :title="r.name">{{ r.name }}</span>
         <span class="truncate text-xs text-foreground-muted">{{ r.caption }}</span>

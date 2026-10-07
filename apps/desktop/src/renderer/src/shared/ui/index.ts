@@ -1,5 +1,6 @@
 // Barrel for the muzakit component copies (see ui/README.md). Import from here, not from the files.
 export { default as VButton } from "./components/base/VButton.vue";
+export { default as VAvatar } from "./components/base/VAvatar.vue";
 export { default as VButtonGroup } from "./components/base/VButtonGroup.vue";
 export { default as VIcon } from "./components/base/VIcon.vue";
 export { default as VLoader } from "./components/feedback/VLoader.vue";

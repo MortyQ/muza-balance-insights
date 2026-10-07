@@ -154,7 +154,6 @@ export function totalFor(view: Readonly<SpendingOverview>, pick: number | null):
 }
 
 const fade = (color: string) => `color-mix(in oklch, ${color} 22%, var(--surface))`;
-export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
 const personOf = (people: ReadonlyArray<BlockPerson>, id: number): BlockPerson => people.find((p) => p.id === id) ?? { id, name: '?', color: GREY };
 /** % of `max`, one decimal. */
 const pctOf = (value: number, max: number) => Math.round((value / max) * 1000) / 10;
@@ -291,7 +290,6 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
   const family: PersonRowView = {
     participantId: null,
     name: t('home.spending.whole'),
-    initial: '',
     color: '',
     dots: people.map((p) => p.color),
     caption: t('home.spending.together', { ops: t('home.spending.opsShort', { n: view.total.purchases }) }),
@@ -306,7 +304,6 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
       return {
         participantId: p.participantId,
         name: who.name,
-        initial: initial(who.name),
         color: who.color,
         dots: [],
         caption: t('home.spending.personShare', { pct: percentOf(p.net, view.total.net), ops: t('home.spending.opsShort', { n: p.purchases }) }),

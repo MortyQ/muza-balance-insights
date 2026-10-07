@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
 import { categoryLink } from '@/shared/config';
-import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import { VAvatar, VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import CategoryRing from './components/CategoryRing.vue';
 import CategoryRow from './components/CategoryRow.vue';
 import PeopleList from './components/PeopleList.vue';
@@ -61,9 +61,7 @@ const {
           </div>
           <PeopleList v-if="family" :rows="whoRows" @pick="onPick" />
           <div v-if="memberCard" class="flex items-center gap-2.5 rounded-xl border border-border-subtle bg-surface-raised p-2.5">
-            <span class="grid size-7 shrink-0 place-items-center rounded-full bg-(--c) text-base font-extrabold text-white" :style="{ '--c': memberCard.color }" aria-hidden="true">
-              {{ memberCard.initial }}
-            </span>
+            <VAvatar :name="memberCard.name" :color="memberCard.color" size="lg" :custom-size="28" aria-hidden="true" />
             <span class="flex min-w-0 flex-col gap-0.5">
               <span class="font-semibold">{{ memberCard.share }}</span>
               <span class="whitespace-nowrap text-xs text-foreground-muted">{{ memberCard.family }}</span>
