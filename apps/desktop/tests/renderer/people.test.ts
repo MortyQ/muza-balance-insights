@@ -26,7 +26,7 @@ const { connectionsCount } = await import('@/features/settings/people/utils.ts')
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', accounts: 2, enabledAccounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
+  id, provider: 'monobank', method: 'token', bank: 'Monobank', accounts: 2, enabledAccounts: 2, coveredFrom: null, coveredTo: null, lastSyncAt: null, token: token(), ...o,
 });
 const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, labelPending: false, color: null, connections });
 

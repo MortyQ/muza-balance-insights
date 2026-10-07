@@ -35,7 +35,7 @@ const emit = defineEmits<{
 
 const id = useId();
 const bank = computed(() => bankOf(connection.provider));
-const badge = computed(() => tokenBadge(connection.token));
+const badge = computed(() => (connection.token ? tokenBadge(connection.token) : null));
 const panel = ref<'token' | 'accounts' | null>(null);
 const tokenInput = ref('');
 const remember = ref(true);
@@ -76,6 +76,7 @@ function save() {
           </div>
         </div>
         <span
+          v-if="badge && connection.token"
           :title="tokenLine(connection.token)"
           class="inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap before:size-1.5 before:rounded-full before:bg-current"
           :class="
@@ -96,6 +97,7 @@ function save() {
           @click="toggleAccounts"
         />
         <VButton
+          v-if="connection.token"
           :variant="connection.token.present ? 'neutral' : 'primary'"
           :text="panel === 'token' ? $t('integrations.row.cancel') : connection.token.present ? $t('integrations.row.reenterToken') : $t('integrations.row.enterToken')"
           :aria-expanded="panel === 'token'"
