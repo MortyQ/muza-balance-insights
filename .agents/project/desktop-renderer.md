@@ -147,7 +147,11 @@
   stopped ones in a second list. Marks: a row's `VPopover` menu (`lucide:ellipsis`) — «Mandatory payment» / «Not
   mandatory» and «Not a regular payment»; `useRecurring.setMark` saves (IPC `setRecurringMark`) and reloads, a failure
   shows `recurring.markFailed`. A mandatory row carries a «mandatory» pill, the summary «of which mandatory …»; hidden
-  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». Tested in `tests/renderer/recurring.test.ts`.
+  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». On home, under «Spending»,
+  `RecurringTeaserFeature`: one card-wide link to the screen — the monthly total, the count and the mandatory part
+  (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
+  IPC; quiet reloads on `syncStatus.version` and on returning to the kept-alive home, where marks may have changed).
+  Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

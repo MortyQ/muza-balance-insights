@@ -34,6 +34,19 @@ export interface RecurringSummaryView {
   since: string;
 }
 
+/** The regular payments line of home. */
+export interface RecurringTeaserView {
+  /** The monthly total, in the screen's currency. */
+  total: string;
+  /** «3 regular payments», with «of which mandatory …» when some are marked. */
+  caption: string;
+}
+
+export interface UseRecurringTeaserReturn {
+  /** null — another month picked, no active payments, or not loaded. */
+  view: ComputedRef<RecurringTeaserView | null>;
+}
+
 export interface UseRecurringReturn {
   state: Readonly<Ref<Loadable<RecurringOverview>>>;
   view: ComputedRef<RecurringOverview | null>;

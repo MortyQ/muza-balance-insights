@@ -32,7 +32,7 @@ English interface.
   when the next payment is due, with the monthly total on top. Payments that stopped in the last few months are listed
   apart. Mark a payment as mandatory from its «…» menu, and the total shows how much of it is mandatory; if something
   is not a regular payment at all, choose «Not a regular payment» to hide it — hidden ones can be restored at the
-  bottom of the screen.
+  bottom of the screen. The home screen shows their monthly total under «Spending»; a click on it opens the section.
 - **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
   back to the top.
 

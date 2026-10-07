@@ -3,10 +3,12 @@
 // fixtures only. Typechecked with the renderer (tsconfig.web.json).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import { KeepAlive, defineComponent, h, ref } from 'vue';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { createPinia, setActivePinia } from 'pinia';
 import type { PeopleView, RecurringMarkQuery, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { rowView, summaryView } from '@/features/recurring-payments/utils.ts';
+import { rowView, summaryView, teaserView } from '@/features/recurring-payments/utils.ts';
 import { dayMonthName as dayText, formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
@@ -44,6 +46,11 @@ describe('regular payments helpers', () => {
       total: uah(59_900), approx: '', mandatory: '', count: '2 регулярных платежа', since: 'Найдено в выписке с 1 сентября 2025',
     });
     expect(summaryView({ ...VIEW, mandatory: 40_000 }, FMT, 2026).mandatory).toBe(`из них обязательные ${uah(40_000)}`);
+  });
+
+  it('home line: the monthly total, how many, the mandatory part when marked', () => {
+    expect(teaserView(VIEW, FMT)).toEqual({ total: uah(59_900), caption: '2 регулярных платежа' });
+    expect(teaserView({ ...VIEW, mandatory: 40_000 }, FMT).caption).toBe(`2 регулярных платежа · из них обязательные ${uah(40_000)}`);
   });
 
   it('a row: category icon and name, the person only when given, the operation currency, next or last', () => {
@@ -168,5 +175,73 @@ describe('regular payments screen mounted', () => {
     expect(w.text()).toContain('Не удалось сохранить отметку.');
     expect(getRecurringOverview).toHaveBeenCalledTimes(1);
     w.unmount();
+  });
+});
+
+describe('regular payments line on home', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    getRecurringOverview.mockClear();
+    current = VIEW;
+    localStorage.clear();
+  });
+
+  async function mountLine() {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { RecurringTeaserFeature } = await import('@/features/recurring-payments');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { render: () => null } },
+        { path: '/recurring', name: 'recurring', component: { render: () => null } },
+      ],
+    });
+    await router.push('/');
+    // Home is kept alive: the line sits in a KeepAlive that can be switched away and back.
+    const on = ref(true);
+    const other = defineComponent({ render: () => null });
+    const host = defineComponent({ render: () => h(KeepAlive, null, [on.value ? h(RecurringTeaserFeature) : h(other)]) });
+    const w = mount(host, { global: { plugins: [i18n, router] } });
+    await flushPromises();
+    return { w, on, router };
+  }
+
+  it('the total and how many, a link to the regular payments screen; asks for the picked person', async () => {
+    const { w, router } = await mountLine();
+    expect(getRecurringOverview.mock.calls[0]?.[0]).toEqual({});
+    for (const s of ['Регулярные платежи', uah(59_900), 'в месяц', '2 регулярных платежа']) expect(w.text()).toContain(s);
+    await w.find('a').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('recurring');
+
+    const { useParticipantStore } = await import('@/entities/participant');
+    useParticipantStore().view = PEOPLE_VIEW;
+    useParticipantStore().select(2);
+    await flushPromises();
+    expect(getRecurringOverview.mock.calls.at(-1)?.[0]).toEqual({ participantId: 2 });
+  });
+
+  it('back on home: reloads quietly, a new mark shows', async () => {
+    const { w, on } = await mountLine();
+    on.value = false;
+    await flushPromises();
+    current = { ...VIEW, mandatory: 40_000 };
+    on.value = true;
+    await flushPromises();
+    expect(getRecurringOverview).toHaveBeenCalledTimes(2);
+    expect(w.text()).toContain(`из них обязательные ${uah(40_000)}`);
+  });
+
+  it('no active payments, or another month picked: no line', async () => {
+    current = { ...VIEW, active: [], monthly: 0 };
+    const none = await mountLine();
+    expect(none.w.find('section').exists()).toBe(false);
+
+    current = VIEW;
+    setActivePinia(createPinia());
+    const { useMonthStore } = await import('@/entities/period');
+    useMonthStore().set('2020-01', null);
+    const past = await mountLine();
+    expect(past.w.find('section').exists()).toBe(false);
   });
 });
