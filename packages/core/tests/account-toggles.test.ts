@@ -35,7 +35,7 @@ describe('migration v11', () => {
     await db.execute(`INSERT INTO connections (id, participant_id, provider, created_at) VALUES (1, 1, 'monobank', 0)`);
     await db.execute(`INSERT INTO accounts (id, connection_id, kind, currency_code, balance, updated_at) VALUES ('a', 1, 'card', 980, 0, 0)`);
 
-    expect(await migrate(db, 0)).toEqual([11, 12, 13]);
+    expect(await migrate(db, 0)).toEqual([11, 12, 13, 14]);
     expect(await rows('SELECT id, sync_choice FROM accounts')).toEqual([{ id: 'a', sync_choice: null }]);
     await expect(db.execute(`UPDATE accounts SET sync_choice = 2 WHERE id = 'a'`)).rejects.toThrow(/CHECK/i);
   });
