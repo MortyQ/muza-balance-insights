@@ -40,7 +40,9 @@
   'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
-  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
+  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `MonthOverview.reserved` — the active
+  reserves («Available per day») in hryvnia at today's rate, the current month only (null — none or another month),
+  set against `total`; the balance itself stays as the bank has it. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
   of the total and of income over up to 6 months before that the data covers from their first day, same person and
   scope, today's rates; `running` while the shown month runs, and then no income (its day decides it); null with fewer
   than 3 such months. Whole months even for a running one: a few days of lumpy spending make «up to the same day» noise. `getNowOverview` takes only `participantId` (main

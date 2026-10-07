@@ -163,6 +163,24 @@ describe('DataService.monthOverview', () => {
     expect(v.people[0]!.total).toEqual(v.total);
   });
 
+  it('reserves: set against today\'s balance only — the active ones with a rate; none, or another month, null', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await synced('uah');
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBeNull();
+
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 500, until: null }); // $5.00 at 40.00
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 10_000, until: '2026-03-15' }); // today: counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' }); // over
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.reserved).toBe(20_000 + 10_000);
+    expect(v.total.ownFunds).toBe(100_000); // the balance itself stays as the bank has it
+    expect((await svc.monthOverview({ month: '2026-03', participantId: v.people[0]!.participantId })).reserved).toBe(30_000);
+    expect((await svc.monthOverview({ month: '2026-02' })).reserved).toBeNull();
+
+    rates = null;
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(10_000);
+  });
+
   it('a past month: balanceAt is its last day, the balance comes from the last operation before its end', async () => {
     await account('uah', 'black', 980, 90_000);
     await synced('uah');

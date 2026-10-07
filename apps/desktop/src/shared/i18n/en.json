@@ -411,6 +411,7 @@
     "balances": {
       "accountsCount": "{n} account | {n} accounts | {n} accounts",
       "accountsOf": "Accounts · {name}",
+      "actual": "Actually {amount} · reserved {reserved}",
       "allAccounts": "All accounts",
       "back": "Back",
       "captionOn": "{label} · on {day} {month}{year}",
@@ -421,6 +422,7 @@
       "expandHint": "Click a card to expand it",
       "familyCards": "Family cards",
       "familySubtitle": "the total and each person",
+      "free": "Free",
       "fxNoRate": "without {amount} — no rate",
       "fxRate": "incl. {amount} at the rate {rate}",
       "inMonth": "in {month}{year}",
@@ -438,6 +440,7 @@
       "people": "People",
       "peopleCount": "{n} person | {n} people | {n} people",
       "readFailed": "Could not read the balances.",
+      "reserved": "Reserved",
       "savedIn": "Into jars",
       "savedOut": "Out of jars",
       "spending": "Out",

@@ -208,7 +208,11 @@ export class DataService {
     const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
     // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
     const coverage = { from: coverageFrom, to: coverageTo < coverageFrom ? coverageFrom : coverageTo };
-    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total };
+    // Only today's balance has reserves set against it: the sum of the active ones with a rate; null — none.
+    const reserved = current
+      ? (await this.reservesOn(db, localDate(now * 1000, tz), rates)).reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0)
+      : 0;
+    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total, reserved: reserved > 0 ? reserved : null };
     if (q.participantId === undefined) {
       const people: MonthOverview['people'] = [];
       for (const p of await listParticipants(db)) {
@@ -583,10 +587,14 @@ export class DataService {
     });
     const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
     const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
-    // A reserve counts through its last day; one without a rate is listed, not taken off.
-    const reserves = (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
+    const reserves = await this.reservesOn(db, today, fx);
     const reserve = reserves.reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0);
     return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
+  }
+
+  /** Every reserve as of `today`: a reserve counts through its last day; one without a rate is listed, not taken off. */
+  private async reservesOn(db: Db, today: string, fx: Map<number, FxRate>): Promise<AllowanceOverview['reserves']> {
+    return (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
   }
 
   /** Reserves of «Available per day» (core reserves.ts). */

@@ -26,6 +26,8 @@ export interface Flow {
   note?: string;
   /** Total cards: put into jars over the month (minus taken out), in `currency`; absent — no jar to tell. */
   saved?: { amount: number; approx: boolean };
+  /** The total card of today: the reserves set against it, in `currency`; absent — none. */
+  reserved?: number;
 }
 
 /** A card of the stack / row, in row order. */

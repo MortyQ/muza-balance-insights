@@ -411,6 +411,7 @@
     "balances": {
       "accountsCount": "{n} счёт | {n} счёта | {n} счетов",
       "accountsOf": "Счета · {name}",
+      "actual": "На самом деле {amount} · в резерве {reserved}",
       "allAccounts": "Все счета",
       "back": "Назад",
       "captionOn": "{label} · на {day} {month}{year}",
@@ -421,6 +422,7 @@
       "expandHint": "Нажмите на карту, чтобы развернуть",
       "familyCards": "Карты семьи",
       "familySubtitle": "общий итог и каждый человек",
+      "free": "Свободно",
       "fxNoRate": "без {amount} — нет курса",
       "fxRate": "вкл. {amount} по курсу {rate}",
       "inMonth": "в {month}{year}",
@@ -438,6 +440,7 @@
       "people": "Люди",
       "peopleCount": "{n} человек | {n} человека | {n} человек",
       "readFailed": "Не удалось прочитать балансы.",
+      "reserved": "В резерве",
       "savedIn": "В банки",
       "savedOut": "Из банок",
       "spending": "Ушло",

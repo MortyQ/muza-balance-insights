@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Pure helpers of the balance block. balanceApi is never called here: the participant slice pulls it in, so it is stubbed.
 import { describe, expect, it, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import type { MonthOverview, PersonView, RatesView } from '@contract/api.ts';
 import { BalanceCard } from '@/entities/account';
 import { moneyFormat } from '@/entities/currency-display';
@@ -19,10 +20,12 @@ import {
   signedMoney,
   slideDelay,
   slidePosition,
+  reservedLine,
   savedLine,
   slidesOf,
   spentShare,
 } from '@/features/balances/utils.ts';
+import MonthPanel from '@/features/balances/components/MonthPanel.vue';
 import { formatMoney } from '@/shared/lib';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
@@ -104,13 +107,68 @@ describe('balances utils', () => {
 
   it('slidesOf: total cards carry saved in the shown currency; account cards and a total without jars none', () => {
     const v: MonthOverview = {
-      month: '2026-03', balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
+      month: '2026-03', reserved: null, balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
       total: { ...card(1_000_000, 0, 0), saved: { amount: 500_000, approx: true } },
       people: [{ participantId: 1, label: 'Вигадана', labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
     };
     const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: EUR_FMT });
     expect(family?.flow.saved).toEqual({ amount: EUR_FMT.convert(500_000), approx: true });
     expect(person?.flow.saved).toBeUndefined();
+  });
+
+  it('slidesOf: reserves against today\'s total — the free amount big, the real balance and the reserve under it; other cards untouched', () => {
+    const v: MonthOverview = {
+      month: '2026-03', reserved: 400_000, balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
+      total: card(1_000_000, 0, 0),
+      people: [{ participantId: 1, label: 'Вигадана', labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
+    };
+    const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
+    expect(family).toMatchObject({
+      caption: balanceCaption('now', 2026, 'Свободно'),
+      amount: formatMoney(600_000, 980, { minorUnits: true }),
+      actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(400_000, 980)}`,
+    });
+    expect(family?.flow.reserved).toBe(400_000);
+    // A person's card in the family view: the family's reserves are not set against each person.
+    expect(person).toMatchObject({ caption: balanceCaption('now', 2026), amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
+    expect(person?.flow.reserved).toBeUndefined();
+
+    // One person picked: their total takes the reserves, their accounts keep their own balances.
+    const mine: MonthOverview = { ...v, people: [], accounts: [
+      { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 },
+    ] };
+    const [total, account] = slidesOf(mine, { people: [], selectedId: 1, currentYear: 2026, fmt: EUR_FMT });
+    expect(total?.amount).toBe(formatMoney(EUR_FMT.convert(600_000), 978, { minorUnits: true }));
+    expect(total?.flow.reserved).toBe(EUR_FMT.convert(400_000));
+    expect(account).toMatchObject({ amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
+
+    expect(slidesOf({ ...v, reserved: null }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[0]?.actual).toBe('');
+  });
+
+  it('reservedLine and the month panel: a link to the planning screen; none without a reserve', async () => {
+    const flow = { currency: 980, income: 0, spending: 0, color: 'red' };
+    expect(reservedLine(flow)).toBeNull();
+    expect(reservedLine({ ...flow, reserved: 400_000 })).toEqual({ label: 'В резерве', amount: formatMoney(400_000, 980, { minorUnits: true }) });
+
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: { render: () => null } },
+        { path: '/planning', name: 'planning', component: { render: () => null } },
+        { path: '/income', name: 'income', component: { render: () => null } },
+      ],
+    });
+    await router.push('/');
+    const panel = (f: typeof flow & { reserved?: number }) =>
+      mount(MonthPanel, { props: { title: 'Март', note: '', flow: f, legend: [], stubShown: false }, global: { plugins: [i18n, router] } });
+    expect(panel(flow).find('a[href="/planning"]').exists()).toBe(false);
+    const w = panel({ ...flow, reserved: 400_000 });
+    const link = w.find('a[href="/planning"]');
+    expect(link.text()).toContain('В резерве');
+    await link.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('planning');
   });
 
   it('spentShare: spending as a share of income; none without income', () => {
@@ -137,6 +195,7 @@ describe('balances utils', () => {
     const usd = { currency: 840, income: 316_200, spending: 0, rate: 44.355 };
     const fam: MonthOverview = {
       month: '2026-09',
+      reserved: null,
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] },
@@ -196,6 +255,7 @@ describe('balances utils', () => {
     ];
     const fam: MonthOverview = {
       month: '2026-09',
+      reserved: null,
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(10_000, 5_000, 4_000, 0, 14),
@@ -252,6 +312,7 @@ describe('balances utils', () => {
     const total = { ...card(1_000_000, 500_000, 200_000, 0, 2), others: [{ currency: 840, ownFunds: 10_000, rate: 40 }] };
     const person: MonthOverview = {
       month: '2026-09',
+      reserved: null,
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total,
@@ -294,7 +355,7 @@ describe('balances utils', () => {
         { currency: 826, ownFunds: 10_000, rate: null },
       ],
     };
-    const v: MonthOverview = { month: '2026-09', balanceAt: 'now', coverage: { from: '2026-09-01', to: '2026-09-27' }, total, people: [], accounts: [], rates: RATES };
+    const v: MonthOverview = { month: '2026-09', reserved: null, balanceAt: 'now', coverage: { from: '2026-09-01', to: '2026-09-27' }, total, people: [], accounts: [], rates: RATES };
     const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT });
     expect(s[0]?.others).toBe(
       `вкл. ${formatMoney(10_000, 840, { minorUnits: true })} по курсу 40,00 · без ${formatMoney(10_000, 826, { minorUnits: true })} — нет курса`,
@@ -306,6 +367,7 @@ describe('balances utils', () => {
     const fmt = moneyFormat(RATES, { main: 980, also: { uah: false, usd: true, eur: true } });
     const v: MonthOverview = {
       month: '2026-09',
+      reserved: null,
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(1_000_000, 0, 0),
@@ -321,7 +383,7 @@ describe('balances utils', () => {
   });
 
   it('BalanceCard: the «≈» line under the amount, none when empty', () => {
-    const props = { title: 'T', caption: 'C', amount: '100 ₴', others: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
+    const props = { title: 'T', caption: 'C', amount: '100 ₴', others: '', actual: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
     const w = mount(BalanceCard, { props: { ...props, approx: '≈ 2,50 $ · 2,00 €' } });
     const spans = w.findAll('span').map((x) => x.text());
     expect(spans.indexOf('≈ 2,50 $ · 2,00 €')).toBe(spans.indexOf('100 ₴') + 1);

@@ -86,6 +86,12 @@ export function savedLine(flow: Flow): { label: string; amount: string } | null 
   };
 }
 
+/** «Reserved 1 500 € ›» of the month panel, a link to the planning screen; null — no reserve against this card. */
+export function reservedLine(flow: Flow): { label: string; amount: string } | null {
+  if (flow.reserved === undefined) return null;
+  return { label: t('home.balances.reserved'), amount: formatMoney(flow.reserved, flow.currency, { minorUnits: true }) };
+}
+
 /** Spending as a whole percent of income; null without income. */
 export function spentShare(income: number, spending: number): number | null {
   return income > 0 ? Math.round((spending / income) * 100) : null;
@@ -143,18 +149,21 @@ export function slidesOf(
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
   const { fmt } = ctx;
-  const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string): Slide => {
+  // `reserved`: today's reserves set against this card — the big figure is what is free, the real balance under it.
+  const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string, reserved: number | null = null): Slide => {
     const approxIncome = total.fx.some((p) => p.rate !== null && p.income !== 0);
     const approxSpending = total.fx.some((p) => p.rate !== null && p.spending !== 0);
+    const shown = total.ownFunds - (reserved ?? 0);
     return {
       key,
       title,
-      caption,
+      caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
       accents,
       dim: false,
-      amount: formatMoney(fmt.convert(total.ownFunds), fmt.currency, { minorUnits: true }),
-      approx: fmt.approxInline(total.ownFunds),
+      amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
+      approx: fmt.approxInline(shown),
       others: othersNote(total),
+      actual: reserved === null ? '' : t('home.balances.actual', { amount: fmt.money(total.ownFunds), reserved: fmt.money(reserved) }),
       bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
       net: total.income - total.spending,
       netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
@@ -167,12 +176,13 @@ export function slidesOf(
         approxSpending,
         note: fxNote(total.fx),
         ...(total.saved ? { saved: { amount: fmt.convert(total.saved.amount), approx: total.saved.approx } } : {}),
+        ...(reserved !== null ? { reserved: fmt.convert(reserved) } : {}),
       },
     };
   };
   if (ctx.selectedId === null) {
     const accents = v.people.map((p) => colorVar(p.color));
-    const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`);
+    const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`, v.reserved);
     family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: fmt.convert(p.total.income), spending: fmt.convert(p.total.spending) }));
     return [family, ...v.people.map((p) => totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts)))];
   }
@@ -181,7 +191,7 @@ export function slidesOf(
   const kindOf = (a: MonthOverview['accounts'][number]) =>
     t(a.kind === 'jar' ? 'home.balances.kind.jar' : a.creditLimit > 0 ? 'home.balances.kind.credit' : a.currency !== UAH ? 'home.balances.kind.fx' : 'home.balances.kind.card');
   return [
-    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts)),
+    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts), v.reserved),
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,
@@ -192,6 +202,7 @@ export function slidesOf(
         amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
         approx: '',
         others: '',
+        actual: '',
         bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
         net: a.ownFunds === null ? null : a.income - a.spending,
         netText: `${netText(a.income - a.spending, a.currency)} ${month}`,

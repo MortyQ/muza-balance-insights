@@ -698,6 +698,11 @@ export type MonthOverview = {
   /** Dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
   coverage: { from: string; to: string };
   total: CardTotal;
+  /**
+   * The current month only: the active reserves («Available per day»), hryvnia kopecks at today's rate, set against
+   * `total` (the family's, or the person's asked for); null — none, or another month.
+   */
+  reserved: number | null;
   /** The whole family only: each person in their own view of transfers. */
   people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
   /** One person only: their accounts. */

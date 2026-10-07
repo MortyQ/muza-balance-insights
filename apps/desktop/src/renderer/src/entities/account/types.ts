@@ -6,6 +6,8 @@ export interface BalanceCardProps {
   approx: string;
   /** Other currencies, one line under the amount; '' — none. */
   others: string;
+  /** With reserves set against it: «Actually 3 000 € · reserved 1 500 €» under a free amount; '' — none. */
+  actual: string;
   bottom: string;
   /** Net of the month: sign decides the arrow; null — no arrow and no text. */
   net: number | null;

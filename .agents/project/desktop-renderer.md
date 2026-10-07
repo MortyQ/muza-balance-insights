@@ -16,6 +16,10 @@
   The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
   from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
   with data at both ends.
+  Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, or the picked
+  person's; never a person's card in the family view or an account card — shows «Free» (own funds − reserves) big and
+  `actual` («Actually … · reserved …», `BalanceCard`) under it; the month panel's «Reserved» line (`reservedLine`,
+  `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
   `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
   `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
   (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).
