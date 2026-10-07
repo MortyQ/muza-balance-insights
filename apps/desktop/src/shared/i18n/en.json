@@ -460,6 +460,18 @@
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
     },
     "now": {
+      "cats": {
+        "count": "{n} category | {n} categories | {n} categories",
+        "label": "Spending by category",
+        "new": "new",
+        "noneToday": "No spending yet today",
+        "period": "Period",
+        "same": "same",
+        "today": "Today",
+        "toggle": "By category",
+        "vsWeek": "Compared with the same days last week, {days}",
+        "week": "Week"
+      },
       "date": "{weekday}, {month} {day}",
       "label": "Now",
       "noneWeek": "No spending yet this week",

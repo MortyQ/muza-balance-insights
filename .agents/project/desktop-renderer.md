@@ -125,6 +125,11 @@
   Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
   `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
+  Under the cells, «By category» opens a panel (`VCollapse`, unmounted while closed) with a «Today | Week» switch and
+  every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
+  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: %, «same», «new»).
+  Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
+  default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

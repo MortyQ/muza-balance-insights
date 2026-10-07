@@ -1,10 +1,10 @@
-import type { NowOverview } from '@contract/api.ts';
+import type { NowCategory, NowOverview, SpendingAmounts } from '@contract/api.ts';
 import { categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { change, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
-import type { NowStripView, TopCell, WeekBar } from './types.ts';
+import type { CategoryBreakdown, CategoryRow, NowPrefs, NowStripView, TopCell, WeekBar } from './types.ts';
 
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 // The contract's weekday is 1–7 by construction (main's isoWeekday).
@@ -46,6 +46,52 @@ export function nowChip(now: number, base: number | null, against: 'usual' | 'we
   return { text: `${dir === 'up' ? '+' : '−'}${c.pct}%`, tone: dir, arrow: dir, sr: t(SR[against][dir]) };
 }
 
+/** A category against the same days last week: «+18%», «same», «new»; null — no comparison. */
+export function categoryChip(net: number, prev: number | null): ChangeChipModel | null {
+  if (prev === null) return null;
+  const c = change(net, prev);
+  if (!c) return null;
+  if (c.kind === 'new' || c.kind === 'same') {
+    return { text: t(c.kind === 'new' ? 'home.now.cats.new' : 'home.now.cats.same'), tone: 'neutral', arrow: null, sr: '' };
+  }
+  return nowChip(net, prev, 'week');
+}
+
+/** One period's list; the share of a category stops at 100% (refunds elsewhere can pull the total below it). */
+export function breakdown(
+  cats: ReadonlyArray<NowCategory & { prev?: number | null }>,
+  total: SpendingAmounts,
+  fmt: MoneyFormat,
+  note = '',
+): CategoryBreakdown {
+  const rows = cats.map(
+    (c): CategoryRow => ({
+      key: c.category,
+      name: categoryName(c),
+      color: categoryColor(c.rank),
+      amount: fmt.money(c.net),
+      ops: t('home.now.opsShort', { n: c.purchases }),
+      share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
+      chip: categoryChip(c.net, c.prev ?? null),
+    }),
+  );
+  if (rows.length === 0) return { rows, summary: '', note: '' };
+  const summary = [t('home.now.cats.count', rows.length), fmt.money(total.net), t('home.now.ops', total.purchases)].join(' · ');
+  return { rows, summary, note };
+}
+
+/** Stored choices, each field forgiven on its own: closed, the week. */
+export function parsePrefs(raw: string | null): NowPrefs {
+  let v: unknown = null;
+  try {
+    v = raw === null ? null : JSON.parse(raw);
+  } catch {
+    // Damaged: the defaults.
+  }
+  const o = typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
+  return { open: o['open'] === true, period: o['period'] === 'today' ? 'today' : 'week' };
+}
+
 function topCell(top: NowOverview['week']['top'], weekNet: number, fmt: MoneyFormat): TopCell | null {
   if (!top) return null;
   // Refunds in another category can pull the week's net below the top category's own: the share stops at 100%.
@@ -84,5 +130,9 @@ export function nowView(o: Readonly<NowOverview>, fmt: MoneyFormat): NowStripVie
       pending: o.week.pendingHolds,
     },
     top: topCell(o.week.top, o.week.total.net, fmt),
+    categories: {
+      today: breakdown(o.todayCategories, o.today, fmt),
+      week: breakdown(o.week.categories, o.week.total, fmt, o.week.prev !== null ? t('home.now.cats.vsWeek', { days }) : ''),
+    },
   };
 }

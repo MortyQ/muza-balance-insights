@@ -41,6 +41,7 @@ import type {
   FxPart,
   MonthOverview,
   MonthOverviewQuery,
+  NowCategory,
   NowOverview,
   NowOverviewQuery,
   OverviewAccount,
@@ -599,6 +600,7 @@ export class DataService {
     // foldByCategory folds by the group key — here the day of the system time zone.
     const byDay = foldByCategory(daily, rates).byCategory;
     const weekByCategory = foldByCategory(week, rates).byCategory;
+    const todayByCategory = foldByCategory(await summary({ from: today, to: today }, 'category'), rates).byCategory;
     const monthRanked = rankedCategories(foldByCategory(await summary(month, 'category'), rates).byCategory);
 
     // The usual day reads only the days the data covers: from its first date to the last fully synced day.
@@ -611,21 +613,28 @@ export class DataService {
     const reach = daily.period.dataUntil === null ? null : daily.period.dataUntil < today ? daily.period.dataUntil : today;
     const prevFrom = shiftDate(monday, -7);
     const prevTo = reach === null ? null : shiftDate(reach, -7);
-    const top = rankedCategories(weekByCategory)[0];
-    const rank = top ? monthRanked.findIndex(([k]) => k === top[0]) : -1;
+    const hasPrev = dataFrom !== null && dataFrom <= prevFrom && prevTo !== null && prevTo >= prevFrom;
+    const prevByCategory = hasPrev && prevTo !== null ? foldByCategory(await summary({ from: prevFrom, to: prevTo }, 'category'), rates).byCategory : null;
+    const nowCategory = ([category, a]: [string, SpendingAmounts]): NowCategory => {
+      const rank = monthRanked.findIndex(([k]) => k === category);
+      return { category, categoryId: CATEGORY_ID.get(category) ?? null, ...a, rank: rank >= 0 ? rank : null };
+    };
+    const weekCategories = rankedCategories(weekByCategory).map(nowCategory);
 
     return {
       date: today,
       weekday,
       dataUntil: daily.period.dataUntil,
       today: byDay.get(today) ?? { net: 0, purchases: 0 },
+      todayCategories: rankedCategories(todayByCategory).map(nowCategory),
       usualDay: usualFrom !== null && usualTo !== null ? usualDay(byDay, usualFrom, usualTo) : null,
       week: {
         from: monday,
         days: weekDays(byDay, monday, today),
         total: sumAmounts(weekByCategory.values()),
-        prev: dataFrom !== null && dataFrom <= prevFrom && prevTo !== null && prevTo >= prevFrom ? sumDays(byDay, prevFrom, prevTo).net : null,
-        top: top ? { category: top[0], categoryId: CATEGORY_ID.get(top[0]) ?? null, ...top[1], rank: rank >= 0 ? rank : null } : null,
+        prev: hasPrev && prevTo !== null ? sumDays(byDay, prevFrom, prevTo).net : null,
+        top: weekCategories[0] ?? null,
+        categories: weekCategories.map((c) => ({ ...c, prev: prevByCategory ? (prevByCategory.get(c.category)?.net ?? 0) : null })),
         pendingHolds: week.period.pendingHolds,
       },
       rates: todayRates,

@@ -580,6 +580,10 @@ describe('DataService.nowOverview', () => {
       weekday: 2,
       dataUntil: '2026-03-10',
       today: { net: 15_000, purchases: 2 },
+      todayCategories: [
+        { category: 'продукты', categoryId: 'groceries', net: 12_000, purchases: 1, rank: 1 },
+        { category: 'кафе и рестораны', categoryId: 'cafes', net: 3_000, purchases: 1, rank: 2 },
+      ],
       // 26 days of 1 000 and 6 000, 8 000, 101 000, 25 000 → the middle two are 1 000
       usualDay: 1_000,
       week: {
@@ -589,6 +593,12 @@ describe('DataService.nowOverview', () => {
         prev: 14_000,
         // March: travel 104 000, groceries 41 000, cafes 15 000 → groceries is second
         top: { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1 },
+        // Last Monday and Tuesday: groceries 2 × 1 000, cafes 5 000 + 7 000, no travel (last Wednesday is outside)
+        categories: [
+          { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1, prev: 2_000 },
+          { category: 'путешествия', categoryId: 'travel', net: 4_000, purchases: 1, rank: 0, prev: 0 },
+          { category: 'кафе и рестораны', categoryId: 'cafes', net: 3_000, purchases: 1, rank: 2, prev: 12_000 },
+        ],
         pendingHolds: 0,
       },
       rates: RATES,
@@ -624,6 +634,7 @@ describe('DataService.nowOverview', () => {
     expect(v.dataUntil).toBe('2026-03-10');
     expect(v.week.from).toBe('2026-03-09');
     expect(v.week.prev).toBe(3_000); // last Monday + last Tuesday only, not last Wednesday
+    expect(v.week.categories).toEqual([]);
   });
 
   it('data that starts late: no usual day (under 7 covered days), no last week', async () => {
@@ -633,6 +644,7 @@ describe('DataService.nowOverview', () => {
     const v = await at().nowOverview({});
     expect(v.usualDay).toBeNull();
     expect(v.week.prev).toBeNull();
+    expect(v.week.categories).toEqual([{ category: 'продукты', categoryId: 'groceries', net: 3_000, purchases: 1, rank: 0, prev: null }]);
     expect(v.today).toEqual({ net: 3_000, purchases: 1 });
   });
 
@@ -649,6 +661,7 @@ describe('DataService.nowOverview', () => {
     expect(mine.today).toEqual({ net: 9_000, purchases: 1 });
     expect(mine.usualDay).toBe(0);
     expect(mine.week.top).toEqual({ category: 'продукты', categoryId: 'groceries', net: 9_000, purchases: 1, rank: 0 });
+    expect(mine.todayCategories).toEqual([{ category: 'продукты', categoryId: 'groceries', net: 9_000, purchases: 1, rank: 0 }]);
   });
 
   it('an empty week: no top category, zeros', async () => {
@@ -656,6 +669,8 @@ describe('DataService.nowOverview', () => {
     await synced('uah');
     const v = await at().nowOverview({});
     expect(v.week.top).toBeNull();
+    expect(v.week.categories).toEqual([]);
+    expect(v.todayCategories).toEqual([]);
     expect(v.week.total).toEqual({ net: 0, purchases: 0 });
     expect(v.today).toEqual({ net: 0, purchases: 0 });
   });

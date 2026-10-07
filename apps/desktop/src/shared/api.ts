@@ -462,6 +462,9 @@ export type AnalyticsOverview = {
 
 export type NowOverviewQuery = { participantId?: number };
 
+/** A spending category of the «Now» strip; `rank` — its place in this month's categories (the spending block's colour), null — not among them. */
+export type NowCategory = SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null };
+
 /**
  * The «Now» strip: today and this calendar week (from Monday), personal scope, hryvnia kopecks folded by today's
  * rates — the same aggregate as the spending block. Main's clock in the system time zone decides «today».
@@ -474,6 +477,8 @@ export type NowOverview = {
   /** Date the data reaches in the system time zone (core periodInfo); null — never imported. */
   dataUntil: string | null;
   today: SpendingAmounts;
+  /** Today's spending categories: net > 0, net desc. */
+  todayCategories: NowCategory[];
   /**
    * Median of daily net over the 30 days before today that the data covers (a day without spending counts as 0);
    * null — fewer than 7 such days.
@@ -492,7 +497,12 @@ export type NowOverview = {
      * The category with the largest net this week; `rank` — its place in this month's categories (the spending
      * block's colour), null — not among them. Null — no spending this week.
      */
-    top: (SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null }) | null;
+    top: NowCategory | null;
+    /**
+     * The week's spending categories (net > 0, net desc); `prev` — the category's net over the same days as `prev`,
+     * null when `prev` is null.
+     */
+    categories: Array<NowCategory & { prev: number | null }>;
     pendingHolds: number;
   };
   /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */

@@ -3,6 +3,14 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.9 — unreleased
+
+### Home screen
+
+- **What you spent on today and this week.** «By category» under the «Now» strip opens a list of every category you
+  spent on, for «Today» or «Week»: amount, number of operations and share of the period. For the week, each category is
+  compared with the same days of last week. The app remembers whether the list is open and which period you picked.
+
 ## 0.1.8 — 2026-10-06
 
 ### Home screen

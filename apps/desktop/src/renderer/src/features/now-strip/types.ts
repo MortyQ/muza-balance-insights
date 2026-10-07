@@ -38,11 +38,41 @@ export interface TopCell {
   caption: string;
 }
 
+export type NowPeriod = 'today' | 'week';
+
+export interface CategoryRow {
+  /** The core's category word: unique in a period. */
+  key: string;
+  name: string;
+  color: string;
+  amount: string;
+  ops: string;
+  /** % of the period's net, 0–100. */
+  share: number;
+  /** Against the same days last week (the week only); null — none. */
+  chip: ChangeChipModel | null;
+}
+
+export interface CategoryBreakdown {
+  rows: CategoryRow[];
+  /** «3 категории · 865 ₴ · 5 операций»; '' — no spending. */
+  summary: string;
+  /** `home.now.cats.vsWeek` under the week's list; '' — no comparison. */
+  note: string;
+}
+
 export interface NowStripView {
   today: TodayCell;
   week: WeekCell;
   /** null — no spending this week. */
   top: TopCell | null;
+  categories: Record<NowPeriod, CategoryBreakdown>;
+}
+
+/** The panel's choices, remembered on this computer. */
+export interface NowPrefs {
+  open: boolean;
+  period: NowPeriod;
 }
 
 export interface UseNowStripReturn {
