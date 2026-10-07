@@ -20,7 +20,7 @@ import {
   rowsFor,
   shareOf,
   totalFor,
-} from '@/features/spending-summary/utils.ts';
+} from '@/features/spending-summary/utils/index.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 

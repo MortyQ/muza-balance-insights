@@ -9,7 +9,7 @@ import { useSyncStatusStore } from '@/entities/sync-status';
 import { useAsyncData } from '@/shared/lib';
 import { useSpendingRequest } from '../api/useSpendingRequest.ts';
 import type { BlockPerson, UseSpendingReturn } from '../types.ts';
-import { periodNote } from '../utils.ts';
+import { periodNote } from '../utils/index.ts';
 
 /**
  * The spending block of one month (the system time zone's), scope and participant (or the whole family): reloads when any changes, and

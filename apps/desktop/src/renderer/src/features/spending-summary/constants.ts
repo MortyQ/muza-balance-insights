@@ -13,6 +13,12 @@ export const TOP = 7;
 /** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
 export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
 
+/** «N more categories». */
+export const REST_COLOR = 'var(--border-strong)';
+
+/** A named category ranked below the family's top 7 (shown when a person is picked): muted, apart from the rest-grey. */
+export const BELOW_TOP_COLOR = 'var(--category-other)';
+
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';
 

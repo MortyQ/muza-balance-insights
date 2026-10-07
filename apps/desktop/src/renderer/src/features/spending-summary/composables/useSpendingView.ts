@@ -3,7 +3,7 @@ import { monthName, t } from '@/shared/lib';
 import type { SpendingPrefs, UseSpendingReturn, UseSpendingViewReturn } from '../types.ts';
 import {
   centerChip, centerConv, comparePeriodText, familyShareText, leftOutLines, noCompareText, opsVs, peopleRows, prevInText, ringOf, rowsFor, totalFor,
-} from '../utils.ts';
+} from '../utils/index.ts';
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
 export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {

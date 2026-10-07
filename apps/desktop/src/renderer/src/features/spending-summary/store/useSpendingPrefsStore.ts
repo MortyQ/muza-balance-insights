@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { PREFS_KEY } from '../constants.ts';
 import type { SpendingPrefs } from '../types.ts';
-import { parsePrefs } from '../utils.ts';
+import { parsePrefs } from '../utils/index.ts';
 
 function read(): SpendingPrefs {
   try {
