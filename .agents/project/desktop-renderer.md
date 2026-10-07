@@ -46,13 +46,18 @@
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
   `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
   `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
-  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils.ts` builds rows for the
+  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils/` (by subject: `rows`, `people`, `chips`, `ring`, `totals`, `texts`, `prefs`, shared `month`; one `index.ts`) builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
   family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
   3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
   the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), the centre total and every amount through `MoneyFormat` (`entities/currency-display`; no per-currency chip). `composables/useSpending.ts` — the
   request and the pick (reset on month, scope and global filter changes);
-  `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
+  `composables/useSpendingView.ts` puts together `usePick` (the block's own person pick and the people list),
+  `useCategoryRows` (`CategoriesView`: rows with their `categoryLink`, «noneBy») and `useSummaryView` (`SummaryView`:
+  ring, comparison, stats, member card). Components only show one model each: `SpendingHeader` (+ `SpendingSettings` of
+  `PrefSwitch`), `SpendingNotices`, `SpendingBody` → `summary/` (`SpendingSummary`: `CategoryRing`, `CompareNote`,
+  `SpendingStats`, `PeopleList` of `PersonRow`, `MemberCard`) and `categories/` (`CategoryList` of `CategoryRow`:
+  `OpsDiff`, `VShareBar`, `AmountCell`); a person's initial is `VAvatar` of `shared/ui`. A picked person keeps the family's bar scale: their
   segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
   of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
   currency is the home-wide `entities/currency-display` choice. The footnote says «at today's Monobank rate». Layout: `@container`, the columns stack

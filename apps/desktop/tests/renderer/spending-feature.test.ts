@@ -6,8 +6,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { PeopleView, SpendingOverview, SpendingOverviewQuery } from '@contract/api.ts';
-import CategoryRing from '@/features/spending-summary/components/CategoryRing.vue';
-import PeopleList from '@/features/spending-summary/components/PeopleList.vue';
+import CategoryRing from '@/features/spending-summary/components/summary/CategoryRing.vue';
+import PeopleList from '@/features/spending-summary/components/summary/PeopleList.vue';
 import { formatMoney } from '@/shared/lib';
 
 // reka-ui's popover positioning reaches for ResizeObserver, which happy-dom does not provide.
