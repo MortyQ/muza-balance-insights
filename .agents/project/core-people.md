@@ -9,6 +9,9 @@
     `ensureDefaultConnection`: единственное подключение провайдера, так работают mcp с токеном из `.env` и десктоп до
     поддержки нескольких). Id владельца запоминается при первом синке; токен другого владельца — `ConnectionMismatchError`
     до любой записи (сам id не печатается). Счёт другого подключения не перезаписывается (предупреждение).
+  - The way of access (migration v15, `connections.method`: `token` | `file`, `CONNECTION_METHODS`): a file
+    connection has no credential and is filled by statement uploads only; `ensureDefaultConnection` picks token
+    connections only, so a token never lands on a file connection.
   - План импорта — только счета своего подключения (`defaultAccountSelection(db, connectionId)`).
   - Слот запросов (`api_calls.connection_id`) — на подключение: лимит банка на учётные данные; `NULL` — вызовы без
     подключения (тесты). `next_request_at` в статусе — самый поздний из слотов.

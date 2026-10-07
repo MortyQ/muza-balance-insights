@@ -19,8 +19,15 @@
   - хранение access / refresh токенов (safeStorage, как `TokenVault`), срок жизни, обновление и отзыв, «Удалить все данные»
     и «Начать заново» их тоже стирают;
   - CSP и fuses не ослабляются; что меняется в `wipe.ts`, `start-over.ts`, импорте под замком.
-  Подготовка уже есть: домен `integrations` (папка на банк), `auth: 'token' | 'oauth' | 'file'` у банка в `entities/bank`.
+  Подготовка уже есть: домен `integrations` (папка на банк), `ways: ('token' | 'oauth' | 'file')[]` у банка в `entities/bank`.
   Следом — общий тип доступа вместо строки-токена (этап 5 плана `docs/superpowers/plans/2026-09-27-integrations-domain.md`).
+
+- **Statement files: not checked on a live system** (plan `docs/superpowers/plans/2026-10-07-statement-files.md`,
+  Task 9) — the reference check: a Ukrainian Monobank card statement for a period the token already covers, «Check
+  against a statement» on that card; expected `matched = rows`, nothing differing or missing. Still assumptions until
+  then: the card amount includes the fee (as in the API), the row order. Next: the FOP statement (needs its Ukrainian
+  header; the IBAN in its title line can find the account), other banks' formats (Sense, Oschadbank: CSV), the English
+  statement only with templates taken from real data.
 
 - **Шифрование базы: не проверено вживую** — шифр в бинарниках libsql win32/linux (первый прогон release на Windows),
   darwin-x64; тексты ошибок `decryptStringAsync` и что «Запретить» даёт «temporarily unavailable»; «Всегда разрешать» на
