@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
-import { createMemoryHistory, createRouter } from 'vue-router';
-import type { IncomeLineView, IncomeOverview, IncomeOverviewQuery, PeopleView } from '@contract/api.ts';
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
+import type { DetailPeriod, IncomeLineView, IncomeOverview, IncomeOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { lineRows, listTotal, monthsView, noneText, peopleView, sendersView, sourcesView, summaryView, whenView } from '@/features/income-detail/utils.ts';
+import { incomeLink, periodRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
@@ -30,7 +31,7 @@ const LINES: IncomeLineView[] = [
 ];
 
 const VIEW: IncomeOverview = {
-  month: '2026-09',
+  range: { kind: 'month', month: '2026-09' },
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-05', coveredDays: 30, pendingHolds: 1 },
   compare: { from: '2026-08-01', to: '2026-08-31', partial: false },
   summary: { total: 360_000, lines: 4, prev: { total: 300_000, lines: 2 }, median: 27_500, perDay: 12_000, activeDays: 4, largest: 'a', spending: 270_000 },
@@ -67,7 +68,7 @@ describe('income screen helpers', () => {
   });
 
   it('12 months: the picked finished month is strong; the running one is out of the average', () => {
-    const m = monthsView(VIEW, FMT);
+    const m = monthsView(VIEW, FMT)!;
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[77.8, false], [83.3, false], [100, true]]);
     expect(m.caption).toBe(`в среднем ${uah(313_333)} в месяц · Сентябрь: на ${uah(46_667)} больше среднего`);
   });
@@ -112,6 +113,60 @@ describe('income screen helpers', () => {
   });
 });
 
+// The week of 21–27 September (line a falls in it), compared with the same days of last week.
+const WEEK: IncomeOverview = {
+  ...VIEW,
+  range: { kind: 'week', from: '2026-09-21' },
+  period: { ...VIEW.period, from: '2026-09-21', to: '2026-09-27', days: 7, coveredDays: 7 },
+  compare: { from: '2026-09-14', to: '2026-09-20', partial: false },
+  summary: { ...VIEW.summary, total: 300_000, lines: 1, prev: { total: 15_000, lines: 1 }, median: 300_000, perDay: 42_857, activeDays: 1, spending: 90_000 },
+  months: [],
+  lines: LINES.slice(0, 1),
+};
+const DAY: IncomeOverview = {
+  ...WEEK,
+  range: { kind: 'day', date: '2026-09-25' },
+  period: { ...WEEK.period, from: '2026-09-25', to: '2026-09-25', days: 1, coveredDays: 1 },
+  compare: null,
+  summary: { ...WEEK.summary, prev: null, perDay: 300_000 },
+};
+
+describe('income screen of a week or a day', () => {
+  it('a week: its dates, the change against last week, «per day», no 12 months, no days of the month', () => {
+    const s = summaryView(WEEK, '', FMT);
+    expect(s.subtitle).toBe('Неделя 21 сен – 27 сен');
+    expect(s.chip?.text).toBe('на 1900% больше, чем на прошлой неделе');
+    expect(s.prev).toBe(`на прошлой неделе было ${uah(15_000)}`);
+    expect(s.stats.map((x) => [x.label, x.note])).toEqual([
+      ['Поступлений', 'на прошлой неделе — 1'],
+      ['Среднее поступление', `медиана ${uah(300_000)}`],
+      ['В день', 'дней с поступлениями: 1 из 7'],
+      ['Потрачено', '30% поступлений'],
+      ['Самое крупное', 'Vigadana Firma, 25 сен в 09:10'],
+    ]);
+    expect(monthsView(WEEK, FMT)).toBeNull();
+    expect(whenView(WEEK.lines, WEEK, '', FMT)).toMatchObject({ days: null, peak: 'Больше всего: пт · утро 6–12' });
+  });
+
+  it('a day: weekday and date, no change, no «per day», the parts of the day only; the period\'s own «no income»', () => {
+    const s = summaryView(DAY, '', FMT);
+    expect(s).toMatchObject({ subtitle: 'пт, 25 сен', chip: null, prev: '' });
+    expect(s.stats.map((x) => x.label)).not.toContain('В день');
+    expect(whenView(DAY.lines, DAY, '', FMT)).toMatchObject({ weekdays: null, days: null, peak: 'Больше всего: утро 6–12' });
+    expect(noneText({ ...DAY, lines: [] })).toBe('В этот день поступлений нет.');
+    expect(noneText({ ...WEEK, lines: [] })).toBe('За эту неделю поступлений нет.');
+  });
+
+  it('the link carries a day or a week; the page reads it back; none — the global filter\'s month', () => {
+    expect(incomeLink()).toEqual({ name: 'income', query: {} });
+    const week = incomeLink({ kind: 'week', from: '2026-09-21' });
+    expect(week.query).toEqual({ week: '2026-09-21' });
+    expect(periodRequest(week.query)).toEqual({ kind: 'week', from: '2026-09-21' });
+    expect(periodRequest(incomeLink({ kind: 'day', date: '2026-09-25' }).query)).toEqual({ kind: 'day', date: '2026-09-25' });
+    expect(periodRequest({})).toBeNull();
+  });
+});
+
 let current: IncomeOverview = VIEW;
 const getIncomeOverview = vi.fn(async (_q: IncomeOverviewQuery) => current);
 vi.mock('@/shared/api', () => ({ balanceApi: { getIncomeOverview: (...a: unknown[]) => getIncomeOverview(...(a as [IncomeOverviewQuery])) } }));
@@ -136,7 +191,7 @@ describe('income screen mounted', () => {
     localStorage.clear();
   });
 
-  async function mountScreen() {
+  async function mountScreen(period: DetailPeriod = { kind: 'month', month: '2026-09' }) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().view = PEOPLE_VIEW;
@@ -145,14 +200,14 @@ describe('income screen mounted', () => {
     const { IncomeDetailFeature } = await import('@/features/income-detail');
     const router = testRouter();
     await router.push('/');
-    const w = mount(IncomeDetailFeature, { global: { plugins: [i18n, router] } });
+    const w = mount(IncomeDetailFeature, { props: { period }, global: { plugins: [i18n, router] } });
     await flushPromises();
     return w;
   }
 
   it('asks for the month; shows every block; a sender filters the list and a chip clears it', async () => {
     const w = await mountScreen();
-    expect(getIncomeOverview.mock.calls[0]?.[0]).toEqual({ month: '2026-09' });
+    expect(getIncomeOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' } });
     for (const s of ['Баланс', 'Поступления', 'Динамика за 12 месяцев', 'Откуда', 'От кого', 'Кто получал', 'Когда', 'Операции', 'Вигадана зарплата']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
 
@@ -177,7 +232,7 @@ describe('income screen mounted', () => {
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().select(2);
     await flushPromises();
-    expect(getIncomeOverview.mock.calls.at(-1)?.[0]).toEqual({ month: '2026-09', participantId: 2 });
+    expect(getIncomeOverview.mock.calls.at(-1)?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' }, participantId: 2 });
     expect(w.text()).not.toContain('Кто получал');
   });
 
@@ -196,5 +251,39 @@ describe('income screen mounted', () => {
     await flushPromises();
     expect(router.currentRoute.value.name).toBe('income');
     expect(mount(FlowBars, { props: { flow }, global: { plugins: [i18n, router] } }).findAll('a')).toHaveLength(0);
+  });
+});
+
+describe('the income page', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    getIncomeOverview.mockClear();
+    current = WEEK;
+  });
+
+  it('a week from the link, «Received that week», no 12 months; picking a month switches to that month', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { useParticipantStore } = await import('@/entities/participant');
+    useParticipantStore().view = PEOPLE_VIEW;
+    const { useMonthStore } = await import('@/entities/period');
+    const months = useMonthStore();
+    months.set('2026-09', null);
+    const { IncomePage } = await import('@/pages/income');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', name: 'home', component: blank }, { path: '/income', name: 'income', component: IncomePage }],
+    });
+    await router.push('/income?week=2026-09-21');
+    const w = mount(defineComponent(() => () => h(RouterView)), { global: { plugins: [i18n, router] } });
+    await flushPromises();
+    expect(getIncomeOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'week', from: '2026-09-21' } });
+    expect(w.text()).toContain('Поступило за неделю');
+    expect(w.text()).not.toContain('Динамика за 12 месяцев');
+
+    current = VIEW;
+    months.set('2026-08', null);
+    await flushPromises();
+    expect(router.currentRoute.value.query).toEqual({});
+    expect(getIncomeOverview.mock.calls.at(-1)?.[0]).toEqual({ period: { kind: 'month', month: '2026-08' } });
   });
 });

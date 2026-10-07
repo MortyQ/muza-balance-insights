@@ -411,15 +411,38 @@ export class DataService {
     };
   }
 
+  /** The income's 12 months around `month` (monthsWindow), folded by today's rates; null before the data starts. */
+  private async incomeMonths(
+    db: Db,
+    month: string,
+    thisMonth: string,
+    filters: { tz: string; participantId?: number },
+    rates: Map<number, FxRate>,
+    dataFrom: string | null,
+    now: number,
+  ): Promise<IncomeOverview['months']> {
+    const months12 = monthsWindow(month, thisMonth);
+    const history = await incomeSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month' }, now);
+    const byMonth = new Map<string, number>();
+    for (const g of history.groups) {
+      const u = toUah(g.total, g.currency, rates);
+      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
+    }
+    const firstMonth = dataFrom?.slice(0, 7) ?? null;
+    return months12.map((m) => ({ month: m, total: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
   /**
-   * The income screen: one month's income of a person (or the family), all scopes, folded into hryvnia by today's rates
-   * — the balances' «Income» figure (same core aggregate, same fold); its lines come from core incomeLines (the same rows).
+   * The income screen: one period's income (a day, a week, a month) of a person (or the family), all scopes, folded into
+   * hryvnia by today's rates — the balances' «Income» figure (same core aggregate, same fold); its lines come from core
+   * incomeLines (the same rows).
    */
   async incomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
-    const period = monthBounds(q.month);
+    const thisDay = localDate(now * 1000, tz);
+    const period = periodBounds(q.period, thisDay);
     const status = await this.status();
     const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
     const today = await this.d.rates();
@@ -438,21 +461,13 @@ export class DataService {
     };
     const head = await incomeSummary(db, { ...period, ...filters }, now);
     const { sum, leftOut } = fold(head.totals);
-    const compare = comparePeriod(q.month, head.period, status.dataFrom);
+    const compare = periodCompare(q.period, period, head.period, status.dataFrom);
     const prev = compare ? fold((await incomeSummary(db, { ...compare, ...filters }, now)).totals).sum : null;
     const spent = await spendingSummary(db, { ...period, ...filters }, now);
     const spending = spent.totals.reduce((s, t) => s + (toUah(t.net, t.currency, rates) ?? 0), 0);
 
-    const thisMonth = localDate(now * 1000, tz).slice(0, 7);
-    const months12 = monthsWindow(q.month, thisMonth);
-    const history = await incomeSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month' }, now);
-    const byMonth = new Map<string, number>();
-    for (const g of history.groups) {
-      const u = toUah(g.total, g.currency, rates);
-      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
-    }
-    const firstMonth = status.dataFrom?.slice(0, 7) ?? null;
-    const months = months12.map((month) => ({ month, total: firstMonth === null || month < firstMonth ? null : (byMonth.get(month) ?? 0) }));
+    const thisMonth = thisDay.slice(0, 7);
+    const months = q.period.kind === 'month' ? await this.incomeMonths(db, q.period.month, thisMonth, filters, rates, status.dataFrom, now) : [];
 
     const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
     const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
@@ -485,7 +500,7 @@ export class DataService {
     const stats = incomeStats(lines, family);
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
     return {
-      month: q.month,
+      range: q.period,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
       compare,
       summary: {

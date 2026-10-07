@@ -83,10 +83,6 @@
     "none": "У {month} витрат у цій категорії немає.",
     "noneDay": "Цього дня витрат у цій категорії немає.",
     "noneWeek": "За цей тиждень витрат у цій категорії немає.",
-    "period": {
-      "day": "{weekday}, {date}",
-      "week": "Тиждень {from} – {to}"
-    },
     "summary": {
       "activeDays": "днів із витратами: {n} з {days}",
       "avg": "Середній чек",
@@ -306,6 +302,10 @@
         "title": "Динаміка за 12 місяців"
       },
       "noDescription": "Без опису",
+      "period": {
+        "day": "{weekday}, {date}",
+        "week": "Тиждень {from} – {to}"
+      },
       "when": {
         "dayParts": "За часом доби",
         "dayTitle": "{day} {month} — {amount}",
@@ -615,6 +615,8 @@
       "search": "Пошук: відправник, коментар, сума"
     },
     "none": "У {month} надходжень немає.",
+    "noneDay": "Цього дня надходжень немає.",
+    "noneWeek": "За цей тиждень надходжень немає.",
     "open": "Відкрити надходження",
     "sources": {
       "source": {
@@ -633,12 +635,16 @@
       "largestWhere": "{sender}, {date} о {time}",
       "lines": "Надходжень",
       "linesPrev": "у {month} — {n}",
+      "linesPrevWeek": "минулого тижня — {n}",
       "median": "медіана {amount}",
       "perDay": "На день",
       "received": "Надійшло за місяць",
+      "receivedDay": "Надійшло за день",
+      "receivedWeek": "Надійшло за тиждень",
       "spent": "Витрачено",
       "spentShare": "{pct}% надходжень",
-      "vsPrev": "у {month} було {amount}"
+      "vsPrev": "у {month} було {amount}",
+      "vsPrevWeek": "минулого тижня було {amount}"
     },
     "title": "Надходження",
     "who": {

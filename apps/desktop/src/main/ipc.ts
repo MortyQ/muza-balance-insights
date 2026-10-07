@@ -15,7 +15,7 @@ import { THEME_PREFS } from '../shared/theme.ts';
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
 const isoDate = z.string().refine(isIsoDate);
-// The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview → periodBounds.
+// The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview / incomeOverview → periodBounds.
 const detailPeriod = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('day'), date: isoDate }),
   z.strictObject({ kind: z.literal('week'), from: isoDate }),
@@ -65,7 +65,7 @@ export const ARG_SCHEMAS = {
   getCategoryOverview: z.tuple([
     z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
   ]),
-  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z

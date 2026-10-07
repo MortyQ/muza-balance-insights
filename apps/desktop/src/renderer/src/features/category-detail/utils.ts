@@ -1,30 +1,19 @@
 import type { CategoryLineView, CategoryOverview, DetailPeriod } from '@contract/api.ts';
-import { isoWeekday, shiftDate } from '@contract/dates.ts';
 import { accountName } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import {
-  changeChip, dayMonth, monthIn, monthNo, monthsView as monthBars, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
+  changeChip, dayMonth, monthIn, monthOf, monthsView as monthBars, PERIOD_BLOCKS, periodTitle, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
   type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
-import { PERIOD_BLOCKS, PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
-
-/** The month a period lies in (a week: the month of its Monday); «When»'s days of the month read it. */
-export const monthOf = (r: DetailPeriod): string => (r.kind === 'month' ? r.month : r.kind === 'day' ? r.date : r.from).slice(0, 7);
+import { PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
 
 /** Spending of a line, positive (a refund is negative); null — no rate. */
 const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah);
 
 /** Merchants match regardless of case and spaces (as main groups them). */
 export const merchantKey = nameKey;
-
-/** «Сентябрь 2026», «Неделя 5 окт – 11 окт», «ср, 7 окт». */
-export function periodTitle(r: DetailPeriod): string {
-  if (r.kind === 'month') return `${monthName(monthNo(r.month))} ${r.month.slice(0, 4)}`;
-  if (r.kind === 'week') return t('category.period.week', { from: dayMonth(r.from), to: dayMonth(shiftDate(r.from, 6)) });
-  return t('category.period.day', { weekday: weekdayShort(isoWeekday(r.date)), date: dayMonth(r.date) });
-}
 
 /** The figure's label: «Spent this month», «Spent that week», «Spent that day». */
 export const spentLabel = (r: DetailPeriod): string => t(PERIOD_TEXT[r.kind].spent);

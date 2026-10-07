@@ -108,9 +108,11 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', extra: 1 }]],
     ['getIncomeOverview', []],
     ['getIncomeOverview', [{}]],
-    ['getIncomeOverview', [{ month: '2026-9' }]],
-    ['getIncomeOverview', [{ month: '2026-09', participantId: 0 }]],
-    ['getIncomeOverview', [{ month: '2026-09', scope: 'personal' }]],
+    ['getIncomeOverview', [{ month: '2026-09' }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-9' } }]],
+    ['getIncomeOverview', [{ period: { kind: 'day', date: '2026-13-01' } }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, participantId: 0 }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, scope: 'personal' }]],
     ['getAnalyticsOverview', []],
     ['getAnalyticsOverview', [{ from: '2026-09' }]],
     ['getAnalyticsOverview', [{ from: '2026-9', to: '2026-09' }]],
@@ -252,7 +254,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     });
     const cat = { period: { kind: 'week', from: '2026-09-28' }, category: 'transport', scope: 'personal', participantId: 2 };
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
-    const inc = { month: '2026-09', participantId: 2 };
+    const inc = { period: { kind: 'day', date: '2026-09-30' }, participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
     const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most
     await expect(ipc.handlers.get('balance:getAnalyticsOverview')!(good, an)).resolves.toEqual({ m: 'getAnalyticsOverview', a: [an] });

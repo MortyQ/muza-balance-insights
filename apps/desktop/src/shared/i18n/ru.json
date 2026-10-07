@@ -83,10 +83,6 @@
     "none": "В {month} трат в этой категории нет.",
     "noneDay": "В этот день трат в этой категории нет.",
     "noneWeek": "За эту неделю трат в этой категории нет.",
-    "period": {
-      "day": "{weekday}, {date}",
-      "week": "Неделя {from} – {to}"
-    },
     "summary": {
       "activeDays": "дней с тратами: {n} из {days}",
       "avg": "Средний чек",
@@ -306,6 +302,10 @@
         "title": "Динамика за 12 месяцев"
       },
       "noDescription": "Без описания",
+      "period": {
+        "day": "{weekday}, {date}",
+        "week": "Неделя {from} – {to}"
+      },
       "when": {
         "dayParts": "По времени суток",
         "dayTitle": "{day} {month} — {amount}",
@@ -615,6 +615,8 @@
       "search": "Поиск: отправитель, комментарий, сумма"
     },
     "none": "В {month} поступлений нет.",
+    "noneDay": "В этот день поступлений нет.",
+    "noneWeek": "За эту неделю поступлений нет.",
     "open": "Открыть поступления",
     "sources": {
       "source": {
@@ -633,12 +635,16 @@
       "largestWhere": "{sender}, {date} в {time}",
       "lines": "Поступлений",
       "linesPrev": "в {month} — {n}",
+      "linesPrevWeek": "на прошлой неделе — {n}",
       "median": "медиана {amount}",
       "perDay": "В день",
       "received": "Поступило за месяц",
+      "receivedDay": "Поступило за день",
+      "receivedWeek": "Поступило за неделю",
       "spent": "Потрачено",
       "spentShare": "{pct}% поступлений",
-      "vsPrev": "в {month} было {amount}"
+      "vsPrev": "в {month} было {amount}",
+      "vsPrevWeek": "на прошлой неделе было {amount}"
     },
     "title": "Поступления",
     "who": {

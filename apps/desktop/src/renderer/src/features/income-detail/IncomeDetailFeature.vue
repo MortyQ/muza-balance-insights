@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { DetailPeriod } from '@contract/api.ts';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import SourceBars from './components/SourceBars.vue';
@@ -6,9 +7,11 @@ import { useIncomeDetail } from './composables/useIncomeDetail.ts';
 import { useIncomeView } from './composables/useIncomeView.ts';
 import { INCOME_COLOR } from './constants.ts';
 
-const base = useIncomeDetail();
+const { period } = defineProps<{ period: DetailPeriod }>();
+
+const base = useIncomeDetail(() => period);
 const { state, view } = base;
-const { summary, none, months, people, sources, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
+const { summary, label, none, months, people, sources, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
 </script>
 
 <template>
@@ -17,10 +20,10 @@ const { summary, none, months, people, sources, senders, moreSenders, when, rows
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('income.failed')" />
 
-    <DetailSkeleton v-if="!view && state.status === 'loading'" />
+    <DetailSkeleton v-if="!view && state.status === 'loading'" :months="period.kind === 'month'" />
     <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
-        <DetailSummary :summary :label="$t('income.summary.received')" />
+        <DetailSummary :summary :label />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>

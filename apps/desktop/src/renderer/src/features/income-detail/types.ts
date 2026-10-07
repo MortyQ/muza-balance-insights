@@ -25,8 +25,11 @@ export interface UseIncomeDetailReturn {
 
 export interface UseIncomeViewReturn {
   summary: ComputedRef<SummaryView | null>;
-  /** The month has no income; '' — it has. */
+  /** The figure's label for the period («Received this month»). */
+  label: ComputedRef<string>;
+  /** The period has no income; '' — it has. */
   none: ComputedRef<string>;
+  /** A month only; null — another period. */
   months: ComputedRef<MonthsView | null>;
   people: ComputedRef<PersonView[]>;
   sources: ComputedRef<SourceView[]>;
@@ -34,7 +37,7 @@ export interface UseIncomeViewReturn {
   moreSenders: ComputedRef<string>;
   when: ComputedRef<WhenView | null>;
   rows: ComputedRef<LineRowView[]>;
-  /** The list's total: the month's figure while nothing filters it, else the shown lines' sum. */
+  /** The list's total: the period's figure while nothing filters it, else the shown lines' sum. */
   total: ComputedRef<string>;
   /** The sender the list is filtered by, its key; null — none. */
   sender: Ref<string | null>;

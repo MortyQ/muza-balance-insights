@@ -1,3 +1,5 @@
+import type { DetailPeriod } from '@contract/api.ts';
+import { isoWeekday, shiftDate } from '@contract/dates.ts';
 import { change, monthName, monthShortName, t } from '@/shared/lib';
 import type { ChangeChipModel, ChartOption } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
@@ -15,6 +17,16 @@ export const weekdayShort = (n: number): string => t(`common.weekdayShort.${n as
 const partName = (i: number) => t(`entities.operations.when.part.${i as DayPart}`);
 /** «8 сен». */
 export const dayMonth = (date: string): string => `${Number(date.slice(8, 10))} ${monthShortName(monthNo(date))}`;
+
+/** The month a period lies in (a week: the month of its Monday); «When»'s days of the month read it. */
+export const monthOf = (r: DetailPeriod): string => (r.kind === 'month' ? r.month : r.kind === 'day' ? r.date : r.from).slice(0, 7);
+
+/** «Сентябрь 2026», «Неделя 5 окт – 11 окт», «ср, 7 окт». */
+export function periodTitle(r: DetailPeriod): string {
+  if (r.kind === 'month') return `${monthName(monthNo(r.month))} ${r.month.slice(0, 4)}`;
+  if (r.kind === 'week') return t('entities.operations.period.week', { from: dayMonth(r.from), to: dayMonth(shiftDate(r.from, 6)) });
+  return t('entities.operations.period.day', { weekday: weekdayShort(isoWeekday(r.date)), date: dayMonth(r.date) });
+}
 export const pct = (value: number, max: number): number => (max > 0 ? Math.round((value / max) * 1000) / 10 : 0);
 /** A bar with a value never vanishes; one without stays flat. */
 const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.max(MIN_BAR, pct(value, max)) : 0);

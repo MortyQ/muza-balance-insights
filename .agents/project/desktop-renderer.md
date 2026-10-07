@@ -68,11 +68,13 @@
   written by `categoryLink(id, scope, period?)` and read back by `categoryRequest`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
-  The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week, else the global filter's
-  month; picking a month in the filter while a day or a week is open replaces the route with the month's. What a
-  period shows is one table, `PERIOD_BLOCKS` (a day: no 12 months, no «per day», «When» only by part of the day; a week:
-  no 12 months and no days of the month), its words `PERIOD_TEXT` (the figure's label, the rank, «no spending»); a
-  week is compared with last week (`changeChip(…, 'week')`, `entities.operations.change.week.*`), a day with nothing.
+  The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week (`periodRequest` of
+  `shared/config`: `query.day` / `query.week`, written by `periodQuery`), else the global filter's month; picking a
+  month in the filter while a day or a week is open replaces the route with the month's. What a period shows is one
+  table, `PERIOD_BLOCKS` of `entities/operations` (a day: no 12 months, no «per day», «When» only by part of the day; a
+  week: no 12 months and no days of the month), the header's period `periodTitle`; the feature's own words are
+  `PERIOD_TEXT` (the figure's label, the rank, «no spending»); a week is compared with last week (`changeChip(…,
+  'week')`, `entities.operations.change.week.*`), a day with nothing. The income screen works the same way.
   The «Now» strip's category rows link here for their day or week (personal).
   `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
   merchant filter, search and order (reset with period, category and person). «When» is counted on the screen from the
@@ -102,8 +104,9 @@
   and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
 - **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,
   `meta.navParent: 'home'`), opened from the «In» row of the balances' month panel (`FlowBars` `incomeTo`, md only). One
-  IPC `getIncomeOverview({ month, participantId? })` — all scopes, the balances' figure; month, person and currency are
-  the global filters; quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
+  IPC `getIncomeOverview({ period, participantId? })` — all scopes, the balances' figure; person and currency are the
+  global filters, the period as on the category screen (`incomeLink(period?)`, the page passes a day, a week or the
+  filter's month); quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
   summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and

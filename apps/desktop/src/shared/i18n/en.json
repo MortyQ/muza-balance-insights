@@ -83,10 +83,6 @@
     "none": "No spending in this category in {month}.",
     "noneDay": "No spending in this category that day.",
     "noneWeek": "No spending in this category that week.",
-    "period": {
-      "day": "{weekday}, {date}",
-      "week": "Week {from} – {to}"
-    },
     "summary": {
       "activeDays": "days with spending: {n} of {days}",
       "avg": "Average",
@@ -306,6 +302,10 @@
         "title": "Last 12 months"
       },
       "noDescription": "No description",
+      "period": {
+        "day": "{weekday}, {date}",
+        "week": "Week {from} – {to}"
+      },
       "when": {
         "dayParts": "By time of day",
         "dayTitle": "{month} {day} — {amount}",
@@ -615,6 +615,8 @@
       "search": "Search: sender, comment, amount"
     },
     "none": "No income in {month}.",
+    "noneDay": "No income that day.",
+    "noneWeek": "No income that week.",
     "open": "Open income",
     "sources": {
       "source": {
@@ -633,12 +635,16 @@
       "largestWhere": "{sender}, {date} at {time}",
       "lines": "Payments in",
       "linesPrev": "{n} in {month}",
+      "linesPrevWeek": "{n} last week",
       "median": "median {amount}",
       "perDay": "Per day",
       "received": "Received this month",
+      "receivedDay": "Received that day",
+      "receivedWeek": "Received that week",
       "spent": "Spent",
       "spentShare": "{pct}% of the income",
-      "vsPrev": "{amount} in {month}"
+      "vsPrev": "{amount} in {month}",
+      "vsPrevWeek": "{amount} last week"
     },
     "title": "Income",
     "who": {

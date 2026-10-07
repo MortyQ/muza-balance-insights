@@ -350,7 +350,7 @@ export type CategoryOverview = {
   leftOut: Array<{ currency: number; net: number }>;
 };
 
-export type IncomeOverviewQuery = { month: string; participantId?: number };
+export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number };
 
 /** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
 export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
@@ -392,7 +392,8 @@ export type IncomeLineView = {
  * the balances' «Income» figure. Weekdays, hours and days are the system time zone's.
  */
 export type IncomeOverview = {
-  month: string;
+  /** The period asked for. */
+  range: DetailPeriod;
   period: SpendingOverview['period'];
   compare: SpendingOverview['compare'];
   summary: IncomeAmounts & {
@@ -406,10 +407,10 @@ export type IncomeOverview = {
     activeDays: number;
     /** Key of the largest line; null — none. */
     largest: string | null;
-    /** The month's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
+    /** The period's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
     spending: number;
   };
-  /** As CategoryOverview's months: up to the current month while `month` is among its last 12; null before the data. */
+  /** As CategoryOverview's months (a month only, else empty): up to the current month while the month is among its last 12; null before the data. */
   months: Array<{ month: string; total: number | null }>;
   /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
   thisMonth: string;
