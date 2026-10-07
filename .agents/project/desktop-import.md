@@ -63,6 +63,14 @@
   payment's id, `mark` `mandatory | hidden | null`) marks its payee (core `setRecurringMark`); unknown key — error; `next` — a calendar month after the last (`nextMonthDay`). The
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
+  `getAllowanceOverview({ participantId? })` («Available per day»; `DataService.allowanceOverview`, pure calculation in
+  `main/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
+  `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over
+  `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
+  earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserve is
+  `preferences.json` `allowanceReserve` (kopecks, `setAllowanceReserve`, 0 … `ALLOWANCE_RESERVE_MAX` in
+  `src/shared/allowance.ts`; «Delete all data» leaves it, like the other prefs). Bank text: the income's and payments'
+  descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
   in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:
   the import's 36 + the current one; zod refuses more, main refuses a range ending after this month). One month → per

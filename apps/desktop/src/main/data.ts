@@ -6,7 +6,8 @@ import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
-import { findRecurring, setRecurringMark } from '@mono/core/recurring';
+import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/recurring';
+import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
@@ -27,6 +28,8 @@ import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, wee
 import { periodBounds, periodCompare } from './period.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
+  AllowanceOverview,
+  AllowanceQuery,
   AnalyticsCategory,
   AnalyticsOverview,
   AnalyticsQuery,
@@ -501,6 +504,44 @@ export class DataService {
     const hidden = found.filter((p) => p.mark === 'hidden').sort(newest).map(view);
     const total = (ps: RecurringPaymentView[]) => ps.reduce((s, p) => s + (p.uah ?? 0), 0);
     return { since, active, ended, hidden, monthly: total(active), mandatory: total(active.filter((p) => p.mark === 'mandatory')), rates };
+  }
+
+  /**
+   * «Available per day» (allowance.ts): the cards' own money now (balancesAt now, no jars), the reserve, the regular
+   * income and mandatory payments of the last 13 months (findRecurring, active only).
+   */
+  async allowanceOverview(q: AllowanceQuery, reserve: number): Promise<AllowanceOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const f = q.participantId !== undefined ? { participantId: q.participantId } : {};
+
+    const balances = await balancesAt(db, { endSec: now + 1, ...f });
+    let money = 0;
+    const leftOut: AllowanceOverview['leftOut'] = [];
+    for (const a of balances.accounts) {
+      if (a.kind === 'jar' || a.own_funds === null) continue;
+      const u = toUah(a.own_funds, a.currency, fx);
+      if (u === null) leftOut.push({ currency: a.currency, ownFunds: a.own_funds });
+      else money += u;
+    }
+
+    const accounts = (await db.execute(`SELECT title FROM accounts WHERE kind = 'jar'`)).rows;
+    const jarTitles = accounts.filter((r) => r.title).map((r) => String(r.title).trim());
+    const period = { from: `${addMonths(today.slice(0, 7), -12)}-01`, to: today, tz, ...f };
+    const series = (p: RecurringPayment): AllowanceSeries => ({
+      key: p.id,
+      name: merchantText(p.description, jarTitles),
+      participantId: p.participantId,
+      uah: toUah(p.amount, p.currency, fx),
+      next: nextMonthDay(localDate(p.last * 1000, tz)),
+    });
+    const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
+    const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
+    return { today, money, leftOut, reserve, ...allowance({ today, money, reserve, income, mandatory }), rates };
   }
 
   /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */

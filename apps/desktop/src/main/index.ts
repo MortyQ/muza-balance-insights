@@ -269,6 +269,10 @@ app.whenReady().then(async () => {
     getIncomeOverview: (q) => data.incomeOverview(q),
     getRecurringOverview: (q) => data.recurringOverview(q),
     setRecurringMark: (q) => data.setRecurringMark(q),
+    getAllowanceOverview: (q) => data.allowanceOverview(q, readPrefs(userData).allowanceReserve),
+    setAllowanceReserve: async (kopecks) => (
+      await updatePrefs(userData, (p) => ({ ...p, allowanceReserve: kopecks })), readPrefs(userData).allowanceReserve
+    ),
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {

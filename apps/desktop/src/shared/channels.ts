@@ -19,6 +19,8 @@ export const METHODS = [
   'getIncomeOverview',
   'getRecurringOverview',
   'setRecurringMark',
+  'getAllowanceOverview',
+  'setAllowanceReserve',
   'getAnalyticsOverview',
   'getMonthOverview',
   'getSyncStatus',

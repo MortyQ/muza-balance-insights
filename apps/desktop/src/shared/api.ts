@@ -138,6 +138,9 @@ export type BalanceApi = {
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
+  getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
+  /** The reserve «Available per day» keeps aside, hryvnia kopecks (0 … ALLOWANCE_RESERVE_MAX); returns what is saved. */
+  setAllowanceReserve(kopecks: number): Promise<number>;
   getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
@@ -195,7 +198,8 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens), and RecurringOverview, which carries each regular payment's description (nothing else).
+// and income screens), and RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
+// description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -401,6 +405,45 @@ export type RecurringOverview = {
   monthly: number;
   /** The part of `monthly` marked mandatory. */
   mandatory: number;
+  rates: RatesView | null;
+};
+
+export type AllowanceQuery = { participantId?: number };
+
+/** The regular income the money has to last until. */
+export type AllowanceIncome = {
+  key: string;
+  /** The last payment's bank description (as RecurringPaymentView's name). */
+  name: string;
+  /** Its usual amount, hryvnia kopecks by today's rate. */
+  uah: number;
+  /** YYYY-MM-DD: when it is due. */
+  date: string;
+  /** It was due today or earlier and has not come: the money is spread to the month's end instead. */
+  overdue: boolean;
+};
+
+/** A mandatory regular payment due before the income. */
+export type AllowancePayment = { key: string; name: string; uah: number | null; due: string };
+
+/**
+ * «Available per day»: the cards' own money now (no jars; foreign ones at today's rate), minus the reserve and the
+ * mandatory payments due before the next regular income, over the days until it. Hryvnia kopecks.
+ */
+export type AllowanceOverview = {
+  today: string;
+  money: number;
+  /** Card currencies without a rate: left out of `money`. Minor units of that currency. */
+  leftOut: Array<{ currency: number; ownFunds: number }>;
+  reserve: number;
+  mandatory: AllowancePayment[];
+  income: AllowanceIncome | null;
+  /** YYYY-MM-DD, exclusive: the income's day, or the next month's first day without one (or when it is late). */
+  until: string;
+  days: number;
+  /** money − reserve − mandatory; < 0 — short of that much. */
+  free: number;
+  perDay: number;
   rates: RatesView | null;
 };
 

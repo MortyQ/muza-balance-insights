@@ -1,4 +1,4 @@
-// userData/preferences.json: «Проверять обновления», «Автосинхронизация», the theme and the language. Every field keeps its
+// userData/preferences.json: «Проверять обновления», «Автосинхронизация», the theme, the language and the allowance reserve. Every field keeps its
 // own default, so a file of an older version or a broken field never resets the rest; concurrent changes are not lost;
 // an invalid change is refused before anything is written.
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ import { PREFS_FILE, readPrefs, updatePrefs, type Prefs } from '../src/main/pref
 import { AUTO_SYNC_TRIGGERS, DEFAULT_AUTO_SYNC } from '../src/shared/auto-sync.ts';
 import { DEFAULT_THEME } from '../src/shared/theme.ts';
 
-const DEFAULTS = { updateChecks: true, autoSync: DEFAULT_AUTO_SYNC, theme: 'system', locale: null };
+const DEFAULTS = { updateChecks: true, autoSync: DEFAULT_AUTO_SYNC, theme: 'system', locale: null, allowanceReserve: 0 };
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'prefs-'));
 const put = (dir: string, text: string) => fs.writeFileSync(path.join(dir, PREFS_FILE), text);
 
@@ -50,6 +50,17 @@ describe('preferences', () => {
     expect(readPrefs(dir).locale).toBeNull();
   });
 
+  it('the allowance reserve: whole kopecks from 0; anything else reads as 0 and is refused on write', async () => {
+    const dir = tmp();
+    put(dir, '{"allowanceReserve":250000}');
+    expect(readPrefs(dir).allowanceReserve).toBe(250_000);
+    for (const bad of ['-1', '1.5', '"100"']) {
+      put(dir, `{"allowanceReserve":${bad}}`);
+      expect(readPrefs(dir).allowanceReserve).toBe(0);
+    }
+    await expect(updatePrefs(dir, (p) => ({ ...p, allowanceReserve: -5 }))).rejects.toThrow();
+  });
+
   it('the defaults cover every trigger', () => {
     expect(Object.keys(DEFAULT_AUTO_SYNC.triggers).sort()).toEqual([...AUTO_SYNC_TRIGGERS].sort());
   });
@@ -62,12 +73,14 @@ describe('preferences', () => {
       updatePrefs(dir, (p) => ({ ...p, autoSync: { ...p.autoSync, triggers: { ...p.autoSync.triggers, wake: false } } })),
       updatePrefs(dir, (p) => ({ ...p, theme: 'dark' })),
       updatePrefs(dir, (p) => ({ ...p, locale: 'ru' })),
+      updatePrefs(dir, (p) => ({ ...p, allowanceReserve: 500_000 })),
     ]);
     expect(readPrefs(dir)).toEqual({
       updateChecks: false,
       autoSync: { enabled: false, triggers: { launch: true, wake: false, interval: true } },
       theme: 'dark',
       locale: 'ru',
+      allowanceReserve: 500_000,
     });
     expect(fs.existsSync(path.join(dir, `${PREFS_FILE}.tmp`))).toBe(false);
   });
