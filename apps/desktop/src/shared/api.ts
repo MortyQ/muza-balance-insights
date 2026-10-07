@@ -265,6 +265,24 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
+  /** «Usual»: the same span of the months before (main/usual.ts); null — fewer than 3 covered months. */
+  usual: SpendingUsual | null;
+};
+
+/**
+ * The medians of the same span (whole months, or up to `cutDay` while the month runs) over the covered months before
+ * the shown one, hryvnia kopecks by today's rates; the same person and scope as the block.
+ */
+export type SpendingUsual = {
+  /** How many months the medians are over (3 … 6). */
+  months: number;
+  /** The day of the month the span ends on; null — whole months. */
+  cutDay: number | null;
+  total: number;
+  /** Categories with a usual net > 0, usual desc. */
+  categories: Array<{ category: string; categoryId: CategoryId | null; net: number }>;
+  /** Income over the same span: the shown month's, and the median before. */
+  income: { now: number; usual: number };
 };
 
 /**

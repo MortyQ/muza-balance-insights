@@ -40,7 +40,10 @@
   'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
-  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `getNowOverview` takes only `participantId` (main
+  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `SpendingOverview.usual` (`main/usual.ts`): the medians per category, of the
+  total and of income over the same span of up to 6 months before that the data covers from their first day (the
+  whole month, or up to the day the data reaches while the month runs — `cutDay`), same person and scope, today's
+  rates; null with fewer than 3 such months. `getNowOverview` takes only `participantId` (main
   decides «today» in the system time zone; categories of today and of the week, the week's with last week's same days —
   categories and numbers only, no bank text); like the other data channels it is closed while locked and while the
   database is not ready.

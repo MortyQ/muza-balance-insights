@@ -1234,3 +1234,47 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });
+
+describe('DataService.spendingOverview: usual', () => {
+  const MONTHS = ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02'];
+  async function covered(from: string) {
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay(from), SYNCED_TO, SYNCED_TO + 60] });
+  }
+  async function history() {
+    for (const [i, m] of MONTHS.entries()) {
+      await tx('uah', `${m}-05`, -10_000, 'продукты');
+      await tx('uah', `${m}-20`, -50_000, 'продукты'); // after the 10th: out of a running month's span
+      await tx('uah', `${m}-03`, -(i + 1) * 1_000, 'доставка');
+      await tx('uah', `${m}-08`, 100_000, 'поступления', { mcc: 4829 });
+    }
+    await tx('uah', '2026-03-02', -12_000, 'продукты');
+    await tx('uah', '2026-03-08', 100_000, 'поступления', { mcc: 4829 });
+  }
+
+  it('the running month: medians up to the day the data reaches (the 10th) over the 6 covered months before', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.usual).toEqual({
+      months: 6,
+      cutDay: 10,
+      total: 13_500,
+      categories: [{ category: 'продукты', categoryId: 'groceries', net: 10_000 }, { category: 'доставка', categoryId: 'delivery', net: 3_500 }],
+      income: { now: 100_000, usual: 100_000 },
+    });
+  });
+
+  it('a past month: whole months, only the covered ones (August is not)', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.usual).toMatchObject({ months: 5, cutDay: null, total: 63_000, categories: [{ categoryId: 'groceries', net: 60_000 }, { categoryId: 'delivery', net: 3_000 }] });
+  });
+
+  it('fewer than 3 covered months before: none', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).usual).toBeNull();
+  });
+});

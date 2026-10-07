@@ -21,10 +21,11 @@ import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { monthSpan as usualSpan, usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
 import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
-import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
+import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
@@ -59,6 +60,7 @@ import type {
   SpendingCategoryView,
   SpendingOverview,
   SpendingOverviewQuery,
+  SpendingUsual,
   SpendingPersonPart,
 } from '../shared/api.ts';
 
@@ -311,6 +313,48 @@ export class DataService {
       rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
+      usual: await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now),
+    };
+  }
+
+  /**
+   * The block's «usual» (main/usual.ts): while the month runs, up to the day the data reaches; the same span of each
+   * covered month before, spending by category and income, folded by today's rates.
+   */
+  private async spendingUsual(
+    db: Db,
+    q: SpendingOverviewQuery,
+    period: { from: string; to: string; incomplete: boolean; dataUntil: string | null },
+    dataFrom: string | null,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<SpendingUsual | null> {
+    const until = period.dataUntil;
+    if (period.incomplete && (until === null || until < period.from)) return null;
+    const cutDay = period.incomplete && until !== null && until <= period.to ? Number(until.slice(8, 10)) : null;
+    const months = usualMonths(q.month, dataFrom);
+    const filters = { tz: systemTimeZone(), scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const incomeOf = async (p: { from: string; to: string }) =>
+      (await incomeSummary(db, { ...p, ...filters }, now)).totals.reduce((s, t) => s + (toUah(t.total, t.currency, rates) ?? 0), 0);
+
+    const spent: Array<Map<string, number>> = [];
+    const income: number[] = [];
+    for (const m of months) {
+      const span = usualSpan(m, cutDay);
+      const byCategory = foldByCategory(await spendingSummary(db, { ...span, ...filters, groupBy: 'category' }, now), rates).byCategory;
+      spent.push(new Map([...byCategory].map(([c, a]) => [c, a.net])));
+      income.push(await incomeOf(span));
+    }
+    const u = usualOf(spent);
+    if (!u) return null;
+    return {
+      months: months.length,
+      cutDay,
+      total: u.total,
+      categories: [...u.byCategory]
+        .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+        .map(([category, net]) => ({ category, categoryId: CATEGORY_ID.get(category) ?? null, net })),
+      income: { now: await incomeOf(usualSpan(q.month, cutDay)), usual: median(income) },
     };
   }
 
