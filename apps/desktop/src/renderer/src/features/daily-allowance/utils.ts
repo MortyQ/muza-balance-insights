@@ -11,8 +11,16 @@ export function reserveMinor(text: string, max: number): number | null {
   return k <= max ? k : null;
 }
 
-/** The reserves list: each in its own currency, ≈ the screen's when that differs, its term. */
-export function reserveRows(v: AllowanceOverview, fmt: MoneyFormat, currentYear: number): ReserveRowView[] {
+/**
+ * The reserves list: each in its own currency, ≈ the screen's when that differs, its term; whose through `ownerOf`
+ * (null — not shown).
+ */
+export function reserveRows(
+  v: AllowanceOverview,
+  fmt: MoneyFormat,
+  currentYear: number,
+  ownerOf: (participantId: number | null) => ReserveRowView['owner'] = () => null,
+): ReserveRowView[] {
   return v.reserves.map((r) => ({
     id: r.id,
     name: r.name,
@@ -23,7 +31,8 @@ export function reserveRows(v: AllowanceOverview, fmt: MoneyFormat, currentYear:
         ? t('home.allowance.reserves.noEnd')
         : t(r.active ? 'home.allowance.reserves.until' : 'home.allowance.reserves.expired', { date: dayMonthName(r.until, currentYear) }),
     active: r.active,
-    input: { name: r.name, currency: r.currency, amount: r.amount, until: r.until },
+    owner: ownerOf(r.participantId),
+    input: { name: r.name, currency: r.currency, amount: r.amount, until: r.until, participantId: r.participantId },
   }));
 }
 

@@ -109,7 +109,7 @@ describe('balances utils', () => {
     const v: MonthOverview = {
       month: '2026-03', reserved: null, balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
       total: { ...card(1_000_000, 0, 0), saved: { amount: 500_000, approx: true } },
-      people: [{ participantId: 1, label: 'Вигадана', labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
+      people: [{ participantId: 1, label: 'Вигадана', reserved: null, labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
     };
     const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: EUR_FMT });
     expect(family?.flow.saved).toEqual({ amount: EUR_FMT.convert(500_000), approx: true });
@@ -120,7 +120,7 @@ describe('balances utils', () => {
     const v: MonthOverview = {
       month: '2026-03', reserved: 400_000, balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
       total: card(1_000_000, 0, 0),
-      people: [{ participantId: 1, label: 'Вигадана', labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
+      people: [{ participantId: 1, label: 'Вигадана', reserved: null, labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
     };
     const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
     expect(family).toMatchObject({
@@ -129,9 +129,11 @@ describe('balances utils', () => {
       actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(400_000, 980)}`,
     });
     expect(family?.flow.reserved).toBe(400_000);
-    // A person's card in the family view: the family's reserves are not set against each person.
+    // A person's card in the family view: only their own reserves; none — the real balance.
     expect(person).toMatchObject({ caption: balanceCaption('now', 2026), amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
     expect(person?.flow.reserved).toBeUndefined();
+    const own = slidesOf({ ...v, people: [{ ...v.people[0]!, reserved: 100_000 }] }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[1];
+    expect(own).toMatchObject({ amount: formatMoney(900_000, 980, { minorUnits: true }), actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(100_000, 980)}` });
 
     // One person picked: their total takes the reserves, their accounts keep their own balances.
     const mine: MonthOverview = { ...v, people: [], accounts: [
@@ -199,7 +201,7 @@ describe('balances utils', () => {
       balanceAt: 'now',
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] },
-      people: [{ participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
+      people: [{ participantId: 1, label: 'Сергей', reserved: null, labelPending: false, color: 'blue', total: { ...card(10_000, 14_025_451, 4_000), fx: [usd] } }],
       accounts: [],
       rates: RATES,
     };
@@ -260,8 +262,8 @@ describe('balances utils', () => {
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(10_000, 5_000, 4_000, 0, 14),
       people: [
-        { participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
-        { participantId: 2, label: 'Аня', labelPending: false, color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
+        { participantId: 1, label: 'Сергей', reserved: null, labelPending: false, color: 'blue', total: card(6_000, 3_000, 2_000, 0, 11) },
+        { participantId: 2, label: 'Аня', reserved: null, labelPending: false, color: 'orange', total: card(4_000, 2_000, 2_000, 0, 3) },
       ],
       accounts: [],
       rates: null,
@@ -335,8 +337,8 @@ describe('balances utils', () => {
       ...person,
       accounts: [],
       people: [
-        { participantId: 1, label: 'Сергей', labelPending: false, color: 'blue', total: card(600_000, 300_000, 100_000) },
-        { participantId: 2, label: 'Аня', labelPending: false, color: 'orange', total: card(400_000, 200_000, 100_000) },
+        { participantId: 1, label: 'Сергей', reserved: null, labelPending: false, color: 'blue', total: card(600_000, 300_000, 100_000) },
+        { participantId: 2, label: 'Аня', reserved: null, labelPending: false, color: 'orange', total: card(400_000, 200_000, 100_000) },
       ],
     };
     const f = slidesOf(fam, { people: [], selectedId: null, currentYear: 2026, fmt: EUR_FMT });

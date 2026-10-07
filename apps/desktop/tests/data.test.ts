@@ -163,22 +163,28 @@ describe('DataService.monthOverview', () => {
     expect(v.people[0]!.total).toEqual(v.total);
   });
 
-  it('reserves: set against today\'s balance only — the active ones with a rate; none, or another month, null', async () => {
+  it('reserves: set against today\'s balance only — the active ones with a rate, the view\'s (a person: their own); none, or another month, null', async () => {
     await account('uah', 'black', 980, 100_000);
     await synced('uah');
     expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBeNull();
 
-    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 500, until: null }); // $5.00 at 40.00
-    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 10_000, until: '2026-03-15' }); // today: counts
-    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' }); // over
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 500, until: null, participantId: me }); // $5.00 at 40.00
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 10_000, until: '2026-03-15', participantId: null }); // common; today: counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14', participantId: her }); // over
+    await svc.addReserve({ name: 'Подарунок', currency: 980, amount: 3_000, until: null, participantId: her });
     const v = await svc.monthOverview({ month: '2026-03' });
-    expect(v.reserved).toBe(20_000 + 10_000);
+    // The family: every active one; each person: their own, never the common one.
+    expect(v.reserved).toBe(20_000 + 10_000 + 3_000);
     expect(v.total.ownFunds).toBe(100_000); // the balance itself stays as the bank has it
-    expect((await svc.monthOverview({ month: '2026-03', participantId: v.people[0]!.participantId })).reserved).toBe(30_000);
+    expect(v.people.map((p) => [p.participantId, p.reserved])).toEqual([[me, 20_000], [her, 3_000]]);
+    expect((await svc.monthOverview({ month: '2026-03', participantId: me })).reserved).toBe(20_000);
+    expect((await svc.monthOverview({ month: '2026-03', participantId: her })).reserved).toBe(3_000);
     expect((await svc.monthOverview({ month: '2026-02' })).reserved).toBeNull();
 
     rates = null;
-    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(10_000);
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
   });
 
   it('a past month: balanceAt is its last day, the balance comes from the last operation before its end', async () => {
@@ -1226,7 +1232,7 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     const streamio = (await svc.recurringOverview({})).active.find((p) => p.name === 'Streamio')!;
     await svc.setRecurringMark({ key: streamio.key, mark: 'mandatory' });
 
-    await svc.addReserve({ name: 'Подушка', currency: 980, amount: 50_000, until: null });
+    await svc.addReserve({ name: 'Подушка', currency: 980, amount: 50_000, until: null , participantId: null });
     const v = await svc.allowanceOverview({});
     expect(v).toMatchObject({
       today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], until: '2026-04-10', days: 26,
@@ -1237,9 +1243,9 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
   });
 
   it('reserves: each in its currency at today\'s rate, through its last day; changed and deleted', async () => {
-    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null });
-    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 30_000, until: '2026-03-15' }); // today: still counts
-    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' }); // over
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null , participantId: null });
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 30_000, until: '2026-03-15' , participantId: null }); // today: still counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' , participantId: null }); // over
     const v = await svc.allowanceOverview({});
     expect(v.reserves.map((r) => [r.name, r.currency, r.amount, r.until, r.active, r.uah])).toEqual([
       ['Квартира', 840, 1_250, null, true, 50_000],
@@ -1249,7 +1255,7 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     expect(v.free).toBe(240_000 - 50_000 - 30_000);
 
     const [flat, study] = v.reserves;
-    await svc.updateReserve(flat!.id, { name: 'Оренда', currency: 980, amount: 10_000, until: null });
+    await svc.updateReserve(flat!.id, { name: 'Оренда', currency: 980, amount: 10_000, until: null , participantId: null });
     await svc.deleteReserve(study!.id);
     const after = await svc.allowanceOverview({});
     expect(after.reserves.map((r) => r.name)).toEqual(['Оренда', 'Відпустка']);
@@ -1257,9 +1263,22 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     await expect(svc.deleteReserve(study!.id)).rejects.toThrow();
   });
 
+  it('reserves of a person: their own listed and taken off; a common one only for the family', async () => {
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    await svc.addReserve({ name: 'Моє', currency: 980, amount: 10_000, until: null, participantId: me });
+    await svc.addReserve({ name: 'Спільне', currency: 980, amount: 20_000, until: null, participantId: null });
+    const family = await svc.allowanceOverview({});
+    expect(family.reserves.map((r) => [r.name, r.participantId])).toEqual([['Моє', me], ['Спільне', null]]);
+    expect(family.free).toBe(240_000 - 30_000);
+    const mine = await svc.allowanceOverview({ participantId: me });
+    expect(mine.reserves.map((r) => r.name)).toEqual(['Моє']);
+    expect(mine.free).toBe(240_000 - 10_000);
+    await expect(svc.addReserve({ name: 'Чуже', currency: 980, amount: 1, until: null, participantId: 999 })).rejects.toThrow();
+  });
+
   it('without rates the dollar card is left out and a dollar reserve is not taken off; a person with nothing of their own has no money and no income', async () => {
     rates = null;
-    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null });
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null , participantId: null });
     const v = await svc.allowanceOverview({});
     expect(v.reserves.map((r) => [r.active, r.uah])).toEqual([[true, null]]);
     expect(v.free).toBe(200_000);

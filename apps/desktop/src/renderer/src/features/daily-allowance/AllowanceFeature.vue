@@ -6,7 +6,7 @@ import AllowanceBreakdown from './components/AllowanceBreakdown.vue';
 import ReserveList from './components/ReserveList.vue';
 import { useAllowance } from './composables/useAllowance.ts';
 
-const { visible, view, reserves, currency, saveReserve, deleteReserve } = useAllowance();
+const { visible, view, reserves, currency, owners, owner, saveReserve, deleteReserve } = useAllowance();
 const { today } = storeToRefs(useMonthStore());
 </script>
 
@@ -26,7 +26,7 @@ const { today } = storeToRefs(useMonthStore());
       <AllowanceBreakdown :lines="view.lines" />
       <p v-if="view.leftOut" class="text-xs text-foreground-muted">{{ view.leftOut }}</p>
       <p class="text-xs text-foreground-muted">{{ $t('home.allowance.note') }}</p>
-      <ReserveList :rows="reserves" :currency :today :save="saveReserve" :remove="deleteReserve" />
+      <ReserveList :rows="reserves" :currency :owners :owner :today :save="saveReserve" :remove="deleteReserve" />
     </div>
   </VCard>
 </template>

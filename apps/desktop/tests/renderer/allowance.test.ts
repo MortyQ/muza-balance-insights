@@ -5,11 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { ReserveInput } from '@contract/allowance.ts';
-import type { AllowanceOverview, AllowanceQuery, AllowanceReserveView } from '@contract/api.ts';
+import type { AllowanceOverview, AllowanceQuery, AllowanceReserveView, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { allowanceView, reserveMinor, reserveRows } from '@/features/daily-allowance/utils.ts';
 import { formatMoney } from '@/shared/lib';
-import { VDatepicker } from '@/shared/ui';
+import { VDatepicker, VSelect } from '@/shared/ui';
 
 const uah = (k: number) => formatMoney(k, 980);
 const NONE = { uah: false, usd: false, eur: false };
@@ -18,7 +18,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const EUR = moneyFormat(RATES, { main: 978, also: NONE });
 
 const reserve = (o: Partial<AllowanceReserveView>): AllowanceReserveView => ({
-  id: 1, name: 'Подушка', currency: 980, amount: 300_000, until: null, active: true, uah: 300_000, ...o,
+  id: 1, name: 'Подушка', currency: 980, amount: 300_000, until: null, participantId: null, active: true, uah: 300_000, ...o,
 });
 const VIEW: AllowanceOverview = {
   today: '2026-10-07',
@@ -88,8 +88,13 @@ describe('available per day: helpers', () => {
     ]);
     expect(reserveRows({ ...VIEW, reserves: reserves.slice(0, 1) }, EUR, 2026)[0]).toMatchObject({
       approx: '',
-      input: { name: 'Квартира', currency: 978, amount: 50_000, until: null },
+      owner: null,
+      input: { name: 'Квартира', currency: 978, amount: 50_000, until: null, participantId: null },
     });
+    const owned = reserveRows({ ...VIEW, reserves: [reserve({ participantId: 2 }), reserve({ id: 2 })] }, FMT, 2026, (id) =>
+      id === null ? { common: true } : { name: 'Аня', color: 'red' },
+    );
+    expect(owned.map((r) => r.owner)).toEqual([{ name: 'Аня', color: 'red' }, { common: true }]);
   });
 });
 
@@ -117,8 +122,12 @@ describe('available per day: the block mounted', () => {
     document.body.innerHTML = '';
   });
 
-  async function mountBlock(month: 'this' | 'past' = 'this') {
+  async function mountBlock(month: 'this' | 'past' = 'this', people?: PeopleView) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
+    if (people) {
+      const { useParticipantStore } = await import('@/entities/participant');
+      useParticipantStore().view = people;
+    }
     const { useMonthStore } = await import('@/entities/period');
     const store = useMonthStore();
     if (month === 'past') store.set('2020-01', null);
@@ -165,7 +174,7 @@ describe('available per day: the block mounted', () => {
     form.findComponent(VDatepicker).vm.$emit('update:modelValue', '2026-12-01');
     await form.trigger('submit');
     await flushPromises();
-    expect(addReserve).toHaveBeenCalledWith({ name: 'Квартира', currency: 980, amount: 120_000, until: '2026-12-01' });
+    expect(addReserve).toHaveBeenCalledWith({ name: 'Квартира', currency: 980, amount: 120_000, until: '2026-12-01', participantId: null });
     expect(getAllowanceOverview).toHaveBeenCalledTimes(2);
     expect(w.find('form').exists()).toBe(false);
     w.unmount();
@@ -197,7 +206,7 @@ describe('available per day: the block mounted', () => {
     await amount!.setValue('4000');
     await w.find('form').trigger('submit');
     await flushPromises();
-    expect(updateReserve).toHaveBeenCalledWith(1, { name: 'Подушка', currency: 980, amount: 400_000, until: null });
+    expect(updateReserve).toHaveBeenCalledWith(1, { name: 'Подушка', currency: 980, amount: 400_000, until: null, participantId: null });
 
     document.body.querySelector<HTMLElement>('[aria-label="Действия: Подушка"]')!.click();
     await flushPromises();
@@ -212,6 +221,55 @@ describe('available per day: the block mounted', () => {
     const w = await mountBlock();
     expect(w.text()).toContain('Не больше 20 резервов.');
     expect(w.findAll('button').some((b) => b.text() === 'Добавить резерв')).toBe(false);
+    w.unmount();
+  });
+
+  const person = (id: number, label: string, color: 'blue' | 'orange') => ({ id, label, labelFromBank: false, labelPending: false, color, connections: [] });
+
+  it('a family: «Whose» offers each person and common (common at first in the family view); the rows say whose', async () => {
+    current = { ...VIEW, reserves: [reserve({ id: 1, name: 'Квартира', participantId: 2 }), reserve({ id: 2, name: 'Подушка' })] };
+    const w = await mountBlock('this', { people: [person(1, 'Сергей', 'blue'), person(2, 'Аня', 'orange')], secureStorage: true });
+    const rows = w.findAll('li').map((l) => l.text());
+    expect(rows[0]).toContain('Аня ·');
+    expect(rows[1]).toContain('общий ·');
+
+    await button(w, 'Добавить резерв').trigger('click');
+    const owner = w.find('form').findAllComponents(VSelect)[1]!; // after the currency
+    expect(owner.props('options')).toEqual([
+      { label: 'Сергей', value: 1 },
+      { label: 'Аня', value: 2 },
+      { label: 'Общий — только для всей семьи', value: 'common' },
+    ]);
+    const [name, amount] = w.find('form').findAll('input[type="text"]');
+    await name!.setValue('Навчання');
+    await amount!.setValue('100');
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    expect(addReserve).toHaveBeenLastCalledWith({ name: 'Навчання', currency: 980, amount: 10_000, until: null, participantId: null });
+
+    await button(w, 'Добавить резерв').trigger('click');
+    w.find('form').findAllComponents(VSelect)[1]!.vm.$emit('update:modelValue', 2);
+    const [n2, a2] = w.find('form').findAll('input[type="text"]');
+    await n2!.setValue('Подарунок');
+    await a2!.setValue('50');
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    expect(addReserve).toHaveBeenLastCalledWith({ name: 'Подарунок', currency: 980, amount: 5_000, until: null, participantId: 2 });
+    w.unmount();
+  });
+
+  it('one person: no «Whose», a new reserve is theirs, no owner in the rows', async () => {
+    const w = await mountBlock('this', { people: [person(1, 'Сергей', 'blue')], secureStorage: true });
+    expect(getAllowanceOverview.mock.calls[0]?.[0]).toEqual({ participantId: 1 });
+    expect(w.find('li').text()).not.toContain('·');
+    await button(w, 'Добавить резерв').trigger('click');
+    expect(w.find('form').findAllComponents(VSelect)).toHaveLength(1); // the currency only
+    const [name, amount] = w.find('form').findAll('input[type="text"]');
+    await name!.setValue('Квартира');
+    await amount!.setValue('100');
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    expect(addReserve).toHaveBeenLastCalledWith({ name: 'Квартира', currency: 980, amount: 10_000, until: null, participantId: 1 });
     w.unmount();
   });
 });

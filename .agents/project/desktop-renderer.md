@@ -16,8 +16,9 @@
   The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
   from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
   with data at both ends.
-  Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, or the picked
-  person's; never a person's card in the family view or an account card — shows «Free» (own funds − reserves) big and
+  Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
+  person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
+  card — shows «Free» (own funds − reserves) big and
   `actual` («Actually … · reserved …», `BalanceCard`) under it; the month panel's «Reserved» line (`reservedLine`,
   `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
   `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
@@ -138,7 +139,9 @@
   (`AllowanceBreakdown`: money, each active reserve, each mandatory payment, free, per day); `reserveMinor` — an amount typed in
   whole units; `reserveRows` — the reserves list (own currency, ≈ the screen's, the term). Under the count `ReserveList`:
   `ReserveRow` (`VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
-  «No end» `VCheckbox` or the last day `VDatepicker`; checked on submit), «Add a reserve» up to `RESERVES_MAX`;
+  «No end» `VCheckbox` or the last day `VDatepicker`; «Whose» `VSelect` — each person and «Common» — in a family of
+  several only, at first the picked person or common; one person: no field, theirs; checked on submit); a row says
+  whose (`ReserveRowView.owner`) in a family view of several, «Add a reserve» up to `RESERVES_MAX`;
   `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route

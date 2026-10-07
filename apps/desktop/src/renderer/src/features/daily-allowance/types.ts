@@ -37,6 +37,8 @@ export interface ReserveRowView {
   term: string;
   /** Counted now (not ended). */
   active: boolean;
+  /** Whose, shown in a family view of several: the person, or common; null — not shown. */
+  owner: { name: string; color: string } | { common: true } | null;
   /** As saved: the form starts from it. */
   input: ReserveInput;
 }
@@ -49,6 +51,10 @@ export interface UseAllowanceReturn {
   reserves: ComputedRef<ReserveRowView[]>;
   /** The screen's currency: a new reserve starts in it. */
   currency: ComputedRef<number>;
+  /** The people a reserve can belong to — a family of several only; empty: the one person owns every new reserve. */
+  owners: ComputedRef<ReadonlyArray<{ id: number; name: string }>>;
+  /** Whose a new reserve is at first: the picked person (one person: them), else common. */
+  owner: ComputedRef<number | null>;
   /** Adds (`id` null) or changes a reserve, then reloads; false — refused or failed. */
   saveReserve: (id: number | null, r: ReserveInput) => Promise<boolean>;
   /** Deletes a reserve, then reloads; false — failed. */

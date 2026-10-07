@@ -100,6 +100,11 @@ export type DataServiceDeps = {
 };
 
 /** Today's rates as the core's fold expects them (one rate for every period). */
+/** A reserve counts for the family (no person) always, for a person only when it is theirs (a common one never). */
+function reserveFor(r: { participantId: number | null }, participantId: number | undefined): boolean {
+  return participantId === undefined || r.participantId === participantId;
+}
+
 function rateMap(r: RatesView | null): Map<number, FxRate> {
   return new Map((r?.list ?? []).map((x) => [x.currency, { rate: x.rate, nearest: false }]));
 }
@@ -208,15 +213,24 @@ export class DataService {
     const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
     // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
     const coverage = { from: coverageFrom, to: coverageTo < coverageFrom ? coverageFrom : coverageTo };
-    // Only today's balance has reserves set against it: the sum of the active ones with a rate; null — none.
-    const reserved = current
-      ? (await this.reservesOn(db, localDate(now * 1000, tz), rates)).reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0)
-      : 0;
-    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total, reserved: reserved > 0 ? reserved : null };
+    // Only today's balance has reserves set against it: the active ones with a rate of the view; null — none.
+    const reserves = current ? await this.reservesOn(db, localDate(now * 1000, tz), rates) : [];
+    const reservedFor = (participantId?: number) => {
+      const sum = reserves.reduce((s, r) => s + (r.active && reserveFor(r, participantId) ? (r.uah ?? 0) : 0), 0);
+      return sum > 0 ? sum : null;
+    };
+    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total, reserved: reservedFor(q.participantId) };
     if (q.participantId === undefined) {
       const people: MonthOverview['people'] = [];
       for (const p of await listParticipants(db)) {
-        people.push({ participantId: p.id, label: p.label, labelPending: labelPending(p), color: p.color, total: (await cardTotal(p.id)).total });
+        people.push({
+          participantId: p.id,
+          label: p.label,
+          labelPending: labelPending(p),
+          color: p.color,
+          total: (await cardTotal(p.id)).total,
+          reserved: reservedFor(p.id),
+        });
       }
       return { ...base, people, accounts: [], rates: today };
     }
@@ -587,7 +601,7 @@ export class DataService {
     });
     const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
     const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
-    const reserves = await this.reservesOn(db, today, fx);
+    const reserves = (await this.reservesOn(db, today, fx)).filter((r) => reserveFor(r, q.participantId));
     const reserve = reserves.reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0);
     return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
   }

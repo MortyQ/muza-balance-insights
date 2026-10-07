@@ -6,10 +6,14 @@ import type { ReserveRowView } from '../types.ts';
 import ReserveForm from './ReserveForm.vue';
 import ReserveRow from './ReserveRow.vue';
 
-const { rows, currency, today, save, remove } = defineProps<{
+const { rows, currency, owners, owner, today, save, remove } = defineProps<{
   rows: ReadonlyArray<ReserveRowView>;
   /** The screen's currency: a new reserve starts in it. */
   currency: number;
+  /** Whom a reserve can belong to (a family of several); empty — no choice. */
+  owners: ReadonlyArray<{ id: number; name: string }>;
+  /** Whose a new reserve is at first. */
+  owner: number | null;
   today: string;
   save: (id: number | null, r: ReserveInput) => Promise<boolean>;
   remove: (id: number) => Promise<boolean>;
@@ -19,7 +23,7 @@ const { rows, currency, today, save, remove } = defineProps<{
 const editing = ref<'new' | number | null>(null);
 const failed = ref<'save' | 'delete' | null>(null);
 const full = computed(() => rows.length >= RESERVES_MAX);
-const fresh = computed<ReserveInput>(() => ({ name: '', currency: currency as ReserveCurrency, amount: 0, until: null }));
+const fresh = computed<ReserveInput>(() => ({ name: '', currency: currency as ReserveCurrency, amount: 0, until: null, participantId: owner }));
 
 function open(what: 'new' | number) {
   failed.value = null;
@@ -42,6 +46,7 @@ async function drop(id: number) {
         <li v-if="editing === r.id" class="py-2">
           <ReserveForm
             :start="r.input"
+            :owners
             :today
             :failed="failed === 'save'"
             @save="(input) => submit(r.id, input)"
@@ -56,6 +61,7 @@ async function drop(id: number) {
     <ReserveForm
       v-if="editing === 'new'"
       :start="fresh"
+      :owners
       :today
       :failed="failed === 'save'"
       @save="(input) => submit(null, input)"

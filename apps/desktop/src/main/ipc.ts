@@ -21,6 +21,7 @@ const reserve = z.strictObject({
   currency: z.union(RESERVE_CURRENCIES.map((c) => z.literal(c))),
   amount: z.number().int().min(0).max(RESERVE_AMOUNT_MAX),
   until: z.string().refine(isIsoDate).nullable(),
+  participantId: id.nullable(),
 });
 const isoDate = z.string().refine(isIsoDate);
 // The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview / incomeOverview → periodBounds.

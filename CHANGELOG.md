@@ -27,7 +27,8 @@ English interface.
   the month. Every step of the count is shown. Jars are not counted.
 - **Reserves.** Under the count, «Reserves» keeps money aside for what matters — rent, studies and the like. Give each
   one a name, an amount in hryvnias, dollars or euros (counted at today's rate) and a last day, or «No end». Edit or
-  delete one from its «…» menu; once its last day has passed it no longer counts. With reserves, the balance card on
+  delete one from its «…» menu; once its last day has passed it no longer counts. In a family, choose whose a reserve
+  is: it counts for that person and for the whole family, while a common one counts for the whole family only. With reserves, the balance card on
   the home screen shows what is free in large type, and the real balance with the reserved part under it; «Reserved»
   next to the card opens «Planning».
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:

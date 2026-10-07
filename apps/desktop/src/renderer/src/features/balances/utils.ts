@@ -184,7 +184,12 @@ export function slidesOf(
     const accents = v.people.map((p) => colorVar(p.color));
     const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`, v.reserved);
     family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: fmt.convert(p.total.income), spending: fmt.convert(p.total.spending) }));
-    return [family, ...v.people.map((p) => totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts)))];
+    return [
+      family,
+      ...v.people.map((p) =>
+        totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts), p.reserved),
+      ),
+    ];
   }
   const person = ctx.people.find((p) => p.id === ctx.selectedId);
   const accent = colorVar(person?.color ?? null);

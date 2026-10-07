@@ -466,7 +466,7 @@ export type AllowanceOverview = {
   money: number;
   /** Card currencies without a rate: left out of `money`. Minor units of that currency. */
   leftOut: Array<{ currency: number; ownFunds: number }>;
-  /** Every reserve, oldest first; the active ones' `uah` are taken off. */
+  /** The view's reserves (the family: all; a person: their own), oldest first; the active ones' `uah` are taken off. */
   reserves: AllowanceReserveView[];
   mandatory: AllowancePayment[];
   income: AllowanceIncome | null;
@@ -699,12 +699,13 @@ export type MonthOverview = {
   coverage: { from: string; to: string };
   total: CardTotal;
   /**
-   * The current month only: the active reserves («Available per day»), hryvnia kopecks at today's rate, set against
-   * `total` (the family's, or the person's asked for); null — none, or another month.
+   * The current month only: the active reserves («Available per day») of the view — the family's all, a person's own —
+   * hryvnia kopecks at today's rate, set against `total`; null — none, or another month.
    */
   reserved: number | null;
   /** The whole family only: each person in their own view of transfers. */
-  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
+  /** `reserved` — that person's own active reserves (common ones never), as MonthOverview.reserved. */
+  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal; reserved: number | null }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
   /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */

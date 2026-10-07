@@ -382,6 +382,8 @@
         "amount": "Amount",
         "amountInvalid": "A whole number from 0",
         "cancel": "Cancel",
+        "common": "Common — for the whole family only",
+        "commonShort": "common",
         "currency": "Currency",
         "dateMissing": "Pick the last day or «No end»",
         "delete": "Delete",
@@ -398,6 +400,7 @@
         "namePlaceholder": "For example, rent",
         "noEnd": "no end",
         "noEndLabel": "No end",
+        "owner": "Whose reserve",
         "save": "Save",
         "title": "Reserves",
         "until": "until {date} inclusive"

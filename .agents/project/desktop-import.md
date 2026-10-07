@@ -41,8 +41,8 @@
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
   `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `MonthOverview.reserved` — the active
-  reserves («Available per day») in hryvnia at today's rate, the current month only (null — none or another month),
-  set against `total`; the balance itself stays as the bank has it. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
+  reserves («Available per day») of the view in hryvnia at today's rate, the current month only (null — none or another
+  month), set against `total`; each of `people` has its own `reserved`; the balance itself stays as the bank has it. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
   of the total and of income over up to 6 months before that the data covers from their first day, same person and
   scope, today's rates; `running` while the shown month runs, and then no income (its day decides it); null with fewer
   than 3 such months. Whole months even for a running one: a few days of lumpy spending make «up to the same day» noise. `getNowOverview` takes only `participantId` (main
@@ -74,9 +74,11 @@
   `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
   core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
-  — the last day it counts or null; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
-  never in the analysis copy or an MCP tool). `reserves` in the answer lists them all: `active` (no end, or `until` ≥
-  today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
+  — the last day it counts or null; migration 14: `participant_id` — whose, or null for common; a removed person's become
+  common; with one person only, the reserves so far became theirs; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
+  never in the analysis copy or an MCP tool). Whose counts where (`reserveFor` in `main/data.ts`): the family view —
+  all; a person — their own only, never a common one. `reserves` in the answer lists the view's: `active` (no end, or
+  `until` ≥ today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
   `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits (`src/shared/allowance.ts`
   re-exports core's). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).

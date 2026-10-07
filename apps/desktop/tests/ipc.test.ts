@@ -120,16 +120,19 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getAllowanceOverview', [{ month: '2026-09' }]],
     ['addReserve', []],
     ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100 }]],
-    ['addReserve', [{ name: '   ', currency: 978, amount: 100, until: null }]],
-    ['addReserve', [{ name: 'x'.repeat(61), currency: 978, amount: 100, until: null }]],
-    ['addReserve', [{ name: 'Квартира', currency: 826, amount: 100, until: null }]],
-    ['addReserve', [{ name: 'Квартира', currency: 978, amount: -1, until: null }]],
-    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 1.5, until: null }]],
-    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 10_000_000_001, until: null }]],
-    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: '2026-02-30' }]],
-    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, extra: 1 }]],
-    ['updateReserve', [0, { name: 'Квартира', currency: 978, amount: 100, until: null }]],
+    ['addReserve', [{ name: '   ', currency: 978, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'x'.repeat(61), currency: 978, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 826, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: -1, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 1.5, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 10_000_000_001, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: '2026-02-30', participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: null, extra: 1 }]],
+    ['updateReserve', [0, { name: 'Квартира', currency: 978, amount: 100, until: null, participantId: null }]],
     ['updateReserve', [1]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: 0 }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: '2' }]],
     ['deleteReserve', [0]],
     ['deleteReserve', ['1']],
     ['setRecurringMark', []],
@@ -294,9 +297,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
     }
-    const flat = { name: 'Квартира', currency: 978, amount: 120_000, until: '2026-12-01' };
+    const flat = { name: 'Квартира', currency: 978, amount: 120_000, until: '2026-12-01', participantId: 2 };
     await expect(ipc.handlers.get('balance:addReserve')!(good, flat)).resolves.toEqual({ m: 'addReserve', a: [flat] });
-    await expect(ipc.handlers.get('balance:updateReserve')!(good, 3, { ...flat, until: null })).resolves.toEqual({ m: 'updateReserve', a: [3, { ...flat, until: null }] });
+    await expect(ipc.handlers.get('balance:updateReserve')!(good, 3, { ...flat, until: null, participantId: null })).resolves.toEqual({ m: 'updateReserve', a: [3, { ...flat, until: null, participantId: null }] });
     await expect(ipc.handlers.get('balance:deleteReserve')!(good, 3)).resolves.toEqual({ m: 'deleteReserve', a: [3] });
     await expect(ipc.handlers.get('balance:listConnectionAccounts')!(good, 4)).resolves.toEqual({ m: 'listConnectionAccounts', a: [4] });
     await expect(ipc.handlers.get('balance:setAccountEnabled')!(good, 'kKGVoZuHWzqVoZuH', false)).resolves.toEqual({
