@@ -214,3 +214,28 @@ describe('setRecurringMark', () => {
     await expect(setRecurringMark(db, id!, 'optional' as never, NOW)).rejects.toThrow(RecurringError);
   });
 });
+
+describe('findRecurring: regular income', () => {
+  const IN = { category: 'поступления', mcc: 4829 };
+
+  it('a sender who pays about once a month, in dollars with a drifting amount; the newest on its own day', async () => {
+    await account('fop', 840);
+    await tx('fop', '2025-12-07', 220_000, { ...IN, description: 'Від: Client Fictional' });
+    await tx('fop', '2026-01-04', 224_000, { ...IN, description: 'Від: Client Fictional' });
+    await tx('fop', '2026-02-06', 218_000, { ...IN, description: 'Від: Client Fictional' });
+    await tx('fop', '2026-03-05', 221_000, { ...IN, description: 'Від: Client Fictional' });
+    const [p] = await findRecurring(db, { ...PERIOD, kind: 'income' }, NOW);
+    expect(p).toMatchObject({ description: 'Від: Client Fictional', category: 'поступления', currency: 840, amount: 220_500, payments: 4, active: true });
+    expect(p!.last).toBe(kyivStartOfDay('2026-03-05') + 3600);
+  });
+
+  it('income is not spending and spending is not income; a refund is no income; irregular credits are no series', async () => {
+    await monthly('uah', '2026-03', 3, -9_900);
+    await monthly('uah', '2026-03', 3, 50_000, { ...IN, description: 'Від: Salary Co' }, 2);
+    // A refund: a credit outside «поступления».
+    await monthly('uah', '2026-03', 3, 9_900, { description: 'Streamio' }, 7);
+    for (const d of ['2026-01-03', '2026-01-09', '2026-02-20', '2026-03-01']) await tx('uah', d, 30_000, { ...IN, description: 'Від: Friend' });
+    expect((await findRecurring(db, { ...PERIOD, kind: 'income' }, NOW)).map((p) => p.description)).toEqual(['Від: Salary Co']);
+    expect((await findRecurring(db, PERIOD, NOW)).map((p) => p.description)).toEqual(['Streamio']);
+  });
+});

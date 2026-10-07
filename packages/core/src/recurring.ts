@@ -1,9 +1,19 @@
 // Regular payments found in the statement: the bank has no such list in its API, so a payee that is paid about once a
 // month for about the same amount is one. Built on the spending lines (spendingLinesSql), so what is not spending
-// (own transfers, the family's when viewed whole, cancelled rows) is never a regular payment either. Like
+// (own transfers, the family's when viewed whole, cancelled rows) is never a regular payment either. The same rules
+// find regular income (kind 'income') on the income rows (incomeRowsSql): a sender who pays about once a month. Like
 // categoryLines, the answer carries the bank's text: it is for the user's own screen, never an MCP tool or the copy.
+import { CATEGORY } from './categories.ts';
 import type { Db } from './db.ts';
-import { SPENDING_LINE_ARGS, SPENDING_LINE_SQL, spendingLinesSql, validateFilters, type Period, type SpendingFilters } from './summaries.ts';
+import {
+  SPENDING_LINE_ARGS,
+  SPENDING_LINE_SQL,
+  incomeRowsSql,
+  spendingLinesSql,
+  validateFilters,
+  type Period,
+  type SpendingFilters,
+} from './summaries.ts';
 
 const DAY = 86_400;
 /** A gap between two payments that keeps a series going: a month, or a month skipped. */
@@ -149,11 +159,21 @@ export function trailingSeries<T extends { time: number }>(lines: ReadonlyArray<
   return run.length >= MIN_PAYMENTS && monthGaps >= MIN_MONTH_GAPS ? run : null;
 }
 
-/** Regular payments among the period's spending, the active first, then by the usual amount (account currency). */
-export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec: number): Promise<RecurringPayment[]> {
-  validateFilters(q);
+/** The rows a series is looked for in: spending (amount < 0) or income (amount > 0), oldest first. */
+async function seriesRows(db: Db, q: Period & SpendingFilters, kind: 'spending' | 'income') {
+  if (kind === 'income') {
+    const from = await incomeRowsSql(db, q);
+    return db.execute({
+      sql: `SELECT r.id, r.time, r.account_id, r.participant_id, r.currency, r.amount, r.op_currency, r.op_amount, r.mcc, ? AS category,
+                   r.description, t.counter_iban, t.counter_edrpou
+            FROM (${from.sql}) r JOIN transactions t ON t.id = r.id
+            WHERE r.amount > 0
+            ORDER BY r.time, r.id`,
+      args: [CATEGORY.income, ...from.args],
+    });
+  }
   const from = await spendingLinesSql(db, q);
-  const rs = await db.execute({
+  return db.execute({
     sql: `${from.sql}
           SELECT l.id, l.time, l.account_id, c.participant_id, l.currency, l.amount, l.op_currency, l.op_amount, l.mcc, l.category,
                  t.description, t.counter_iban, t.counter_edrpou
@@ -164,11 +184,24 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
           ORDER BY l.time, l.id`,
     args: [...from.args, ...SPENDING_LINE_ARGS],
   });
+}
+
+/**
+ * Regular payments among the period's spending (or, `kind` 'income', regular income among its income), the active
+ * first, then by the usual amount (account currency). Amounts are positive either way.
+ */
+export async function findRecurring(
+  db: Db,
+  q: Period & SpendingFilters & { kind?: 'spending' | 'income' },
+  nowSec: number,
+): Promise<RecurringPayment[]> {
+  validateFilters(q);
+  const rs = await seriesRows(db, q, q.kind ?? 'spending');
   const marks = await marksByPayee(db);
   const byPayee = new Map<string, Line[]>();
   for (const r of rs.rows) {
     const description = String(r.description ?? '');
-    const amount = -Number(r.amount);
+    const amount = Math.abs(Number(r.amount));
     const opCurrency = r.op_currency === null ? Number(r.currency) : Number(r.op_currency);
     // No operation amount (another currency the bank did not report): the account amount stands in.
     const opAmount = r.op_amount === null ? amount : Math.abs(Number(r.op_amount));

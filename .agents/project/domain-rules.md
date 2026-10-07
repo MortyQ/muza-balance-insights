@@ -121,6 +121,8 @@
   are split by amount (±10% of a group's median `operation_amount`), and each group's series is the run back from its
   newest payment while gaps are 25–35 days or a skipped month (55–70); at least 3 payments and 2 one-month gaps.
   `active` — the last payment at most 40 days old. The desktop puts the next payment a calendar month after the last.
+  `kind: 'income'` finds regular income by the same rules on the income rows (`incomeRowsSql`: no refunds, no own or
+  — for the whole family — family transfers): a sender who pays about once a month.
 - Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular
   payment), by payee — the series key (`payeeOf`: payee + operation currency), so a mark holds for later payments and
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
