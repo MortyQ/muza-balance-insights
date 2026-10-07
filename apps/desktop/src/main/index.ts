@@ -268,6 +268,7 @@ app.whenReady().then(async () => {
     getCategoryOverview: (q) => data.categoryOverview(q),
     getIncomeOverview: (q) => data.incomeOverview(q),
     getRecurringOverview: (q) => data.recurringOverview(q),
+    setRecurringMark: (q) => data.setRecurringMark(q),
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {

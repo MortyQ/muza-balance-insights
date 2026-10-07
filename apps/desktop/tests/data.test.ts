@@ -1159,6 +1159,34 @@ describe('DataService.recurringOverview (the regular payments screen)', () => {
     expect(v.monthly).toBe(0);
   });
 
+  it('marks: mandatory counts apart within monthly; hidden leaves active and ended for its own list; cleared — back', async () => {
+    const before = await svc.recurringOverview({});
+    const codehub = before.active.find((p) => p.name === 'Codehub')!;
+    const gym = before.ended[0]!;
+    expect(before.hidden).toEqual([]);
+    expect(before.mandatory).toBe(0);
+
+    await svc.setRecurringMark({ key: codehub.key, mark: 'mandatory' });
+    await svc.setRecurringMark({ key: gym.key, mark: 'hidden' });
+    const v = await svc.recurringOverview({});
+    expect(v.active.map((p) => [p.name, p.mark])).toEqual([['Codehub', 'mandatory'], ['Streamio •••', null]]);
+    expect(v.monthly).toBe(40_000 + 19_900);
+    expect(v.mandatory).toBe(40_000);
+    expect(v.ended).toEqual([]);
+    expect(v.hidden.map((p) => [p.name, p.mark])).toEqual([['Gym Fictional', 'hidden']]);
+
+    // A hidden active one is out of monthly.
+    await svc.setRecurringMark({ key: codehub.key, mark: 'hidden' });
+    const h = await svc.recurringOverview({});
+    expect(h.monthly).toBe(19_900);
+    expect(h.mandatory).toBe(0);
+    expect(h.hidden.map((p) => p.name)).toEqual(['Codehub', 'Gym Fictional']);
+
+    await svc.setRecurringMark({ key: gym.key, mark: null });
+    expect((await svc.recurringOverview({})).ended.map((p) => p.name)).toEqual(['Gym Fictional']);
+    await expect(svc.setRecurringMark({ key: 'nope', mark: 'mandatory' })).rejects.toThrow();
+  });
+
   it('carries the description only — never a name, card number, IBAN or jar title', async () => {
     const json = JSON.stringify(await svc.recurringOverview({}));
     for (const c of CANARIES) expect(json).not.toContain(c);

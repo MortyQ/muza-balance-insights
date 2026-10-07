@@ -58,7 +58,9 @@
   `getRecurringOverview({ participantId? })` (the regular payments screen; `DataService.recurringOverview`): core
   `findRecurring` over the last 13 months (from the first day of the month a year back to today, system time zone), all
   scopes; `active` (last payment ≤ 40 days ago, hryvnia desc), `ended` (40–120 days, newest first), `monthly` = the
-  active ones' usual payments in hryvnia by today's rates; `next` — a calendar month after the last (`nextMonthDay`). The
+  active ones' usual payments in hryvnia by today's rates, `mandatory` — the part marked so; `hidden` — payees marked
+  «not a regular payment» (out of `active`, `ended` and the sums). `setRecurringMark({ key, mark })` (`key` — a
+  payment's id, `mark` `mandatory | hidden | null`) marks its payee (core `setRecurringMark`); unknown key — error; `next` — a calendar month after the last (`nextMonthDay`). The
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers

@@ -17,7 +17,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const payment = (o: Partial<RecurringPaymentView>): RecurringPaymentView => ({
   key: 'k', name: 'Streamio', category: 'связь и цифровые сервисы', categoryId: 'telecom', participantId: 1,
   account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: 19_900, currency: 980, amount: 19_900, operation: null,
-  payments: 4, first: '2026-06-05', last: '2026-09-05', next: '2026-10-05', ...o,
+  payments: 4, mark: null, first: '2026-06-05', last: '2026-09-05', next: '2026-10-05', ...o,
 });
 
 const VIEW: RecurringOverview = {
@@ -27,7 +27,9 @@ const VIEW: RecurringOverview = {
     payment({ key: 'b' }),
   ],
   ended: [payment({ key: 'c', name: 'Gym Fictional', category: 'спорт', categoryId: 'sport', last: '2026-07-04', next: '2026-08-04' })],
+  hidden: [],
   monthly: 59_900,
+  mandatory: 0,
   rates: RATES,
 };
 
@@ -108,7 +110,7 @@ describe('regular payments screen mounted', () => {
   });
 
   it('nothing found: the empty line instead of a list', async () => {
-    current = { ...VIEW, active: [], ended: [], monthly: 0 };
+    current = { ...VIEW, active: [], ended: [], hidden: [], monthly: 0 };
     const w = await mountScreen();
     expect(w.text()).toContain('За последние 13 месяцев регулярных платежей не найдено.');
     expect(w.findAll('ul')).toHaveLength(0);

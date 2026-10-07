@@ -6,7 +6,7 @@ import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
-import { findRecurring } from '@mono/core/recurring';
+import { findRecurring, setRecurringMark } from '@mono/core/recurring';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
@@ -39,6 +39,7 @@ import type {
   IncomeOverview,
   IncomeOverviewQuery,
   RecurringOverview,
+  RecurringMarkQuery,
   RecurringOverviewQuery,
   RecurringPaymentView,
   DataStatus,
@@ -488,16 +489,23 @@ export class DataService {
       amount: p.amount,
       operation: p.operationCurrency !== p.currency ? { currency: p.operationCurrency, amount: p.operationAmount } : null,
       payments: p.payments,
+      mark: p.mark,
       first: day(p.first),
       last: day(p.last),
       next: nextMonthDay(day(p.last)),
     });
-    const active = found.filter((p) => p.active).map(view).sort((a, b) => (b.uah ?? -1) - (a.uah ?? -1) || a.key.localeCompare(b.key));
-    const ended = found
-      .filter((p) => !p.active && now - p.last <= ENDED_DAYS * 86_400)
-      .sort((a, b) => b.last - a.last || a.id.localeCompare(b.id))
-      .map(view);
-    return { since, active, ended, monthly: active.reduce((s, p) => s + (p.uah ?? 0), 0), rates };
+    const newest = (a: (typeof found)[number], b: (typeof found)[number]) => b.last - a.last || a.id.localeCompare(b.id);
+    const shown = found.filter((p) => p.mark !== 'hidden');
+    const active = shown.filter((p) => p.active).map(view).sort((a, b) => (b.uah ?? -1) - (a.uah ?? -1) || a.key.localeCompare(b.key));
+    const ended = shown.filter((p) => !p.active && now - p.last <= ENDED_DAYS * 86_400).sort(newest).map(view);
+    const hidden = found.filter((p) => p.mark === 'hidden').sort(newest).map(view);
+    const total = (ps: RecurringPaymentView[]) => ps.reduce((s, p) => s + (p.uah ?? 0), 0);
+    return { since, active, ended, hidden, monthly: total(active), mandatory: total(active.filter((p) => p.mark === 'mandatory')), rates };
+  }
+
+  /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */
+  async setRecurringMark(q: RecurringMarkQuery): Promise<void> {
+    await setRecurringMark(await this.conn(), q.key, q.mark, this.d.nowSec());
   }
 
   /**

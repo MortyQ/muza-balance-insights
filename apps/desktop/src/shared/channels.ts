@@ -18,6 +18,7 @@ export const METHODS = [
   'getCategoryOverview',
   'getIncomeOverview',
   'getRecurringOverview',
+  'setRecurringMark',
   'getAnalyticsOverview',
   'getMonthOverview',
   'getSyncStatus',
