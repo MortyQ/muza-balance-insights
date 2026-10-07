@@ -11,6 +11,9 @@ export const DUPLICATE_TOKEN_TEXT: MessageKey = 'integrations.monobank.duplicate
 /** How to get the token, step by step. Plain text: the app opens no external links. */
 export const TOKEN_STEPS = ['integrations.monobank.step1', 'integrations.monobank.step2'] as const satisfies ReadonlyArray<MessageKey>;
 
+/** How to get the statement file for «Upload statement». */
+export const FILE_STEPS = ['integrations.monobank.fileStep1', 'integrations.monobank.fileStep2'] as const satisfies ReadonlyArray<MessageKey>;
+
 export const TOKEN_PLACEHOLDER: MessageKey = 'integrations.monobank.placeholder';
 
 /** Under the bank's name on the first connect screen. */
