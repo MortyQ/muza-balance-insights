@@ -594,6 +594,17 @@
       "footnote": "Spending is what was charged minus refunds. Transfers between your own accounts and income are not spending. Spending in other currencies is converted at today's Monobank rate.",
       "importing": "Import in progress — the numbers fill in as the statement downloads.",
       "inMonth": "In {month}",
+      "insights": {
+        "incomeLess": "Income is {pct}% below usual",
+        "incomeMore": "Income is {pct}% above usual",
+        "incomeNormal": "Income is at its usual level",
+        "less": "{name} — {pct}% less than usual (−{amount})",
+        "months": "{n} month | {n} months | {n} months",
+        "more": "{name} — {pct}% more than usual (+{amount})",
+        "noteMonth": "Compared with the median of {months}",
+        "noteRunning": "Compared with the median of {months} up to day {day}",
+        "title": "What's unusual"
+      },
       "leftOut": "+ {amount} without an exchange rate — not in the totals",
       "markTitle": "In {month} — {amount}",
       "noCompare": "No data in {month} to compare",

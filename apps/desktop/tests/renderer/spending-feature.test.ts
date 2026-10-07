@@ -312,3 +312,36 @@ describe('spending block: currencies come from the home-wide choice', () => {
     expect(ring).not.toContain('₴ ≈');
   });
 });
+
+describe('spending block: what is unusual', () => {
+  const USUAL = {
+    months: 6,
+    cutDay: null,
+    total: 60_000,
+    categories: [
+      { category: 'продукты', categoryId: 'groceries' as const, net: 100_000 },
+      { category: 'кафе и рестораны', categoryId: 'cafes' as const, net: 10_000 },
+    ],
+    income: { now: 100_000, usual: 100_000 },
+  };
+
+  it('a category off its usual: the line, income beside it, what usual is; a person picked inside the block hides it', async () => {
+    current = { ...VIEW, usual: USUAL };
+    const w = await mountBlock();
+    const text = w.find('section[aria-label="Что необычно"]').text();
+    expect(text).toContain(`Продукты — на 50% меньше обычного (−${formatMoney(50_000, 980)})`);
+    // Cafés: none this month, 10 000 usually — 100% less, 100 ₴ is under the threshold.
+    expect(text).not.toContain('Кафе');
+    expect(text).toContain('Доходы на обычном уровне');
+    expect(text).toContain('Сравнение с медианой за 6 месяцев');
+
+    await person(w, 'Аня')!.trigger('click');
+    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
+  });
+
+  it('nothing off: no section', async () => {
+    current = { ...VIEW, usual: { ...USUAL, categories: [{ category: 'продукты', categoryId: 'groceries', net: 48_000 }] } };
+    const w = await mountBlock();
+    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
+  });
+});

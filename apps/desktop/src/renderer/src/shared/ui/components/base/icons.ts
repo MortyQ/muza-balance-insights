@@ -46,6 +46,7 @@ import LucideList from "~icons/lucide/list";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucideLock from "~icons/lucide/lock";
 import LucideMaximize2 from "~icons/lucide/maximize-2";
+import LucideMinus from "~icons/lucide/minus";
 import LucideMonitor from "~icons/lucide/monitor";
 import LucideMoon from "~icons/lucide/moon";
 import LucidePackage from "~icons/lucide/package";
@@ -135,6 +136,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:lock": LucideLock,
   "lucide:maximize-2": LucideMaximize2,
+  "lucide:minus": LucideMinus,
   "lucide:monitor": LucideMonitor,
   "lucide:moon": LucideMoon,
   "lucide:package": LucidePackage,

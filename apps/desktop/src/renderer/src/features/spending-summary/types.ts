@@ -164,6 +164,18 @@ export interface UseSummaryViewReturn {
 }
 
 /** The block's display state from `useSpending` and the menu choices: everything the template binds. */
+/** One line of «What's unusual»: more spent (up), less (down), or about income (neutral). */
+export interface InsightLine {
+  text: string;
+  tone: 'up' | 'down' | 'neutral';
+}
+
+export interface InsightsView {
+  lines: InsightLine[];
+  /** What «usual» is here: the median of how many months, to which day. */
+  note: string;
+}
+
 export interface UseSpendingViewReturn {
   /** «September · Whole family». */
   subtitle: ComputedRef<string>;
@@ -175,5 +187,7 @@ export interface UseSpendingViewReturn {
   summary: ComputedRef<SummaryView | null>;
   categories: ComputedRef<CategoriesView>;
   people: ComputedRef<PersonRowView[]>;
+  /** The view's own figures only: none while a person is picked inside the block. */
+  insights: ComputedRef<InsightsView | null>;
   onPick: (id: number | null) => void;
 }
