@@ -121,6 +121,11 @@
   are split by amount (±10% of a group's median `operation_amount`), and each group's series is the run back from its
   newest payment while gaps are 25–35 days or a skipped month (55–70); at least 3 payments and 2 one-month gaps.
   `active` — the last payment at most 40 days old. The desktop puts the next payment a calendar month after the last.
+- Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular
+  payment), by payee — the series key (`payeeOf`: payee + operation currency), so a mark holds for later payments and
+  a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
+  null)` finds the payee by a payment of the series. The key holds bank text: the table is in this database only (not
+  whitelisted for the copy); «Start over» and «Delete all data» lose it like the overrides.
 - ✅ Пункт 2 реализован: `packages/core/src/summaries.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`) и `packages/core/src/status.ts`
   (`getBalances`, `getSyncStatus`). Суммы в копейках валюты счёта, валюты не суммируются, без имён и описаний;
   счета — id + подпись `type/CUR`.

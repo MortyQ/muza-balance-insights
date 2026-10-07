@@ -393,6 +393,19 @@ export const MIGRATIONS: ReadonlyArray<{ version: number; name: string; statemen
     // The user's toggle for an account: NULL = auto (accounts.ts), 1 = on, 0 = off. The bank's upsert never touches it.
     statements: [`ALTER TABLE accounts ADD COLUMN sync_choice INTEGER CHECK (sync_choice IN (0, 1))`],
   },
+  {
+    version: 12,
+    name: 'recurring_marks',
+    // The user's marks on a regular payment (recurring.ts), by payee: the key holds the bank's text or the account paid
+    // to, so it stays in this database only (the analysis copy takes whitelisted tables only).
+    statements: [
+      `CREATE TABLE recurring_marks (
+        payee      TEXT PRIMARY KEY,
+        mark       TEXT NOT NULL CHECK (mark IN ('mandatory', 'hidden')),
+        updated_at INTEGER NOT NULL
+      )`,
+    ],
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? 0;

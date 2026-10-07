@@ -17,6 +17,14 @@ const AMOUNT_TOLERANCE = 0.1;
 /** A series whose last payment is older than this (from now) has ended. */
 export const ACTIVE_DAYS = 40;
 
+/** The user's mark on a payee: `mandatory` — must be paid (counted as such); `hidden` — not a regular payment. */
+export const RECURRING_MARKS = ['mandatory', 'hidden'] as const;
+export type RecurringMark = (typeof RECURRING_MARKS)[number];
+
+export class RecurringError extends Error {
+  override name = 'RecurringError';
+}
+
 export type RecurringPayment = {
   /** The id of the last payment's transaction: stable while the series goes on, unique across the answer. */
   id: string;
@@ -38,6 +46,8 @@ export type RecurringPayment = {
   last: number;
   /** The last payment is at most ACTIVE_DAYS old. */
   active: boolean;
+  /** The user's mark on the payee; null — none. */
+  mark: RecurringMark | null;
 };
 
 type Line = {
@@ -74,6 +84,42 @@ const median = (xs: ReadonlyArray<number>): number => {
 };
 
 const within = (days: number, [lo, hi]: readonly [number, number]) => days >= lo && days <= hi;
+
+/** The key a series and its mark go by: the payee in one operation currency. */
+export function payeeOf(description: string, counterIban: string | null, counterEdrpou: string | null, operationCurrency: number): string {
+  return `${payeeKey(description, counterIban, counterEdrpou)}|${operationCurrency}`;
+}
+
+const text = (v: unknown) => (v === null || v === undefined || v === '' ? null : String(v));
+
+async function marksByPayee(db: Db): Promise<Map<string, RecurringMark>> {
+  const rs = await db.execute('SELECT payee, mark FROM recurring_marks');
+  return new Map(rs.rows.map((r) => [String(r.payee), r.mark === 'hidden' ? 'hidden' : 'mandatory']));
+}
+
+/**
+ * Marks the payee of the transaction `transactionId` (a payment of the series), or clears its mark (`null`). The mark
+ * holds for every payment to that payee in that currency, later ones included. Unknown transaction → RecurringError.
+ */
+export async function setRecurringMark(db: Db, transactionId: string, mark: RecurringMark | null, nowSec: number): Promise<void> {
+  if (mark !== null && !RECURRING_MARKS.includes(mark)) throw new RecurringError(`mark: ${RECURRING_MARKS.join(' | ')} | null`);
+  const rs = await db.execute({
+    sql: `SELECT t.description, t.counter_iban, t.counter_edrpou, COALESCE(t.currency_code, a.currency_code) AS op_currency
+          FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE t.id = ?`,
+    args: [transactionId],
+  });
+  const r = rs.rows[0];
+  if (!r) throw new RecurringError('unknown transaction');
+  const payee = payeeOf(String(r.description ?? ''), text(r.counter_iban), text(r.counter_edrpou), Number(r.op_currency));
+  if (mark === null) await db.execute({ sql: 'DELETE FROM recurring_marks WHERE payee = ?', args: [payee] });
+  else {
+    await db.execute({
+      sql: `INSERT INTO recurring_marks (payee, mark, updated_at) VALUES (?, ?, ?)
+            ON CONFLICT (payee) DO UPDATE SET mark = excluded.mark, updated_at = excluded.updated_at`,
+      args: [payee, mark, nowSec],
+    });
+  }
+}
 
 /** Payments of one payee split by amount: each joins the group whose usual amount it is within the tolerance of. */
 export function amountGroups<T extends { opAmount: number }>(lines: ReadonlyArray<T>): T[][] {
@@ -118,7 +164,7 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
           ORDER BY l.time, l.id`,
     args: [...from.args, ...SPENDING_LINE_ARGS],
   });
-  const text = (v: unknown) => (v === null || v === undefined || v === '' ? null : String(v));
+  const marks = await marksByPayee(db);
   const byPayee = new Map<string, Line[]>();
   for (const r of rs.rows) {
     const description = String(r.description ?? '');
@@ -126,7 +172,7 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
     const opCurrency = r.op_currency === null ? Number(r.currency) : Number(r.op_currency);
     // No operation amount (another currency the bank did not report): the account amount stands in.
     const opAmount = r.op_amount === null ? amount : Math.abs(Number(r.op_amount));
-    const payee = `${payeeKey(description, text(r.counter_iban), text(r.counter_edrpou))}|${opCurrency}`;
+    const payee = payeeOf(description, text(r.counter_iban), text(r.counter_edrpou), opCurrency);
     const line: Line = {
       id: String(r.id),
       time: Number(r.time),
@@ -165,6 +211,7 @@ export async function findRecurring(db: Db, q: Period & SpendingFilters, nowSec:
         first: series[0]!.time,
         last: last.time,
         active: nowSec - last.time <= ACTIVE_DAYS * DAY,
+        mark: marks.get(last.payee) ?? null,
       });
     }
   }

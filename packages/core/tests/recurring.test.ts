@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/db.ts';
 import { kyivStartOfDay } from '../src/format.ts';
-import { amountGroups, findRecurring, payeeKey, trailingSeries } from '../src/recurring.ts';
+import { amountGroups, findRecurring, payeeKey, RecurringError, setRecurringMark, trailingSeries } from '../src/recurring.ts';
 import { insertAccountRow, memoryDb } from './helpers.ts';
 
 // "Now" = 2026-03-15 12:00 Kyiv. Fictional payees and amounts only.
@@ -163,5 +163,54 @@ describe('findRecurring', () => {
     // December 2024 … February 2025: only February is in the period.
     await monthly('uah', '2025-02', 3, -9_900);
     expect(await findRecurring(db, PERIOD, NOW)).toEqual([]);
+  });
+
+  it('a found series has no mark', async () => {
+    await monthly('uah', '2026-03', 3, -9_900);
+    expect((await findRecurring(db, PERIOD, NOW))[0]!.mark).toBeNull();
+  });
+});
+
+describe('setRecurringMark', () => {
+  it('marks the payee: the mark holds for a later payment, can change and be cleared', async () => {
+    const ids = await monthly('uah', '2026-02', 3, -9_900);
+    await setRecurringMark(db, ids[0]!, 'mandatory', NOW);
+    expect((await findRecurring(db, PERIOD, NOW))[0]!.mark).toBe('mandatory');
+
+    // A new month's payment: a new last id, the same payee.
+    const next = await tx('uah', '2026-03-05', -9_900);
+    const [p] = await findRecurring(db, PERIOD, NOW);
+    expect(p).toMatchObject({ id: next, mark: 'mandatory' });
+
+    await setRecurringMark(db, next, 'hidden', NOW);
+    expect((await findRecurring(db, PERIOD, NOW))[0]!.mark).toBe('hidden');
+    await setRecurringMark(db, next, null, NOW);
+    expect((await findRecurring(db, PERIOD, NOW))[0]!.mark).toBeNull();
+    expect((await db.execute('SELECT COUNT(*) AS n FROM recurring_marks')).rows[0]?.n).toBe(0);
+  });
+
+  it('by the account paid to: a new description keeps the mark; another payee is not marked', async () => {
+    const o = { category: 'переводы людям', mcc: 4829, iban: 'UA00FICTIONALRENT' };
+    const first = await tx('uah', '2026-01-01', -1_200_000, { ...o, description: 'Rent January' });
+    await tx('uah', '2026-02-01', -1_200_000, { ...o, description: 'For the flat' });
+    await tx('uah', '2026-03-01', -1_200_000, { ...o, description: 'Rent' });
+    await monthly('uah', '2026-03', 3, -9_900);
+    await setRecurringMark(db, first, 'mandatory', NOW);
+    const found = await findRecurring(db, PERIOD, NOW);
+    expect(found.map((p) => [p.description, p.mark])).toEqual([['Rent', 'mandatory'], ['Streamio', null]]);
+  });
+
+  it('the same payee in another operation currency is another mark', async () => {
+    const uahIds = await monthly('uah', '2026-03', 3, -9_900, { description: 'Codehub' });
+    await monthly('uah', '2026-03', 3, -40_000, { description: 'Codehub', opCurrency: 840, opAmount: -1_000 }, 9);
+    await setRecurringMark(db, uahIds[2]!, 'hidden', NOW);
+    const found = await findRecurring(db, PERIOD, NOW);
+    expect(found.map((p) => [p.operationCurrency, p.mark])).toEqual([[840, null], [980, 'hidden']]);
+  });
+
+  it('an unknown transaction or mark is refused', async () => {
+    await expect(setRecurringMark(db, 'nope', 'mandatory', NOW)).rejects.toThrow(RecurringError);
+    const [id] = await monthly('uah', '2026-03', 3, -9_900);
+    await expect(setRecurringMark(db, id!, 'optional' as never, NOW)).rejects.toThrow(RecurringError);
   });
 });
