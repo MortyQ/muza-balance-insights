@@ -6,8 +6,8 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { PeopleView, RecurringMarkQuery, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { dayText, rowView, summaryView } from '@/features/recurring-payments/utils.ts';
-import { formatMoney } from '@/shared/lib';
+import { rowView, summaryView } from '@/features/recurring-payments/utils.ts';
+import { dayMonthName as dayText, formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
 const NONE = { uah: false, usd: false, eur: false };
@@ -34,7 +34,7 @@ const VIEW: RecurringOverview = {
 };
 
 describe('regular payments helpers', () => {
-  it('dayText: day and month, the year only outside the current one', () => {
+  it('dayMonthName: day and month, the year only outside the current one', () => {
     expect(dayText('2026-10-05', 2026)).toBe('5 октября');
     expect(dayText('2025-09-01', 2026)).toBe('1 сентября 2025');
   });

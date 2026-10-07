@@ -364,6 +364,29 @@
     "settingsOther": "Settings (Ctrl+,)"
   },
   "home": {
+    "allowance": {
+      "days": "{n} day | {n} days | {n} days",
+      "free": "Free",
+      "income": "Next income: {name}, ≈ {amount}",
+      "incomeLate": "Income was due on {date} and hasn't come yet — counting to the month's end",
+      "money": "Money on cards",
+      "noIncome": "No regular income found — counting to the month's end",
+      "noRate": "no rate",
+      "note": "Jars are not counted. Mandatory are the payments marked so on the «Regular payments» screen.",
+      "payment": "{name}, {date}",
+      "perDay": "Per day, {days}",
+      "reserve": "Reserve",
+      "reserveFailed": "Couldn't save the reserve.",
+      "reserveHint": "In hryvnias, taken off the money on cards",
+      "reserveInvalid": "A whole number of hryvnias from 0",
+      "reserveLabel": "Reserve — money not to touch",
+      "reserveSave": "Save",
+      "short": "short",
+      "title": "Available per day",
+      "toggle": "How it's counted",
+      "untilIncome": "until {date} · {days}",
+      "untilMonthEnd": "until the month's end · {days}"
+    },
     "balances": {
       "accountsCount": "{n} account | {n} accounts | {n} accounts",
       "accountsOf": "Accounts · {name}",

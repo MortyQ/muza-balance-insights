@@ -16,6 +16,11 @@ English interface.
 - **What went into jars.** The month panel next to the balance cards has a new line: how much the jars grew over the
   month («Into jars»), or how much came out of them («Out of jars»). Money taken back out of a jar counts against what
   was put in. Jars in dollars or euros are counted at today's rate.
+- **Available per day.** A new block on the home screen says how much you can spend a day until your next income:
+  the money on your cards, minus a reserve you choose and the mandatory regular payments due before that income,
+  divided by the days left. The app finds your regular income in the statement by itself; if it is late or there is
+  none, it counts to the end of the month. «How it's counted» shows every step and lets you set the reserve. Jars are
+  not counted.
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
