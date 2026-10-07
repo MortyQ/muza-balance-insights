@@ -298,21 +298,21 @@ function barsOption(bars: ReadonlyArray<BarView>, o: { color: (b: BarView) => st
 }
 
 /** «By weekday» of «When»: the peak in the colour, the rest softer. */
-export function weekdaysChartOption(w: Readonly<WhenView>): ChartOption {
-  return barsOption(w.weekdays, { color: (b) => (b.strong ? 'var(--cat)' : SOFT_BAR), value: (b) => b.height, radius: 4, gap: '18%', label: () => true, bottom: 20 });
+export function weekdaysChartOption(bars: ReadonlyArray<BarView>): ChartOption {
+  return barsOption(bars, { color: (b) => (b.strong ? 'var(--cat)' : SOFT_BAR), value: (b) => b.height, radius: 4, gap: '18%', label: () => true, bottom: 20 });
 }
 
 /** A day without a value still shows as a thin line (% of the chart). */
 const EMPTY_DAY = 4;
 
 /** «By day of the month» of «When»: days with a value in the colour, the others a thin line; labels under the chart. */
-export function daysChartOption(w: Readonly<WhenView>): ChartOption {
-  return barsOption(w.days, {
+export function daysChartOption(bars: ReadonlyArray<BarView>): ChartOption {
+  return barsOption(bars, {
     color: (b) => (b.strong ? 'var(--cat)' : 'var(--border)'),
     value: (b) => (b.strong ? b.height : EMPTY_DAY),
     radius: 2,
     gap: '15%',
-    label: (i) => i === 0 || i === 9 || i === 19 || i === w.days.length - 1,
+    label: (i) => i === 0 || i === 9 || i === 19 || i === bars.length - 1,
     bottom: 18,
   });
 }

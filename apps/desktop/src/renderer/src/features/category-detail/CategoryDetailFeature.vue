@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { RouterLink } from 'vue-router';
 import type { Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
-import { DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
-import { ROUTE } from '@/shared/config';
-import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { VCard, VInfoNotice } from '@/shared/ui';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
@@ -18,13 +16,7 @@ const { summary, none, months, people, merchants, moreMerchants, when, rows, tot
 
 <template>
   <div class="@container flex flex-col gap-4" :style="{ '--cat': summary?.color ?? 'var(--category-other)' }">
-    <RouterLink
-      :to="{ name: ROUTE.home }"
-      class="inline-flex min-h-9 items-center gap-1.5 self-start rounded-lg border border-border-subtle bg-surface px-3 font-semibold hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus"
-    >
-      <VIcon icon="lucide:chevron-left" class="size-4" />
-      {{ $t('category.back') }}
-    </RouterLink>
+    <BackLink :label="$t('category.back')" />
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('category.failed')" />
 

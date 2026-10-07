@@ -145,12 +145,12 @@ describe('category screen helpers', () => {
   it('«When» as ECharts options: the weekday peak in the colour; days with spending coloured, the rest a thin line; tooltips', () => {
     type Bars = { xAxis: { axisLabel: { interval: (i: number) => boolean } }; tooltip: { formatter: (p: { dataIndex: number }) => string }; series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }> }> };
     const when = whenView(LINES, VIEW, '', FMT);
-    const w = weekdaysChartOption(when) as Bars;
+    const w = weekdaysChartOption(when.weekdays) as Bars;
     expect(w.series[0]!.data.map((d) => [d.value, d.itemStyle.color])).toEqual([
       [0, SOFT_BAR], [0, SOFT_BAR], [26.9, SOFT_BAR], [93.4, SOFT_BAR], [0, SOFT_BAR], [100, 'var(--cat)'], [0, SOFT_BAR],
     ]);
     expect(w.tooltip.formatter({ dataIndex: 5 })).toBe(when.weekdays[5]!.title);
-    const d = daysChartOption(when) as Bars;
+    const d = daysChartOption(when.days) as Bars;
     expect(d.series[0]!.data.filter((x) => x.itemStyle.color === 'var(--cat)')).toHaveLength(3);
     expect(d.series[0]!.data[0]).toEqual({ value: 4, itemStyle: { color: 'var(--border)', borderRadius: [2, 2, 0, 0] } });
     expect(Array.from({ length: 30 }, (_, i) => i).filter((i) => d.xAxis.axisLabel.interval(i))).toEqual([0, 9, 19, 29]);

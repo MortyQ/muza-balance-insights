@@ -81,9 +81,11 @@
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.
 - **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
-  `DetailSummary` (header, figure, change chip, stats grid; `SummaryView`), `MonthsChart`, `WhenCharts`, `PeopleBars`,
-  `ShareList` (merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and
-  order; column and search texts come as props), `DetailSkeleton`; pure helpers in `utils.ts` (`monthsView`,
+  `DetailSummary` (`SummaryHeader` + `SummaryFigure` + `StatGrid` of `StatCell`; `SummaryView`), `MonthsChart`,
+  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PeopleBars` (`PersonBar`), `ShareList` (`ShareItem`:
+  merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and order, rows —
+  `OperationRow`, columns `OPERATION_COLS`; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
+  block only shows what it is given and emits what was picked; loading stays in the feature's `api/`; pure helpers in `utils.ts` (`monthsView`,
   `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
   each other).

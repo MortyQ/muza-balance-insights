@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
-import { DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
-import { ROUTE } from '@/shared/config';
-import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { VCard, VInfoNotice } from '@/shared/ui';
 import SourceBars from './components/SourceBars.vue';
 import { useIncomeDetail } from './composables/useIncomeDetail.ts';
 import { useIncomeView } from './composables/useIncomeView.ts';
@@ -15,13 +13,7 @@ const { summary, none, months, people, sources, senders, moreSenders, when, rows
 
 <template>
   <div class="@container flex flex-col gap-4" :style="{ '--cat': INCOME_COLOR }">
-    <RouterLink
-      :to="{ name: ROUTE.home }"
-      class="inline-flex min-h-9 items-center gap-1.5 self-start rounded-lg border border-border-subtle bg-surface px-3 font-semibold hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus"
-    >
-      <VIcon icon="lucide:chevron-left" class="size-4" />
-      {{ $t('income.back') }}
-    </RouterLink>
+    <BackLink :label="$t('income.back')" />
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('income.failed')" />
 
