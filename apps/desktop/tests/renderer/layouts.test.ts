@@ -122,6 +122,24 @@ describe('MasterLayout', () => {
     w.unmount();
   });
 
+  it('another screen starts at its top: the scroll area glides up; already at the top — left alone', async () => {
+    const { w, router } = await mountAt('/');
+    const area = w.get('[data-test="layout-scroll"]').element as HTMLElement;
+    const scrollTo = vi.fn();
+    area.scrollTo = scrollTo as unknown as HTMLElement['scrollTo'];
+    area.scrollTop = 600;
+    await router.push('/sub');
+    await flushPromises();
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+
+    scrollTo.mockClear();
+    area.scrollTop = 0;
+    await router.push('/second');
+    await flushPromises();
+    expect(scrollTo).not.toHaveBeenCalled();
+    w.unmount();
+  });
+
   it('the real home page carries the name KEPT_ALIVE lists', async () => {
     const { HomePage } = await import('@/pages/home');
     expect((HomePage as { __name?: string }).__name).toBe('HomePage');

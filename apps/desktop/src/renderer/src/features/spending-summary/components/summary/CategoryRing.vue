@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { VChangeChip } from '@/shared/ui';
-import type { ChipView } from '../types.ts';
+import type { ChipView } from '../../types.ts';
 
 const { stops, label, amount, perDay, chip, conv } = defineProps<{
   stops: string;

@@ -46,13 +46,18 @@
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
   `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
   `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
-  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils.ts` builds rows for the
+  before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils/` (by subject: `rows`, `people`, `chips`, `ring`, `totals`, `texts`, `prefs`, shared `month`; one `index.ts`) builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
   family's rank from `--category-1…7`, a picked person's category below the top 7 — `--category-other`), chips (`change`,
   3% → «as in»; short differences carry «+» / «−» and an `sr` direction for screen readers), operations (`opsView`, `opsVs` with `OPS_TONE`),
   the ring (`ringStops` / `ringOf`), the compared period (`comparePeriodText` → `home.spending.compareFull`), the centre total and every amount through `MoneyFormat` (`entities/currency-display`; no per-currency chip). `composables/useSpending.ts` — the
   request and the pick (reset on month, scope and global filter changes);
-  `composables/useSpendingView.ts` — everything the template shows. A picked person keeps the family's bar scale: their
+  `composables/useSpendingView.ts` puts together `usePick` (the block's own person pick and the people list),
+  `useCategoryRows` (`CategoriesView`: rows with their `categoryLink`, «noneBy») and `useSummaryView` (`SummaryView`:
+  ring, comparison, stats, member card). Components only show one model each: `SpendingHeader` (+ `SpendingSettings` of
+  `PrefSwitch`), `SpendingNotices`, `SpendingBody` → `summary/` (`SpendingSummary`: `CategoryRing`, `CompareNote`,
+  `SpendingStats`, `PeopleList` of `PersonRow`, `MemberCard`) and `categories/` (`CategoryList` of `CategoryRow`:
+  `OpsDiff`, `VShareBar`, `AmountCell`); a person's initial is `VAvatar` of `shared/ui`. A picked person keeps the family's bar scale: their
   segment first and bright, the others faded. A pick with no spending keeps the people list and shows `noneBy`; a pick
   of a person no longer in the view falls back to the family. Menu choices — `store/useSpendingPrefsStore.ts` (`localStorage` `spending.view`, defaults: split and mark on); the
   currency is the home-wide `entities/currency-display` choice. The footnote says «at today's Monobank rate». Layout: `@container`, the columns stack
@@ -64,11 +69,20 @@
   with the «Now» strip and the category screen.
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
-  unknown id → home by the route's guard; `query.scope`, read back by `categoryRequest`), default layout without its
+  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
+  written by `categoryLink(id, scope, period?)` and read back by `categoryRequest`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
-  `desktop-import.md`): the month, person and currency are the global filters; quiet reload on `syncStatus.version`.
+  `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
+  The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week (`periodRequest` of
+  `shared/config`: `query.day` / `query.week`, written by `periodQuery`), else the global filter's month; picking a
+  month in the filter while a day or a week is open replaces the route with the month's. What a period shows is one
+  table, `PERIOD_BLOCKS` of `entities/operations` (a day: no 12 months, no «per day», «When» only by part of the day; a
+  week: no 12 months and no days of the month), the header's period `periodTitle`; the feature's own words are
+  `PERIOD_TEXT` (the figure's label, the rank, «no spending»); a week is compared with last week (`changeChip(…,
+  'week')`, `entities.operations.change.week.*`), a day with nothing. The income screen works the same way.
+  The «Now» strip's category rows link here for their day or week (personal).
   `composables/useCategoryDetail.ts` — the request; `composables/useCategoryView.ts` — the view plus the list's own
-  merchant filter, search and order (reset with month, category and person). «When» is counted on the screen from the
+  merchant filter, search and order (reset with period, category and person). «When» is counted on the screen from the
   lines (`whenTotals`), so the merchant filter narrows it too and its title names the merchant; the search does not. `utils.ts` is pure and tested
   (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
@@ -81,20 +95,23 @@
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.
 - **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
-  `DetailSummary` (header, figure, change chip, stats grid; `SummaryView`), `MonthsChart`, `WhenCharts`, `PeopleBars`,
-  `ShareList` (merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and
-  order; column and search texts come as props), `DetailSkeleton`; pure helpers in `utils.ts` (`monthsView`,
+  `DetailSummary` (`SummaryHeader` + `SummaryFigure` + `StatGrid` of `StatCell`; `SummaryView`), `MonthsChart`,
+  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PeopleBars` (`PersonBar`), `ShareList` (`ShareItem`:
+  merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and order, rows —
+  `OperationRow`, columns `OPERATION_COLS`; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
+  block only shows what it is given and emits what was picked; loading stays in the feature's `api/`; pure helpers in `utils.ts` (`monthsView`,
   `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
   each other).
   Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
   chart, the dashed average as a mark line with its amount at the right end (`avgLabel`), the picked month's label bold) and «When»'s weekdays and days
   (`weekdaysChartOption`, `daysChartOption`); options are pure and tested, colours stay CSS (`var(--cat)`, `SOFT_BAR`)
-  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day) stay plain CSS.
+  and `VChart` resolves them. Progress-like bars (people, names, sources, parts of the day, the spending rows, the «Now» panel) are `VShareBar` of `shared/ui`.
 - **Income screen** (`features/income-detail`, `IncomeDetailFeature.vue`; `pages/income`): route `income` (`/income`,
   `meta.navParent: 'home'`), opened from the «In» row of the balances' month panel (`FlowBars` `incomeTo`, md only). One
-  IPC `getIncomeOverview({ month, participantId? })` — all scopes, the balances' figure; month, person and currency are
-  the global filters; quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
+  IPC `getIncomeOverview({ period, participantId? })` — all scopes, the balances' figure; person and currency are the
+  global filters, the period as on the category screen (`incomeLink(period?)`, the page passes a day, a week or the
+  filter's month); quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
   summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
@@ -125,6 +142,12 @@
   Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
   `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
+  Under the cells, «By category» opens a panel (`VCollapse`, unmounted while closed) with a «Today | Week» switch and
+  every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
+  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: %, «same», «new»).
+  Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
+  default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen,
+  which each row opens for that day or week.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

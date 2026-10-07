@@ -260,7 +260,13 @@ export type SpendingOverview = {
   familyTotal: number | null;
 };
 
-export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number };
+/**
+ * The period of a detail screen: one day, a week from its Monday, a whole month (system time zone). Main refuses a week
+ * that does not start on a Monday and a period that starts after today.
+ */
+export type DetailPeriod = { kind: 'day'; date: string } | { kind: 'week'; from: string } | { kind: 'month'; month: string };
+
+export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number };
 
 /** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
 export type CategoryLineView = {
@@ -301,7 +307,8 @@ export type CategoryLineView = {
  * — the same lines as the spending block's figure. Weekdays, hours and days are the system time zone's.
  */
 export type CategoryOverview = {
-  month: string;
+  /** The period asked for. */
+  range: DetailPeriod;
   category: string;
   categoryId: CategoryId;
   period: SpendingOverview['period'];
@@ -326,8 +333,8 @@ export type CategoryOverview = {
     rank: number | null;
   };
   /**
-   * 12 months up to the current one while `month` is among its last 12, else up to `month`; net null before the data
-   * starts.
+   * A month only (else empty): 12 months up to the current one while the month is among its last 12, else up to it;
+   * net null before the data starts.
    */
   months: Array<{ month: string; net: number | null }>;
   /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
@@ -343,7 +350,7 @@ export type CategoryOverview = {
   leftOut: Array<{ currency: number; net: number }>;
 };
 
-export type IncomeOverviewQuery = { month: string; participantId?: number };
+export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number };
 
 /** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
 export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
@@ -385,7 +392,8 @@ export type IncomeLineView = {
  * the balances' «Income» figure. Weekdays, hours and days are the system time zone's.
  */
 export type IncomeOverview = {
-  month: string;
+  /** The period asked for. */
+  range: DetailPeriod;
   period: SpendingOverview['period'];
   compare: SpendingOverview['compare'];
   summary: IncomeAmounts & {
@@ -399,10 +407,10 @@ export type IncomeOverview = {
     activeDays: number;
     /** Key of the largest line; null — none. */
     largest: string | null;
-    /** The month's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
+    /** The period's spending, all scopes (the balances' «Spent»), to say how much of the income went. */
     spending: number;
   };
-  /** As CategoryOverview's months: up to the current month while `month` is among its last 12; null before the data. */
+  /** As CategoryOverview's months (a month only, else empty): up to the current month while the month is among its last 12; null before the data. */
   months: Array<{ month: string; total: number | null }>;
   /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
   thisMonth: string;
@@ -462,6 +470,9 @@ export type AnalyticsOverview = {
 
 export type NowOverviewQuery = { participantId?: number };
 
+/** A spending category of the «Now» strip; `rank` — its place in this month's categories (the spending block's colour), null — not among them. */
+export type NowCategory = SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null };
+
 /**
  * The «Now» strip: today and this calendar week (from Monday), personal scope, hryvnia kopecks folded by today's
  * rates — the same aggregate as the spending block. Main's clock in the system time zone decides «today».
@@ -474,6 +485,8 @@ export type NowOverview = {
   /** Date the data reaches in the system time zone (core periodInfo); null — never imported. */
   dataUntil: string | null;
   today: SpendingAmounts;
+  /** Today's spending categories: net > 0, net desc. */
+  todayCategories: NowCategory[];
   /**
    * Median of daily net over the 30 days before today that the data covers (a day without spending counts as 0);
    * null — fewer than 7 such days.
@@ -492,7 +505,12 @@ export type NowOverview = {
      * The category with the largest net this week; `rank` — its place in this month's categories (the spending
      * block's colour), null — not among them. Null — no spending this week.
      */
-    top: (SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null }) | null;
+    top: NowCategory | null;
+    /**
+     * The week's spending categories (net > 0, net desc); `prev` — the category's net over the same days as `prev`,
+     * null when `prev` is null.
+     */
+    categories: Array<NowCategory & { prev: number | null }>;
     pendingHolds: number;
   };
   /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */

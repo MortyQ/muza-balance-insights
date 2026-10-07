@@ -41,11 +41,15 @@
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
   `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `getNowOverview` takes only `participantId` (main
-  decides «today» in the system time zone); like the other data channels it is closed while locked and while the
+  decides «today» in the system time zone; categories of today and of the week, the week's with last week's same days —
+  categories and numbers only, no bank text); like the other data channels it is closed while locked and while the
   database is not ready.
-  `getCategoryOverview({ month, category: CategoryId, scope, participantId? })` (the category screen; main:
-  `DataService.categoryOverview`, helpers in `main/category.ts`) and `getIncomeOverview({ month, participantId? })` (the
-  income screen; `DataService.incomeOverview`, `incomeStats` in `main/category.ts`) are the **only** data channels that
+  `getCategoryOverview({ period, category: CategoryId, scope, participantId? })` (the category screen; main:
+  `DataService.categoryOverview`, helpers in `main/category.ts`; `period` — `DetailPeriod`: `{ kind: 'day', date }`,
+  `{ kind: 'week', from }` (a Monday) or `{ kind: 'month', month }`; zod checks the shape, `main/period.ts` the days
+  (`periodBounds`: a Monday, not after today) and what it is compared with (`periodCompare`: last month; last week cut
+  to the weekdays the data reaches; a day — nothing); the 12 months only for a month) and `getIncomeOverview({ period, participantId? })` (the
+  income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `main/category.ts`) are the **only** data channels that
   carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending

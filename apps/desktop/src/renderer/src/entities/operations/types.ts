@@ -24,7 +24,6 @@ export interface MonthsView {
 export interface PersonView {
   participantId: number;
   name: string;
-  initial: string;
   color: string;
   amount: string;
   caption: string;
@@ -52,9 +51,11 @@ export interface DayPartView {
 export interface WhenView {
   /** «When», or «When: Uklon» while the list is filtered by one name. */
   title: string;
-  weekdays: BarView[];
+  /** null — not shown for this period (one day). */
+  weekdays: BarView[] | null;
   dayParts: DayPartView[];
-  days: BarView[];
+  /** null — not shown for this period (a day, a week). */
+  days: BarView[] | null;
   peak: string;
 }
 

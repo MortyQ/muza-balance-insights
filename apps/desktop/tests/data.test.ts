@@ -580,6 +580,10 @@ describe('DataService.nowOverview', () => {
       weekday: 2,
       dataUntil: '2026-03-10',
       today: { net: 15_000, purchases: 2 },
+      todayCategories: [
+        { category: 'продукты', categoryId: 'groceries', net: 12_000, purchases: 1, rank: 1 },
+        { category: 'кафе и рестораны', categoryId: 'cafes', net: 3_000, purchases: 1, rank: 2 },
+      ],
       // 26 days of 1 000 and 6 000, 8 000, 101 000, 25 000 → the middle two are 1 000
       usualDay: 1_000,
       week: {
@@ -589,6 +593,12 @@ describe('DataService.nowOverview', () => {
         prev: 14_000,
         // March: travel 104 000, groceries 41 000, cafes 15 000 → groceries is second
         top: { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1 },
+        // Last Monday and Tuesday: groceries 2 × 1 000, cafes 5 000 + 7 000, no travel (last Wednesday is outside)
+        categories: [
+          { category: 'продукты', categoryId: 'groceries', net: 33_000, purchases: 3, rank: 1, prev: 2_000 },
+          { category: 'путешествия', categoryId: 'travel', net: 4_000, purchases: 1, rank: 0, prev: 0 },
+          { category: 'кафе и рестораны', categoryId: 'cafes', net: 3_000, purchases: 1, rank: 2, prev: 12_000 },
+        ],
         pendingHolds: 0,
       },
       rates: RATES,
@@ -624,6 +634,7 @@ describe('DataService.nowOverview', () => {
     expect(v.dataUntil).toBe('2026-03-10');
     expect(v.week.from).toBe('2026-03-09');
     expect(v.week.prev).toBe(3_000); // last Monday + last Tuesday only, not last Wednesday
+    expect(v.week.categories).toEqual([]);
   });
 
   it('data that starts late: no usual day (under 7 covered days), no last week', async () => {
@@ -633,6 +644,7 @@ describe('DataService.nowOverview', () => {
     const v = await at().nowOverview({});
     expect(v.usualDay).toBeNull();
     expect(v.week.prev).toBeNull();
+    expect(v.week.categories).toEqual([{ category: 'продукты', categoryId: 'groceries', net: 3_000, purchases: 1, rank: 0, prev: null }]);
     expect(v.today).toEqual({ net: 3_000, purchases: 1 });
   });
 
@@ -649,6 +661,7 @@ describe('DataService.nowOverview', () => {
     expect(mine.today).toEqual({ net: 9_000, purchases: 1 });
     expect(mine.usualDay).toBe(0);
     expect(mine.week.top).toEqual({ category: 'продукты', categoryId: 'groceries', net: 9_000, purchases: 1, rank: 0 });
+    expect(mine.todayCategories).toEqual([{ category: 'продукты', categoryId: 'groceries', net: 9_000, purchases: 1, rank: 0 }]);
   });
 
   it('an empty week: no top category, zeros', async () => {
@@ -656,6 +669,8 @@ describe('DataService.nowOverview', () => {
     await synced('uah');
     const v = await at().nowOverview({});
     expect(v.week.top).toBeNull();
+    expect(v.week.categories).toEqual([]);
+    expect(v.todayCategories).toEqual([]);
     expect(v.week.total).toEqual({ net: 0, purchases: 0 });
     expect(v.today).toEqual({ net: 0, purchases: 0 });
   });
@@ -768,7 +783,7 @@ describe('DataService.categoryOverview (the category screen)', () => {
   });
 
   it('the figure is the spending block\'s; the lines sum to it; share, rank, last month, 12 months', async () => {
-    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    const v = await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'transport', scope: 'personal' });
     const block = (await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).categories.find((c) => c.category === TAXI)!;
     expect(v.category).toBe(TAXI);
     expect(v.summary).toMatchObject({ net: block.net, purchases: block.purchases, gross: 3_500 + 10_000 + 20_000, refunds: 1_000 });
@@ -784,15 +799,15 @@ describe('DataService.categoryOverview (the category screen)', () => {
   });
 
   it('12 months reach today while the picked month is among them, else end with it', async () => {
-    const recent = await svc.categoryOverview({ month: '2026-02', category: 'transport', scope: 'personal' });
+    const recent = await svc.categoryOverview({ period: { kind: 'month', month: '2026-02' }, category: 'transport', scope: 'personal' });
     expect(recent.months.map((m) => m.month)).toEqual(last12Months('2026-03'));
     expect(recent.months.at(-1)).toEqual({ month: '2026-03', net: 32_500 });
-    const old = await svc.categoryOverview({ month: '2025-03', category: 'transport', scope: 'personal' });
+    const old = await svc.categoryOverview({ period: { kind: 'month', month: '2025-03' }, category: 'transport', scope: 'personal' });
     expect(old.months.map((m) => m.month)).toEqual(last12Months('2025-03'));
   });
 
   it('lines: newest first, the commission apart, refund and foreign-currency marks, local date and weekday', async () => {
-    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    const v = await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'transport', scope: 'personal' });
     expect(v.lines.map((l) => [l.key, l.date, l.weekday, l.uah, l.refund, l.commission])).toEqual([
       ['t5', '2026-03-08', 7, -20_000, false, false],
       ['t4', '2026-03-07', 6, 1_000, true, false],
@@ -800,12 +815,55 @@ describe('DataService.categoryOverview (the category screen)', () => {
       ['t2', '2026-03-02', 1, -10_000, false, false],
     ]);
     expect(v.lines[0]).toMatchObject({ currency: 840, amount: -500, account: { kind: 'card', type: 'white', currency: 840 }, time: '01:00' });
-    const fees = await svc.categoryOverview({ month: '2026-03', category: 'fees', scope: 'personal' });
+    const fees = await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'fees', scope: 'personal' });
     expect(fees.lines.map((l) => [l.key, l.uah, l.commission])).toEqual([['t3:fee', -500, true]]);
   });
 
+  it('a week from its Monday: its lines only, share and rank among the week\'s categories, last week to compare, no 12 months', async () => {
+    const v = await svc.categoryOverview({ period: { kind: 'week', from: '2026-03-02' }, category: 'transport', scope: 'personal' });
+    expect(v.range).toEqual({ kind: 'week', from: '2026-03-02' });
+    expect(v.period).toMatchObject({ from: '2026-03-02', to: '2026-03-08', days: 7 });
+    expect(v.lines.map((l) => l.key)).toEqual(['t5', 't4', 't3', 't2']);
+    // The week's spending: transport 32 500 and the 500 fee (groceries are on 03-09, the next week).
+    expect(v.summary).toMatchObject({ net: 32_500, rank: 1, share: 32_500 / 33_000, prev: { net: 0, purchases: 0 } });
+    expect(v.compare).toEqual({ from: '2026-02-23', to: '2026-03-01', partial: false });
+    expect(v.months).toEqual([]);
+  });
+
+  it('this week while the data stops inside it: last week cut to the weekdays the data reaches', async () => {
+    // NOW is Sunday 03-15; the data reaches Tuesday 03-10.
+    const v = await svc.categoryOverview({ period: { kind: 'week', from: '2026-03-09' }, category: 'transport', scope: 'personal' });
+    expect(v.compare).toEqual({ from: '2026-03-02', to: '2026-03-03', partial: true });
+    expect(v.summary.prev).toEqual({ net: 10_000, purchases: 1 });
+    expect(v.lines).toEqual([]);
+  });
+
+  it('one day: its lines only, nothing to compare, no 12 months', async () => {
+    const v = await svc.categoryOverview({ period: { kind: 'day', date: '2026-03-06' }, category: 'transport', scope: 'personal' });
+    expect(v.period).toMatchObject({ from: '2026-03-06', to: '2026-03-06', days: 1 });
+    expect(v.lines.map((l) => l.key)).toEqual(['t3']);
+    expect(v.summary).toMatchObject({ net: 3_500, purchases: 1, prev: null });
+    expect(v.compare).toBeNull();
+    expect(v.months).toEqual([]);
+  });
+
+  it('refuses a week that does not start on a Monday and a period that starts after today', async () => {
+    await expect(svc.categoryOverview({ period: { kind: 'week', from: '2026-03-03' }, category: 'transport', scope: 'personal' })).rejects.toThrow(/Monday/);
+    await expect(svc.categoryOverview({ period: { kind: 'day', date: '2026-03-16' }, category: 'transport', scope: 'personal' })).rejects.toThrow(/after today/);
+    await expect(svc.categoryOverview({ period: { kind: 'month', month: '2026-04' }, category: 'transport', scope: 'personal' })).rejects.toThrow(/after today/);
+  });
+
+  it('a week or a day carries the bank text under the same rules: no names, card numbers, IBANs or jar titles', async () => {
+    await tx('uah', '2026-03-03', -700, TAXI, { description: 'Taxi to 537541******1234 via CANARY-JAR Dream' });
+    for (const period of [{ kind: 'week', from: '2026-03-02' }, { kind: 'day', date: '2026-03-03' }] as const) {
+      const json = JSON.stringify(await svc.categoryOverview({ period, category: 'transport', scope: 'personal' }));
+      for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+      expect(json).not.toMatch(/\*{4}|UA\d{2}/);
+    }
+  });
+
   it('where: merchants case-insensitively; one person — no people', async () => {
-    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    const v = await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'transport', scope: 'personal' });
     expect(v.merchants).toEqual([
       { name: 'Imaginary Metro', net: 20_000, purchases: 1 },
       { name: 'Vigadane Taxi', net: 12_500, purchases: 2 },
@@ -815,10 +873,10 @@ describe('DataService.categoryOverview (the category screen)', () => {
 
   it('the description and comment reach the renderer here only — never a name, card number, IBAN or jar title', async () => {
     await tx('uah', '2026-03-03', -700, TAXI, { description: 'Taxi to 537541******1234 via CANARY-JAR Dream' });
-    const v = await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' });
+    const v = await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'transport', scope: 'personal' });
     expect(v.lines.find((l) => l.key === `t${seq}`)?.merchant).toBe('Taxi to •• 1234 via •••');
     await tx('uah', '2026-03-04', -100, TAXI);
-    const json = JSON.stringify(await svc.categoryOverview({ month: '2026-03', category: 'transport', scope: 'personal' }));
+    const json = JSON.stringify(await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'transport', scope: 'personal' }));
     expect(json).toContain(CANARIES[1]);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);
@@ -844,7 +902,7 @@ describe('DataService.incomeOverview (the income screen)', () => {
   });
 
   it('the figure is the balances\' «Income», all scopes; the lines sum to it; last month, 12 months, the spending', async () => {
-    const v = await svc.incomeOverview({ month: '2026-03' });
+    const v = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } });
     const month = await svc.monthOverview({ month: '2026-03' });
     expect(v.summary.total).toBe(month.total.income);
     expect(v.summary).toMatchObject({ total: 40_000 + 10_000 + 4_000 + 50_000, lines: 4, prev: { total: 30_000, lines: 1 }, activeDays: 4, largest: 't5' });
@@ -858,8 +916,28 @@ describe('DataService.incomeOverview (the income screen)', () => {
     expect(v.leftOut).toEqual([]);
   });
 
+  it('a week from its Monday: its lines, last week to compare, the week\'s spending, no 12 months', async () => {
+    const v = await svc.incomeOverview({ period: { kind: 'week', from: '2026-03-02' } });
+    expect(v.range).toEqual({ kind: 'week', from: '2026-03-02' });
+    expect(v.period).toMatchObject({ from: '2026-03-02', to: '2026-03-08', days: 7 });
+    expect(v.lines.map((l) => l.key)).toEqual(['t5', 't4', 't3', 't2']);
+    expect(v.summary).toMatchObject({ total: 104_000, lines: 4, prev: { total: 0, lines: 0 }, spending: 0 });
+    expect(v.compare).toEqual({ from: '2026-02-23', to: '2026-03-01', partial: false });
+    expect(v.months).toEqual([]);
+  });
+
+  it('one day: its lines only, nothing to compare; a week not from a Monday is refused', async () => {
+    const v = await svc.incomeOverview({ period: { kind: 'day', date: '2026-03-04' } });
+    expect(v.lines.map((l) => l.key)).toEqual(['t3']);
+    expect(v.summary).toMatchObject({ total: 10_000, lines: 1, prev: null });
+    expect(v.compare).toBeNull();
+    expect(v.months).toEqual([]);
+    await expect(svc.incomeOverview({ period: { kind: 'week', from: '2026-03-04' } })).rejects.toThrow(/Monday/);
+    await expect(svc.incomeOverview({ period: { kind: 'day', date: '2026-03-16' } })).rejects.toThrow(/after today/);
+  });
+
   it('lines: newest first, source, sender, local date and weekday; senders case-insensitively; sources; one person — no people', async () => {
-    const v = await svc.incomeOverview({ month: '2026-03' });
+    const v = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } });
     expect(v.lines.map((l) => [l.key, l.date, l.weekday, l.uah, l.source, l.sender])).toEqual([
       ['t5', '2026-03-07', 6, 50_000, 'other_bank', 'Vigadanyi Bank'],
       ['t4', '2026-03-06', 5, 4_000, 'transfer', 'Imaginary Client'],
@@ -891,9 +969,9 @@ describe('DataService.incomeOverview (the income screen)', () => {
     await tx('uah', '2026-03-05', -15_000, 'семье', { family: true });
     await tx('hers', '2026-03-05', 15_000, IN, { family: true, mcc: 4829 });
 
-    const family = await svc.incomeOverview({ month: '2026-03' });
+    const family = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } });
     expect(family.people).toEqual([{ participantId: me, total: 104_000, lines: 4 }, { participantId: her, total: 7_000, lines: 1 }]);
-    const hers = await svc.incomeOverview({ month: '2026-03', participantId: her });
+    const hers = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, participantId: her });
     expect(hers.summary.total).toBe(22_000);
     expect(hers.lines.find((l) => l.source === 'family')?.uah).toBe(15_000);
     expect(hers.people).toEqual([]);
@@ -903,7 +981,7 @@ describe('DataService.incomeOverview (the income screen)', () => {
     await account('pln', 'white', 985, 0);
     await synced('pln');
     await tx('pln', '2026-03-03', 3_000, IN, { mcc: 4829 });
-    const v = await svc.incomeOverview({ month: '2026-03' });
+    const v = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } });
     expect(v.leftOut).toEqual([{ currency: 985, total: 3_000 }]);
     expect(v.summary.total).toBe(104_000);
     expect(v.lines.find((l) => l.currency === 985)?.uah).toBeNull();
@@ -911,10 +989,10 @@ describe('DataService.incomeOverview (the income screen)', () => {
 
   it('the description and comment reach the renderer — never a name, card number, IBAN or jar title', async () => {
     await tx('uah', '2026-03-03', 700, IN, { mcc: 4829, description: 'From 537541******1234 to CANARY-JAR Dream' });
-    const v = await svc.incomeOverview({ month: '2026-03' });
+    const v = await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } });
     expect(v.lines.find((l) => l.key === `t${seq}`)?.sender).toBe('From •• 1234 to •••');
     await tx('uah', '2026-03-04', 100, IN, { mcc: 4829 });
-    const json = JSON.stringify(await svc.incomeOverview({ month: '2026-03' }));
+    const json = JSON.stringify(await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } }));
     expect(json).toContain(CANARIES[1]);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);

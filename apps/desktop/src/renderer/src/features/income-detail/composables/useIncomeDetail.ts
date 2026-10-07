@@ -1,27 +1,29 @@
-import { computed } from 'vue';
-import { storeToRefs } from 'pinia';
+import { computed, toValue, type MaybeRefOrGetter } from 'vue';
+import type { DetailPeriod } from '@contract/api.ts';
 import { useMoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
-import { useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { t, useAsyncData } from '@/shared/lib';
 import { useIncomeRequest } from '../api/useIncomeRequest.ts';
 import type { UseIncomeDetailReturn } from '../types.ts';
 
-/** The income of the global filters' month and person (or the family): reloads when either changes, and quietly when the data changes. */
-export function useIncomeDetail(): UseIncomeDetailReturn {
+/**
+ * The income of a period (a day, a week, a month) for the global filter's person (or the family): reloads when either
+ * changes, and quietly when the data changes.
+ */
+export function useIncomeDetail(period: MaybeRefOrGetter<DetailPeriod>): UseIncomeDetailReturn {
   const { fetchIncomeOverview } = useIncomeRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
-  const { month } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchIncomeOverview({ month: month.value, ...(id !== null ? { participantId: id } : {}) });
+      return fetchIncomeOverview({ period: toValue(period), ...(id !== null ? { participantId: id } : {}) });
     },
-    [month, participantId],
+    // The period by value: a page that rebuilds the same period does not reload.
+    [() => JSON.stringify(toValue(period)), participantId],
     { quiet: [() => syncStatus.version] },
   );
 

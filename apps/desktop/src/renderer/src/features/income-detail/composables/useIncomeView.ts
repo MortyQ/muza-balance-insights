@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import type { UseIncomeDetailReturn, UseIncomeViewReturn } from '../types.ts';
-import { lineRows, listTotal, monthsView, moreSendersText, noneText, peopleView, senderKey, sendersView, sourcesView, summaryView, whenView } from '../utils.ts';
+import { lineRows, listTotal, monthsView, moreSendersText, noneText, peopleView, receivedLabel, senderKey, sendersView, sourcesView, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
 export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn {
@@ -11,14 +11,15 @@ export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn 
   const sender = ref<string | null>(null);
   const query = ref('');
   const sort = ref<SortKey>('date');
-  // Another month or person is another list: the filter and the search start over.
-  watch(() => [view.value?.month, participant.selectedId], () => {
+  // Another period or person is another list: the filter and the search start over.
+  watch(() => [JSON.stringify(view.value?.range), participant.selectedId], () => {
     sender.value = null;
     query.value = '';
   });
 
   const people = computed(() => participant.people.map((p) => ({ id: p.id, name: p.label, color: colorVar(p.color) })));
   const summary = computed(() => (view.value ? summaryView(view.value, who.value, fmt.value) : null));
+  const label = computed(() => (view.value ? receivedLabel(view.value.range) : ''));
   const none = computed(() => (view.value ? noneText(view.value) : ''));
   const months = computed(() => (view.value ? monthsView(view.value, fmt.value) : null));
   const whoReceived = computed(() => (view.value && family.value ? peopleView(view.value, people.value, fmt.value) : []));
@@ -45,6 +46,6 @@ export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn 
   }
 
   return {
-    summary, none, months, people: whoReceived, sources, senders, moreSenders, when, rows: computed(() => list.value.rows), total, sender, senderName, query, sort, pickSender,
+    summary, label, none, months, people: whoReceived, sources, senders, moreSenders, when, rows: computed(() => list.value.rows), total, sender, senderName, query, sort, pickSender,
   };
 }

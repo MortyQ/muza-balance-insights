@@ -2,8 +2,9 @@
 import { computed } from 'vue';
 import { t } from '@/shared/lib';
 import { type SegmentOption, VIcon, VInput, VSegmentedControl } from '@/shared/ui';
-import { SORTS } from '../constants.ts';
-import type { LineRowView, MarkView, SortKey } from '../types.ts';
+import { OPERATION_COLS as COLS, SORTS } from '../constants.ts';
+import type { LineRowView, SortKey } from '../types.ts';
+import OperationRow from './OperationRow.vue';
 
 const { rows, total, filterName, whereLabel, searchLabel } = defineProps<{
   rows: ReadonlyArray<LineRowView>;
@@ -20,13 +21,6 @@ const emit = defineEmits<{ clear: [] }>();
 
 const SORT_LABEL = { date: 'entities.operations.list.byDate', amount: 'entities.operations.list.byAmount' } as const;
 const sortOptions = computed<SegmentOption<SortKey>[]>(() => SORTS.map((value) => ({ value, label: t(SORT_LABEL[value]) })));
-const MARK_TONE: Record<MarkView['tone'], string> = {
-  warning: 'bg-warning-subtle text-[color-mix(in_oklch,var(--warning)_55%,var(--foreground))]',
-  good: 'bg-success-subtle text-success',
-  neutral: 'bg-surface-sunken text-foreground-secondary',
-  accent: 'bg-primary-subtle text-primary',
-};
-const COLS = 'grid grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem] gap-3';
 </script>
 
 <template>
@@ -58,30 +52,7 @@ const COLS = 'grid grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem] gap-3';
           <span role="columnheader">{{ $t('entities.operations.list.col.marks') }}</span>
           <span role="columnheader" class="text-right">{{ $t('entities.operations.list.col.amount') }}</span>
         </div>
-        <div v-for="r in rows" :key="r.key" role="row" :class="COLS" class="items-center border-b border-border-subtle px-3 py-2.5 hover:bg-surface-raised">
-          <span role="cell" class="flex flex-col">
-            <span class="font-semibold">{{ r.date }}</span>
-            <span class="text-xs text-foreground-muted">{{ r.time }}</span>
-          </span>
-          <span role="cell" class="flex min-w-0 flex-col">
-            <span class="truncate font-semibold" :title="r.merchant">{{ r.merchant }}</span>
-            <span v-if="r.comment" class="truncate text-xs italic text-foreground-muted" :title="r.comment">{{ r.comment }}</span>
-          </span>
-          <span role="cell" class="flex min-w-0 items-center gap-2">
-            <span v-if="r.person" class="size-2 shrink-0 rounded-full bg-(--c)" :style="{ '--c': r.personColor }" aria-hidden="true" />
-            <span class="flex min-w-0 flex-col">
-              <span v-if="r.person" class="truncate">{{ r.person }}</span>
-              <span class="truncate text-xs text-foreground-muted" :title="r.account">{{ r.account }}</span>
-            </span>
-          </span>
-          <span role="cell" class="flex flex-wrap gap-1">
-            <span v-for="m in r.marks" :key="m.text" class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold" :class="MARK_TONE[m.tone]">{{ m.text }}</span>
-          </span>
-          <span role="cell" class="flex flex-col items-end">
-            <span class="whitespace-nowrap font-bold tabular-nums" :class="{ 'text-success': r.incoming }">{{ r.amount }}</span>
-            <span v-if="r.original" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ r.original }}</span>
-          </span>
-        </div>
+        <OperationRow v-for="r in rows" :key="r.key" :row="r" />
         <p v-if="rows.length === 0" class="px-3 py-5 text-foreground-muted">{{ $t('entities.operations.list.empty') }}</p>
       </div>
     </div>

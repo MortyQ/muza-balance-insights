@@ -6,8 +6,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { PeopleView, SpendingOverview, SpendingOverviewQuery } from '@contract/api.ts';
-import CategoryRing from '@/features/spending-summary/components/CategoryRing.vue';
-import PeopleList from '@/features/spending-summary/components/PeopleList.vue';
+import CategoryRing from '@/features/spending-summary/components/summary/CategoryRing.vue';
+import PeopleList from '@/features/spending-summary/components/summary/PeopleList.vue';
 import { formatMoney } from '@/shared/lib';
 
 // reka-ui's popover positioning reaches for ResizeObserver, which happy-dom does not provide.
@@ -242,9 +242,9 @@ describe('spending block: the only person in the app', () => {
 
     expect(w.findComponent(PeopleList).exists()).toBe(false);
     expect(category(w)).toHaveLength(1); // a row opens its screen in every view
-    const segments = w.findAll('[title]').filter((e) => (e.attributes('style') ?? '').includes('--s:'));
+    const segments = w.findAll('.v-share-bar__part');
     expect(segments.length).toBeGreaterThan(0);
-    for (const seg of segments) expect(seg.attributes('style')).toContain('--s: var(--category-1)');
+    for (const seg of segments) expect(seg.attributes('style')).toContain('--v-share-bar-color: var(--category-1)');
 
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();

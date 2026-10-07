@@ -81,6 +81,8 @@
       "search": "Search: place, comment, amount"
     },
     "none": "No spending in this category in {month}.",
+    "noneDay": "No spending in this category that day.",
+    "noneWeek": "No spending in this category that week.",
     "summary": {
       "activeDays": "days with spending: {n} of {days}",
       "avg": "Average",
@@ -92,11 +94,17 @@
       "median": "median {amount}",
       "ops": "Operations",
       "opsPrev": "{n} in {month}",
+      "opsPrevWeek": "{n} last week",
       "perDay": "Per day",
       "rank": "#{n} this month",
+      "rankDay": "#{n} that day",
+      "rankWeek": "#{n} that week",
       "share": "Share of all spending",
       "spent": "Spent this month",
-      "vsPrev": "{amount} in {month}"
+      "spentDay": "Spent that day",
+      "spentWeek": "Spent that week",
+      "vsPrev": "{amount} in {month}",
+      "vsPrevWeek": "{amount} last week"
     },
     "where": {
       "more": "{n} more place | {n} more places | {n} more places",
@@ -255,6 +263,15 @@
     },
     "operations": {
       "avg": "avg {amount}",
+      "change": {
+        "week": {
+          "less": "{pct}% less than last week",
+          "lessPartial": "{pct}% less than by this day last week",
+          "more": "{pct}% more than last week",
+          "morePartial": "{pct}% more than by this day last week",
+          "same": "as last week"
+        }
+      },
       "filterHint": "Click to filter the list",
       "list": {
         "byAmount": "By amount",
@@ -285,6 +302,10 @@
         "title": "Last 12 months"
       },
       "noDescription": "No description",
+      "period": {
+        "day": "{weekday}, {date}",
+        "week": "Week {from} – {to}"
+      },
       "when": {
         "dayParts": "By time of day",
         "dayTitle": "{month} {day} — {amount}",
@@ -296,6 +317,7 @@
           "3": "night 23–6"
         },
         "peak": "Most: {weekday} · {part}",
+        "peakPart": "Most: {part}",
         "title": "When",
         "titleFor": "When: {name}",
         "weekdays": "By weekday"
@@ -460,6 +482,18 @@
       "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
     },
     "now": {
+      "cats": {
+        "count": "{n} category | {n} categories | {n} categories",
+        "label": "Spending by category",
+        "new": "new",
+        "noneToday": "No spending yet today",
+        "period": "Period",
+        "same": "same",
+        "today": "Today",
+        "toggle": "By category",
+        "vsWeek": "Compared with the same days last week, {days}",
+        "week": "Week"
+      },
       "date": "{weekday}, {month} {day}",
       "label": "Now",
       "noneWeek": "No spending yet this week",
@@ -581,6 +615,8 @@
       "search": "Search: sender, comment, amount"
     },
     "none": "No income in {month}.",
+    "noneDay": "No income that day.",
+    "noneWeek": "No income that week.",
     "open": "Open income",
     "sources": {
       "source": {
@@ -599,12 +635,16 @@
       "largestWhere": "{sender}, {date} at {time}",
       "lines": "Payments in",
       "linesPrev": "{n} in {month}",
+      "linesPrevWeek": "{n} last week",
       "median": "median {amount}",
       "perDay": "Per day",
       "received": "Received this month",
+      "receivedDay": "Received that day",
+      "receivedWeek": "Received that week",
       "spent": "Spent",
       "spentShare": "{pct}% of the income",
-      "vsPrev": "{amount} in {month}"
+      "vsPrev": "{amount} in {month}",
+      "vsPrevWeek": "{amount} last week"
     },
     "title": "Income",
     "who": {

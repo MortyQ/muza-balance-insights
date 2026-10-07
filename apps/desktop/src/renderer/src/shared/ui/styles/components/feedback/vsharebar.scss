@@ -1,0 +1,49 @@
+/* Ours, not copied — VShareBar (see VShareBar.vue header). Bar heights have no --ui-* token: literals. */
+
+.v-share-bar {
+  position: relative;
+  display: block;
+  border-radius: var(--ui-radius-full);
+
+  &--xs {
+    height: 0.25rem;
+  }
+
+  &--sm {
+    height: 0.375rem;
+  }
+
+  &--md {
+    height: 0.5rem;
+  }
+
+  &--track {
+    background: var(--ui-surface-sunken);
+  }
+}
+
+.v-share-bar__fill {
+  display: flex;
+  gap: 2px;
+  width: var(--v-share-bar-width);
+  height: 100%;
+}
+
+.v-share-bar__part {
+  flex: var(--v-share-bar-grow) 1 0;
+  min-width: 0;
+  border-radius: var(--ui-radius-full);
+  background: var(--v-share-bar-color);
+}
+
+/* Taller than the bar, centred on it: it reads as a tick across the track. */
+.v-share-bar__mark {
+  position: absolute;
+  top: -0.25rem;
+  bottom: -0.25rem;
+  left: var(--v-share-bar-mark);
+  width: 2px;
+  margin-inline-start: -1px;
+  border-radius: var(--ui-radius-xs);
+  background: var(--ui-foreground);
+}

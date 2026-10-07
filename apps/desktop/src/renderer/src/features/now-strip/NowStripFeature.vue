@@ -1,9 +1,24 @@
 <script setup lang="ts">
-import { VCard, VChangeChip, VIcon } from '@/shared/ui';
+import { computed, useId } from 'vue';
+import { t } from '@/shared/lib';
+import { VCard, VChangeChip, VCollapse, VIcon, VSegmentedControl, type SegmentOption } from '@/shared/ui';
+import CategoryList from './components/CategoryList.vue';
 import WeekBars from './components/WeekBars.vue';
 import { useNowStrip } from './composables/useNowStrip.ts';
+import { useNowPrefsStore } from './store/useNowPrefsStore.ts';
+import type { NowPeriod } from './types.ts';
 
 const { visible, view } = useNowStrip();
+const prefs = useNowPrefsStore();
+const panelId = useId();
+
+const open = computed({ get: () => prefs.prefs.open, set: (v: boolean) => prefs.set('open', v) });
+const period = computed({ get: () => prefs.prefs.period, set: (v: NowPeriod) => prefs.set('period', v) });
+const periods = computed((): SegmentOption<NowPeriod>[] => [
+  { label: t('home.now.cats.today'), value: 'today' },
+  { label: t('home.now.cats.week'), value: 'week' },
+]);
+const list = computed(() => view.value?.categories[period.value] ?? null);
 </script>
 
 <template>
@@ -54,6 +69,33 @@ const { visible, view } = useNowStrip();
           <p v-else class="text-sm text-foreground-muted">{{ $t('home.now.noneWeek') }}</p>
         </div>
       </div>
+
+      <button
+        type="button"
+        class="flex w-full cursor-pointer items-center justify-center gap-1.5 border-t border-border-subtle px-4 py-2 text-sm font-semibold text-primary hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-border-focus"
+        :aria-expanded="open"
+        :aria-controls="panelId"
+        data-test="now-categories-toggle"
+        @click="open = !open"
+      >
+        {{ $t('home.now.cats.toggle') }}
+        <VIcon icon="lucide:chevron-down" class="size-3.5 transition-transform motion-reduce:transition-none" :class="{ 'rotate-180': open }" />
+      </button>
+
+      <VCollapse :id="panelId" v-model="open" unmount>
+        <div class="flex flex-col gap-3 border-t border-border-subtle px-4 pt-3 pb-4" role="region" :aria-label="$t('home.now.cats.label')">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <VSegmentedControl v-model="period" :options="periods" size="sm" role="group" :aria-label="$t('home.now.cats.period')" />
+            <span v-if="list?.summary" class="text-xs text-foreground-muted tabular-nums">{{ list.summary }}</span>
+          </div>
+          <CategoryList
+            v-if="list"
+            :list
+            :empty="period === 'today' ? $t('home.now.cats.noneToday') : $t('home.now.noneWeek')"
+          />
+          <p v-if="period === 'week' && list?.note" class="text-xs text-foreground-muted">{{ list.note }}</p>
+        </div>
+      </VCollapse>
     </div>
   </VCard>
 </template>

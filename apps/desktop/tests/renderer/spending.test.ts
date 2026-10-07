@@ -20,7 +20,7 @@ import {
   rowsFor,
   shareOf,
   totalFor,
-} from '@/features/spending-summary/utils.ts';
+} from '@/features/spending-summary/utils/index.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 
@@ -264,12 +264,12 @@ describe('peopleRows', () => {
   it('«Вся семья» first with every colour, then each person with their share; pressed follows the pick', () => {
     const rows = peopleRows(VIEW, null, P, UAH_FMT);
     expect(rows[0]).toEqual({
-      participantId: null, name: 'Вся семья', initial: '', color: '', dots: ['var(--series-blue)', 'var(--series-orange)'],
+      participantId: null, name: 'Вся семья', color: '', dots: ['var(--series-blue)', 'var(--series-orange)'],
       caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: '+25%', tone: 'up', arrow: null, sr: 'больше, чем в августе' }, pressed: true,
     });
-    expect(rows.slice(1).map((r) => [r.participantId, r.name, r.initial, r.color, r.caption, r.amount, r.chip?.text, r.pressed])).toEqual([
-      [1, 'Сергей', 'С', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), '+20%', false],
-      [2, 'Аня', 'А', 'var(--series-orange)', '40% · 8 оп.', uah(40_000), '+33%', false],
+    expect(rows.slice(1).map((r) => [r.participantId, r.name, r.color, r.caption, r.amount, r.chip?.text, r.pressed])).toEqual([
+      [1, 'Сергей', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), '+20%', false],
+      [2, 'Аня', 'var(--series-orange)', '40% · 8 оп.', uah(40_000), '+33%', false],
     ]);
     expect(peopleRows(VIEW, 2, P, UAH_FMT).map((r) => r.pressed)).toEqual([false, false, true]);
   });

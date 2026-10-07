@@ -19,6 +19,7 @@ Replace these copies with imports once muzakit is published as a package.
 | `VSwitch`, `vswitch.scss` | `vswitch.scss`: focus ring on the track for `:focus-visible` (the real input is clipped) |
 | `VInput` | `useDebounceFn` from `@vueuse/core` → local `debounce()` in `components/inputs/debounce.ts` (not exported from `index.ts`); the `debounce` prop is destructured as `debounceProp` to avoid shadowing the imported helper; `ref<HTMLInputElement \| HTMLTextAreaElement \| null>(null)` → `useTemplateRef`; added `defineExpose({ focus })` so a parent can call `.focus()` on a template ref to the component (muzakit's `VInput` doesn't expose this — no screen there needed to refocus it programmatically); `vinput.scss`: a disabled field drops its resting shadow, as a disabled `VButton` does |
 | `VCollapse` | none |
+| `VAvatar`, `vavatar.scss` | `color` — a CSS colour (a person's) for the background, white initials (`.v-avatar--color`), instead of the name's tone; one letter, upper-cased in Ukrainian (people are named by one word; muzakit takes two and indexes `parts[0][0]`, which `noUncheckedIndexedAccess` refuses); the root is a `<span>` (it sits inside buttons); `alt` defaults to `''` and the online dot is `aria-hidden` — muzakit's English literals «User avatar» / «Online» would be untranslated screen text; `<style lang="scss">` + `@use` |
 | `VComposer` | `useClipboard` from `@vueuse/core` → a local `copy()`: `navigator.clipboard.writeText`, falling back to an off-screen `<textarea>` + `execCommand('copy')` (vueuse's own pre-`execCommand`-removal fallback) when the Clipboard API is unavailable or rejects; its own `copied` ref/timeout, cleared in `onScopeDispose` — see the note below about Electron's `denyAllPermissions` |
 
 ## Ours, not copied
@@ -49,6 +50,11 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
   text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
   block's chips and the now strip's.
+- `VShareBar` — a share of a whole as a bar (`value` %, clamped): one fill (`color`) or coloured `segments`
+  (`ShareBarSegment`: flex weight, colour, title), an optional `mark` (where the value stood before), `xs | sm | md`,
+  the grey track on or off. muzakit's `VMeter` is a value against a threshold (state icon, label), not a share.
+  `aria-hidden`: the value is always beside it as text. Every progress-like bar of the data screens (categories, people,
+  sources, parts of the day).
 - `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
   `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
   `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option
