@@ -10,6 +10,8 @@ English interface.
 - **What you spent on today and this week.** «By category» under the «Now» strip opens a list of every category you
   spent on, for «Today» or «Week»: amount, number of operations and share of the period. For the week, each category is
   compared with the same days of last week. The app remembers whether the list is open and which period you picked.
+- **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
+  back to the top.
 
 ## 0.1.8 — 2026-10-06
 

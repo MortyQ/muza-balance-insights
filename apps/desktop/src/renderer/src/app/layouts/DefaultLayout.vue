@@ -1,9 +1,12 @@
 <script setup lang="ts">
+import { useTemplateRef } from 'vue';
 import { SideNav } from '@/shared/layout';
 import { GlobalFilters } from '@/widgets/global-filters';
 import { useNav } from './composables/useNav.ts';
+import { useScrollTop } from './composables/useScrollTop.ts';
 
 const nav = useNav();
+useScrollTop(useTemplateRef<HTMLElement>('area'));
 </script>
 
 <template>
@@ -14,7 +17,7 @@ const nav = useNav();
     <div class="shrink-0 px-4 min-[45rem]:px-8">
       <GlobalFilters class="mx-auto max-w-[calc(13rem+3rem+52rem)]" />
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto px-4 min-[45rem]:px-8">
+    <div ref="area" class="min-h-0 flex-1 overflow-y-auto px-4 min-[45rem]:px-8" data-test="layout-scroll">
       <div
         class="mx-auto grid max-w-[calc(13rem+3rem+52rem)] items-start gap-y-4 pt-6 pb-6 min-[45rem]:grid-cols-[13rem_minmax(0,1fr)] min-[45rem]:gap-x-12"
       >
