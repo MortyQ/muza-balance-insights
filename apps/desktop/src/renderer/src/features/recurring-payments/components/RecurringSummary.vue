@@ -12,6 +12,7 @@ const { summary } = defineProps<{ summary: RecurringSummaryView }>();
       <span class="text-foreground-secondary">{{ $t('recurring.perMonth') }}</span>
     </p>
     <p v-if="summary.approx" class="text-sm text-foreground-muted tabular-nums">{{ summary.approx }}</p>
+    <p v-if="summary.mandatory" class="text-sm font-semibold text-foreground-secondary tabular-nums">{{ summary.mandatory }}</p>
     <p class="text-sm text-foreground-muted">{{ summary.count }} · {{ summary.since }}</p>
   </div>
 </template>

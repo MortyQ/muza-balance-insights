@@ -20,7 +20,9 @@ English interface.
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
   when the next payment is due, with the monthly total on top. Payments that stopped in the last few months are listed
-  apart.
+  apart. Mark a payment as mandatory from its «…» menu, and the total shows how much of it is mandatory; if something
+  is not a regular payment at all, choose «Not a regular payment» to hide it — hidden ones can be restored at the
+  bottom of the screen.
 - **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
   back to the top.
 

@@ -127,7 +127,10 @@
   count, since when) and `RecurringRowView`s (`utils.ts`: `summaryView`, `rowView`, `dayText`); the person is in a row
   only in the family view of several. Components: `RecurringSummary`, `RecurringList` → `RecurringRow` (the category's
   icon, the name, category · person with `VAvatar`, the usual amount, the operation currency, «next» or «last»); the
-  stopped ones in a second list. Tested in `tests/renderer/recurring.test.ts`.
+  stopped ones in a second list. Marks: a row's `VPopover` menu (`lucide:ellipsis`) — «Mandatory payment» / «Not
+  mandatory» and «Not a regular payment»; `useRecurring.setMark` saves (IPC `setRecurringMark`) and reloads, a failure
+  shows `recurring.markFailed`. A mandatory row carries a «mandatory» pill, the summary «of which mandatory …»; hidden
+  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { RecurringOverview } from '@contract/api.ts';
+import type { RecurringMark, RecurringOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable } from '@/shared/lib';
 
@@ -18,6 +18,7 @@ export interface RecurringRowView {
   when: string;
   /** The family view of more than one person: whose payment it is. */
   person: { name: string; color: string } | null;
+  mandatory: boolean;
 }
 
 export interface RecurringSummaryView {
@@ -25,6 +26,8 @@ export interface RecurringSummaryView {
   total: string;
   /** The same in the other picked currencies; '' — none. */
   approx: string;
+  /** «of which mandatory 1 200 ₴»; '' — none marked. */
+  mandatory: string;
   /** «3 regular payments». */
   count: string;
   /** «Found in the statement since 1 March 2025». */
@@ -35,10 +38,14 @@ export interface UseRecurringReturn {
   state: Readonly<Ref<Loadable<RecurringOverview>>>;
   view: ComputedRef<RecurringOverview | null>;
   fmt: ComputedRef<MoneyFormat>;
+  /** Marks a payment's payee (or clears it) and reloads; a failure sets `markFailed`. */
+  setMark: (key: string, mark: RecurringMark | null) => Promise<void>;
+  markFailed: Readonly<Ref<boolean>>;
 }
 
 export interface UseRecurringViewReturn {
   summary: ComputedRef<RecurringSummaryView | null>;
   active: ComputedRef<RecurringRowView[]>;
   ended: ComputedRef<RecurringRowView[]>;
+  hidden: ComputedRef<RecurringRowView[]>;
 }

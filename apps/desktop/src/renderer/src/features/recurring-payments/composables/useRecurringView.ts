@@ -15,17 +15,16 @@ export function useRecurringView({ view, fmt }: Pick<UseRecurringReturn, 'view' 
     const p = participant.people.find((x) => x.id === id);
     return p ? { name: p.label, color: colorVar(p.color) } : null;
   };
-  const rows = (active: boolean) => {
+  const rows = (list: 'active' | 'ended' | 'hidden') => {
     const v = view.value;
     if (!v) return [];
-    return (active ? v.active : v.ended).map((p) =>
-      rowView(p, { fmt: fmt.value, currentYear: currentYear.value, active, person: personOf(p.participantId) }),
-    );
+    return v[list].map((p) => rowView(p, { fmt: fmt.value, currentYear: currentYear.value, active: list === 'active', person: personOf(p.participantId) }));
   };
 
   return {
     summary: computed(() => (view.value ? summaryView(view.value, fmt.value, currentYear.value) : null)),
-    active: computed(() => rows(true)),
-    ended: computed(() => rows(false)),
+    active: computed(() => rows('active')),
+    ended: computed(() => rows('ended')),
+    hidden: computed(() => rows('hidden')),
   };
 }

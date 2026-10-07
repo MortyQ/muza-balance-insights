@@ -26,6 +26,7 @@ import LucideCreditCard from "~icons/lucide/credit-card";
 import LucideDatabase from "~icons/lucide/database";
 import LucideDownload from "~icons/lucide/download";
 import LucideDumbbell from "~icons/lucide/dumbbell";
+import LucideEllipsis from "~icons/lucide/ellipsis";
 import LucideEye from "~icons/lucide/eye";
 import LucideEyeOff from "~icons/lucide/eye-off";
 import LucideFingerprintPattern from "~icons/lucide/fingerprint-pattern";
@@ -114,6 +115,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:database": LucideDatabase,
   "lucide:download": LucideDownload,
   "lucide:dumbbell": LucideDumbbell,
+  "lucide:ellipsis": LucideEllipsis,
   "lucide:eye": LucideEye,
   "lucide:eye-off": LucideEyeOff,
   "lucide:fingerprint-pattern": LucideFingerprintPattern,

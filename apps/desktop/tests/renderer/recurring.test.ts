@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import type { PeopleView, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
+import type { PeopleView, RecurringMarkQuery, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { dayText, rowView, summaryView } from '@/features/recurring-payments/utils.ts';
 import { formatMoney } from '@/shared/lib';
@@ -41,8 +41,9 @@ describe('regular payments helpers', () => {
 
   it('summary: the monthly total, how many, since when', () => {
     expect(summaryView(VIEW, FMT, 2026)).toEqual({
-      total: uah(59_900), approx: '', count: '2 регулярных платежа', since: 'Найдено в выписке с 1 сентября 2025',
+      total: uah(59_900), approx: '', mandatory: '', count: '2 регулярных платежа', since: 'Найдено в выписке с 1 сентября 2025',
     });
+    expect(summaryView({ ...VIEW, mandatory: 40_000 }, FMT, 2026).mandatory).toBe(`из них обязательные ${uah(40_000)}`);
   });
 
   it('a row: category icon and name, the person only when given, the operation currency, next or last', () => {
@@ -50,7 +51,9 @@ describe('regular payments helpers', () => {
     expect(active).toEqual({
       key: 'a', name: 'Codehub', caption: 'Связь и цифровые сервисы · Аня', icon: 'lucide:smartphone', amount: uah(40_000),
       operation: formatMoney(1_000, 840, { minorUnits: true }), when: 'следующий 5 октября', person: { name: 'Аня', color: 'var(--series-orange)' },
+      mandatory: false,
     });
+    expect(rowView({ ...VIEW.active[0]!, mark: 'mandatory' }, { fmt: FMT, currentYear: 2026, active: true, person: null }).mandatory).toBe(true);
     const ended = rowView(VIEW.ended[0]!, { fmt: FMT, currentYear: 2026, active: false, person: null });
     expect(ended).toMatchObject({ caption: 'Спорт', icon: 'lucide:dumbbell', operation: '', when: 'последний 4 июля', person: null });
     // No rate: the account's own currency.
@@ -60,7 +63,13 @@ describe('regular payments helpers', () => {
 
 let current: RecurringOverview = VIEW;
 const getRecurringOverview = vi.fn(async (_q: RecurringOverviewQuery) => current);
-vi.mock('@/shared/api', () => ({ balanceApi: { getRecurringOverview: (...a: unknown[]) => getRecurringOverview(...(a as [RecurringOverviewQuery])) } }));
+const setRecurringMark = vi.fn(async (_q: RecurringMarkQuery) => undefined);
+vi.mock('@/shared/api', () => ({
+  balanceApi: {
+    getRecurringOverview: (...a: unknown[]) => getRecurringOverview(...(a as [RecurringOverviewQuery])),
+    setRecurringMark: (...a: unknown[]) => setRecurringMark(...(a as [RecurringMarkQuery])),
+  },
+}));
 
 const PEOPLE_VIEW: PeopleView = {
   people: [
@@ -74,7 +83,9 @@ describe('regular payments screen mounted', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     getRecurringOverview.mockClear();
+    setRecurringMark.mockReset();
     current = VIEW;
+    document.body.innerHTML = '';
     localStorage.clear();
   });
 
@@ -83,7 +94,7 @@ describe('regular payments screen mounted', () => {
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().view = PEOPLE_VIEW;
     const { RecurringFeature } = await import('@/features/recurring-payments');
-    const w = mount(RecurringFeature, { global: { plugins: [i18n] } });
+    const w = mount(RecurringFeature, { global: { plugins: [i18n] }, attachTo: document.body });
     await flushPromises();
     return w;
   }
@@ -114,5 +125,48 @@ describe('regular payments screen mounted', () => {
     const w = await mountScreen();
     expect(w.text()).toContain('За последние 13 месяцев регулярных платежей не найдено.');
     expect(w.findAll('ul')).toHaveLength(0);
+  });
+
+  it('the row menu marks a payment mandatory, then the screen reloads and shows the mark and the mandatory part', async () => {
+    const w = await mountScreen();
+    document.body.querySelector<HTMLElement>('[aria-label="Действия: Codehub"]')!.click();
+    await flushPromises();
+    current = { ...VIEW, active: [{ ...VIEW.active[0]!, mark: 'mandatory' }, VIEW.active[1]!], mandatory: 40_000 };
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Обязательный платёж')!.click();
+    await flushPromises();
+    expect(setRecurringMark).toHaveBeenCalledWith({ key: 'a', mark: 'mandatory' });
+    expect(getRecurringOverview).toHaveBeenCalledTimes(2);
+    expect(w.text()).toContain(`из них обязательные ${uah(40_000)}`);
+    expect(w.findAll('li')[0]!.text()).toContain('обязательный');
+    w.unmount();
+  });
+
+  it('«Not a regular payment» hides it; the hidden list restores it', async () => {
+    current = { ...VIEW, hidden: [payment({ key: 'h', name: 'Bean Bar', mark: 'hidden' })] };
+    const w = await mountScreen();
+    expect(w.text()).toContain('Скрытые (1)');
+    const restore = w.findAll('button').find((b) => b.text() === 'Вернуть')!;
+    await restore.trigger('click');
+    await flushPromises();
+    expect(setRecurringMark).toHaveBeenCalledWith({ key: 'h', mark: null });
+
+    document.body.querySelector<HTMLElement>('[aria-label="Действия: Streamio"]')!.click();
+    await flushPromises();
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Не регулярный платёж')!.click();
+    await flushPromises();
+    expect(setRecurringMark).toHaveBeenLastCalledWith({ key: 'b', mark: 'hidden' });
+    w.unmount();
+  });
+
+  it('a failed mark says so and does not reload', async () => {
+    setRecurringMark.mockRejectedValueOnce(new Error('boom'));
+    const w = await mountScreen();
+    document.body.querySelector<HTMLElement>('[aria-label="Действия: Codehub"]')!.click();
+    await flushPromises();
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Не регулярный платёж')!.click();
+    await flushPromises();
+    expect(w.text()).toContain('Не удалось сохранить отметку.');
+    expect(getRecurringOverview).toHaveBeenCalledTimes(1);
+    w.unmount();
   });
 });
