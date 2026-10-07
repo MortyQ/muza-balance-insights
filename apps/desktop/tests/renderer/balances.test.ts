@@ -19,6 +19,7 @@ import {
   signedMoney,
   slideDelay,
   slidePosition,
+  savedLine,
   slidesOf,
   spentShare,
 } from '@/features/balances/utils.ts';
@@ -31,7 +32,7 @@ const NONE = { uah: false, usd: false, eur: false };
 const UAH_FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const EUR_FMT = moneyFormat(RATES, { main: 978, also: NONE });
 
-const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], missing, accounts, income, spending, fx: [] });
+const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], saved: null, missing, accounts, income, spending, fx: [] });
 
 describe('balances utils', () => {
   it('slidePosition: a stack of at most 4 visible cards; a row with the offset applied', () => {
@@ -91,6 +92,25 @@ describe('balances utils', () => {
     expect(signedMoney(5_240_000, 980, '+')).toBe('+52 400 ₴');
     expect(signedMoney(4_860_000, 980, '−')).toBe('−48 600 ₴');
     expect(signedMoney(0, 980, '−')).toBe('0 ₴');
+  });
+
+  it('savedLine: into jars with a plus, out of jars with a minus, «≈» when a foreign jar was folded in; none without jars', () => {
+    const flow = { currency: 980, income: 0, spending: 0, color: 'red' };
+    expect(savedLine(flow)).toBeNull();
+    expect(savedLine({ ...flow, saved: { amount: 3_000, approx: false } })).toEqual({ label: 'В банки', amount: `+${formatMoney(3_000, 980)}` });
+    expect(savedLine({ ...flow, saved: { amount: -500, approx: true } })).toEqual({ label: 'Из банок', amount: `≈ −${formatMoney(500, 980)}` });
+    expect(savedLine({ ...flow, saved: { amount: 0, approx: false } })).toEqual({ label: 'В банки', amount: formatMoney(0, 980) });
+  });
+
+  it('slidesOf: total cards carry saved in the shown currency; account cards and a total without jars none', () => {
+    const v: MonthOverview = {
+      month: '2026-03', balanceAt: 'now', coverage: { from: '2026-03-01', to: '2026-03-10' }, rates: RATES, accounts: [],
+      total: { ...card(1_000_000, 0, 0), saved: { amount: 500_000, approx: true } },
+      people: [{ participantId: 1, label: 'Вигадана', labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
+    };
+    const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: EUR_FMT });
+    expect(family?.flow.saved).toEqual({ amount: EUR_FMT.convert(500_000), approx: true });
+    expect(person?.flow.saved).toBeUndefined();
   });
 
   it('spentShare: spending as a share of income; none without income', () => {

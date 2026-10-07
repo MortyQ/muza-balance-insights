@@ -13,6 +13,9 @@
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
   `syncStatus.version`); `composables/useCardStack.ts` — `open`/`offset`/`toggle`/`prev`/`next`, сбрасывается сменой
   месяца или человека. Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
+  from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
+  with data at both ends.
   `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
   `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
   (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).

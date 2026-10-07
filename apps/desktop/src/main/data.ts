@@ -124,6 +124,7 @@ export class DataService {
     // The month's end as an instant in the user's zone: the balance, «current» and the sums follow the user's calendar.
     const tz = systemTimeZone();
     const endSec = startOfDayIn(nextMonthStart(q.month), tz);
+    const startSec = startOfDayIn(from, tz);
     const current = endSec > now;
     const status = await this.status();
     const first = status.dataFrom;
@@ -151,6 +152,7 @@ export class DataService {
     const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
       const f = participantId === undefined ? {} : { participantId };
       const balances = await balancesAt(db, { endSec, ...f });
+      const atStart = new Map((await balancesAt(db, { endSec: startSec, ...f })).accounts.map((a) => [a.id, a.own_funds]));
       const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
       const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
       const others = balances.totals
@@ -158,11 +160,21 @@ export class DataService {
         .map((t) => ({ currency: t.currency, ownFunds: t.own_funds, rate: rates.get(t.currency)?.rate ?? null }));
       // A foreign part without a rate stays out of ownFunds (others says so with rate null).
       const folded = others.reduce((s, o) => s + (toUah(o.ownFunds, o.currency, rates) ?? 0), 0);
+      // Jars with data at both ends and a known rate; a jar the month does not cover says nothing about it.
+      const jars = balances.accounts.flatMap((a) => {
+        const start = atStart.get(a.id);
+        if (a.kind !== 'jar' || a.own_funds === null || start === null || start === undefined) return [];
+        const uah = toUah(a.own_funds - start, a.currency, rates);
+        return uah === null ? [] : [{ uah, foreign: a.currency !== UAH }];
+      });
+      const saved: CardTotal['saved'] =
+        jars.length === 0 ? null : { amount: jars.reduce((s, j) => s + j.uah, 0), approx: jars.some((j) => j.foreign) };
       return {
         balances,
         total: {
           ownFunds: (balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0) + folded,
           others,
+          saved,
           missing: balances.missing,
           accounts: balances.accounts.length,
           ...flowOf(income, spending),

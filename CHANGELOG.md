@@ -13,6 +13,9 @@ English interface.
 - **A category for one day or one week.** A row of that list opens the category's screen for that day or week: what
   you bought and where, when, and who spent. The week is compared with the same days of last week. Picking a month in
   the filters switches the screen back to that month.
+- **What went into jars.** The month panel next to the balance cards has a new line: how much the jars grew over the
+  month («Into jars»), or how much came out of them («Out of jars»). Money taken back out of a jar counts against what
+  was put in. Jars in dollars or euros are counted at today's rate.
 - **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
   back to the top.
 

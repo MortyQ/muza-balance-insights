@@ -153,7 +153,7 @@ describe('DataService.monthOverview', () => {
     expect(v.coverage).toEqual({ from: '2026-03-01', to: '2026-03-10' });
     // Dollars fold into hryvnia at today's 40.00: own funds and spending alike; each foreign part listed with its rate.
     expect(v.total).toEqual({
-      ownFunds: 100_000 + 5_000 * 40, others: [{ currency: 840, ownFunds: 5_000, rate: 40 }], missing: 0, accounts: 2, income: 20_000,
+      ownFunds: 100_000 + 5_000 * 40, others: [{ currency: 840, ownFunds: 5_000, rate: 40 }], saved: null, missing: 0, accounts: 2, income: 20_000,
       spending: 30_000 + 1_000 * 40, fx: [{ currency: 840, income: 0, spending: 1_000, rate: 40 }],
     });
     expect(v.rates).toEqual(RATES);
@@ -181,7 +181,7 @@ describe('DataService.monthOverview', () => {
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
 
     const v = await svc.monthOverview({ month: '2025-11' });
-    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, accounts: 1, income: 0, spending: 0, fx: [] });
+    expect(v.total).toEqual({ ownFunds: 0, others: [], saved: null, missing: 1, accounts: 1, income: 0, spending: 0, fx: [] });
     // Coverage starts in 2026-01 but the month asked for ends in 2025-11: from > to before clamping — clamp to = from.
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
@@ -342,6 +342,36 @@ describe('DataService.monthOverview', () => {
     expect(person.accounts).toEqual([
       { id: 'herusd', name: { kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
+  });
+
+  it('saved: the jars\' own funds at the month\'s end minus at its start; foreign jars at today\'s rate, cards never count', async () => {
+    await account('uah', 'black', 980, 50_000);
+    await account('jar', null, 980, 30_000);
+    await account('usdjar', null, 840, 1_000);
+    await account('gbpjar', null, 826, 9_000); // not quoted: left out
+    for (const a of ['uah', 'jar', 'usdjar', 'gbpjar']) await synced(a);
+    await tx('uah', '2026-03-02', -20_000, 'свои переводы', { rule: 'pair' });
+    await tx('jar', '2026-03-02', 20_000, 'свои переводы', { rule: 'pair' });
+    await tx('jar', '2026-03-06', -5_000, 'свои переводы', { rule: 'pair' }); // taken back out: counts against
+    await tx('usdjar', '2026-03-04', 500, 'свои переводы', { rule: 'pair' });
+    await tx('gbpjar', '2026-03-04', 9_000, 'свои переводы', { rule: 'pair' });
+
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.saved).toEqual({ amount: 15_000 + 500 * 40, approx: true });
+    expect(v.people[0]!.total.saved).toEqual(v.total.saved);
+
+    // February: nothing moved in the jars that month.
+    expect((await svc.monthOverview({ month: '2026-02' })).total.saved).toEqual({ amount: 0, approx: true });
+  });
+
+  it('saved is null without a jar with data at both ends of the month', async () => {
+    await account('uah', 'black', 980, 50_000);
+    await synced('uah');
+    expect((await svc.monthOverview({ month: '2026-03' })).total.saved).toBeNull();
+    await account('jar', null, 980, 10_000);
+    await synced('jar'); // covered from 2026-01-01: December has no start
+    expect((await svc.monthOverview({ month: '2025-12' })).total.saved).toBeNull();
+    expect((await svc.monthOverview({ month: '2026-03' })).total.saved).toEqual({ amount: 0, approx: false });
   });
 
   it('nothing the renderer gets contains a name, description, card number, IBAN or jar title', async () => {

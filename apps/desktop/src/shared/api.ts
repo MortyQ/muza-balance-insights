@@ -540,6 +540,11 @@ export type CardTotal = FlowView & {
   ownFunds: number;
   /** Foreign-currency own funds, each with today's rate; rate null — left out of ownFunds. */
   others: Array<{ currency: number; ownFunds: number; rate: number | null }>;
+  /**
+   * Put into jars over the month: the jars' own funds at its end minus at its start (money taken out counts against),
+   * in hryvnia, foreign jars at today's rate (`approx`). Only jars with data at both ends and a known rate; null — none.
+   */
+  saved: { amount: number; approx: boolean } | null;
   /** Accounts without data at that date. */
   missing: number;
   /** All accounts behind the card, with data or without. */

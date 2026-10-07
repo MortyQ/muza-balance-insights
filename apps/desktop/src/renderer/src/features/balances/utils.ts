@@ -5,7 +5,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
-import type { Slide } from './types.ts';
+import type { Flow, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
 export function slidePosition(i: number, open: boolean, offset: number): { x: number; y: number; z: number; opacity: number } {
@@ -73,6 +73,17 @@ export function netText(net: number, currency: number): string {
 export function signedMoney(value: number, currency: number, sign: '+' | '−'): string {
   const s = formatMoney(Math.abs(value), currency);
   return value === 0 ? s : `${sign}${s}`;
+}
+
+/** «Into jars +3 000 ₴» / «Out of jars −500 ₴» of a total card; null — no jar to tell. */
+export function savedLine(flow: Flow): { label: string; amount: string } | null {
+  if (!flow.saved) return null;
+  const { amount, approx } = flow.saved;
+  const out = amount < 0;
+  return {
+    label: t(out ? 'home.balances.savedOut' : 'home.balances.savedIn'),
+    amount: (approx ? '≈ ' : '') + signedMoney(amount, flow.currency, out ? '−' : '+'),
+  };
 }
 
 /** Spending as a whole percent of income; null without income. */
@@ -155,6 +166,7 @@ export function slidesOf(
         approxIncome,
         approxSpending,
         note: fxNote(total.fx),
+        ...(total.saved ? { saved: { amount: fmt.convert(total.saved.amount), approx: total.saved.approx } } : {}),
       },
     };
   };

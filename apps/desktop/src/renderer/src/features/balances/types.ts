@@ -24,6 +24,8 @@ export interface Flow {
   approxSpending?: boolean;
   /** Total cards: the rate line under the bars («incl. 3 162 $ at the rate 44,36»); '' — none. */
   note?: string;
+  /** Total cards: put into jars over the month (minus taken out), in `currency`; absent — no jar to tell. */
+  saved?: { amount: number; approx: boolean };
 }
 
 /** A card of the stack / row, in row order. */

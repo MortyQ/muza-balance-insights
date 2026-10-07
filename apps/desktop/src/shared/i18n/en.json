@@ -394,6 +394,8 @@
       "people": "People",
       "peopleCount": "{n} person | {n} people | {n} people",
       "readFailed": "Could not read the balances.",
+      "savedIn": "Into jars",
+      "savedOut": "Out of jars",
       "spending": "Out",
       "spentShare": "spent {spent}% of income",
       "stubLater": "«All accounts» — this section is coming later",

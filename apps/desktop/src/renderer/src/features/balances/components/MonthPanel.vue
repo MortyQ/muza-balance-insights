@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { incomeLink } from '@/shared/config';
 import { VButton } from '@/shared/ui';
 import type { Flow, LegendItem } from '../types.ts';
-import { spentShare } from '../utils.ts';
+import { savedLine, spentShare } from '../utils.ts';
 import FlowBars from './FlowBars.vue';
 
 const { title, note, flow, legend, stubShown } = defineProps<{
@@ -19,6 +19,7 @@ const { title, note, flow, legend, stubShown } = defineProps<{
 const emit = defineEmits<{ stub: [] }>();
 
 const spent = computed(() => spentShare(flow.income, flow.spending));
+const saved = computed(() => savedLine(flow));
 </script>
 
 <template>
@@ -29,6 +30,10 @@ const spent = computed(() => spentShare(flow.income, flow.spending));
     </div>
     <div class="flex flex-col gap-2">
       <FlowBars :flow size="md" :income-to="incomeLink()" />
+      <p v-if="saved" class="flex justify-between text-sm">
+        <span class="text-foreground-secondary">{{ saved.label }}</span>
+        <span class="font-bold tabular-nums">{{ saved.amount }}</span>
+      </p>
       <p v-if="flow.note" class="line-clamp-2 text-xs text-foreground-muted" :title="flow.note">{{ flow.note }}</p>
     </div>
     <ul v-if="legend.length > 0" class="flex flex-wrap gap-x-4.5 gap-y-2" :aria-label="$t('home.balances.people')">
