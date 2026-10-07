@@ -13,6 +13,14 @@
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
   `syncStatus.version`); `composables/useCardStack.ts` — `open`/`offset`/`toggle`/`prev`/`next`, сбрасывается сменой
   месяца или человека. Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
+  from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
+  with data at both ends.
+  Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
+  person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
+  card — shows «Free» (own funds − reserves) big and
+  `actual` («Actually … · reserved …», `BalanceCard`) under it; the month panel's «Reserved» line (`reservedLine`,
+  `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
   `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
   `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
   (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).
@@ -67,6 +75,12 @@
   unknown word stay plain rows); it no longer unfolds — the per-person split is on the category screen. Category
   icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
   with the «Now» strip and the category screen.
+  «What's unusual» (`SpendingInsights`, above the body): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
+  (whole-month medians) — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the
+  largest differences first, at most `INSIGHT_MAX` (3). A usual under `INSIGHT_BASE` (1 000 ₴) is too small a base for a
+  share: only «more», said by the amount. While the month runs (`usual.running`) only categories already over a whole
+  usual month, no income; a month that is over then says income (beside a category, or alone when off itself). The
+  note says the median of how many months. None while a person is picked inside the block (the usual is the view's).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
@@ -116,6 +130,36 @@
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
   tested (`tests/renderer/income-detail.test.ts`).
+- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
+  `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
+- **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about
+  now (the month filter does not apply). One IPC `getAllowanceOverview({ participantId? })`, reloaded
+  on the person, quietly on `syncStatus.version` and a new day (`useAllowance`). `utils.ts`: `allowanceView` — the sum
+  per day (or what is short), «until … · n days», the income line (next / late / none) and the count's lines
+  (`AllowanceBreakdown`: money, each active reserve, each mandatory payment, free, per day); `reserveMinor` — an amount typed in
+  whole units; `reserveRows` — the reserves list (own currency, ≈ the screen's, the term). Under the count `ReserveList`:
+  `ReserveRow` (`VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
+  «No end» `VCheckbox` or the last day `VDatepicker`; «Whose» `VSelect` — each person and «Common» — in a family of
+  several only, at first the picked person or common; one person: no field, theirs; checked on submit); a row says
+  whose (`ReserveRowView.owner`) in a family view of several, «Add a reserve» up to `RESERVES_MAX`;
+  `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
+  `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
+- **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route
+  `recurring` (`/recurring`), its own side menu item (`home.nav.recurring`, after «Analytics») and
+  `meta.periodFilter: 'none'` — the global filters show the person and the currency, no period (the screen always
+  looks at the last 13 months). One IPC `getRecurringOverview({ participantId? })`, reloaded on the person, quietly on
+  `syncStatus.version`. `useRecurring` loads, `useRecurringView` builds `RecurringSummaryView` (the monthly total, the
+  count, since when) and `RecurringRowView`s (`utils.ts`: `summaryView`, `rowView`, `dayText`); the person is in a row
+  only in the family view of several. Components: `RecurringSummary`, `RecurringList` → `RecurringRow` (the category's
+  icon, the name, category · person with `VAvatar`, the usual amount, the operation currency, «next» or «last»); the
+  stopped ones in a second list. Marks: a row's `VPopover` menu (`lucide:ellipsis`) — «Mandatory payment» / «Not
+  mandatory» and «Not a regular payment»; `useRecurring.setMark` saves (IPC `setRecurringMark`) and reloads, a failure
+  shows `recurring.markFailed`. A mandatory row carries a «mandatory» pill, the summary «of which mandatory …»; hidden
+  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». On home, under «Spending»,
+  `RecurringTeaserFeature`: one card-wide link to the screen — the monthly total, the count and the mandatory part
+  (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
+  IPC; quiet reloads on `syncStatus.version` and on returning to the kept-alive home, where marks may have changed).
+  Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

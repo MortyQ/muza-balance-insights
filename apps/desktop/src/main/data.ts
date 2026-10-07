@@ -6,6 +6,9 @@ import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
 import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
+import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/recurring';
+import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/reserves';
+import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
@@ -19,13 +22,16 @@ import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
 import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
-import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
+import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
+  AllowanceOverview,
+  AllowanceQuery,
   AnalyticsCategory,
   AnalyticsOverview,
   AnalyticsQuery,
@@ -37,6 +43,10 @@ import type {
   IncomeLineView,
   IncomeOverview,
   IncomeOverviewQuery,
+  RecurringOverview,
+  RecurringMarkQuery,
+  RecurringOverviewQuery,
+  RecurringPaymentView,
   DataStatus,
   FlowView,
   FxPart,
@@ -51,10 +61,21 @@ import type {
   SpendingCategoryView,
   SpendingOverview,
   SpendingOverviewQuery,
+  SpendingUsual,
   SpendingPersonPart,
 } from '../shared/api.ts';
 
 /** The core's category word → its CATEGORY key, the id the renderer translates. */
+/** The same day a calendar month on (YYYY-MM-DD), the last day of a shorter month: 31 Jan → 28 Feb. */
+export function nextMonthDay(date: string): string {
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m, Math.min(d, last))).toISOString().slice(0, 10);
+}
+
+/** A stopped regular payment is still listed this long after its last payment. */
+const ENDED_DAYS = 120;
+
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
@@ -79,6 +100,11 @@ export type DataServiceDeps = {
 };
 
 /** Today's rates as the core's fold expects them (one rate for every period). */
+/** A reserve counts for the family (no person) always, for a person only when it is theirs (a common one never). */
+function reserveFor(r: { participantId: number | null }, participantId: number | undefined): boolean {
+  return participantId === undefined || r.participantId === participantId;
+}
+
 function rateMap(r: RatesView | null): Map<number, FxRate> {
   return new Map((r?.list ?? []).map((x) => [x.currency, { rate: x.rate, nearest: false }]));
 }
@@ -124,6 +150,7 @@ export class DataService {
     // The month's end as an instant in the user's zone: the balance, «current» and the sums follow the user's calendar.
     const tz = systemTimeZone();
     const endSec = startOfDayIn(nextMonthStart(q.month), tz);
+    const startSec = startOfDayIn(from, tz);
     const current = endSec > now;
     const status = await this.status();
     const first = status.dataFrom;
@@ -151,6 +178,7 @@ export class DataService {
     const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
       const f = participantId === undefined ? {} : { participantId };
       const balances = await balancesAt(db, { endSec, ...f });
+      const atStart = new Map((await balancesAt(db, { endSec: startSec, ...f })).accounts.map((a) => [a.id, a.own_funds]));
       const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
       const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
       const others = balances.totals
@@ -158,11 +186,21 @@ export class DataService {
         .map((t) => ({ currency: t.currency, ownFunds: t.own_funds, rate: rates.get(t.currency)?.rate ?? null }));
       // A foreign part without a rate stays out of ownFunds (others says so with rate null).
       const folded = others.reduce((s, o) => s + (toUah(o.ownFunds, o.currency, rates) ?? 0), 0);
+      // Jars with data at both ends and a known rate; a jar the month does not cover says nothing about it.
+      const jars = balances.accounts.flatMap((a) => {
+        const start = atStart.get(a.id);
+        if (a.kind !== 'jar' || a.own_funds === null || start === null || start === undefined) return [];
+        const uah = toUah(a.own_funds - start, a.currency, rates);
+        return uah === null ? [] : [{ uah, foreign: a.currency !== UAH }];
+      });
+      const saved: CardTotal['saved'] =
+        jars.length === 0 ? null : { amount: jars.reduce((s, j) => s + j.uah, 0), approx: jars.some((j) => j.foreign) };
       return {
         balances,
         total: {
           ownFunds: (balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0) + folded,
           others,
+          saved,
           missing: balances.missing,
           accounts: balances.accounts.length,
           ...flowOf(income, spending),
@@ -175,11 +213,24 @@ export class DataService {
     const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
     // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
     const coverage = { from: coverageFrom, to: coverageTo < coverageFrom ? coverageFrom : coverageTo };
-    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total };
+    // Only today's balance has reserves set against it: the active ones with a rate of the view; null — none.
+    const reserves = current ? await this.reservesOn(db, localDate(now * 1000, tz), rates) : [];
+    const reservedFor = (participantId?: number) => {
+      const sum = reserves.reduce((s, r) => s + (r.active && reserveFor(r, participantId) ? (r.uah ?? 0) : 0), 0);
+      return sum > 0 ? sum : null;
+    };
+    const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total, reserved: reservedFor(q.participantId) };
     if (q.participantId === undefined) {
       const people: MonthOverview['people'] = [];
       for (const p of await listParticipants(db)) {
-        people.push({ participantId: p.id, label: p.label, labelPending: labelPending(p), color: p.color, total: (await cardTotal(p.id)).total });
+        people.push({
+          participantId: p.id,
+          label: p.label,
+          labelPending: labelPending(p),
+          color: p.color,
+          total: (await cardTotal(p.id)).total,
+          reserved: reservedFor(p.id),
+        });
       }
       return { ...base, people, accounts: [], rates: today };
     }
@@ -281,6 +332,45 @@ export class DataService {
       rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
+      usual: await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now),
+    };
+  }
+
+  /**
+   * The block's «usual» (main/usual.ts): whole months before the shown one, spending by category and income, folded by
+   * today's rates. Income only for a month that is over.
+   */
+  private async spendingUsual(
+    db: Db,
+    q: SpendingOverviewQuery,
+    period: { from: string; incomplete: boolean; dataUntil: string | null },
+    dataFrom: string | null,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<SpendingUsual | null> {
+    if (period.incomplete && (period.dataUntil === null || period.dataUntil < period.from)) return null;
+    const months = usualMonths(q.month, dataFrom);
+    const filters = { tz: systemTimeZone(), scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const incomeOf = async (m: string) =>
+      (await incomeSummary(db, { ...monthBounds(m), ...filters }, now)).totals.reduce((s, t) => s + (toUah(t.total, t.currency, rates) ?? 0), 0);
+
+    const spent: Array<Map<string, number>> = [];
+    const income: number[] = [];
+    for (const m of months) {
+      const byCategory = foldByCategory(await spendingSummary(db, { ...monthBounds(m), ...filters, groupBy: 'category' }, now), rates).byCategory;
+      spent.push(new Map([...byCategory].map(([c, a]) => [c, a.net])));
+      if (!period.incomplete) income.push(await incomeOf(m));
+    }
+    const u = usualOf(spent);
+    if (!u) return null;
+    return {
+      months: months.length,
+      running: period.incomplete,
+      total: u.total,
+      categories: [...u.byCategory]
+        .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
+        .map(([category, net]) => ({ category, categoryId: CATEGORY_ID.get(category) ?? null, net })),
+      income: period.incomplete ? null : { now: await incomeOf(q.month), usual: median(income) },
     };
   }
 
@@ -430,6 +520,113 @@ export class DataService {
     }
     const firstMonth = dataFrom?.slice(0, 7) ?? null;
     return months12.map((m) => ({ month: m, total: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
+  /**
+   * The regular payments screen: core findRecurring over the last 13 months (from the first day of the month a year
+   * back), all scopes. The only text is each payment's description, through merchantText.
+   */
+  async recurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const since = `${addMonths(today.slice(0, 7), -12)}-01`;
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const found = await findRecurring(db, { from: since, to: today, tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+
+    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
+    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const day = (sec: number) => localDate(sec * 1000, tz);
+    const view = (p: (typeof found)[number]): RecurringPaymentView => ({
+      key: p.id,
+      name: merchantText(p.description, jarTitles),
+      category: p.category,
+      categoryId: CATEGORY_ID.get(p.category) ?? null,
+      participantId: p.participantId,
+      account: names.get(p.accountId) ?? { kind: 'card', type: null, currency: p.currency, tag: null },
+      uah: toUah(p.amount, p.currency, fx),
+      currency: p.currency,
+      amount: p.amount,
+      operation: p.operationCurrency !== p.currency ? { currency: p.operationCurrency, amount: p.operationAmount } : null,
+      payments: p.payments,
+      mark: p.mark,
+      first: day(p.first),
+      last: day(p.last),
+      next: nextMonthDay(day(p.last)),
+    });
+    const newest = (a: (typeof found)[number], b: (typeof found)[number]) => b.last - a.last || a.id.localeCompare(b.id);
+    const shown = found.filter((p) => p.mark !== 'hidden');
+    const active = shown.filter((p) => p.active).map(view).sort((a, b) => (b.uah ?? -1) - (a.uah ?? -1) || a.key.localeCompare(b.key));
+    const ended = shown.filter((p) => !p.active && now - p.last <= ENDED_DAYS * 86_400).sort(newest).map(view);
+    const hidden = found.filter((p) => p.mark === 'hidden').sort(newest).map(view);
+    const total = (ps: RecurringPaymentView[]) => ps.reduce((s, p) => s + (p.uah ?? 0), 0);
+    return { since, active, ended, hidden, monthly: total(active), mandatory: total(active.filter((p) => p.mark === 'mandatory')), rates };
+  }
+
+  /**
+   * «Available per day» (allowance.ts): the cards' own money now (balancesAt now, no jars), the reserve, the regular
+   * income and mandatory payments of the last 13 months (findRecurring, active only).
+   */
+  async allowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const f = q.participantId !== undefined ? { participantId: q.participantId } : {};
+
+    const balances = await balancesAt(db, { endSec: now + 1, ...f });
+    let money = 0;
+    const leftOut: AllowanceOverview['leftOut'] = [];
+    for (const a of balances.accounts) {
+      if (a.kind === 'jar' || a.own_funds === null) continue;
+      const u = toUah(a.own_funds, a.currency, fx);
+      if (u === null) leftOut.push({ currency: a.currency, ownFunds: a.own_funds });
+      else money += u;
+    }
+
+    const accounts = (await db.execute(`SELECT title FROM accounts WHERE kind = 'jar'`)).rows;
+    const jarTitles = accounts.filter((r) => r.title).map((r) => String(r.title).trim());
+    const period = { from: `${addMonths(today.slice(0, 7), -12)}-01`, to: today, tz, ...f };
+    const series = (p: RecurringPayment): AllowanceSeries => ({
+      key: p.id,
+      name: merchantText(p.description, jarTitles),
+      participantId: p.participantId,
+      uah: toUah(p.amount, p.currency, fx),
+      next: nextMonthDay(localDate(p.last * 1000, tz)),
+    });
+    const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
+    const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
+    const reserves = (await this.reservesOn(db, today, fx)).filter((r) => reserveFor(r, q.participantId));
+    const reserve = reserves.reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0);
+    return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
+  }
+
+  /** Every reserve as of `today`: a reserve counts through its last day; one without a rate is listed, not taken off. */
+  private async reservesOn(db: Db, today: string, fx: Map<number, FxRate>): Promise<AllowanceOverview['reserves']> {
+    return (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
+  }
+
+  /** Reserves of «Available per day» (core reserves.ts). */
+  async addReserve(r: ReserveInput): Promise<void> {
+    await addReserve(await this.conn(), r, this.d.nowSec());
+  }
+
+  async updateReserve(id: number, r: ReserveInput): Promise<void> {
+    await updateReserve(await this.conn(), id, r);
+  }
+
+  async deleteReserve(id: number): Promise<void> {
+    await deleteReserve(await this.conn(), id);
+  }
+
+  /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */
+  async setRecurringMark(q: RecurringMarkQuery): Promise<void> {
+    await setRecurringMark(await this.conn(), q.key, q.mark, this.d.nowSec());
   }
 
   /**

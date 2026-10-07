@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia';
 import { VCard } from '@/shared/ui';
 import SpendingBody from './components/SpendingBody.vue';
 import SpendingHeader from './components/SpendingHeader.vue';
+import SpendingInsights from './components/SpendingInsights.vue';
 import SpendingNotices from './components/SpendingNotices.vue';
 import { useSpending } from './composables/useSpending.ts';
 import { useSpendingView } from './composables/useSpendingView.ts';
@@ -12,7 +13,7 @@ const base = useSpending();
 const { scope, state, view, periodNote, importing, family } = base;
 const prefsStore = useSpendingPrefsStore();
 const { prefs } = storeToRefs(prefsStore);
-const { subtitle, hasData, empty, leftOut, summary, categories, people, onPick } = useSpendingView(base, prefs);
+const { subtitle, hasData, empty, leftOut, summary, categories, people, insights, onPick } = useSpendingView(base, prefs);
 </script>
 
 <template>
@@ -27,6 +28,7 @@ const { subtitle, hasData, empty, leftOut, summary, categories, people, onPick }
         :empty
         :left-out
       />
+      <SpendingInsights v-if="insights" :insights />
       <SpendingBody v-if="summary && hasData" :summary :categories :people :dim="state.status === 'loading'" @pick="onPick" />
       <p v-if="hasData" class="text-sm text-foreground-muted">{{ $t('home.spending.footnote') }}</p>
     </div>

@@ -13,6 +13,31 @@ English interface.
 - **A category for one day or one week.** A row of that list opens the category's screen for that day or week: what
   you bought and where, when, and who spent. The week is compared with the same days of last week. Picking a month in
   the filters switches the screen back to that month.
+- **What went into jars.** The month panel next to the balance cards has a new line: how much the jars grew over the
+  month («Into jars»), or how much came out of them («Out of jars»). Money taken back out of a jar counts against what
+  was put in. Jars in dollars or euros are counted at today's rate.
+- **What's unusual.** The «Spending» block points out the categories that stand out against your usual month — the
+  median of up to six months before. For a month that is over, it shows the categories that are clearly up or down,
+  and your income against its usual level. While the month is still running, it shows only the categories where you
+  have already spent more than in a usual whole month.
+- **Planning and «Available per day».** A new «Planning» section in the side menu, for planners and their settings.
+  The first one is «Available per day»: how much you can spend a day until your next income — the money on your
+  cards, minus your reserves and the mandatory regular payments due before that income, divided by the days left. The
+  app finds your regular income in the statement by itself; if it is late or there is none, it counts to the end of
+  the month. Every step of the count is shown. Jars are not counted.
+- **Reserves.** Under the count, «Reserves» keeps money aside for what matters — rent, studies and the like. Give each
+  one a name, an amount in hryvnias, dollars or euros (counted at today's rate) and a last day, or «No end». Edit or
+  delete one from its «…» menu; once its last day has passed it no longer counts. In a family, choose whose a reserve
+  is: it counts for that person and for the whole family, while a common one counts for the whole family only. With reserves, the balance card on
+  the home screen shows what is free in large type, and the real balance with the reserved part under it; «Reserved»
+  next to the card opens «Planning».
+- **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
+  subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
+  payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
+  when the next payment is due, with the monthly total on top. Payments that stopped in the last few months are listed
+  apart. Mark a payment as mandatory from its «…» menu, and the total shows how much of it is mandatory; if something
+  is not a regular payment at all, choose «Not a regular payment» to hide it — hidden ones can be restored at the
+  bottom of the screen. The home screen shows their monthly total under «Spending»; a click on it opens the section.
 - **Screens open at the top.** Opening a category or another screen from further down the page now scrolls smoothly
   back to the top.
 

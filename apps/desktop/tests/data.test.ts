@@ -5,7 +5,7 @@ import type { Db } from '@mono/core/db';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/main/category.ts';
-import { DataService } from '../src/main/data.ts';
+import { DataService, nextMonthDay } from '../src/main/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/main/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
@@ -153,7 +153,7 @@ describe('DataService.monthOverview', () => {
     expect(v.coverage).toEqual({ from: '2026-03-01', to: '2026-03-10' });
     // Dollars fold into hryvnia at today's 40.00: own funds and spending alike; each foreign part listed with its rate.
     expect(v.total).toEqual({
-      ownFunds: 100_000 + 5_000 * 40, others: [{ currency: 840, ownFunds: 5_000, rate: 40 }], missing: 0, accounts: 2, income: 20_000,
+      ownFunds: 100_000 + 5_000 * 40, others: [{ currency: 840, ownFunds: 5_000, rate: 40 }], saved: null, missing: 0, accounts: 2, income: 20_000,
       spending: 30_000 + 1_000 * 40, fx: [{ currency: 840, income: 0, spending: 1_000, rate: 40 }],
     });
     expect(v.rates).toEqual(RATES);
@@ -161,6 +161,30 @@ describe('DataService.monthOverview', () => {
     // Only one participant exists (the default "Я"): its own view matches the family total (no family transfers).
     expect(v.people).toHaveLength(1);
     expect(v.people[0]!.total).toEqual(v.total);
+  });
+
+  it('reserves: set against today\'s balance only — the active ones with a rate, the view\'s (a person: their own); none, or another month, null', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await synced('uah');
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBeNull();
+
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 500, until: null, participantId: me }); // $5.00 at 40.00
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 10_000, until: '2026-03-15', participantId: null }); // common; today: counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14', participantId: her }); // over
+    await svc.addReserve({ name: 'Подарунок', currency: 980, amount: 3_000, until: null, participantId: her });
+    const v = await svc.monthOverview({ month: '2026-03' });
+    // The family: every active one; each person: their own, never the common one.
+    expect(v.reserved).toBe(20_000 + 10_000 + 3_000);
+    expect(v.total.ownFunds).toBe(100_000); // the balance itself stays as the bank has it
+    expect(v.people.map((p) => [p.participantId, p.reserved])).toEqual([[me, 20_000], [her, 3_000]]);
+    expect((await svc.monthOverview({ month: '2026-03', participantId: me })).reserved).toBe(20_000);
+    expect((await svc.monthOverview({ month: '2026-03', participantId: her })).reserved).toBe(3_000);
+    expect((await svc.monthOverview({ month: '2026-02' })).reserved).toBeNull();
+
+    rates = null;
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
   });
 
   it('a past month: balanceAt is its last day, the balance comes from the last operation before its end', async () => {
@@ -181,7 +205,7 @@ describe('DataService.monthOverview', () => {
     const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
 
     const v = await svc.monthOverview({ month: '2025-11' });
-    expect(v.total).toEqual({ ownFunds: 0, others: [], missing: 1, accounts: 1, income: 0, spending: 0, fx: [] });
+    expect(v.total).toEqual({ ownFunds: 0, others: [], saved: null, missing: 1, accounts: 1, income: 0, spending: 0, fx: [] });
     // Coverage starts in 2026-01 but the month asked for ends in 2025-11: from > to before clamping — clamp to = from.
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
@@ -342,6 +366,36 @@ describe('DataService.monthOverview', () => {
     expect(person.accounts).toEqual([
       { id: 'herusd', name: { kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
+  });
+
+  it('saved: the jars\' own funds at the month\'s end minus at its start; foreign jars at today\'s rate, cards never count', async () => {
+    await account('uah', 'black', 980, 50_000);
+    await account('jar', null, 980, 30_000);
+    await account('usdjar', null, 840, 1_000);
+    await account('gbpjar', null, 826, 9_000); // not quoted: left out
+    for (const a of ['uah', 'jar', 'usdjar', 'gbpjar']) await synced(a);
+    await tx('uah', '2026-03-02', -20_000, 'свои переводы', { rule: 'pair' });
+    await tx('jar', '2026-03-02', 20_000, 'свои переводы', { rule: 'pair' });
+    await tx('jar', '2026-03-06', -5_000, 'свои переводы', { rule: 'pair' }); // taken back out: counts against
+    await tx('usdjar', '2026-03-04', 500, 'свои переводы', { rule: 'pair' });
+    await tx('gbpjar', '2026-03-04', 9_000, 'свои переводы', { rule: 'pair' });
+
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.total.saved).toEqual({ amount: 15_000 + 500 * 40, approx: true });
+    expect(v.people[0]!.total.saved).toEqual(v.total.saved);
+
+    // February: nothing moved in the jars that month.
+    expect((await svc.monthOverview({ month: '2026-02' })).total.saved).toEqual({ amount: 0, approx: true });
+  });
+
+  it('saved is null without a jar with data at both ends of the month', async () => {
+    await account('uah', 'black', 980, 50_000);
+    await synced('uah');
+    expect((await svc.monthOverview({ month: '2026-03' })).total.saved).toBeNull();
+    await account('jar', null, 980, 10_000);
+    await synced('jar'); // covered from 2026-01-01: December has no start
+    expect((await svc.monthOverview({ month: '2025-12' })).total.saved).toBeNull();
+    expect((await svc.monthOverview({ month: '2026-03' })).total.saved).toEqual({ amount: 0, approx: false });
   });
 
   it('nothing the renderer gets contains a name, description, card number, IBAN or jar title', async () => {
@@ -1076,5 +1130,219 @@ describe('DataService.analyticsOverview (the analytics screen)', () => {
   it('carries no bank text', async () => {
     const json = JSON.stringify(await svc.analyticsOverview({ from: '2026-01', to: '2026-03' }));
     for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.recurringOverview (the regular payments screen)', () => {
+  const STREAM = { mcc: 5815, description: `Streamio ${CANARIES[4]}` };
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden
+    for (const id of ['uah', 'usd']) await synced(id);
+    for (const d of ['2026-01-05', '2026-02-05', '2026-03-05']) await tx('uah', d, -19_900, 'связь и цифровые сервисы', STREAM);
+    for (const d of ['2026-01-02', '2026-02-02', '2026-03-02']) await tx('usd', d, -1_000, 'связь и цифровые сервисы', { mcc: 5815, description: 'Codehub' });
+    // Stopped in January: the last payment is 70 days before now.
+    for (const d of ['2025-11-04', '2025-12-04', '2026-01-04']) await tx('uah', d, -50_000, 'спорт', { mcc: 7997, description: 'Gym Fictional' });
+    // Ended long ago: over 120 days, not listed.
+    for (const d of ['2025-05-10', '2025-06-10', '2025-07-10']) await tx('uah', d, -9_900, 'развлечения', { mcc: 7832, description: 'Cinema Club' });
+  });
+
+  it('active by hryvnia desc, the dollar one at today\'s rate; ended within 120 days; monthly = the active together', async () => {
+    const v = await svc.recurringOverview({});
+    expect(v.since).toBe('2025-03-01');
+    expect(v.active.map((p) => [p.name, p.categoryId, p.uah, p.currency, p.amount, p.payments, p.last])).toEqual([
+      ['Codehub', 'telecom', 40_000, 840, 1_000, 3, '2026-03-02'],
+      ['Streamio •••', 'telecom', 19_900, 980, 19_900, 3, '2026-03-05'],
+    ]);
+    expect(v.active[1]!.next).toBe('2026-04-05');
+    expect(v.active[0]!.account).toEqual({ kind: 'card', type: 'white', currency: 840, tag: null });
+    expect(v.ended.map((p) => [p.name, p.categoryId, p.last])).toEqual([['Gym Fictional', 'sport', '2026-01-04']]);
+    expect(v.monthly).toBe(40_000 + 19_900);
+    expect(v.rates).toEqual(RATES);
+  });
+
+  it('nextMonthDay: the same day a month on, the last day of a shorter month', () => {
+    expect(nextMonthDay('2026-03-05')).toBe('2026-04-05');
+    expect(nextMonthDay('2026-01-31')).toBe('2026-02-28');
+    expect(nextMonthDay('2026-12-15')).toBe('2027-01-15');
+  });
+
+  it('a currency without a rate: no hryvnia figure, left out of monthly, listed last', async () => {
+    rates = null;
+    const v = await svc.recurringOverview({});
+    expect(v.active.map((p) => [p.name, p.uah])).toEqual([['Streamio •••', 19_900], ['Codehub', null]]);
+    expect(v.monthly).toBe(19_900);
+  });
+
+  it('a person sees their own payments only', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const v = await svc.recurringOverview({ participantId: her });
+    expect(v.active).toEqual([]);
+    expect(v.ended).toEqual([]);
+    expect(v.monthly).toBe(0);
+  });
+
+  it('marks: mandatory counts apart within monthly; hidden leaves active and ended for its own list; cleared — back', async () => {
+    const before = await svc.recurringOverview({});
+    const codehub = before.active.find((p) => p.name === 'Codehub')!;
+    const gym = before.ended[0]!;
+    expect(before.hidden).toEqual([]);
+    expect(before.mandatory).toBe(0);
+
+    await svc.setRecurringMark({ key: codehub.key, mark: 'mandatory' });
+    await svc.setRecurringMark({ key: gym.key, mark: 'hidden' });
+    const v = await svc.recurringOverview({});
+    expect(v.active.map((p) => [p.name, p.mark])).toEqual([['Codehub', 'mandatory'], ['Streamio •••', null]]);
+    expect(v.monthly).toBe(40_000 + 19_900);
+    expect(v.mandatory).toBe(40_000);
+    expect(v.ended).toEqual([]);
+    expect(v.hidden.map((p) => [p.name, p.mark])).toEqual([['Gym Fictional', 'hidden']]);
+
+    // A hidden active one is out of monthly.
+    await svc.setRecurringMark({ key: codehub.key, mark: 'hidden' });
+    const h = await svc.recurringOverview({});
+    expect(h.monthly).toBe(19_900);
+    expect(h.mandatory).toBe(0);
+    expect(h.hidden.map((p) => p.name)).toEqual(['Codehub', 'Gym Fictional']);
+
+    await svc.setRecurringMark({ key: gym.key, mark: null });
+    expect((await svc.recurringOverview({})).ended.map((p) => p.name)).toEqual(['Gym Fictional']);
+    await expect(svc.setRecurringMark({ key: 'nope', mark: 'mandatory' })).rejects.toThrow();
+  });
+
+  it('carries the description only — never a name, card number, IBAN or jar title', async () => {
+    const json = JSON.stringify(await svc.recurringOverview({}));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.allowanceOverview («Available per day»)', () => {
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 200_000);
+    await account('usd', 'white', 840, 1_000);
+    await account('jar1', null, 980, 500_000); // a jar: not counted
+    for (const id of ['uah', 'usd', 'jar1']) await synced(id);
+    for (const d of ['2026-01-10', '2026-02-10', '2026-03-10']) await tx('uah', d, 3_000_000, 'поступления', { mcc: 4829, description: 'Від: Salary Co' });
+    for (const d of ['2026-01-05', '2026-02-05', '2026-03-05']) await tx('uah', d, -19_900, 'связь и цифровые сервисы', { mcc: 5815, description: 'Streamio' });
+    for (const d of ['2026-01-08', '2026-02-08', '2026-03-08']) await tx('uah', d, -9_900, 'развлечения', { mcc: 7832, description: 'Cinema Club' });
+  });
+
+  it('cards now (no jars, dollars at today\'s rate) − reserve − mandatory before the salary, over the days until it', async () => {
+    const streamio = (await svc.recurringOverview({})).active.find((p) => p.name === 'Streamio')!;
+    await svc.setRecurringMark({ key: streamio.key, mark: 'mandatory' });
+
+    await svc.addReserve({ name: 'Подушка', currency: 980, amount: 50_000, until: null , participantId: null });
+    const v = await svc.allowanceOverview({});
+    expect(v).toMatchObject({
+      today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], until: '2026-04-10', days: 26,
+      income: { name: 'Від: Salary Co', uah: 3_000_000, date: '2026-04-10', overdue: false },
+      free: 240_000 - 50_000 - 19_900, perDay: Math.floor(170_100 / 26), rates: RATES,
+    });
+    expect(v.mandatory).toEqual([{ key: streamio.key, name: 'Streamio', uah: 19_900, due: '2026-04-05' }]);
+  });
+
+  it('reserves: each in its currency at today\'s rate, through its last day; changed and deleted', async () => {
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null , participantId: null });
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 30_000, until: '2026-03-15' , participantId: null }); // today: still counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' , participantId: null }); // over
+    const v = await svc.allowanceOverview({});
+    expect(v.reserves.map((r) => [r.name, r.currency, r.amount, r.until, r.active, r.uah])).toEqual([
+      ['Квартира', 840, 1_250, null, true, 50_000],
+      ['Навчання', 980, 30_000, '2026-03-15', true, 30_000],
+      ['Відпустка', 980, 70_000, '2026-03-14', false, 70_000],
+    ]);
+    expect(v.free).toBe(240_000 - 50_000 - 30_000);
+
+    const [flat, study] = v.reserves;
+    await svc.updateReserve(flat!.id, { name: 'Оренда', currency: 980, amount: 10_000, until: null , participantId: null });
+    await svc.deleteReserve(study!.id);
+    const after = await svc.allowanceOverview({});
+    expect(after.reserves.map((r) => r.name)).toEqual(['Оренда', 'Відпустка']);
+    expect(after.free).toBe(240_000 - 10_000);
+    await expect(svc.deleteReserve(study!.id)).rejects.toThrow();
+  });
+
+  it('reserves of a person: their own listed and taken off; a common one only for the family', async () => {
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    await svc.addReserve({ name: 'Моє', currency: 980, amount: 10_000, until: null, participantId: me });
+    await svc.addReserve({ name: 'Спільне', currency: 980, amount: 20_000, until: null, participantId: null });
+    const family = await svc.allowanceOverview({});
+    expect(family.reserves.map((r) => [r.name, r.participantId])).toEqual([['Моє', me], ['Спільне', null]]);
+    expect(family.free).toBe(240_000 - 30_000);
+    const mine = await svc.allowanceOverview({ participantId: me });
+    expect(mine.reserves.map((r) => r.name)).toEqual(['Моє']);
+    expect(mine.free).toBe(240_000 - 10_000);
+    await expect(svc.addReserve({ name: 'Чуже', currency: 980, amount: 1, until: null, participantId: 999 })).rejects.toThrow();
+  });
+
+  it('without rates the dollar card is left out and a dollar reserve is not taken off; a person with nothing of their own has no money and no income', async () => {
+    rates = null;
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null , participantId: null });
+    const v = await svc.allowanceOverview({});
+    expect(v.reserves.map((r) => [r.active, r.uah])).toEqual([[true, null]]);
+    expect(v.free).toBe(200_000);
+    expect(v.money).toBe(200_000);
+    expect(v.leftOut).toEqual([{ currency: 840, ownFunds: 1_000 }]);
+    expect(v.mandatory).toEqual([]);
+
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const p = await svc.allowanceOverview({ participantId: her });
+    expect(p).toMatchObject({ money: 0, income: null, until: '2026-04-01', days: 17, free: 0, perDay: 0 });
+  });
+
+  it('carries the descriptions only — never a name, card number, IBAN or jar title', async () => {
+    const json = JSON.stringify(await svc.allowanceOverview({}));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.spendingOverview: usual', () => {
+  const MONTHS = ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02'];
+  async function covered(from: string) {
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay(from), SYNCED_TO, SYNCED_TO + 60] });
+  }
+  async function history() {
+    for (const [i, m] of MONTHS.entries()) {
+      await tx('uah', `${m}-05`, -10_000, 'продукты');
+      await tx('uah', `${m}-20`, -50_000, 'продукты'); // after the 10th: still in the usual (whole months)
+      await tx('uah', `${m}-03`, -(i + 1) * 1_000, 'доставка');
+      await tx('uah', `${m}-08`, 100_000, 'поступления', { mcc: 4829 });
+    }
+    await tx('uah', '2026-03-02', -12_000, 'продукты');
+    await tx('uah', '2026-03-08', 100_000, 'поступления', { mcc: 4829 });
+  }
+
+  it('the running month: whole-month medians over the 6 covered months before, no income', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.usual).toEqual({
+      months: 6,
+      running: true,
+      total: 63_500,
+      categories: [{ category: 'продукты', categoryId: 'groceries', net: 60_000 }, { category: 'доставка', categoryId: 'delivery', net: 3_500 }],
+      income: null,
+    });
+  });
+
+  it('a past month: whole months, only the covered ones (August is not), income against its median', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.usual).toMatchObject({
+      months: 5,
+      running: false,
+      total: 63_000,
+      categories: [{ categoryId: 'groceries', net: 60_000 }, { categoryId: 'delivery', net: 3_000 }],
+      income: { now: 100_000, usual: 100_000 },
+    });
+  });
+
+  it('fewer than 3 covered months before: none', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).usual).toBeNull();
   });
 });

@@ -18,6 +18,18 @@ export const routes: RouteRecordRaw[] = [
     meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 1 }, periodFilter: 'range' },
   },
   {
+    path: '/recurring',
+    name: ROUTE.recurring,
+    component: () => import('@/pages/recurring').then((m) => m.RecurringPage),
+    meta: { nav: { label: 'home.nav.recurring', icon: 'lucide:repeat', order: 2 }, periodFilter: 'none' },
+  },
+  {
+    path: '/planning',
+    name: ROUTE.planning,
+    component: () => import('@/pages/planning').then((m) => m.PlanningPage),
+    meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 3 }, periodFilter: 'none' },
+  },
+  {
     // Opened from a row of «Spending»; an unknown category goes home.
     path: '/category/:id',
     name: ROUTE.category,

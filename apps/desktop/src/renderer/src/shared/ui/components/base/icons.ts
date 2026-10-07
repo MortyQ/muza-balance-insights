@@ -5,6 +5,7 @@ import LucideArrowLeftRight from "~icons/lucide/arrow-left-right";
 import LucideArrowUpRight from "~icons/lucide/arrow-up-right";
 import LucideBanknote from "~icons/lucide/banknote";
 import LucideBus from "~icons/lucide/bus";
+import LucideCalculator from "~icons/lucide/calculator";
 import LucideCalendar from "~icons/lucide/calendar";
 import LucideCalendarRange from "~icons/lucide/calendar-range";
 import LucideCalendarX from "~icons/lucide/calendar-x";
@@ -26,6 +27,7 @@ import LucideCreditCard from "~icons/lucide/credit-card";
 import LucideDatabase from "~icons/lucide/database";
 import LucideDownload from "~icons/lucide/download";
 import LucideDumbbell from "~icons/lucide/dumbbell";
+import LucideEllipsis from "~icons/lucide/ellipsis";
 import LucideEye from "~icons/lucide/eye";
 import LucideEyeOff from "~icons/lucide/eye-off";
 import LucideFingerprintPattern from "~icons/lucide/fingerprint-pattern";
@@ -45,6 +47,7 @@ import LucideList from "~icons/lucide/list";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucideLock from "~icons/lucide/lock";
 import LucideMaximize2 from "~icons/lucide/maximize-2";
+import LucideMinus from "~icons/lucide/minus";
 import LucideMonitor from "~icons/lucide/monitor";
 import LucideMoon from "~icons/lucide/moon";
 import LucidePackage from "~icons/lucide/package";
@@ -57,6 +60,7 @@ import LucidePlug from "~icons/lucide/plug";
 import LucidePlus from "~icons/lucide/plus";
 import LucideRefreshCcw from "~icons/lucide/refresh-ccw";
 import LucideRefreshCw from "~icons/lucide/refresh-cw";
+import LucideRepeat from "~icons/lucide/repeat";
 import LucideSearch from "~icons/lucide/search";
 import LucideSend from "~icons/lucide/send";
 import LucideSettings from "~icons/lucide/settings";
@@ -91,6 +95,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:arrow-up-right": LucideArrowUpRight,
   "lucide:banknote": LucideBanknote,
   "lucide:bus": LucideBus,
+  "lucide:calculator": LucideCalculator,
   "lucide:calendar": LucideCalendar,
   "lucide:calendar-range": LucideCalendarRange,
   "lucide:calendar-x": LucideCalendarX,
@@ -113,6 +118,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:database": LucideDatabase,
   "lucide:download": LucideDownload,
   "lucide:dumbbell": LucideDumbbell,
+  "lucide:ellipsis": LucideEllipsis,
   "lucide:eye": LucideEye,
   "lucide:eye-off": LucideEyeOff,
   "lucide:fingerprint-pattern": LucideFingerprintPattern,
@@ -132,6 +138,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:lock": LucideLock,
   "lucide:maximize-2": LucideMaximize2,
+  "lucide:minus": LucideMinus,
   "lucide:monitor": LucideMonitor,
   "lucide:moon": LucideMoon,
   "lucide:package": LucidePackage,
@@ -144,6 +151,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:plus": LucidePlus,
   "lucide:refresh-ccw": LucideRefreshCcw,
   "lucide:refresh-cw": LucideRefreshCw,
+  "lucide:repeat": LucideRepeat,
   "lucide:search": LucideSearch,
   "lucide:send": LucideSend,
   "lucide:settings": LucideSettings,

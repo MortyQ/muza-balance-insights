@@ -50,6 +50,7 @@ const VIEW: SpendingOverview = {
   rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
   leftOut: [],
   familyTotal: null,
+  usual: null,
 };
 const PREFS = { split: true, mark: false };
 const NONE = { uah: false, usd: false, eur: false };

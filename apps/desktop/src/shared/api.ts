@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
 import type { CategoryId } from './categories.ts';
@@ -135,6 +136,14 @@ export type BalanceApi = {
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
+  getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
+  /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
+  setRecurringMark(q: RecurringMarkQuery): Promise<void>;
+  getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
+  /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
+  addReserve(r: ReserveInput): Promise<void>;
+  updateReserve(id: number, r: ReserveInput): Promise<void>;
+  deleteReserve(id: number): Promise<void>;
   getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
@@ -192,7 +201,8 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens; nothing else).
+// and income screens), and RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
+// description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 
 export type Scope = 'personal' | 'business';
@@ -258,6 +268,25 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
+  /** «Usual»: the same span of the months before (main/usual.ts); null — fewer than 3 covered months. */
+  usual: SpendingUsual | null;
+};
+
+/**
+ * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same
+ * person and scope as the block. Whole months even while the shown one runs: a few days of lumpy spending (transfers,
+ * rent) or a salary a day early make any «up to the same day» median meaningless.
+ */
+export type SpendingUsual = {
+  /** How many months the medians are over (3 … 6). */
+  months: number;
+  /** The shown month is still running: only what already exceeds a whole usual month says anything. */
+  running: boolean;
+  total: number;
+  /** Categories with a usual net > 0, usual desc. */
+  categories: Array<{ category: string; categoryId: CategoryId | null; net: number }>;
+  /** Income: the shown month's and the median before; null while the month runs (the salary's day decides it then). */
+  income: { now: number; usual: number } | null;
 };
 
 /**
@@ -348,6 +377,106 @@ export type CategoryOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; net: number }>;
+};
+
+export type RecurringOverviewQuery = { participantId?: number };
+
+/** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
+export type RecurringMark = 'mandatory' | 'hidden';
+
+/** `key` — a RecurringPaymentView's key; `mark` null clears it. */
+export type RecurringMarkQuery = { key: string; mark: RecurringMark | null };
+
+/** A regular payment found in the statement (core findRecurring): about once a month to one payee, about one amount. */
+export type RecurringPaymentView = {
+  /** The id of the series' last payment. */
+  key: string;
+  /** The last payment's bank description (a card number cut to its last digits, a jar's title hidden). */
+  name: string;
+  category: string;
+  categoryId: CategoryId | null;
+  participantId: number;
+  account: AccountName;
+  /** The usual payment in hryvnia kopecks by today's rate; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and the usual payment in its minor units, > 0. */
+  currency: number;
+  amount: number;
+  /** The operation's own currency and usual amount when it differs from the account's. */
+  operation: { currency: number; amount: number } | null;
+  payments: number;
+  /** The user's mark on its payee; null — none. */
+  mark: RecurringMark | null;
+  /** System time zone, YYYY-MM-DD: the first and the last payment, and when the next one is due. */
+  first: string;
+  last: string;
+  next: string;
+};
+
+/** Regular payments of the last 13 months, all scopes, of a person (or the family). */
+export type RecurringOverview = {
+  /** The first day looked at (YYYY-MM-DD). */
+  since: string;
+  /** Paid within the last 40 days, not hidden, the largest (hryvnia) first. */
+  active: RecurringPaymentView[];
+  /** Stopped: the last payment 40 to 120 days ago, not hidden, the newest first. */
+  ended: RecurringPaymentView[];
+  /** Marked «not a regular payment», active or stopped, the newest first. */
+  hidden: RecurringPaymentView[];
+  /** The active ones' usual payments together, hryvnia kopecks (a payment without a rate counts nowhere). */
+  monthly: number;
+  /** The part of `monthly` marked mandatory. */
+  mandatory: number;
+  rates: RatesView | null;
+};
+
+export type AllowanceQuery = { participantId?: number };
+
+/** The regular income the money has to last until. */
+export type AllowanceIncome = {
+  key: string;
+  /** The last payment's bank description (as RecurringPaymentView's name). */
+  name: string;
+  /** Its usual amount, hryvnia kopecks by today's rate. */
+  uah: number;
+  /** YYYY-MM-DD: when it is due. */
+  date: string;
+  /** It was due today or earlier and has not come: the money is spread to the month's end instead. */
+  overdue: boolean;
+};
+
+/** A mandatory regular payment due before the income. */
+export type AllowancePayment = { key: string; name: string; uah: number | null; due: string };
+
+/**
+ * «Available per day»: the cards' own money now (no jars; foreign ones at today's rate), minus the reserve and the
+ * mandatory payments due before the next regular income, over the days until it. Hryvnia kopecks.
+ */
+/** A reserve as «Available per day» counts it. */
+export type AllowanceReserveView = ReserveInput & {
+  id: number;
+  /** No end, or its last day is today or later: taken off. */
+  active: boolean;
+  /** The amount in hryvnia kopecks at today's rate; null — no rate (not taken off). */
+  uah: number | null;
+};
+
+export type AllowanceOverview = {
+  today: string;
+  money: number;
+  /** Card currencies without a rate: left out of `money`. Minor units of that currency. */
+  leftOut: Array<{ currency: number; ownFunds: number }>;
+  /** The view's reserves (the family: all; a person: their own), oldest first; the active ones' `uah` are taken off. */
+  reserves: AllowanceReserveView[];
+  mandatory: AllowancePayment[];
+  income: AllowanceIncome | null;
+  /** YYYY-MM-DD, exclusive: the income's day, or the next month's first day without one (or when it is late). */
+  until: string;
+  days: number;
+  /** money − reserve − mandatory; < 0 — short of that much. */
+  free: number;
+  perDay: number;
+  rates: RatesView | null;
 };
 
 export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number };
@@ -540,6 +669,11 @@ export type CardTotal = FlowView & {
   ownFunds: number;
   /** Foreign-currency own funds, each with today's rate; rate null — left out of ownFunds. */
   others: Array<{ currency: number; ownFunds: number; rate: number | null }>;
+  /**
+   * Put into jars over the month: the jars' own funds at its end minus at its start (money taken out counts against),
+   * in hryvnia, foreign jars at today's rate (`approx`). Only jars with data at both ends and a known rate; null — none.
+   */
+  saved: { amount: number; approx: boolean } | null;
   /** Accounts without data at that date. */
   missing: number;
   /** All accounts behind the card, with data or without. */
@@ -564,8 +698,14 @@ export type MonthOverview = {
   /** Dates of the month actually covered by data; clamped so `from` ≤ `to` even with no covered day at all. */
   coverage: { from: string; to: string };
   total: CardTotal;
+  /**
+   * The current month only: the active reserves («Available per day») of the view — the family's all, a person's own —
+   * hryvnia kopecks at today's rate, set against `total`; null — none, or another month.
+   */
+  reserved: number | null;
   /** The whole family only: each person in their own view of transfers. */
-  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal }>;
+  /** `reserved` — that person's own active reserves (common ones never), as MonthOverview.reserved. */
+  people: Array<{ participantId: number; label: string; labelPending: boolean; color: ColorKey | null; total: CardTotal; reserved: number | null }>;
   /** One person only: their accounts. */
   accounts: OverviewAccount[];
   /** Today's rates every amount of this answer was folded by; null — never fetched (foreign parts are left out). */
