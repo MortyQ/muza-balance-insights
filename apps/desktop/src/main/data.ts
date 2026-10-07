@@ -17,6 +17,7 @@ import { startOfDayIn } from '@mono/core/format';
 import { toUah, type FxRate } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingGrid, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
+import type { AllowanceReserve } from '../shared/allowance.ts';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
@@ -551,7 +552,7 @@ export class DataService {
    * «Available per day» (allowance.ts): the cards' own money now (balancesAt now, no jars), the reserve, the regular
    * income and mandatory payments of the last 13 months (findRecurring, active only).
    */
-  async allowanceOverview(q: AllowanceQuery, reserve: number): Promise<AllowanceOverview> {
+  async allowanceOverview(q: AllowanceQuery, saved: AllowanceReserve): Promise<AllowanceOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
@@ -582,7 +583,8 @@ export class DataService {
     });
     const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
     const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
-    return { today, money, leftOut, reserve, ...allowance({ today, money, reserve, income, mandatory }), rates };
+    const reserve = toUah(saved.amount, saved.currency, fx);
+    return { today, money, leftOut, reserve: { ...saved, uah: reserve }, ...allowance({ today, money, reserve: reserve ?? 0, income, mandatory }), rates };
   }
 
   /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */

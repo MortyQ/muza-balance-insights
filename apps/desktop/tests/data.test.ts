@@ -1208,29 +1208,37 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     const streamio = (await svc.recurringOverview({})).active.find((p) => p.name === 'Streamio')!;
     await svc.setRecurringMark({ key: streamio.key, mark: 'mandatory' });
 
-    const v = await svc.allowanceOverview({}, 50_000);
+    const v = await svc.allowanceOverview({}, { currency: 980, amount: 50_000 });
     expect(v).toMatchObject({
-      today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], reserve: 50_000, until: '2026-04-10', days: 26,
+      today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], reserve: { currency: 980, amount: 50_000, uah: 50_000 }, until: '2026-04-10', days: 26,
       income: { name: 'Від: Salary Co', uah: 3_000_000, date: '2026-04-10', overdue: false },
       free: 240_000 - 50_000 - 19_900, perDay: Math.floor(170_100 / 26), rates: RATES,
     });
     expect(v.mandatory).toEqual([{ key: streamio.key, name: 'Streamio', uah: 19_900, due: '2026-04-05' }]);
   });
 
-  it('without rates the dollar card is left out; a person with nothing of their own has no money and no income', async () => {
+  it('a reserve in dollars is taken off at today\'s rate', async () => {
+    const v = await svc.allowanceOverview({}, { currency: 840, amount: 1_250 });
+    expect(v.reserve).toEqual({ currency: 840, amount: 1_250, uah: 50_000 });
+    expect(v.free).toBe(240_000 - 50_000);
+  });
+
+  it('without rates the dollar card is left out and a dollar reserve is not taken off; a person with nothing of their own has no money and no income', async () => {
     rates = null;
-    const v = await svc.allowanceOverview({}, 0);
+    const v = await svc.allowanceOverview({}, { currency: 840, amount: 1_250 });
+    expect(v.reserve).toEqual({ currency: 840, amount: 1_250, uah: null });
+    expect(v.free).toBe(200_000);
     expect(v.money).toBe(200_000);
     expect(v.leftOut).toEqual([{ currency: 840, ownFunds: 1_000 }]);
     expect(v.mandatory).toEqual([]);
 
     const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
-    const p = await svc.allowanceOverview({ participantId: her }, 0);
+    const p = await svc.allowanceOverview({ participantId: her }, { currency: 980, amount: 0 });
     expect(p).toMatchObject({ money: 0, income: null, until: '2026-04-01', days: 17, free: 0, perDay: 0 });
   });
 
   it('carries the descriptions only — never a name, card number, IBAN or jar title', async () => {
-    const json = JSON.stringify(await svc.allowanceOverview({}, 0));
+    const json = JSON.stringify(await svc.allowanceOverview({}, { currency: 980, amount: 0 }));
     for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });

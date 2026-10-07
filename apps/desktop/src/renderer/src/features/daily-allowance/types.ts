@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
+import type { AllowanceReserve } from '@contract/allowance.ts';
 import type { AllowanceOverview } from '@contract/api.ts';
 import type { Loadable } from '@/shared/lib';
 
@@ -24,13 +25,19 @@ export interface AllowanceView {
   leftOut: string;
 }
 
+/** What the reserve field shows: whole units of a currency. */
+export interface ReserveFieldValue {
+  currency: AllowanceReserve['currency'];
+  units: number;
+}
+
 export interface UseAllowanceReturn {
   state: Readonly<Ref<Loadable<AllowanceOverview>>>;
-  /** The month filter is this month and the answer is there. */
+  /** The answer is there. */
   visible: ComputedRef<boolean>;
   view: ComputedRef<AllowanceView | null>;
-  /** The saved reserve in whole hryvnias, for the field. */
-  reserve: ComputedRef<number>;
-  /** Saves the reserve (whole hryvnias) and reloads; false — refused or failed. */
-  setReserve: (hryvnias: number) => Promise<boolean>;
+  /** The saved reserve for the field (reserveField); null — not loaded. */
+  reserve: ComputedRef<ReserveFieldValue | null>;
+  /** Saves the reserve (minor units of the field's currency) and reloads; false — refused or failed. */
+  setReserve: (amount: number) => Promise<boolean>;
 }

@@ -8,7 +8,7 @@ import { useSyncStatusStore } from '@/entities/sync-status';
 import { useAsyncData } from '@/shared/lib';
 import { useAllowanceRequest } from '../api/useAllowanceRequest.ts';
 import type { UseAllowanceReturn } from '../types.ts';
-import { allowanceView } from '../utils.ts';
+import { allowanceView, reserveField } from '../utils.ts';
 
 /**
  * «Available per day» for the global filter's person (or the family): reloads with the person, quietly on new data and
@@ -33,11 +33,13 @@ export function useAllowance(): UseAllowanceReturn {
   const fmt = useMoneyFormat(() => state.value.data?.rates);
   const view = computed(() => (state.value.data ? allowanceView(state.value.data, fmt.value, Number(today.value.slice(0, 4))) : null));
 
-  async function setReserve(hryvnias: number): Promise<boolean> {
-    const kopecks = hryvnias * 100;
-    if (!Number.isInteger(hryvnias) || kopecks < 0 || kopecks > ALLOWANCE_RESERVE_MAX) return false;
+  const reserve = computed(() => (state.value.data ? reserveField(state.value.data.reserve, fmt.value) : null));
+
+  async function setReserve(amount: number): Promise<boolean> {
+    const field = reserve.value;
+    if (!field || !Number.isInteger(amount) || amount < 0 || amount > ALLOWANCE_RESERVE_MAX) return false;
     try {
-      await saveReserve(kopecks);
+      await saveReserve({ currency: field.currency, amount });
     } catch {
       return false;
     }
@@ -49,7 +51,7 @@ export function useAllowance(): UseAllowanceReturn {
     state,
     visible: computed(() => view.value !== null),
     view,
-    reserve: computed(() => Math.round((state.value.data?.reserve ?? 0) / 100)),
+    reserve,
     setReserve,
   };
 }

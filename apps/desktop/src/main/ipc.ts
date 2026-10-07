@@ -1,7 +1,7 @@
 // IPC in main (Security Checklist #17, #20): only the methods of src/shared/channels.ts, each with a zod schema for
 // its arguments, each call checked for its sender first. No generic channel ("run SQL", "fetch", "invoke anything").
 import { z } from 'zod';
-import { ALLOWANCE_RESERVE_MAX } from '../shared/allowance.ts';
+import { ALLOWANCE_RESERVE_CURRENCIES, ALLOWANCE_RESERVE_MAX } from '../shared/allowance.ts';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
@@ -69,7 +69,12 @@ export const ARG_SCHEMAS = {
   getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional() })]),
   getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
   getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
-  setAllowanceReserve: z.tuple([z.number().int().min(0).max(ALLOWANCE_RESERVE_MAX)]),
+  setAllowanceReserve: z.tuple([
+    z.strictObject({
+      currency: z.union(ALLOWANCE_RESERVE_CURRENCIES.map((c) => z.literal(c))),
+      amount: z.number().int().min(0).max(ALLOWANCE_RESERVE_MAX),
+    }),
+  ]),
   setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([

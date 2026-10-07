@@ -8,8 +8,8 @@ import { useAllowance } from './composables/useAllowance.ts';
 const { visible, view, reserve, setReserve } = useAllowance();
 const failed = ref(false);
 
-async function save(hryvnias: number) {
-  failed.value = !(await setReserve(hryvnias));
+async function save(amount: number) {
+  failed.value = !(await setReserve(amount));
 }
 </script>
 
@@ -29,7 +29,7 @@ async function save(hryvnias: number) {
       <AllowanceBreakdown :lines="view.lines" />
       <p v-if="view.leftOut" class="text-xs text-foreground-muted">{{ view.leftOut }}</p>
       <p class="text-xs text-foreground-muted">{{ $t('home.allowance.note') }}</p>
-      <ReserveField :saved="reserve" :failed @save="save" />
+      <ReserveField v-if="reserve" :saved="reserve" :failed @save="save" />
     </div>
   </VCard>
 </template>

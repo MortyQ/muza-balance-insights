@@ -71,8 +71,10 @@
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over
   `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserve is
-  `preferences.json` `allowanceReserve` (kopecks, `setAllowanceReserve`, 0 … `ALLOWANCE_RESERVE_MAX` in
-  `src/shared/allowance.ts`; «Delete all data» leaves it, like the other prefs). Bank text: the income's and payments'
+  `preferences.json` `allowanceReserve` — `AllowanceReserve { currency: 980 | 840 | 978, amount }` (minor units of the
+  currency it was typed in, 0 … `ALLOWANCE_RESERVE_MAX`, `src/shared/allowance.ts`; an older bare number reads as
+  hryvnia kopecks; `setAllowanceReserve`; «Delete all data» leaves it, like the other prefs). Taken off at today's rate;
+  without one it is not taken off (`reserve.uah` null). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
   in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:

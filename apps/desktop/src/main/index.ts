@@ -270,8 +270,8 @@ app.whenReady().then(async () => {
     getRecurringOverview: (q) => data.recurringOverview(q),
     setRecurringMark: (q) => data.setRecurringMark(q),
     getAllowanceOverview: (q) => data.allowanceOverview(q, readPrefs(userData).allowanceReserve),
-    setAllowanceReserve: async (kopecks) => (
-      await updatePrefs(userData, (p) => ({ ...p, allowanceReserve: kopecks })), readPrefs(userData).allowanceReserve
+    setAllowanceReserve: async (reserve) => (
+      await updatePrefs(userData, (p) => ({ ...p, allowanceReserve: reserve })), readPrefs(userData).allowanceReserve
     ),
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),

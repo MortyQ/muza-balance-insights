@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { AllowanceReserve } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
 import type { CategoryId } from './categories.ts';
@@ -139,8 +140,8 @@ export type BalanceApi = {
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
-  /** The reserve «Available per day» keeps aside, hryvnia kopecks (0 … ALLOWANCE_RESERVE_MAX); returns what is saved. */
-  setAllowanceReserve(kopecks: number): Promise<number>;
+  /** The reserve «Available per day» keeps aside, in its currency (amount 0 … ALLOWANCE_RESERVE_MAX); returns what is saved. */
+  setAllowanceReserve(reserve: AllowanceReserve): Promise<AllowanceReserve>;
   getAnalyticsOverview(q: AnalyticsQuery): Promise<AnalyticsOverview>;
   getMonthOverview(q: MonthOverviewQuery): Promise<MonthOverview>;
   getSyncStatus(): Promise<DataStatus>;
@@ -454,7 +455,8 @@ export type AllowanceOverview = {
   money: number;
   /** Card currencies without a rate: left out of `money`. Minor units of that currency. */
   leftOut: Array<{ currency: number; ownFunds: number }>;
-  reserve: number;
+  /** The saved reserve and it in hryvnia by today's rate (null — no rate: not taken off). */
+  reserve: AllowanceReserve & { uah: number | null };
   mandatory: AllowancePayment[];
   income: AllowanceIncome | null;
   /** YYYY-MM-DD, exclusive: the income's day, or the next month's first day without one (or when it is late). */

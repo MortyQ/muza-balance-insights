@@ -24,7 +24,8 @@ English interface.
   The first one is «Available per day»: how much you can spend a day until your next income — the money on your
   cards, minus a reserve you choose and the mandatory regular payments due before that income, divided by the days
   left. The app finds your regular income in the statement by itself; if it is late or there is none, it counts to
-  the end of the month. Every step of the count is shown, and the reserve is set right there. Jars are not counted.
+  the end of the month. Every step of the count is shown, and the reserve is set right there, in your main currency
+  (counted at today's rate). Jars are not counted.
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
