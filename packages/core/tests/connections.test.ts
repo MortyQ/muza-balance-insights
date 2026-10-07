@@ -54,7 +54,7 @@ describe('migration v8', () => {
       indexes: await indexes(db),
     };
 
-    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14]);
+    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14, 15]);
 
     expect(await rows(db, 'SELECT id, label, created_at FROM participants')).toEqual([{ id: 1, label: 'Я', created_at: 222 }]);
     expect(await rows(db, 'SELECT id, participant_id, provider, external_client_id FROM connections')).toEqual([
@@ -83,6 +83,30 @@ describe('migration v8', () => {
     const id = await ensureDefaultConnection(db, 'monobank', 42);
     expect(await ensureDefaultConnection(db, 'monobank', 43)).toBe(id);
     expect(await rows(db, 'SELECT label, created_at FROM participants')).toEqual([{ label: 'Я', created_at: 42 }]);
+  });
+});
+
+describe('migration v15: the way of access', () => {
+  it('connections so far are token ones; only token and file are allowed', async () => {
+    db = await v7();
+    await db.execute(`INSERT INTO accounts (id, kind, type, currency_code, balance, updated_at) VALUES ('black', 'card', 'black', 980, 0, 1)`);
+    await migrate(db, 0);
+    expect(await rows(db, 'SELECT id, method FROM connections')).toEqual([{ id: 1, method: 'token' }]);
+    await expect(db.execute(`UPDATE connections SET method = 'oauth' WHERE id = 1`)).rejects.toThrow(/CHECK/i);
+  });
+
+  it('ensureDefaultConnection never picks a file connection: a token must not land on one', async () => {
+    db = await memoryDb();
+    await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Я', 0)`);
+    await db.execute(`INSERT INTO connections (participant_id, provider, method, created_at) VALUES (1, 'monobank', 'file', 0)`);
+    const id = await ensureDefaultConnection(db, 'monobank', 1);
+    expect(await rows(db, 'SELECT id, method FROM connections ORDER BY id')).toEqual([
+      { id: 1, method: 'file' },
+      { id, method: 'token' },
+    ]);
+    // A second file connection does not make the token one ambiguous.
+    await db.execute(`INSERT INTO connections (participant_id, provider, method, created_at) VALUES (1, 'monobank', 'file', 0)`);
+    expect(await ensureDefaultConnection(db, 'monobank', 2)).toBe(id);
   });
 });
 
