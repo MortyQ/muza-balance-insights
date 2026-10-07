@@ -3,7 +3,7 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
-## 0.1.9 — unreleased
+## 0.1.9 — 2026-10-07
 
 ### Home screen
 
@@ -28,9 +28,9 @@ English interface.
 - **Reserves.** Under the count, «Reserves» keeps money aside for what matters — rent, studies and the like. Give each
   one a name, an amount in hryvnias, dollars or euros (counted at today's rate) and a last day, or «No end». Edit or
   delete one from its «…» menu; once its last day has passed it no longer counts. In a family, choose whose a reserve
-  is: it counts for that person and for the whole family, while a common one counts for the whole family only. With reserves, the balance card on
-  the home screen shows what is free in large type, and the real balance with the reserved part under it; «Reserved»
-  next to the card opens «Planning».
+  is: it counts for that person and for the whole family, while a common one counts for the whole family only. With
+  reserves, the balance card on the home screen shows what is free in large type, and the real balance with the
+  reserved part under it; «Reserved» next to the card opens «Planning».
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and
