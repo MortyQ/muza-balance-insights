@@ -96,12 +96,16 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getNowOverview', [{ month: '2026-09' }]],
     ['getNowOverview', [{}, {}]],
     ['getCategoryOverview', []],
-    ['getCategoryOverview', [{ month: '2026-09', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'такси', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'all' }]],
-    ['getCategoryOverview', [{ month: '2026-9', category: 'transport', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', participantId: 0 }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', extra: 1 }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, scope: 'personal' }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'такси', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'all' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-9' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'day', date: '2026-02-30' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'week', from: '2026-10-05', to: '2026-10-11' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'year', year: '2026' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', participantId: 0 }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', extra: 1 }]],
     ['getIncomeOverview', []],
     ['getIncomeOverview', [{}]],
     ['getIncomeOverview', [{ month: '2026-9' }]],
@@ -246,7 +250,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'getNowOverview',
       a: [{ participantId: 2 }],
     });
-    const cat = { month: '2026-09', category: 'transport', scope: 'personal', participantId: 2 };
+    const cat = { period: { kind: 'week', from: '2026-09-28' }, category: 'transport', scope: 'personal', participantId: 2 };
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
     const inc = { month: '2026-09', participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });

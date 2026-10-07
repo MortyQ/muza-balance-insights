@@ -23,6 +23,7 @@ import { incomeStats, lineStats, merchantText, monthsWindow } from './category.t
 import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
+import { periodBounds, periodCompare } from './period.ts';
 import type { CategoryId } from '../shared/categories.ts';
 import type {
   AnalyticsCategory,
@@ -287,12 +288,35 @@ export class DataService {
    * The category screen: one category's month — its figure as the spending block counts it, the 12 months before,
    * and every line behind it with the bank's description and comment (the one answer that carries them).
    */
+  /** The category's 12 months around `month` (monthsWindow), folded by today's rates; null before the data starts. */
+  private async categoryMonths(
+    db: Db,
+    month: string,
+    thisMonth: string,
+    category: string,
+    filters: { tz: string; scope: CategoryOverviewQuery['scope']; participantId?: number },
+    rates: Map<number, FxRate>,
+    dataFrom: string | null,
+    now: number,
+  ): Promise<CategoryOverview['months']> {
+    const months12 = monthsWindow(month, thisMonth);
+    const history = await spendingSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month', category }, now);
+    const byMonth = new Map<string, number>();
+    for (const g of history.groups) {
+      const u = toUah(g.net, g.currency, rates);
+      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
+    }
+    const firstMonth = dataFrom?.slice(0, 7) ?? null;
+    return months12.map((m) => ({ month: m, net: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
   async categoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
     const category = CATEGORY[q.category];
-    const period = monthBounds(q.month);
+    const thisDay = localDate(now * 1000, tz);
+    const period = periodBounds(q.period, thisDay);
     const status = await this.status();
     const filters = { tz, scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
     const today = await this.d.rates();
@@ -314,21 +338,13 @@ export class DataService {
       if (gu === null || ru === null) leftOut.push({ currency: g.currency, net: g.net });
       else (gross += gu), (refunds += ru);
     }
-    const compare = comparePeriod(q.month, head.period, status.dataFrom);
+    const compare = periodCompare(q.period, period, head.period, status.dataFrom);
     const prev = compare
       ? (foldByCategory(await spendingSummary(db, { ...compare, ...filters, groupBy: 'category', category }, now), rates).byCategory.get(category) ?? { net: 0, purchases: 0 })
       : null;
 
-    const thisMonth = localDate(now * 1000, tz).slice(0, 7);
-    const months12 = monthsWindow(q.month, thisMonth);
-    const history = await spendingSummary(db, { from: `${months12[0]}-01`, to: monthBounds(months12.at(-1)!).to, ...filters, groupBy: 'month', category }, now);
-    const byMonth = new Map<string, number>();
-    for (const g of history.groups) {
-      const u = toUah(g.net, g.currency, rates);
-      if (u !== null) byMonth.set(g.key, (byMonth.get(g.key) ?? 0) + u);
-    }
-    const firstMonth = status.dataFrom?.slice(0, 7) ?? null;
-    const months = months12.map((month) => ({ month, net: firstMonth === null || month < firstMonth ? null : (byMonth.get(month) ?? 0) }));
+    const thisMonth = thisDay.slice(0, 7);
+    const months = q.period.kind === 'month' ? await this.categoryMonths(db, q.period.month, thisMonth, category, filters, rates, status.dataFrom, now) : [];
 
     const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
     const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
@@ -366,7 +382,7 @@ export class DataService {
     const stats = lineStats(lines, family);
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
     return {
-      month: q.month,
+      range: q.period,
       category,
       categoryId: q.category,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },

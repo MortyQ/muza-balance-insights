@@ -1,4 +1,4 @@
-import type { CategoryLineView, CategoryOverview } from '@contract/api.ts';
+import type { CategoryLineView, CategoryOverview, DetailPeriod } from '@contract/api.ts';
 import { accountName } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
@@ -8,6 +8,9 @@ import {
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
 import { TOP_MERCHANTS } from './constants.ts';
+
+/** The month a period lies in (a week: the month of its Monday). */
+export const monthOf = (r: DetailPeriod): string => (r.kind === 'month' ? r.month : r.kind === 'day' ? r.date : r.from).slice(0, 7);
 
 /** Spending of a line, positive (a refund is negative); null — no rate. */
 const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah);
@@ -52,7 +55,7 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     name: categoryName(v),
     icon: CATEGORY_ICON[v.categoryId],
     color: categoryColor(s.rank === null ? null : s.rank - 1),
-    subtitle: [`${monthName(monthNo(v.month))} ${v.month.slice(0, 4)}`, who, scope].filter(Boolean).join(' · '),
+    subtitle: [`${monthName(monthNo(monthOf(v.range)))} ${monthOf(v.range).slice(0, 4)}`, who, scope].filter(Boolean).join(' · '),
     amount: fmt.money(s.net),
     conv: fmt.approxInline(s.net),
     chip: changeChip(s.net, s.prev?.net ?? null, v.compare),
@@ -64,12 +67,12 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
 
 /** «No spending in this category in September.»; '' — there are lines. */
 export function noneText(v: Readonly<CategoryOverview>): string {
-  return v.lines.length === 0 ? t('category.none', { month: monthIn(v.month) }) : '';
+  return v.lines.length === 0 ? t('category.none', { month: monthIn(monthOf(v.range)) }) : '';
 }
 
 /** The 12 months: bars on one scale, the average of the finished months with data, how the picked month stands against it. */
 export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): MonthsView {
-  return monthBars(v.months.map((m) => ({ month: m.month, value: m.net })), v.month, v.thisMonth, fmt);
+  return monthBars(v.months.map((m) => ({ month: m.month, value: m.net })), monthOf(v.range), v.thisMonth, fmt);
 }
 
 /** «Who spent» (the family view): each person with spending, on the largest one's scale. */
@@ -92,8 +95,8 @@ export function moreMerchantsText(v: Readonly<CategoryOverview>): string {
  * «When» of the given lines (all of the month, or one merchant's): weekdays, parts of the day, days of the month, and
  * the peak in words; `merchant` — the filter's name for the title ('' — none).
  */
-export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pick<CategoryOverview, 'month' | 'period'>>, merchant: string, fmt: MoneyFormat): WhenView {
-  return whenBars(lines, v.month, v.period.days, merchant, fmt, spent);
+export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pick<CategoryOverview, 'range' | 'period'>>, merchant: string, fmt: MoneyFormat): WhenView {
+  return whenBars(lines, monthOf(v.range), v.period.days, merchant, fmt, spent);
 }
 
 function marksOf(l: Readonly<CategoryLineView>, fmt: MoneyFormat): MarkView[] {

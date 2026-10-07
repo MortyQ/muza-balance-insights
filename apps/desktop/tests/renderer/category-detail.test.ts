@@ -33,7 +33,7 @@ const LINES: CategoryLineView[] = [
 ];
 
 const VIEW: CategoryOverview = {
-  month: '2026-09',
+  range: { kind: 'month', month: '2026-09' },
   category: 'такси и транспорт',
   categoryId: 'transport',
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-05', coveredDays: 30, pendingHolds: 1 },
@@ -109,7 +109,7 @@ describe('category screen helpers', () => {
   });
 
   it('12 months up to today: the picked month is the strong bar and the caption compares it', () => {
-    const v = { ...VIEW, month: '2026-08', thisMonth: '2026-09' };
+    const v: CategoryOverview = { ...VIEW, range: { kind: 'month', month: '2026-08' }, thisMonth: '2026-09' };
     const m = monthsView(v, FMT);
     expect(m.bars.slice(-3).map((b) => b.strong)).toEqual([false, true, false]);
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Август: на ${uah(10_000)} больше среднего`);
@@ -239,7 +239,7 @@ describe('category screen mounted', () => {
 
   it('asks for the month, the category and the scope; shows every block; a merchant filters the list and a chip clears it', async () => {
     const w = await mountScreen();
-    expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ month: '2026-09', category: 'transport', scope: 'personal' });
+    expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal' });
     for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Операции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
     expect(w.findAll('.v-chart').length).toBeGreaterThan(0);

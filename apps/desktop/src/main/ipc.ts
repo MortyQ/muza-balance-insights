@@ -14,6 +14,13 @@ import { THEME_PREFS } from '../shared/theme.ts';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
+const isoDate = z.string().refine(isIsoDate);
+// The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview → periodBounds.
+const detailPeriod = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('day'), date: isoDate }),
+  z.strictObject({ kind: z.literal('week'), from: isoDate }),
+  z.strictObject({ kind: z.literal('month'), month }),
+]);
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
 const token = z.string().min(20).max(200).regex(/^\S+$/);
 const label = z.string().min(1).max(80);
@@ -56,7 +63,7 @@ export const ARG_SCHEMAS = {
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
   getNowOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
   getCategoryOverview: z.tuple([
-    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
+    z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
   ]),
   getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.

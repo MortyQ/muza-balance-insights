@@ -24,7 +24,7 @@ export function useCategoryDetail(categoryId: MaybeRefOrGetter<CategoryId>, scop
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchCategoryOverview({ month: month.value, category: toValue(categoryId), scope: toValue(scope), ...(id !== null ? { participantId: id } : {}) });
+      return fetchCategoryOverview({ period: { kind: 'month', month: month.value }, category: toValue(categoryId), scope: toValue(scope), ...(id !== null ? { participantId: id } : {}) });
     },
     [month, participantId, () => toValue(categoryId), () => toValue(scope)],
     { quiet: [() => syncStatus.version] },

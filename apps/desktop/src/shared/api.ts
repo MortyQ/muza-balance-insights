@@ -260,7 +260,13 @@ export type SpendingOverview = {
   familyTotal: number | null;
 };
 
-export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number };
+/**
+ * The period of a detail screen: one day, a week from its Monday, a whole month (system time zone). Main refuses a week
+ * that does not start on a Monday and a period that starts after today.
+ */
+export type DetailPeriod = { kind: 'day'; date: string } | { kind: 'week'; from: string } | { kind: 'month'; month: string };
+
+export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number };
 
 /** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
 export type CategoryLineView = {
@@ -301,7 +307,8 @@ export type CategoryLineView = {
  * — the same lines as the spending block's figure. Weekdays, hours and days are the system time zone's.
  */
 export type CategoryOverview = {
-  month: string;
+  /** The period asked for. */
+  range: DetailPeriod;
   category: string;
   categoryId: CategoryId;
   period: SpendingOverview['period'];
@@ -326,8 +333,8 @@ export type CategoryOverview = {
     rank: number | null;
   };
   /**
-   * 12 months up to the current one while `month` is among its last 12, else up to `month`; net null before the data
-   * starts.
+   * A month only (else empty): 12 months up to the current one while the month is among its last 12, else up to it;
+   * net null before the data starts.
    */
   months: Array<{ month: string; net: number | null }>;
   /** The current month (YYYY-MM) in the system time zone: still running, so not in the months' average. */
