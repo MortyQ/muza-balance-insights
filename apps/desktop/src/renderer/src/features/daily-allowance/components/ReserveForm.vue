@@ -1,0 +1,69 @@
+<script setup lang="ts">
+import { computed, ref, useId } from 'vue';
+import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX, type ReserveCurrency, type ReserveInput } from '@contract/allowance.ts';
+import { currencySymbol, t } from '@/shared/lib';
+import { VButton, VCheckbox, VDatepicker, VInput, VSelect, type VSelectOption } from '@/shared/ui';
+import { reserveMinor } from '../utils.ts';
+
+const { start, today, failed = false } = defineProps<{
+  /** What the form starts from: a saved reserve, or a new one's defaults. */
+  start: ReserveInput;
+  /** YYYY-MM-DD: the earliest last day offered. */
+  today: string;
+  /** The last save failed. */
+  failed?: boolean;
+}>();
+const emit = defineEmits<{ save: [r: ReserveInput]; cancel: [] }>();
+
+const nameId = useId();
+const amountId = useId();
+const name = ref(start.name);
+const amount = ref(start.amount > 0 ? String(start.amount / 100) : '');
+const currency = ref<ReserveCurrency>(start.currency);
+const noEnd = ref(start.until === null);
+const until = ref<string | null>(start.until);
+const tried = ref(false);
+
+const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
+const minor = computed(() => reserveMinor(amount.value, RESERVE_AMOUNT_MAX));
+const nameOk = computed(() => {
+  const n = [...name.value.trim()].length;
+  return n >= 1 && n <= RESERVE_NAME_MAX;
+});
+const nameError = computed(() => (tried.value && !nameOk.value ? t('home.allowance.reserves.nameInvalid', { max: RESERVE_NAME_MAX }) : ''));
+const amountError = computed(() => (tried.value && minor.value === null ? t('home.allowance.reserves.amountInvalid') : ''));
+const dateError = computed(() => (tried.value && !noEnd.value && until.value === null ? t('home.allowance.reserves.dateMissing') : ''));
+
+function save() {
+  tried.value = true;
+  if (!nameOk.value || minor.value === null || (!noEnd.value && until.value === null)) return;
+  emit('save', { name: name.value.trim(), currency: currency.value, amount: minor.value, until: noEnd.value ? null : until.value });
+}
+</script>
+
+<template>
+  <form class="flex flex-col gap-3 rounded-lg border border-border-subtle p-3" @submit.prevent="save">
+    <div class="flex flex-col gap-1">
+      <label :for="nameId" class="text-sm font-semibold">{{ $t('home.allowance.reserves.name') }}</label>
+      <VInput :id="nameId" v-model="name" size="sm" :placeholder="$t('home.allowance.reserves.namePlaceholder')" :show-clear-button="false" :error="nameError" />
+    </div>
+    <div class="flex flex-wrap items-start gap-2">
+      <div class="flex flex-col gap-1">
+        <label :for="amountId" class="text-sm font-semibold">{{ $t('home.allowance.reserves.amount') }}</label>
+        <VInput :id="amountId" v-model="amount" size="sm" class="w-36" :show-clear-button="false" :error="amountError" />
+      </div>
+      <VSelect v-model="currency" :options="currencies" :label="$t('home.allowance.reserves.currency')" class="w-24" />
+    </div>
+    <div class="flex flex-col gap-2">
+      <VCheckbox v-model="noEnd" :label="$t('home.allowance.reserves.noEndLabel')" />
+      <VDatepicker v-if="!noEnd" v-model="until" :label="$t('home.allowance.reserves.lastDay')" :min="today" class="w-56" />
+      <p v-if="dateError" class="text-xs text-danger">{{ dateError }}</p>
+    </div>
+    <p class="text-xs text-foreground-muted">{{ $t('home.allowance.reserves.hint') }}</p>
+    <p v-if="failed" class="text-xs text-danger">{{ $t('home.allowance.reserves.failed') }}</p>
+    <div class="flex gap-2">
+      <VButton type="submit" variant="primary" size="sm" :text="$t('home.allowance.reserves.save')" />
+      <VButton type="button" variant="secondary" size="sm" :text="$t('home.allowance.reserves.cancel')" @click="emit('cancel')" />
+    </div>
+  </form>
+</template>

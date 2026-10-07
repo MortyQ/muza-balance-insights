@@ -7,6 +7,7 @@ import { CATEGORY } from '@mono/core/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/recurring';
+import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/reserves';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
@@ -17,7 +18,6 @@ import { startOfDayIn } from '@mono/core/format';
 import { toUah, type FxRate } from '@mono/core/fx';
 import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
 import { incomeSummary, spendingGrid, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
-import type { AllowanceReserve } from '../shared/allowance.ts';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
@@ -552,7 +552,7 @@ export class DataService {
    * «Available per day» (allowance.ts): the cards' own money now (balancesAt now, no jars), the reserve, the regular
    * income and mandatory payments of the last 13 months (findRecurring, active only).
    */
-  async allowanceOverview(q: AllowanceQuery, saved: AllowanceReserve): Promise<AllowanceOverview> {
+  async allowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
@@ -583,8 +583,23 @@ export class DataService {
     });
     const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter((p) => p.active).map(series);
     const mandatory = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark === 'mandatory').map(series);
-    const reserve = toUah(saved.amount, saved.currency, fx);
-    return { today, money, leftOut, reserve: { ...saved, uah: reserve }, ...allowance({ today, money, reserve: reserve ?? 0, income, mandatory }), rates };
+    // A reserve counts through its last day; one without a rate is listed, not taken off.
+    const reserves = (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
+    const reserve = reserves.reduce((s, r) => s + (r.active ? (r.uah ?? 0) : 0), 0);
+    return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
+  }
+
+  /** Reserves of «Available per day» (core reserves.ts). */
+  async addReserve(r: ReserveInput): Promise<void> {
+    await addReserve(await this.conn(), r, this.d.nowSec());
+  }
+
+  async updateReserve(id: number, r: ReserveInput): Promise<void> {
+    await updateReserve(await this.conn(), id, r);
+  }
+
+  async deleteReserve(id: number): Promise<void> {
+    await deleteReserve(await this.conn(), id);
   }
 
   /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */

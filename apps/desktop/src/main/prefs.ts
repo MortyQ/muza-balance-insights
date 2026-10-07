@@ -1,10 +1,9 @@
 // The app's preferences in userData/preferences.json: «Проверять обновления», «Автосинхронизация» (all on by default), the
-// theme, the language and the reserve of «Available per day» (0 by default). Not data: «Delete all data» leaves it. Each field falls back to its own default, so a file of
+// theme and the language. Not data: «Delete all data» leaves it. Each field falls back to its own default, so a file of
 // an older version (or a broken field) never resets the others; a broken or foreign file reads as the defaults.
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { ALLOWANCE_RESERVE_CURRENCIES, ALLOWANCE_RESERVE_MAX, NO_RESERVE } from '../shared/allowance.ts';
 import { DEFAULT_AUTO_SYNC } from '../shared/auto-sync.ts';
 import { LOCALES } from '../shared/locale.ts';
 import { DEFAULT_THEME, THEME_PREFS } from '../shared/theme.ts';
@@ -21,11 +20,6 @@ const Stored = z.strictObject({
   theme: z.enum(THEME_PREFS),
   /** null: not chosen, the system's language (resolveLocale). */
   locale: z.enum(LOCALES).nullable(),
-  /** «Available per day»: what is kept aside, in the currency it was typed in. */
-  allowanceReserve: z.strictObject({
-    currency: z.union(ALLOWANCE_RESERVE_CURRENCIES.map((c) => z.literal(c))),
-    amount: z.number().int().min(0).max(ALLOWANCE_RESERVE_MAX),
-  }),
 });
 export type Prefs = z.infer<typeof Stored>;
 
@@ -41,13 +35,6 @@ const Read = z.object({
     .catch(DEFAULT_AUTO_SYNC),
   theme: Stored.shape.theme.catch(DEFAULT_THEME),
   locale: Stored.shape.locale.catch(null),
-  // 0.1.9 before the currency: a bare number of hryvnia kopecks.
-  allowanceReserve: z
-    .union([
-      Stored.shape.allowanceReserve,
-      z.number().int().min(0).max(ALLOWANCE_RESERVE_MAX).transform((amount) => ({ currency: 980 as const, amount })),
-    ])
-    .catch(NO_RESERVE),
 });
 
 export function readPrefs(userDataDir: string): Prefs {

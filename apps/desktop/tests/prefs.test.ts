@@ -9,7 +9,7 @@ import { PREFS_FILE, readPrefs, updatePrefs, type Prefs } from '../src/main/pref
 import { AUTO_SYNC_TRIGGERS, DEFAULT_AUTO_SYNC } from '../src/shared/auto-sync.ts';
 import { DEFAULT_THEME } from '../src/shared/theme.ts';
 
-const DEFAULTS = { updateChecks: true, autoSync: DEFAULT_AUTO_SYNC, theme: 'system', locale: null, allowanceReserve: { currency: 980, amount: 0 } };
+const DEFAULTS = { updateChecks: true, autoSync: DEFAULT_AUTO_SYNC, theme: 'system', locale: null };
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'prefs-'));
 const put = (dir: string, text: string) => fs.writeFileSync(path.join(dir, PREFS_FILE), text);
 
@@ -50,21 +50,6 @@ describe('preferences', () => {
     expect(readPrefs(dir).locale).toBeNull();
   });
 
-  it('the allowance reserve: a currency and whole minor units from 0; an older bare number is hryvnia; anything else reads as none and is refused on write', async () => {
-    const dir = tmp();
-    put(dir, '{"allowanceReserve":{"currency":978,"amount":50000}}');
-    expect(readPrefs(dir).allowanceReserve).toEqual({ currency: 978, amount: 50_000 });
-    put(dir, '{"allowanceReserve":250000}');
-    expect(readPrefs(dir).allowanceReserve).toEqual({ currency: 980, amount: 250_000 });
-    for (const bad of ['-1', '1.5', '"100"', '{"currency":826,"amount":100}', '{"currency":980,"amount":-1}', '{"currency":980}']) {
-      put(dir, `{"allowanceReserve":${bad}}`);
-      expect(readPrefs(dir).allowanceReserve).toEqual({ currency: 980, amount: 0 });
-    }
-    await expect(updatePrefs(dir, (p) => ({ ...p, allowanceReserve: { currency: 980, amount: -5 } }))).rejects.toThrow();
-    // @ts-expect-error a currency that is not a main one
-    await expect(updatePrefs(dir, (p) => ({ ...p, allowanceReserve: { currency: 826, amount: 5 } }))).rejects.toThrow();
-  });
-
   it('the defaults cover every trigger', () => {
     expect(Object.keys(DEFAULT_AUTO_SYNC.triggers).sort()).toEqual([...AUTO_SYNC_TRIGGERS].sort());
   });
@@ -77,14 +62,12 @@ describe('preferences', () => {
       updatePrefs(dir, (p) => ({ ...p, autoSync: { ...p.autoSync, triggers: { ...p.autoSync.triggers, wake: false } } })),
       updatePrefs(dir, (p) => ({ ...p, theme: 'dark' })),
       updatePrefs(dir, (p) => ({ ...p, locale: 'ru' })),
-      updatePrefs(dir, (p) => ({ ...p, allowanceReserve: { currency: 840, amount: 500_000 } })),
     ]);
     expect(readPrefs(dir)).toEqual({
       updateChecks: false,
       autoSync: { enabled: false, triggers: { launch: true, wake: false, interval: true } },
       theme: 'dark',
       locale: 'ru',
-      allowanceReserve: { currency: 840, amount: 500_000 },
     });
     expect(fs.existsSync(path.join(dir, `${PREFS_FILE}.tmp`))).toBe(false);
   });

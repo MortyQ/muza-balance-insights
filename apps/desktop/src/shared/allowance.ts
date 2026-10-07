@@ -1,10 +1,9 @@
-/** The largest reserve «Available per day» accepts: 100 million of its currency, in minor units. */
-export const ALLOWANCE_RESERVE_MAX = 10_000_000_000;
-
-/** The currencies a reserve is kept in: the main currencies of the screen (hryvnia, dollar, euro). */
-export const ALLOWANCE_RESERVE_CURRENCIES = [980, 840, 978] as const;
-
-/** The reserve «Available per day» keeps aside: in the currency it was typed in, minor units; counted at today's rate. */
-export type AllowanceReserve = { currency: (typeof ALLOWANCE_RESERVE_CURRENCIES)[number]; amount: number };
-
-export const NO_RESERVE: AllowanceReserve = { currency: 980, amount: 0 };
+// Reserves of «Available per day»: the limits and types are core's (reserves.ts), shared with IPC and the screen.
+export {
+  RESERVE_AMOUNT_MAX,
+  RESERVE_CURRENCIES,
+  RESERVE_NAME_MAX,
+  RESERVES_MAX,
+  type ReserveCurrency,
+  type ReserveInput,
+} from '@mono/core/reserves';

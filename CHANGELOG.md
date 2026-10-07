@@ -22,10 +22,12 @@ English interface.
   have already spent more than in a usual whole month.
 - **Planning and «Available per day».** A new «Planning» section in the side menu, for planners and their settings.
   The first one is «Available per day»: how much you can spend a day until your next income — the money on your
-  cards, minus a reserve you choose and the mandatory regular payments due before that income, divided by the days
-  left. The app finds your regular income in the statement by itself; if it is late or there is none, it counts to
-  the end of the month. Every step of the count is shown, and the reserve is set right there, in your main currency
-  (counted at today's rate). Jars are not counted.
+  cards, minus your reserves and the mandatory regular payments due before that income, divided by the days left. The
+  app finds your regular income in the statement by itself; if it is late or there is none, it counts to the end of
+  the month. Every step of the count is shown. Jars are not counted.
+- **Reserves.** Under the count, «Reserves» keeps money aside for what matters — rent, studies and the like. Give each
+  one a name, an amount in hryvnias, dollars or euros (counted at today's rate) and a last day, or «No end». Edit or
+  delete one from its «…» menu; once its last day has passed it no longer counts.
 - **Regular payments.** A new «Regular payments» section in the side menu lists what you pay about once a month:
   subscriptions, installments, rent and the like. The app finds them in your statement by itself — a payment to one
   payee for about the same amount, at least three months in a row. Each one shows its usual amount, who pays it and

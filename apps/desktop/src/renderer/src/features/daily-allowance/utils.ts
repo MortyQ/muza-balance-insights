@@ -1,10 +1,9 @@
-import type { AllowanceReserve } from '@contract/allowance.ts';
 import type { AllowanceOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { dayMonthName, formatMoney, t } from '@/shared/lib';
-import type { AllowanceView, BreakdownLine, ReserveFieldValue } from './types.ts';
+import type { AllowanceView, BreakdownLine, ReserveRowView } from './types.ts';
 
-/** A reserve typed in whole units of its currency: minor units, or null — not a whole number from 0 up to the limit. */
+/** An amount typed in whole units of its currency: minor units, or null — not a whole number from 0 up to the limit. */
 export function reserveMinor(text: string, max: number): number | null {
   const s = text.trim().replace(/\s+/g, '');
   if (!/^\d+$/.test(s)) return null;
@@ -12,15 +11,20 @@ export function reserveMinor(text: string, max: number): number | null {
   return k <= max ? k : null;
 }
 
-/**
- * The reserve field in the screen's currency: the saved one as is when it is that currency, else converted at today's
- * rate (the next save keeps it in the screen's currency). Without a rate for the saved one: in its own currency.
- */
-export function reserveField(r: AllowanceOverview['reserve'], fmt: MoneyFormat): ReserveFieldValue {
-  const shown = fmt.currency as AllowanceReserve['currency'];
-  if (r.currency === shown) return { currency: shown, units: Math.round(r.amount / 100) };
-  if (r.uah !== null) return { currency: shown, units: Math.round(fmt.convert(r.uah) / 100) };
-  return { currency: r.currency, units: Math.round(r.amount / 100) };
+/** The reserves list: each in its own currency, ≈ the screen's when that differs, its term. */
+export function reserveRows(v: AllowanceOverview, fmt: MoneyFormat, currentYear: number): ReserveRowView[] {
+  return v.reserves.map((r) => ({
+    id: r.id,
+    name: r.name,
+    amount: formatMoney(r.amount, r.currency),
+    approx: r.currency !== fmt.currency && r.uah !== null ? `≈ ${fmt.money(r.uah)}` : '',
+    term:
+      r.until === null
+        ? t('home.allowance.reserves.noEnd')
+        : t(r.active ? 'home.allowance.reserves.until' : 'home.allowance.reserves.expired', { date: dayMonthName(r.until, currentYear) }),
+    active: r.active,
+    input: { name: r.name, currency: r.currency, amount: r.amount, until: r.until },
+  }));
 }
 
 export function allowanceView(v: AllowanceOverview, fmt: MoneyFormat, currentYear: number): AllowanceView {
@@ -35,9 +39,9 @@ export function allowanceView(v: AllowanceOverview, fmt: MoneyFormat, currentYea
   const minus = (k: number) => `−${fmt.money(k)}`;
   const lines: BreakdownLine[] = [
     { label: t('home.allowance.money'), amount: fmt.money(v.money), strong: false },
-    ...(v.reserve.amount > 0
-      ? [{ label: t('home.allowance.reserve'), amount: v.reserve.uah === null ? t('home.allowance.noRate') : minus(v.reserve.uah), strong: false }]
-      : []),
+    ...v.reserves
+      .filter((r) => r.active && r.amount > 0)
+      .map((r) => ({ label: t('home.allowance.reserveLine', { name: r.name }), amount: r.uah === null ? t('home.allowance.noRate') : minus(r.uah), strong: false })),
     ...v.mandatory.map((p) => ({
       label: t('home.allowance.payment', { name: p.name, date: day(p.due) }),
       amount: p.uah === null ? t('home.allowance.noRate') : minus(p.uah),

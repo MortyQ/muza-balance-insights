@@ -1208,37 +1208,54 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     const streamio = (await svc.recurringOverview({})).active.find((p) => p.name === 'Streamio')!;
     await svc.setRecurringMark({ key: streamio.key, mark: 'mandatory' });
 
-    const v = await svc.allowanceOverview({}, { currency: 980, amount: 50_000 });
+    await svc.addReserve({ name: 'Подушка', currency: 980, amount: 50_000, until: null });
+    const v = await svc.allowanceOverview({});
     expect(v).toMatchObject({
-      today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], reserve: { currency: 980, amount: 50_000, uah: 50_000 }, until: '2026-04-10', days: 26,
+      today: '2026-03-15', money: 200_000 + 1_000 * 40, leftOut: [], until: '2026-04-10', days: 26,
       income: { name: 'Від: Salary Co', uah: 3_000_000, date: '2026-04-10', overdue: false },
       free: 240_000 - 50_000 - 19_900, perDay: Math.floor(170_100 / 26), rates: RATES,
     });
     expect(v.mandatory).toEqual([{ key: streamio.key, name: 'Streamio', uah: 19_900, due: '2026-04-05' }]);
   });
 
-  it('a reserve in dollars is taken off at today\'s rate', async () => {
-    const v = await svc.allowanceOverview({}, { currency: 840, amount: 1_250 });
-    expect(v.reserve).toEqual({ currency: 840, amount: 1_250, uah: 50_000 });
-    expect(v.free).toBe(240_000 - 50_000);
+  it('reserves: each in its currency at today\'s rate, through its last day; changed and deleted', async () => {
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null });
+    await svc.addReserve({ name: 'Навчання', currency: 980, amount: 30_000, until: '2026-03-15' }); // today: still counts
+    await svc.addReserve({ name: 'Відпустка', currency: 980, amount: 70_000, until: '2026-03-14' }); // over
+    const v = await svc.allowanceOverview({});
+    expect(v.reserves.map((r) => [r.name, r.currency, r.amount, r.until, r.active, r.uah])).toEqual([
+      ['Квартира', 840, 1_250, null, true, 50_000],
+      ['Навчання', 980, 30_000, '2026-03-15', true, 30_000],
+      ['Відпустка', 980, 70_000, '2026-03-14', false, 70_000],
+    ]);
+    expect(v.free).toBe(240_000 - 50_000 - 30_000);
+
+    const [flat, study] = v.reserves;
+    await svc.updateReserve(flat!.id, { name: 'Оренда', currency: 980, amount: 10_000, until: null });
+    await svc.deleteReserve(study!.id);
+    const after = await svc.allowanceOverview({});
+    expect(after.reserves.map((r) => r.name)).toEqual(['Оренда', 'Відпустка']);
+    expect(after.free).toBe(240_000 - 10_000);
+    await expect(svc.deleteReserve(study!.id)).rejects.toThrow();
   });
 
   it('without rates the dollar card is left out and a dollar reserve is not taken off; a person with nothing of their own has no money and no income', async () => {
     rates = null;
-    const v = await svc.allowanceOverview({}, { currency: 840, amount: 1_250 });
-    expect(v.reserve).toEqual({ currency: 840, amount: 1_250, uah: null });
+    await svc.addReserve({ name: 'Квартира', currency: 840, amount: 1_250, until: null });
+    const v = await svc.allowanceOverview({});
+    expect(v.reserves.map((r) => [r.active, r.uah])).toEqual([[true, null]]);
     expect(v.free).toBe(200_000);
     expect(v.money).toBe(200_000);
     expect(v.leftOut).toEqual([{ currency: 840, ownFunds: 1_000 }]);
     expect(v.mandatory).toEqual([]);
 
     const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
-    const p = await svc.allowanceOverview({ participantId: her }, { currency: 980, amount: 0 });
+    const p = await svc.allowanceOverview({ participantId: her });
     expect(p).toMatchObject({ money: 0, income: null, until: '2026-04-01', days: 17, free: 0, perDay: 0 });
   });
 
   it('carries the descriptions only — never a name, card number, IBAN or jar title', async () => {
-    const json = JSON.stringify(await svc.allowanceOverview({}, { currency: 980, amount: 0 }));
+    const json = JSON.stringify(await svc.allowanceOverview({}));
     for (const c of CANARIES) expect(json).not.toContain(c);
   });
 });

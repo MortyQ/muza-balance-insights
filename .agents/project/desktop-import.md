@@ -70,11 +70,13 @@
   `main/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over
   `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
-  earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserve is
-  `preferences.json` `allowanceReserve` — `AllowanceReserve { currency: 980 | 840 | 978, amount }` (minor units of the
-  currency it was typed in, 0 … `ALLOWANCE_RESERVE_MAX`, `src/shared/allowance.ts`; an older bare number reads as
-  hryvnia kopecks; `setAllowanceReserve`; «Delete all data» leaves it, like the other prefs). Taken off at today's rate;
-  without one it is not taken off (`reserve.uah` null). Bank text: the income's and payments'
+  earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
+  core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
+  — the last day it counts or null; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
+  never in the analysis copy or an MCP tool). `reserves` in the answer lists them all: `active` (no end, or `until` ≥
+  today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
+  `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits (`src/shared/allowance.ts`
+  re-exports core's). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
   in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:

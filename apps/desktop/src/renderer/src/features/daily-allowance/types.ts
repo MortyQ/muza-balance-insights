@@ -1,5 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { AllowanceReserve } from '@contract/allowance.ts';
+import type { ReserveInput } from '@contract/allowance.ts';
 import type { AllowanceOverview } from '@contract/api.ts';
 import type { Loadable } from '@/shared/lib';
 
@@ -25,10 +25,20 @@ export interface AllowanceView {
   leftOut: string;
 }
 
-/** What the reserve field shows: whole units of a currency. */
-export interface ReserveFieldValue {
-  currency: AllowanceReserve['currency'];
-  units: number;
+/** One reserve of the list. */
+export interface ReserveRowView {
+  id: number;
+  name: string;
+  /** In its own currency. */
+  amount: string;
+  /** ≈ in the screen's currency when that differs (and has a rate); '' — none. */
+  approx: string;
+  /** «no end» / «until 1 December» / «ended 1 December». */
+  term: string;
+  /** Counted now (not ended). */
+  active: boolean;
+  /** As saved: the form starts from it. */
+  input: ReserveInput;
 }
 
 export interface UseAllowanceReturn {
@@ -36,8 +46,11 @@ export interface UseAllowanceReturn {
   /** The answer is there. */
   visible: ComputedRef<boolean>;
   view: ComputedRef<AllowanceView | null>;
-  /** The saved reserve for the field (reserveField); null — not loaded. */
-  reserve: ComputedRef<ReserveFieldValue | null>;
-  /** Saves the reserve (minor units of the field's currency) and reloads; false — refused or failed. */
-  setReserve: (amount: number) => Promise<boolean>;
+  reserves: ComputedRef<ReserveRowView[]>;
+  /** The screen's currency: a new reserve starts in it. */
+  currency: ComputedRef<number>;
+  /** Adds (`id` null) or changes a reserve, then reloads; false — refused or failed. */
+  saveReserve: (id: number | null, r: ReserveInput) => Promise<boolean>;
+  /** Deletes a reserve, then reloads; false — failed. */
+  deleteReserve: (id: number) => Promise<boolean>;
 }

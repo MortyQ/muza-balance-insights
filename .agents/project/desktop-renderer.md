@@ -131,10 +131,11 @@
   now (the month filter does not apply). One IPC `getAllowanceOverview({ participantId? })`, reloaded
   on the person, quietly on `syncStatus.version` and a new day (`useAllowance`). `utils.ts`: `allowanceView` — the sum
   per day (or what is short), «until … · n days», the income line (next / late / none) and the count's lines
-  (`AllowanceBreakdown`: money, reserve, each mandatory payment, free, per day); `reserveMinor` — the reserve typed in
-  whole units; `reserveField` — the field in the screen's main currency (the saved reserve as is, or converted at
-  today's rate; without a rate in its own currency), saved in the field's currency. «How it's counted» is always open, with `ReserveField` (`VInput` + «Save»; IPC
-  `setAllowanceReserve`, then a reload). `dayMonthName` («5 April», the year outside the current one) is in
+  (`AllowanceBreakdown`: money, each active reserve, each mandatory payment, free, per day); `reserveMinor` — an amount typed in
+  whole units; `reserveRows` — the reserves list (own currency, ≈ the screen's, the term). Under the count `ReserveList`:
+  `ReserveRow` (`VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
+  «No end» `VCheckbox` or the last day `VDatepicker`; checked on submit), «Add a reserve» up to `RESERVES_MAX`;
+  `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route
   `recurring` (`/recurring`), its own side menu item (`home.nav.recurring`, after «Analytics») and

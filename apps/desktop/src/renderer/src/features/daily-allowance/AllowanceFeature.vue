@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useMonthStore } from '@/entities/period';
 import { VCard } from '@/shared/ui';
 import AllowanceBreakdown from './components/AllowanceBreakdown.vue';
-import ReserveField from './components/ReserveField.vue';
+import ReserveList from './components/ReserveList.vue';
 import { useAllowance } from './composables/useAllowance.ts';
 
-const { visible, view, reserve, setReserve } = useAllowance();
-const failed = ref(false);
-
-async function save(amount: number) {
-  failed.value = !(await setReserve(amount));
-}
+const { visible, view, reserves, currency, saveReserve, deleteReserve } = useAllowance();
+const { today } = storeToRefs(useMonthStore());
 </script>
 
 <template>
@@ -24,12 +21,12 @@ async function save(amount: number) {
       <p v-if="view.short" class="text-xs text-foreground-muted">{{ view.until }}</p>
       <p class="text-xs text-foreground-muted">{{ view.income }}</p>
     </div>
-    <!-- How it is counted: always open on the planning screen, the reserve is set right there. -->
+    <!-- How it is counted, and the reserves taken off: always open on the planning screen. -->
     <div class="flex flex-col gap-4 border-t border-border-subtle px-4 pt-3 pb-4" role="region" :aria-label="$t('home.allowance.toggle')">
       <AllowanceBreakdown :lines="view.lines" />
       <p v-if="view.leftOut" class="text-xs text-foreground-muted">{{ view.leftOut }}</p>
       <p class="text-xs text-foreground-muted">{{ $t('home.allowance.note') }}</p>
-      <ReserveField v-if="reserve" :saved="reserve" :failed @save="save" />
+      <ReserveList :rows="reserves" :currency :today :save="saveReserve" :remove="deleteReserve" />
     </div>
   </VCard>
 </template>
