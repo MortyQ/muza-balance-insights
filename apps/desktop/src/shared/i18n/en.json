@@ -533,7 +533,9 @@
       "noTokenSome": "No token: {names}. Their new transactions are not downloaded.",
       "openConnections": "Open «Connections»",
       "readFailed": "Could not read the data. Restart the app; if it happens again, send the [ipc] lines from the terminal.",
-      "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions."
+      "unreadable": "The saved token can no longer be read ({names}). Enter it again to download new transactions.",
+      "noDataFileText": "Upload a statement file in «Connections».",
+      "uploadStatement": "Upload statement"
     },
     "now": {
       "cats": {
@@ -763,7 +765,9 @@
       "remember": "Remember on this computer",
       "step1": "Open api.monobank.ua in a browser and sign in with the Monobank app (QR code).",
       "step2": "Copy your personal token and paste it here.",
-      "tokenName": "{bank} token"
+      "tokenName": "{bank} token",
+      "fileStep1": "In the Monobank app, make a card statement as CSV in Ukrainian.",
+      "fileStep2": "Save the file on this computer and pick it here."
     },
     "picker": {
       "available": "Personal token, read-only",
@@ -779,9 +783,50 @@
       "enterToken": "Enter token",
       "reenterToken": "Enter token again",
       "remove": "Remove",
-      "save": "Save"
+      "save": "Save",
+      "uploadStatement": "Upload statement",
+      "checkStatement": "Check against a statement"
     },
-    "tokenError": "The token was not saved: check that the whole token is pasted, with no spaces."
+    "tokenError": "The token was not saved: check that the whole token is pasted, with no spaces.",
+    "way": {
+      "label": "How to connect",
+      "token": "Token",
+      "file": "Statement file",
+      "tokenHint": "The app downloads new operations by itself with the token.",
+      "fileHint": "No token: you upload a statement file whenever you want fresh data. Nothing updates by itself."
+    },
+    "file": {
+      "connectNote": "Once added, press «Upload statement» next to the connection and pick the CSV file."
+    },
+    "statement": {
+      "pick": "Choose file",
+      "summary": "Operations in the file: {rows} · {from} – {to}",
+      "account": "Account",
+      "newCard": "New card",
+      "cardType": "Card type",
+      "comparing": "Comparing with the account…",
+      "counts": "Already here: {matched} · New: {added}",
+      "amountDiffers": "Same second, another amount: {count}",
+      "missingInFile": "Here, but not in the file: {count}",
+      "blockedToken": "A token connection: the statement is only checked, it is not written here.",
+      "blockedCurrency": "The file's currency is not the account's.",
+      "blockedGap": "No data from {from} to {to}: upload the statement for those days first.",
+      "nothingNew": "No new operations.",
+      "add": "Add",
+      "added": "Operations added: {count}.",
+      "expired": "Choose the file again.",
+      "importRunning": "Wait for the import to finish first.",
+      "compareFailed": "Could not compare the file with the account.",
+      "problem": {
+        "unknownFormat": "The file does not look like this bank's CSV statement.",
+        "english": "The statement is in English: its service texts are translated and transfers are not recognised. Make the statement in Ukrainian.",
+        "unsupportedKind": "A FOP statement is not supported yet, only a card statement.",
+        "empty": "The file has no operations.",
+        "badRow": "Line {row} of the file does not read.",
+        "tooLarge": "The file is too large: over 10 MB.",
+        "noFormat": "This bank cannot be uploaded by file yet."
+      }
+    }
   },
   "main": {
     "dialog": {

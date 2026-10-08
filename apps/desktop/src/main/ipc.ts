@@ -37,7 +37,20 @@ const label = z.string().min(1).max(80);
 const accountId = z.string().min(1).max(100).regex(/^\S+$/);
 const color = z.enum(COLOR_KEYS);
 const pin = z.string().regex(PIN_RE);
+const participant = z.union([
+  z.strictObject({ id }),
+  z.strictObject({ label, color: color.optional() }),
+  z.strictObject({ fromBank: z.literal(true), color: color.optional() }),
+]);
 const triggers = z.strictObject({ startup: z.boolean(), idle: z.boolean(), screenLock: z.boolean(), sleep: z.boolean() });
+// A statement kept in main (statements.ts): a random UUID.
+const statementId = z.string().regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+// The bank's card type for a new card from a file (Monobank: black, white …); main stores it as the API would.
+const cardType = z.string().regex(/^[A-Za-z]{1,20}$/);
+const statementTarget = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('account'), accountId }),
+  z.strictObject({ kind: z.literal('new'), type: cardType.nullable() }),
+]);
 const autoSync = z.strictObject({
   enabled: z.boolean(),
   triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
@@ -47,16 +60,11 @@ const autoSync = z.strictObject({
 export const ARG_SCHEMAS = {
   listPeople: z.tuple([]),
   addConnection: z.tuple([
-    z.strictObject({
-      participant: z.union([
-        z.strictObject({ id }),
-        z.strictObject({ label, color: color.optional() }),
-        z.strictObject({ fromBank: z.literal(true), color: color.optional() }),
-      ]),
-      provider: z.enum(PROVIDER_IDS),
-      token,
-      remember: z.boolean(),
-    }),
+    z.union([
+      z.strictObject({ participant, provider: z.enum(PROVIDER_IDS), method: z.literal('token').optional(), token, remember: z.boolean() }),
+      // A file connection carries no token.
+      z.strictObject({ participant, provider: z.enum(PROVIDER_IDS), method: z.literal('file') }),
+    ]),
   ]),
   renameParticipant: z.tuple([id, label]),
   restoreBankName: z.tuple([id]),
@@ -65,6 +73,9 @@ export const ARG_SCHEMAS = {
   removeConnection: z.tuple([id]),
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
+  openStatement: z.tuple([id]),
+  compareStatement: z.tuple([statementId, statementTarget]),
+  commitStatement: z.tuple([statementId, statementTarget]),
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),

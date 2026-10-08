@@ -894,9 +894,9 @@ export class DataService {
     return last === null || last === undefined ? null : Number(last);
   }
 
-  /** Every connection (the import takes them all). */
+  /** Every token connection (the import takes them all; a file connection is filled by uploads only). */
   async connections(): Promise<Array<{ connectionId: number; provider: ProviderId }>> {
-    return (await listConnections(await this.conn())).map((c) => ({ connectionId: c.id, provider: c.provider }));
+    return (await listConnections(await this.conn())).filter((c) => c.method === 'token').map((c) => ({ connectionId: c.id, provider: c.provider }));
   }
 
   /** The only Monobank connection (created with «Я» if there is none): the owner of an older version's token.bin. */

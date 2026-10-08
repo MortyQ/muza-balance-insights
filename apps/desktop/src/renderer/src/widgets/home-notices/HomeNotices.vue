@@ -35,6 +35,8 @@ const emptyText = computed(() => {
   const [y, m] = monthStore.month.split('-');
   return t('home.notices.monthEmpty', { month: `${monthName(Number(m))} ${y}`, date: fullDate(empty.value.dataFrom) });
 });
+// Only file connections: the data comes from statement uploads, not from the import.
+const filesOnly = computed(() => participant.hasConnections && participant.connections.every((c) => c.method === 'file'));
 const showNoToken = computed(() => participant.withoutToken.length > 0);
 const text = computed(() =>
   noTokenText(participant.withoutToken, participant.connections.length, importProgress.progress.phase, participant.labelOf),
@@ -56,13 +58,21 @@ const text = computed(() =>
   <div v-if="noData" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice v-if="userImport" :card="false" icon="lucide:download" tone="info" :subtitle="$t('home.notices.importing')" />
     <template v-else>
-      <VInfoNotice :card="false" icon="lucide:inbox" tone="info" :title="$t('home.notices.noDataTitle')" :subtitle="$t('home.notices.noDataText')" />
-      <VButton :text="$t('home.notices.loadHistory')" icon="lucide:download" @click="openImport()" />
+      <VInfoNotice
+        :card="false"
+        icon="lucide:inbox"
+        tone="info"
+        :title="$t('home.notices.noDataTitle')"
+        :subtitle="filesOnly ? $t('home.notices.noDataFileText') : $t('home.notices.noDataText')"
+      />
+      <VButton v-if="filesOnly" :text="$t('home.notices.uploadStatement')" icon="lucide:file-up" @click="openConnections" />
+      <VButton v-else :text="$t('home.notices.loadHistory')" icon="lucide:download" @click="openImport()" />
     </template>
   </div>
   <div v-if="empty" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-subtle bg-surface-sunken px-4 py-3">
     <VInfoNotice :card="false" icon="lucide:calendar-x" tone="info" :subtitle="emptyText" />
-    <VButton :text="$t('home.notices.loadMonth')" icon="lucide:download" @click="openImport(empty.from)" />
+    <VButton v-if="filesOnly" :text="$t('home.notices.uploadStatement')" icon="lucide:file-up" @click="openConnections" />
+    <VButton v-else :text="$t('home.notices.loadMonth')" icon="lucide:download" @click="openImport(empty.from)" />
   </div>
   <div
     v-if="participant.accountsOff"

@@ -11,7 +11,7 @@ import { DISABLED_ACCOUNT_HINT, IMPORT_RUNNING_ACCOUNTS_TEXT } from '../constant
 import type { AccountsState } from '../types.ts';
 import { accountLabel, accountSwitchChange, accountsButtonText } from '../utils.ts';
 
-const { connection, secureStorage, tokenField, accounts, cardTypes, importRunning, savingAccount } = defineProps<{
+const { connection, secureStorage, tokenField, accounts, cardTypes, statementFiles, importRunning, savingAccount } = defineProps<{
   connection: Readonly<ConnectionView>;
   secureStorage: boolean;
   /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Enter token again». */
@@ -20,6 +20,8 @@ const { connection, secureStorage, tokenField, accounts, cardTypes, importRunnin
   accounts: AccountsState | undefined;
   /** The bank's card types → dictionary keys of their names. */
   cardTypes: Readonly<Record<string, MessageKey>>;
+  /** The bank has a statement file format: «Upload statement» (a file connection) or «Check against a statement». */
+  statementFiles: boolean;
   /** The switches wait for the import to end. */
   importRunning: boolean;
   /** The account whose switch is being saved. */
@@ -35,13 +37,17 @@ const emit = defineEmits<{
 
 const id = useId();
 const bank = computed(() => bankOf(connection.provider));
-const badge = computed(() => tokenBadge(connection.token));
-const panel = ref<'token' | 'accounts' | null>(null);
+const badge = computed(() => (connection.token ? tokenBadge(connection.token) : null));
+const panel = ref<'token' | 'accounts' | 'statement' | null>(null);
 const tokenInput = ref('');
 const remember = ref(true);
 
 function toggleToken() {
   panel.value = panel.value === 'token' ? null : 'token';
+}
+
+function toggleStatement() {
+  panel.value = panel.value === 'statement' ? null : 'statement';
 }
 
 function toggleAccounts() {
@@ -76,6 +82,7 @@ function save() {
           </div>
         </div>
         <span
+          v-if="badge && connection.token"
           :title="tokenLine(connection.token)"
           class="inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap before:size-1.5 before:rounded-full before:bg-current"
           :class="
@@ -96,6 +103,21 @@ function save() {
           @click="toggleAccounts"
         />
         <VButton
+          v-if="statementFiles && connection.method === 'file'"
+          :variant="connection.accounts > 0 ? 'neutral' : 'primary'"
+          :text="panel === 'statement' ? $t('integrations.row.cancel') : $t('integrations.row.uploadStatement')"
+          :aria-expanded="panel === 'statement'"
+          @click="toggleStatement"
+        />
+        <VButton
+          v-if="statementFiles && connection.method === 'token' && connection.accounts > 0"
+          variant="neutral"
+          :text="panel === 'statement' ? $t('integrations.row.cancel') : $t('integrations.row.checkStatement')"
+          :aria-expanded="panel === 'statement'"
+          @click="toggleStatement"
+        />
+        <VButton
+          v-if="connection.token"
           :variant="connection.token.present ? 'neutral' : 'primary'"
           :text="panel === 'token' ? $t('integrations.row.cancel') : connection.token.present ? $t('integrations.row.reenterToken') : $t('integrations.row.enterToken')"
           :aria-expanded="panel === 'token'"
@@ -114,6 +136,16 @@ function save() {
               <VButton type="submit" :text="$t('integrations.row.save')" :disabled="tokenInput.trim() === ''" />
             </div>
           </form>
+        </div>
+      </div>
+    </Transition>
+    <Transition v-bind="EXPAND_TRANSITION">
+      <div v-if="panel === 'statement'" class="grid">
+        <div class="-mx-1 min-h-0 overflow-hidden px-1">
+          <div class="pt-5 pb-1">
+            <!-- The statement panel comes from the domain root (a sub-feature): shared/ does not import it. -->
+            <slot name="statement" />
+          </div>
         </div>
       </div>
     </Transition>

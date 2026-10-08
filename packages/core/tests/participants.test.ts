@@ -69,6 +69,19 @@ describe('participants', () => {
     await expect(addConnection(db, 999, 'monobank', 0)).rejects.toBeInstanceOf(ConnectionError);
   });
 
+  it('a connection is a token one unless it says file; the way is listed with it', async () => {
+    db = await memoryDb();
+    const me = await addParticipant(db, { label: 'Вигадана Особа' }, 0);
+    const token = await addConnection(db, me, 'monobank', 0);
+    const file = await addConnection(db, me, 'monobank', 0, 'file');
+    expect((await listConnections(db)).map((c) => [c.id, c.method])).toEqual([
+      [token, 'token'],
+      [file, 'file'],
+    ]);
+    // @ts-expect-error — only the listed ways
+    await expect(addConnection(db, me, 'monobank', 0, 'oauth')).rejects.toBeInstanceOf(ConnectionError);
+  });
+
   it("«взять имя из банка»: the first import sets the holder's name; after a rename the bank no longer changes it", async () => {
     db = await memoryDb();
     const participant = await addParticipant(db, { fromBank: true }, 0);
@@ -223,9 +236,9 @@ describe('connections: list and delete', () => {
     await db.execute({ sql: `UPDATE connections SET external_client_id = 'secret-holder' WHERE id = ?`, args: [her.connection] });
     const list = await listConnections(db);
     expect(list).toEqual([
-      { id: me.connection, participantId: me.participant, provider: 'monobank', accounts: 1, enabledAccounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt: null },
+      { id: me.connection, participantId: me.participant, provider: 'monobank', method: 'token', accounts: 1, enabledAccounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt: null },
       {
-        id: her.connection, participantId: her.participant, provider: 'monobank', accounts: 1, enabledAccounts: 1,
+        id: her.connection, participantId: her.participant, provider: 'monobank', method: 'token', accounts: 1, enabledAccounts: 1,
         coveredFrom: '2026-02-09', coveredTo: '2026-02-11', lastSyncAt: expect.stringMatching(/^2026-02-11/),
       },
     ]);
