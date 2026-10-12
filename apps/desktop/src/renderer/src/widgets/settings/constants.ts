@@ -1,5 +1,13 @@
-import type { SettingsSection } from '@/shared/config';
+import type { MessageKey } from '@contract/i18n/index.ts';
+import type { ConnectionsTab, SettingsSection } from '@/shared/config';
 import type { SideNavGroup } from '@/shared/layout';
+
+/** The tabs of «Connections»: the dictionary key of each one's name. */
+export const CONNECTION_TAB_LABELS = {
+  banks: 'settings.connections.tabs.banks',
+  'auto-sync': 'settings.connections.tabs.autoSync',
+  history: 'settings.connections.tabs.history',
+} as const satisfies Record<ConnectionsTab, MessageKey>;
 
 export const NAV_GROUPS = [
   {

@@ -23,12 +23,22 @@ export function settingsSection(q: unknown): SettingsSection {
   return isSection(q) ? q : 'people';
 }
 
+/** The tabs of «Connections», in order. The tab is `query.tab` of the settings route. */
+export const CONNECTION_TABS = ['banks', 'auto-sync', 'history'] as const;
+
+export type ConnectionsTab = (typeof CONNECTION_TABS)[number];
+
+/** The tab a route query asks for; anything else (none, unknown, repeated) opens the first. */
+export function connectionsTab(q: unknown): ConnectionsTab {
+  return CONNECTION_TABS.find((t) => t === q) ?? 'banks';
+}
+
 /**
- * A link to «Connections», scrolled to the history download (`query.focus`), its start date set to `from` (local
- * YYYY-MM-DD) when given. The section ignores a date it would not accept.
+ * A link to the history download: the «History» tab of «Connections», focused (`query.focus`), its start date set to
+ * `from` (local YYYY-MM-DD) when given. The section ignores a date it would not accept.
  */
 export function importLink(from?: string): { name: typeof ROUTE.settings; query: Record<string, string> } {
-  return { name: ROUTE.settings, query: { section: 'connections', focus: 'import', ...(from ? { from } : {}) } };
+  return { name: ROUTE.settings, query: { section: 'connections', tab: 'history', focus: 'import', ...(from ? { from } : {}) } };
 }
 
 /** What a settings route query asks of the history download: focus it, and from which date. */

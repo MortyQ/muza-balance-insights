@@ -13,10 +13,12 @@ English interface.
 
 ### Settings
 
-- **«Connections» in one place.** «Auto-sync» moved from its own menu item into «Connections», next to the banks it
-  refreshes; its triggers now sit right under the main switch. «Add connection» is at the top of the list.
-- **A tidier connection row.** The token status and the main action share one line with the bank's name; «Enter token
-  again» and «Remove» moved into the «…» menu.
+- **«Connections» in one place, in three tabs.** «Auto-sync» moved from its own menu item into «Connections». The
+  section now has three tabs — «Banks», «Auto-sync» and «History» (the history download) — and shows one at a time
+  instead of a long page. «Download history» on the home screen opens the «History» tab right away. The triggers of
+  «Auto-sync» sit right under its main switch, and «Add connection» is at the top of the list of banks.
+- **A tidier connection row.** The token status stands next to the bank's name, the main action on the right of the
+  same line; «Enter token again» and «Remove» moved into the «…» menu.
 - **«Refresh» in «Connections».** A «Refresh» button above the list of banks updates the data right away, and the line
   next to it says when it was last updated. It is switched off, with the reason, while an import is running or when no
   token is saved.

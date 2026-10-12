@@ -74,28 +74,30 @@ function save() {
 
 <template>
   <div class="flex flex-col px-4 py-3">
-    <!-- One line: the bank and how fresh it is on the left; the token's state, the action it needs and the rare ones
-         (the menu) on the right. Wraps under the name in a narrow window. -->
+    <!-- One line: the bank with its token's state, and how fresh it is under them, on the left; the action the token
+         needs and the rare ones (the menu) on the right. Wraps under the name in a narrow window. -->
     <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
       <div class="flex min-w-0 items-center gap-3">
         <BankMark :bank size="sm" />
         <div class="flex min-w-0 flex-col gap-0.5">
-          <span class="font-semibold">{{ connection.bank }}</span>
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="font-semibold">{{ connection.bank }}</span>
+            <span
+              :title="tokenLine(connection.token)"
+              class="inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap before:size-1.5 before:rounded-full before:bg-current"
+              :class="
+                badge.tone === 'success'
+                  ? 'bg-success-subtle text-success'
+                  : 'bg-warning-muted text-warning-foreground dark:bg-warning-subtle dark:text-warning'
+              "
+            >
+              {{ badge.text }}
+            </span>
+          </div>
           <span class="text-sm text-foreground-muted">{{ coverageLine(connection) }}</span>
         </div>
       </div>
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <span
-          :title="tokenLine(connection.token)"
-          class="inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap before:size-1.5 before:rounded-full before:bg-current"
-          :class="
-            badge.tone === 'success'
-              ? 'bg-success-subtle text-success'
-              : 'bg-warning-muted text-warning-foreground dark:bg-warning-subtle dark:text-warning'
-          "
-        >
-          {{ badge.text }}
-        </span>
         <VButton
           v-if="connection.accounts > 0"
           variant="neutral"

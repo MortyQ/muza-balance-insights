@@ -862,11 +862,19 @@
       "description": "The app fetches new transactions of every connection by itself and rereads the last 31 days: that is how holds that have since completed or been cancelled catch up.",
       "enabled": "Update data automatically",
       "enabledHint": "The whole family: connections with a saved token.",
-      "note": "At most once every 30 minutes. Deeper history is downloaded with the «Download» button on the home screen.",
+      "note": "At most once every 30 minutes. Deeper history is downloaded on the «History» tab.",
       "title": "Auto-sync",
       "triggerInterval": "Every 4 hours while the app is open",
       "triggerLaunch": "When the app starts",
       "triggerWake": "When the computer wakes from sleep"
+    },
+    "connections": {
+      "tabs": {
+        "banks": "Banks",
+        "autoSync": "Auto-sync",
+        "history": "History"
+      },
+      "tabsLabel": "Parts of «Connections»"
     },
     "dbEncryption": {
       "encrypted": "The database on this computer is encrypted; the key is kept in {store}.",

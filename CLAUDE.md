@@ -164,25 +164,30 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
-  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
+  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» — three tabs, one shown at a time (`VSegmentedControl` in
+    the widget; `CONNECTION_TABS` / `connectionsTab` in `shared/config`: `banks`, `auto-sync`, `history`; the tab is
+    `query.tab` of the settings route, unknown → `banks`; the widget emits `selectTab`, the page writes the address):
+    «Banks» (`ConnectionsFeature` from `features/integrations`, badge
     `tokenBadge`; «Add connection» sits next to the block's title (`SettingsSection` `#action`); above the list a toolbar
     with the section's own bank filter (several banks only) and `BankRefreshFeature` of `features/bank-refresh` in its
     `#toolbar` slot — «Refresh» of the chosen bank or all; a row keeps the token
-    state, «Accounts» and «Enter token» in one line and the rare actions in a `VPopover` menu; then «Auto-sync»
+    state next to the bank's name, «Accounts» and «Enter token» on the right of the same line and the rare actions in a
+    `VPopover` menu); «Auto-sync»
     (`AutoSyncSettingsFeature`: the main switch, its triggers as `nested` rows of the same list; no menu item of its
-    own); then «History download» — `ImportFeature` from `features/import-statement`, composed in the
+    own); «History» — the history download, `ImportFeature` from `features/import-statement`, composed in the
     widget: a list per bank (Monobank only for now), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
     `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
     back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
-    `Importer` throws on a date out of range. No arbitrary end date: coverage is one span per account (`sync_state`));
+    `Importer` throws on a date out of range. No arbitrary end date: coverage is one span per account (`sync_state`);
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Language and time» (`LanguageSelectFeature`), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`. The history download is
-  reached by `importLink(from?)` (`shared/config`: `section=connections`, `focus=import`, optional `from`); the page
-  reads it back with `importRequest` and the section scrolls to itself, focuses and takes the date. Home has no import
+  reached by `importLink(from?)` (`shared/config`: `section=connections`, `tab=history`, `focus=import`, optional
+  `from`); the page reads it back with `connectionsTab` and `importRequest`, and the block focuses and takes the date. A
+  tab picked by hand drops `focus` and `from`. Home has no import
   block: `widgets/home-notices` shows «No data yet» → «Download history» while nothing is imported (a line instead while
   the user's import runs), and, for a month picked before `dataFrom`, «{month}: no data yet» → «Download» from that
   month (`emptyMonth`). For that the month filter's lower bound is the import's floor month, not the first data month.
@@ -209,4 +214,4 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   menu item names the item to keep current with `meta.navParent` (the category and income screens → `home`). `MasterLayout` keeps the screens in `KEPT_ALIVE` (`HomePage`) alive while another screen of their layout is open (back from a category, home is there at once, reloading quietly). Pages and layouts have one root element
   (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
   with `meta.nav`; the guard opens every default-layout route once home is the start (`startGuard`).
-- The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.
+- The renderer settings tests: `tests/renderer/settings.test.ts`, the tabs of «Connections» — `tests/renderer/connections-tabs.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

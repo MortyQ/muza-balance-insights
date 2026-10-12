@@ -55,6 +55,8 @@
   narrow window on Windows, macOS and Linux, the select inside the popover, a refresh of one bank) once a second
   provider exists. The same goes for the bank select of «Connections» in settings and its «Connections shown: X of N»
   line.
+- The tabs of «Connections» («Banks», «Auto-sync», «History») have not been checked in the running app: the switch in
+  a narrow window, the fade between tabs, «Download history» from home landing on «History» with its date.
 - «Refresh» in «Connections» (settings) shows with one bank, but has not been checked in the running app either: the
   toolbar in a narrow window, the status line while an import or «Auto-sync» runs, the refusal under the row.
 - After a refresh of one bank, «last synced» is still the newest sync of any account (`DataService.lastSyncSec`,

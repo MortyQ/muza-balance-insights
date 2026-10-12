@@ -69,9 +69,9 @@ describe('emptyMonth', () => {
 });
 
 describe('importLink / importRequest', () => {
-  it('«Connections», focused on the download, with the date when given; the page reads it back', () => {
-    expect(importLink()).toEqual({ name: 'settings', query: { section: 'connections', focus: 'import' } });
-    expect(importLink('2026-03-01').query).toEqual({ section: 'connections', focus: 'import', from: '2026-03-01' });
+  it('the «History» tab of «Connections», focused on the download, with the date when given; the page reads it back', () => {
+    expect(importLink()).toEqual({ name: 'settings', query: { section: 'connections', tab: 'history', focus: 'import' } });
+    expect(importLink('2026-03-01').query).toEqual({ section: 'connections', tab: 'history', focus: 'import', from: '2026-03-01' });
     expect(importRequest(importLink('2026-03-01').query)).toEqual({ focus: true, from: '2026-03-01' });
     expect(importRequest({ section: 'connections', from: ['x'] })).toEqual({ focus: false, from: null });
   });
@@ -133,7 +133,7 @@ describe('HomeNotices: no data', () => {
     expect(w.text()).toContain('Данных пока нет');
     await w.findAll('button').find((b) => b.text() === 'Загрузить историю')!.trigger('click');
     await flushPromises();
-    expect(router.currentRoute.value.query).toEqual({ section: 'connections', focus: 'import' });
+    expect(router.currentRoute.value.query).toEqual({ section: 'connections', tab: 'history', focus: 'import' });
   });
 
   it('while the user’s import runs: no call to download, a line that it is on its way; unknown status: nothing', async () => {
@@ -152,7 +152,7 @@ describe('HomeNotices: no data', () => {
     expect(w.text()).toContain('Март 2026: данных ещё нет — история загружена с 10.06.2026.');
     await w.findAll('button').find((b) => b.text() === 'Загрузить')!.trigger('click');
     await flushPromises();
-    expect(router.currentRoute.value.query).toEqual({ section: 'connections', focus: 'import', from: '2026-03-01' });
+    expect(router.currentRoute.value.query).toEqual({ section: 'connections', tab: 'history', focus: 'import', from: '2026-03-01' });
   });
 
   it('a month with data: no notice', async () => {
