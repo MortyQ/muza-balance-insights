@@ -1,0 +1,136 @@
+/* copied from muzakit/libs/ui/src (2026-10-07); changes: ui/README.md */
+.v-avatar {
+  --v-avatar-size: var(--ui-control-h-md);
+  --v-avatar-font-size: var(--ui-text-sm);
+  --v-avatar-status-size: 0.5rem;
+  --v-avatar-bg: var(--ui-surface-raised);
+  --v-avatar-fg: var(--ui-foreground-secondary);
+
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  width: var(--v-avatar-size);
+  height: var(--v-avatar-size);
+  font-size: var(--v-avatar-font-size);
+  font-weight: 550;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  background-color: var(--v-avatar-bg);
+  color: var(--v-avatar-fg);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  &--circle {
+    border-radius: var(--ui-radius-full);
+  }
+
+  &--square {
+    border-radius: var(--ui-radius);
+  }
+
+  /* md and lg sit on the control scale so an avatar lines up with the button
+     beside it; the ends of the scale are avatar-only steps. */
+  &--xs {
+    --v-avatar-size: 1.25rem;
+    --v-avatar-font-size: var(--ui-text-2xs);
+    --v-avatar-status-size: 0.3125rem;
+  }
+
+  &--sm {
+    --v-avatar-size: 1.5rem;
+    --v-avatar-font-size: var(--ui-text-xs);
+    --v-avatar-status-size: 0.375rem;
+  }
+
+  &--md {
+    --v-avatar-size: var(--ui-control-h-md);
+    --v-avatar-font-size: var(--ui-text-sm);
+    --v-avatar-status-size: 0.5rem;
+  }
+
+  &--lg {
+    --v-avatar-size: var(--ui-control-h-lg);
+    --v-avatar-font-size: var(--ui-text-base);
+    --v-avatar-status-size: 0.625rem;
+  }
+
+  &--xl {
+    --v-avatar-size: 3.5rem;
+    --v-avatar-font-size: var(--ui-text-lg);
+    --v-avatar-status-size: 0.75rem;
+  }
+
+  /* Deterministic tones, derived from the design-system hues so avatars stay
+     on-palette in both themes. */
+  &--tone-0 {
+    --v-avatar-bg: var(--ui-primary);
+    --v-avatar-fg: var(--ui-primary-foreground);
+  }
+
+  &--tone-1 {
+    --v-avatar-bg: var(--ui-info);
+    --v-avatar-fg: var(--ui-info-foreground);
+  }
+
+  &--tone-2 {
+    --v-avatar-bg: var(--ui-success);
+    --v-avatar-fg: var(--ui-success-foreground);
+  }
+
+  &--tone-3 {
+    --v-avatar-bg: var(--ui-warning);
+    --v-avatar-fg: var(--ui-warning-foreground);
+  }
+
+  &--tone-4 {
+    --v-avatar-bg: var(--ui-danger);
+    --v-avatar-fg: var(--ui-danger-foreground);
+  }
+
+  &--tone-5 {
+    --v-avatar-bg: color-mix(in oklch, var(--ui-primary) 50%, var(--ui-info));
+    --v-avatar-fg: var(--ui-primary-foreground);
+  }
+
+  &--tone-6 {
+    --v-avatar-bg: color-mix(in oklch, var(--ui-info) 50%, var(--ui-success));
+    --v-avatar-fg: var(--ui-info-foreground);
+  }
+
+  &--tone-7 {
+    --v-avatar-bg: color-mix(in oklch, var(--ui-danger) 50%, var(--ui-warning));
+    --v-avatar-fg: var(--ui-danger-foreground);
+  }
+
+  /* A colour of the caller's (a person's): white initials on it, as the tones' foregrounds. */
+  &--color {
+    --v-avatar-bg: var(--v-avatar-color);
+    --v-avatar-fg: var(--ui-primary-foreground);
+  }
+
+  &__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &__initials {
+    user-select: none;
+  }
+
+  &__status {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    display: block;
+    width: var(--v-avatar-status-size);
+    height: var(--v-avatar-status-size);
+    border-radius: var(--ui-radius-full);
+    background-color: var(--ui-success);
+    box-shadow: 0 0 0 1.5px var(--ui-surface);
+  }
+}

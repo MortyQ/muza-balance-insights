@@ -1,37 +1,29 @@
 <script setup lang="ts">
 import { toRef } from 'vue';
-import { RouterLink } from 'vue-router';
-import type { Scope } from '@contract/api.ts';
+import type { DetailPeriod, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
-import { DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
-import { ROUTE } from '@/shared/config';
-import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { VCard, VInfoNotice } from '@/shared/ui';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
-const { categoryId, scope } = defineProps<{ categoryId: CategoryId; scope: Scope }>();
+const { categoryId, scope, period } = defineProps<{ categoryId: CategoryId; scope: Scope; period: DetailPeriod }>();
 
-const base = useCategoryDetail(() => categoryId, () => scope);
+const base = useCategoryDetail(() => categoryId, () => scope, () => period);
 const { state, view } = base;
-const { summary, none, months, people, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
+const { summary, label, none, months, people, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
 </script>
 
 <template>
   <div class="@container flex flex-col gap-4" :style="{ '--cat': summary?.color ?? 'var(--category-other)' }">
-    <RouterLink
-      :to="{ name: ROUTE.home }"
-      class="inline-flex min-h-9 items-center gap-1.5 self-start rounded-lg border border-border-subtle bg-surface px-3 font-semibold hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus"
-    >
-      <VIcon icon="lucide:chevron-left" class="size-4" />
-      {{ $t('category.back') }}
-    </RouterLink>
+    <BackLink :label="$t('category.back')" />
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('category.failed')" />
 
-    <DetailSkeleton v-if="!view && state.status === 'loading'" />
+    <DetailSkeleton v-if="!view && state.status === 'loading'" :months="period.kind === 'month'" />
     <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
-        <DetailSummary :summary :label="$t('category.summary.spent')" />
+        <DetailSummary :summary :label />
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>

@@ -99,17 +99,50 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getNowOverview', [{ month: '2026-09' }]],
     ['getNowOverview', [{}, {}]],
     ['getCategoryOverview', []],
-    ['getCategoryOverview', [{ month: '2026-09', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'такси', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'all' }]],
-    ['getCategoryOverview', [{ month: '2026-9', category: 'transport', scope: 'personal' }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', participantId: 0 }]],
-    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal', extra: 1 }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, scope: 'personal' }]],
+    ['getCategoryOverview', [{ month: '2026-09', category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'такси', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'all' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-9' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'day', date: '2026-02-30' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'week', from: '2026-10-05', to: '2026-10-11' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'year', year: '2026' }, category: 'transport', scope: 'personal' }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', participantId: 0 }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', extra: 1 }]],
     ['getIncomeOverview', []],
     ['getIncomeOverview', [{}]],
-    ['getIncomeOverview', [{ month: '2026-9' }]],
-    ['getIncomeOverview', [{ month: '2026-09', participantId: 0 }]],
-    ['getIncomeOverview', [{ month: '2026-09', scope: 'personal' }]],
+    ['getIncomeOverview', [{ month: '2026-09' }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-9' } }]],
+    ['getIncomeOverview', [{ period: { kind: 'day', date: '2026-13-01' } }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, participantId: 0 }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, scope: 'personal' }]],
+    ['getRecurringOverview', []],
+    ['getRecurringOverview', [{ participantId: 0 }]],
+    ['getRecurringOverview', [{ month: '2026-09' }]],
+    ['getAllowanceOverview', [{ participantId: 0 }]],
+    ['getAllowanceOverview', [{ month: '2026-09' }]],
+    ['addReserve', []],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100 }]],
+    ['addReserve', [{ name: '   ', currency: 978, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'x'.repeat(61), currency: 978, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 826, amount: 100, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: -1, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 1.5, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 10_000_000_001, until: null, participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: '2026-02-30', participantId: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: null, extra: 1 }]],
+    ['updateReserve', [0, { name: 'Квартира', currency: 978, amount: 100, until: null, participantId: null }]],
+    ['updateReserve', [1]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: 0 }]],
+    ['addReserve', [{ name: 'Квартира', currency: 978, amount: 100, until: null, participantId: '2' }]],
+    ['deleteReserve', [0]],
+    ['deleteReserve', ['1']],
+    ['setRecurringMark', []],
+    ['setRecurringMark', [{ key: 't1' }]],
+    ['setRecurringMark', [{ key: '', mark: null }]],
+    ['setRecurringMark', [{ key: 't1', mark: 'optional' }]],
+    ['setRecurringMark', [{ key: 't1', mark: 'mandatory', extra: 1 }]],
     ['getAnalyticsOverview', []],
     ['getAnalyticsOverview', [{ from: '2026-09' }]],
     ['getAnalyticsOverview', [{ from: '2026-9', to: '2026-09' }]],
@@ -244,8 +277,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       getMonthOverview: { month: '2026-09' },
       getSpendingOverview: { month: '2026-09', scope: 'personal' },
       getNowOverview: {},
-      getCategoryOverview: { month: '2026-09', category: 'transport', scope: 'personal' },
-      getIncomeOverview: { month: '2026-09' },
+      getCategoryOverview: { period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal' },
+      getIncomeOverview: { period: { kind: 'month', month: '2026-09' } },
       getAnalyticsOverview: { from: '2026-08', to: '2026-09' },
     } as const;
     for (const [m, q] of Object.entries(base) as Array<[keyof typeof base, object]>) {
@@ -275,9 +308,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'getNowOverview',
       a: [{ participantId: 2 }],
     });
-    const cat = { month: '2026-09', category: 'transport', scope: 'personal', participantId: 2 };
+    const cat = { period: { kind: 'week', from: '2026-09-28' }, category: 'transport', scope: 'personal', participantId: 2 };
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
-    const inc = { month: '2026-09', participantId: 2 };
+    const inc = { period: { kind: 'day', date: '2026-09-30' }, participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
     const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most
     await expect(ipc.handlers.get('balance:getAnalyticsOverview')!(good, an)).resolves.toEqual({ m: 'getAnalyticsOverview', a: [an] });
@@ -293,6 +326,10 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
     }
+    const flat = { name: 'Квартира', currency: 978, amount: 120_000, until: '2026-12-01', participantId: 2 };
+    await expect(ipc.handlers.get('balance:addReserve')!(good, flat)).resolves.toEqual({ m: 'addReserve', a: [flat] });
+    await expect(ipc.handlers.get('balance:updateReserve')!(good, 3, { ...flat, until: null, participantId: null })).resolves.toEqual({ m: 'updateReserve', a: [3, { ...flat, until: null, participantId: null }] });
+    await expect(ipc.handlers.get('balance:deleteReserve')!(good, 3)).resolves.toEqual({ m: 'deleteReserve', a: [3] });
     await expect(ipc.handlers.get('balance:listConnectionAccounts')!(good, 4)).resolves.toEqual({ m: 'listConnectionAccounts', a: [4] });
     await expect(ipc.handlers.get('balance:setAccountEnabled')!(good, 'kKGVoZuHWzqVoZuH', false)).resolves.toEqual({
       m: 'setAccountEnabled',

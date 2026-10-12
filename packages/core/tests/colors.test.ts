@@ -41,7 +41,7 @@ describe('migration v10', () => {
       await db.execute(`INSERT INTO connections (id, participant_id, provider, created_at) VALUES (${i * 2}, ${i * 3}, 'monobank', 0)`);
     }
 
-    expect(await migrate(db, 0)).toEqual([10, 11]);
+    expect(await migrate(db, 0)).toEqual([10, 11, 12, 13, 14]);
     const expected = [...COLOR_KEYS, null, null];
     expect((await rows('SELECT color FROM participants ORDER BY id')).map((r) => r.color)).toEqual(expected);
     expect((await rows('SELECT color FROM connections ORDER BY id')).map((r) => r.color)).toEqual(expected);

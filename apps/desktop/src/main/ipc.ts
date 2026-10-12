@@ -1,6 +1,7 @@
 // IPC in main (Security Checklist #17, #20): only the methods of src/shared/channels.ts, each with a zod schema for
 // its arguments, each call checked for its sender first. No generic channel ("run SQL", "fetch", "invoke anything").
 import { z } from 'zod';
+import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX } from '../shared/allowance.ts';
 import { APP_ORIGIN } from './app-protocol.ts';
 import { METHODS, channel, type Method } from '../shared/channels.ts';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
@@ -14,6 +15,21 @@ import { THEME_PREFS } from '../shared/theme.ts';
 
 const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const id = z.number().int().positive();
+// A reserve of «Available per day»: core (reserves.ts) checks the same again.
+const reserve = z.strictObject({
+  name: z.string().refine((v) => v.trim().length > 0 && [...v.trim()].length <= RESERVE_NAME_MAX),
+  currency: z.union(RESERVE_CURRENCIES.map((c) => z.literal(c))),
+  amount: z.number().int().min(0).max(RESERVE_AMOUNT_MAX),
+  until: z.string().refine(isIsoDate).nullable(),
+  participantId: id.nullable(),
+});
+const isoDate = z.string().refine(isIsoDate);
+// The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview / incomeOverview → periodBounds.
+const detailPeriod = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('day'), date: isoDate }),
+  z.strictObject({ kind: z.literal('week'), from: isoDate }),
+  z.strictObject({ kind: z.literal('month'), month }),
+]);
 // The credential's own shape is checked in main per provider (src/net/providers.ts); here only its outer bounds.
 const token = z.string().min(20).max(200).regex(/^\S+$/);
 const label = z.string().min(1).max(80);
@@ -60,9 +76,15 @@ export const ARG_SCHEMAS = {
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), provider: provider.optional() })]),
   getNowOverview: z.tuple([z.strictObject({ participantId: id.optional(), provider: provider.optional() })]),
   getCategoryOverview: z.tuple([
-    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), provider: provider.optional() }),
+    z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), provider: provider.optional() }),
   ]),
-  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), provider: provider.optional() })]),
+  getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional(), provider: provider.optional() })]),
+  getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  addReserve: z.tuple([reserve]),
+  updateReserve: z.tuple([id, reserve]),
+  deleteReserve: z.tuple([id]),
+  setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z

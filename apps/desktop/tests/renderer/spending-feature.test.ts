@@ -6,8 +6,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { PeopleView, SpendingOverview, SpendingOverviewQuery } from '@contract/api.ts';
-import CategoryRing from '@/features/spending-summary/components/CategoryRing.vue';
-import PeopleList from '@/features/spending-summary/components/PeopleList.vue';
+import CategoryRing from '@/features/spending-summary/components/summary/CategoryRing.vue';
+import PeopleList from '@/features/spending-summary/components/summary/PeopleList.vue';
 import { formatMoney } from '@/shared/lib';
 
 // reka-ui's popover positioning reaches for ResizeObserver, which happy-dom does not provide.
@@ -35,6 +35,7 @@ const VIEW: SpendingOverview = {
   rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
   leftOut: [],
   familyTotal: null,
+  usual: null,
 };
 
 // The family view with nothing spent this month.
@@ -242,9 +243,9 @@ describe('spending block: the only person in the app', () => {
 
     expect(w.findComponent(PeopleList).exists()).toBe(false);
     expect(category(w)).toHaveLength(1); // a row opens its screen in every view
-    const segments = w.findAll('[title]').filter((e) => (e.attributes('style') ?? '').includes('--s:'));
+    const segments = w.findAll('.v-share-bar__part');
     expect(segments.length).toBeGreaterThan(0);
-    for (const seg of segments) expect(seg.attributes('style')).toContain('--s: var(--category-1)');
+    for (const seg of segments) expect(seg.attributes('style')).toContain('--v-share-bar-color: var(--category-1)');
 
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();
@@ -309,5 +310,38 @@ describe('spending block: currencies come from the home-wide choice', () => {
     expect(ring).toContain(formatMoney(1_000, 978));
     expect(ring).toContain(`≈ ${formatMoney(50_000, 980)}`);
     expect(ring).not.toContain('₴ ≈');
+  });
+});
+
+describe('spending block: what is unusual', () => {
+  const USUAL = {
+    months: 6,
+    running: false,
+    total: 60_000,
+    categories: [
+      { category: 'продукты', categoryId: 'groceries' as const, net: 100_000 },
+      { category: 'кафе и рестораны', categoryId: 'cafes' as const, net: 10_000 },
+    ],
+    income: { now: 100_000, usual: 100_000 },
+  };
+
+  it('a category off its usual: the line, income beside it, what usual is; a person picked inside the block hides it', async () => {
+    current = { ...VIEW, usual: USUAL };
+    const w = await mountBlock();
+    const text = w.find('section[aria-label="Что необычно"]').text();
+    expect(text).toContain(`Продукты — на 50% меньше обычного (−${formatMoney(50_000, 980)})`);
+    // Cafés: none this month, 10 000 usually — 100% less, 100 ₴ is under the threshold.
+    expect(text).not.toContain('Кафе');
+    expect(text).toContain('Доходы на обычном уровне');
+    expect(text).toContain('Сравнение с медианой за 6 месяцев');
+
+    await person(w, 'Аня')!.trigger('click');
+    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
+  });
+
+  it('nothing off: no section', async () => {
+    current = { ...VIEW, usual: { ...USUAL, categories: [{ category: 'продукты', categoryId: 'groceries', net: 48_000 }] } };
+    const w = await mountBlock();
+    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
   });
 });

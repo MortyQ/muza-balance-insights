@@ -2,6 +2,7 @@
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
 import { NowStripFeature } from '@/features/now-strip';
+import { RecurringTeaserFeature } from '@/features/recurring-payments';
 import { AppLockHintFeature, UpdateBannerFeature } from '@/features/settings';
 import { SpendingFeature } from '@/features/spending-summary';
 import { HomeNotices } from '@/widgets/home-notices';
@@ -20,6 +21,7 @@ const syncStatus = useSyncStatusStore();
       <BalancesFeature />
       <NowStripFeature />
       <SpendingFeature />
+      <RecurringTeaserFeature />
     </template>
   </main>
 </template>

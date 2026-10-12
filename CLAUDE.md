@@ -193,7 +193,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
   top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`: «General» =
   `home`, «Analytics» = `analytics`, `features/analytics-overview`). On a route with `meta.periodFilter: 'range'`
-  (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`.
+  (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`; with
+  `'none'` (regular payments, planning) no period at all.
 - **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
   picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
   `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the
@@ -202,7 +203,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   recovery, connect, settings: `meta.layout: 'empty'`). The routes are `app/router/routes.ts`. The screen goes into the
   layout's slot (MasterLayout's `RouterView` slot), not a `RouterView` inside the layout: a leaving layout keeps its old
   screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each
-  layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. A default-layout screen without its own
+  layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. Another path in the default layout glides its scroll area to the top (`useScrollTop`; no motion under `prefers-reduced-motion`). A default-layout screen without its own
   menu item names the item to keep current with `meta.navParent` (the category and income screens → `home`). `MasterLayout` keeps the screens in `KEPT_ALIVE` (`HomePage`) alive while another screen of their layout is open (back from a category, home is there at once, reloading quietly). Pages and layouts have one root element
   (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
   with `meta.nav`; the guard opens every default-layout route once home is the start (`startGuard`).

@@ -52,7 +52,7 @@ describe('ui components copied from muzakit', () => {
     }
   });
 
-  it('every copied file carries the provenance header (icons.ts, index.ts, table/, VSelect/VDatepicker/VMonthPicker/VMonthRangePicker and the charts are ours)', () => {
+  it('every copied file carries the provenance header (icons.ts, index.ts, table/, VSelect/VDatepicker/VMonthPicker/VMonthRangePicker, VChangeChip, VShareBar and the charts are ours)', () => {
     // VSelect, VDatepicker and VMonthPicker are built fresh on reka-ui, not copied from muzakit (see ui/README.md) —
     // their header says so instead of "copied from muzakit".
     const ownFiles = new Set([
@@ -72,6 +72,8 @@ describe('ui components copied from muzakit', () => {
       'vpopover.scss',
       'VChangeChip.vue',
       'vchangechip.scss',
+      'VShareBar.vue',
+      'vsharebar.scss',
       'VChart.vue',
       'vchart.scss',
       'echarts.ts',
@@ -173,6 +175,18 @@ describe('ui components copied from muzakit', () => {
       expect(values[0], prop).toBeDefined();
       expect(new Set(values).size, prop).toBe(1);
     }
+  });
+
+  it('labels above a field: VInput, VSelect and VDatepicker set the same type and line height, so fields stand level in a row', () => {
+    const rule = (file: string, selector: string) => {
+      const css = read(path.join(uiDir, 'styles/components/inputs', file));
+      const body = css.slice(css.indexOf(`${selector} {`)).split('}')[0] ?? '';
+      return ['color', 'font-size', 'line-height', 'font-weight'].map((p) => body.match(new RegExp(`\\b${p}:\\s*([^;]+);`))?.[1]?.trim() ?? null);
+    };
+    const input = rule('vinput.scss', '.v-input-top-label');
+    expect(input).toEqual(['var(--ui-foreground-secondary)', 'var(--ui-text-sm)', 'var(--ui-leading-sm)', '500']);
+    expect(rule('vselect.scss', '.v-select__label')).toEqual(input);
+    expect(rule('vdatepicker.scss', '.v-datepicker__label')).toEqual(input);
   });
 
   it('every exported component has a row in ui/README.md', () => {

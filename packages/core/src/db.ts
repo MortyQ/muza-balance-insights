@@ -393,6 +393,46 @@ export const MIGRATIONS: ReadonlyArray<{ version: number; name: string; statemen
     // The user's toggle for an account: NULL = auto (accounts.ts), 1 = on, 0 = off. The bank's upsert never touches it.
     statements: [`ALTER TABLE accounts ADD COLUMN sync_choice INTEGER CHECK (sync_choice IN (0, 1))`],
   },
+  {
+    version: 12,
+    name: 'recurring_marks',
+    // The user's marks on a regular payment (recurring.ts), by payee: the key holds the bank's text or the account paid
+    // to, so it stays in this database only (the analysis copy takes whitelisted tables only).
+    statements: [
+      `CREATE TABLE recurring_marks (
+        payee      TEXT PRIMARY KEY,
+        mark       TEXT NOT NULL CHECK (mark IN ('mandatory', 'hidden')),
+        updated_at INTEGER NOT NULL
+      )`,
+    ],
+  },
+  {
+    version: 13,
+    name: 'reserves',
+    // Money the user keeps aside from «Available per day» (reserves.ts): a name of their own, so it stays in this
+    // database only (the analysis copy takes whitelisted tables only). `until` — the last day it counts; null — no end.
+    statements: [
+      `CREATE TABLE reserves (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        name       TEXT NOT NULL CHECK (length(name) BETWEEN 1 AND 60),
+        currency   INTEGER NOT NULL CHECK (currency IN (980, 840, 978)),
+        amount     INTEGER NOT NULL CHECK (amount >= 0),
+        until      TEXT CHECK (until IS NULL OR until GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+        created_at INTEGER NOT NULL
+      )`,
+    ],
+  },
+  {
+    version: 14,
+    name: 'reserve_owner',
+    // Whose reserve it is: counted for that person and the family; null — common, counted for the family only. A
+    // removed person's reserves become common. With one person only, the reserves so far are theirs.
+    statements: [
+      `ALTER TABLE reserves ADD COLUMN participant_id INTEGER REFERENCES participants(id) ON DELETE SET NULL`,
+      `UPDATE reserves SET participant_id = (SELECT id FROM participants)
+       WHERE participant_id IS NULL AND (SELECT COUNT(*) FROM participants) = 1`,
+    ],
+  },
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? 0;

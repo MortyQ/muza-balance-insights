@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, ref } from 'vue';
-import type { ConnectionView, PeopleView, PersonView, ProviderKey } from '@contract/api.ts';
+import type { ConnectionView, DetailPeriod, PeopleView, PersonView, ProviderKey } from '@contract/api.ts';
 
 const CHANNELS = ['getMonthOverview', 'getSpendingOverview', 'getNowOverview', 'getCategoryOverview', 'getIncomeOverview', 'getAnalyticsOverview'] as const;
 type Channel = (typeof CHANNELS)[number];
@@ -50,6 +50,8 @@ async function participantStore() {
   return (await import('@/entities/participant')).useParticipantStore();
 }
 
+const PERIOD: DetailPeriod = { kind: 'month', month: '2026-03' };
+
 const REQUESTS: Array<[Channel, () => Promise<() => unknown>]> = [
   ['getMonthOverview', async () => (await import('@/features/balances/composables/useMonthOverview.ts')).useMonthOverview],
   ['getSpendingOverview', async () => (await import('@/features/spending-summary/composables/useSpending.ts')).useSpending],
@@ -58,10 +60,16 @@ const REQUESTS: Array<[Channel, () => Promise<() => unknown>]> = [
     'getCategoryOverview',
     async () => {
       const { useCategoryDetail } = await import('@/features/category-detail/composables/useCategoryDetail.ts');
-      return () => useCategoryDetail('groceries', 'personal');
+      return () => useCategoryDetail('groceries', 'personal', PERIOD);
     },
   ],
-  ['getIncomeOverview', async () => (await import('@/features/income-detail/composables/useIncomeDetail.ts')).useIncomeDetail],
+  [
+    'getIncomeOverview',
+    async () => {
+      const { useIncomeDetail } = await import('@/features/income-detail/composables/useIncomeDetail.ts');
+      return () => useIncomeDetail(PERIOD);
+    },
+  ],
   ['getAnalyticsOverview', async () => (await import('@/features/analytics-overview/composables/useAnalytics.ts')).useAnalytics],
 ];
 
@@ -131,7 +139,7 @@ describe('another bank is another view: the blocks start over as for another per
   it('the category list drops its search and merchant filter', async () => {
     const { useCategoryDetail } = await import('@/features/category-detail/composables/useCategoryDetail.ts');
     const { useCategoryView } = await import('@/features/category-detail/composables/useCategoryView.ts');
-    const { result: view, participant } = await host(TWO_BANKS, () => useCategoryView(useCategoryDetail('groceries', 'personal'), ref('personal')));
+    const { result: view, participant } = await host(TWO_BANKS, () => useCategoryView(useCategoryDetail('groceries', 'personal', PERIOD), ref('personal')));
     view.query.value = 'x';
     view.merchant.value = 'Shop';
     participant.selectProvider(TESTBANK);
@@ -142,7 +150,7 @@ describe('another bank is another view: the blocks start over as for another per
   it('the income list drops its search and sender filter', async () => {
     const { useIncomeDetail } = await import('@/features/income-detail/composables/useIncomeDetail.ts');
     const { useIncomeView } = await import('@/features/income-detail/composables/useIncomeView.ts');
-    const { result: view, participant } = await host(TWO_BANKS, () => useIncomeView(useIncomeDetail()));
+    const { result: view, participant } = await host(TWO_BANKS, () => useIncomeView(useIncomeDetail(PERIOD)));
     view.query.value = 'x';
     participant.selectProvider(TESTBANK);
     await flushPromises();

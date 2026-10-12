@@ -1,3 +1,5 @@
+import type { DetailPeriod } from '@contract/api.ts';
+import { isoWeekday, shiftDate } from '@contract/dates.ts';
 import { change, monthName, monthShortName, t } from '@/shared/lib';
 import type { ChangeChipModel, ChartOption } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
@@ -15,6 +17,16 @@ export const weekdayShort = (n: number): string => t(`common.weekdayShort.${n as
 const partName = (i: number) => t(`entities.operations.when.part.${i as DayPart}`);
 /** «8 сен». */
 export const dayMonth = (date: string): string => `${Number(date.slice(8, 10))} ${monthShortName(monthNo(date))}`;
+
+/** The month a period lies in (a week: the month of its Monday); «When»'s days of the month read it. */
+export const monthOf = (r: DetailPeriod): string => (r.kind === 'month' ? r.month : r.kind === 'day' ? r.date : r.from).slice(0, 7);
+
+/** «Сентябрь 2026», «Неделя 5 окт – 11 окт», «ср, 7 окт». */
+export function periodTitle(r: DetailPeriod): string {
+  if (r.kind === 'month') return `${monthName(monthNo(r.month))} ${r.month.slice(0, 4)}`;
+  if (r.kind === 'week') return t('entities.operations.period.week', { from: dayMonth(r.from), to: dayMonth(shiftDate(r.from, 6)) });
+  return t('entities.operations.period.day', { weekday: weekdayShort(isoWeekday(r.date)), date: dayMonth(r.date) });
+}
 export const pct = (value: number, max: number): number => (max > 0 ? Math.round((value / max) * 1000) / 10 : 0);
 /** A bar with a value never vanishes; one without stays flat. */
 const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.max(MIN_BAR, pct(value, max)) : 0);
@@ -22,19 +34,40 @@ const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.m
 /** Names (merchants, senders) match regardless of case and spaces (as main groups them). */
 export const nameKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
 
-export const initial = (name: string): string => name.slice(0, 1).toLocaleUpperCase('uk');
 
-/** The change against the compared period, the spending block's words (`home.spending.change.*`). */
-export function changeChip(value: number, prev: number | null, compare: Readonly<{ from: string; partial: boolean }> | null): ChangeChipModel | null {
+const WEEK_CHANGE = {
+  same: 'entities.operations.change.week.same',
+  more: 'entities.operations.change.week.more',
+  less: 'entities.operations.change.week.less',
+  morePartial: 'entities.operations.change.week.morePartial',
+  lessPartial: 'entities.operations.change.week.lessPartial',
+} as const;
+const MONTH_CHANGE = {
+  same: 'home.spending.change.same',
+  more: 'home.spending.change.more',
+  less: 'home.spending.change.less',
+  morePartial: 'home.spending.change.morePartial',
+  lessPartial: 'home.spending.change.lessPartial',
+} as const;
+
+/**
+ * The change against the compared period: last month (the spending block's words, `home.spending.change.*`) or last
+ * week (`entities.operations.change.week.*`).
+ */
+export function changeChip(
+  value: number,
+  prev: number | null,
+  compare: Readonly<{ from: string; partial: boolean }> | null,
+  against: 'month' | 'week' = 'month',
+): ChangeChipModel | null {
   const c = change(value, prev);
   if (!c || !compare) return null;
+  const words = against === 'week' ? WEEK_CHANGE : MONTH_CHANGE;
   const month = monthIn(compare.from);
   if (c.kind === 'new') return { text: t('home.spending.change.new'), tone: 'neutral', arrow: null, sr: '' };
-  if (c.kind === 'same') return { text: t('home.spending.change.same', { month }), tone: 'neutral', arrow: null, sr: '' };
+  if (c.kind === 'same') return { text: t(words.same, { month }), tone: 'neutral', arrow: null, sr: '' };
   const up = c.kind === 'up';
-  const key = up
-    ? (compare.partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
-    : (compare.partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
+  const key = up ? (compare.partial ? words.morePartial : words.more) : (compare.partial ? words.lessPartial : words.less);
   return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
 }
 
@@ -92,7 +125,6 @@ export function peopleBars(
       return {
         participantId: p.participantId,
         name: who.name,
-        initial: initial(who.name),
         color: who.color,
         amount: fmt.money(p.value),
         caption: countCaption(p.value, p.count, fmt),
@@ -155,9 +187,17 @@ export function whenTotals<L extends WhenLine>(
   return { weekdays, dayParts, days };
 }
 
+/** Which charts of «When» a period has: one day — the parts of the day only; a week — no days of the month. */
+export interface WhenParts {
+  weekdays: boolean;
+  days: boolean;
+}
+
+const ALL_PARTS: WhenParts = { weekdays: true, days: true };
+
 /**
- * «When» of the given lines (all of the month, or one name's): weekdays, parts of the day, days of the month, and the
- * peak in words; `name` — the filter's name for the title ('' — none).
+ * «When» of the given lines (all of the period, or one name's): weekdays, parts of the day, days of the month (those of
+ * `parts`), and the peak in words; `name` — the filter's name for the title ('' — none).
  */
 export function whenView<L extends WhenLine>(
   lines: ReadonlyArray<L>,
@@ -166,6 +206,7 @@ export function whenView<L extends WhenLine>(
   name: string,
   fmt: Money,
   value: (l: L) => number | null,
+  parts: Readonly<WhenParts> = ALL_PARTS,
 ): WhenView {
   const w = whenTotals(lines, daysInMonth, value);
   const wMax = Math.max(0, ...w.weekdays);
@@ -175,7 +216,7 @@ export function whenView<L extends WhenLine>(
   const peakPart = w.dayParts.indexOf(pMax);
   return {
     title: name ? t('entities.operations.when.titleFor', { name }) : t('entities.operations.when.title'),
-    weekdays: w.weekdays.map((n, i) => ({
+    weekdays: !parts.weekdays ? null : w.weekdays.map((n, i) => ({
       key: String(i),
       label: weekdayShort(i + 1),
       height: barHeight(n, wMax),
@@ -183,14 +224,19 @@ export function whenView<L extends WhenLine>(
       title: `${weekdayShort(i + 1)} — ${fmt.money(n)}`,
     })),
     dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
-    days: w.days.map((n, i) => ({
+    days: !parts.days ? null : w.days.map((n, i) => ({
       key: String(i + 1),
       label: String(i + 1),
       height: barHeight(n, dMax),
       strong: n > 0,
       title: t('entities.operations.when.dayTitle', { day: i + 1, month: monthShortName(monthNo(month)), amount: fmt.money(n) }),
     })),
-    peak: wMax > 0 && pMax > 0 ? t('entities.operations.when.peak', { weekday: weekdayShort(peakDay + 1), part: partName(peakPart) }) : '',
+    peak:
+      pMax <= 0
+        ? ''
+        : parts.weekdays
+          ? (wMax > 0 ? t('entities.operations.when.peak', { weekday: weekdayShort(peakDay + 1), part: partName(peakPart) }) : '')
+          : t('entities.operations.when.peakPart', { part: partName(peakPart) }),
   };
 }
 
@@ -298,21 +344,21 @@ function barsOption(bars: ReadonlyArray<BarView>, o: { color: (b: BarView) => st
 }
 
 /** «By weekday» of «When»: the peak in the colour, the rest softer. */
-export function weekdaysChartOption(w: Readonly<WhenView>): ChartOption {
-  return barsOption(w.weekdays, { color: (b) => (b.strong ? 'var(--cat)' : SOFT_BAR), value: (b) => b.height, radius: 4, gap: '18%', label: () => true, bottom: 20 });
+export function weekdaysChartOption(bars: ReadonlyArray<BarView>): ChartOption {
+  return barsOption(bars, { color: (b) => (b.strong ? 'var(--cat)' : SOFT_BAR), value: (b) => b.height, radius: 4, gap: '18%', label: () => true, bottom: 20 });
 }
 
 /** A day without a value still shows as a thin line (% of the chart). */
 const EMPTY_DAY = 4;
 
 /** «By day of the month» of «When»: days with a value in the colour, the others a thin line; labels under the chart. */
-export function daysChartOption(w: Readonly<WhenView>): ChartOption {
-  return barsOption(w.days, {
+export function daysChartOption(bars: ReadonlyArray<BarView>): ChartOption {
+  return barsOption(bars, {
     color: (b) => (b.strong ? 'var(--cat)' : 'var(--border)'),
     value: (b) => (b.strong ? b.height : EMPTY_DAY),
     radius: 2,
     gap: '15%',
-    label: (i) => i === 0 || i === 9 || i === 19 || i === w.days.length - 1,
+    label: (i) => i === 0 || i === 9 || i === 19 || i === bars.length - 1,
     bottom: 18,
   });
 }

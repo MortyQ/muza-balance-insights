@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { VCard } from '@/shared/ui';
 
+/** `months` — the 12 months' card has a place (a month's screen). */
+const { months = true } = defineProps<{ months?: boolean }>();
+
 const MONTH_BARS = [40, 55, 35, 60, 45, 70, 50, 65, 40, 55, 75, 60];
 </script>
 
@@ -30,7 +33,7 @@ const MONTH_BARS = [40, 55, 35, 60, 45, 70, 50, 65, 40, 55, 75, 60];
         </div>
       </div>
     </VCard>
-    <VCard padding="md">
+    <VCard v-if="months" padding="md">
       <div class="flex flex-col gap-3">
         <span class="h-5 w-48 rounded-md bg-surface-sunken" />
         <span class="flex h-36 items-end gap-1.5">

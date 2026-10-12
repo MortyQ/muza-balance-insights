@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
-import { createMemoryHistory, createRouter } from 'vue-router';
-import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, PeopleView } from '@contract/api.ts';
+import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
+import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, DetailPeriod, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { besidePointer, daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
 import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
@@ -33,7 +33,7 @@ const LINES: CategoryLineView[] = [
 ];
 
 const VIEW: CategoryOverview = {
-  month: '2026-09',
+  range: { kind: 'month', month: '2026-09' },
   category: 'такси и транспорт',
   categoryId: 'transport',
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-05', coveredDays: 30, pendingHolds: 1 },
@@ -78,7 +78,7 @@ describe('category screen helpers', () => {
   });
 
   it('12 months: bars on one scale, months before the data flat, the average of the known ones', () => {
-    const m = monthsView(VIEW, FMT);
+    const m = monthsView(VIEW, FMT)!;
     expect(m.bars).toHaveLength(12);
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[56.7, false], [70.9, false], [100, true]]);
     expect(m.bars[0]!.height).toBe(0);
@@ -89,7 +89,7 @@ describe('category screen helpers', () => {
   });
 
   it('12 months as an ECharts option: the bars\' heights and colours, the dashed average, the strong label, the tooltip', () => {
-    const m = monthsView(VIEW, FMT);
+    const m = monthsView(VIEW, FMT)!;
     const o = monthsChartOption(m) as {
       xAxis: { data: string[]; axisLabel: { formatter: (l: string, i: number) => string } };
       tooltip: { renderMode: string; formatter: (p: { dataIndex: number }) => string };
@@ -109,8 +109,8 @@ describe('category screen helpers', () => {
   });
 
   it('12 months up to today: the picked month is the strong bar and the caption compares it', () => {
-    const v = { ...VIEW, month: '2026-08', thisMonth: '2026-09' };
-    const m = monthsView(v, FMT);
+    const v: CategoryOverview = { ...VIEW, range: { kind: 'month', month: '2026-08' }, thisMonth: '2026-09' };
+    const m = monthsView(v, FMT)!;
     expect(m.bars.slice(-3).map((b) => b.strong)).toEqual([false, true, false]);
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Август: на ${uah(10_000)} больше среднего`);
     expect(m.bars.at(-2)!.title).toBe(`Август 2026 — ${uah(100_000)}`);
@@ -127,9 +127,9 @@ describe('category screen helpers', () => {
     const when = whenView(LINES, VIEW, '', FMT);
     expect(when.title).toBe('Когда');
     expect(when.peak).toBe('Больше всего: сб · утро 6–12');
-    expect(when.weekdays.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
+    expect(when.weekdays!.map((b) => b.height)).toEqual([0, 0, 26.9, 93.4, 0, 100, 0]);
     expect(when.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 83.1]);
-    expect(when.days.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
+    expect(when.days!.filter((d) => d.strong).map((d) => d.label)).toEqual(['2', '10', '19']);
   });
 
   it('a chart tooltip sits beside the pointer, never under it: right, or left when it does not fit; inside the chart', () => {
@@ -138,19 +138,19 @@ describe('category screen helpers', () => {
     expect(besidePointer([250, 60], size(100, 30))).toEqual([136, 45]);
     expect(besidePointer([250, 5], size(100, 30))).toEqual([136, 0]);
     expect(besidePointer([10, 118], size(100, 30))).toEqual([24, 90]);
-    const o = monthsChartOption(monthsView(VIEW, FMT)) as { tooltip: { position: (...a: unknown[]) => [number, number] } };
+    const o = monthsChartOption(monthsView(VIEW, FMT)!) as { tooltip: { position: (...a: unknown[]) => [number, number] } };
     expect(o.tooltip.position([50, 60], null, null, null, size(100, 30))).toEqual([64, 45]);
   });
 
   it('«When» as ECharts options: the weekday peak in the colour; days with spending coloured, the rest a thin line; tooltips', () => {
     type Bars = { xAxis: { axisLabel: { interval: (i: number) => boolean } }; tooltip: { formatter: (p: { dataIndex: number }) => string }; series: Array<{ data: Array<{ value: number; itemStyle: { color: string } }> }> };
     const when = whenView(LINES, VIEW, '', FMT);
-    const w = weekdaysChartOption(when) as Bars;
+    const w = weekdaysChartOption(when.weekdays!) as Bars;
     expect(w.series[0]!.data.map((d) => [d.value, d.itemStyle.color])).toEqual([
       [0, SOFT_BAR], [0, SOFT_BAR], [26.9, SOFT_BAR], [93.4, SOFT_BAR], [0, SOFT_BAR], [100, 'var(--cat)'], [0, SOFT_BAR],
     ]);
-    expect(w.tooltip.formatter({ dataIndex: 5 })).toBe(when.weekdays[5]!.title);
-    const d = daysChartOption(when) as Bars;
+    expect(w.tooltip.formatter({ dataIndex: 5 })).toBe(when.weekdays![5]!.title);
+    const d = daysChartOption(when.days!) as Bars;
     expect(d.series[0]!.data.filter((x) => x.itemStyle.color === 'var(--cat)')).toHaveLength(3);
     expect(d.series[0]!.data[0]).toEqual({ value: 4, itemStyle: { color: 'var(--border)', borderRadius: [2, 2, 0, 0] } });
     expect(Array.from({ length: 30 }, (_, i) => i).filter((i) => d.xAxis.axisLabel.interval(i))).toEqual([0, 9, 19, 29]);
@@ -159,7 +159,7 @@ describe('category screen helpers', () => {
   it('«When» of one merchant: only its lines, its name in the title', () => {
     const bus = whenView(LINES.filter((l) => l.key === 'd' || l.key === 'e'), VIEW, 'IMAGINARY  bus', FMT);
     expect(bus.title).toBe('Когда: IMAGINARY  bus');
-    expect(bus.weekdays.map((b) => b.height)).toEqual([0, 0, 28.8, 100, 0, 0, 0]);
+    expect(bus.weekdays!.map((b) => b.height)).toEqual([0, 0, 28.8, 100, 0, 0, 0]);
     expect(bus.dayParts.map((p) => p.width)).toEqual([100, 0, 0, 0]);
     expect(bus.peak).toBe('Больше всего: чт · утро 6–12');
   });
@@ -191,12 +191,82 @@ describe('category screen helpers', () => {
   });
 });
 
+// The week of 14–20 September (lines a, b, c fall in it), compared with the same days of last week.
+const WEEK: CategoryOverview = {
+  ...VIEW,
+  range: { kind: 'week', from: '2026-09-14' },
+  period: { ...VIEW.period, from: '2026-09-14', to: '2026-09-20', days: 7, coveredDays: 7 },
+  compare: { from: '2026-09-07', to: '2026-09-13', partial: false },
+  summary: { ...VIEW.summary, net: 64_000, purchases: 2, prev: { net: 59_800, purchases: 1 }, perDay: 9_143, activeDays: 2, rank: 2 },
+  months: [],
+  lines: LINES.slice(0, 3),
+};
+const DAY: CategoryOverview = {
+  ...WEEK,
+  range: { kind: 'day', date: '2026-09-19' },
+  period: { ...WEEK.period, from: '2026-09-19', to: '2026-09-19', days: 1, coveredDays: 1 },
+  compare: null,
+  summary: { ...WEEK.summary, net: 64_000, purchases: 1, prev: null, perDay: 64_000, activeDays: 1, rank: 1 },
+  lines: LINES.slice(0, 1),
+};
+
+describe('category screen of a week or a day', () => {
+  it('a week: its dates in the header, the change against last week, the figures without the 12 months', () => {
+    const s = summaryView(WEEK, '', 'Личное', FMT);
+    expect(s.subtitle).toBe('Неделя 14 сен – 20 сен · Личное');
+    expect(s.chip).toMatchObject({ tone: 'up', text: 'на 7% больше, чем на прошлой неделе' });
+    expect(s.prev).toBe(`на прошлой неделе было ${uah(59_800)}`);
+    expect(s.stats.map((x) => x.label)).toEqual(['Операций', 'Средний чек', 'В день', 'Доля всех трат', 'Самая крупная', 'Кэшбэк']);
+    expect(s.stats[0]!.note).toBe('на прошлой неделе — 1');
+    expect(s.stats[2]!.note).toBe('дней с тратами: 2 из 7');
+    expect(s.stats[3]!.note).toBe('2-е место за неделю');
+    expect(summaryView({ ...WEEK, compare: { ...WEEK.compare!, partial: true } }, '', 'Личное', FMT).chip?.text).toBe(
+      'на 7% больше, чем к этому дню на прошлой неделе',
+    );
+    expect(monthsView(WEEK, FMT)).toBeNull();
+  });
+
+  it('a week\'s «When»: weekdays and parts of the day, no days of the month', () => {
+    const w = whenView(WEEK.lines, WEEK, '', FMT);
+    expect(w.weekdays).toHaveLength(7);
+    expect(w.days).toBeNull();
+    expect(w.peak).toBe('Больше всего: сб · ночь 23–6');
+  });
+
+  it('a day: weekday and date, no change, no «per day», the parts of the day only', () => {
+    const s = summaryView(DAY, '', 'Личное', FMT);
+    expect(s.subtitle).toBe('сб, 19 сен · Личное');
+    expect(s).toMatchObject({ chip: null, prev: '' });
+    expect(s.stats.map((x) => x.label)).not.toContain('В день');
+    expect(s.stats.find((x) => x.label === 'Доля всех трат')?.note).toBe('1-е место за день');
+    const w = whenView(DAY.lines, DAY, '', FMT);
+    expect(w).toMatchObject({ weekdays: null, days: null, peak: 'Больше всего: ночь 23–6' });
+    expect(monthsView(DAY, FMT)).toBeNull();
+  });
+
+  it('no lines: the period\'s own words', () => {
+    expect(noneText({ ...WEEK, lines: [] })).toBe('За эту неделю трат в этой категории нет.');
+    expect(noneText({ ...DAY, lines: [] })).toBe('В этот день трат в этой категории нет.');
+  });
+});
+
 describe('the category route', () => {
   it('a link from «Spending» carries the category and the scope; the page reads them back', () => {
     const link = categoryLink('transport', 'business');
     expect(link).toEqual({ name: 'category', params: { id: 'transport' }, query: { scope: 'business' } });
-    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business' });
-    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal' });
+    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business', period: null });
+    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal', period: null });
+  });
+
+  it('a link from the «Now» strip carries a day or a week; a date that is not real is dropped', () => {
+    const day = categoryLink('groceries', 'personal', { kind: 'day', date: '2026-10-07' });
+    expect(day.query).toEqual({ scope: 'personal', day: '2026-10-07' });
+    expect(categoryRequest(day.params, day.query).period).toEqual({ kind: 'day', date: '2026-10-07' });
+    const week = categoryLink('groceries', 'personal', { kind: 'week', from: '2026-10-05' });
+    expect(week.query).toEqual({ scope: 'personal', week: '2026-10-05' });
+    expect(categoryRequest(week.params, week.query).period).toEqual({ kind: 'week', from: '2026-10-05' });
+    expect(categoryRequest({ id: 'groceries' }, { day: '2026-02-30' }).period).toBeNull();
+    expect(categoryRequest({ id: 'groceries' }, { week: ['2026-10-05'] }).period).toBeNull();
   });
 });
 
@@ -220,7 +290,7 @@ describe('category screen mounted', () => {
     localStorage.clear();
   });
 
-  async function mountScreen() {
+  async function mountScreen(period: DetailPeriod = { kind: 'month', month: '2026-09' }) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().view = PEOPLE_VIEW;
@@ -232,14 +302,14 @@ describe('category screen mounted', () => {
       routes: [{ path: '/', name: 'home', component: defineComponent(() => () => h('div')) }],
     });
     await router.push('/');
-    const w = mount(CategoryDetailFeature, { props: { categoryId: 'transport', scope: 'personal' }, global: { plugins: [i18n, router] } });
+    const w = mount(CategoryDetailFeature, { props: { categoryId: 'transport', scope: 'personal', period }, global: { plugins: [i18n, router] } });
     await flushPromises();
     return w;
   }
 
   it('asks for the month, the category and the scope; shows every block; a merchant filters the list and a chip clears it', async () => {
     const w = await mountScreen();
-    expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ month: '2026-09', category: 'transport', scope: 'personal' });
+    expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal' });
     for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Операции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
     expect(w.findAll('.v-chart').length).toBeGreaterThan(0);
@@ -275,5 +345,58 @@ describe('category screen mounted', () => {
     await flushPromises();
     expect(getCategoryOverview.mock.calls.at(-1)?.[0]).toMatchObject({ participantId: 2 });
     expect(w.text()).not.toContain('Кто тратил');
+  });
+
+  it('a week: asks for it, «Spent that week», no 12 months', async () => {
+    current = WEEK;
+    const w = await mountScreen({ kind: 'week', from: '2026-09-14' });
+    expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'week', from: '2026-09-14' }, category: 'transport', scope: 'personal' });
+    expect(w.text()).toContain('Потрачено за неделю');
+    expect(w.text()).not.toContain('Динамика за 12 месяцев');
+    expect(w.text()).not.toContain('По дням месяца');
+    expect(w.text()).toContain('По дням недели');
+  });
+});
+
+describe('the category page', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    getCategoryOverview.mockClear();
+    current = WEEK;
+  });
+
+  async function mountPage(path: string) {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { useParticipantStore } = await import('@/entities/participant');
+    useParticipantStore().view = PEOPLE_VIEW;
+    const { useMonthStore } = await import('@/entities/period');
+    useMonthStore().set('2026-09', null);
+    const { CategoryPage } = await import('@/pages/category');
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
+        { path: '/category/:id', name: 'category', component: CategoryPage },
+      ],
+    });
+    await router.push(path);
+    const w = mount(defineComponent(() => () => h(RouterView)), { global: { plugins: [i18n, router] } });
+    await flushPromises();
+    return { w, router, months: useMonthStore() };
+  }
+
+  it('a week from the link; picking a month in the global filter switches the screen to that month', async () => {
+    const { router, months } = await mountPage('/category/transport?scope=personal&week=2026-09-14');
+    expect(getCategoryOverview.mock.calls[0]?.[0]).toMatchObject({ period: { kind: 'week', from: '2026-09-14' } });
+    months.set('2026-08', null);
+    await flushPromises();
+    expect(router.currentRoute.value.query).toEqual({ scope: 'personal' });
+    expect(getCategoryOverview.mock.calls.at(-1)?.[0]).toMatchObject({ period: { kind: 'month', month: '2026-08' } });
+  });
+
+  it('no day or week: the global filter\'s month', async () => {
+    current = VIEW;
+    await mountPage('/category/transport?scope=personal');
+    expect(getCategoryOverview.mock.calls[0]?.[0]).toMatchObject({ period: { kind: 'month', month: '2026-09' } });
   });
 });

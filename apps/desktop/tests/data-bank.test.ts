@@ -94,7 +94,7 @@ describe('the data channels narrowed to one bank', () => {
     expect((await svc.spendingOverview({ ...q, scope: 'personal' })).total.net).toBe(0);
     const month = await svc.monthOverview(q);
     expect([month.total.ownFunds, month.total.accounts, month.total.income, month.total.spending, month.accounts]).toEqual([0, 0, 0, 0, []]);
-    expect((await svc.incomeOverview(q)).summary.total).toBe(0);
+    expect((await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, provider: TESTBANK, participantId: her })).summary.total).toBe(0);
     expect((await svc.nowOverview({ provider: TESTBANK, participantId: her })).week.total.net).toBe(0);
   });
 
@@ -113,10 +113,10 @@ describe('the data channels narrowed to one bank', () => {
   });
 
   it('the category, income, analytics and «Now» answers narrow the same way', async () => {
-    const category = async (q: object) => (await svc.categoryOverview({ month: '2026-03', category: 'groceries', scope: 'personal', ...q })).lines.length;
+    const category = async (q: object) => (await svc.categoryOverview({ period: { kind: 'month', month: '2026-03' }, category: 'groceries', scope: 'personal', ...q })).lines.length;
     expect([await category({}), await category({ provider: 'monobank' }), await category({ provider: TESTBANK })]).toEqual([3, 2, 1]);
 
-    const income = async (q: object) => (await svc.incomeOverview({ month: '2026-03', ...q })).summary.total;
+    const income = async (q: object) => (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, ...q })).summary.total;
     expect([await income({}), await income({ provider: 'monobank' }), await income({ provider: TESTBANK })]).toEqual([70_000, 0, 70_000]);
 
     const spent = async (q: object) => (await svc.analyticsOverview({ from: '2026-03', to: '2026-03', ...q })).totals.spending;

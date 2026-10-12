@@ -158,6 +158,7 @@ describe('GlobalFilters', () => {
       routes: [
         { path: '/', name: 'home', component: screen },
         { path: '/analytics', name: 'analytics', component: screen, meta: { periodFilter: 'range' } },
+        { path: '/recurring', name: 'recurring', component: screen, meta: { periodFilter: 'none' } },
       ],
     });
     await router.push('/');
@@ -172,6 +173,15 @@ describe('GlobalFilters', () => {
     const at = triggers.findIndex((l) => l?.startsWith('Период:'));
     expect(at).toBeGreaterThanOrEqual(0);
     expect(triggers[at + 1]).toMatch(/^Валюты:/);
+    w.unmount();
+  });
+
+  it('regular payments: no period at all, the currency button stays', async () => {
+    await router.push('/recurring');
+    const w = mountFilters();
+    const triggers = w.findAll('button[aria-label]').map((b) => b.attributes('aria-label'));
+    expect(triggers.some((l) => l?.startsWith('Месяц') || l?.startsWith('Период:'))).toBe(false);
+    expect(triggers.some((l) => l?.startsWith('Валюты:'))).toBe(true);
     w.unmount();
   });
 

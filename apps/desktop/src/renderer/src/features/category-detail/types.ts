@@ -16,8 +16,11 @@ export interface UseCategoryDetailReturn {
 
 export interface UseCategoryViewReturn {
   summary: ComputedRef<SummaryView | null>;
-  /** The month has no line of the category; '' — it has. */
+  /** The figure's label for the period («Spent this month»). */
+  label: ComputedRef<string>;
+  /** The period has no line of the category; '' — it has. */
   none: ComputedRef<string>;
+  /** A month only; null — another period. */
   months: ComputedRef<MonthsView | null>;
   people: ComputedRef<PersonView[]>;
   merchants: ComputedRef<ShareItemView[]>;

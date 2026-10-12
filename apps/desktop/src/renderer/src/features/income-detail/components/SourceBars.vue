@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VShareBar } from '@/shared/ui';
 import type { SourceView } from '../types.ts';
 
 const { sources } = defineProps<{ sources: ReadonlyArray<SourceView> }>();
@@ -15,7 +16,7 @@ const { sources } = defineProps<{ sources: ReadonlyArray<SourceView> }>();
         </span>
         <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ s.amount }}</span>
       </div>
-      <span class="h-2 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true"><span class="block h-full w-(--w) rounded-full bg-(--cat)" :style="{ '--w': `${s.width}%` }" /></span>
+      <VShareBar :value="s.width" color="var(--cat)" />
     </div>
   </section>
 </template>

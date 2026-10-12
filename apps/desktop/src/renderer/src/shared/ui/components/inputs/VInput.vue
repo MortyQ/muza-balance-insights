@@ -10,6 +10,7 @@ defineOptions({ inheritAttrs: false });
 
 const {
   name = "",
+  label = "",
   type = "text",
   placeholder = "",
   disabled = false,
@@ -26,6 +27,8 @@ const {
   showClearButton: showClearButtonProp = true,
 } = defineProps<{
   name?: string
+  /** A label above the field, styled as VSelect's and VDatepicker's; `name` is the floating one inside. */
+  label?: string
   type?: "text" | "password" | "email" | "number" | "search" | "tel" | "url" | "date"
   placeholder?: string
   disabled?: boolean
@@ -156,6 +159,8 @@ const computedPlaceholder = computed(() => {
 
 <template>
   <div class="v-input-wrapper">
+    <label v-if="label" :for="inputId" class="v-input-top-label">{{ label }}</label>
+
     <!-- Input Container -->
     <div class="v-input-container">
       <!-- Floating Label -->
