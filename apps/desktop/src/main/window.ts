@@ -21,8 +21,11 @@ function frameOptions(platform: NodeJS.Platform, dark: boolean) {
 
 export function windowOptions(opts: { preloadPath: string; isPackaged: boolean; title: string; platform: NodeJS.Platform; dark: boolean }) {
   return {
-    width: 1100,
+    width: 1280,
     height: 800,
+    // The narrowest window the screens are laid out for: the side menu and a content column of about 39rem.
+    minWidth: 960,
+    minHeight: 600,
     title: opts.title,
     show: false,
     ...frameOptions(opts.platform, opts.dark),

@@ -4,8 +4,8 @@ import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
-import type { Flow, Slide } from './types.ts';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS, WHEEL_PUSH, WHEEL_QUIET, WHEEL_REST, WHEEL_STEP } from './constants.ts';
+import type { Flow, Slide, WheelState } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
 export function slidePosition(i: number, open: boolean, offset: number): { x: number; y: number; z: number; opacity: number } {
@@ -20,8 +20,46 @@ export function slideDelay(i: number, n: number, open: boolean, paging: boolean)
   return open ? i * OPEN_STAGGER : (n - i) * CLOSE_STAGGER;
 }
 
-export function maxOffset(n: number): number {
-  return Math.max(0, n - VISIBLE_CARDS);
+export function maxOffset(n: number, visible = VISIBLE_CARDS): number {
+  return Math.max(0, n - visible);
+}
+
+/**
+ * A wheel event over the open row: `dx` more px of sideways travel on top of `acc`. A step of ±1 once it adds up to
+ * WHEEL_STEP (the travel starts over); a turn of direction drops what was gathered the other way.
+ */
+export function wheelStep(acc: number, dx: number): { acc: number; step: -1 | 0 | 1 } {
+  const sum = Math.sign(acc) === -Math.sign(dx) ? dx : acc + dx;
+  if (Math.abs(sum) < WHEEL_STEP) return { acc: sum, step: 0 };
+  return { acc: 0, step: sum > 0 ? 1 : -1 };
+}
+
+export const WHEEL_IDLE: WheelState = { travelled: 0, lastAt: -Infinity, paged: 0, pagedAt: 0, low: 0 };
+
+/**
+ * One swipe pages one card, however long its inertia keeps sending events; the next page takes a new swipe — a pause,
+ * a turn the other way, or a fresh push the same way (see WHEEL_REST).
+ */
+export function wheelSwipe(s: WheelState, dx: number, at: number): { state: WheelState; step: -1 | 0 | 1 } {
+  const size = Math.abs(dx);
+  let travelled = at - s.lastAt > WHEEL_QUIET ? 0 : s.travelled;
+  if (s.paged !== 0) {
+    const fresh =
+      at - s.lastAt > WHEEL_QUIET ||
+      Math.sign(dx) === -s.paged ||
+      (at - s.pagedAt >= WHEEL_REST && size >= Math.max(s.low * 3, s.low + WHEEL_PUSH));
+    if (!fresh) return { state: { ...s, lastAt: at, low: Math.min(s.low, size) }, step: 0 };
+    travelled = 0;
+  }
+  const next = wheelStep(travelled, dx);
+  if (next.step === 0) return { state: { ...WHEEL_IDLE, travelled: next.acc, lastAt: at }, step: 0 };
+  return { state: { travelled: 0, lastAt: at, paged: next.step, pagedAt: at, low: size }, step: next.step };
+}
+
+/** Whole cards a row `width` px wide shows, at least one; not measured yet (0) — VISIBLE_CARDS. */
+export function visibleCards(width: number): number {
+  if (width <= 0) return VISIBLE_CARDS;
+  return Math.max(1, Math.floor((width + CARD_STEP - CARD_WIDTH) / CARD_STEP));
 }
 
 const yearSuffix = (y: number, current: number) => (y === current ? '' : ` ${y}`);

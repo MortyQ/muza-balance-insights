@@ -38,6 +38,12 @@ describe('BrowserWindow options (Checklist #2–4, #6, #8–10)', () => {
     }
   });
 
+  it('opens at a size no smaller than the smallest the screens are laid out for', () => {
+    expect([prod.minWidth, prod.minHeight]).toEqual([960, 600]);
+    expect(prod.width).toBeGreaterThanOrEqual(prod.minWidth);
+    expect(prod.height).toBeGreaterThanOrEqual(prod.minHeight);
+  });
+
   it('no enableBlinkFeatures / no risky keys at all', () => {
     for (const k of ['enableBlinkFeatures', 'enableRemoteModule', 'additionalArguments', 'disableBlinkFeatures']) {
       expect(Object.keys(prod.webPreferences)).not.toContain(k);

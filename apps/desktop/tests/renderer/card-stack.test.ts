@@ -23,10 +23,11 @@ beforeEach(() => {
 });
 afterEach(() => scope.stop());
 
-function setup(n: number) {
+function setup(n: number, shown = 2) {
   const count = ref(n);
-  const stack = scope.run(() => useCardStack(count))!;
-  return { count, stack };
+  const visible = ref(shown);
+  const stack = scope.run(() => useCardStack(count, visible))!;
+  return { count, visible, stack };
 }
 
 describe('useCardStack', () => {
@@ -89,6 +90,16 @@ describe('useCardStack', () => {
     count.value = 10;
     await nextTick();
     expect(stack.offset.value).toBe(1);
+  });
+
+  it('a narrow row shows one card and pages to the last; a wider row pulls the offset back', async () => {
+    const { visible, stack } = setup(4, 1);
+    stack.toggle();
+    for (let i = 0; i < 5; i++) stack.next();
+    expect(stack.offset.value).toBe(3);
+    visible.value = 3;
+    await nextTick();
+    expect([stack.offset.value, stack.paging.value]).toEqual([1, true]);
   });
 
   it('the «Все счета» note shows until the stack is toggled', () => {

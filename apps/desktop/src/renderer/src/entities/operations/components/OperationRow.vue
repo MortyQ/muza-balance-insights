@@ -13,25 +13,25 @@ const MARK_TONE: Record<MarkView['tone'], string> = {
 
 <template>
   <div role="row" :class="OPERATION_COLS" class="items-center border-b border-border-subtle px-3 py-2.5 hover:bg-surface-raised">
-    <span role="cell" class="flex flex-col">
+    <span role="cell" class="flex flex-col [grid-area:when]">
       <span class="font-semibold">{{ row.date }}</span>
       <span class="text-xs text-foreground-muted">{{ row.time }}</span>
     </span>
-    <span role="cell" class="flex min-w-0 flex-col">
+    <span role="cell" class="flex min-w-0 flex-col [grid-area:where]">
       <span class="truncate font-semibold" :title="row.merchant">{{ row.merchant }}</span>
       <span v-if="row.comment" class="truncate text-xs italic text-foreground-muted" :title="row.comment">{{ row.comment }}</span>
     </span>
-    <span role="cell" class="flex min-w-0 items-center gap-2">
+    <span role="cell" class="flex min-w-0 items-center gap-2 [grid-area:who]">
       <span v-if="row.person" class="size-2 shrink-0 rounded-full bg-(--c)" :style="{ '--c': row.personColor }" aria-hidden="true" />
       <span class="flex min-w-0 flex-col">
         <span v-if="row.person" class="truncate">{{ row.person }}</span>
         <span class="truncate text-xs text-foreground-muted" :title="row.account">{{ row.account }}</span>
       </span>
     </span>
-    <span role="cell" class="flex flex-wrap gap-1">
+    <span role="cell" class="flex flex-wrap justify-end gap-1 [grid-area:marks] @3xl:justify-start">
       <span v-for="m in row.marks" :key="m.text" class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold" :class="MARK_TONE[m.tone]">{{ m.text }}</span>
     </span>
-    <span role="cell" class="flex flex-col items-end">
+    <span role="cell" class="flex flex-col items-end [grid-area:amount]">
       <span class="whitespace-nowrap font-bold tabular-nums" :class="{ 'text-success': row.incoming }">{{ row.amount }}</span>
       <span v-if="row.original" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ row.original }}</span>
     </span>

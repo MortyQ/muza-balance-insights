@@ -6,7 +6,8 @@ export const MIN_BAR = 4;
 export const SORTS = ['date', 'amount'] as const;
 
 /** The list's columns: when, the text, who, marks, amount (header and rows alike). */
-export const OPERATION_COLS = 'grid grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem] gap-3';
+export const OPERATION_COLS =
+  "grid grid-cols-[6.5rem_minmax(0,1fr)_auto] gap-x-3 gap-y-1 [grid-template-areas:'when_where_amount''when_who_marks'] @3xl:grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem] @3xl:gap-3 @3xl:[grid-template-areas:'when_where_who_marks_amount']";
 
 /**
  * What a detail screen shows for each period: one day has no 12 months, no «per day», no weekdays and no days of the

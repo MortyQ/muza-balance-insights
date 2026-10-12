@@ -20,9 +20,9 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
       :class="open ? 'pointer-events-none opacity-0' : 'opacity-100'"
       :inert="open"
     >
-      <div class="flex items-baseline gap-3">
-        <h3 class="text-base font-bold">{{ $t('home.balances.title') }}</h3>
-        <span class="inline-flex items-center gap-1.5 text-xs text-foreground-muted">
+      <div class="flex min-w-0 items-baseline gap-3">
+        <h3 class="shrink-0 text-base font-bold">{{ $t('home.balances.title') }}</h3>
+        <span class="inline-flex min-w-0 items-center gap-1.5 truncate text-xs text-foreground-muted">
           <VIcon icon="lucide:maximize-2" :size="14" />
           {{ $t('home.balances.expandHint') }}
         </span>
@@ -33,11 +33,11 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
       :class="open ? 'opacity-100' : 'pointer-events-none opacity-0'"
       :inert="!open"
     >
-      <div class="flex items-baseline gap-2">
-        <h3 class="text-base font-bold">{{ title }}</h3>
-        <span class="text-xs text-foreground-muted">{{ subtitle }}</span>
+      <div class="flex min-w-0 items-baseline gap-2">
+        <h3 class="truncate text-base font-bold" :title>{{ title }}</h3>
+        <span class="shrink-0 text-xs whitespace-nowrap text-foreground-muted">{{ subtitle }}</span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex shrink-0 items-center gap-2">
         <VButton variant="neutral" size="md" icon="lucide:chevron-left" :aria-label="$t('home.balances.back')" :disabled="!canPrev" @click="emit('prev')" />
         <VButton variant="neutral" size="md" icon="lucide:chevron-right" :aria-label="$t('home.balances.next')" :disabled="!canNext" @click="emit('next')" />
         <VButton variant="primary" size="md" :text="$t('home.balances.allAccounts')" @click="emit('stub')" />

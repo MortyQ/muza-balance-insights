@@ -20,6 +20,10 @@ import {
   signedMoney,
   slideDelay,
   slidePosition,
+  visibleCards,
+  WHEEL_IDLE,
+  wheelStep,
+  wheelSwipe,
   reservedLine,
   savedLine,
   slidesOf,
@@ -59,6 +63,42 @@ describe('balances utils', () => {
     expect(maxOffset(1)).toBe(0);
     expect(maxOffset(2)).toBe(0);
     expect(maxOffset(9)).toBe(7);
+  });
+
+  it('wheelStep: a card per 60 px of sideways travel, either way; a turn starts over', () => {
+    expect(wheelStep(0, 20)).toEqual({ acc: 20, step: 0 });
+    expect(wheelStep(40, 25)).toEqual({ acc: 0, step: 1 });
+    expect(wheelStep(-40, -25)).toEqual({ acc: 0, step: -1 });
+    expect(wheelStep(50, -10)).toEqual({ acc: -10, step: 0 });
+    expect(wheelStep(0, 120)).toEqual({ acc: 0, step: 1 });
+  });
+
+  it('wheelSwipe: one card a swipe; the next takes a pause, a turn back or a fresh push', () => {
+    // [dx, at] events → the steps they give.
+    const run = (events: Array<[number, number]>) => {
+      let state = WHEEL_IDLE;
+      return events.map(([dx, at]) => {
+        const next = wheelSwipe(state, dx, at);
+        state = next.state;
+        return next.step;
+      });
+    };
+    // A swipe and its long, slowing inertia: one page.
+    expect(run([[30, 0], [40, 16], [50, 32], [40, 48], [30, 100], [20, 200], [10, 400], [5, 500], [2, 600]])).toEqual([0, 1, 0, 0, 0, 0, 0, 0, 0]);
+    // The fingers still speeding up right after the page are the same swipe.
+    expect(run([[60, 0], [90, 16], [120, 32]])).toEqual([1, 0, 0]);
+    // Back at once, in the middle of the inertia.
+    expect(run([[60, 0], [20, 50], [10, 100], [-30, 130], [-40, 146]])).toEqual([1, 0, 0, 0, -1]);
+    // The same way again: a fresh push over the fading tail, or after a pause.
+    expect(run([[60, 0], [10, 150], [4, 300], [40, 320], [40, 336]])).toEqual([1, 0, 0, 0, 1]);
+    expect(run([[60, 0], [5, 100], [60, 400]])).toEqual([1, 0, 1]);
+  });
+
+  it('visibleCards: whole cards of the row at its width, at least one; two until it is measured', () => {
+    expect(visibleCards(0)).toBe(2);
+    expect([visibleCards(300), visibleCards(582), visibleCards(695)]).toEqual([1, 1, 1]);
+    expect([visibleCards(696), visibleCards(1040), visibleCards(1052)]).toEqual([2, 2, 3]);
+    expect([maxOffset(9, 1), maxOffset(9, 3), maxOffset(2, 3)]).toEqual([8, 6, 0]);
   });
 
   it('captions: today, the month end, another year', () => {

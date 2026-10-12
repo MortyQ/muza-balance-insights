@@ -24,7 +24,9 @@ const sortOptions = computed<SegmentOption<SortKey>[]>(() => SORTS.map((value) =
 </script>
 
 <template>
-  <section class="flex flex-col gap-3">
+  <!-- Its own container: five columns from @3xl, below it two lines a row — who and the marks go under the text and
+       the amount, and their column headers stay for screen readers only. -->
+  <section class="@container flex flex-col gap-3">
     <div class="flex flex-wrap items-center gap-3">
       <h2 class="grow text-base font-bold">
         {{ $t('entities.operations.list.title') }} <span class="font-semibold text-foreground-muted">{{ rows.length }}</span>
@@ -39,18 +41,18 @@ const sortOptions = computed<SegmentOption<SortKey>[]>(() => SORTS.map((value) =
         {{ filterName }}
         <VIcon icon="lucide:x" class="size-3.5" />
       </button>
-      <VInput v-model="query" type="search" icon="lucide:search" :placeholder="searchLabel" :aria-label="searchLabel" class="w-64" />
+      <VInput v-model="query" type="search" icon="lucide:search" :placeholder="searchLabel" :aria-label="searchLabel" class="w-64 max-w-full" />
       <VSegmentedControl v-model="sort" :options="sortOptions" :aria-label="$t('entities.operations.list.sort')" />
     </div>
 
     <div class="overflow-x-auto">
-      <div class="flex min-w-190 flex-col" role="table" :aria-label="$t('entities.operations.list.title')">
+      <div class="flex flex-col" role="table" :aria-label="$t('entities.operations.list.title')">
         <div role="row" :class="COLS" class="border-b border-border-subtle px-3 py-2 text-[11px] font-bold uppercase tracking-wide text-foreground-muted">
-          <span role="columnheader">{{ $t('entities.operations.list.col.when') }}</span>
-          <span role="columnheader">{{ whereLabel }}</span>
-          <span role="columnheader">{{ $t('entities.operations.list.col.who') }}</span>
-          <span role="columnheader">{{ $t('entities.operations.list.col.marks') }}</span>
-          <span role="columnheader" class="text-right">{{ $t('entities.operations.list.col.amount') }}</span>
+          <span role="columnheader" class="[grid-area:when]">{{ $t('entities.operations.list.col.when') }}</span>
+          <span role="columnheader" class="[grid-area:where]">{{ whereLabel }}</span>
+          <span role="columnheader" class="[grid-area:who] @max-3xl:sr-only">{{ $t('entities.operations.list.col.who') }}</span>
+          <span role="columnheader" class="[grid-area:marks] @max-3xl:sr-only">{{ $t('entities.operations.list.col.marks') }}</span>
+          <span role="columnheader" class="text-right [grid-area:amount]">{{ $t('entities.operations.list.col.amount') }}</span>
         </div>
         <OperationRow v-for="r in rows" :key="r.key" :row="r" />
         <p v-if="rows.length === 0" class="px-3 py-5 text-foreground-muted">{{ $t('entities.operations.list.empty') }}</p>

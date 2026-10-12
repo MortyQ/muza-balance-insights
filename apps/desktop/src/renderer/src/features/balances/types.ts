@@ -60,6 +60,19 @@ export interface UseMonthOverviewReturn {
   monthName: ComputedRef<string>;
 }
 
+/** A sideways swipe over the open row, between its wheel events. */
+export interface WheelState {
+  /** Px gathered towards the next page. */
+  travelled: number;
+  /** Time of the last event, ms. */
+  lastAt: number;
+  /** The way this swipe has already paged; 0 — not yet. */
+  paged: -1 | 0 | 1;
+  pagedAt: number;
+  /** The slowest event (px) since the page: inertia only slows down, a new push does not. */
+  low: number;
+}
+
 export interface UseCardStackReturn {
   open: Ref<boolean>;
   offset: Ref<number>;

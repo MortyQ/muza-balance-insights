@@ -27,7 +27,7 @@ const { summary, label, none, months, people, merchants, moreMerchants, when, ro
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>
-      <!-- Two columns from the container's @3xl (the content column is at most 52rem): the merchants' list on the left,
+      <!-- Two columns from the container's @3xl (the content column is 39 to 68rem wide): the merchants' list on the left,
            «When» and «Who spent» stacked on the right, so the two sides come out about as tall. -->
       <div v-if="view.lines.length > 0" class="grid gap-4 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <VCard padding="md" class="min-w-0"><ShareList :items="merchants" :more="moreMerchants" :title="$t('category.where.title')" @pick="pickMerchant" /></VCard>

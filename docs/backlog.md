@@ -55,6 +55,11 @@
   narrow window on Windows, macOS and Linux, the select inside the popover, a refresh of one bank) once a second
   provider exists. The same goes for the bank select of «Connections» in settings and its «Connections shown: X of N»
   line.
+- The layout pass of 12.10.2026 (window at least 960×600 and 1280 wide by default, content column up to 68rem, the
+  month panel of «Balances» under the stack in a narrow block, as many cards in the open row as fit, two-line
+  operation rows, the ring beside the stats in a stacked «Spending») was made from the code: none of it has been seen
+  in the running app. Check every data screen at 960, 1280 and a maximised window, on Windows and macOS. Not done:
+  an icon-only side menu for middle widths; «Compare» in analytics still scrolls sideways under about 44rem.
 - The tabs of «Connections» («Banks», «Auto-sync», «History») have not been checked in the running app: the switch in
   a narrow window, the fade between tabs, «Download history» from home landing on «History» with its date.
 - «Refresh» in «Connections» (settings) shows with one bank, but has not been checked in the running app either: the

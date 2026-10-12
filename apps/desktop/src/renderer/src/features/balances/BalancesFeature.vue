@@ -7,12 +7,15 @@ import CardStack from './components/CardStack.vue';
 import MonthPanel from './components/MonthPanel.vue';
 import { useCardStack } from './composables/useCardStack.ts';
 import { useMonthOverview } from './composables/useMonthOverview.ts';
+import { useVisibleCards } from './composables/useVisibleCards.ts';
 import { accountsCount, coverageNote, maxOffset } from './utils.ts';
 
 const { state, view, slides, isFamily, legend, monthName } = useMonthOverview();
-const stack = useCardStack(() => slides.value.length);
-const { open, offset, paging, stubShown } = stack;
 const block = useTemplateRef<HTMLElement>('block');
+// As many cards in the row as the block is wide.
+const visible = useVisibleCards(block);
+const stack = useCardStack(() => slides.value.length, visible);
+const { open, offset, paging, stubShown } = stack;
 const cards = useTemplateRef<{ focusFront: () => void }>('cards');
 
 /** Folds the row back; focus inside the block (now on a control that goes inert) moves to the front card. */
@@ -36,13 +39,13 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
 <template>
   <VCard padding="md" @keydown.esc="collapse">
     <VInfoNotice v-if="state.status === 'error' && !view" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('home.balances.readFailed')" />
-    <div v-else ref="block" class="flex flex-col gap-3">
+    <div v-else ref="block" class="@container flex flex-col gap-3">
       <BalancesHeader
         :open
         :title="openTitle"
         :subtitle="openSubtitle"
         :can-prev="offset > 0"
-        :can-next="offset < maxOffset(slides.length)"
+        :can-next="offset < maxOffset(slides.length, visible)"
         @prev="stack.prev"
         @next="stack.next"
         @stub="stack.showStub"
@@ -50,11 +53,14 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
       />
       <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('home.balances.readFailed')" />
       <div v-if="head" class="relative transition-opacity" :class="{ 'opacity-60': state.status === 'loading' }">
-        <CardStack ref="cards" :slides :open :offset :paging @toggle="onCard" />
+        <CardStack ref="cards" :slides :open :offset :paging :visible @toggle="onCard" @page="$event > 0 ? stack.next() : stack.prev()" />
+        <!-- Beside the stack (406px with the cards peeking out) while the block is wide enough for both; under it
+             otherwise, and then gone while the row is open. -->
         <MonthPanel
-          class="absolute top-0 right-0 h-[266px] w-[340px] [transition:opacity_.3s_ease,translate_.4s_cubic-bezier(.2,.8,.2,1)]
-                 motion-reduce:translate-x-0 motion-reduce:[transition:opacity_.2s_ease]"
-          :class="open ? 'pointer-events-none translate-x-8 opacity-0' : 'opacity-100'"
+          class="mt-4 [transition:opacity_.3s_ease,translate_.4s_cubic-bezier(.2,.8,.2,1)] motion-reduce:translate-x-0
+                 motion-reduce:[transition:opacity_.2s_ease] @[44rem]:absolute @[44rem]:top-0 @[44rem]:right-0 @[44rem]:mt-0
+                 @[44rem]:h-[266px] @[44rem]:w-[min(30rem,calc(100%-438px))]"
+          :class="open ? 'pointer-events-none translate-x-8 opacity-0 @max-[44rem]:hidden' : 'opacity-100'"
           :inert="open"
           :title="monthName"
           :note

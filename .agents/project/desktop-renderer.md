@@ -101,13 +101,21 @@
   (`tests/renderer/category-detail.test.ts`): summary (the change chip in «Spending»'s words), 12 months (average of
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
   and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
-  `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
+  `aria-hidden` with sr-only text; the list is a `role="table"` grid and its own `@container`: five columns from `@3xl`, below it two lines a row
+  (who and the marks under the text and the amount, their headers sr-only) — no sideways scroll.
   12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
   The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.
+- **Widths the screens are laid out for**: the window is at least 960×600 (`minWidth` / `minHeight` in
+  `main/window.ts`, opens at 1280×800), so with the side menu the content column of the default layout is about 39rem
+  at the least and 68rem at the most (`DefaultLayout`); a card's inside is 3rem narrower. Blocks adapt by container
+  queries, not by the window: check a new block at both ends. «Balances»: the month panel stands beside the stack from
+  `@[44rem]` and under it below (hidden while the row is open); the row shows `visibleCards(width)` whole cards
+  (`useVisibleCards`: `ResizeObserver` on the block; `useCardStack(count, visible)` pages by it). «Spending»: two
+  columns from `@3xl`; below it the ring stands on the left of the stats from `@lg`.
 - **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
   `DetailSummary` (`SummaryHeader` + `SummaryFigure` + `StatGrid` of `StatCell`; `SummaryView`), `MonthsChart`,
   `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PeopleBars` (`PersonBar`), `ShareList` (`ShareItem`:

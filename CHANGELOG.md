@@ -5,6 +5,16 @@ English interface.
 
 ## 0.1.10 — unreleased
 
+### Window and layout
+
+- **The screens use a wide window.** The content column is wider, so on a large window blocks stand side by side
+  instead of one under another with empty space around: the ring next to the categories in «Spending», the chart next
+  to «What changed» and four small charts in a row in «Analytics». The window now opens wider.
+- **Nothing overlaps in a small window.** The window can no longer be made narrower than the screens are laid out for.
+  In «Balances» the month's panel moves under the card when there is no room beside it, and the opened row shows as
+  many cards as fit. The list of operations on the category and income screens no longer scrolls sideways: in a
+  narrow window each operation takes two lines.
+
 ### Updates
 
 - **«Restart and update» during an import.** While an import or an automatic refresh is running, the button is switched
