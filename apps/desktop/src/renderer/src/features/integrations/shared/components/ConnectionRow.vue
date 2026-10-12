@@ -6,8 +6,8 @@ import { BankMark, bankOf } from '@/entities/bank';
 import { coverageLine, tokenBadge, tokenLine } from '@/entities/participant';
 import { SettingsList, SettingsRow } from '@/shared/layout';
 import { EXPAND_TRANSITION } from '@/shared/lib';
-import { VButton, VSwitch } from '@/shared/ui';
-import { DISABLED_ACCOUNT_HINT, IMPORT_RUNNING_ACCOUNTS_TEXT } from '../constants.ts';
+import { VButton, VPopover, VSwitch } from '@/shared/ui';
+import { DISABLED_ACCOUNT_HINT, IMPORT_RUNNING_ACCOUNTS_TEXT, MENU_ITEM_CLASS } from '../constants.ts';
 import type { AccountsState } from '../types.ts';
 import { accountLabel, accountSwitchChange, accountsButtonText } from '../utils.ts';
 
@@ -37,11 +37,19 @@ const id = useId();
 const bank = computed(() => bankOf(connection.provider));
 const badge = computed(() => tokenBadge(connection.token));
 const panel = ref<'token' | 'accounts' | null>(null);
+const menuOpen = ref(false);
 const tokenInput = ref('');
 const remember = ref(true);
 
 function toggleToken() {
   panel.value = panel.value === 'token' ? null : 'token';
+}
+
+// The menu's actions close it first: the panel (or main's dialog) opens with nothing over it.
+function fromMenu(action: 'token' | 'remove') {
+  menuOpen.value = false;
+  if (action === 'token') panel.value = 'token';
+  else emit('remove');
 }
 
 function toggleAccounts() {
@@ -66,15 +74,17 @@ function save() {
 
 <template>
   <div class="flex flex-col px-4 py-3">
-    <div class="flex flex-col gap-5">
-      <div class="flex items-center justify-between gap-4">
-        <div class="flex min-w-0 items-center gap-3">
-          <BankMark :bank size="sm" />
-          <div class="flex min-w-0 flex-col gap-0.5">
-            <span class="font-semibold">{{ connection.bank }}</span>
-            <span class="text-sm text-foreground-muted">{{ coverageLine(connection) }}</span>
-          </div>
+    <!-- One line: the bank and how fresh it is on the left; the token's state, the action it needs and the rare ones
+         (the menu) on the right. Wraps under the name in a narrow window. -->
+    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+      <div class="flex min-w-0 items-center gap-3">
+        <BankMark :bank size="sm" />
+        <div class="flex min-w-0 flex-col gap-0.5">
+          <span class="font-semibold">{{ connection.bank }}</span>
+          <span class="text-sm text-foreground-muted">{{ coverageLine(connection) }}</span>
         </div>
+      </div>
+      <div class="flex flex-wrap items-center justify-end gap-2">
         <span
           :title="tokenLine(connection.token)"
           class="inline-flex h-5 shrink-0 items-center gap-1 rounded-full px-2 text-xs font-semibold whitespace-nowrap before:size-1.5 before:rounded-full before:bg-current"
@@ -86,8 +96,6 @@ function save() {
         >
           {{ badge.text }}
         </span>
-      </div>
-      <div class="flex flex-wrap items-center justify-end gap-2">
         <VButton
           v-if="connection.accounts > 0"
           variant="neutral"
@@ -96,12 +104,21 @@ function save() {
           @click="toggleAccounts"
         />
         <VButton
-          :variant="connection.token.present ? 'neutral' : 'primary'"
-          :text="panel === 'token' ? $t('integrations.row.cancel') : connection.token.present ? $t('integrations.row.reenterToken') : $t('integrations.row.enterToken')"
+          v-if="!connection.token.present"
+          :text="$t('integrations.row.enterToken')"
           :aria-expanded="panel === 'token'"
           @click="toggleToken"
         />
-        <VButton variant="negative" :text="$t('integrations.row.remove')" @click="emit('remove')" />
+        <VPopover v-model:open="menuOpen" icon="lucide:ellipsis" :label="$t('integrations.row.more')">
+          <div class="flex flex-col">
+            <button v-if="connection.token.present" type="button" :class="MENU_ITEM_CLASS" @click="fromMenu('token')">
+              {{ $t('integrations.row.reenterToken') }}
+            </button>
+            <button type="button" :class="[MENU_ITEM_CLASS, 'text-danger']" @click="fromMenu('remove')">
+              {{ $t('integrations.row.remove') }}
+            </button>
+          </div>
+        </VPopover>
       </div>
     </div>
     <!-- The gap lives inside the expanding box (pt-5), so nothing jumps when it opens or closes. -->
@@ -110,8 +127,9 @@ function save() {
         <div class="-mx-1 min-h-0 overflow-hidden px-1">
           <form class="flex flex-col gap-3 pt-5 pb-1" @submit.prevent="save">
             <component :is="tokenField" v-model:token="tokenInput" v-model:remember="remember" :secure-storage autofocus />
-            <div>
+            <div class="flex flex-wrap gap-2">
               <VButton type="submit" :text="$t('integrations.row.save')" :disabled="tokenInput.trim() === ''" />
+              <VButton variant="neutral" :text="$t('integrations.row.cancel')" @click="panel = null" />
             </div>
           </form>
         </div>

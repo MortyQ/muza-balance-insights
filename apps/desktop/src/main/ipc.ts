@@ -27,6 +27,8 @@ const autoSync = z.strictObject({
   triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
 });
 
+const provider = z.enum(PROVIDER_IDS);
+
 /** Argument tuples. z.tuple without a rest element rejects extra arguments. */
 export const ARG_SCHEMAS = {
   listPeople: z.tuple([]),
@@ -37,7 +39,7 @@ export const ARG_SCHEMAS = {
         z.strictObject({ label, color: color.optional() }),
         z.strictObject({ fromBank: z.literal(true), color: color.optional() }),
       ]),
-      provider: z.enum(PROVIDER_IDS),
+      provider,
       token,
       remember: z.boolean(),
     }),
@@ -49,20 +51,22 @@ export const ARG_SCHEMAS = {
   removeConnection: z.tuple([id]),
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
+  // The data channels: `provider` narrows the answer to one bank's accounts (absent — every bank).
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),
-  getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
-  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
-  getNowOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  refreshNow: z.tuple([z.strictObject({ provider: provider.optional() })]),
+  getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), provider: provider.optional() })]),
+  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), provider: provider.optional() })]),
+  getNowOverview: z.tuple([z.strictObject({ participantId: id.optional(), provider: provider.optional() })]),
   getCategoryOverview: z.tuple([
-    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
+    z.strictObject({ month, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), provider: provider.optional() }),
   ]),
-  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  getIncomeOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), provider: provider.optional() })]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z
-      .strictObject({ from: month, to: month, participantId: id.optional() })
+      .strictObject({ from: month, to: month, participantId: id.optional(), provider: provider.optional() })
       .refine((q) => q.from <= q.to && monthSpan(q.from, q.to) <= ANALYTICS_MAX_MONTHS),
   ]),
   getSyncStatus: z.tuple([]),

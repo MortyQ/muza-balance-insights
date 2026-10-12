@@ -12,7 +12,7 @@ export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn 
   const query = ref('');
   const sort = ref<SortKey>('date');
   // Another month or person is another list: the filter and the search start over.
-  watch(() => [view.value?.month, participant.selectedId], () => {
+  watch(() => [view.value?.month, participant.selectedId, participant.selectedProvider], () => {
     sender.value = null;
     query.value = '';
   });

@@ -3,13 +3,25 @@ import { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { kyivStartOfDay } from '@mono/core/format';
+import type { ProviderId } from '@mono/core/providers/types';
 import { CANCEL_KILL_MS, Importer, JOB_FILE, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
 import type { ImportProgress } from '../src/shared/progress.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
+
+// A second bank for the «refresh one bank» tests: one more id in core's provider list (the worker protocol checks it).
+vi.mock('../../../packages/core/src/providers/types.ts', async (orig) => ({
+  ...(await orig<typeof import('../../../packages/core/src/providers/types.ts')>()),
+  PROVIDER_IDS: ['monobank', 'testbank'],
+}));
+vi.mock('../src/net/providers.ts', async () => {
+  const { monobank } = await import('../src/integrations/monobank/desktop.ts');
+  return { DESKTOP_PROVIDERS: { monobank, testbank: monobank } };
+});
+const TESTBANK = 'testbank' as ProviderId;
 
 const TOKEN = 'uCANARY-importer-token-0123456789';
 const NOW = kyivStartOfDay('2026-03-31') + 15 * 3600; // 31 March, 15:00 Kyiv
@@ -43,7 +55,7 @@ class FakeChild extends EventEmitter implements ChildLike {
   }
 }
 
-type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null };
+type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null; provider?: ProviderId };
 
 /** Default: one Monobank connection (id 1) whose token is in secure storage. `connections` replaces it. */
 /** `db`: what DbAccess.forWorker() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
@@ -64,7 +76,7 @@ function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | nul
       children.push(c);
       return c;
     },
-    connections: async () => conns.map((c) => ({ connectionId: c.connectionId, provider: 'monobank' as const })),
+    connections: async () => conns.map((c) => ({ connectionId: c.connectionId, provider: c.provider ?? ('monobank' as const) })),
     tokens: { get: async (id) => byId(id)?.token ?? null, status: async (id) => ({ stored: byId(id)?.stored ?? null }) },
     powerSaveBlocker: {
       start: (t) => (blocker.started.push(t), blocker.next++),
@@ -555,6 +567,76 @@ describe('Importer: «Автосинхронизация»', () => {
     children[0]!.reply({ type: 'error', kind: 'cancelled' });
     expect(sent.at(-1)).toEqual({ phase: 'cancelled', auto: true });
     expect(fs.existsSync(job())).toBe(true);
+  });
+});
+
+// «Refresh» from the sync status: the auto-sync run, started by the user, for every bank or for one.
+describe('Importer: a refresh for one bank', () => {
+  const two = (): Conn[] => [
+    { connectionId: 1, token: TOKEN, stored: 'secure' },
+    { connectionId: 2, token: `${TOKEN}-b`, stored: 'secure', provider: TESTBANK },
+    { connectionId: 3, token: `${TOKEN}-c`, stored: 'secure', provider: TESTBANK },
+  ];
+
+  it('with providers: only their connections, as an automatic run', async () => {
+    const { importer, children, sent } = setup({ connections: two() });
+    expect(await importer.startAuto({ providers: [TESTBANK] })).toEqual({ started: true });
+    const start = children[0]!.sent[0] as { connections: Array<{ connectionId: number }> };
+    expect(start.connections.map((c) => c.connectionId)).toEqual([2, 3]);
+    expect(sent.every((p) => p.auto === true)).toBe(true);
+    expect(fs.existsSync(job())).toBe(false);
+  });
+
+  it('without providers: every connection, as before', async () => {
+    const { importer, children } = setup({ connections: two() });
+    await importer.startAuto();
+    const start = children[0]!.sent[0] as { connections: Array<{ connectionId: number }> };
+    expect(start.connections.map((c) => c.connectionId)).toEqual([1, 2, 3]);
+  });
+
+  it('a bank whose connections have no token, or that has no connection: no-token, nothing starts', async () => {
+    const noToken = setup({ connections: [{ connectionId: 1, token: TOKEN, stored: 'secure' }, { connectionId: 2, token: null, provider: TESTBANK }] });
+    expect(await noToken.importer.startAuto({ providers: [TESTBANK] })).toEqual({ started: false, reason: 'no-token' });
+    expect(noToken.children).toHaveLength(0);
+    expect(noToken.sent).toEqual([]);
+
+    const noConnection = setup();
+    expect(await noConnection.importer.startAuto({ providers: [TESTBANK] })).toEqual({ started: false, reason: 'no-token' });
+    expect(noConnection.children).toHaveLength(0);
+  });
+
+  it('a connection of another bank without a token is not reported as skipped', async () => {
+    const { importer, children, sent } = setup({ connections: [{ connectionId: 1, token: null }, { connectionId: 2, token: TOKEN, stored: 'secure', provider: TESTBANK }] });
+    await importer.startAuto({ providers: [TESTBANK] });
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [] });
+    expect(sent.at(-1)).toEqual({ phase: 'done', windowsTotal: 1, transactions: 0, failed: [], auto: true });
+  });
+
+  it('a crash restarts the same banks, not all of them', async () => {
+    const { importer, children, timers } = setup({ connections: two() });
+    await importer.startAuto({ providers: [TESTBANK] });
+    children[0]!.exit();
+    timers.at(-1)!();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(children).toHaveLength(2);
+    const restart = children[1]!.sent[0] as { connections: Array<{ connectionId: number }> };
+    expect(restart.connections.map((c) => c.connectionId)).toEqual([2, 3]);
+  });
+
+  it('the banks of one run do not stick to the next', async () => {
+    const { importer, children } = setup({ connections: two() });
+    await importer.startAuto({ providers: [TESTBANK] });
+    children[0]!.reply({ type: 'done', windowsTotal: 1, transactions: 0, failed: [] });
+    children[0]!.exit();
+    await importer.startAuto();
+    const next = children[1]!.sent[0] as { connections: Array<{ connectionId: number }> };
+    expect(next.connections.map((c) => c.connectionId)).toEqual([1, 2, 3]);
+  });
+
+  it('refused while a run is in flight', async () => {
+    const { importer } = setup({ connections: two() });
+    await importer.startAuto();
+    expect(await importer.startAuto({ providers: [TESTBANK] })).toEqual({ started: false, reason: 'running' });
   });
 });
 

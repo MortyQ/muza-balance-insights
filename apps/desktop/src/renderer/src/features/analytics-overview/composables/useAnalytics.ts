@@ -18,12 +18,14 @@ export function useAnalytics(): UseAnalyticsReturn {
   const { range } = storeToRefs(useRangeStore());
 
   const participantId = () => participant.selectedId;
+  const provider = () => participant.selectedProvider;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchAnalyticsOverview({ from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}) });
+      const bank = provider();
+      return fetchAnalyticsOverview({ from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}), ...(bank !== null ? { provider: bank } : {}) });
     },
-    [range, participantId],
+    [range, participantId, provider],
     { quiet: [() => syncStatus.version] },
   );
 

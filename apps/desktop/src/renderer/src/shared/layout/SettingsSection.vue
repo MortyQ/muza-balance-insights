@@ -12,9 +12,12 @@ const { title, description, note, noteIcon = 'lucide:info' } = defineProps<{
 
 <template>
   <section class="flex flex-col gap-4">
-    <div class="flex flex-col gap-1">
-      <h2 class="text-xl font-semibold">{{ title }}</h2>
-      <p v-if="description" class="max-w-[62ch] text-sm text-foreground-muted">{{ description }}</p>
+    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+      <div class="flex min-w-0 flex-col gap-1">
+        <h2 class="text-xl font-semibold">{{ title }}</h2>
+        <p v-if="description" class="max-w-[62ch] text-sm text-foreground-muted">{{ description }}</p>
+      </div>
+      <slot name="action" />
     </div>
     <slot />
     <p v-if="note" class="flex max-w-[62ch] items-start gap-2 text-sm text-foreground-muted">

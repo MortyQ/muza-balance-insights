@@ -37,7 +37,7 @@ export function useCardStack(count: MaybeRefOrGetter<number>): UseCardStackRetur
     stubShown.value = true;
   }
 
-  watch([() => monthStore.month, () => participant.selectedId], () => {
+  watch([() => monthStore.month, () => participant.selectedId, () => participant.selectedProvider], () => {
     paging.value = true;
     offset.value = 0;
   });

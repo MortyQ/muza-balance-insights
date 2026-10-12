@@ -8,7 +8,6 @@ export const SETTINGS_SECTIONS = [
   'storage',
   'network',
   'data',
-  'auto-sync',
   'updates',
   'appearance',
   'language',

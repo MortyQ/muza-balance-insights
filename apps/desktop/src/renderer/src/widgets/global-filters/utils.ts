@@ -1,7 +1,15 @@
+import type { ConnectionView, ProviderKey } from '@contract/api.ts';
 import type { ImportProgress } from '@contract/progress.ts';
+import { bankOf } from '@/entities/bank';
 import { IMPORT_ERRORS, progressLine } from '@/features/import-statement';
 import { i18n, syncedWhen, t } from '@/shared/lib';
+import { ALL_BANKS } from './constants.ts';
 import type { FilterRowWidths, SyncStatusView } from './types.ts';
+
+/** The bank select: «All banks», then the connected banks by name. */
+export function bankOptions(providers: ReadonlyArray<ProviderKey>): Array<{ label: string; value: string }> {
+  return [{ label: t('home.filters.allBanks'), value: ALL_BANKS }, ...providers.map((p) => ({ label: t(bankOf(p).name), value: p }))];
+}
 
 /** When the data was last updated, for the tooltip of the data line: «Updated at 14:20»; '' — never. */
 function updatedLine(line: string, lastSyncAt: string | null, now: number): string {
@@ -72,4 +80,23 @@ export function failedConnections(p: Readonly<ImportProgress>): Record<number, s
  */
 export function fitsCenter(w: Readonly<FilterRowWidths>, gap: number): boolean {
   return w.row === 0 || w.center + 2 * gap + 2 * Math.max(w.left, w.right) <= w.row;
+}
+
+/**
+ * When the bank's data was last refreshed (`provider` null: every bank): the oldest refresh among its connections, so
+ * the line never says more than is true of all of them. Null: one of them was never refreshed, or there is none.
+ */
+export function lastRefreshOf(connections: ReadonlyArray<Readonly<ConnectionView>>, provider: ProviderKey | null): string | null {
+  const times = connections.filter((c) => provider === null || c.provider === provider).map((c) => c.lastSyncAt);
+  let oldest: string | null = null;
+  for (const at of times) {
+    if (at === null) return null;
+    if (oldest === null || at < oldest) oldest = at;
+  }
+  return oldest;
+}
+
+/** When the selection was last refreshed, or that it never was. */
+export function refreshLine(last: string | null, now: Date): string {
+  return last === null ? t('home.filters.refresh.never') : t('home.filters.refresh.last', { when: syncedWhen(last, now) });
 }

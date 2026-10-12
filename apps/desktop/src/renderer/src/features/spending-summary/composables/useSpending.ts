@@ -25,15 +25,17 @@ export function useSpending(): UseSpendingReturn {
   const pick = ref<number | null>(null);
 
   const participantId = () => participant.selectedId;
+  const provider = () => participant.selectedProvider;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchSpendingOverview({ month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}) });
+      const bank = provider();
+      return fetchSpendingOverview({ month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}), ...(bank !== null ? { provider: bank } : {}) });
     },
-    [month, scope, participantId],
+    [month, scope, participantId, provider],
     { quiet: [() => syncStatus.version] },
   );
-  watch([month, scope, participantId], () => {
+  watch([month, scope, participantId, provider], () => {
     pick.value = null;
   });
 

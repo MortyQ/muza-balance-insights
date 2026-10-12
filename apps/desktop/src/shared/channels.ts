@@ -13,6 +13,7 @@ export const METHODS = [
   'setAccountEnabled',
   'startImport',
   'cancelImport',
+  'refreshNow',
   'getSpendingOverview',
   'getNowOverview',
   'getCategoryOverview',

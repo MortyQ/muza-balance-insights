@@ -48,6 +48,23 @@
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
 
+## Not checked on a live system: banks
+
+- The bank select in the global filters and the «Refresh» popover next to the sync status are hidden until a second
+  bank is connected, so neither has been seen in the running app: only their tests cover them. Check both (layout in a
+  narrow window on Windows, macOS and Linux, the select inside the popover, a refresh of one bank) once a second
+  provider exists.
+- After a refresh of one bank, «last synced» is still the newest sync of any account (`DataService.lastSyncSec`,
+  `status().lastSyncAt`): auto-sync waits its 30 minutes / 4 hours although the other bank was not refreshed, and the
+  status tooltip «Updated at …» says more than is true of that bank. Decide with the second bank: the oldest of the
+  connections' latest syncs, or per-bank thresholds.
+- A bank connected later than the first: in its own view the compared period and the months before its data read as
+  zero, not as «no data» (coverage and `dataFrom` are family-wide, as for a person).
+- «Refresh»: the button stays on while an unfinished import waits for a token (main answers `running`); the «no saved
+  token for this bank» text also shows for «All banks»; a refusal stays on screen after the bank in the popover changes.
+- `GlobalFilters` is mounted in `tests/renderer/sync-status.test.ts` with one bank only: add a two-bank case that finds
+  the bank select and the refresh button in the row.
+
 ## Later: currencies
 
 - PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the

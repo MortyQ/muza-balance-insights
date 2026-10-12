@@ -1,6 +1,8 @@
+// @vitest-environment happy-dom
 // The settings screen: which section a query opens and how the arrows walk the menu.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { describe, expect, it } from 'vitest';
+import { mount } from '@vue/test-utils';
 import type { SettingsSection } from '@/shared/config';
 import type { SideNavItem } from '@/shared/layout';
 
@@ -62,13 +64,14 @@ describe('settings sections', () => {
     ['network', 'network'],
     ['appearance', 'appearance'],
     ['lock', 'lock'],
-    ['auto-sync', 'auto-sync'],
+    // «Auto-sync» is a block of «Connections» now, not a section of its own.
+    ['auto-sync', 'people'],
   ])('settingsSection(%j) → %s', (q, s) => expect(settingsSection(q)).toBe(s));
 
   it('arrows wrap and walk the menu order', () => {
     expect(nextSection('people', -1)).toBe('about');
     expect(nextSection('about', 1)).toBe('people');
-    expect(nextSection('data', 1)).toBe('auto-sync');
+    expect(nextSection('data', 1)).toBe('updates');
     expect(nextSection('connections', 1)).toBe('lock');
   });
 
@@ -127,5 +130,50 @@ describe('update errors', () => {
     ['mismatch', 'не совпал с подписанным описанием'],
   ] as const)('%s', (reason, text) => {
     expect(updateLine({ phase: 'error', reason })).toContain(text);
+  });
+});
+
+// «Restart and update» cannot restart during an import (main refuses): the button is off and the line says why.
+describe('a ready update during an import', () => {
+  const ready = { phase: 'ready', version: '0.1.9' } as const;
+
+  it('the line says the restart waits for the import', () => {
+    expect(updateLine(ready)).toContain('установится при перезапуске');
+    expect(updateLine(ready, true)).toContain('Идёт импорт');
+    expect(updateLine(ready, true)).toContain('0.1.9');
+  });
+
+  it('the import changes no other line', () => {
+    expect(updateLine({ phase: 'available', version: '0.1.9', mode: 'auto' }, true)).toBe(updateLine({ phase: 'available', version: '0.1.9', mode: 'auto' }));
+  });
+
+  it('the button is disabled while the import runs', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { default: UpdateActions } = await import('@/features/settings/app-update/components/UpdateActions.vue');
+    const button = (importRunning: boolean) =>
+      mount(UpdateActions, { props: { state: ready, importRunning }, global: { plugins: [i18n] } }).get('button');
+    expect(button(false).attributes('disabled')).toBeUndefined();
+    expect(button(true).attributes('disabled')).toBeDefined();
+  });
+});
+
+// «Connections» holds everything about the banks' data: the banks, auto-sync, the history download.
+describe('the connections section', () => {
+  it('auto-sync has no menu item of its own', () => {
+    const labels = NAV_GROUPS.flatMap((g) => g.items.map((i): string => i.label));
+    expect(labels).not.toContain('settings.nav.autoSync');
+  });
+
+  it('a nested settings row is indented under the row above it', async () => {
+    const { SettingsRow } = await import('@/shared/layout');
+    const row = (nested: boolean) => mount(SettingsRow, { props: { title: 'x', nested } }).classes();
+    expect(row(true)).toContain('pl-8');
+    expect(row(false)).not.toContain('pl-8');
+  });
+
+  it('a section shows an action next to its title', async () => {
+    const { SettingsSection } = await import('@/shared/layout');
+    const w = mount(SettingsSection, { props: { title: 'Banks' }, slots: { action: '<button>Add</button>' } });
+    expect(w.get('h2').element.parentElement?.parentElement?.querySelector('button')?.textContent).toBe('Add');
   });
 });

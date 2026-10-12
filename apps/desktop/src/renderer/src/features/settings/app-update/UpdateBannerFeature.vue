@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useAppUpdateStore } from '@/entities/app-update';
+import { useImportProgressStore } from '@/entities/import-progress';
 import { VButton, VInfoNotice, VProgressBar } from '@/shared/ui';
 import UpdateActions from './components/UpdateActions.vue';
 import { useUpdate } from './composables/useUpdate.ts';
 import { updateLine } from './utils.ts';
 
 const store = useAppUpdateStore();
+const importProgress = useImportProgressStore();
 const { error, download, install } = useUpdate();
 // «Later» hides the banner until the next start; the update itself stays (settings, or the next quit).
 const later = ref(false);
@@ -22,10 +24,10 @@ const shown = computed(() => !later.value && ['available', 'downloading', 'ready
         :card="false"
         :icon="state.phase === 'error' ? 'lucide:circle-alert' : 'lucide:sparkles'"
         :tone="state.phase === 'error' ? 'danger' : 'info'"
-        :subtitle="updateLine(state)"
+        :subtitle="updateLine(state, importProgress.running)"
       />
       <div class="flex items-center gap-2">
-        <UpdateActions :state @download="download" @install="install" />
+        <UpdateActions :state :import-running="importProgress.running" @download="download" @install="install" />
         <VButton variant="neutral" :text="$t('settings.update.later')" @click="later = true" />
       </div>
     </div>

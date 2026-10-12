@@ -3,6 +3,21 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.9 — unreleased
+
+### Updates
+
+- **«Restart and update» during an import.** While an import or an automatic refresh is running, the button is switched
+  off and the line next to it says the restart has to wait — before, pressing it seemed to do nothing. It works again
+  as soon as the import finishes.
+
+### Settings
+
+- **«Connections» in one place.** «Auto-sync» moved from its own menu item into «Connections», next to the banks it
+  refreshes; its triggers now sit right under the main switch. «Add connection» is at the top of the list.
+- **A tidier connection row.** The token status and the main action share one line with the bank's name; «Enter token
+  again» and «Remove» moved into the «…» menu.
+
 ## 0.1.8 — 2026-10-06
 
 ### Home screen

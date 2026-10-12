@@ -16,12 +16,14 @@ export function useIncomeDetail(): UseIncomeDetailReturn {
   const { month } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
+  const provider = () => participant.selectedProvider;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchIncomeOverview({ month: month.value, ...(id !== null ? { participantId: id } : {}) });
+      const bank = provider();
+      return fetchIncomeOverview({ month: month.value, ...(id !== null ? { participantId: id } : {}), ...(bank !== null ? { provider: bank } : {}) });
     },
-    [month, participantId],
+    [month, participantId, provider],
     { quiet: [() => syncStatus.version] },
   );
 

@@ -23,10 +23,11 @@ export function useMonthOverview(): UseMonthOverviewReturn {
   const { state } = useAsyncData(
     async (): Promise<TaggedOverview> => {
       const id = participant.selectedId;
-      const overview = await fetchOverview({ month: monthStore.month, ...(id !== null ? { participantId: id } : {}) });
+      const bank = participant.selectedProvider;
+      const overview = await fetchOverview({ month: monthStore.month, ...(id !== null ? { participantId: id } : {}), ...(bank !== null ? { provider: bank } : {}) });
       return { participantId: id, overview };
     },
-    [() => monthStore.month, () => participant.selectedId],
+    [() => monthStore.month, () => participant.selectedId, () => participant.selectedProvider],
     { quiet: [() => syncStatus.version] },
   );
   const view = computed(() => state.value.data?.overview ?? null);

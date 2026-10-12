@@ -20,12 +20,14 @@ export function useNowStrip(): UseNowStripReturn {
   const { month, thisMonth, today } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
+  const provider = () => participant.selectedProvider;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchNowOverview(id !== null ? { participantId: id } : {});
+      const bank = provider();
+      return fetchNowOverview({ ...(id !== null ? { participantId: id } : {}), ...(bank !== null ? { provider: bank } : {}) });
     },
-    [participantId],
+    [participantId, provider],
     { quiet: [() => syncStatus.version, today] },
   );
 

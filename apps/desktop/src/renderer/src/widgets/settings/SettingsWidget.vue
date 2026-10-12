@@ -27,14 +27,13 @@ const { section, importFrom = null, focusImport = false } = defineProps<{
 }>();
 const emit = defineEmits<{ select: [section: SettingsSection]; deleted: [] }>();
 
-// Composed below: «Storage and tokens» (the encryption row goes into its list) and «Connections» (the banks, then the
-// history download).
+// Composed below: «Storage and tokens» (the encryption row goes into its list) and «Connections» (the banks, auto-sync,
+// then the history download).
 const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'connections'>, Component> = {
   people: PeopleFeature,
   lock: AppLockSettingsFeature,
   network: NetworkInfoFeature,
   data: DeleteDataFeature,
-  'auto-sync': AutoSyncSettingsFeature,
   updates: UpdateSettingsFeature,
   appearance: ThemeSwitchFeature,
   language: LanguageSelectFeature,
@@ -55,6 +54,7 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'connections'>, Comp
       </StorageInfoFeature>
       <div v-else-if="section === 'connections'" key="connections" class="flex flex-col gap-12">
         <ConnectionsFeature />
+        <AutoSyncSettingsFeature />
         <ImportFeature :requested-from="importFrom" :focus="focusImport" />
       </div>
       <component :is="SECTIONS[section]" v-else :key="section" @deleted="emit('deleted')" />

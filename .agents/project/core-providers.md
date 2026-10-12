@@ -15,3 +15,14 @@
     `packages/core/src/connections.ts`); счёт без подключения — ошибка, а не значение по умолчанию;
   - общее для всех клиентов: слот запросов `src/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/errors.ts`
     (`RateLimitError`, `StatementFormatError`).
+
+- **The provider filter** (`Filters.provider` in `summaries.ts`; `getBalances` / `balancesAt` `provider`): only the
+  accounts of that bank's connections, alone or with `participantId` (one subquery over `accounts → connections`). It
+  narrows the accounts and nothing else: `excludedTransferSql` does not look at it, so a transfer between the owner's
+  accounts in two banks stays internal in every view. Coverage (`periodInfo`) and `firstDataDate` stay family-wide. An id
+  outside `PROVIDER_IDS` is refused (`validateFilters`). Tests get a second bank by mocking the two registries
+  (`providers/types.ts`, `providers/rules.ts`): `packages/core/tests/bank-filter.test.ts`.
+- **What adding a bank takes**: its rules and client under `providers/<id>/`, its id in `PROVIDER_IDS`, its entry in
+  `PROVIDER_RULES`; in the desktop — `DESKTOP_PROVIDERS`, `WORKER_PROVIDERS`, the worker's `FETCH` table, its hosts in
+  `TRUSTED_SERVICES` (a separate, reviewed step), its entry in `BANKS` and its form folder in `features/integrations`.
+  The bank filter, the data channels and «Refresh» need nothing: their options come from the connections.

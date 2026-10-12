@@ -381,7 +381,18 @@
       "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
     },
     "filters": {
+      "allBanks": "All banks",
+      "bank": "Bank",
       "percent": "{pct}%",
+      "refresh": {
+        "button": "Refresh",
+        "last": "Refreshed {when}",
+        "never": "Not refreshed yet",
+        "noToken": "No saved token for this bank.",
+        "running": "An import is already running.",
+        "title": "Refresh data",
+        "unavailable": "The database is unavailable right now."
+      },
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",
       "updated": "Updated {when}"
@@ -639,7 +650,7 @@
       "newTitle": "New {bank} connection",
       "none": "No connections yet.",
       "note": "Connect someone else's account only with the token owner's consent. «Remove» erases the connection, its token and the downloaded transactions in this app; nothing changes at the bank.",
-      "title": "Connections"
+      "title": "Banks"
     },
     "first": {
       "defaultLabel": "Me",
@@ -670,6 +681,7 @@
       "accountsLoading": "Loading accounts…",
       "cancel": "Cancel",
       "enterToken": "Enter token",
+      "more": "More actions",
       "reenterToken": "Enter token again",
       "remove": "Remove",
       "save": "Save"
@@ -722,8 +734,7 @@
       "title": "Auto-sync",
       "triggerInterval": "Every 4 hours while the app is open",
       "triggerLaunch": "When the app starts",
-      "triggerWake": "When the computer wakes from sleep",
-      "when": "When to update"
+      "triggerWake": "When the computer wakes from sleep"
     },
     "dbEncryption": {
       "encrypted": "The database on this computer is encrypted; the key is kept in {store}.",
@@ -827,7 +838,6 @@
     "nav": {
       "about": "About",
       "appearance": "Appearance",
-      "autoSync": "Auto-sync",
       "connections": "Connections",
       "data": "Data",
       "groupApp": "App",
@@ -917,6 +927,7 @@
       "later": "Later",
       "note": "Before installing, the file is checked against the signed description of the version: size and checksum. Going back to an older version is not possible.",
       "ready": "Version {version} is downloaded and checked — it installs on restart.",
+      "readyAfterImport": "Version {version} is ready. An import is running — you can restart once it finishes.",
       "restart": "Restart and update",
       "saved": "Version {version} is downloaded and checked: «{file}» in the «Downloads» folder.",
       "savedHelp": "Open the file in «Downloads» and drag Balance Insights into «Applications», replacing the old one. macOS asks for your password once so the new version can read the saved token — choose «Always Allow». Your data and token stay.",

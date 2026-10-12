@@ -21,12 +21,20 @@ export function useCategoryDetail(categoryId: MaybeRefOrGetter<CategoryId>, scop
   const { month } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
+  const provider = () => participant.selectedProvider;
   const { state } = useAsyncData(
     () => {
       const id = participantId();
-      return fetchCategoryOverview({ month: month.value, category: toValue(categoryId), scope: toValue(scope), ...(id !== null ? { participantId: id } : {}) });
+      const bank = provider();
+      return fetchCategoryOverview({
+        month: month.value,
+        category: toValue(categoryId),
+        scope: toValue(scope),
+        ...(id !== null ? { participantId: id } : {}),
+        ...(bank !== null ? { provider: bank } : {}),
+      });
     },
-    [month, participantId, () => toValue(categoryId), () => toValue(scope)],
+    [month, participantId, provider, () => toValue(categoryId), () => toValue(scope)],
     { quiet: [() => syncStatus.version] },
   );
 

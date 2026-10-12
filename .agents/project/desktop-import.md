@@ -82,3 +82,13 @@
     (renderer узнаёт режим и после перезагрузки страницы). Ручной «Загрузить» вытесняет автосинхронизацию (`halt()`, затем свой
     запуск). На главной — одна строка «Обновляю данные…» (или повтор / ошибка), без итога «Готово»; строка «Идёт импорт —
     цифры дополняются» — только для ручного импорта.
+
+- **Bank (provider) in the data channels**: `getMonthOverview`, `getSpendingOverview`, `getNowOverview`,
+  `getCategoryOverview`, `getIncomeOverview` and `getAnalyticsOverview` take an optional `provider` (zod: one of
+  `PROVIDER_IDS`) next to `participantId`; `DataService` passes it to core wherever it passes the participant, including
+  each person's part of the family view. Answers keep their shape. Tests: `tests/data-bank.test.ts`.
+- **`refreshNow({ provider? })`** → `StartImportResult`: the auto-sync run started by the user
+  (`Importer.startAuto({ providers })`: the providers' connections go to `launch` as `only`), for one bank or, without
+  `provider`, for all. No job file, no token prompts, states marked `auto: true`; `AutoSync`'s thresholds and switches do
+  not apply. Refuses with `running` while an import runs or an unfinished one waits, `no-token` when none of the bank's
+  connections has a token, `db-unavailable`. Closed while locked and while the database is not ready.

@@ -127,6 +127,8 @@ export type BalanceApi = {
   /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
+  /** «Refresh»: the auto-sync run started by the user, for one bank or (no provider) for all. */
+  refreshNow(q: { provider?: ProviderKey }): Promise<StartImportResult>;
   /** Returns an unsubscribe function. */
   onProgress(cb: (p: ImportProgress) => void): () => void;
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
@@ -194,10 +196,11 @@ export type BalanceApi = {
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
 // and income screens; nothing else).
 // participantId: one participant's view; absent — the whole family.
+// provider: one bank's accounts only; absent — every bank. It combines with participantId.
 
 export type Scope = 'personal' | 'business';
 
-export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
+export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number; provider?: ProviderKey };
 
 /** Hryvnia kopecks (account currencies folded by today's rates) and spending lines. */
 export type SpendingAmounts = { net: number; purchases: number };
@@ -260,7 +263,7 @@ export type SpendingOverview = {
   familyTotal: number | null;
 };
 
-export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number };
+export type CategoryOverviewQuery = { month: string; category: CategoryId; scope: Scope; participantId?: number; provider?: ProviderKey };
 
 /** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
 export type CategoryLineView = {
@@ -343,7 +346,7 @@ export type CategoryOverview = {
   leftOut: Array<{ currency: number; net: number }>;
 };
 
-export type IncomeOverviewQuery = { month: string; participantId?: number };
+export type IncomeOverviewQuery = { month: string; participantId?: number; provider?: ProviderKey };
 
 /** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
 export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
@@ -420,7 +423,7 @@ export type IncomeOverview = {
 };
 
 /** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */
-export type AnalyticsQuery = { from: string; to: string; participantId?: number };
+export type AnalyticsQuery = { from: string; to: string; participantId?: number; provider?: ProviderKey };
 
 /** full — data for the whole bucket; running — the current month / today; none — before the first data or after today (values 0, not drawn). */
 export type AnalyticsBucketState = 'full' | 'running' | 'none';
@@ -460,7 +463,7 @@ export type AnalyticsOverview = {
   leftOut: number[];
 };
 
-export type NowOverviewQuery = { participantId?: number };
+export type NowOverviewQuery = { participantId?: number; provider?: ProviderKey };
 
 /**
  * The «Now» strip: today and this calendar week (from Monday), personal scope, hryvnia kopecks folded by today's
@@ -499,7 +502,7 @@ export type NowOverview = {
   rates: RatesView | null;
 };
 
-export type MonthOverviewQuery = { month: string; participantId?: number };
+export type MonthOverviewQuery = { month: string; participantId?: number; provider?: ProviderKey };
 
 /** Minor units: income and spending of the month (the core aggregates, all scopes). */
 export type FlowView = { income: number; spending: number };

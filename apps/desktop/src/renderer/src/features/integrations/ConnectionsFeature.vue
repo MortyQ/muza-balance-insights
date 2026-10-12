@@ -46,6 +46,23 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
     :description="$t('integrations.connections.description')"
     :note="$t('integrations.connections.note')"
   >
+    <template #action>
+      <VButton v-if="!adding" :text="$t('integrations.connections.add')" icon="lucide:plus" @click="startAdding" />
+    </template>
+    <!-- The form opens right under the title, where its button is. -->
+    <Transition v-bind="EXPAND_TRANSITION">
+      <div v-if="adding" class="grid">
+        <div class="-m-1 min-h-0 overflow-hidden p-1">
+          <div class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="text-base font-semibold">{{ newTitle }}</h3>
+              <VButton variant="neutral" :text="$t('integrations.connections.cancel')" @click="adding = false" />
+            </div>
+            <AddConnectionFeature :provider="DEFAULT_PROVIDER" :submit-text="$t('integrations.add.submitShort')" autofocus @added="onAdded" />
+          </div>
+        </div>
+      </div>
+    </Transition>
     <p v-if="!participant.hasConnections" class="text-foreground-secondary">{{ $t('integrations.connections.none') }}</p>
     <template v-for="p in participant.people" :key="p.id">
       <SettingsList v-if="p.connections.length > 0" :heading="p.label">
@@ -78,22 +95,5 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           : $t('integrations.connections.added')
       "
     />
-    <!-- One slot for the button and the panel: the section's gap stays the same while the panel slides. -->
-    <div>
-      <VButton v-if="!adding" :text="$t('integrations.connections.add')" icon="lucide:plus" @click="startAdding" />
-      <Transition v-bind="EXPAND_TRANSITION">
-        <div v-if="adding" class="grid">
-          <div class="-m-1 min-h-0 overflow-hidden p-1">
-            <div class="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
-              <div class="flex items-center justify-between gap-2">
-                <h3 class="text-base font-semibold">{{ newTitle }}</h3>
-                <VButton variant="neutral" :text="$t('integrations.connections.cancel')" @click="adding = false" />
-              </div>
-              <AddConnectionFeature :provider="DEFAULT_PROVIDER" :submit-text="$t('integrations.add.submitShort')" autofocus @added="onAdded" />
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </div>
   </SettingsSection>
 </template>

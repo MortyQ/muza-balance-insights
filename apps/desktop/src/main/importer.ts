@@ -66,6 +66,8 @@ export class Importer {
   private last: ImportProgress = { phase: 'idle' };
   // The job of the latest launch (a restart keeps it).
   private current: Job | null = null;
+  /** The connections the current run was limited to (a refresh of one bank); a restart after a crash keeps them. */
+  private currentOnly: readonly number[] | undefined;
   private readonly jobFile: string;
 
   constructor(private readonly d: ImporterDeps) {
@@ -107,13 +109,16 @@ export class Importer {
    * «Автосинхронизация»: every connection with a token, from the start of this month (system time zone), each covered
    * account re-reading one whole window up to now. Not while an import runs or an unfinished one waits to resume. Writes no job file
    * (the next launch refreshes again) and asks for no token: a connection without one is left to the home notice.
+   * `providers`: only the connections of these banks («Refresh» for one bank); absent — every connection.
    */
-  async startAuto(): Promise<StartImportResult> {
+  async startAuto(opts: { providers?: ReadonlyArray<ProviderId> } = {}): Promise<StartImportResult> {
     if (this.running) return { started: false, reason: 'running' };
     if (this.readJob()) return { started: false, reason: 'running' };
     const now = this.d.nowSec();
     const zone = systemTimeZone();
-    return this.launch({ sinceSec: startOfDayIn(`${localDate(now * 1000, zone).slice(0, 8)}01`, zone), startedAt: now, auto: true }, false);
+    const { providers } = opts;
+    const only = providers ? (await this.d.connections()).filter((c) => providers.includes(c.provider)).map((c) => c.connectionId) : undefined;
+    return this.launch({ sinceSec: startOfDayIn(`${localDate(now * 1000, zone).slice(0, 8)}01`, zone), startedAt: now, auto: true }, false, only);
   }
 
   /**
@@ -212,6 +217,7 @@ export class Importer {
       return { started: false, reason: 'db-unavailable' };
     }
     this.current = job;
+    this.currentOnly = only;
     if (!job.auto) this.writeJob(job);
     this.cancelling = false;
     this.blocker = this.d.powerSaveBlocker.start('prevent-app-suspension');
@@ -298,7 +304,7 @@ export class Importer {
       // Time the Mac slept through the pause does not count towards the retry budget.
       const slept = sleptDuringPause(pauseStart, this.d.nowSec() * 1000, delay);
       if (slept > 0 && this.crashSince !== null) this.crashSince += slept;
-      void this.launch(job, true);
+      void this.launch(job, true, this.currentOnly);
     }, delay);
   }
 

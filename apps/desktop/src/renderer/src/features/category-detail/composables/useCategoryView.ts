@@ -13,8 +13,8 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const merchant = ref<string | null>(null);
   const query = ref('');
   const sort = ref<SortKey>('date');
-  // Another month, person or category is another list: the filter and the search start over.
-  watch(() => [view.value?.month, view.value?.categoryId, participant.selectedId], () => {
+  // Another month, person, bank or category is another list: the filter and the search start over.
+  watch(() => [view.value?.month, view.value?.categoryId, participant.selectedId, participant.selectedProvider], () => {
     merchant.value = null;
     query.value = '';
   });

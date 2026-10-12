@@ -21,7 +21,6 @@ export const NAV_GROUPS = [
   {
     label: 'settings.nav.groupApp',
     items: [
-      { label: 'settings.nav.autoSync', icon: 'lucide:refresh-ccw', id: 'auto-sync' },
       { label: 'settings.nav.updates', icon: 'lucide:refresh-cw', id: 'updates' },
       { label: 'settings.nav.appearance', icon: 'lucide:palette', id: 'appearance' },
       { label: 'settings.nav.language', icon: 'lucide:languages', id: 'language' },

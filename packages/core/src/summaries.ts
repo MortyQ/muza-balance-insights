@@ -10,7 +10,7 @@ import { accountLabels, dateIn, parseLocalDate } from './format.ts';
 import { BUCKETS_CTE, addDays, bucketKeySql, isTimeZone, periodArgs, periodBuckets, periodRange, periodSql, zoneOf, type ZonedPeriod } from './periods.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
-import type { ProviderId, ProviderIncomeSource } from './providers/types.ts';
+import { PROVIDER_IDS, type ProviderId, type ProviderIncomeSource } from './providers/types.ts';
 import { isScope, type Scope } from './scope.ts';
 
 export class SummaryError extends Error {
@@ -93,15 +93,19 @@ function perDay(amount: number, info: PeriodInfo): number | null {
 /**
  * participantId: the view of one participant — only their accounts, and a family transfer counts (spending of the
  * sender, income of the receiver). Absent: the whole family — family transfers are excluded like internal ones.
+ * provider: only the accounts of that bank's connections. It narrows the accounts and nothing else: a transfer between
+ * the owner's accounts in two banks stays internal in every view.
  */
-export type Filters = { scope?: Scope; accountId?: string; participantId?: number };
+export type Filters = { scope?: Scope; accountId?: string; participantId?: number; provider?: ProviderId };
 
-/** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant if one is asked for. */
+/** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant and the bank if asked for. */
 function accountWhere(f: Filters, where: string[], args: Array<string | number>): void {
   where.push(`t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
-  if (f.participantId === undefined) return;
-  where.push('t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE pc.participant_id = ?)');
-  args.push(f.participantId);
+  const of: string[] = [];
+  if (f.participantId !== undefined) (of.push('pc.participant_id = ?'), args.push(f.participantId));
+  if (f.provider !== undefined) (of.push('pc.provider = ?'), args.push(f.provider));
+  if (of.length === 0) return;
+  where.push(`t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE ${of.join(' AND ')})`);
 }
 
 /**
@@ -121,6 +125,9 @@ export type SpendingFilters = Filters & { operationCurrency?: number };
 export function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
   if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
+  if (f.provider !== undefined && !(PROVIDER_IDS as readonly string[]).includes(f.provider)) {
+    throw new SummaryError(`provider: неизвестный банк «${String(f.provider).slice(0, 40)}»`);
+  }
 }
 
 async function labelsById(db: Db): Promise<Map<string, string>> {

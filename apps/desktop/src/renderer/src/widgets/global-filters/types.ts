@@ -1,4 +1,4 @@
-import type { ComputedRef, ShallowRef } from 'vue';
+import type { ComputedRef, Ref, ShallowRef } from 'vue';
 import type { ParticipantFilterMode } from '@/entities/participant';
 
 /** The parts of the filter row whose widths decide whether the person buttons fit in its middle. */
@@ -39,3 +39,15 @@ export type SyncStatusView = {
   /** On hover; '' = none. */
   tooltip: string;
 };
+
+export interface UseRefreshReturn {
+  /** The popover's select: `ALL_BANKS` or a provider id. */
+  bank: Ref<string>;
+  /** When the selection was last refreshed, worded. */
+  line: ComputedRef<string>;
+  /** Why the last refresh did not start; '' when it did. */
+  error: Ref<string>;
+  /** A request is in flight or an import runs: the button is off. */
+  busy: ComputedRef<boolean>;
+  refresh: () => Promise<void>;
+}

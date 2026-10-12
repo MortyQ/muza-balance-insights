@@ -9,8 +9,8 @@ const ERROR_TEXT: Readonly<Record<UpdateError, MessageKey>> = {
   mismatch: 'settings.update.error.mismatch',
 };
 
-/** The status line in settings. */
-export function updateLine(s: Readonly<UpdateState>): string {
+/** The status line in settings and in the banner. `importRunning`: a ready update cannot restart the app yet. */
+export function updateLine(s: Readonly<UpdateState>, importRunning = false): string {
   switch (s.phase) {
     case 'idle':
       return '';
@@ -23,7 +23,7 @@ export function updateLine(s: Readonly<UpdateState>): string {
     case 'downloading':
       return t('settings.update.downloading', { version: s.version, percent: s.percent });
     case 'ready':
-      return t('settings.update.ready', { version: s.version });
+      return t(importRunning ? 'settings.update.readyAfterImport' : 'settings.update.ready', { version: s.version });
     case 'saved':
       return t('settings.update.saved', { version: s.version, file: s.fileName });
     case 'error':

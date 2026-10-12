@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { ConnectionView, PeopleView, PersonView } from '@contract/api.ts';
+import type { ConnectionView, PeopleView, PersonView, ProviderKey } from '@contract/api.ts';
 import { t } from '@/shared/lib';
 import { useParticipantsRequest } from '../api/useParticipantsRequest.ts';
-import { FAMILY, SELECTED_KEY } from '../constants.ts';
+import { FAMILY, SELECTED_KEY, SELECTED_PROVIDER_KEY } from '../constants.ts';
 import { allAccountsOff } from '../utils.ts';
 
 function readSelected(): number | null {
@@ -23,11 +23,29 @@ function writeSelected(id: number): void {
   }
 }
 
+function readProvider(): string | null {
+  try {
+    return localStorage.getItem(SELECTED_PROVIDER_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeProvider(provider: string | null): void {
+  try {
+    if (provider === null) localStorage.removeItem(SELECTED_PROVIDER_KEY);
+    else localStorage.setItem(SELECTED_PROVIDER_KEY, provider);
+  } catch {
+    // Storage unavailable: the filter just starts at «All banks» next time.
+  }
+}
+
 /** People, their connections and token statuses (never a token: it does not leave main); the family / person view. */
 export const useParticipantStore = defineStore('participant', () => {
   const { fetchPeople } = useParticipantsRequest();
   const view = ref<PeopleView | null>(null);
   const chosen = ref<number>(readSelected() ?? FAMILY);
+  const chosenProvider = ref<string | null>(readProvider());
 
   // A person still waiting for the bank's name reads «New person» in the app's language.
   const people = computed<ReadonlyArray<PersonView>>(() =>
@@ -51,6 +69,19 @@ export const useParticipantStore = defineStore('participant', () => {
     return people.value.some((p) => p.id === chosen.value) ? chosen.value : null;
   });
 
+  /** The banks that have a connection, each once, in the order the connections come. */
+  const providers = computed<ProviderKey[]>(() => [...new Set(connections.value.map((c) => c.provider))]);
+  const multipleBanks = computed(() => providers.value.length > 1);
+  /** The bank the data screens show; null = every bank. With one bank there is nothing to narrow. */
+  const selectedProvider = computed<ProviderKey | null>(() =>
+    multipleBanks.value ? (providers.value.find((p) => p === chosenProvider.value) ?? null) : null,
+  );
+
+  function selectProvider(provider: ProviderKey | null): void {
+    chosenProvider.value = provider;
+    writeProvider(provider);
+  }
+
   function select(id: number): void {
     chosen.value = id;
     writeSelected(id);
@@ -69,5 +100,5 @@ export const useParticipantStore = defineStore('participant', () => {
     view.value = await fetchPeople();
   }
 
-  return { view, chosen, people, connections, hasConnections, anyToken, withoutToken, accountsOff, secureStorage, multiple, selectedId, select, labelOf, refresh };
+  return { view, chosen, people, connections, hasConnections, anyToken, withoutToken, accountsOff, secureStorage, multiple, selectedId, select, providers, multipleBanks, selectedProvider, selectProvider, labelOf, refresh };
 });

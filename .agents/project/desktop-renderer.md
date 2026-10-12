@@ -242,3 +242,16 @@
   в «Переименовать».
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.
+
+- **Bank filter and «Refresh» by bank** (spec `docs/superpowers/specs/2026-10-06-bank-filter-design.md`): the chosen
+  bank lives in `entities/participant` (`providers` — the connections' distinct providers, `multipleBanks`,
+  `selectedProvider` — null = all banks, remembered in `localStorage` `balance.provider`, a bank that is gone reads as
+  null; `selectProvider`). Everything below is hidden with one connected bank, and no request names a provider then.
+  `widgets/global-filters`: `components/BankFilter.vue` — a `VSelect` after `CurrencyToggle` (`bankOptions`,
+  `ALL_BANKS = 'all'`: reka-ui's select refuses an empty value); `components/RefreshPopover.vue` — an icon button next to
+  the sync status opening a `VPopover` with its own bank select, the last refresh of the selection (`lastRefreshOf`: the
+  oldest `lastSyncAt` among the bank's connections) and «Refresh» (`composables/useRefresh.ts` →
+  `api/useRefreshRequest.ts` → `refreshNow`; refusals worded by `REFRESH_ERRORS`; off while an import runs). The six
+  data composables send `provider` with `participantId` and reload on its change; what a block resets for another person
+  (card stack, the spending block's pick, the lists' search and filters) it resets for another bank. Tests:
+  `tests/renderer/bank-filter.test.ts`, `bank-requests.test.ts`, `bank-refresh.test.ts`.

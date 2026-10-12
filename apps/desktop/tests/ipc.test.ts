@@ -83,6 +83,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['startImport', ['2026-02-30']],
     ['startImport', []],
     ['startImport', ['2026-01-01', 'extra']],
+    ['refreshNow', []],
+    ['refreshNow', [{ provider: 'nobank' }]],
+    ['refreshNow', [{ extra: 1 }]],
     ['getSpendingOverview', []],
     ['getSpendingOverview', [{ month: '2026-09' }]],
     ['getSpendingOverview', [{ month: '2026-9', scope: 'personal' }]],
@@ -224,6 +227,32 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
   it('every method has at least one invalid case above', () => {
     const covered = new Set(INVALID.map(([m]) => m));
     for (const m of METHODS) expect(covered.has(m), m).toBe(true);
+  });
+
+  it('refreshNow: every bank or a known one; closed while locked and while the database is not ready', () => {
+    for (const q of [{}, { provider: 'monobank' }]) expect(ARG_SCHEMAS.refreshNow.safeParse([q]).success).toBe(true);
+    for (const args of [[], [{ provider: 'nobank' }], [{ provider: 'monobank', extra: 1 }], ['monobank']]) {
+      expect(ARG_SCHEMAS.refreshNow.safeParse(args).success).toBe(false);
+    }
+    expect(ALLOWED_WHEN_LOCKED as readonly string[]).not.toContain('refreshNow');
+    expect(ALLOWED_WHEN_DB_UNAVAILABLE as readonly string[]).not.toContain('refreshNow');
+    expect(METHODS).toContain('refreshNow');
+  });
+
+  it('the data channels take a known bank and refuse an unknown one', () => {
+    const base = {
+      getMonthOverview: { month: '2026-09' },
+      getSpendingOverview: { month: '2026-09', scope: 'personal' },
+      getNowOverview: {},
+      getCategoryOverview: { month: '2026-09', category: 'transport', scope: 'personal' },
+      getIncomeOverview: { month: '2026-09' },
+      getAnalyticsOverview: { from: '2026-08', to: '2026-09' },
+    } as const;
+    for (const [m, q] of Object.entries(base) as Array<[keyof typeof base, object]>) {
+      expect(ARG_SCHEMAS[m].safeParse([{ ...q, provider: 'monobank' }]).success, m).toBe(true);
+      expect(ARG_SCHEMAS[m].safeParse([{ ...q, provider: 'nobank' }]).success, m).toBe(false);
+      expect(ARG_SCHEMAS[m].safeParse([{ ...q, provider: 1 }]).success, m).toBe(false);
+    }
   });
 
   it('startImport takes a real YYYY-MM-DD date (the importer checks the range)', () => {

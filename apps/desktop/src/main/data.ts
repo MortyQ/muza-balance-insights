@@ -44,6 +44,7 @@ import type {
   NowOverview,
   NowOverviewQuery,
   OverviewAccount,
+  ProviderKey,
   SpendingAmounts,
   RatesView,
   SpendingCategoryView,
@@ -77,6 +78,11 @@ export type DataServiceDeps = {
 };
 
 /** Today's rates as the core's fold expects them (one rate for every period). */
+/** The bank part of a core filter: present only when the query names one. */
+function bankOf(q: { provider?: ProviderKey }): { provider?: ProviderKey } {
+  return q.provider !== undefined ? { provider: q.provider } : {};
+}
+
 function rateMap(r: RatesView | null): Map<number, FxRate> {
   return new Map((r?.list ?? []).map((x) => [x.currency, { rate: x.rate, nearest: false }]));
 }
@@ -117,6 +123,7 @@ export class DataService {
    */
   async monthOverview(q: MonthOverviewQuery): Promise<MonthOverview> {
     const db = await this.conn();
+    const bank = bankOf(q);
     const now = this.d.nowSec();
     const { from, to } = monthBounds(q.month);
     // The month's end as an instant in the user's zone: the balance, «current» and the sums follow the user's calendar.
@@ -147,7 +154,7 @@ export class DataService {
     };
 
     const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
-      const f = participantId === undefined ? {} : { participantId };
+      const f = { ...(participantId === undefined ? {} : { participantId }), ...bank };
       const balances = await balancesAt(db, { endSec, ...f });
       const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
       const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
@@ -181,7 +188,7 @@ export class DataService {
       }
       return { ...base, people, accounts: [], rates: today };
     }
-    const f = { participantId: q.participantId };
+    const f = { participantId: q.participantId, ...bank };
     const inc = await incomeSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const sp = await spendingSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const types = new Map((await db.execute('SELECT id, type FROM accounts')).rows.map((r) => [String(r.id), r.type === null ? null : String(r.type)]));
@@ -205,12 +212,13 @@ export class DataService {
    */
   async spendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview> {
     const db = await this.conn();
+    const bank = bankOf(q);
     const now = this.d.nowSec();
     const period = monthBounds(q.month);
     const status = await this.status();
     const tz = systemTimeZone();
     const summary = (p: { from: string; to: string }, participantId?: number) =>
-      spendingSummary(db, { ...p, tz, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}) }, now);
+      spendingSummary(db, { ...p, tz, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}), ...bank }, now);
 
     const head = await summary(period, q.participantId);
     const compare = comparePeriod(q.month, head.period, status.dataFrom);
@@ -293,7 +301,7 @@ export class DataService {
     const category = CATEGORY[q.category];
     const period = monthBounds(q.month);
     const status = await this.status();
-    const filters = { tz, scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}), ...bankOf(q) };
     const today = await this.d.rates();
     const rates = rateMap(today);
 
@@ -404,7 +412,7 @@ export class DataService {
     const tz = systemTimeZone();
     const period = monthBounds(q.month);
     const status = await this.status();
-    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}), ...bankOf(q) };
     const today = await this.d.rates();
     const rates = rateMap(today);
 
@@ -502,7 +510,7 @@ export class DataService {
     const today = localDate(now * 1000, tz);
     if (q.to > today.slice(0, 7)) throw new Error('analytics: the range ends after this month');
     const { dataFrom } = await this.status();
-    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}), ...bankOf(q) };
     const todayRates = await this.d.rates();
     const rates = rateMap(todayRates);
     const sum = (xs: Iterable<number>) => [...xs].reduce((s, x) => s + x, 0);
@@ -590,7 +598,7 @@ export class DataService {
     const month = monthBounds(today.slice(0, 7));
     const { dataFrom } = await this.status();
     const summary = (p: { from: string; to: string }, groupBy: 'day' | 'category') =>
-      spendingSummary(db, { ...p, tz, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+      spendingSummary(db, { ...p, tz, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}), ...bankOf(q) }, now);
 
     const todayRates = await this.d.rates();
     const rates = rateMap(todayRates);

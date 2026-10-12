@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
 import { useAppUpdateStore } from '@/entities/app-update';
+import { useImportProgressStore } from '@/entities/import-progress';
 import { SettingsList, SettingsRow, SettingsSection } from '@/shared/layout';
 import { VButton, VInfoNotice, VProgressBar, VSwitch } from '@/shared/ui';
 import UpdateActions from './components/UpdateActions.vue';
@@ -8,11 +9,12 @@ import { useUpdate } from './composables/useUpdate.ts';
 import { updateLine } from './utils.ts';
 
 const store = useAppUpdateStore();
+const importProgress = useImportProgressStore();
 const { error, check, download, install, setChecks } = useUpdate();
 const switchId = useId();
 
 const view = computed(() => store.view);
-const line = computed(() => (view.value ? updateLine(view.value.state) : ''));
+const line = computed(() => (view.value ? updateLine(view.value.state, importProgress.running) : ''));
 const checking = computed(() => store.phase === 'checking');
 const checksEnabled = computed({
   get: () => view.value?.checksEnabled ?? true,
@@ -35,7 +37,7 @@ const checksEnabled = computed({
             <span v-if="line" class="text-sm" :class="view.state.phase === 'error' ? 'text-danger' : 'text-foreground-muted'">{{ line }}</span>
           </div>
           <div class="flex flex-wrap items-center justify-end gap-2">
-            <UpdateActions :state="view.state" @download="download" @install="install" />
+            <UpdateActions :state="view.state" :import-running="importProgress.running" @download="download" @install="install" />
             <VButton
               variant="neutral"
               :text="$t('settings.update.checkNow')"

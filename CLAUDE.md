@@ -165,7 +165,10 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
   - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
-    `tokenBadge`, adding; then «History download» — `ImportFeature` from `features/import-statement`, composed in the
+    `tokenBadge`; «Add connection» sits next to the block's title (`SettingsSection` `#action`), a row keeps the token
+    state, «Accounts» and «Enter token» in one line and the rare actions in a `VPopover` menu; then «Auto-sync»
+    (`AutoSyncSettingsFeature`: the main switch, its triggers as `nested` rows of the same list; no menu item of its
+    own); then «History download» — `ImportFeature` from `features/import-statement`, composed in the
     widget: a list per bank (Monobank only for now), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
     `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
     back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
@@ -173,7 +176,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
-  - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
+  - Приложение: «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Language and time» (`LanguageSelectFeature`), «О программе».
   Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`. The history download is
   reached by `importLink(from?)` (`shared/config`: `section=connections`, `focus=import`, optional `from`); the page
@@ -181,9 +184,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   block: `widgets/home-notices` shows «No data yet» → «Download history» while nothing is imported (a line instead while
   the user's import runs), and, for a month picked before `dataFrom`, «{month}: no data yet» → «Download» from that
   month (`emptyMonth`). For that the month filter's lower bound is the import's floor month, not the first data month.
-- **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
-  `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
-  the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
+- **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note; slot `action` — a button
+  next to the title), `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the
+  right; `labelFor` makes the text the control's label; `nested` — a row that belongs to the row above). Every section uses them — the settings domain, `features/integrations` («Подключения»)
   and the settings widget («О программе»).
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the

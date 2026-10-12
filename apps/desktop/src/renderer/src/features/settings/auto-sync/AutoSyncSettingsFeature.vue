@@ -34,17 +34,17 @@ async function onTrigger(trigger: AutoSyncTrigger, e: Event): Promise<void> {
         <SettingsRow :title="$t('settings.autoSync.enabled')" :hint="$t('settings.autoSync.enabledHint')" :label-for="`${id}-enabled`">
           <VSwitch :id="`${id}-enabled`" :model-value="settings.enabled" :disabled="busy" role="switch" @change="onEnabled($event)" />
         </SettingsRow>
-      </SettingsList>
-      <SettingsList v-if="settings.enabled" :heading="$t('settings.autoSync.when')">
-        <SettingsRow v-for="tr in AUTO_SYNC_TRIGGERS" :key="tr" :title="$t(TRIGGER_LABELS[tr])" :label-for="`${id}-${tr}`">
-          <VSwitch
-            :id="`${id}-${tr}`"
-            :model-value="settings.triggers[tr]"
-            :disabled="busy"
-            role="switch"
-            @change="onTrigger(tr, $event)"
-          />
-        </SettingsRow>
+        <template v-if="settings.enabled">
+          <SettingsRow v-for="tr in AUTO_SYNC_TRIGGERS" :key="tr" :title="$t(TRIGGER_LABELS[tr])" :label-for="`${id}-${tr}`" nested>
+            <VSwitch
+              :id="`${id}-${tr}`"
+              :model-value="settings.triggers[tr]"
+              :disabled="busy"
+              role="switch"
+              @change="onTrigger(tr, $event)"
+            />
+          </SettingsRow>
+        </template>
       </SettingsList>
     </template>
     <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />

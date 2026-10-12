@@ -8,6 +8,8 @@ import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
 import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { monthOf } from '@/shared/lib';
+import BankFilter from './components/BankFilter.vue';
+import RefreshPopover from './components/RefreshPopover.vue';
 import SyncStatus from './components/SyncStatus.vue';
 import { useParticipantLayout } from './composables/useParticipantLayout.ts';
 import { failedConnections, syncStatusView } from './utils.ts';
@@ -44,7 +46,8 @@ const { mode } = useParticipantLayout({
     <!-- The filters every home block reads (person, month, currency); the app name and the settings button live in the
          window's title bar (widgets/app-header). Outside the home screen's scroll area: it stays put while the blocks
          scroll. The page sets its width (the grid's).
-         Person: buttons centred in the row, or a select before the month (useParticipantLayout). -->
+         Person: buttons centred in the row, or a select before the month (useParticipantLayout).
+         Bank: a select after the currency, only with more than one bank connected. -->
     <h1 class="sr-only">Balance Insights</h1>
     <div class="flex min-w-0 flex-wrap items-center gap-3">
       <template v-if="syncStatus.hasData">
@@ -53,14 +56,16 @@ const { mode } = useParticipantLayout({
           <PeriodRangeFilter v-if="ranged" :min="firstMonth" :data-from="syncStatus.status?.dataFrom ?? null" />
           <MonthFilter v-else :min="firstMonth" />
           <CurrencyToggle />
+          <BankFilter />
         </div>
       </template>
     </div>
     <div class="flex justify-center">
       <ParticipantFilter v-if="syncStatus.hasData && mode === 'buttons'" :failed />
     </div>
-    <div ref="right" class="justify-self-end whitespace-nowrap">
+    <div ref="right" class="flex items-center gap-1 justify-self-end whitespace-nowrap">
       <SyncStatus v-if="status.text" :view="status" />
+      <RefreshPopover />
     </div>
     <div ref="center" class="invisible absolute top-0 left-0 w-max" aria-hidden="true" inert>
       <ParticipantFilter v-if="syncStatus.hasData" :failed />
