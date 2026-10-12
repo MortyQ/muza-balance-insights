@@ -315,10 +315,21 @@
   `selectedProvider` — null = all banks, remembered in `localStorage` `balance.provider`, a bank that is gone reads as
   null; `selectProvider`). Everything below is hidden with one connected bank, and no request names a provider then.
   `widgets/global-filters`: `components/BankFilter.vue` — a `VSelect` after `CurrencyToggle` (`bankOptions`,
-  `ALL_BANKS = 'all'`: reka-ui's select refuses an empty value); `components/RefreshPopover.vue` — an icon button next to
-  the sync status opening a `VPopover` with its own bank select, the last refresh of the selection (`lastRefreshOf`: the
-  oldest `lastSyncAt` among the bank's connections) and «Refresh» (`composables/useRefresh.ts` →
-  `api/useRefreshRequest.ts` → `refreshNow`; refusals worded by `REFRESH_ERRORS`; off while an import runs). The six
+  `ALL_BANKS = 'all'`: reka-ui's select refuses an empty value; both and `optionProvider` — a select's value → a
+  connected bank or null — live in `entities/bank`); `components/RefreshPopover.vue` — an icon button next to
+  the sync status opening a `VPopover` with its own bank select, the last refresh of the selection and «Refresh».
+  The refresh itself is `features/bank-refresh`: `useRefresh(bank)` (the caller's bank, null = all;
+  `api/useRefreshRequest.ts` → `refreshNow`; `lastRefreshOf`: the oldest `lastSyncAt` among the bank's connections;
+  refusals worded by `REFRESH_ERRORS`; off while an import runs) and `BankRefreshFeature` (`provider` prop): the status
+  line (`refreshStatus`: an import or «Auto-sync» in progress, no saved token — a warning, else the last refresh) and
+  the button (`refreshButtonText`: «Refresh» with one bank, «Refresh all» / «Refresh {bank}» with several), off while
+  an import runs or no connection of the selection has a token (`hasTokenFor`); its root is `contents`, so the status
+  with the button and the refusal under them are items of the caller's row.
+  «Connections» in settings (`ConnectionsFeature`): a toolbar above the list — the section's own bank `VSelect`
+  (several banks only; a local choice, not `selectedProvider`; off while an import runs) and the slot
+  `#toolbar="{ provider }"`, where the settings widget puts `BankRefreshFeature`, shown with one bank too. The choice
+  narrows the list (`peopleOfBank`: a person without a connection there is left out); under a narrowed list —
+  «Connections shown: X of N» and «Show all». Tests: `tests/renderer/connections-bank.test.ts`. The six
   data composables send `provider` with `participantId` and reload on its change; what a block resets for another person
   (card stack, the spending block's pick, the lists' search and filters) it resets for another bank. Tests:
   `tests/renderer/bank-filter.test.ts`, `bank-requests.test.ts`, `bank-refresh.test.ts`.

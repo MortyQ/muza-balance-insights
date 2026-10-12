@@ -1,23 +1,22 @@
-import { computed, ref } from 'vue';
+import { type MaybeRefOrGetter, computed, ref, toValue } from 'vue';
+import type { ProviderKey } from '@contract/api.ts';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { failedText, t } from '@/shared/lib';
 import { useRefreshRequest } from '../api/useRefreshRequest.ts';
-import { ALL_BANKS, REFRESH_ERRORS } from '../constants.ts';
+import { REFRESH_ERRORS } from '../constants.ts';
 import type { UseRefreshReturn } from '../types.ts';
 import { lastRefreshOf, refreshLine } from '../utils.ts';
 
-/** «Refresh» for one bank or all of them: the popover's own choice of bank, not the data filter's. */
-export function useRefresh(): UseRefreshReturn {
+/** «Refresh» for one bank (`bank`) or, with null, all of them: the caller's own choice of bank, not the data filter's. */
+export function useRefresh(bank: MaybeRefOrGetter<ProviderKey | null>): UseRefreshReturn {
   const { refreshNow } = useRefreshRequest();
   const participant = useParticipantStore();
   const importProgress = useImportProgressStore();
-  const bank = ref<string>(ALL_BANKS);
   const error = ref('');
   const sending = ref(false);
 
-  const provider = computed(() => participant.providers.find((p) => p === bank.value) ?? null);
-  const line = computed(() => refreshLine(lastRefreshOf(participant.connections, provider.value), new Date()));
+  const line = computed(() => refreshLine(lastRefreshOf(participant.connections, toValue(bank)), new Date()));
   // Main refuses a second run anyway: the button says so before the click.
   const busy = computed(() => sending.value || importProgress.running);
 
@@ -26,7 +25,7 @@ export function useRefresh(): UseRefreshReturn {
     error.value = '';
     sending.value = true;
     try {
-      const r = await refreshNow(provider.value);
+      const r = await refreshNow(toValue(bank));
       if (!r.started) error.value = t(REFRESH_ERRORS[r.reason]);
     } catch {
       error.value = failedText();
@@ -35,5 +34,5 @@ export function useRefresh(): UseRefreshReturn {
     }
   }
 
-  return { bank, line, error, busy, refresh };
+  return { line, error, busy, refresh };
 }

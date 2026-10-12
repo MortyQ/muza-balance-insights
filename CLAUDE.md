@@ -165,7 +165,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
   - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
-    `tokenBadge`; «Add connection» sits next to the block's title (`SettingsSection` `#action`), a row keeps the token
+    `tokenBadge`; «Add connection» sits next to the block's title (`SettingsSection` `#action`); above the list a toolbar
+    with the section's own bank filter (several banks only) and `BankRefreshFeature` of `features/bank-refresh` in its
+    `#toolbar` slot — «Refresh» of the chosen bank or all; a row keeps the token
     state, «Accounts» and «Enter token» in one line and the rare actions in a `VPopover` menu; then «Auto-sync»
     (`AutoSyncSettingsFeature`: the main switch, its triggers as `nested` rows of the same list; no menu item of its
     own); then «History download» — `ImportFeature` from `features/import-statement`, composed in the

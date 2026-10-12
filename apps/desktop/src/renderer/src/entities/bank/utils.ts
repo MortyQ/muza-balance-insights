@@ -1,8 +1,9 @@
 import { currencyAlpha } from '@mono/core/currency';
 import type { AccountName } from '@contract/account-name.ts';
+import type { ProviderKey } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { t } from '@/shared/lib';
-import { BANKS, MONOBANK, MONOBANK_CARD_TYPES } from './constants.ts';
+import { ALL_BANKS, BANKS, MONOBANK, MONOBANK_CARD_TYPES } from './constants.ts';
 import type { Bank, BankId } from './types.ts';
 
 /**
@@ -19,6 +20,16 @@ export function bankLogo(id: BankId): string | null {
 /** The bank of a connection's provider; one this app does not know (a database from a newer version) shows as Monobank. */
 export function bankOf(id: string): Bank {
   return BANKS.find((b) => b.id === id) ?? MONOBANK;
+}
+
+/** The bank select: «All banks», then the connected banks by name. */
+export function bankOptions(providers: ReadonlyArray<ProviderKey>): Array<{ label: string; value: string }> {
+  return [{ label: t('home.filters.allBanks'), value: ALL_BANKS }, ...providers.map((p) => ({ label: t(bankOf(p).name), value: p }))];
+}
+
+/** The bank a select's value names: one of the connected banks, or null for «All banks» and for anything else. */
+export function optionProvider(providers: ReadonlyArray<ProviderKey>, value: string | number | null): ProviderKey | null {
+  return providers.find((p) => p === value) ?? null;
 }
 
 /** A card type's name from the bank's table; null type → «Card», a type the table lacks → as the bank sent it. */

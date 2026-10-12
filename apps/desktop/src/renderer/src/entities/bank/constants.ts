@@ -3,6 +3,9 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
 import type { Bank } from './types.ts';
 
+/** The bank select's value for «All banks»: not a provider id, and not empty (reka-ui's select keeps '' for «no value»). */
+export const ALL_BANKS = 'all';
+
 export const BANKS = [
   {
     id: 'monobank',

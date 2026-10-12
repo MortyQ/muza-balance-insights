@@ -17,6 +17,11 @@ English interface.
   refreshes; its triggers now sit right under the main switch. «Add connection» is at the top of the list.
 - **A tidier connection row.** The token status and the main action share one line with the bank's name; «Enter token
   again» and «Remove» moved into the «…» menu.
+- **«Refresh» in «Connections».** A «Refresh» button above the list of banks updates the data right away, and the line
+  next to it says when it was last updated. It is switched off, with the reason, while an import is running or when no
+  token is saved.
+- **Connections by bank.** With more than one bank connected, a «Bank» select above the list shows the connections of
+  one bank only, and «Refresh» then updates just that bank. «Show all» brings the whole list back.
 
 ## 0.1.9 — 2026-10-07
 

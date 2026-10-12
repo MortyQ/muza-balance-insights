@@ -460,6 +460,8 @@
       "percent": "{pct}%",
       "refresh": {
         "button": "Refresh",
+        "buttonAll": "Refresh all",
+        "buttonBank": "Refresh {bank}",
         "last": "Refreshed {when}",
         "never": "Not refreshed yet",
         "noToken": "No saved token for this bank.",
@@ -756,6 +758,8 @@
       "description": "The bank and the token the app reads your statement with. The token is read-only: it cannot move money. In «Accounts» you can switch an account off: it is not downloaded and is left out of the statistics.",
       "newTitle": "New {bank} connection",
       "none": "No connections yet.",
+      "shown": "Connections shown: {shown} of {total}.",
+      "showAll": "Show all",
       "note": "Connect someone else's account only with the token owner's consent. «Remove» erases the connection, its token and the downloaded transactions in this app; nothing changes at the bank.",
       "title": "Banks"
     },

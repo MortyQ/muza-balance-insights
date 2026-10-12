@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { bankOf } from '@/entities/bank';
+import { computed, onMounted, ref, useId } from 'vue';
+import type { ProviderKey } from '@contract/api.ts';
+import { ALL_BANKS, bankOf, bankOptions, optionProvider } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
 import { EXPAND_TRANSITION, t } from '@/shared/lib';
-import { VButton, VInfoNotice } from '@/shared/ui';
+import { VButton, VInfoNotice, VSelect } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
 import { DEFAULT_PROVIDER } from './constants.ts';
 import ConnectionRow from './shared/components/ConnectionRow.vue';
 import { useConnectionActions } from './shared/composables/useConnectionActions.ts';
-import { formsOf, newConnectionTitle } from './utils.ts';
+import { formsOf, newConnectionTitle, peopleOfBank } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
@@ -18,6 +19,21 @@ const { error, setToken, remove, accounts, loadAccounts, savingAccount, setAccou
 const newTitle = computed(() => newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name)));
 const adding = ref(false);
 const added = ref(false);
+
+// The section's own choice of bank: it narrows the list below and tells the toolbar's slot what to refresh. Not the
+// data filter of the home screens.
+const bankId = useId();
+const bank = ref<string>(ALL_BANKS);
+const provider = computed<ProviderKey | null>(() => optionProvider(participant.providers, bank.value));
+const bankValue = computed<string | number | null>({
+  // A bank whose last connection was removed reads as «All banks».
+  get: () => provider.value ?? ALL_BANKS,
+  set: (v) => {
+    if (typeof v === 'string') bank.value = v;
+  },
+});
+const people = computed(() => peopleOfBank(participant.people, provider.value));
+const shown = computed(() => people.value.reduce((n, p) => n + p.connections.length, 0));
 
 onMounted(() => void participant.refresh().catch(() => undefined));
 
@@ -64,8 +80,21 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
       </div>
     </Transition>
     <p v-if="!participant.hasConnections" class="text-foreground-secondary">{{ $t('integrations.connections.none') }}</p>
-    <template v-for="p in participant.people" :key="p.id">
-      <SettingsList v-if="p.connections.length > 0" :heading="p.label">
+    <!-- The bank filter (several banks only) and whatever the caller puts next to it: «Refresh» of the chosen bank. -->
+    <div
+      v-else-if="participant.multipleBanks || $slots.toolbar"
+      data-test="connections-toolbar"
+      class="flex flex-wrap items-center gap-3 rounded-xl border border-border-subtle bg-surface-raised px-3 py-2.5"
+    >
+      <div v-if="participant.multipleBanks" class="flex items-center gap-2">
+        <label :for="bankId" class="pl-1 font-semibold">{{ $t('home.filters.bank') }}</label>
+        <VSelect :id="bankId" v-model="bankValue" :options="bankOptions(participant.providers)" :disabled="importProgress.running" />
+      </div>
+      <span v-else class="pl-1 font-semibold">{{ $t('home.filters.refresh.title') }}</span>
+      <slot name="toolbar" :provider />
+    </div>
+    <template v-for="p in people" :key="p.id">
+      <SettingsList :heading="p.label">
         <ConnectionRow
           v-for="c in p.connections"
           :key="c.id"
@@ -83,6 +112,10 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
         />
       </SettingsList>
     </template>
+    <p v-if="provider !== null" data-test="connections-shown" class="flex flex-wrap items-center gap-2 text-sm text-foreground-muted">
+      {{ $t('integrations.connections.shown', { shown, total: participant.connections.length }) }}
+      <VButton variant="link" :text="$t('integrations.connections.showAll')" @click="bank = ALL_BANKS" />
+    </p>
     <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
     <VInfoNotice
       v-if="added"

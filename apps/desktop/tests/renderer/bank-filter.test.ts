@@ -83,7 +83,7 @@ describe('the bank select in the global filters', () => {
   };
 
   it('bankOptions: «All banks», then the connected banks by name', async () => {
-    const { bankOptions } = await import('@/widgets/global-filters/utils.ts');
+    const { bankOptions } = await import('@/entities/bank');
     expect(bankOptions(['monobank'])).toEqual([
       { label: 'Все банки', value: 'all' },
       { label: 'Monobank', value: 'monobank' },

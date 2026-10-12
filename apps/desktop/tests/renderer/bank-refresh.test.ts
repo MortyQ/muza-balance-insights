@@ -4,7 +4,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 import type { ConnectionView, PeopleView, PersonView, ProviderKey } from '@contract/api.ts';
 import type { StartImportResult } from '@contract/progress.ts';
 
@@ -34,10 +34,11 @@ async function setup(view: PeopleView) {
 }
 
 async function useHosted() {
-  const { useRefresh } = await import('@/widgets/global-filters/composables/useRefresh.ts');
+  const { useRefresh } = await import('@/features/bank-refresh');
+  const bank = ref<ProviderKey | null>(null);
   let r!: ReturnType<typeof useRefresh>;
-  mount(defineComponent({ setup: () => ((r = useRefresh()), () => null) }));
-  return r;
+  mount(defineComponent({ setup: () => ((r = useRefresh(bank)), () => null) }));
+  return { ...r, bank };
 }
 
 beforeEach(() => {
@@ -47,14 +48,14 @@ beforeEach(() => {
 
 describe('lastRefreshOf', () => {
   it('the oldest refresh among the bank\'s connections: «refreshed» never overstates', async () => {
-    const { lastRefreshOf } = await import('@/widgets/global-filters/utils.ts');
+    const { lastRefreshOf } = await import('@/features/bank-refresh/utils.ts');
     expect(lastRefreshOf(CONNECTIONS, 'monobank')).toBe('2026-03-10 10:00');
     expect(lastRefreshOf(CONNECTIONS, TESTBANK)).toBe('2026-03-10 09:00');
     expect(lastRefreshOf(CONNECTIONS, null)).toBe('2026-03-10 09:00');
   });
 
   it('null when one of them was never refreshed, or there is none', async () => {
-    const { lastRefreshOf } = await import('@/widgets/global-filters/utils.ts');
+    const { lastRefreshOf } = await import('@/features/bank-refresh/utils.ts');
     expect(lastRefreshOf([...CONNECTIONS, connection(4, 'monobank', null)], 'monobank')).toBeNull();
     expect(lastRefreshOf([...CONNECTIONS, connection(4, 'monobank', null)], TESTBANK)).toBe('2026-03-10 09:00');
     expect(lastRefreshOf([], null)).toBeNull();
@@ -66,7 +67,6 @@ describe('useRefresh', () => {
   it('all banks by default: asks main for every bank', async () => {
     await setup(TWO_BANKS);
     const r = await useHosted();
-    expect(r.bank.value).toBe('all');
     await r.refresh();
     expect(refreshNow).toHaveBeenCalledExactlyOnceWith({});
     expect(r.error.value).toBe('');
@@ -81,12 +81,10 @@ describe('useRefresh', () => {
     expect(refreshNow).toHaveBeenCalledExactlyOnceWith({ provider: TESTBANK });
   });
 
-  it('a value that is no connected bank means all banks', async () => {
-    await setup(TWO_BANKS);
-    const r = await useHosted();
-    r.bank.value = 'nobank';
-    await r.refresh();
-    expect(refreshNow).toHaveBeenCalledExactlyOnceWith({});
+  it('a select value that is no connected bank means all banks', async () => {
+    const { optionProvider } = await import('@/entities/bank');
+    const banks = ['monobank', TESTBANK] as const;
+    expect([optionProvider(banks, TESTBANK), optionProvider(banks, 'nobank'), optionProvider(banks, 'all')]).toEqual([TESTBANK, null, null]);
   });
 
   it.each([

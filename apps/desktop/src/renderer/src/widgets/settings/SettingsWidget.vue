@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
+import { BankRefreshFeature } from '@/features/bank-refresh';
 import { ImportFeature } from '@/features/import-statement';
 import { ConnectionsFeature } from '@/features/integrations';
 import {
@@ -27,8 +28,8 @@ const { section, importFrom = null, focusImport = false } = defineProps<{
 }>();
 const emit = defineEmits<{ select: [section: SettingsSection]; deleted: [] }>();
 
-// Composed below: «Storage and tokens» (the encryption row goes into its list) and «Connections» (the banks, auto-sync,
-// then the history download).
+// Composed below: «Storage and tokens» (the encryption row goes into its list) and «Connections» (the banks with
+// «Refresh» of the bank chosen there, auto-sync, then the history download).
 const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'connections'>, Component> = {
   people: PeopleFeature,
   lock: AppLockSettingsFeature,
@@ -53,7 +54,11 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'connections'>, Comp
         <DbEncryptionFeature />
       </StorageInfoFeature>
       <div v-else-if="section === 'connections'" key="connections" class="flex flex-col gap-12">
-        <ConnectionsFeature />
+        <ConnectionsFeature>
+          <template #toolbar="{ provider }">
+            <BankRefreshFeature :provider />
+          </template>
+        </ConnectionsFeature>
         <AutoSyncSettingsFeature />
         <ImportFeature :requested-from="importFrom" :focus="focusImport" />
       </div>
