@@ -1,0 +1,41 @@
+schema: spec-driven
+
+# Project context. Rules are NOT restated here: the root `CLAUDE.md` and `.agents/project/*.md` are authoritative.
+context: |
+  Balance Insights: a local personal-finance app on Monobank data; nothing leaves the user's computer.
+  pnpm monorepo: packages/core (@mono/core, platform-independent domain: providers, sync, categories, transfers,
+  refunds, aggregates, migrations), packages/db-libsql (Node libsql adapter), apps/mcp (stdio MCP server + CLI,
+  developer tool), apps/desktop (Electron + Vue 3 renderer in FSD layers, the main product).
+  Rules live in the root `CLAUDE.md` and in `.agents/project/*.md` (domain rules, MCP, desktop app, security, import,
+  renderer). Artifacts must reference them, never restate them; read the relevant file before writing a design.
+  One root `openspec/` serves the monorepo. Capability folders under `openspec/specs/` are prefixed by part:
+  `core-<capability>`, `desktop-<capability>`, `mcp-<capability>`. Capability and change names must not contain words
+  from the deny rules of `.claude/settings.json` (`sync`, `accounts`, `settings`, `overrides`, `recategorize`, ...).
+  The agent never sees real data, the token or the database: no artifact may contain amounts, names, card numbers,
+  IBANs or bank descriptions from real data.
+  All artifacts are written in English.
+
+rules:
+  proposal:
+    - State which packages / apps are affected
+    - Always state what is out of scope
+    - Say whether a trust anchor (root CLAUDE.md, "Trust anchors") changes; such a change is its own task group, done and verified before the rest
+    - Say whether the change is user-visible; if so, name the CHANGELOG.md entry it adds under the next unreleased version
+  design:
+    - Name the `.agents/project/*.md` files the change follows, and say which of them it updates
+    - For the renderer, plan the FSD placement (layer, slice, segments) before any file is written
+    - For a security-relevant change (network, IPC, storage, tokens, CSP, lock, encryption), say what it protects and what stays out of reach of the renderer
+    - Evaluate real alternatives and give a verdict, not "it depends"
+  tasks:
+    - "Each task group is one reviewable block and one commit: feat(<scope>): <block> (Conventional Commits)"
+    - Every new UI text is a key in uk.json, en.json and ru.json in the same task
+    - The last task runs `pnpm test` and `pnpm typecheck` at the root
+    - Things that can only be checked on a live system go to `docs/backlog.md`, not into a task the agent ticks
+
+operations:
+  apply:
+    guidance:
+      - Start only after the user has reviewed and approved the proposal
+  archive:
+    guidance:
+      - Archive only after the change is committed and its specs are synced

@@ -20,9 +20,11 @@
   "scripts": {
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "q": "node --import tsx apps/mcp/scripts/q.ts"
+    "q": "node --import tsx apps/mcp/scripts/q.ts",
+    "openspec:update": "OPENSPEC_TELEMETRY=0 openspec update"
   },
   "devDependencies": {
+    "@fission-ai/openspec": "1.14.1",
     "tsx": "^4.23.15"
   },
   "packageManager": "pnpm@12.6.0"
