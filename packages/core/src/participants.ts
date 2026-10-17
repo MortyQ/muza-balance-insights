@@ -2,7 +2,7 @@
 // data: it lives in this database only — never in the analysis copy, logs or the recategorize report.
 import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
-import { ConnectionError, PARTICIPANT_LABEL_MAX, parseProviderId } from './connections.ts';
+import { ConnectionError, PARTICIPANT_LABEL_MAX, parseConnectionMethod, parseProviderId, type ConnectionMethod } from './connections.ts';
 import type { Db } from './db.ts';
 import { TIMEZONE } from './constants.ts';
 import { dateIn, dateTimeIn } from './format.ts';
@@ -20,6 +20,7 @@ export type ConnectionInfo = {
   id: number;
   participantId: number;
   provider: ProviderId;
+  method: ConnectionMethod;
   accounts: number;
   /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
   enabledAccounts: number;
@@ -108,7 +109,7 @@ export function setParticipantColor(db: Db, id: number, color: ColorKey): Promis
  */
 export async function listConnections(db: Db, timeZone: string = TIMEZONE): Promise<ConnectionInfo[]> {
   const rs = await db.execute(
-    `SELECT c.id, c.participant_id, c.provider, COUNT(a.id) AS accounts,
+    `SELECT c.id, c.participant_id, c.provider, c.method, COUNT(a.id) AS accounts,
             SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
             MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
      FROM connections c
@@ -121,6 +122,7 @@ export async function listConnections(db: Db, timeZone: string = TIMEZONE): Prom
     id: Number(r.id),
     participantId: Number(r.participant_id),
     provider: parseProviderId(r.provider),
+    method: parseConnectionMethod(r.method),
     accounts: Number(r.accounts),
     enabledAccounts: Number(r.enabled_accounts ?? 0),
     coveredFrom: date(r.oldest),
@@ -130,12 +132,18 @@ export async function listConnections(db: Db, timeZone: string = TIMEZONE): Prom
 }
 
 /** A new connection has no colour (only people have one; the column stays for older rows). */
-export async function addConnection(db: Db, participantId: number, provider: ProviderId, nowSec: number): Promise<number> {
+export async function addConnection(
+  db: Db,
+  participantId: number,
+  provider: ProviderId,
+  nowSec: number,
+  method: ConnectionMethod = 'token',
+): Promise<number> {
   const p = await db.execute({ sql: 'SELECT 1 FROM participants WHERE id = ?', args: [participantId] });
   if (p.rows.length === 0) throw new ConnectionError('Такого участника нет');
   const rs = await db.execute({
-    sql: 'INSERT INTO connections (participant_id, provider, created_at) VALUES (?, ?, ?) RETURNING id',
-    args: [participantId, parseProviderId(provider), nowSec],
+    sql: 'INSERT INTO connections (participant_id, provider, method, created_at) VALUES (?, ?, ?, ?) RETURNING id',
+    args: [participantId, parseProviderId(provider), parseConnectionMethod(method), nowSec],
   });
   return Number(rs.rows[0]?.id);
 }

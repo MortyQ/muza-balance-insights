@@ -15,5 +15,8 @@ interface BankDisplay {
   monogramClass: string;
 }
 
-/** What the screens show about a bank; how to connect it lives in its folder in `features/integrations`. */
-export type Bank = BankDisplay & ({ status: 'available'; auth: BankAuth } | { status: 'soon' });
+/**
+ * What the screens show about a bank; how to connect it lives in its folder in `features/integrations`. `ways` — the
+ * ways the user may pick from, the first is the default.
+ */
+export type Bank = BankDisplay & ({ status: 'available'; ways: ReadonlyArray<BankAuth> } | { status: 'soon' });

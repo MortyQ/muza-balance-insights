@@ -39,7 +39,7 @@ describe('IntegrationsService', () => {
 
     const view = await people.list();
     expect(view.secureStorage).toBe(true);
-    expect(view.people.map((p) => [p.label, p.labelFromBank, p.labelPending, p.connections.map((x) => [x.bank, x.token.stored])])).toEqual([
+    expect(view.people.map((p) => [p.label, p.labelFromBank, p.labelPending, p.connections.map((x) => [x.bank, x.token?.stored])])).toEqual([
       ['Вигаданий Я', false, false, [['Monobank', 'secure'], ['Monobank', 'secure']]],
       [BANK_LABEL_PLACEHOLDER, true, true, [['Monobank', 'memory']]],
     ]);

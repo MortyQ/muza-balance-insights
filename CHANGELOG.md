@@ -3,6 +3,19 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.10 — unreleased
+
+### Connections
+
+- **Connect Monobank by a statement file.** When you add a connection, choose «Token» or «Statement file». With a
+  file there is no token: download a card statement as CSV in Ukrainian from the Monobank app, then press «Upload
+  statement» next to the connection and pick the file. Before anything is added you see how many operations the file
+  has, how many are already in the app and how many are new; uploading the same or an overlapping file again adds only
+  what is new. The data does not update by itself — upload a new statement when you want fresh numbers. The file is
+  read on this computer and is not kept. A statement in English or a FOP statement is not supported yet.
+- **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
+  many operations match, without adding anything.
+
 ## 0.1.9 — 2026-10-07
 
 ### Home screen

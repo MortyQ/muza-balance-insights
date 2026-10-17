@@ -9,6 +9,7 @@ import { VButton, VInfoNotice } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
 import { DEFAULT_PROVIDER } from './constants.ts';
 import ConnectionRow from './shared/components/ConnectionRow.vue';
+import StatementUploadFeature from './statement-file/StatementUploadFeature.vue';
 import { useConnectionActions } from './shared/composables/useConnectionActions.ts';
 import { formsOf, newConnectionTitle } from './utils.ts';
 
@@ -57,13 +58,23 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :token-field="formsOf(c.provider).tokenField"
           :accounts="accounts.get(c.id)"
           :card-types="formsOf(c.provider).cardTypes"
+          :statement-files="formsOf(c.provider).fileSteps !== null"
           :import-running="importProgress.running"
           :saving-account
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
           @remove="remove(c.id)"
           @open-accounts="loadAccounts(c.id)"
           @set-account-enabled="(accountId, enabled, done) => onSetAccountEnabled(c.id, accountId, enabled, done)"
-        />
+        >
+          <template #statement>
+            <StatementUploadFeature
+              v-if="formsOf(c.provider).fileSteps"
+              :connection="c"
+              :card-types="formsOf(c.provider).cardTypes"
+              :steps="formsOf(c.provider).fileSteps ?? []"
+            />
+          </template>
+        </ConnectionRow>
       </SettingsList>
     </template>
     <VInfoNotice v-if="error" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="error" />
