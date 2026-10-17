@@ -20,7 +20,7 @@ A local stdio MCP server: Monobank transactions → SQLite → ready-made spendi
 - `apps/mcp` (`@mono/mcp`): the MCP server, CLI, scripts, the anonymised copy (`analysis/*`), `.env` / the token (`config.ts`).
 - `apps/desktop` (`@mono/desktop`): stage 1, Electron.
 - `data/`, `.env`, `analysis/`, `reports/`, `docs/` are at the repo root (`REPO_ROOT` in `apps/mcp/src/paths.ts`).
-- Root scripts: `test`, `typecheck` (`pnpm -r`) and `q`. No other root proxies.
+- Root scripts: `test`, `typecheck` (`pnpm -r`), `q` and `openspec:update`. No other root proxies.
 - CLI arguments go through `cliArgs()` (`apps/mcp/src/args.ts`): pnpm passes `--` to the script as is;
   `apps/mcp/tests/cli-args.test.ts` checks this against real pnpm.
 
@@ -77,7 +77,9 @@ Rules:
 
 ## Process
 
-- Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok).
+- Work goes in phases with stops. A plan first; code only after the user's explicit «ок» (ok). For a new feature or a
+  behaviour change the plan is an OpenSpec change (`openspec/changes/<change>/`), and the «ок» is the user's review
+  of its proposal; the flow and what goes without a spec are in `.agents/claude/behavior.md`, «OpenSpec».
 - Before handing over: `pnpm test` and `pnpm typecheck` (at the root, `pnpm -r`).
 - **English only in the repository**: code comments, docs, agent instructions (`CLAUDE.md`, `.agents/`), specs, plans,
   briefs, reports, the backlog, commit messages and PR texts — no Russian (or Ukrainian) anywhere but the UI
@@ -111,6 +113,8 @@ been opened yet, read the relevant file yourself before editing.
 | `.agents/project/desktop-security.md` | CSP, fuses, network, app lock, database encryption, «Удалить все данные» | `apps/desktop/CLAUDE.md` |
 | `.agents/project/desktop-import.md` | the import worker, retries, tokens, IPC for people and connections | `apps/desktop/CLAUDE.md` |
 | `.agents/project/desktop-renderer.md` | FSD, "`shared/ui` first", styles, navigation | `apps/desktop/src/renderer/CLAUDE.md` (with the muzakit instructions) |
+| `openspec/specs/` | the living specs of a capability, before changing it | — |
+| `openspec/config.yaml` | the OpenSpec project context and the rules for proposal, design and tasks | — |
 | `docs/backlog.md` | plans and what has not been checked on a live system | — |
 | `CHANGELOG.md` | what users get in each version; the release description (rule in "Process") | — |
 
