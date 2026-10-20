@@ -160,7 +160,7 @@ app.whenReady().then(async () => {
     },
   });
   app.on('will-quit', () => rates.stop());
-  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current() });
+  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current(), log: (line) => process.stderr.write(`${line}\n`) });
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {

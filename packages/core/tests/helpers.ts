@@ -156,12 +156,15 @@ export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlA
  * lives is made in one place.
  */
 export async function insertTransactionRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
-  const full: Record<string, SqlArg> = { raw_json: '{}', ...row };
-  const cols = Object.keys(full);
-  await db.execute({
-    sql: `INSERT INTO transactions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
-    args: cols.map((c) => full[c] as SqlArg),
-  });
+  const { raw_json: raw = '{}', ...tx } = row;
+  const cols = Object.keys(tx);
+  await db.batch([
+    {
+      sql: `INSERT INTO transactions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+      args: cols.map((c) => tx[c] as SqlArg),
+    },
+    { sql: 'INSERT INTO transaction_raw (id, raw_json) VALUES (?, ?)', args: [tx.id as SqlArg, raw] },
+  ]);
 }
 
 /** The single Monobank connection of a test database (created on first use). */

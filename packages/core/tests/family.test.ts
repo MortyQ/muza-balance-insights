@@ -45,8 +45,8 @@ describe('family in the database and the aggregates', () => {
 
   const insertTx = (id: string, accountId: string, time: number, amount: number, mcc: number, description: string) =>
     db.execute({
-      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, raw_json, synced_at)
-            VALUES (?, ?, ?, '2026-02-10', ?, ?, 0, ?, 980, '{}', 0)`,
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, synced_at)
+            VALUES (?, ?, ?, '2026-02-10', ?, ?, 0, ?, 980, 0)`,
       args: [id, accountId, time, description, mcc, amount],
     });
   const row = async (id: string) =>

@@ -23,7 +23,7 @@ import {
   syncAccounts,
   type SyncContext,
 } from '../src/sync.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb, type FakeClock } from './helpers.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, insertTransactionRow, item, memoryDb, type FakeClock } from './helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());
@@ -217,11 +217,7 @@ describe('connections: list and delete', () => {
     await insertAccountRow(db, { id: 'her-black', connection_id: her.connection, kind: 'card', type: 'black', currency_code: 980, iban: 'UA00HER', balance: 7000, updated_at: 0 });
     const T = Date.UTC(2026, 1, 10, 12) / 1000;
     const tx = (id: string, account: string, time: number, amount: number, mcc: number, description: string) =>
-      db.execute({
-        sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, raw_json, synced_at)
-              VALUES (?, ?, ?, '2026-02-10', ?, ?, 0, ?, 980, '{}', 0)`,
-        args: [id, account, time, description, mcc, amount],
-      });
+      insertTransactionRow(db, { id, account_id: account, time, local_date: '2026-02-10', description, mcc, hold: 0, amount, currency_code: 980, synced_at: 0 });
     await tx('out', 'my-black', T, -100_000, 4829, 'Вигадана Особа');
     await tx('in', 'her-black', T + 3, 100_000, 4829, 'Від: Вигаданий Я');
     await tx('her-food', 'her-black', T + 700, -30_000, 5411, 'Вигаданий Магазин');
@@ -258,6 +254,7 @@ describe('connections: list and delete', () => {
 
     expect(await deleteConnection(db, her.connection)).toEqual({ accounts: 1, transactions: 2, participantRemoved: true });
     expect(await rows('SELECT id FROM accounts')).toEqual([{ id: 'my-black' }]);
+    expect(await rows('SELECT id FROM transaction_raw')).toEqual([{ id: 'out' }]);
     expect(await rows('SELECT id FROM transactions')).toEqual([{ id: 'out' }]);
     expect(await rows('SELECT * FROM sync_state')).toEqual([]);
     expect(await rows('SELECT * FROM api_calls')).toEqual([]);

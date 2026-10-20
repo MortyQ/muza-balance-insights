@@ -42,8 +42,8 @@ async function insertTx(
 ) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-            currency_code, commission_rate, category, raw_json, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 980, ?, ?, '{}', 0)`,
+            currency_code, commission_rate, category, synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, 980, ?, ?, 0)`,
     args: [
       id, accountId, time, toKyivDate(time), opts.description ?? '', opts.mcc ?? 4829,
       amount, amount, opts.commission ?? 0, opts.category ?? 'другое',

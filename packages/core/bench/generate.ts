@@ -259,19 +259,22 @@ export async function loadDataset(db: Db, ds: BenchDataset): Promise<void> {
   await db.batch(head);
   const CHUNK = 2000;
   for (let i = 0; i < ds.transactions.length; i += CHUNK) {
-    await db.batch(ds.transactions.slice(i, i + CHUNK).map(insertTx(now)));
+    await db.batch(ds.transactions.slice(i, i + CHUNK).flatMap(insertTx(now)));
   }
 }
 
 const insertTx =
   (syncedAt: number) =>
-  (t: BenchTx): Stmt => ({
-    sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-            currency_code, commission_rate, balance, counter_name, counter_iban, raw_json, synced_at, is_cancelled)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    args: [
-      t.id, t.accountId, t.time, toKyivDate(t.time), t.description, t.mcc, t.hold, t.amount,
-      t.operationAmount, t.currencyCode, t.commissionRate, t.balance, t.counterName, t.counterIban, t.rawJson, syncedAt,
-      t.isCancelled,
-    ] satisfies SqlArg[],
-  });
+  (t: BenchTx): Stmt[] => [
+    {
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
+              currency_code, commission_rate, balance, counter_name, counter_iban, synced_at, is_cancelled)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        t.id, t.accountId, t.time, toKyivDate(t.time), t.description, t.mcc, t.hold, t.amount,
+        t.operationAmount, t.currencyCode, t.commissionRate, t.balance, t.counterName, t.counterIban, syncedAt,
+        t.isCancelled,
+      ] satisfies SqlArg[],
+    },
+    { sql: 'INSERT INTO transaction_raw (id, raw_json) VALUES (?, ?)', args: [t.id, t.rawJson] },
+  ];

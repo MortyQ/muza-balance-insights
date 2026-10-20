@@ -269,8 +269,8 @@ export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window
 const UPSERT_TX = `INSERT INTO transactions (
     id, account_id, time, local_date, description, mcc, original_mcc, hold, amount, operation_amount,
     currency_code, commission_rate, cashback_amount, balance, comment, counter_name, counter_iban,
-    counter_edrpou, receipt_id, category, is_internal_transfer, is_cancelled, raw_json, synced_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)
+    counter_edrpou, receipt_id, category, is_internal_transfer, is_cancelled, synced_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
   ON CONFLICT(id) DO UPDATE SET
     account_id = excluded.account_id, time = excluded.time, local_date = excluded.local_date,
     description = excluded.description, mcc = excluded.mcc, original_mcc = excluded.original_mcc,
@@ -279,17 +279,21 @@ const UPSERT_TX = `INSERT INTO transactions (
     cashback_amount = excluded.cashback_amount, balance = excluded.balance, comment = excluded.comment,
     counter_name = excluded.counter_name, counter_iban = excluded.counter_iban,
     counter_edrpou = excluded.counter_edrpou, receipt_id = excluded.receipt_id,
-    is_cancelled = 0, raw_json = excluded.raw_json, synced_at = excluded.synced_at`;
+    is_cancelled = 0, synced_at = excluded.synced_at`;
 // On conflict, category / is_internal_transfer / transfer_* are left alone: the pass after the commit
 // recomputes them for the window (a row may already be marked internal).
 
-function upsertStatement(
+// The bank's item, kept apart from the row statistics scan; written right after its operation, in the same batch.
+const UPSERT_RAW = `INSERT INTO transaction_raw (id, raw_json) VALUES (?, ?)
+  ON CONFLICT(id) DO UPDATE SET raw_json = excluded.raw_json`;
+
+function upsertStatements(
   accountId: string,
   it: NormalizedTx,
   syncedAt: number,
   overrides: readonly CategoryOverride[],
   provider: ProviderId,
-): Stmt {
+): Stmt[] {
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
@@ -297,15 +301,18 @@ function upsertStatement(
     overrides,
   );
   // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).
-  return {
-    sql: UPSERT_TX,
-    args: [
-      it.id, accountId, it.time, toKyivDate(it.time), description, it.mcc, it.originalMcc ?? null,
-      it.hold ? 1 : 0, it.amount, it.operationAmount ?? null, it.currencyCode, it.commissionRate ?? null,
-      it.cashbackAmount ?? null, it.balance ?? null, it.comment ?? null, it.counterName ?? null, it.counterIban ?? null, it.counterEdrpou ?? null,
-      it.receiptId ?? null, category, it.raw, syncedAt,
-    ],
-  };
+  return [
+    {
+      sql: UPSERT_TX,
+      args: [
+        it.id, accountId, it.time, toKyivDate(it.time), description, it.mcc, it.originalMcc ?? null,
+        it.hold ? 1 : 0, it.amount, it.operationAmount ?? null, it.currencyCode, it.commissionRate ?? null,
+        it.cashbackAmount ?? null, it.balance ?? null, it.comment ?? null, it.counterName ?? null, it.counterIban ?? null, it.counterEdrpou ?? null,
+        it.receiptId ?? null, category, syncedAt,
+      ],
+    },
+    { sql: UPSERT_RAW, args: [it.id, it.raw] },
+  ];
 }
 
 /**
@@ -378,7 +385,7 @@ export async function commitRows(db: Db, input: CommitRowsInput): Promise<Commit
   }
 
   const overrides = await loadOverrides(db);
-  const stmts: Stmt[] = [...(input.before ?? []), ...items.map((it) => upsertStatement(accountId, it, nowSec, overrides, input.provider))];
+  const stmts: Stmt[] = [...(input.before ?? []), ...items.flatMap((it) => upsertStatements(accountId, it, nowSec, overrides, input.provider))];
   if (cancelIds.length > 0) {
     stmts.push({
       sql: `UPDATE transactions SET is_cancelled = 1, synced_at = ?

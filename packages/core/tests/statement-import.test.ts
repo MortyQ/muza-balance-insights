@@ -50,6 +50,19 @@ describe('a file connection', () => {
       { oldest_synced_time: kyiv('2026-10-03T09:05:11'), newest_synced_time: kyiv('2026-10-07T12:15:42') },
     ]);
     expect((await rows('SELECT COUNT(*) AS n FROM transactions'))[0]?.n).toBe(5);
+    // Each row's payload is the file's own row, stored apart, next to its operation.
+    const payload = await rows('SELECT r.raw_json FROM transaction_raw r JOIN transactions t ON t.id = r.id');
+    expect(payload.map((r) => String(r.raw_json)).sort()).toEqual(st.rows.map((r) => r.raw).sort());
+  });
+
+  it('an upload whose write fails leaves no account, no operation and no payload', async () => {
+    const conn = await fileConnection();
+    const st = card();
+    const broken = { ...st, rows: st.rows.map((r, i) => (i === 3 ? { ...r, raw: null as unknown as string } : r)) };
+    await expect(commitStatement(db, conn, broken, { kind: 'new', id: 'file-card-1', type: 'black' }, 999)).rejects.toThrow();
+    for (const table of ['accounts', 'transactions', 'transaction_raw', 'sync_state']) {
+      expect((await rows(`SELECT COUNT(*) AS n FROM ${table}`))[0]?.n, table).toBe(0);
+    }
   });
 
   it('the same file twice adds nothing; an overlapping newer file adds only its new rows and moves the balance', async () => {

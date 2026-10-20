@@ -70,8 +70,8 @@ describe('db migrations', () => {
     db = await openDb(':memory:');
     await expect(
       db.execute(
-        `INSERT INTO transactions (id, account_id, time, local_date, mcc, hold, amount, currency_code, raw_json, synced_at)
-         VALUES ('t1', 'missing', 0, '1970-01-01', 5411, 0, -1, 980, '{}', 0)`,
+        `INSERT INTO transactions (id, account_id, time, local_date, mcc, hold, amount, currency_code, synced_at)
+         VALUES ('t1', 'missing', 0, '1970-01-01', 5411, 0, -1, 980, 0)`,
       ),
     ).rejects.toThrow(/FOREIGN KEY/i);
     await expect(

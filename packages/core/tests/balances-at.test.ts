@@ -22,8 +22,8 @@ async function account(id: string, balance: number, o: { creditLimit?: number; k
 }
 async function tx(accountId: string, time: number, amount: number, balance: number | null, cancelled = 0) {
   await db.execute({
-    sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, balance, is_cancelled, raw_json, synced_at)
-          VALUES (?, ?, ?, '2026-07-01', '', 5411, 0, ?, 980, ?, ?, '{}', 0)`,
+    sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, balance, is_cancelled, synced_at)
+          VALUES (?, ?, ?, '2026-07-01', '', 5411, 0, ?, 980, ?, ?, 0)`,
     args: [`t${++seq}`, accountId, time, amount, balance, cancelled],
   });
 }

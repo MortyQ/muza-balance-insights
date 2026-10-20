@@ -3,8 +3,10 @@ import { RESYNC_OVERLAP_SEC } from '../src/constants.ts';
 import { MAX_STATEMENT_WINDOW_SEC } from '../src/providers/monobank/constants.ts';
 import type { Db } from '../src/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
+import type { NormalizedTx } from '../src/providers/types.ts';
 import {
   WINDOW_SEC,
+  commitRows,
   commitWindow,
   defaultAccountSelection,
   getSyncState,
@@ -211,6 +213,32 @@ describe('upsert & holds', () => {
     clock.advance(60_000);
     await syncWindow(ctx, 'a', { from: 1000, to: 2000 });
     expect(await txRows()).toMatchObject([{ id: 'h1', hold: 0, amount: -9_870, cancelled: 0 }]);
+  });
+
+  it("the bank's item is stored apart, next to its operation; a re-fetch replaces it", async () => {
+    db = await memoryDb();
+    await insertAccount(db, 'a');
+    const statements: Record<string, RawItem[]> = { a: [item('p1', 1500, -10_000, { hold: true })] };
+    const { ctx, clock } = makeCtx(fakeMonobank({ statements }));
+    await syncWindow(ctx, 'a', { from: 1000, to: 2000 });
+    const raw = async () => (await db.execute('SELECT id, raw_json FROM transaction_raw')).rows.map((r) => ({ id: r.id, item: JSON.parse(String(r.raw_json)) }));
+    expect(await raw()).toMatchObject([{ id: 'p1', item: { id: 'p1', amount: -10_000, hold: true } }]);
+
+    statements.a = [item('p1', 1500, -9_870, { hold: false })];
+    clock.advance(60_000);
+    await syncWindow(ctx, 'a', { from: 1000, to: 2000 });
+    expect(await raw()).toMatchObject([{ id: 'p1', item: { id: 'p1', amount: -9_870, hold: false } }]);
+  });
+
+  it('a window whose write fails leaves neither an operation nor a payload, nor coverage', async () => {
+    db = await memoryDb();
+    await insertAccount(db, 'a');
+    const tx = (id: string, raw: string | null): NormalizedTx => ({ id, time: 1500, amount: -100, currencyCode: 980, hold: false, mcc: 5411, raw: raw as string });
+    await expect(
+      commitRows(db, { provider: 'monobank', accountId: 'a', window: { from: 1000, to: 2000 }, items: [tx('ok', '{}'), tx('bad', null)], nowSec: 1, cancelHolds: true }),
+    ).rejects.toThrow();
+    const count = async (table: string) => Number((await db.execute(`SELECT COUNT(*) AS n FROM ${table}`)).rows[0]?.n);
+    expect([await count('transactions'), await count('transaction_raw'), await count('sync_state')]).toEqual([0, 0, 0]);
   });
 
   it('hold missing on re-fetch → is_cancelled = 1; reappears → 0; non-hold missing → untouched + warning', async () => {

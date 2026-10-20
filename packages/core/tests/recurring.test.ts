@@ -26,8 +26,8 @@ async function tx(
   const id = `t${++seq}`;
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-            commission_rate, category, is_internal_transfer, scope, is_cancelled, raw_json, synced_at, counter_iban)
-          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), 0, ?, ?, 'personal', 0, '{}', 0, ?)`,
+            commission_rate, category, is_internal_transfer, scope, is_cancelled, synced_at, counter_iban)
+          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), 0, ?, ?, 'personal', 0, 0, ?)`,
     args: [
       id, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? 'Streamio', o.mcc ?? 5815, amount, o.opAmount ?? amount, o.opCurrency ?? null,
       accountId, o.category ?? 'связь и цифровые сервисы', o.internal ? 1 : 0, o.iban ?? null,

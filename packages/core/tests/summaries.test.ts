@@ -45,8 +45,8 @@ async function tx(
   // Operation currency defaults to the account currency, as for most real rows.
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-            commission_rate, category, is_internal_transfer, scope, is_cancelled, raw_json, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, '{}', 0)`,
+            commission_rate, category, is_internal_transfer, scope, is_cancelled, synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, 0)`,
     args: [
       id, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? '', o.mcc ?? 5411, o.hold ? 1 : 0, amount, o.opAmount ?? amount,
       o.opCurrency ?? null, accountId, o.commission ?? 0, o.category ?? 'продукты', o.internal ? 1 : 0, o.scope ?? 'personal', o.cancelled ? 1 : 0,

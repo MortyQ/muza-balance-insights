@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { migrate, SCHEMA_VERSION } from '@mono/core/db';
-import { insertAccount } from '@mono/core/test-helpers';
+import { insertAccount, insertTransactionRow } from '@mono/core/test-helpers';
 import { openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { encryptDatabase, encryptingFiles, MIGRATION_STEPS, type EncryptDeps } from '../src/main/db/encrypt.ts';
 
@@ -27,6 +27,11 @@ async function makePlain() {
   const db = await openLibsql(`file:${file}`);
   await migrate(db, 1_700_000_000);
   await insertAccount(db, 'acc-1');
+  // The bank's payload lives in its own table (transaction_raw): it is copied and encrypted like the rest.
+  await insertTransactionRow(db, {
+    id: 'tx-1', account_id: 'acc-1', time: 1_700_000_000, local_date: '2023-11-14', mcc: 5411, hold: 0, amount: -100,
+    currency_code: 980, synced_at: 0, raw_json: JSON.stringify({ description: CANARY }),
+  });
   await db.execute({ sql: "INSERT INTO category_overrides (pattern, match_type, category) VALUES (?, 'exact', 'кафе')", args: [CANARY] });
   await db.execute("INSERT INTO category_overrides (pattern, match_type, category) VALUES ('Вигадана Кавʼярня', 'contains', 'кафе')");
   await db.execute("DELETE FROM category_overrides WHERE pattern = 'Вигадана Кавʼярня'");
@@ -59,6 +64,7 @@ describe('encryptDatabase', () => {
     await makePlain();
     const before = await snapshot();
     expect(before.rows.sqlite_sequence!.length).toBeGreaterThan(0);
+    expect(before.rows.transaction_raw).toHaveLength(1);
     const d = deps();
     expect(await encryptDatabase(d)).toEqual({ ok: true });
     expect(fs.readFileSync(file).subarray(0, 15).toString('latin1')).not.toBe('SQLite format 3');

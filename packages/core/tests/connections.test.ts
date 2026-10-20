@@ -54,18 +54,25 @@ describe('migration v8', () => {
       indexes: await indexes(db),
     };
 
-    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14, 15]);
+    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16]);
 
     expect(await rows(db, 'SELECT id, label, created_at FROM participants')).toEqual([{ id: 1, label: 'Я', created_at: 222 }]);
     expect(await rows(db, 'SELECT id, participant_id, provider, external_client_id FROM connections')).toEqual([
       { id: 1, participant_id: 1, provider: 'monobank', external_client_id: null },
     ]);
     expect(await rows(db, 'SELECT * FROM accounts ORDER BY id')).toEqual(before.accounts.map((a) => ({ ...a, connection_id: 1, sync_choice: null })));
-    expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(before.transactions);
+    // v16 moves the payload to transaction_raw and adds crossing_category (filled by derived.ts).
+    expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(
+      before.transactions.map(({ raw_json: _raw, ...t }) => ({ ...t, crossing_category: null })),
+    );
+    expect(await rows(db, 'SELECT id, raw_json FROM transaction_raw ORDER BY id')).toEqual(
+      before.transactions.map((t) => ({ id: t.id, raw_json: t.raw_json })),
+    );
     expect(await rows(db, 'SELECT * FROM sync_state ORDER BY account_id')).toEqual(before.sync);
     expect(await rows(db, 'SELECT connection_id FROM api_calls')).toEqual([{ connection_id: 1 }]);
     expect(await rows(db, 'PRAGMA foreign_key_check')).toEqual([]);
-    expect(await indexes(db)).toEqual([...before.indexes, 'idx_accounts_connection'].sort());
+    const droppedByV16 = ['idx_tx_category', 'idx_tx_description', 'idx_tx_local_date', 'idx_tx_scope'];
+    expect(await indexes(db)).toEqual([...before.indexes.filter((i) => !droppedByV16.includes(i)), 'idx_accounts_connection'].sort());
     expect(await rows(db, "SELECT name FROM sqlite_master WHERE name = 'accounts_old'")).toEqual([]);
     // The new tables still enforce their references and checks.
     await expect(db.execute(`INSERT INTO accounts (id, connection_id, kind, currency_code, balance, updated_at) VALUES ('x', 99, 'card', 980, 0, 0)`)).rejects.toThrow(/FOREIGN KEY/i);

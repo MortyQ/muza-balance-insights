@@ -22,7 +22,7 @@ let seq = 0;
 async function tx(time: number, amount: number, o: { category?: string; account?: string; opCurrency?: number; opAmount?: number; rule?: string; description?: string } = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-            category, transfer_rule, raw_json, synced_at) VALUES (?, ?, ?, ?, ?, 5411, 0, ?, ?, ?, ?, ?, '{}', 0)`,
+            category, transfer_rule, synced_at) VALUES (?, ?, ?, ?, ?, 5411, 0, ?, ?, ?, ?, ?, 0)`,
     args: [`t${++seq}`, o.account ?? 'black', time, toKyivDate(time), o.description ?? '', amount, o.opAmount ?? amount, o.opCurrency ?? 980,
       o.category ?? 'продукты', o.rule ?? null],
   });

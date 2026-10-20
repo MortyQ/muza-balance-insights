@@ -35,7 +35,7 @@ describe('migration v11', () => {
     await db.execute(`INSERT INTO connections (id, participant_id, provider, created_at) VALUES (1, 1, 'monobank', 0)`);
     await db.execute(`INSERT INTO accounts (id, connection_id, kind, currency_code, balance, updated_at) VALUES ('a', 1, 'card', 980, 0, 0)`);
 
-    expect(await migrate(db, 0)).toEqual([11, 12, 13, 14, 15]);
+    expect(await migrate(db, 0)).toEqual([11, 12, 13, 14, 15, 16]);
     expect(await rows('SELECT id, sync_choice FROM accounts')).toEqual([{ id: 'a', sync_choice: null }]);
     await expect(db.execute(`UPDATE accounts SET sync_choice = 2 WHERE id = 'a'`)).rejects.toThrow(/CHECK/i);
   });
@@ -136,8 +136,8 @@ describe('statistics without disabled accounts (variant A for transfers)', () =>
 
   const insertTx = (id: string, accountId: string, time: number, amount: number, mcc: number, description: string, o: { hold?: number; counterIban?: string } = {}) =>
     db.execute({
-      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, counter_iban, raw_json, synced_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 980, ?, '{}', 0)`,
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, counter_iban, synced_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 980, ?, 0)`,
       args: [id, accountId, time, toKyivDate(time), description, mcc, o.hold ?? 0, amount, o.counterIban ?? null],
     });
   const net = (s: { groups: Array<{ key: string; net: number }> }) => Object.fromEntries(s.groups.map((g) => [g.key, g.net]));
@@ -297,8 +297,8 @@ describe('transfers made after the toggle: no pair, marked `text` by the provide
   let seq = 0;
   const tx = (id: string, accountId: string, amount: number, description: string) =>
     db.execute({
-      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, raw_json, synced_at)
-            VALUES (?, ?, ?, '2026-02-10', ?, 4829, 0, ?, 980, '{}', 0)`,
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, synced_at)
+            VALUES (?, ?, ?, '2026-02-10', ?, 4829, 0, ?, 980, 0)`,
       args: [id, accountId, T + 1000 * ++seq, description, amount],
     });
   const net = (s: { groups: Array<{ key: string; net: number }> }) => Object.fromEntries(s.groups.map((g) => [g.key, g.net]));
@@ -375,7 +375,7 @@ describe('exchange rates without disabled accounts', () => {
   const row = (accountId: string, date: string, amount: number, opCurrency: number, opAmount: number, pairId: string | null = null) =>
     db.execute({
       sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-              transfer_rule, transfer_pair_id, is_internal_transfer, raw_json, synced_at) VALUES (?, ?, ?, ?, '', 4829, 0, ?, ?, ?, 'pair_fx', ?, 1, '{}', 0)`,
+              transfer_rule, transfer_pair_id, is_internal_transfer, synced_at) VALUES (?, ?, ?, ?, '', 4829, 0, ?, ?, ?, 'pair_fx', ?, 1, 0)`,
       args: [`fx${++seq}`, accountId, kyivStartOfDay(date) + 12 * 3600 + seq, date, amount, opAmount, opCurrency, pairId],
     });
   const SEP = { from: '2026-09-01', to: '2026-09-30' };

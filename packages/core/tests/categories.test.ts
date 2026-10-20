@@ -63,8 +63,8 @@ describe('recategorize (DB)', () => {
     const ins = (id: string, mcc: number, amount: number, counter: string | null, internal = 0) =>
       db.execute({
         sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code,
-                counter_name, is_internal_transfer, raw_json, synced_at)
-              VALUES (?, 'black', 1, '2026-08-05', '', ?, 0, ?, 980, ?, ?, '{}', 0)`,
+                counter_name, is_internal_transfer, synced_at)
+              VALUES (?, 'black', 1, '2026-08-05', '', ?, 0, ?, 980, ?, ?, 0)`,
         args: [id, mcc, amount, counter, internal],
       });
     await ins('shop', 5411, -100, null);

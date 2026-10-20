@@ -17,7 +17,7 @@ async function acc(id: string, currency: number) {
 async function row(accountId: string, date: string, amount: number, opCurrency: number, opAmount: number, o: { rule?: string | null; cancelled?: number; timeOffsetSec?: number } = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-            is_cancelled, transfer_rule, raw_json, synced_at) VALUES (?, ?, ?, ?, '', 4829, 0, ?, ?, ?, ?, ?, '{}', 0)`,
+            is_cancelled, transfer_rule, synced_at) VALUES (?, ?, ?, ?, '', 4829, 0, ?, ?, ?, ?, ?, 0)`,
     args: [`t${++seq}`, accountId, kyivStartOfDay(date) + 12 * 3600 + (o.timeOffsetSec ?? 0), date, amount, opAmount, opCurrency, o.cancelled ?? 0,
       o.rule === undefined ? 'pair_fx' : o.rule],
   });

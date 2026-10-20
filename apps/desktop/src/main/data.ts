@@ -97,6 +97,8 @@ export type DataServiceDeps = {
   nowSec: () => number;
   /** Today's rates (RatesService.current); null — never fetched. */
   rates: () => Promise<RatesView | null>;
+  /** Diagnostics: one line, no data. */
+  log?: (line: string) => void;
 };
 
 /** Today's rates as the core's fold expects them (one rate for every period). */
@@ -118,7 +120,9 @@ export class DataService {
     if (this.db) return this.db;
     const opening = this.d.open().then(async (db) => {
       try {
-        await migrate(db, this.d.nowSec());
+        await migrate(db, this.d.nowSec(), (r) =>
+          this.d.log?.(`[db] compaction ${r.ok ? 'done' : `failed: ${r.error instanceof Error ? r.error.name : 'error'}`}`),
+        );
       } catch (err) {
         db.close();
         throw err;

@@ -20,7 +20,7 @@
 
 ## 2. Bank payload out of the scanned table — `feat(core): transaction payload table`
 
-- [ ] 2.1 Add migration 16 (design D1, D5):
+- [x] 2.1 Add migration 16 (design D1, D5):
   - rebuild `transactions` with hot columns first, no `raw_json`, the new `crossing_category`, and `mcc` without
     `NOT NULL`;
   - create `transaction_raw` with `ON DELETE CASCADE` and copy the payload;
@@ -28,18 +28,19 @@
   - keep `idx_tx_time`, `idx_tx_account_time` and the pair indexes, and drop the others.
   - Verify: a migration test on a fictional v15 database checks row counts, payload equality, `PRAGMA
     foreign_key_check` and `integrity_check`, and that a row with a NULL `mcc` is accepted.
-- [ ] 2.2 Add an optional `compact` flag to `MIGRATIONS` entries. `migrate()` runs `VACUUM` after such a migration,
-  outside its transaction, best-effort, and returns whether compaction ran.
+- [x] 2.2 Add an optional `compact` flag to `MIGRATIONS` entries. `migrate()` runs `VACUUM` after such a migration,
+  outside its transaction, best-effort, and reports the result to the caller (an optional `onCompaction` callback;
+  desktop main logs it).
   - Verify: tests cover a successful compaction (the file shrinks), and a failing one where the migration stays
     applied and the failure is reported.
-- [ ] 2.3 Make `commitRows`' upsert write `transaction_raw` in the same `batch` (the API import and statement uploads).
+- [x] 2.3 Make `commitRows`' upsert write `transaction_raw` in the same `batch` (the API import and statement uploads).
   - Verify: `sync.test.ts` and `statement-import.test.ts` assert the payload is stored, and that a failed batch leaves
     neither row.
-- [ ] 2.4 Check that `deleteConnection` removes the payload by cascade, that `export:analysis` still copies exactly
+- [x] 2.4 Check that `deleteConnection` removes the payload by cascade, that `export:analysis` still copies exactly
   its whitelisted columns, and that the desktop's database encryption (`encrypt.ts`) copies the new tables.
   - Verify: `participants.test.ts`, the `apps/mcp` analysis tests and the desktop encryption test pass with their
     assertions extended.
-- [ ] 2.5 Add to `docs/backlog.md` the things to check on a live system:
+- [x] 2.5 Add to `docs/backlog.md` the things to check on a live system:
   - the first-launch migration and compaction time on a real database;
   - the real payload size compared with the 1 KB assumption.
   - Verify: the backlog lists them.

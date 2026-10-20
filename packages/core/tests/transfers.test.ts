@@ -180,7 +180,7 @@ afterEach(() => db.close());
 async function insertTx(id: string, accountId: string, time: number, amount: number, description: string, mcc = 4829, operationAmount = amount) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-            currency_code, raw_json, synced_at) VALUES (?, ?, ?, '2026-08-05', ?, ?, 0, ?, ?, 980, '{}', 0)`,
+            currency_code, synced_at) VALUES (?, ?, ?, '2026-08-05', ?, ?, 0, ?, ?, 980, 0)`,
     args: [id, accountId, time, description, mcc, amount, operationAmount],
   });
 }
