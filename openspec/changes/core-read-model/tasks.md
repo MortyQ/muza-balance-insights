@@ -2,19 +2,19 @@
 
 ## 1. Performance harness and baseline — `feat(core): performance harness`
 
-- [ ] 1.1 Add `packages/core/bench/generate.ts`: a seeded generator of fictional data.
+- [x] 1.1 Add `packages/core/bench/generate.ts`: a seeded generator of fictional data.
   - It covers two participants, cards in two currencies, a jar disabled by the auto rule, and transfers (pair,
     pair_fx, pair_fee, iban, text, family).
   - It also covers refunds, holds, commissions, and a payload of about 1 KB per operation.
   - Verify: a unit test asserts the same seed gives the same rows, and that the rows contain no real-looking IBAN or
     name.
-- [ ] 1.2 Add `packages/core/bench/run.ts` and `bench/budgets.ts`, plus a `bench` script in
+- [x] 1.2 Add `packages/core/bench/run.ts` and `bench/budgets.ts`, plus a `bench` script in
   `packages/core/package.json` (`node --import tsx bench/run.ts`).
   - The script measures one month by category, income by source, 12 months by month, 12 months by day, the
     «Spending»-equivalent set, the full re-derivation and `balancesAt`.
   - It runs on an encrypted temp file, prints a table, and exits non-zero when a case exceeds its budget.
   - Verify: `pnpm --filter @mono/core bench` runs and prints the baseline.
-- [ ] 1.3 Record the baseline table in the change folder (`openspec/changes/core-read-model/baseline.md`). Set the
+- [x] 1.3 Record the baseline table in the change folder (`openspec/changes/core-read-model/baseline.md`). Set the
   temporary budgets at baseline + 20%.
   - Verify: the bench passes against them.
 
