@@ -109,8 +109,14 @@ function accountWhere(f: Filters, where: string[], args: Array<string | number>)
  * that crosses to a disabled account (crossing_category is set, derived.ts: such a row is an ordinary operation).
  */
 // COALESCE: transfer_rule is NULL for most rows, and «0 OR NULL» is NULL, not 0.
-const excludedTransferSql = (f: Filters) =>
-  `(t.crossing_category IS NULL AND ${f.participantId === undefined ? `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')` : '(t.is_internal_transfer = 1)'})`;
+const excludedTransferSql = (personView: boolean) =>
+  `(t.crossing_category IS NULL AND ${personView ? '(t.is_internal_transfer = 1)' : `(t.is_internal_transfer = 1 OR COALESCE(t.transfer_rule, '') = 'family')`})`;
+
+/**
+ * The participant view's rules (family transfers count) — for one participant, or for every one at once when grouped
+ * by participant: each row belongs to the participant who owns its account, so each group is that participant's view.
+ */
+const personView = (q: Filters & { groupBy?: string }) => q.participantId !== undefined || q.groupBy === 'participant';
 
 /** Rows crossing to a disabled account get their ordinary category (derived.ts). */
 const CATEGORY_SQL = 'COALESCE(t.crossing_category, t.category)';
@@ -134,9 +140,12 @@ async function labelsById(db: Db): Promise<Map<string, string>> {
 
 /** The MCP tools' choices (`spending_summary`, `compare_periods`). */
 export const SPENDING_GROUP_BY = ['category', 'month', 'account', 'mcc', 'scope', 'operation_currency'] as const;
-/** Plus `day` — one group per day of the period's zone — for the desktop's «Now» strip only: the MCP tools do not offer it. */
-export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number] | 'day';
-const GROUP_BY: ReadonlyArray<SpendingGroupBy> = [...SPENDING_GROUP_BY, 'day'];
+/**
+ * Plus, for the desktop only (the MCP tools do not offer them): `day` — one group per day of the period's zone; and
+ * `participant` — one group per participant (the key is the id), each with the participant view's rules (personView).
+ */
+export type SpendingGroupBy = (typeof SPENDING_GROUP_BY)[number] | 'day' | 'participant';
+const GROUP_BY: ReadonlyArray<SpendingGroupBy> = [...SPENDING_GROUP_BY, 'day', 'participant'];
 
 /** Key of the commission line when grouping by MCC (it has no MCC of its own). */
 export const COMMISSION_KEY = 'commission';
@@ -149,7 +158,7 @@ export type SpendingGroup = {
   currency: number;
   /**
    * Category / YYYY-MM / account id / MCC (as text, «commission» for commissions) / scope /
-   * operation currency (ISO alphabetic, «commission» for commissions).
+   * operation currency (ISO alphabetic, «commission» for commissions) / participant id.
    */
   key: string;
   /** Only for groupBy = account: "black/UAH". */
@@ -196,6 +205,7 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
   day: 'bucket',
+  participant: 'participant_id',
 };
 
 /** Lines that count as spending: not «поступления» / «свои переводы», not zero. Arguments: SPENDING_LINE_ARGS. */
@@ -208,7 +218,8 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  *   category, the commission is a separate «комиссии банка» line (`kind` commission, no operation currency);
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays;
  * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
- * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket. The caller
+ * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket,
+ * participant_id (the account owner's, only when grouped by participant, else NULL). The caller
  * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
  * `buckets`), else NULL. The buckets are the outer loop of a range join (CROSS JOIN fixes the order), so each one is an
  * index range on `time` (idx_tx_time: per account it would be one seek per account and bucket) and no row looks its
@@ -217,7 +228,7 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  */
 export async function spendingLinesSql(
   db: Db,
-  q: Period & SpendingFilters,
+  q: Period & SpendingFilters & { groupBy?: SpendingGroupBy },
   unit: 'day' | 'month' | null = null,
 ): Promise<{ sql: string; args: Array<string | number> }> {
   // With buckets the period is their union, and only their bounds may reach the time index: given the period's bounds
@@ -228,25 +239,26 @@ export async function spendingLinesSql(
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
   accountWhere(q, where, args);
+  const byPerson = q.groupBy === 'participant';
   return {
     sql: `WITH ${unit ? `${BUCKETS_CTE},` : ''}
           base AS MATERIALIZED (
             SELECT t.id, a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
-                   ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
+                   ${excludedTransferSql(personView(q))} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission,
-                   ${unit ? 'b.k' : 'NULL'} AS bucket
+                   ${unit ? 'b.k' : 'NULL'} AS bucket, ${byPerson ? 'c.participant_id' : 'NULL'} AS participant_id
             FROM ${unit ? 'buckets b CROSS JOIN transactions t INDEXED BY idx_tx_time ON t.time >= b.s AND t.time < b.e' : 'transactions t'}
-              JOIN accounts a ON a.id = t.account_id
+              JOIN accounts a ON a.id = t.account_id${byPerson ? ' JOIN connections c ON c.id = a.connection_id' : ''}
             WHERE ${where.join(' AND ')}
           ),
           lines AS (
             -- body: account-currency amount without the commission; the operation amount never includes it
-            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount, bucket
+            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount, bucket, participant_id
             FROM base WHERE internal = 0
             UNION ALL
             -- commission: account currency only, no operation currency
-            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket FROM base WHERE commission > 0
+            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket, participant_id FROM base WHERE commission > 0
           )`,
     args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees],
   };
@@ -461,9 +473,9 @@ export async function comparePeriods(
 // ---------- incomeSummary ----------
 
 export const INCOME_GROUP_BY = ['source', 'month', 'account', 'scope'] as const;
-/** Plus `day` — one group per date of the period's zone — for the desktop's analytics screen only: the MCP tools do not offer it. */
-export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number] | 'day';
-const INCOME_GROUPS: ReadonlyArray<IncomeGroupBy> = [...INCOME_GROUP_BY, 'day'];
+/** Plus `day` and `participant` (as in SpendingGroupBy) for the desktop only: the MCP tools do not offer them. */
+export type IncomeGroupBy = (typeof INCOME_GROUP_BY)[number] | 'day' | 'participant';
+const INCOME_GROUPS: ReadonlyArray<IncomeGroupBy> = [...INCOME_GROUP_BY, 'day', 'participant'];
 
 /** The provider's sources, plus `family`: money from another participant (participant view only). */
 export type IncomeSource = ProviderIncomeSource | 'family';
@@ -485,12 +497,12 @@ export type IncomeSummary = {
 
 /**
  * `WITH … SELECT` of the income rows in the period — the one place the income rules live (incomeSummary, incomeLines):
- * non-internal «поступления» rows; family transfers only in a participant's view; only enabled accounts.
+ * non-internal «поступления» rows; family transfers only in a participant's view (personView); only enabled accounts.
  * Columns: id, currency (the account's), account_id, participant_id, time, mcc, scope, description, comment, counter_name,
  * hold, amount, op_currency, op_amount, transfer_rule (null for a row crossing to a disabled account). Newest first.
  */
-export async function incomeRowsSql(db: Db, q: Period & Filters): Promise<{ sql: string; args: Array<string | number> }> {
-  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(q)}`, `${CATEGORY_SQL} = ?`, periodSql('t')];
+export async function incomeRowsSql(db: Db, q: Period & Filters & { groupBy?: IncomeGroupBy }): Promise<{ sql: string; args: Array<string | number> }> {
+  const where = ['t.is_cancelled = 0', `NOT ${excludedTransferSql(personView(q))}`, `${CATEGORY_SQL} = ?`, periodSql('t')];
   const args: Array<string | number> = [CATEGORY.income, ...periodArgs(q)];
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
@@ -537,6 +549,7 @@ export async function incomeSummary(
       : groupBy === 'day' ? dateIn(Number(r.time), zoneOf(q))
       : groupBy === 'month' ? dateIn(Number(r.time), zoneOf(q)).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)
+      : groupBy === 'participant' ? String(r.participant_id)
       : String(r.scope);
     const currency = Number(r.currency);
     const id = `${currency}\u0000${key}`;

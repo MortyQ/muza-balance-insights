@@ -87,6 +87,34 @@ describe('family in the database and the aggregates', () => {
     expect((await incomeSummary(db, { ...q, participantId: me }, NOW)).groups).toEqual([]);
   });
 
+  it('grouped by participant: each group is that participant\'s own view (family transfers count), commissions too', async () => {
+    await db.execute({
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, commission_rate, currency_code, synced_at)
+            VALUES ('her-cash', 'her-black', ?, '2026-02-11', 'Вигаданий банкомат', 6011, 0, -20500, 500, 980, 0)`,
+      args: [Date.UTC(2026, 1, 11, 9) / 1000],
+    });
+    await rederiveCore(db);
+    const byKey = <G extends { currency: number; key: string }>(gs: G[], v: (g: G) => number) =>
+      Object.fromEntries(gs.map((g) => [`${g.currency}:${g.key}`, v(g)]));
+    const each = async <G extends { currency: number; key: string }>(one: (p: number) => Promise<Array<{ currency: number } & Record<string, unknown>>>, grouped: G[], v: (g: G) => number, total: string) => {
+      for (const p of [me, her]) {
+        const solo = Object.fromEntries((await one(p)).map((t) => [`${t.currency}:${p}`, t[total]]));
+        expect(Object.fromEntries(Object.entries(byKey(grouped, v)).filter(([k]) => k.endsWith(`:${p}`)))).toEqual(solo);
+      }
+    };
+    const sp = await spendingSummary(db, { ...q, groupBy: 'participant' }, NOW);
+    expect(byKey(sp.groups, (g) => g.net)).toEqual({ [`980:${me}`]: 150_000, [`980:${her}`]: 50_500 });
+    await each(async (p) => (await spendingSummary(db, { ...q, participantId: p }, NOW)).totals, sp.groups, (g) => g.net, 'net');
+    await each(async (p) => (await spendingSummary(db, { ...q, participantId: p }, NOW)).totals, sp.groups, (g) => g.purchases, 'purchases');
+
+    const inc = await incomeSummary(db, { ...q, groupBy: 'participant' }, NOW);
+    expect(byKey(inc.groups, (g) => g.total)).toEqual({ [`980:${her}`]: 100_000 });
+    await each(async (p) => (await incomeSummary(db, { ...q, participantId: p }, NOW)).totals, inc.groups, (g) => g.total, 'total');
+
+    // The family's total is not the people's sum: the family view leaves the family transfer out.
+    expect((await spendingSummary(db, q, NOW)).totals[0]?.net).toBe(100_500);
+  });
+
   it('incomeLines: the family transfer is the receiver\'s line (source family) in their view, none for the whole family', async () => {
     expect((await incomeLines(db, q, NOW)).lines).toEqual([]);
     expect((await incomeLines(db, { ...q, participantId: her }, NOW)).lines.map((l) => [l.id, l.amount, l.source, l.participantId])).toEqual([['in', 100_000, 'family', her]]);

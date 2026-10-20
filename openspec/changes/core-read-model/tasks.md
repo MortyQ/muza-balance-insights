@@ -85,21 +85,21 @@
 
 ## 5. Grouped queries for the desktop screens — `feat(desktop): grouped overview queries`
 
-- [ ] 5.1 Core: give `balancesAt` one statement for all accounts (design D6), with the same semantics.
+- [x] 5.1 Core: give `balancesAt` one statement for all accounts (design D6), with the same semantics.
   - Verify: `balances-at.test.ts` passes unchanged, and a new test asserts one statement for any number of accounts.
-- [ ] 5.2 Core: add the internal participant grouping for spending and income with the participant-view rules (not
+- [x] 5.2 Core: add the internal participant grouping for spending and income with the participant-view rules (not
   in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`).
   - Verify: `family.test.ts`-style fixtures show each participant's group equals the single-participant call.
-- [ ] 5.3 Desktop `data.ts`:
+- [x] 5.3 Desktop `data.ts`:
   - `spendingUsual` uses one `spendingGrid` by month and one `incomeSummary` by month;
   - `monthOverview` uses the participant grouping for people;
   - `nowOverview` uses one day × category query and folds in JS.
   - Verify: `apps/desktop/tests/data.test.ts` passes with unchanged expected values.
-- [ ] 5.4 Add `apps/desktop/tests/data-queries.test.ts`, with a `Db` wrapper that counts statements.
+- [x] 5.4 Add `apps/desktop/tests/data-queries.test.ts`, with a `Db` wrapper that counts statements.
   - Each overview's count must be the same for 1 and 3 people, for 2 and 8 accounts, and for 3 and 36 months of
     history.
   - Verify: the test passes.
-- [ ] 5.5 Update `.agents/project/desktop-import.md` where it describes how `usual`, `monthOverview` and
+- [x] 5.5 Update `.agents/project/desktop-import.md` where it describes how `usual`, `monthOverview` and
   `getNowOverview` are computed. Add to `CHANGELOG.md` a new `## 0.1.10 — unreleased` section with the «Faster
   screens» entry (user terms only, no internal names).
   - Verify: `apps/desktop/tests/release-notes.test.ts` passes.

@@ -126,18 +126,23 @@ export type BalancesAt = {
  */
 export async function balancesAt(db: Db, opts: { endSec: number; participantId?: number }): Promise<BalancesAt> {
   const { rows, labels } = await loadAccounts(db, opts.participantId);
-  const accounts: AccountBalanceAt[] = [];
-  for (const r of rows) {
-    const balance = await balanceAt(db, r, opts.endSec);
-    accounts.push({
+  const found = await balancesFromRows(db, rows, opts.endSec);
+  const accounts: AccountBalanceAt[] = rows.map((r) => {
+    const balance = opts.endSec > r.updatedAt ? r.balance : r.oldest === null || r.oldest > opts.endSec ? null : found.get(r.id)!;
+    return {
       id: r.id,
       label: labels.get(r.id) ?? r.id,
       kind: r.kind === 'jar' ? 'jar' : 'card',
       currency: r.currency,
       credit_limit: r.creditLimit,
       own_funds: balance === null ? null : balance - r.creditLimit,
-    });
-  }
+    };
+  });
+  return balancesOf(accounts);
+}
+
+/** The totals and the missing count of these accounts — also of a part of balancesAt's answer (one person's accounts). */
+export function balancesOf(accounts: AccountBalanceAt[]): BalancesAt {
   const totals = new Map<number, number>();
   for (const a of accounts) if (a.own_funds !== null) totals.set(a.currency, (totals.get(a.currency) ?? 0) + a.own_funds);
   return {
@@ -147,20 +152,36 @@ export async function balancesAt(db: Db, opts: { endSec: number; participantId?:
   };
 }
 
-async function balanceAt(db: Db, r: AccountRow, endSec: number): Promise<number | null> {
-  if (endSec > r.updatedAt) return r.balance;
-  if (r.oldest === null || r.oldest > endSec) return null;
-  const last = await db.execute({
-    sql: 'SELECT time, balance FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time < ? ORDER BY time DESC LIMIT 2',
-    args: [r.id, endSec],
+/**
+ * The balance at `endSec` of every account the operations must answer for (covered at the end, fetched after it), in one
+ * statement: per account the last non-cancelled operation before the end (an index seek on account and time); its
+ * balance when it is the only one in that second and has one, else today's balance minus every operation from the end
+ * up to the fetch. CASE keeps the sum lazy: SQLite runs that subquery only for an account that needs it.
+ */
+async function balancesFromRows(db: Db, rows: readonly AccountRow[], endSec: number): Promise<Map<string, number>> {
+  const asked = rows.filter((r) => endSec <= r.updatedAt && r.oldest !== null && r.oldest <= endSec);
+  if (asked.length === 0) return new Map();
+  const rs = await db.execute({
+    sql: `WITH acc(id, balance, upd) AS (VALUES ${asked.map(() => '(?, ?, ?)').join(', ')}),
+          top AS (
+            SELECT acc.*, (SELECT t.time FROM transactions t
+                           WHERE t.account_id = acc.id AND t.is_cancelled = 0 AND t.time < ? ORDER BY t.time DESC LIMIT 1) AS t1
+            FROM acc
+          ),
+          pick AS (
+            SELECT top.*,
+                   (SELECT COUNT(*) FROM transactions t WHERE t.account_id = top.id AND t.is_cancelled = 0 AND t.time = top.t1) AS n1,
+                   (SELECT t.balance FROM transactions t WHERE t.account_id = top.id AND t.is_cancelled = 0 AND t.time = top.t1) AS b1
+            FROM top
+          )
+          SELECT id, CASE WHEN n1 = 1 AND b1 IS NOT NULL THEN b1
+                          ELSE balance - (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t
+                                          WHERE t.account_id = pick.id AND t.is_cancelled = 0 AND t.time >= ? AND t.time <= pick.upd)
+                     END AS at_end
+          FROM pick`,
+    args: [...asked.flatMap((r) => [r.id, r.balance, r.updatedAt]), endSec, endSec],
   });
-  const [a, b] = last.rows;
-  if (a && a.balance !== null && !(b && Number(b.time) === Number(a.time))) return Number(a.balance);
-  const after = await db.execute({
-    sql: 'SELECT COALESCE(SUM(amount), 0) AS s FROM transactions WHERE account_id = ? AND is_cancelled = 0 AND time >= ? AND time <= ?',
-    args: [r.id, endSec, r.updatedAt],
-  });
-  return r.balance - Number(after.rows[0]?.s ?? 0);
+  return new Map(rs.rows.map((r) => [String(r.id), Number(r.at_end)]));
 }
 
 /** Date (in `timeZone`, Kyiv by default) of the oldest covered second over every enabled account; null — nothing imported. */

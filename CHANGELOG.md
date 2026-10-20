@@ -16,6 +16,12 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 
+### Speed
+
+- **Faster screens.** The balance cards, the «Now» strip, the spending block and analytics open noticeably faster,
+  and they no longer slow down as you add people, accounts or months of history. The first start after this update
+  can take a few seconds longer: the app reorganizes the data it keeps on this computer once.
+
 ## 0.1.9 — 2026-10-07
 
 ### Home screen

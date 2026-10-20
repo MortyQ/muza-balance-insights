@@ -70,6 +70,9 @@
 - `spendingGrid` (category × day or month of the period's zone, one query over `spendingLinesSql` + `SPENDING_LINE_SQL`,
   so per currency its cells add up to `spendingSummary`'s groups) and `incomeSummary` `groupBy: 'day'` — internal, for the
   desktop's analytics screen only (not in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`, the MCP tools do not offer them).
+- `groupBy: 'participant'` of `spendingSummary` / `incomeSummary` — internal too, for the desktop's per-person cards:
+  one group per participant (key = the id), each with the participant view's rules (family transfers count; every row
+  belongs to its account owner), so each group equals that participant's own call. The family total is not their sum.
 - The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
   exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.
@@ -84,6 +87,8 @@
   (ещё не отражённые в этом остатке) в сумму не входят. Покрытие счёта начинается позже конца месяца, или счёта
   нет в `sync_state` вовсе — «нет данных» (`null`). Кредитный лимит истории не имеет — для прошлых месяцев берётся
   текущий.
+  All accounts answer in one statement (per account an index seek for the last operation; the backward sum runs only
+  for an account that needs it); `balancesOf` gives the totals of a part of the answer (one person's accounts).
 - Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/fx.ts`): копейки гривны за минимальную единицу
   валюты из строк `pair_fx` на гривневых счетах. Продажи валюты; покупки — только если валюту ни разу не продавали.
   В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца в его поясе,

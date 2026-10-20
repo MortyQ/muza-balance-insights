@@ -109,6 +109,41 @@ describe('balancesAt', () => {
     await account('hers', 2_000, { connection: conn });
     expect(Object.keys(await own(END_JULY, her))).toEqual(['hers']);
   });
+
+  it('one statement over the operations, whatever the number of accounts; each account keeps its own rule', async () => {
+    const counted = async (): Promise<number> => {
+      let n = 0;
+      const spy: Db = { execute: (s) => ((n += /\btransactions\b/.test(typeof s === 'string' ? s : s.sql) ? 1 : 0), db.execute(s)), batch: (ss) => db.batch(ss), close: () => undefined };
+      await balancesAt(spy, { endSec: END_JULY });
+      return n;
+    };
+    const rules = async (i: number) => {
+      await account(`last${i}`, 50_000);
+      await tx(`last${i}`, END_JULY - 100, -1_000, 70_000);
+      await tx(`last${i}`, END_JULY + 100, -20_000, 50_000);
+      await account(`back${i}`, 50_000);
+      await tx(`back${i}`, END_JULY - 5, -1_000, 99_000);
+      await tx(`back${i}`, END_JULY - 5, 1_000, 98_000);
+      await tx(`back${i}`, END_JULY + 100, -20_000, 50_000);
+    };
+    await rules(0);
+    expect(await counted()).toBe(1);
+    for (let i = 1; i < 4; i++) await rules(i);
+    await account('late', 1_000, { oldest: END_JULY + 1 });
+    expect(await counted()).toBe(1);
+    expect(await own(END_JULY)).toEqual({
+      ...Object.fromEntries([0, 1, 2, 3].flatMap((i) => [[`last${i}`, 70_000], [`back${i}`, 70_000]])),
+      late: null,
+    });
+  });
+
+  it('no statement over the operations when no account needs one', async () => {
+    await account('a', 50_000, { oldest: END_JULY + 1 });
+    const seen: string[] = [];
+    const spy: Db = { execute: (s) => (seen.push(typeof s === 'string' ? s : s.sql), db.execute(s)), batch: (ss) => db.batch(ss), close: () => undefined };
+    expect((await balancesAt(spy, { endSec: SYNCED + 1 })).accounts.map((a) => a.own_funds)).toEqual([50_000]);
+    expect(seen.filter((s) => /\btransactions\b/.test(s))).toEqual([]);
+  });
 });
 
 describe('firstDataDate', () => {

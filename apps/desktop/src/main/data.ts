@@ -17,12 +17,12 @@ import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/format';
 import { toUah, type FxRate } from '@mono/core/fx';
-import { balancesAt, firstDataDate, type BalancesAt } from '@mono/core/status';
-import { incomeSummary, spendingGrid, spendingSummary, type IncomeSummary, type SpendingSummary } from '@mono/core/summaries';
+import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/status';
+import { incomeSummary, periodInfo, spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
-import { comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
 import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
@@ -165,14 +165,17 @@ export class DataService {
     const today = await this.d.rates();
     const rates = rateMap(today);
     // Every currency folded into hryvnia; a currency without a rate stays out of the sums, listed in fx.
-    const flowOf = (inc: IncomeSummary, sp: SpendingSummary): FlowView & { fx: FxPart[] } => {
-      const currencies = [...new Set([...inc.totals.map((t) => t.currency), ...sp.totals.map((t) => t.currency)])].sort((a, b) => a - b);
+    const flowOf = (
+      inc: ReadonlyArray<{ currency: number; total: number }>,
+      sp: ReadonlyArray<{ currency: number; net: number }>,
+    ): FlowView & { fx: FxPart[] } => {
+      const currencies = [...new Set([...inc.map((t) => t.currency), ...sp.map((t) => t.currency)])].sort((a, b) => a - b);
       let income = 0;
       let spending = 0;
       const fx: FxPart[] = [];
       for (const c of currencies) {
-        const i = inc.totals.find((t) => t.currency === c)?.total ?? 0;
-        const s = sp.totals.find((t) => t.currency === c)?.net ?? 0;
+        const i = inc.find((t) => t.currency === c)?.total ?? 0;
+        const s = sp.find((t) => t.currency === c)?.net ?? 0;
         const iu = toUah(i, c, rates);
         const su = toUah(s, c, rates);
         if (iu !== null && su !== null) (income += iu), (spending += su);
@@ -181,12 +184,8 @@ export class DataService {
       return { income, spending, fx };
     };
 
-    const cardTotal = async (participantId?: number): Promise<{ total: CardTotal; balances: BalancesAt }> => {
-      const f = participantId === undefined ? {} : { participantId };
-      const balances = await balancesAt(db, { endSec, ...f });
-      const atStart = new Map((await balancesAt(db, { endSec: startSec, ...f })).accounts.map((a) => [a.id, a.own_funds]));
-      const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
-      const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
+    // A card from the balances at the month's end, own funds at its start (by account) and the month's flow.
+    const cardTotal = (balances: BalancesAt, atStart: ReadonlyMap<string, number | null>, flow: FlowView & { fx: FxPart[] }): CardTotal => {
       const others = balances.totals
         .filter((t) => t.currency !== UAH)
         .map((t) => ({ currency: t.currency, ownFunds: t.own_funds, rate: rates.get(t.currency)?.rate ?? null }));
@@ -202,19 +201,22 @@ export class DataService {
       const saved: CardTotal['saved'] =
         jars.length === 0 ? null : { amount: jars.reduce((s, j) => s + j.uah, 0), approx: jars.some((j) => j.foreign) };
       return {
-        balances,
-        total: {
-          ownFunds: (balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0) + folded,
-          others,
-          saved,
-          missing: balances.missing,
-          accounts: balances.accounts.length,
-          ...flowOf(income, spending),
-        },
+        ownFunds: (balances.totals.find((t) => t.currency === UAH)?.own_funds ?? 0) + folded,
+        others,
+        saved,
+        missing: balances.missing,
+        accounts: balances.accounts.length,
+        ...flow,
       };
     };
 
-    const head = await cardTotal(q.participantId);
+    // The view's own queries; the family's people come from the same balances and from one grouped query each below.
+    const f = q.participantId === undefined ? {} : { participantId: q.participantId };
+    const balances = await balancesAt(db, { endSec, ...f });
+    const atStart = new Map((await balancesAt(db, { endSec: startSec, ...f })).accounts.map((a) => [a.id, a.own_funds]));
+    const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
+    const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
+    const head = { balances, total: cardTotal(balances, atStart, flowOf(income.totals, spending.totals)) };
     const coverageFrom = first !== null && first > from ? first : from;
     const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
     // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
@@ -227,20 +229,30 @@ export class DataService {
     };
     const base = { month: q.month, balanceAt: current ? ('now' as const) : to, coverage, total: head.total, reserved: reservedFor(q.participantId) };
     if (q.participantId === undefined) {
-      const people: MonthOverview['people'] = [];
-      for (const p of await listParticipants(db)) {
-        people.push({
+      // Each person's card as their own view counts it: their accounts' balances, and income and spending grouped by
+      // participant (each group has the person's view of family transfers) — one query each, whatever the number of people.
+      const owners = new Map(
+        (await db.execute('SELECT a.id, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id')).rows.map((r) => [
+          String(r.id),
+          Number(r.participant_id),
+        ]),
+      );
+      const incomeBy = await incomeSummary(db, { ...period, groupBy: 'participant' }, now);
+      const spendingBy = await spendingSummary(db, { ...period, groupBy: 'participant' }, now);
+      const people: MonthOverview['people'] = (await listParticipants(db)).map((p) => {
+        const key = String(p.id);
+        const own = balancesOf(balances.accounts.filter((a) => owners.get(a.id) === p.id));
+        return {
           participantId: p.id,
           label: p.label,
           labelPending: labelPending(p),
           color: p.color,
-          total: (await cardTotal(p.id)).total,
+          total: cardTotal(own, atStart, flowOf(incomeBy.groups.filter((g) => g.key === key), spendingBy.groups.filter((g) => g.key === key))),
           reserved: reservedFor(p.id),
-        });
-      }
+        };
+      });
       return { ...base, people, accounts: [], rates: today };
     }
-    const f = { participantId: q.participantId };
     const inc = await incomeSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const sp = await spendingSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const types = new Map((await db.execute('SELECT id, type FROM accounts')).rows.map((r) => [String(r.id), r.type === null ? null : String(r.type)]));
@@ -356,17 +368,20 @@ export class DataService {
   ): Promise<SpendingUsual | null> {
     if (period.incomplete && (period.dataUntil === null || period.dataUntil < period.from)) return null;
     const months = usualMonths(q.month, dataFrom);
+    if (months.length === 0) return null;
     const filters = { tz: systemTimeZone(), scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
-    const incomeOf = async (m: string) =>
-      (await incomeSummary(db, { ...monthBounds(m), ...filters }, now)).totals.reduce((s, t) => s + (toUah(t.total, t.currency, rates) ?? 0), 0);
+    // The usual months run up to the shown one without a gap: one grid by month for their spending, and (a month that
+    // is over) one income query by month up to the shown month's end. Each month folds as its own summary would.
+    const from = monthBounds(months.at(-1)!).from;
+    const grid = await spendingGrid(db, { from, to: monthBounds(months[0]!).to, ...filters, unit: 'month' }, now);
+    const incomeBy = period.incomplete ? null : await incomeSummary(db, { from, to: monthBounds(q.month).to, ...filters, groupBy: 'month' }, now);
+    const incomeOf = (m: string) => (incomeBy?.groups ?? []).filter((g) => g.key === m).reduce((s, g) => s + (toUah(g.total, g.currency, rates) ?? 0), 0);
 
-    const spent: Array<Map<string, number>> = [];
-    const income: number[] = [];
-    for (const m of months) {
-      const byCategory = foldByCategory(await spendingSummary(db, { ...monthBounds(m), ...filters, groupBy: 'category' }, now), rates).byCategory;
-      spent.push(new Map([...byCategory].map(([c, a]) => [c, a.net])));
-      if (!period.incomplete) income.push(await incomeOf(m));
-    }
+    const spent = months.map((m) => {
+      const byCategory = foldByCategory(cellGroups(grid.cells, (c) => c.bucket === m, (c) => c.category), rates).byCategory;
+      return new Map([...byCategory].map(([c, a]) => [c, a.net]));
+    });
+    const income = period.incomplete ? [] : months.map(incomeOf);
     const u = usualOf(spent);
     if (!u) return null;
     return {
@@ -376,7 +391,7 @@ export class DataService {
       categories: [...u.byCategory]
         .sort(([a, x], [b, y]) => y - x || a.localeCompare(b))
         .map(([category, net]) => ({ category, categoryId: CATEGORY_ID.get(category) ?? null, net })),
-      income: period.incomplete ? null : { now: await incomeOf(q.month), usual: median(income) },
+      income: period.incomplete ? null : { now: incomeOf(q.month), usual: median(income) },
     };
   }
 
@@ -823,32 +838,41 @@ export class DataService {
     const monday = shiftDate(today, 1 - weekday);
     const windowFrom = shiftDate(today, -USUAL_WINDOW);
     const month = monthBounds(today.slice(0, 7));
+    const prevFrom = shiftDate(monday, -7);
     const { dataFrom } = await this.status();
-    const summary = (p: { from: string; to: string }, groupBy: 'day' | 'category') =>
-      spendingSummary(db, { ...p, tz, groupBy, scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
 
     const todayRates = await this.d.rates();
     const rates = rateMap(todayRates);
-    const daily = await summary({ from: windowFrom, to: today }, 'day');
-    const week = await summary({ from: monday, to: today }, 'category');
-    // foldByCategory folds by the group key — here the day of the system time zone.
-    const byDay = foldByCategory(daily, rates).byCategory;
-    const weekByCategory = foldByCategory(week, rates).byCategory;
-    const todayByCategory = foldByCategory(await summary({ from: today, to: today }, 'category'), rates).byCategory;
-    const monthRanked = rankedCategories(foldByCategory(await summary(month, 'category'), rates).byCategory);
+    // One grid by day × category over every span the strip shows (the usual day's window, this month, last week);
+    // each span folds as its own summary would: per currency and key, then by today's rates.
+    const spanFrom = [windowFrom, month.from, prevFrom].sort()[0]!;
+    const grid = await spendingGrid(
+      db,
+      { from: spanFrom, to: month.to, tz, unit: 'day', scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) },
+      now,
+    );
+    const fold = (from: string, to: string, keyOf: (c: SpendingCell) => string) =>
+      foldByCategory(cellGroups(grid.cells, (c) => c.bucket >= from && c.bucket <= to, keyOf), rates).byCategory;
+    const byCategory = (c: SpendingCell) => c.category;
+    const daily = await periodInfo(db, { from: windowFrom, to: today, tz }, now);
+    const week = await periodInfo(db, { from: monday, to: today, tz }, now);
+    // Keyed by the day of the system time zone.
+    const byDay = fold(windowFrom, today, (c) => c.bucket);
+    const weekByCategory = fold(monday, today, byCategory);
+    const todayByCategory = fold(today, today, byCategory);
+    const monthRanked = rankedCategories(fold(month.from, month.to, byCategory));
 
     // The usual day reads only the days the data covers: from its first date to the last fully synced day.
-    const lastCovered = daily.period.coveredDays > 0 ? shiftDate(windowFrom, daily.period.coveredDays - 1) : null;
+    const lastCovered = daily.coveredDays > 0 ? shiftDate(windowFrom, daily.coveredDays - 1) : null;
     const yesterday = shiftDate(today, -1);
     const usualFrom = dataFrom === null ? null : dataFrom > windowFrom ? dataFrom : windowFrom;
     const usualTo = lastCovered === null ? null : lastCovered < yesterday ? lastCovered : yesterday;
     // Last week is clipped to the same weekdays the data reaches: today is never fully covered, so the cap is
     // dataUntil (capped at today), not the last fully covered day — a fresh sync must not drop a comparison day.
-    const reach = daily.period.dataUntil === null ? null : daily.period.dataUntil < today ? daily.period.dataUntil : today;
-    const prevFrom = shiftDate(monday, -7);
+    const reach = daily.dataUntil === null ? null : daily.dataUntil < today ? daily.dataUntil : today;
     const prevTo = reach === null ? null : shiftDate(reach, -7);
     const hasPrev = dataFrom !== null && dataFrom <= prevFrom && prevTo !== null && prevTo >= prevFrom;
-    const prevByCategory = hasPrev && prevTo !== null ? foldByCategory(await summary({ from: prevFrom, to: prevTo }, 'category'), rates).byCategory : null;
+    const prevByCategory = hasPrev && prevTo !== null ? fold(prevFrom, prevTo, byCategory) : null;
     const nowCategory = ([category, a]: [string, SpendingAmounts]): NowCategory => {
       const rank = monthRanked.findIndex(([k]) => k === category);
       return { category, categoryId: CATEGORY_ID.get(category) ?? null, ...a, rank: rank >= 0 ? rank : null };
@@ -858,7 +882,7 @@ export class DataService {
     return {
       date: today,
       weekday,
-      dataUntil: daily.period.dataUntil,
+      dataUntil: daily.dataUntil,
       today: byDay.get(today) ?? { net: 0, purchases: 0 },
       todayCategories: rankedCategories(todayByCategory).map(nowCategory),
       usualDay: usualFrom !== null && usualTo !== null ? usualDay(byDay, usualFrom, usualTo) : null,
@@ -869,7 +893,7 @@ export class DataService {
         prev: hasPrev && prevTo !== null ? sumDays(byDay, prevFrom, prevTo).net : null,
         top: weekCategories[0] ?? null,
         categories: weekCategories.map((c) => ({ ...c, prev: prevByCategory ? (prevByCategory.get(c.category)?.net ?? 0) : null })),
-        pendingHolds: week.period.pendingHolds,
+        pendingHolds: week.pendingHolds,
       },
       rates: todayRates,
     };

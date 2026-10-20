@@ -1,7 +1,7 @@
 // Pure helpers of the spending block in main (DataService.spendingOverview): the period compared with, and folding
 // account currencies into hryvnia by today's rates.
 import { toUah, type FxRate } from '@mono/core/fx';
-import type { PeriodInfo, SpendingSummary } from '@mono/core/summaries';
+import type { PeriodInfo, SpendingCell, SpendingGroup } from '@mono/core/summaries';
 import type { SpendingAmounts } from '../shared/api.ts';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -37,7 +37,25 @@ export function comparePeriod(
 }
 
 /** The groups (groupBy category) of a summary: all the helper reads, so a test passes just these. */
-export type CategoryGroups = Pick<SpendingSummary, 'groups'>;
+export type CategoryGroups = { groups: ReadonlyArray<Pick<SpendingGroup, 'currency' | 'key' | 'net' | 'purchases'>> };
+
+/**
+ * The cells of a spending grid that `keep` lets through, summed per account currency and `keyOf`: the groups a summary
+ * over those days (or months) grouped that way gives — so folding them rounds per currency and key exactly as it does.
+ */
+export function cellGroups(cells: readonly SpendingCell[], keep: (c: SpendingCell) => boolean, keyOf: (c: SpendingCell) => string): CategoryGroups {
+  const by = new Map<string, { currency: number; key: string; net: number; purchases: number }>();
+  for (const c of cells) {
+    if (!keep(c)) continue;
+    const key = keyOf(c);
+    const id = `${c.currency}\u0000${key}`;
+    const g = by.get(id) ?? { currency: c.currency, key, net: 0, purchases: 0 };
+    g.net += c.net;
+    g.purchases += c.purchases;
+    by.set(id, g);
+  }
+  return { groups: [...by.values()] };
+}
 
 /** Per category in hryvnia kopecks; a currency without a rate stays out (leftOut: its own minor units). */
 export function foldByCategory(

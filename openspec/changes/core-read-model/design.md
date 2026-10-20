@@ -178,8 +178,14 @@ New internal variants, not in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`, so MCP to
   `participant_id` as a key, so `monthOverview` gets every person's spending and income in one query each. The family
   total keeps its own query: the family view excludes family transfers, so it is not the sum of the people.
 - **Balances.** `balancesAt` answers all accounts in one statement: the last non-cancelled row before `endSec` per
-  account via `ROW_NUMBER()`, the same-second tie check, and the reverse sum. The current semantics are kept,
-  including the `updated_at` bound.
+  account, the same-second tie check, and the reverse sum. The current semantics are kept, including the `updated_at`
+  bound.
+  - Finding (group 5): the last row comes from a correlated `ORDER BY time DESC LIMIT 1` per account (an index seek on
+    `idx_tx_account_time`), not `ROW_NUMBER()`: a window over every earlier row reads each account's whole history.
+    The reverse sum sits in a `CASE` branch, so SQLite runs it only for an account that needs it.
+  - The family's per-person cards split the family's answer by owner (`balancesOf`) instead of asking per person.
+  - `spendingOverview`'s per-person split of the categories still asks per person (two summaries each). It is outside
+    D6; with the 2–3 people of a family each is one fast month query.
 
 Alternative: a daily aggregate table maintained on write. Rejected for now:
 - it needs per-view variants (family / person, scope, crossing) and its own invalidation;

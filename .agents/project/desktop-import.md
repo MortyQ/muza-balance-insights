@@ -45,12 +45,20 @@
   Под замком и при не-ready базе оба канала закрыты.
   `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `MonthOverview.reserved` — the active
   reserves («Available per day») of the view in hryvnia at today's rate, the current month only (null — none or another
-  month), set against `total`; each of `people` has its own `reserved`; the balance itself stays as the bank has it. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
+  month), set against `total`; each of `people` has its own `reserved`; the balance itself stays as the bank has it. The family's `people` cost no query per person: their balances are the
+  family's `balancesAt` split by owner (core `balancesOf`), their income and spending one `incomeSummary` /
+  `spendingSummary` grouped by `participant` each (an internal grouping: every group follows that person's own view of
+  family transfers); `balancesAt` itself is one statement for all accounts. `tests/data-queries.test.ts` checks that every overview runs a
+  fixed number of statements, whatever the people, accounts and months. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
   of the total and of income over up to 6 months before that the data covers from their first day, same person and
   scope, today's rates; `running` while the shown month runs, and then no income (its day decides it); null with fewer
-  than 3 such months. Whole months even for a running one: a few days of lumpy spending make «up to the same day» noise. `getNowOverview` takes only `participantId` (main
+  than 3 such months. Whole months even for a running one: a few days of lumpy spending make «up to the same day» noise. The usual months run up to the shown one without a gap, so they come from one
+  `spendingGrid` by month and one `incomeSummary` by month (to the shown month's end); each month folds as its own
+  summary would (`cellGroups` in `main/spending.ts`: per currency and key, then today's rates). `getNowOverview` takes only `participantId` (main
   decides «today» in the system time zone; categories of today and of the week, the week's with last week's same days —
-  categories and numbers only, no bank text); like the other data channels it is closed while locked and while the
+  categories and numbers only, no bank text; one `spendingGrid` by day × category over the widest span — the usual day's
+  window, this month, last week — folded per span with `cellGroups`, plus `periodInfo` for the window and the week);
+  like the other data channels it is closed while locked and while the
   database is not ready.
   `getCategoryOverview({ period, category: CategoryId, scope, participantId? })` (the category screen; main:
   `DataService.categoryOverview`, helpers in `main/category.ts`; `period` — `DetailPeriod`: `{ kind: 'day', date }`,
