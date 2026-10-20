@@ -5,8 +5,8 @@
 ## Принятые решения
 
 - Холды: soft-delete через `is_cancelled`, строки не удаляются.
-- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`,
-  `crossingCategories`) are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
+- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`)
+  are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
   which the MCP server keeps) and match rows by `time` in [start of `from`, start of the day after `to`). Grouping by
   `day` / `month` reads the zone's own day starts (`periodBuckets` → CTE `buckets`), right across DST. The desktop passes
   the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
@@ -16,9 +16,19 @@
   доходах, ни в балансах (`getBalances`, `balancesAt`), ни в курсе обменов, ни в поиске, ни в статусе и покрытии
   (`periodInfo`, `getSyncStatus`, `firstDataDate`, покрытие в `listConnections`); строки остаются в базе и возвращаются,
   как только счёт включён. Перевод включённого счёта с выключенным (пара `transfer_pair_id` на выключенном счёте или
-  одиночное совпадение `iban` с ним — `crossesDisabledSql`) — обычная операция: не internal и не `family`, категория —
-  как без пометки перевода (`crossingCategories`: `categorize` в момент запроса, в SQL — CTE `crossing AS MATERIALIZED`
-  из `json_each`), источник дохода — по форме. Разметка и колонки не меняются, rederive не нужен. Перевод без пары,
+  одиночное совпадение `iban` с ним) — обычная операция: не internal и не `family`, категория —
+  как без пометки перевода, источник дохода — по форме. Stored, not computed per query (migration v16,
+  `transactions.crossing_category`, `packages/core/src/derived.ts`): NULL = the row does not cross, otherwise its
+  ordinary category (`categorize` without the transfer mark). Statistics read `COALESCE(t.crossing_category,
+  t.category)` and `t.crossing_category IS NULL`; the transfer marks themselves are not changed. Who keeps it right:
+  `refreshCrossing(db, span?)` compares a fingerprint of the accounts (id, connection, kind, type, currency, title,
+  IBAN, effective enabled flag; `derived_state`) — changed → full derivation, unchanged → only the span given (a
+  committed window), else nothing. Every writer of `accounts` / `sync_state` calls it (`setAccountEnabled`,
+  `syncAccounts`, `commitRows` — the API import and statement uploads; `deleteConnection` through `rederiveCore`),
+  and every opener right after `migrate()` (desktop main, the worker, `apps/mcp` `openDb`); readers never write.
+  `rederiveCore` ends with a full derivation (`rederiveCrossing`, prints nothing). A category override reaches crossing
+  rows with the next recategorize, like every other row. `derived.test.ts` checks that every function writing
+  `accounts` / `sync_state` refreshes. Перевод без пары,
   сделанный уже после выключения (`text`), — тоже обычная операция, если правило провайдера
   (`ownTransferCounterpart`: шаблон банки или её название, «На білу картку» / «З Чорної картки» — тип карты,
   тексты ФОП — тип и валюта) указывает только на выключенные счета того же подключения; текст, который подходит и

@@ -5,6 +5,7 @@ import { accountEnabledSql } from './accounts.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import { categorize, loadOverrides, recategorize, type CategoryOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
+import { refreshCrossing } from './derived.ts';
 import { RateLimitError, StatementFormatError } from './errors.ts';
 import { toKyivDate } from './format.ts';
 import type { Clock } from './platform.ts';
@@ -160,6 +161,8 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
     }
   }
   if (stmts.length > 0) await ctx.db.batch(stmts);
+  // A new or changed account (an IBAN, a jar's title or balance) can change which rows cross to a disabled one.
+  await refreshCrossing(ctx.db);
   const counts = { cards: accounts.filter((a) => a.kind === 'card').length, jars: accounts.filter((a) => a.kind === 'jar').length };
   ctx.onEvent?.({ type: 'accounts', ...counts });
   return counts;
@@ -411,6 +414,8 @@ export async function commitRows(db: Db, input: CommitRowsInput): Promise<Commit
     const touched = { from: Math.min(...spans.map((r) => r.from)), to: Math.max(...spans.map((r) => r.to)) };
     await recategorize(db, touched);
     await rescope(db, touched);
+    // A first coverage row can flip a jar's auto rule, and a statement can create a card: refresh decides full or span.
+    await refreshCrossing(db, touched);
   } catch (err) {
     input.warn?.(
       `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${accountId} сохранено, но разметка переводов/категорий/scope ` +

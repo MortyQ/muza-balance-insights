@@ -1,9 +1,10 @@
-// Re-derives everything computed from the stored rows: internal transfers, refunds, categories, scope.
+// Re-derives everything computed from the stored rows: internal transfers, refunds, categories, scope, crossing.
 // Its report goes to the agent via recategorize (apps/mcp/src/cli/recategorize.ts, run OUTSIDE the OS sandbox):
 // aggregates and diagnostics only — no descriptions, counterparties, comments, IBANs or card numbers
 // (apps/mcp/tests/recategorize-safety.test.ts). Change what it prints only after the user's ok.
 import { recategorize } from './categories.ts';
 import type { Db } from './db.ts';
+import { rederiveCrossing } from './derived.ts';
 import { categoryCounts, transferDiagnostics } from './queries.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope, scopeCounts } from './scope.ts';
@@ -14,6 +15,8 @@ export async function rederiveCore(db: Db): Promise<string[]> {
   await markRefunds(db);
   const changed = await recategorize(db);
   await rescope(db);
+  // Crossing to disabled accounts reads the transfer marks just made; nothing of it goes into the report.
+  await rederiveCrossing(db);
 
   const d = await transferDiagnostics(db);
   const report = [

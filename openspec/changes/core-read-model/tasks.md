@@ -47,26 +47,26 @@
 
 ## 3. Stored crossing — `feat(core): stored crossing category`
 
-- [ ] 3.1 Move the crossing rules from `accounts.ts` into a new `derived.ts`:
+- [x] 3.1 Move the crossing rules from `accounts.ts` into a new `derived.ts`:
   - the paired and IBAN cases in SQL;
   - the `text` case through the provider rule `ownTransferCounterpart`.
   - It computes `crossing_category` in range mode and in full mode (design D3).
   - Verify: the existing `account-toggles.test.ts` scenarios are rewritten to read the stored column, and they keep
     their expected values.
-- [ ] 3.2 Add the account fingerprint and `refreshCrossing(db)`. It is a no-op when the fingerprint is unchanged, and
+- [x] 3.2 Add the account fingerprint and `refreshCrossing(db)`. It is a no-op when the fingerprint is unchanged, and
   a full refresh otherwise. Call it from `setAccountEnabled`, `syncAccounts`, `commitRows`, `deleteConnection` and
   every opener after `migrate()` (desktop `DataService.conn`, the worker, `apps/mcp` openers).
   - Verify: tests cover the toggle, the auto rule flipping after an import, a statement upload that creates a card,
     connection removal, the first open after the migration, and «nothing changed → zero row writes».
   - Verify: a test lists the core functions that write `accounts` or `sync_state` and asserts each one refreshes.
-- [ ] 3.3 Switch `summaries.ts`, `search.ts`, `income-lines.ts`, `category-lines.ts`, `recurring.ts` and `fx.ts` to
+- [x] 3.3 Switch `summaries.ts`, `search.ts`, `income-lines.ts`, `category-lines.ts`, `recurring.ts` and `fx.ts` to
   `COALESCE(t.crossing_category, t.category)` / `t.crossing_category IS NULL`. Remove `CROSSING_CTE`,
   `CROSSING_JOIN` and `crossingCategories` from the read path.
   - Verify: `summaries.test.ts`, `fx.test.ts`, `recurring.test.ts`, the search tests and the MCP tool tests pass
     unchanged.
-- [ ] 3.4 Add the crossing step at the end of `rederiveCore`, printing nothing.
+- [x] 3.4 Add the crossing step at the end of `rederiveCore`, printing nothing.
   - Verify: `apps/mcp/tests/recategorize-safety.test.ts` passes unchanged and the report lines are identical.
-- [ ] 3.5 Update `.agents/project/domain-rules.md` (crossing is stored, how it is refreshed) and
+- [x] 3.5 Update `.agents/project/domain-rules.md` (crossing is stored, how it is refreshed) and
   `.agents/project/core-people.md` (a toggle refreshes crossing).
   - Verify: both files name `derived.ts` and `refreshCrossing`, and no longer describe `crossingCategories` as a query
     step.

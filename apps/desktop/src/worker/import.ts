@@ -3,6 +3,7 @@
 // only through the allowlist — each provider's client only its own services. One job per process: main forks a fresh worker for every import.
 import { net } from 'electron';
 import { migrate, type Db } from '@mono/core/db';
+import { refreshCrossing } from '@mono/core/derived';
 import type { FetchLike } from '@mono/core/platform';
 import type { ProviderId } from '@mono/core/providers/types';
 import { openLibsql } from '@mono/db-libsql';
@@ -43,6 +44,7 @@ port.on('message', (event: { data: unknown }) => {
     try {
       db = await openLibsql(`file:${msg.dbPath}`, msg.dbKey ? { encryptionKey: msg.dbKey } : {});
       await migrate(db, Math.floor(Date.now() / 1000));
+      await refreshCrossing(db);
       await runImport({
         db,
         fetchFor: (provider) => FETCH[provider],

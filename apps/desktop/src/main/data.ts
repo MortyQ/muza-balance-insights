@@ -12,6 +12,7 @@ import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/constants';
 import { migrate, type Db } from '@mono/core/db';
+import { refreshCrossing } from '@mono/core/derived';
 import { listConnections, listParticipants } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/format';
@@ -123,6 +124,7 @@ export class DataService {
         await migrate(db, this.d.nowSec(), (r) =>
           this.d.log?.(`[db] compaction ${r.ok ? 'done' : `failed: ${r.error instanceof Error ? r.error.name : 'error'}`}`),
         );
+        await refreshCrossing(db);
       } catch (err) {
         db.close();
         throw err;

@@ -37,7 +37,8 @@
     баланс > 0 или есть `sync_state`). `syncAccounts` выбор не трогает. План (`defaultAccountSelection`) берёт только
     включённые; выключенные пользователем — в `disabled`, банки, выключенные авто-правилом, — в `skippedJars`; явный
     `accountIds` — как раньше. `listConnectionAccounts` (тип, валюта, последние 4 цифры карты, название банки, `enabled`,
-    `auto`; без iban и полного номера), `setAccountEnabled` (неизвестный счёт — `ConnectionError`).
+    `auto`; без iban и полного номера), `setAccountEnabled` (неизвестный счёт — `ConnectionError`; a toggle refreshes the
+    stored crossing at once, `refreshCrossing` in `derived.ts`, see `domain-rules.md`).
   - Тот же владелец во втором подключении (тот же `external_client_id` или все счета уже в одном другом подключении) —
     `ConnectionDuplicateError` до любой записи.
   - Несколько подключений в одном прогоне — `runPlans`: окна по кругу между подключениями, у каждого свой слот;
