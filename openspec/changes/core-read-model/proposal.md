@@ -31,6 +31,9 @@ column above is the lower bound.
 
 - **Storage.** The bank's original item moves to a side table (`transaction_raw`), and `transactions` keeps only
   columns the domain reads. One migration rebuilds the table, and the file is compacted once afterwards.
+- **MCC becomes optional in storage.** The same rebuild drops `NOT NULL` from `mcc`. Some banks do not send one:
+  PrivatBank statements have the bank's own category instead. Removing `NOT NULL` later would need a second rebuild of
+  the largest table. Every writer keeps sending an MCC until change 3 teaches the domain rules to work without one.
 - **Stored crossing.** Whether a row crosses to a disabled account, and the category it then gets, becomes a stored
   derived column (`crossing_category`). It is refreshed whenever the set of enabled accounts or anything it depends on
   changes: toggle, import, statement upload, re-derivation, connection removal, migration. Statistics read the column. No statistic runs
@@ -89,6 +92,10 @@ None. `openspec/specs/` is empty: the domain rules live in `.agents/project/doma
   - The provider module contract, namespaced bank ids (statement row ids too: account, second, amount and order among
     equal rows today), removing Monobank-specific names (`monobank.db`, rates source, UI fallbacks) and provider
     conformance tests (change 3).
+  - Statement readers for binary files (PrivatBank `.xlsx`, A-Bank `.pdf`) and picking the reader from the file
+    itself; several accounts in one file; operations without an MCC in the domain rules (category from the bank's own
+    category); own transfers between accounts in different banks (time and fee tolerance). These belong to change 3,
+    `openspec/changes/provider-modules` (its proposal records the agreed decisions).
   - The architecture rules and skills that follow all three changes.
   - Pre-computed aggregate tables (per-day totals). They will be reconsidered only if the harness shows the need after
     this change.

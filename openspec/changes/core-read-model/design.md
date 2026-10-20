@@ -58,7 +58,10 @@ Migration 16 rebuilds `transactions` with the usual 12-step pattern:
 
 - hot columns first;
 - no `raw_json`;
-- a new `crossing_category TEXT` (see D3).
+- a new `crossing_category TEXT` (see D3);
+- `mcc INTEGER` without `NOT NULL`. A bank without MCCs (PrivatBank statements) must not be forced to invent one, and
+  this rebuild is the cheap moment: dropping `NOT NULL` later would rebuild the table again. Nothing writes NULL in
+  this change.
 
 It creates `transaction_raw (id TEXT PRIMARY KEY REFERENCES transactions(id) ON DELETE CASCADE, raw_json TEXT NOT NULL)`
 and copies the payload. The upsert in `commitRows` writes both rows in the same `batch`, so the API import and a
@@ -231,13 +234,16 @@ Plans and query counts are deterministic and catch the same regressions earlier.
 - **[Trade-off] An older app version cannot write a v16 database** (its upsert names `raw_json`).
   → Auto-update never offers a lower version (signed manifest, strictly higher). A manual downgrade is not supported,
   as with every earlier migration.
+- **[Risk] Code that reads `mcc` as a number (`Number(r.mcc)`) would see NULL as 0 once a writer stores NULL.**
+  → In this change every writer still sends an MCC (`NormalizedTx.mcc` stays required). Change 3 makes the type
+  optional and the rules NULL-aware, together with the first reader that needs it.
 - **[Risk] `recategorize-safety.test.ts` follows the import graph of `rederive.ts`, and the new `derived.ts` joins it.**
   → `derived.ts` imports only core modules and provider rules: no `config.ts`, no `.env`, no output.
 
 ## Migration Plan
 
 1. Migration 16 (one transaction):
-   - rebuild `transactions` without `raw_json` and with `crossing_category`;
+   - rebuild `transactions` without `raw_json`, with `crossing_category`, and with `mcc` nullable;
    - create `transaction_raw` and copy the payload;
    - recreate the kept indexes and drop the rest;
    - create `derived_state`.

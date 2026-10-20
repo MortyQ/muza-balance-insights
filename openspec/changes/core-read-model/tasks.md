@@ -21,12 +21,13 @@
 ## 2. Bank payload out of the scanned table — `feat(core): transaction payload table`
 
 - [ ] 2.1 Add migration 16 (design D1, D5):
-  - rebuild `transactions` with hot columns first, no `raw_json`, and the new `crossing_category`;
+  - rebuild `transactions` with hot columns first, no `raw_json`, the new `crossing_category`, and `mcc` without
+    `NOT NULL`;
   - create `transaction_raw` with `ON DELETE CASCADE` and copy the payload;
   - create `derived_state`;
   - keep `idx_tx_time`, `idx_tx_account_time` and the pair indexes, and drop the others.
   - Verify: a migration test on a fictional v15 database checks row counts, payload equality, `PRAGMA
-    foreign_key_check` and `integrity_check`.
+    foreign_key_check` and `integrity_check`, and that a row with a NULL `mcc` is accepted.
 - [ ] 2.2 Add an optional `compact` flag to `MIGRATIONS` entries. `migrate()` runs `VACUUM` after such a migration,
   outside its transaction, best-effort, and returns whether compaction ran.
   - Verify: tests cover a successful compaction (the file shrinks), and a failing one where the migration stays
