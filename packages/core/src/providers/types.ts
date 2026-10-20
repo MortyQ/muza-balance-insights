@@ -147,3 +147,34 @@ export interface ProviderClient {
     onPage?: (page: number, received: number) => void,
   ): Promise<NormalizedTx[]>;
 }
+
+// ---------- the statement file half (upload) ----------
+
+/** What a statement file turned out to be. */
+export type StatementKind = 'card';
+
+/** A parsed statement file: the account's currency and its rows, oldest first, without ids (the importer sets them). */
+export interface ParsedStatement {
+  kind: StatementKind;
+  /** The account currency (ISO 4217 numeric), from the file. */
+  currencyCode: number;
+  rows: Array<Omit<NormalizedTx, 'id'>>;
+  /** The balance after the newest row, when the file states it. */
+  closingBalance: number | null;
+}
+
+/**
+ * Why a file was not taken — a code the UI words: not a statement of this bank, a statement in a language whose
+ * service texts the rules do not know, a kind of statement not supported yet, no rows, a row that does not read.
+ */
+export type StatementProblem = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row';
+
+export type StatementParseResult =
+  | { ok: true; statement: ParsedStatement }
+  | { ok: false; problem: StatementProblem; /** 1-based line of the file, for `bad-row`. */ row?: number };
+
+/** Text of a statement file → rows. Pure: no file system, no clock. */
+export interface StatementFileParser {
+  provider: ProviderId;
+  parse(text: string): StatementParseResult;
+}

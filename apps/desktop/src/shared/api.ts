@@ -30,9 +30,13 @@ export type ProviderKey = 'monobank';
 
 export type { ColorKey };
 
+/** How a connection gets its data: the bank's API with a token, or statement files the user uploads. */
+export type ConnectionMethod = 'token' | 'file';
+
 export type ConnectionView = {
   id: number;
   provider: ProviderKey;
+  method: ConnectionMethod;
   /** «Monobank». */
   bank: string;
   accounts: number;
@@ -42,7 +46,8 @@ export type ConnectionView = {
   coveredFrom: string | null;
   coveredTo: string | null;
   lastSyncAt: string | null;
-  token: TokenStatus;
+  /** null for a file connection: it has no token. */
+  token: TokenStatus | null;
 };
 
 export type PersonView = {
@@ -69,13 +74,16 @@ export type PeopleView = {
  */
 export type ParticipantChoice = { id: number } | { label: string; color?: ColorKey } | { fromBank: true; color?: ColorKey };
 
-export type AddConnectionInput = { participant: ParticipantChoice; provider: ProviderKey; token: string; remember: boolean };
+export type AddConnectionInput =
+  | { participant: ParticipantChoice; provider: ProviderKey; method?: 'token'; token: string; remember: boolean }
+  | { participant: ParticipantChoice; provider: ProviderKey; method: 'file' };
 
 /** taken: another person has this colour. */
 export type ColorChangeResult = { changed: true } | { changed: false; reason: 'taken' };
 
 export type AddConnectionResult =
-  | { added: true; connectionId: number; participantId: number; stored: 'secure' | 'memory' }
+  /** stored: where the token went; null for a file connection. */
+  | { added: true; connectionId: number; participantId: number; stored: 'secure' | 'memory' | null }
   /** duplicate: this very token is already a connection. */
   | { added: false; reason: 'duplicate' };
 
@@ -104,6 +112,50 @@ export type ConnectionAccountView = {
   auto: boolean;
 };
 
+// ---------- statement files ----------
+
+/** Why a statement file was not taken (core StatementProblem), plus main's own: too big, a bank without a file format. */
+export type StatementProblemCode = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row' | 'too-large' | 'no-format';
+
+export type OpenStatementResult =
+  | {
+      opened: true;
+      /** The file kept in main for the next steps (10 minutes, one at a time). */
+      statementId: string;
+      currencyCode: number;
+      rows: number;
+      /** Dates of the oldest and the newest row (system time zone). */
+      from: string;
+      to: string;
+      /** The connection's cards in the file's currency: the account to compare with or write to. */
+      accounts: ConnectionAccountView[];
+    }
+  | { opened: false; reason: 'cancelled' }
+  | { opened: false; reason: 'problem'; problem: StatementProblemCode; /** the file's row, for bad-row */ row: number | null };
+
+/** Where the rows go: a card of the connection, or a new card of the file's currency with its card type. */
+export type StatementTargetInput = { kind: 'account'; accountId: string } | { kind: 'new'; type: string | null };
+
+/** What blocks writing: a token connection (compare only), another currency, a hole in the account's coverage. */
+export type StatementBlock = 'token' | 'currency' | 'gap';
+
+export type StatementComparisonView = {
+  rows: number;
+  matched: number;
+  amountDiffers: number;
+  added: number;
+  missingInFile: number;
+  /** Dates (system time zone) neither the account nor the file covers; null = no hole. */
+  gap: { from: string; to: string } | null;
+  blocked: StatementBlock | null;
+};
+
+export type CompareStatementResult = { ok: true; comparison: StatementComparisonView } | { ok: false; reason: 'expired' };
+
+export type CommitStatementResult =
+  | { written: true; added: number }
+  | { written: false; reason: 'expired' | 'import-running' | StatementBlock };
+
 export type SetAccountEnabledResult = { changed: true } | { changed: false; reason: 'import-running' };
 
 export type BalanceApi = {
@@ -125,6 +177,12 @@ export type BalanceApi = {
    * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
    */
   setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
+  /** The system open dialog (CSV only), then the file is read and parsed in main; neither its path nor its text comes back. */
+  openStatement(connectionId: number): Promise<OpenStatementResult>;
+  /** Counts only: the kept file against an account. */
+  compareStatement(statementId: string, target: StatementTargetInput): Promise<CompareStatementResult>;
+  /** Writes the kept file into a file connection's card; refused while an import runs. */
+  commitStatement(statementId: string, target: StatementTargetInput): Promise<CommitStatementResult>;
   /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;

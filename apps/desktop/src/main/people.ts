@@ -38,13 +38,14 @@ export class PeopleService {
         own.push({
           id: c.id,
           provider: c.provider,
+          method: c.method,
           bank: DESKTOP_PROVIDERS[c.provider].bank,
           accounts: c.accounts,
           enabledAccounts: c.enabledAccounts,
           coveredFrom: c.coveredFrom,
           coveredTo: c.coveredTo,
           lastSyncAt: c.lastSyncAt,
-          token: await this.d.tokens.status(c.id),
+          token: c.method === 'token' ? await this.d.tokens.status(c.id) : null,
         });
       }
       people.push({ id: p.id, label: p.label, labelFromBank: p.labelSource === 'bank', labelPending: labelPending(p), color: p.color, connections: own });

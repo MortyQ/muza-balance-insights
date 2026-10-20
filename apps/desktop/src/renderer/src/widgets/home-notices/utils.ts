@@ -15,7 +15,7 @@ export function noTokenText(
 ): string {
   const names = missing.map((c) => labelOf(c.id)).join(', ');
   if (phase === 'needs-token') return t('home.import.needsToken');
-  if (missing.some((c) => c.token.needsReentry)) return t('home.notices.unreadable', { names });
+  if (missing.some((c) => c.token?.needsReentry)) return t('home.notices.unreadable', { names });
   if (missing.length === total) return t('home.notices.noTokenAll');
   return t('home.notices.noTokenSome', { names });
 }

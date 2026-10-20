@@ -36,8 +36,9 @@ export const useParticipantStore = defineStore('participant', () => {
   const connections = computed<ReadonlyArray<ConnectionView>>(() => people.value.flatMap((p) => p.connections));
   const hasConnections = computed(() => connections.value.length > 0);
   /** At least one connection can import now. */
-  const anyToken = computed(() => connections.value.some((c) => c.token.present));
-  const withoutToken = computed(() => connections.value.filter((c) => !c.token.present));
+  const anyToken = computed(() => connections.value.some((c) => c.token?.present === true));
+  /** Token connections without a usable token (a file connection has none to miss). */
+  const withoutToken = computed(() => connections.value.filter((c) => c.token !== null && !c.token.present));
   /** Every account is turned off in «Accounts»: home says so instead of showing nothing. */
   const accountsOff = computed(() => allAccountsOff(connections.value));
   const secureStorage = computed(() => view.value?.secureStorage ?? true);

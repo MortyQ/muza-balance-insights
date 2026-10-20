@@ -1,0 +1,20 @@
+"Individual Entrepreneur TESTOV TEST, Account statement for UA000000000000000000000000001 for the period from 01.10.2026 to 07.10.2026"
+"Date of
+transaction","Time of
+transaction","Type of transaction
+(debit/credit)","Details of
+transaction",Counterparty,"Counterparty
+EDRPOU","Counterparty
+IBAN","Amount in
+account currency","Amount in
+transaction currency","Transaction
+currency",Rate,"Equivalent amount
+at NBU exchange rate
+on date of transaction
+(for credit)","Amount of fees
+in account currency","Balance after
+transaction in
+account currency"
+05.10.2026,16:45:09,Debit,"Transfer to own card","TESTOV TEST",,,-5000.00,-5000.00,UAH,,,0.00,43500.00
+02.10.2026,11:20:45,Debit,"Single tax for Q3 2026, test","TEST TREASURY",11111111,UA000000000000000000000000003,-1500.00,-1500.00,UAH,,,0.00,48500.00
+01.10.2026,10:15:00,Credit,"Payment for services under contract No. 1 dated 01.09.2026","TEST CLIENT LLC",12345678,UA000000000000000000000000002,20000.00,20000.00,UAH,,20000.00,0.00,50000.00

@@ -171,6 +171,22 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setParticipantColor', [1, 'pink']],
     ['setParticipantColor', [1, '#ff0000']],
     ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'x'.repeat(40), remember: true, color: 'green' }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', method: 'file', token: 'x'.repeat(40), remember: true }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', method: 'file', remember: true }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', method: 'oauth' }]],
+    ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', method: 'token' }]],
+    ['openStatement', []],
+    ['openStatement', [0]],
+    ['openStatement', ['/Users/someone/statement.csv']],
+    ['openStatement', [1, '/tmp/x.csv']],
+    ['compareStatement', ['not-a-uuid', { kind: 'account', accountId: 'a' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'account' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'account', accountId: 'a', path: '/tmp/x.csv' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new', type: 'black', id: 'chosen-id' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new', type: '../x' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new' }]],
+    ['commitStatement', ['00000000-0000-4000-8000-000000000000']],
+    ['commitStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'file', path: '/tmp/x.csv' }]],
     ['listConnectionAccounts', []],
     ['listConnectionAccounts', [0]],
     ['listConnectionAccounts', ['1']],
@@ -296,6 +312,14 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }, { label: 'Вигадана', color: 'aqua' }, { fromBank: true, color: 'red' }]) {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
+    }
+    const file = { participant: { id: 3 }, provider: 'monobank', method: 'file' };
+    await expect(ipc.handlers.get('balance:addConnection')!(good, file)).resolves.toEqual({ m: 'addConnection', a: [file] });
+    await expect(ipc.handlers.get('balance:openStatement')!(good, 4)).resolves.toEqual({ m: 'openStatement', a: [4] });
+    for (const target of [{ kind: 'account', accountId: 'file-1' }, { kind: 'new', type: 'black' }, { kind: 'new', type: null }]) {
+      for (const m of ['compareStatement', 'commitStatement']) {
+        await expect(ipc.handlers.get(`balance:${m}`)!(good, '00000000-0000-4000-8000-000000000000', target)).resolves.toEqual({ m, a: ['00000000-0000-4000-8000-000000000000', target] });
+      }
     }
     const flat = { name: 'Квартира', currency: 978, amount: 120_000, until: '2026-12-01', participantId: 2 };
     await expect(ipc.handlers.get('balance:addReserve')!(good, flat)).resolves.toEqual({ m: 'addReserve', a: [flat] });

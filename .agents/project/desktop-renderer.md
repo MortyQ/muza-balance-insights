@@ -294,8 +294,17 @@
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
   Банки — `entities/bank`, только отображение (`BANKS`: `id`, `name`, монограмма / логотип, `status` — доступен / «Скоро»;
-  у доступного — `auth: 'token' | 'oauth' | 'file'`, у Monobank `'token'`; `bankOf` — банк подключения, незнакомый →
-  Monobank); как подключать — в папке банка в `features/integrations`. Подключение — `addConnection` в main (пока только Monobank).
+  у доступного — `ways: ReadonlyArray<'token' | 'oauth' | 'file'>`, the ways the add form offers, the first is the default;
+  Monobank `['token', 'file']`; `bankOf` — банк подключения, незнакомый → Monobank); как подключать — в папке банка в
+  `features/integrations`. Подключение — `addConnection` в main (пока только Monobank).
+- Statement files (`features/integrations/statement-file`): the add form shows «Token» / «Statement file» when the bank
+  has both (`FileConnectForm`: no token, no «Use the name from the bank» — a file has no holder's name). A connection
+  row gets «Upload statement» (a file connection) or «Check against a statement» (a token connection with accounts:
+  compare only) when the bank's forms have `fileSteps`; the panel (`StatementUploadFeature`) comes into the row's
+  `statement` slot from the domain root, since `shared/` must not import a sub-feature. `useStatementUpload`: main
+  opens the file (the renderer never gets its path or text), every change of the card or the new card's type compares
+  again, «Add» writes and refreshes people and the data status. Home with file connections only points to «Upload
+  statement» instead of the import.
 - Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «Люди» — `features/settings/people`
   (имя и «Переименовать», «Взять имя из банка», цвет человека); раздел «Подключения» — `features/integrations`
   (подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий

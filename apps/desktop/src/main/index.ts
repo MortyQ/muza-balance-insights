@@ -1,8 +1,10 @@
 // Electron main. Order matters: identity, sandbox and the app:// scheme privileges are set before `ready`.
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, powerMonitor, powerSaveBlocker, protocol, safeStorage, session, utilityProcess } from 'electron';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
+import { systemTimeZone } from '../shared/dates.ts';
 import { resolveLocale } from '../shared/locale.ts';
 import { importActive } from '../shared/progress.ts';
 import { AutoSync, watchAutoSync } from './auto-sync.ts';
@@ -29,6 +31,7 @@ import { readPrefs, updatePrefs } from './prefs.ts';
 import { SecureStore } from './secure-store.ts';
 import { trustedServicesView } from './services.ts';
 import { runDbSmoke } from './smoke.ts';
+import { StatementsService } from './statements.ts';
 import { TokenVault } from './token.ts';
 import { createUpdater, scheduleChecks } from './update/electron.ts';
 import { RatesService } from './rates.ts';
@@ -205,6 +208,19 @@ app.whenReady().then(async () => {
     send: (v) => void push(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
+  const statements = new StatementsService({
+    db: () => data.database(),
+    pickFile: async () => {
+      const opts = { properties: ['openFile' as const], filters: [{ name: 'CSV', extensions: ['csv'] }] };
+      const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+      return r.canceled ? null : (r.filePaths[0] ?? null);
+    },
+    importRunning: () => importer.running,
+    randomId: () => randomUUID(),
+    nowMs: () => Date.now(),
+    timeZone: systemTimeZone,
+    log: (msg) => process.stderr.write(`${msg}\n`),
+  });
   lock = new LockService({
     userDataDir: userData,
     touchId: createTouchId(() => translator(locale())('main.touchIdReason')),
@@ -213,8 +229,11 @@ app.whenReady().then(async () => {
     // «Идёт импорт» after the import is actually over.
     importRunning: () => importActive(importer.lastProgress),
     now: () => Date.now(),
-    // Whatever the renderer has shown leaves its memory with the page.
-    onLocked: () => win?.webContents.reload(),
+    // Whatever the renderer has shown leaves its memory with the page; a statement kept in main goes too.
+    onLocked: () => {
+      statements.forget();
+      win?.webContents.reload();
+    },
     onChange: (v) => {
       push(LOCK_CHANNEL, v);
       if (v.locked) return;
@@ -249,7 +268,7 @@ app.whenReady().then(async () => {
     confirmRemove: () => confirm('removeConnection'),
     nowSec: () => Math.floor(Date.now() / 1000),
   });
-  // None of these handlers ever returns the token; data handlers return categories, amounts and «black/UAH» labels only.
+  // None of these handlers ever returns the token, a statement file's path or its text; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
     listPeople: () => people.list(),
     addConnection: (input) => integrations.addConnection(input),
@@ -260,6 +279,9 @@ app.whenReady().then(async () => {
     removeConnection: (id) => integrations.remove(id),
     listConnectionAccounts: (id) => integrations.listConnectionAccounts(id),
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
+    openStatement: (connectionId) => statements.open(connectionId),
+    compareStatement: (statementId, target) => statements.compare(statementId, target),
+    commitStatement: (statementId, target) => statements.commit(statementId, target),
     startImport: (from) => importer.start(from),
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),
@@ -278,6 +300,7 @@ app.whenReady().then(async () => {
     deleteAllData: async () => {
       const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
+        statements.forget();
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
         rates.forget();
         await access.afterWipe().catch(() => process.stderr.write('[db] state after wipe failed\n'));

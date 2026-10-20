@@ -4,6 +4,10 @@ import { firstFreeColor } from './colors.ts';
 import type { Db } from './db.ts';
 import { PROVIDER_IDS, type ProviderId } from './providers/types.ts';
 
+/** How a connection gets its data: the bank's API with a credential, or statement files the user uploads. */
+export const CONNECTION_METHODS = ['token', 'file'] as const;
+export type ConnectionMethod = (typeof CONNECTION_METHODS)[number];
+
 export const DEFAULT_PARTICIPANT_LABEL = 'Я';
 /** Longest participant label, typed or from the bank. */
 export const PARTICIPANT_LABEL_MAX = 80;
@@ -18,13 +22,23 @@ export function parseProviderId(value: unknown): ProviderId {
   throw new ConnectionError(`Неизвестный провайдер в базе: «${v.slice(0, 40)}»`);
 }
 
+export function parseConnectionMethod(value: unknown): ConnectionMethod {
+  const v = String(value);
+  if ((CONNECTION_METHODS as readonly string[]).includes(v)) return v as ConnectionMethod;
+  throw new ConnectionError(`Неизвестный способ подключения: «${v.slice(0, 40)}»`);
+}
+
 /**
- * The connection of `provider` while there is only one per provider (apps/mcp with its .env token, the desktop app until
- * several connections are supported): the existing one, or a new one for the first participant (created as «Я» if
- * there is none). Two connections of the provider → an error: the caller must pick one.
+ * The token connection of `provider` while there is only one per provider (apps/mcp with its .env token, the desktop
+ * app until several connections are supported): the existing one, or a new one for the first participant (created as
+ * «Я» if there is none). Two token connections of the provider → an error: the caller must pick one. File connections
+ * are never picked: a token must not land on one.
  */
 export async function ensureDefaultConnection(db: Db, provider: ProviderId, nowSec: number): Promise<number> {
-  const existing = await db.execute({ sql: 'SELECT id FROM connections WHERE provider = ? ORDER BY id', args: [provider] });
+  const existing = await db.execute({
+    sql: `SELECT id FROM connections WHERE provider = ? AND method = 'token' ORDER BY id`,
+    args: [provider],
+  });
   if (existing.rows.length > 1) throw new ConnectionError(`Подключений ${provider} несколько — нужно выбрать одно`);
   if (existing.rows[0]) return Number(existing.rows[0].id);
 

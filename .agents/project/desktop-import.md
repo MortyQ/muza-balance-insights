@@ -18,6 +18,9 @@
   `worker.ts` (сторона worker: клиент, тексты и разбор ошибок); общие типы — `integrations/types.ts`. Таблицы
   `DESKTOP_PROVIDERS` (`net/providers.ts`) и `WORKER_PROVIDERS` (`worker/providers.ts`) только собирают их в
   `Record<ProviderId, …>`: main не импортирует код worker. Сеть банка сюда не входит — она в `FETCH` (`worker/import.ts`).
+- File connections (`connections.method = 'file'`) are outside the import: `DataService.connections()` lists token
+  connections only, so the start, the resume and auto-sync never see them; their accounts are filled by statement
+  uploads (`main/statements.ts`), refused while an import runs.
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
   `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
   банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`, из папок банков); сеть — таблица `FETCH` в

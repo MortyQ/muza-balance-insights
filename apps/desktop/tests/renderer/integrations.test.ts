@@ -61,7 +61,7 @@ describe('banks and their forms', () => {
   it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
     expect(bankOf('monobank')).toBe(MONOBANK);
     expect(bankOf('unknown')).toBe(MONOBANK);
-    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'entities.bank.monobank', status: 'available', auth: 'token' });
+    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'entities.bank.monobank', status: 'available', ways: ['token', 'file'] });
     expect(t(MONOBANK.name)).toBe('Monobank');
     for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
     expect(t(TOKEN_STEPS[0])).toMatch(/api\.monobank\.ua/);

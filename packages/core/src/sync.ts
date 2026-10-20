@@ -320,31 +320,65 @@ export async function commitWindow(
   w: Window,
   items: NormalizedTx[],
 ): Promise<CommitResult> {
-  const { db } = ctx;
-  const nowSec = Math.floor(ctx.clock.nowMs() / 1000);
+  return commitRows(ctx.db, {
+    provider: ctx.api.provider,
+    accountId,
+    window: w,
+    items,
+    nowSec: Math.floor(ctx.clock.nowMs() / 1000),
+    cancelHolds: true,
+    ...(ctx.warn ? { warn: ctx.warn } : {}),
+  });
+}
+
+export type CommitRowsInput = {
+  provider: ProviderId;
+  accountId: string;
+  /** The span the rows cover in full: it joins the account's coverage. */
+  window: Window;
+  items: readonly NormalizedTx[];
+  nowSec: number;
+  /** The API's window: holds it no longer returns are cancelled. A statement file is not asked about holds. */
+  cancelHolds: boolean;
+  /** Statements that go first in the same transaction (a statement file's new account). */
+  before?: readonly Stmt[];
+  warn?: (msg: string) => void;
+};
+
+/**
+ * Rows of one account and its coverage in ONE transaction, then the derivation passes around the span. Refuses a span
+ * that would leave a hole in the coverage (nothing is written).
+ */
+export async function commitRows(db: Db, input: CommitRowsInput): Promise<CommitResult> {
+  const { accountId, window: w, items, nowSec } = input;
 
   const state = await getSyncState(db, accountId);
   if (state && (w.from > state.newest || w.to < state.oldest)) {
     throw new Error(`Окно не примыкает к покрытому периоду счёта ${accountId} — это создало бы дыру`);
   }
 
-  const fetchedIds = new Set(items.map((i) => i.id));
-  const existing = await db.execute({
-    sql: `SELECT id, hold, time FROM transactions
-          WHERE account_id = ? AND time > ? AND time < ? AND is_cancelled = 0`,
-    args: [accountId, w.from, w.to],
-  });
-  const missing = existing.rows.filter((r) => !fetchedIds.has(String(r.id)));
-  const cancelIds = missing.filter((r) => Number(r.hold) === 1).map((r) => String(r.id));
-  const missingNonHold = missing.filter((r) => Number(r.hold) !== 1);
-  for (const r of missingNonHold) {
-    ctx.warn?.(
-      `Транзакция ${String(r.id)} (${toKyivDate(Number(r.time))}, счёт ${accountId}) не холд, но больше не приходит из API — оставляю как есть`,
-    );
+  let cancelIds: string[] = [];
+  let missingNonHolds = 0;
+  if (input.cancelHolds) {
+    const fetchedIds = new Set(items.map((i) => i.id));
+    const existing = await db.execute({
+      sql: `SELECT id, hold, time FROM transactions
+            WHERE account_id = ? AND time > ? AND time < ? AND is_cancelled = 0`,
+      args: [accountId, w.from, w.to],
+    });
+    const missing = existing.rows.filter((r) => !fetchedIds.has(String(r.id)));
+    cancelIds = missing.filter((r) => Number(r.hold) === 1).map((r) => String(r.id));
+    const missingNonHold = missing.filter((r) => Number(r.hold) !== 1);
+    for (const r of missingNonHold) {
+      input.warn?.(
+        `Транзакция ${String(r.id)} (${toKyivDate(Number(r.time))}, счёт ${accountId}) не холд, но больше не приходит из API — оставляю как есть`,
+      );
+    }
+    missingNonHolds = missingNonHold.length;
   }
 
   const overrides = await loadOverrides(db);
-  const stmts: Stmt[] = items.map((it) => upsertStatement(accountId, it, nowSec, overrides, ctx.api.provider));
+  const stmts: Stmt[] = [...(input.before ?? []), ...items.map((it) => upsertStatement(accountId, it, nowSec, overrides, input.provider))];
   if (cancelIds.length > 0) {
     stmts.push({
       sql: `UPDATE transactions SET is_cancelled = 1, synced_at = ?
@@ -371,13 +405,13 @@ export async function commitWindow(
     await recategorize(db, touched);
     await rescope(db, touched);
   } catch (err) {
-    ctx.warn?.(
+    input.warn?.(
       `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${accountId} сохранено, но разметка переводов/категорий/scope ` +
         `не обновлена (${err instanceof Error ? err.message : 'неизвестная ошибка'}). Запусти recategorize.`,
     );
   }
 
-  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds: missingNonHold.length };
+  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds };
 }
 
 /** Fetch (all pages) + atomic commit. In 'wait' mode, a server 429 is waited out and retried. */

@@ -24,6 +24,8 @@ export interface ProviderForms {
   accessNote: MessageKey;
   /** The bank's card types → dictionary keys of their names in «Accounts» (an unknown type shows as it is). */
   cardTypes: Readonly<Record<string, MessageKey>>;
+  /** How to get a statement file, step by step; null — the bank has no file format yet. */
+  fileSteps: ReadonlyArray<MessageKey> | null;
 }
 
 export type SubmitState = { status: 'idle' } | { status: 'saving' } | { status: 'error'; message: string };

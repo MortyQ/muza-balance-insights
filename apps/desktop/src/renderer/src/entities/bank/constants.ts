@@ -8,7 +8,7 @@ export const BANKS = [
     id: 'monobank',
     name: 'entities.bank.monobank',
     status: 'available',
-    auth: 'token',
+    ways: ['token', 'file'],
     monogram: 'm',
     monogramClass: 'bg-black text-white',
   },

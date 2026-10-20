@@ -105,7 +105,7 @@ describe('syncStatusView', () => {
 });
 
 const conn = (id: number, lastSyncAt: string | null): ConnectionView => ({
-  id, provider: 'monobank', bank: 'Monobank', accounts: 1, enabledAccounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt,
+  id, provider: 'monobank', method: 'token', bank: 'Monobank', accounts: 1, enabledAccounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt,
   token: { present: true, stored: 'secure', secureStorage: true, needsReentry: false },
 });
 const person = (id: number, label: string, connections: ConnectionView[]): PersonView => ({ id, label, labelFromBank: false, labelPending: false, color: null, connections });
