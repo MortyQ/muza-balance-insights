@@ -7,7 +7,7 @@ import path from 'node:path';
 import type { Db } from '../src/db.ts';
 import { MCP_ROOT, REPO_ROOT } from '../src/paths.ts';
 import { rederiveAll } from '../src/rederive.ts';
-import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
+import { insertAccountRow, insertTransactionRow, memoryDb } from '@mono/core/test-helpers';
 
 const ENTRY = path.join(MCP_ROOT, 'src', 'cli', 'recategorize.ts');
 
@@ -166,11 +166,10 @@ describe('recategorize: output is aggregates and diagnostics only', () => {
     });
     await insertAccountRow(db, { id: 'jar1', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, balance: 100, updated_at: 1 });
     const tx = (id: string, time: number, amount: number, mcc: number, description: string, extra: { counterName?: string; counterIban?: string; comment?: string } = {}) =>
-      db.execute({
-        sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-                currency_code, balance, comment, counter_name, counter_iban, raw_json, synced_at)
-              VALUES (?, 'card1', ?, '2026-08-05', ?, ?, 0, ?, ?, 980, 0, ?, ?, ?, '{}', 1)`,
-        args: [id, time, description, mcc, amount, amount, extra.comment ?? null, extra.counterName ?? null, extra.counterIban ?? null],
+      insertTransactionRow(db, {
+        id, account_id: 'card1', time, local_date: '2026-08-05', description, mcc, hold: 0, amount, operation_amount: amount,
+        currency_code: 980, balance: 0, comment: extra.comment ?? null, counter_name: extra.counterName ?? null,
+        counter_iban: extra.counterIban ?? null, synced_at: 1,
       });
     await tx('t1', 100, -10_000, 4829, CANARY.counterName, { counterName: CANARY.counterName, counterIban: CANARY.counterIban, comment: CANARY.comment });
     await tx('t2', 200, -5_000, 5411, CANARY.description);

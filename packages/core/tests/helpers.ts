@@ -150,6 +150,20 @@ export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlA
   });
 }
 
+/**
+ * Inserts one operation with exactly the given columns (a fixture), plus the bank's payload (`raw_json`, default
+ * `'{}'`) wherever the schema keeps it. Tests use this instead of a raw INSERT so that a change in where the payload
+ * lives is made in one place.
+ */
+export async function insertTransactionRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
+  const full: Record<string, SqlArg> = { raw_json: '{}', ...row };
+  const cols = Object.keys(full);
+  await db.execute({
+    sql: `INSERT INTO transactions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+    args: cols.map((c) => full[c] as SqlArg),
+  });
+}
+
 /** The single Monobank connection of a test database (created on first use). */
 export async function testConnection(db: Db): Promise<number> {
   return ensureDefaultConnection(db, 'monobank', 0);
