@@ -73,14 +73,14 @@
 
 ## 4. Query shape and plans — `feat(core): range-join buckets and query plans`
 
-- [ ] 4.1 Replace `bucketKeySql` with the bucket range join (design D4) in `spendingLinesSql`, `spendingGrid` and
+- [x] 4.1 Replace `bucketKeySql` with the bucket range join (design D4) in `spendingLinesSql`, `spendingGrid` and
   `incomeSummary` grouped by day or month.
   - Verify: `periods-zones.test.ts` (DST) and `summaries.test.ts` pass unchanged.
-- [ ] 4.2 Add `tests/query-plans.test.ts`. It runs `EXPLAIN QUERY PLAN` for one month of spending, income, search,
+- [x] 4.2 Add `tests/query-plans.test.ts`. It runs `EXPLAIN QUERY PLAN` for one month of spending, income, search,
   12 months by day and `balancesAt`, and asserts there is no `SCAN t`/`SCAN transactions`. Use it to confirm which
   dropped index (task 2.1) no statement needs; restore any that a plan needs, in a new migration.
   - Verify: the test passes.
-- [ ] 4.3 Run the bench and tighten the budgets for the cases this group improves.
+- [x] 4.3 Run the bench and tighten the budgets for the cases this group improves.
   - Verify: `pnpm --filter @mono/core bench` passes.
 
 ## 5. Grouped queries for the desktop screens — `feat(desktop): grouped overview queries`

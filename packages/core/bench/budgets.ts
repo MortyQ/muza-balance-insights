@@ -1,6 +1,6 @@
 // Budgets of bench/run.ts, ms, for the default dataset (bench/generate.ts DEFAULT_BENCH) in an encrypted file.
-// Temporary: the baseline + 20%, at least 5 ms (openspec/changes/core-read-model/baseline.md); tightened as the change
-// lands.
+// The read cases are at the targets of openspec/changes/core-read-model/design.md D8 (several times the measured time,
+// for slower machines); the re-derivation is still the baseline + 20% until incremental re-derivation lands.
 export type BenchCase =
   | 'month by category'
   | 'month income by source'
@@ -11,11 +11,11 @@ export type BenchCase =
   | 'full re-derivation';
 
 export const BUDGETS_MS: Readonly<Record<BenchCase, number>> = {
-  'month by category': 220,
-  'month income by source': 215,
-  '12 months by month': 755,
-  '12 months by day': 870,
-  'spending block set': 11250,
+  'month by category': 20,
+  'month income by source': 20,
+  '12 months by month': 100,
+  '12 months by day': 150,
+  'spending block set': 300,
   'balances at two instants': 5,
   'full re-derivation': 3700,
 };

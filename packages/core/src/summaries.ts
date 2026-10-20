@@ -7,7 +7,7 @@ import { RESYNC_OVERLAP_SEC } from './constants.ts';
 import type { Db } from './db.ts';
 import { currencyAlpha } from './currency.ts';
 import { accountLabels, dateIn, parseLocalDate } from './format.ts';
-import { BUCKETS_CTE, addDays, bucketKeySql, isTimeZone, periodArgs, periodBuckets, periodRange, periodSql, zoneOf, type ZonedPeriod } from './periods.ts';
+import { BUCKETS_CTE, addDays, isTimeZone, periodArgs, periodBuckets, periodRange, periodSql, zoneOf, type ZonedPeriod } from './periods.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId, ProviderIncomeSource } from './providers/types.ts';
@@ -190,12 +190,12 @@ export type SpendingQuery = Period & SpendingFilters & { groupBy?: SpendingGroup
 
 const KEY_SQL: Record<SpendingGroupBy, string> = {
   category: 'category',
-  month: bucketKeySql('time'),
+  month: 'bucket',
   account: 'account_id',
   mcc: `COALESCE(CAST(mcc AS TEXT), '${COMMISSION_KEY}')`,
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
-  day: bucketKeySql('time'),
+  day: 'bucket',
 };
 
 /** Lines that count as spending: not «поступления» / «свои переводы», not zero. Arguments: SPENDING_LINE_ARGS. */
@@ -208,37 +208,45 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  *   category, the commission is a separate «комиссии банка» line (`kind` commission, no operation currency);
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays;
  * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
- * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount. The caller keeps
- * SPENDING_LINE_SQL. With `unit`, the CTE `buckets` of the period's days or months is there too (bucketKeySql).
+ * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket. The caller
+ * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
+ * `buckets`), else NULL. The buckets are the outer loop of a range join (CROSS JOIN fixes the order), so each one is an
+ * index range on `time` (idx_tx_time: per account it would be one seek per account and bucket) and no row looks its
+ * bucket up among all of them. `base` is MATERIALIZED: `lines` reads it
+ * twice (bodies and commissions), and inlined twice the second copy got an automatic index over all operations.
  */
 export async function spendingLinesSql(
   db: Db,
   q: Period & SpendingFilters,
   unit: 'day' | 'month' | null = null,
 ): Promise<{ sql: string; args: Array<string | number> }> {
-  const where = ['t.is_cancelled = 0', periodSql('t')];
-  const args: Array<string | number> = [...periodArgs(q)];
+  // With buckets the period is their union, and only their bounds may reach the time index: given the period's bounds
+  // too, SQLite takes those, and every bucket walks the whole period.
+  const where = unit ? ['t.is_cancelled = 0'] : ['t.is_cancelled = 0', periodSql('t')];
+  const args: Array<string | number> = unit ? [] : [...periodArgs(q)];
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
   accountWhere(q, where, args);
   return {
     sql: `WITH ${unit ? `${BUCKETS_CTE},` : ''}
-          base AS (
+          base AS MATERIALIZED (
             SELECT t.id, a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
                    ${excludedTransferSql(q)} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
-                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission
-            FROM transactions t JOIN accounts a ON a.id = t.account_id
+                   CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission,
+                   ${unit ? 'b.k' : 'NULL'} AS bucket
+            FROM ${unit ? 'buckets b CROSS JOIN transactions t INDEXED BY idx_tx_time ON t.time >= b.s AND t.time < b.e' : 'transactions t'}
+              JOIN accounts a ON a.id = t.account_id
             WHERE ${where.join(' AND ')}
           ),
           lines AS (
             -- body: account-currency amount without the commission; the operation amount never includes it
-            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount
+            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount, bucket
             FROM base WHERE internal = 0
             UNION ALL
             -- commission: account currency only, no operation currency
-            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL FROM base WHERE commission > 0
+            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket FROM base WHERE commission > 0
           )`,
     args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees],
   };
@@ -336,7 +344,7 @@ export async function spendingGrid(db: Db, q: Period & SpendingFilters & { unit:
   const from = await spendingLinesSql(db, q, q.unit);
   const rs = await db.execute({
     sql: `${from.sql}
-          SELECT currency, ${bucketKeySql('time')} AS b, category,
+          SELECT currency, bucket AS b, category,
                  SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
                  SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
                  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds

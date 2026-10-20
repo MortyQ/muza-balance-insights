@@ -134,6 +134,18 @@ Alternatives:
 `buckets b CROSS JOIN transactions t ON t.time >= b.s AND t.time < b.e`. The `CROSS JOIN` makes the buckets the outer
 loop, so each bucket is an index range on `time`. `bucketKeySql` is removed.
 
+Found while implementing (measured on the bench data):
+
+- The bucketed query must not also carry the period's bounds. Given both, SQLite takes the period's bounds for the
+  index, and every bucket walks the whole period: a year by day took 250 ms, slower than the old correlated lookup
+  (135 ms). With the bucket bounds only it takes about 40 ms. The buckets are exactly the period, so nothing changes.
+- The bucketed query names `INDEXED BY idx_tx_time`. With `account_id IN (…)` the planner chose `idx_tx_account_time`,
+  which costs one seek per account and bucket.
+- The `base` CTE of the spending lines is `MATERIALIZED`. `lines` reads it twice (bodies and commissions). Inlined twice,
+  the second copy got an automatic index, which reads every operation. The query-plan test now also fails on an
+  automatic index over the operations.
+- `incomeSummary` grouped by day or month already assigns days in JS, one pass, so it needed no change.
+
 Alternative: integer arithmetic on a fixed offset. Rejected: it is wrong across DST, which the domain rules require
 to be right.
 
@@ -146,6 +158,8 @@ statistics:
 - keep the pair indexes;
 - drop `idx_tx_description`, `idx_tx_local_date`, `idx_tx_category` and `idx_tx_scope` unless a plan test shows a
   statement that needs one. They are low-selectivity or unused, and each one costs a write per upsert and file pages.
+  Confirmed by `tests/query-plans.test.ts`: no statistic needs them. `exchangeRates` reads every `pair_fx` row by design
+  (the nearest exchange may be in any month) and is outside the plan test, as before.
 
 Alternative: a covering index over the statistic columns. Rejected: after D1 the rows are already slim, so a covering
 index would roughly double the write cost of every upsert for a small read gain.

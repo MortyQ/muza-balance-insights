@@ -60,9 +60,6 @@ export function periodBuckets(p: ZonedPeriod, unit: 'day' | 'month'): string {
   return JSON.stringify(out);
 }
 
-/** Buckets b(k, s, e) from one JSON argument (periodBuckets). */
+/** Buckets b(k, s, e) from one JSON argument (periodBuckets); rows join them by `time >= s AND time < e`. */
 export const BUCKETS_CTE =
   "buckets AS MATERIALIZED (SELECT json_extract(value, '$[0]') AS k, json_extract(value, '$[1]') AS s, json_extract(value, '$[2]') AS e FROM json_each(?))";
-
-/** The bucket key of a row by its time column (`expr`). */
-export const bucketKeySql = (expr: string) => `(SELECT b.k FROM buckets b WHERE ${expr} >= b.s AND ${expr} < b.e)`;
