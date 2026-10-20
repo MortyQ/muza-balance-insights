@@ -197,3 +197,35 @@ export async function refreshCrossing(db: Db, range: TimeRange | null = null): P
     await deriveCrossing(db, accounts, range);
   }
 }
+
+/**
+ * What of the accounts can re-mark old rows outside any window: IBANs (the `iban` and `family` rules), jar titles (the
+ * `text` rule) and card types (scope), one entry per account. Only compared (accountInputsChanged), never shown.
+ */
+export type AccountInputs = ReadonlyMap<string, string>;
+
+export async function accountInputs(db: Db): Promise<AccountInputs> {
+  const rs = await db.execute("SELECT id, iban, type, CASE WHEN kind = 'jar' THEN title END AS jar_title FROM accounts");
+  return new Map(rs.rows.map((r) => [String(r.id), JSON.stringify([r.iban ?? null, r.type ?? null, r.jar_title ?? null])]));
+}
+
+/**
+ * True when the import changed what old rows depend on: an existing account's IBAN, type or jar title, or a new account
+ * bringing an IBAN or a jar title not seen before. A new account alone does not: its rows pair only inside its windows.
+ */
+export function accountInputsChanged(before: AccountInputs, after: AccountInputs): boolean {
+  const known = new Set([...before.values()].flatMap((v) => {
+    const [iban, , title] = JSON.parse(v) as [string | null, string | null, string | null];
+    return [iban && `i:${iban}`, title && `t:${title}`].filter((x): x is string => !!x);
+  }));
+  for (const [id, v] of after) {
+    const was = before.get(id);
+    if (was !== undefined) {
+      if (was !== v) return true;
+      continue;
+    }
+    const [iban, , title] = JSON.parse(v) as [string | null, string | null, string | null];
+    if ((iban && !known.has(`i:${iban}`)) || (title && !known.has(`t:${title}`))) return true;
+  }
+  return false;
+}

@@ -43,7 +43,7 @@ column above is the lower bound.
 - **Fewer statistics per screen.** The desktop's overviews ask the core for grouped results once (months, days, people)
   instead of looping. The core gains the grouped variants they need (internal, not offered to MCP tools).
 - **Incremental re-derivation.** At the end of an import only the touched time spans are re-derived. A full pass runs
-  only when it is needed: IBANs or jar titles changed, or a window's derivation failed. A statement upload keeps its
+  only when it is needed: IBANs, jar titles or card types changed, or a window's derivation failed. A statement upload keeps its
   window pass and runs a full pass only when that pass failed. `recategorize` and
   connection removal keep the full pass.
 - **Performance harness.** A synthetic, fictional dataset generator and a bench script in `packages/core` with

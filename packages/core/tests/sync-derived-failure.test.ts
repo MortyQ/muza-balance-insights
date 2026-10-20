@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../src/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { getSyncState, runPlan, type SyncContext, type Window } from '../src/sync.ts';
+import { getSyncState, runPlan, type CommitResult, type SyncContext, type Window } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from './helpers.ts';
 
 vi.mock('../src/categories.ts', async (importOriginal) => ({
@@ -28,10 +28,12 @@ describe('sync with a failing categories pass', () => {
     });
     const clock = fakeClock((t + 3000) * 1000);
     const warnings: string[] = [];
+    const results: CommitResult[] = [];
     const ctx: SyncContext = {
       db, clock,
       api: createMonoClient({ token: TEST_TOKEN, db, fetch: mono.fetch, clock, rateLimitMode: 'wait' }),
       warn: (m) => warnings.push(m),
+      onEvent: (e) => e.type === 'window-done' && results.push(e.result),
     };
 
     await expect(runPlan(ctx, new Map([['black', [w1, w2]]]))).resolves.toBeUndefined();
@@ -41,5 +43,7 @@ describe('sync with a failing categories pass', () => {
     expect(await getSyncState(db, 'black')).toMatchObject({ oldest: w1.from, newest: w2.to });
     expect(warnings).toHaveLength(2);
     expect(warnings[0]).toMatch(/сохранено, но разметка .* не обновлена \(categories exploded\).*Запусти recategorize/);
+    // Each result says so, with its window as the span: the end of an import then runs a full pass.
+    expect(results.map((r) => [r.derivationFailed, r.span])).toEqual([[true, w1], [true, w2]]);
   });
 });

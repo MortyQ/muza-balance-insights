@@ -19,8 +19,9 @@ English interface.
 ### Speed
 
 - **Faster screens.** The balance cards, the «Now» strip, the spending block and analytics open noticeably faster,
-  and they no longer slow down as you add people, accounts or months of history. The first start after this update
-  can take a few seconds longer: the app reorganizes the data it keeps on this computer once.
+  and they no longer slow down as you add people, accounts or months of history. An update of your data finishes
+  sooner once it is downloaded. The first start after this update can take a few seconds longer: the app reorganizes
+  the data it keeps on this computer once.
 
 ## 0.1.9 — 2026-10-07
 

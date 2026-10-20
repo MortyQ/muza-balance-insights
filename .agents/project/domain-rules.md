@@ -73,6 +73,11 @@
 - `groupBy: 'participant'` of `spendingSummary` / `incomeSummary` — internal too, for the desktop's per-person cards:
   one group per participant (key = the id), each with the participant view's rules (family transfers count; every row
   belongs to its account owner), so each group equals that participant's own call. The family total is not their sum.
+- Derivation after a write (`packages/core/src/rederive.ts`): `deriveSpan(db, span)` — transfers and refunds look
+  around the span for partners, then categories, scope and crossing run over everything they touched. `commitRows`
+  runs it per window and reports `span` and `derivationFailed`; a statement upload runs `rederiveCore` only when it
+  failed. `rederiveSpans` (the end of a desktop import) merges the spans and runs `deriveSpan` on each. The stored
+  values must equal a full `rederiveCore`: `tests/derived-equivalence.test.ts`.
 - The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
   exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.

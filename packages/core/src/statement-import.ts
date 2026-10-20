@@ -1,10 +1,11 @@
 // A statement file into an account: first compared with what the account already has (counts only), then written —
 // the account (new, or its balance), the rows and the coverage in one transaction, then the derivation passes as for
-// the API (commitRows). Only an account of a file connection is written; a token connection's account can be compared
-// with a file (the reference check), never written from one.
+// the API (commitRows; a full pass only when that failed). Only an account of a file connection is written; a token
+// connection's account can be compared with a file (the reference check), never written from one.
 import { ConnectionError, parseConnectionMethod, parseProviderId } from './connections.ts';
 import type { Db, Stmt } from './db.ts';
 import type { ParsedStatement } from './providers/types.ts';
+import { rederiveCore } from './rederive.ts';
 import { commitRows, getSyncState, type Window } from './sync.ts';
 
 /** Where the rows go: an account of the connection, or a new card of the file's currency. */
@@ -174,7 +175,7 @@ export async function commitStatement(
           await db.execute({ sql: 'SELECT id FROM transactions WHERE account_id = ? AND time BETWEEN ? AND ?', args: [accountId, span.from, span.to] })
         ).rows.map((r) => String(r.id)),
   );
-  await commitRows(db, {
+  const result = await commitRows(db, {
     provider,
     accountId,
     window: span,
@@ -183,5 +184,8 @@ export async function commitStatement(
     cancelHolds: false,
     before,
   });
+  // The file is one window, and its pass in commitRows is the incremental step: a statement brings no IBAN and no jar.
+  // Only a failed pass needs the full one, before the upload reports success.
+  if (result.derivationFailed) await rederiveCore(db);
   return { added: ids.filter((id) => !known.has(id)).length };
 }

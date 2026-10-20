@@ -51,12 +51,13 @@ produces.
 
 ### Requirement: Re-derivation after an import is incremental
 At the end of an import the core SHALL re-derive only the time spans the import touched. It SHALL run a full
-re-derivation only when the IBANs or jar titles changed during the import, or when deriving a committed window failed.
+re-derivation only when the accounts' IBANs, jar titles or card types changed during the import, or when deriving a
+committed window failed.
 A statement upload SHALL rely on its window's derivation, with a full pass only when that failed. Explicit
 re-derivation (recategorize, connection removal) SHALL stay a full pass.
 
 #### Scenario: Routine auto-sync
-- **WHEN** an auto-sync re-reads the current month and no IBAN or jar title changed
+- **WHEN** an auto-sync re-reads the current month and no IBAN, jar title or card type changed
 - **THEN** only the spans of the committed windows, widened by the pairing windows, are re-derived
 
 #### Scenario: A window's derivation failed

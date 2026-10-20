@@ -185,3 +185,12 @@ export async function allTextInDb(db: Db): Promise<string> {
   }
   return out;
 }
+
+/** Every derived column of every operation, by id: what incremental derivation must leave equal to a full pass. */
+export async function derivedColumns(db: Db): Promise<Array<Record<string, unknown>>> {
+  const rs = await db.execute(
+    `SELECT id, is_internal_transfer, transfer_rule, transfer_pair_id, refund_pair_id, category, crossing_category, scope
+     FROM transactions ORDER BY id`,
+  );
+  return rs.rows.map((r) => ({ ...r }));
+}

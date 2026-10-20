@@ -168,7 +168,8 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   /** The functions that write accounts or sync_state, and how each keeps crossing right. */
   const WRITERS: Record<string, Record<string, RegExp>> = {
     'accounts.ts': { setAccountEnabled: /\brefreshCrossing\(/ },
-    'sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\brefreshCrossing\(/ },
+    // commitRows refreshes through its derivation pass, deriveSpan (rederive.ts, checked below).
+    'sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\bderiveSpan\(/ },
     'participants.ts': { deleteConnection: /\brederiveCore\(/ },
     'statement-import.ts': { commitStatement: /\bcommitRows\(/ },
   };
@@ -191,6 +192,10 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
       expect(bodyOf(fs.readFileSync(new URL(file, SRC), 'utf8'), fn)).toMatch(call);
     },
   );
+
+  it('deriveSpan, the pass of commitRows and of the end of an import, refreshes crossing', () => {
+    expect(bodyOf(fs.readFileSync(new URL('rederive.ts', SRC), 'utf8'), 'deriveSpan')).toMatch(/\brefreshCrossing\(/);
+  });
 
   it('every write in the listed files sits in a listed function', () => {
     for (const [file, fns] of Object.entries(WRITERS)) {

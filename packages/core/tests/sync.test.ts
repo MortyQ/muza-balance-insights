@@ -253,7 +253,9 @@ describe('upsert & holds', () => {
 
     statements.a = [];
     const r = await syncWindow(ctx, 'a', w);
-    expect(r).toMatchObject({ cancelledHolds: 1, missingNonHolds: 1 });
+    expect(r).toMatchObject({ cancelledHolds: 1, missingNonHolds: 1, derivationFailed: false });
+    // The derived span holds the window (the passes look around it for partners).
+    expect(r.span.from <= w.from && r.span.to >= w.to).toBe(true);
     expect(await txRows()).toMatchObject([
       { id: 'h1', cancelled: 1 },
       { id: 'p1', cancelled: 0 },

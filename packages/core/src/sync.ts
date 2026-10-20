@@ -3,7 +3,7 @@
 // bank is the client's (providers/<id>/client.ts).
 import { accountEnabledSql } from './accounts.ts';
 import { RESYNC_OVERLAP_SEC } from './constants.ts';
-import { categorize, loadOverrides, recategorize, type CategoryOverride } from './categories.ts';
+import { categorize, loadOverrides, type CategoryOverride } from './categories.ts';
 import type { Db, Stmt } from './db.ts';
 import { refreshCrossing } from './derived.ts';
 import { RateLimitError, StatementFormatError } from './errors.ts';
@@ -13,9 +13,8 @@ import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from './connections.ts
 import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
 import type { NormalizedTx, ProviderClient, ProviderId } from './providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from './cancel.ts';
-import { markRefunds } from './refunds.ts';
-import { rescope } from './scope.ts';
-import { markInternalTransfers } from './transfers.ts';
+import { deriveSpan } from './rederive.ts';
+import type { TimeRange } from './transfers.ts';
 
 /**
  * Window length we request from `provider`: one hour below its API maximum (Monobank: 31 d + 1 h) as a safety margin
@@ -69,6 +68,10 @@ export type CommitResult = {
   cancelledHolds: number;
   /** Non-hold transactions in the DB that the API no longer returned. Not touched, only reported. */
   missingNonHolds: number;
+  /** The span the derivation passes covered (the window when they failed): the end of an import re-derives it. */
+  span: TimeRange;
+  /** The rows are committed but deriving them failed: only a full pass (rederiveCore) repairs it. */
+  derivationFailed: boolean;
 };
 
 // ---------- accounts ----------
@@ -408,22 +411,20 @@ export async function commitRows(db: Db, input: CommitRowsInput): Promise<Commit
   await db.batch(stmts);
 
   // Derived fields: transfer pairs may straddle windows/accounts, so the pass looks around the window.
-  // The window is already committed: a failure here must not stop the sync. recategorize repairs it.
+  // The window is already committed: a failure here must not stop the sync. A full pass repairs it.
+  let span: TimeRange = { from: w.from, to: w.to };
+  let derivationFailed = false;
   try {
-    const spans = [w, await markInternalTransfers(db, w), await markRefunds(db, w)].filter((r): r is Window => r !== null);
-    const touched = { from: Math.min(...spans.map((r) => r.from)), to: Math.max(...spans.map((r) => r.to)) };
-    await recategorize(db, touched);
-    await rescope(db, touched);
-    // A first coverage row can flip a jar's auto rule, and a statement can create a card: refresh decides full or span.
-    await refreshCrossing(db, touched);
+    span = (await deriveSpan(db, w)).span;
   } catch (err) {
+    derivationFailed = true;
     input.warn?.(
       `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${accountId} сохранено, но разметка переводов/категорий/scope ` +
         `не обновлена (${err instanceof Error ? err.message : 'неизвестная ошибка'}). Запусти recategorize.`,
     );
   }
 
-  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds };
+  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds, span, derivationFailed };
 }
 
 /** Fetch (all pages) + atomic commit. In 'wait' mode, a server 429 is waited out and retried. */

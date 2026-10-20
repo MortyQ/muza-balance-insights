@@ -18,6 +18,13 @@
   `worker.ts` (сторона worker: клиент, тексты и разбор ошибок); общие типы — `integrations/types.ts`. Таблицы
   `DESKTOP_PROVIDERS` (`net/providers.ts`) и `WORKER_PROVIDERS` (`worker/providers.ts`) только собирают их в
   `Record<ProviderId, …>`: main не импортирует код worker. Сеть банка сюда не входит — она в `FETCH` (`worker/import.ts`).
+- **The end of an import** (the `rederive` progress phase, `worker/run-import.ts`): every committed window was
+  already derived by its own pass (`commitRows` → core `deriveSpan`), so the end re-derives only the spans they
+  touched (core `rederiveSpans`, merged; log line `rederive: N spans, categories changed: M`). A full `rederiveCore`
+  (log line: its first report line) when a window's derivation failed (`CommitResult.derivationFailed`) or the
+  accounts' IBANs, jar titles or card types changed during the run (`accountInputs` / `accountInputsChanged` in core
+  `derived.ts`, read before the first window and at the end). A connection's first import brings new IBANs, so it
+  ends with a full pass. Checked by `tests/run-import-derive.test.ts`.
 - File connections (`connections.method = 'file'`) are outside the import: `DataService.connections()` lists token
   connections only, so the start, the resume and auto-sync never see them; their accounts are filled by statement
   uploads (`main/statements.ts`), refused while an import runs.

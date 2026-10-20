@@ -209,6 +209,13 @@ runs `rederiveCore` only when that pass failed: a statement brings no IBAN and n
 `rederiveCore` keeps its signature and its printed report. It gains the crossing step at its end, and that step prints
 nothing. The `rederive` progress phase stays, so the renderer is unchanged.
 
+Findings (group 6):
+- Card types are compared too: scope reads the account type (`fop`), so a changed type re-scopes old rows. A new
+  account counts only when it brings an IBAN or a jar title not seen before (`accountInputsChanged`, `derived.ts`).
+- `deriveSpan` (`rederive.ts`) is the one pass behind `commitRows` and `rederiveSpans`.
+- In `derived-equivalence.test.ts` either safety net alone keeps the values equal: the per-window pass widened to the
+  partners it touched, or the end-of-import span pass. Removing both breaks the test, so it guards both.
+
 Alternative: drop the end-of-import pass entirely and rely on the per-window passes. Rejected: a pair whose halves
 arrive in windows of different connections may be derived before its partner exists. The span pass over merged spans
 is cheap and covers that case.

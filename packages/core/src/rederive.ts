@@ -4,11 +4,11 @@
 // (apps/mcp/tests/recategorize-safety.test.ts). Change what it prints only after the user's ok.
 import { recategorize } from './categories.ts';
 import type { Db } from './db.ts';
-import { rederiveCrossing } from './derived.ts';
+import { refreshCrossing, rederiveCrossing } from './derived.ts';
 import { categoryCounts, transferDiagnostics } from './queries.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope, scopeCounts } from './scope.ts';
-import { markInternalTransfers } from './transfers.ts';
+import { markInternalTransfers, type TimeRange } from './transfers.ts';
 
 export async function rederiveCore(db: Db): Promise<string[]> {
   await markInternalTransfers(db);
@@ -30,3 +30,42 @@ export async function rederiveCore(db: Db): Promise<string[]> {
   for (const c of await categoryCounts(db)) report.push(`  ${String(c.n).padStart(6)}  ${c.category}`);
   return report;
 }
+
+/** Spans that overlap or touch merged into one, oldest first. */
+export function mergeSpans(spans: readonly TimeRange[]): TimeRange[] {
+  const out: TimeRange[] = [];
+  for (const s of [...spans].sort((a, b) => a.from - b.from || a.to - b.to)) {
+    const last = out.at(-1);
+    if (last && s.from <= last.to) last.to = Math.max(last.to, s.to);
+    else out.push({ ...s });
+  }
+  return out;
+}
+
+/**
+ * The derivation passes around one span (a committed window, or a merged span at the end of an import): transfers and
+ * refunds look around it for partners, then categories, scope and crossing run over everything they touched. Returns
+ * that span and how many categories changed. Throws on a failure: the caller decides what repairs it.
+ */
+export async function deriveSpan(db: Db, w: TimeRange): Promise<{ span: TimeRange; changed: number }> {
+  const spans = [w, await markInternalTransfers(db, w), await markRefunds(db, w)].filter((r): r is TimeRange => r !== null);
+  const span = { from: Math.min(...spans.map((r) => r.from)), to: Math.max(...spans.map((r) => r.to)) };
+  const changed = await recategorize(db, span);
+  await rescope(db, span);
+  // A first coverage row can flip a jar's auto rule, and a statement can create a card: refresh decides full or span.
+  await refreshCrossing(db, span);
+  return { span, changed };
+}
+
+/**
+ * The end of an import whose windows all derived and whose accounts did not change what old rows depend on
+ * (accountInputsChanged in derived.ts): only the
+ * spans the import touched, merged, each through deriveSpan. Prints nothing; a full pass is rederiveCore.
+ */
+export async function rederiveSpans(db: Db, spans: readonly TimeRange[]): Promise<{ spans: number; changed: number }> {
+  const merged = mergeSpans(spans);
+  let changed = 0;
+  for (const s of merged) changed += (await deriveSpan(db, s)).changed;
+  return { spans: merged.length, changed };
+}
+

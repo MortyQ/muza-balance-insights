@@ -106,24 +106,24 @@
 
 ## 6. Incremental re-derivation after an import — `feat(core): incremental re-derivation`
 
-- [ ] 6.1 Core:
+- [x] 6.1 Core:
   - `commitRows` returns its derived span and a `derivationFailed` flag;
   - `commitStatement` runs `rederiveCore` only when its window's derivation failed;
   - add `rederiveSpans(db, spans)`, which merges overlapping spans and runs transfers → refunds → categories → scope →
     crossing in range mode.
   - Verify: unit tests for span merging, for a failed window, and for a statement upload (no extra pass on success, a
     full pass on failure).
-- [ ] 6.2 Worker `run-import.ts`: collect spans, compare the IBANs and jar titles at the start and the end, and call
+- [x] 6.2 Worker `run-import.ts`: collect spans, compare the IBANs and jar titles at the start and the end, and call
   `rederiveSpans` or `rederiveCore` (design D7). The `rederive` progress phase and the log line stay.
   - Verify: the worker tests cover the routine case (spans only), a new account without a new IBAN (spans only), a
     new IBAN or jar title (full pass) and a failed window (full pass).
-- [ ] 6.3 Add `packages/core/tests/derived-equivalence.test.ts`.
+- [x] 6.3 Add `packages/core/tests/derived-equivalence.test.ts`.
   - Run a fictional multi-window, two-connection import with a toggle in the middle, and a statement upload to a file
     connection.
   - Then run a full `rederiveCore` on a copy.
   - Every derived column must be equal.
   - Verify: the test passes.
-- [ ] 6.4 Update `.agents/project/desktop-import.md` (what the `rederive` phase does), and extend the CHANGELOG entry:
+- [x] 6.4 Update `.agents/project/desktop-import.md` (what the `rederive` phase does), and extend the CHANGELOG entry:
   an update finishes sooner after the data is downloaded.
   - Verify: the release-notes test passes.
 
