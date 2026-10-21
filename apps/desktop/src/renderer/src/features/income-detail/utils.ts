@@ -66,7 +66,7 @@ export function summaryView(v: Readonly<IncomeOverview>, who: string, fmt: Money
     subtitle: [periodTitle(v.range), who].filter(Boolean).join(' · '),
     amount: fmt.money(s.total),
     conv: fmt.approxInline(s.total),
-    chip: changeChip(s.total, s.prev?.total ?? null, v.compare, v.range.kind === 'week' ? 'week' : 'month'),
+    chip: changeChip(s.total, s.prev?.total ?? null, v.compare, fmt, v.range.kind === 'week' ? 'week' : 'month'),
     prev: s.prev ? prev.amount(fmt.money(s.prev.total)) : '',
     note: '',
     stats,

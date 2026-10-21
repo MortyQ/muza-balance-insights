@@ -265,10 +265,10 @@
       "avg": "avg {amount}",
       "change": {
         "week": {
-          "less": "{pct}% less than last week",
-          "lessPartial": "{pct}% less than by this day last week",
-          "more": "{pct}% more than last week",
-          "morePartial": "{pct}% more than by this day last week",
+          "less": "{diff} less than last week",
+          "lessPartial": "{diff} less than by this day last week",
+          "more": "{diff} more than last week",
+          "morePartial": "{diff} more than by this day last week",
           "same": "as last week"
         }
       },
@@ -605,10 +605,10 @@
         "utilities": "Utilities"
       },
       "change": {
-        "less": "{pct}% less than in {month}",
-        "lessPartial": "{pct}% less than by this day in {month}",
-        "more": "{pct}% more than in {month}",
-        "morePartial": "{pct}% more than by this day in {month}",
+        "less": "{diff} less than in {month}",
+        "lessPartial": "{diff} less than by this day in {month}",
+        "more": "{diff} more than in {month}",
+        "morePartial": "{diff} more than by this day in {month}",
         "new": "new",
         "same": "as in {month}",
         "srLess": "less than in {month}",
@@ -627,12 +627,12 @@
       "importing": "Import in progress — the numbers fill in as the statement downloads.",
       "inMonth": "In {month}",
       "insights": {
-        "incomeLess": "Income is {pct}% below usual",
-        "incomeMore": "Income is {pct}% above usual",
+        "incomeLess": "Income is {diff} below usual",
+        "incomeMore": "Income is {diff} above usual",
         "incomeNormal": "Income is at its usual level",
-        "less": "{name} — {pct}% less than usual (−{amount})",
+        "less": "{name} — {diff} less than usual",
         "months": "{n} month | {n} months | {n} months",
-        "more": "{name} — {pct}% more than usual (+{amount})",
+        "more": "{name} — {diff} more than usual",
         "noteMonth": "Compared with the median of {months}",
         "noteRunning": "Compared with the median whole month of {months}: this month is still running",
         "overMonth": "{name} — already {amount} more than in a usual whole month",

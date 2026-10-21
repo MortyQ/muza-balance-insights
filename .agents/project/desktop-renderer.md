@@ -207,7 +207,7 @@
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
   Under the cells, «By category» opens a panel (`VCollapse`, unmounted while closed) with a «Today | Week» switch and
   every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
-  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: %, «same», «new»).
+  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: the amount only, no room for %, «same», «new»).
   Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
   default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen,
   which each row opens for that day or week.
@@ -223,7 +223,10 @@
   the main currency, «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
   main served the cached rates offline, or «no rates»).
 - **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
-  one look and one rule for «Spending» and the strip.
+  one look and one rule for «Spending» and the strip. A change against a base is said in money first, the percent in
+  brackets — «+1 090 ₴ (9%)», in a sentence «1 090 ₴ (9%) more than…» (`changeText`; analytics: `diffText`): a
+  percent alone reads wrong over a small base. Dictionary keys take it as `{diff}`. Shares («45% of the family») stay
+  percent only.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.

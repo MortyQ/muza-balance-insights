@@ -23,6 +23,10 @@ English interface.
 - **Swipe through the cards.** When the cards are open, swipe them sideways on a trackpad or a touch screen, drag them
   with the mouse, or use Shift and the wheel; they stop on whole cards. The arrows at the top still work, the dots under
   the cards show where you are and take you to a card, and folding the cards brings them back to the first one.
+- **Changes in money, not only in percent.** Every comparison with an earlier period — under the spending ring, in
+  the people list, in «Now», «What's unusual», on the category and income screens and in «Analytics» — now shows how
+  much more or less in your currency, with the percent in brackets: «+1 090 ₴ (9%)». A change over a small amount no
+  longer reads as a frightening «+14 500%» on its own. The category lists of «Now» show the amount alone, to fit.
 
 ### Fixes
 

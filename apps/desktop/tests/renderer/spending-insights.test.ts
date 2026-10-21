@@ -40,10 +40,10 @@ describe('insightsView', () => {
       FMT,
     )!;
     expect(v.lines).toEqual([
-      { text: `Аптеки и здоровье — на 100% меньше обычного (−${uah(160_000)})`, tone: 'down' },
-      { text: `Доставка — на 123% больше обычного (+${uah(123_000)})`, tone: 'up' },
-      { text: `Кафе и рестораны — на 40% меньше обычного (−${uah(80_000)})`, tone: 'down' },
-      { text: 'Доходы на 30% ниже обычного', tone: 'neutral' },
+      { text: `Аптеки и здоровье — на ${uah(160_000)} (100%) меньше обычного`, tone: 'down' },
+      { text: `Доставка — на ${uah(123_000)} (123%) больше обычного`, tone: 'up' },
+      { text: `Кафе и рестораны — на ${uah(80_000)} (40%) меньше обычного`, tone: 'down' },
+      { text: `Доходы на ${uah(30_000)} (30%) ниже обычного`, tone: 'neutral' },
     ]);
     expect(v.note).toBe('Сравнение с медианой за 5 месяцев');
   });
@@ -77,7 +77,7 @@ describe('insightsView', () => {
 
   it('income alone when only it is off; nothing at all — null; no usual — null', () => {
     const calm = USUAL.categories.map((c) => cat(c.category, c.categoryId, c.net));
-    expect(insightsView(view(calm), FMT)!.lines).toEqual([{ text: 'Доходы на 30% ниже обычного', tone: 'neutral' }]);
+    expect(insightsView(view(calm), FMT)!.lines).toEqual([{ text: `Доходы на ${uah(30_000)} (30%) ниже обычного`, tone: 'neutral' }]);
     expect(insightsView(view(calm, { ...USUAL, income: { now: 100_000, usual: 100_000 } }), FMT)).toBeNull();
     expect(insightsView(view(calm, null), FMT)).toBeNull();
   });
