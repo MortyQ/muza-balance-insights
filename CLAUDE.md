@@ -13,7 +13,7 @@ A local stdio MCP server: Monobank transactions → SQLite → ready-made spendi
   clock, the logger and ids are passed in (`packages/core/src/shared/platform.ts`). Checked by
   `packages/core/tests/purity.test.ts` and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime
   dependencies: only `zod` and `@date-fns/tz`. `src/` is layered folders (`shared` → `storage` → `providers` → `people`
-  → `derive` → `read` → `ingest` | `commands`; «Layout» in `.agents/project/core-providers.md`). Exports are TS sources
+  → `derive` → `read` → `ingest` | `commands`; `.agents/project/core-layout.md`). Exports are TS sources
   per module: `@mono/core/<folder>/<module>` → `src/<folder>/<module>.ts`, no build step. Domain tests live in
   `packages/core/tests`, in the same folders, and run on the Node adapter (a devDependency).
 - `packages/db-libsql` (`@mono/db-libsql`): the Node libsql adapter → `Db` (PRAGMA, WAL). It does not depend on core
@@ -106,7 +106,8 @@ been opened yet, read the relevant file yourself before editing.
 
 | File | Read when | Pulled in by |
 |---|---|---|
-| `.agents/project/core-providers.md` | the core's folder layout, bank providers, the domain boundary | `packages/core/CLAUDE.md` |
+| `.agents/project/core-layout.md` | **before adding, moving or splitting a module in `packages/core`**: layers, where new code goes, tests | `packages/core/CLAUDE.md` |
+| `.agents/project/core-providers.md` | bank providers, the domain boundary | `packages/core/CLAUDE.md` |
 | `.agents/project/core-people.md` | participants, connections, `runPlans`, the order of import windows | `packages/core/CLAUDE.md` |
 | `.agents/project/domain-rules.md` | categories, transfers, refunds, fees, scope, aggregates, `search`, `findRecurring` | `packages/core/CLAUDE.md`, `apps/mcp/CLAUDE.md` |
 | `.agents/project/mcp-server.md` | MCP tools, the response format | `apps/mcp/CLAUDE.md` |
