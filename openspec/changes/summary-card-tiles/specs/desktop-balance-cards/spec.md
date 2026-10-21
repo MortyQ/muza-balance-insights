@@ -1,0 +1,44 @@
+# Spec Delta
+
+## MODIFIED Requirements
+
+### Requirement: Total card looks like a summary, not a bank card
+
+The total of the view (the family, a picked person, and each person in the family view) SHALL be shown on a summary
+card that does not use any bank's look and keeps the card's size. Its header SHALL be a band tinted with the colours of
+the people it adds up, holding a summary icon, the title, a «Total» label and the people as coloured dots. Under it the
+card SHALL show the caption with the account count beside it, and the amount with its conversion to the other picked
+currencies beside it. At the bottom it SHALL show tiles: own funds («Actually») and the reserved amount when reserves
+are set against the card, and the month's net. It SHALL NOT show the foreign-currency rate line. Negative figures (the
+amount, own funds, the month's net) SHALL be drawn in a soft red that tells a minus apart without the full danger
+colour, in both themes.
+
+#### Scenario: Family view
+
+- **WHEN** the family view is shown
+- **THEN** the front card is the summary card with a dot per person and a header band in their colours, and each person's card in the row is a summary card in their colour
+
+#### Scenario: One person
+
+- **WHEN** a person is picked
+- **THEN** the front card is their summary card, and every card after it is an account card
+
+#### Scenario: Reserves set
+
+- **WHEN** reserves are set against the card
+- **THEN** the amount is what is free, and the tiles show own funds, the reserved amount and the month's net
+
+#### Scenario: No reserves
+
+- **WHEN** no reserve is set against the card
+- **THEN** only the month's net tile is shown, with no empty tiles
+
+#### Scenario: Foreign currency held
+
+- **WHEN** the view holds money in another currency
+- **THEN** it is counted in the amount, and no «incl. … at the rate …» line is shown on the card
+
+#### Scenario: A minus
+
+- **WHEN** the amount or the month's net is below zero
+- **THEN** that figure is drawn in the soft red, and the month's tile is tinted the soft red instead of green
