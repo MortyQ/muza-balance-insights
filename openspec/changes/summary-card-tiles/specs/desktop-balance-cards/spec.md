@@ -58,13 +58,18 @@ colour, in both themes.
 
 #### Scenario: A person below zero in the shares
 
-- **WHEN** a person's free amount is zero or below
-- **THEN** they have no part of the bar and their amount in the line is drawn in the soft red
+- **WHEN** some people's free amounts are above zero and others' are below
+- **THEN** every person with a non-zero amount has a part of the bar sized by the amount's size, a minus hatched in the person's colour, and the amount in the line is drawn in the soft red
+
+#### Scenario: Nobody above zero
+
+- **WHEN** every person's free amount is zero, or every one is below zero
+- **THEN** the card shows no bar, only the line with each person's amount
 
 #### Scenario: Many people
 
 - **WHEN** the family has more than three people
-- **THEN** the line names the three with the largest free amounts and «+N» for the rest, the full list in its tooltip, while the bar keeps a part for everyone above zero
+- **THEN** the line names the three with the largest free amounts and «+N» for the rest, the full list in its tooltip, while the bar keeps a part for everyone whose amount is not zero
 
 #### Scenario: Many people in the header
 
@@ -85,3 +90,8 @@ colour, in both themes.
 
 - **WHEN** the amount or the month's net is below zero
 - **THEN** that figure is drawn in the soft red, and the month's tile is tinted the soft red instead of green
+
+#### Scenario: A month at zero
+
+- **WHEN** the month's net is exactly zero
+- **THEN** the month's tile is neutral, with no arrow and no sign

@@ -74,8 +74,8 @@ strip is a bank card's move).
 
 A CSS grid with one column per tile shown (`repeat(n, minmax(0, 1fr))`): with reserves — «Actually», «Reserved», the
 month; without — the month alone, full width. Neutral tiles are `--surface-sunken`. The month tile is
-`--success-subtle` with `--success` text when the net is zero or above, `--negative-soft-bg` with `--negative-soft` text
-below zero; the arrow follows the sign as today. The month label is a new key `home.balances.inMonthTitle`
+`--success-subtle` with `--success` text above zero, `--negative-soft-bg` with `--negative-soft` text below zero, and
+neutral (`--surface-sunken`, no arrow, «0 ₴» without a sign) at exactly zero (canvas X2); the arrow follows the sign. The month label is a new key `home.balances.inMonthTitle`
 («In {month}{year}», capitalised, same placeholders as `inMonth`), the «Actually» tile `home.balances.actualTile`.
 
 ### 4. Soft red
@@ -118,13 +118,19 @@ Alternative: chips under the amount (D) or a full-width row (G) (rejected by the
 Only the family's front card, with two or more people. `slidesOf` builds an item per person: `name` — the first word
 of their label (the first name, no surname; «pending» while the label is), `amount` / `value` — that person's free
 amount, their own card's big figure (`ownFunds - reserved`), converted and formatted in whole units (`fmt.money`, no
-decimals); `color` — their accent. The bar is a flex row of `flex-grow: max(value, 0)` parts (at least 4 px) with 2 px
-gaps, 6 px high, for every person above zero — also those not named in the line; a person at zero or below has no
-part, and their amount is `text-negative-soft`. All at zero or below — no bar, the line only. The line names at most
+decimals); `color` — their accent. The bar (canvas X5) is a flex row of parts with 2 px gaps, 6 px high: one per person whose
+amount is not zero — also those not named in the line — with `flex-grow: |value|` and at least 4 px. Above zero the
+part is the person's colour; below zero it is hatched in it (`repeating-linear-gradient(135deg, color-mix(in oklch,
+<accent> 55%, var(--surface)) 0 3px, var(--surface) 3px 5px)`), so a debt shows its size without passing for money.
+Nobody above zero (everyone at zero, or everyone below — canvas X1, X2) — no bar, the line only. An amount below
+zero is `text-negative-soft` in the line. The line names at most
 three people, the largest `value` first, then `more` — «+{n}» (`home.balances.morePeople`) for the rest, '' with
 three or fewer; names truncate, amounts never; `all` — every «name amount» joined by « · », the line's `title`. The
 header shows at most five dots, then «+{n}» (the same key) for the rest; the band's gradient keeps every person's
 colour.
+
+Alternative for the bar: parts for those above zero only (canvas X3; rejected: one person in the plus fills the
+whole bar beside a family in the minus), or no bar as soon as anyone is below zero (X4; rejected: loses the picture).
 
 Alternative: two rows of three, up to six named (canvas M2), or a summary line / initials (M3, M4) (rejected by the
 user: three names stay readable beside the conversions column).

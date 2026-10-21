@@ -28,10 +28,11 @@
   verified by unit tests next to the existing `formatMoney` / `moneyFormat` tests
 - [ ] 2.2 `SummaryCardProps` as in design §1 (`fx`, `people`, `freeShare` instead of `approx`); `features/balances`
   `slidesOf` builds them (§7–9); verified by `slidesOf` tests: no «also» currency → empty `fx`; the family with
-  people, a person below zero, four people → three named and «+1», first names only, whole-unit amounts; the meter's clamping and sum, no reserves → null; the
+  people, a person below zero, four people → three named and «+1», first names only, whole-unit amounts; mixed signs, all at zero, all below zero; the month at zero; the meter's clamping and sum, no reserves → null; the
   family card never gets `freeShare`
 - [ ] 2.3 `SummaryCard.vue`: the two-column body, the column, the shares bar and line, the meter; verified by component
-  tests in `balances.test.ts` (column rows or none, bar parts per positive person, soft red amount, five dots and
+  tests in `balances.test.ts` (column rows or none, bar parts per non-zero person with a hatched minus, no bar when
+  nobody is above zero, the neutral zero month tile, soft red amount, five dots and
   «+N» in the header, meter widths and labels)
 - [ ] 2.4 Dictionaries: `home.balances.atRate`, `freeShare`, `reservedShare`, `morePeople` in uk, en and ru; verified
   by `tests/i18n.test.ts`
