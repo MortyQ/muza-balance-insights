@@ -157,7 +157,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
     version: 4,
     name: 'transactions: transfer_pair_id / transfer_rule (internal transfer detection, phase 3)',
     statements: [
-      // Set by the post-sync pass in src/transfers.ts, never by the upsert.
+      // Set by the post-sync pass in src/derive/transfers.ts, never by the upsert.
       // transfer_pair_id: the other half of a pair; NULL for single-row rules (iban, text).
       `ALTER TABLE transactions ADD COLUMN transfer_pair_id TEXT`,
       `ALTER TABLE transactions ADD COLUMN transfer_rule TEXT
@@ -223,7 +223,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
     version: 6,
     name: 'transactions.refund_pair_id (a purchase and its refund that came with a different MCC)',
     statements: [
-      // Set on both rows by src/refunds.ts; the refund takes the purchase's category. Not a transfer.
+      // Set on both rows by src/derive/refunds.ts; the refund takes the purchase's category. Not a transfer.
       `ALTER TABLE transactions ADD COLUMN refund_pair_id TEXT`,
       `CREATE INDEX IF NOT EXISTS idx_tx_refund_pair ON transactions (refund_pair_id)`,
     ],
@@ -232,7 +232,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
     version: 7,
     name: 'transactions.scope (personal | business), scope_overrides, settings',
     statements: [
-      // Computed by src/scope.ts after categories; 'personal' until the first pass.
+      // Computed by src/derive/scope.ts after categories; 'personal' until the first pass.
       `ALTER TABLE transactions ADD COLUMN scope TEXT NOT NULL DEFAULT 'personal' CHECK (scope IN ('personal', 'business'))`,
       `CREATE INDEX IF NOT EXISTS idx_tx_scope ON transactions (scope)`,
       `CREATE TABLE IF NOT EXISTS scope_overrides (
@@ -242,7 +242,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
         scope      TEXT NOT NULL CHECK (scope IN ('personal', 'business')),
         UNIQUE (pattern, match_type)
       )`,
-      // Only non-default values are stored; defaults live in src/settings.ts.
+      // Only non-default values are stored; defaults live in src/people/settings.ts.
       `CREATE TABLE IF NOT EXISTS settings (
         key   TEXT PRIMARY KEY,
         value TEXT NOT NULL

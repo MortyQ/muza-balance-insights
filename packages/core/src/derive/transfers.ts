@@ -11,10 +11,10 @@
 // sender and income of the receiver when one person is viewed), excluded only when the whole family is viewed.
 // Thresholds come from real data (phase 3 report): all mirrors within 0–14 s. What a transfer, an own-transfer text
 // or an auto top-up looks like is the provider's (providers/<id>/rules.ts), per account.
-import type { Db, Stmt } from './storage/db.ts';
-import { accountProviders, providerOf } from './connections.ts';
-import { rulesFor } from './providers/rules.ts';
-import type { ProviderId, ProviderRules } from './providers/types.ts';
+import type { Db, Stmt } from '../storage/db.ts';
+import { accountProviders, providerOf } from '../people/connections.ts';
+import { rulesFor } from '../providers/rules.ts';
+import type { ProviderId, ProviderRules } from '../providers/types.ts';
 
 /** Max |Δt| between the two halves of a pair, seconds. */
 export const TRANSFER_WINDOW_SEC = 20;

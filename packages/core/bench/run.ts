@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openLibsql } from '@mono/db-libsql';
 import type { Db } from '../src/storage/db.ts';
-import { rederiveCore, rederiveSpans } from '../src/rederive.ts';
+import { rederiveCore, rederiveSpans } from '../src/derive/rederive.ts';
 import { balancesAt } from '../src/status.ts';
 import { startOfDayIn } from '../src/shared/format.ts';
 import { incomeSummary, spendingGrid, spendingSummary } from '../src/summaries.ts';

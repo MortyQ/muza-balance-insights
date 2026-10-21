@@ -3,7 +3,7 @@
 // only through the allowlist — each provider's client only its own services. One job per process: main forks a fresh worker for every import.
 import { net } from 'electron';
 import { migrate, type Db } from '@mono/core/storage/db';
-import { refreshCrossing } from '@mono/core/derived';
+import { refreshCrossing } from '@mono/core/derive/derived';
 import type { FetchLike } from '@mono/core/shared/platform';
 import type { ProviderId } from '@mono/core/providers/types';
 import { openLibsql } from '@mono/db-libsql';

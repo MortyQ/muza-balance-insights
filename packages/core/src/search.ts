@@ -2,16 +2,16 @@
 // Text matching runs in JS (SQLite LOWER/LIKE do not fold Cyrillic case) over description + counter_name,
 // so a full name in the query still matches; the answer shows names only as initials (displayCounterName),
 // unless the user turned on settings.reveal_full_names.
-import { ENABLED_ACCOUNT_IDS_SQL } from './accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL } from './people/accounts.ts';
 import type { Db } from './storage/db.ts';
 import { toMajor } from './shared/currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from './shared/format.ts';
-import { accountProviders, providerOf } from './connections.ts';
+import { accountProviders, providerOf } from './people/connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
 import { periodArgs, periodSql } from './shared/periods.ts';
-import { getSettings } from './settings.ts';
-import { isScope, type Scope } from './scope.ts';
+import { getSettings } from './people/settings.ts';
+import { isScope, type Scope } from './derive/scope.ts';
 import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './summaries.ts';
 
 export const SEARCH_DEFAULT_LIMIT = 50;

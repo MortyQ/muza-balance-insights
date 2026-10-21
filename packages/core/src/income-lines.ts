@@ -1,7 +1,7 @@
 // Every income line in a period — the rows behind incomeSummary, for the desktop's income screen. The same rows by
 // construction (incomeRowsSql), so they sum to its totals. Unlike the summaries, the answer carries the bank's text
 // (description, comment, counter_name): it is for the user's own screen, never for an MCP tool or the anonymised copy.
-import { accountProviders, providerOf } from './connections.ts';
+import { accountProviders, providerOf } from './people/connections.ts';
 import type { Db } from './storage/db.ts';
 import { rulesFor } from './providers/rules.ts';
 import { incomeRowsSql, incomeSource, periodInfo, validateFilters, type Filters, type IncomeSource, type Period, type PeriodInfo } from './summaries.ts';

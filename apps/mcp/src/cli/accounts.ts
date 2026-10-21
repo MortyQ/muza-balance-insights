@@ -4,7 +4,7 @@ import { getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
 import { formatDuration } from '@mono/core/shared/format';
 import { log } from '../log.ts';
-import { ensureDefaultConnection } from '@mono/core/connections';
+import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { systemClock } from '../clock.ts';
 import { syncAccounts } from '@mono/core/sync';

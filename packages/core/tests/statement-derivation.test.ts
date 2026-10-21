@@ -1,17 +1,17 @@
 // A statement upload relies on its window's derivation pass: no full pass after it, unless that pass failed.
-// Separate file: vi.mock wraps src/rederive.ts for every test in the file. Invented data only.
+// Separate file: vi.mock wraps src/derive/rederive.ts for every test in the file. Invented data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../src/storage/db.ts';
-import { addConnection, addParticipant } from '../src/participants.ts';
+import { addConnection, addParticipant } from '../src/people/participants.ts';
 import { monobankStatement } from '../src/providers/monobank/statement.ts';
-import * as rederive from '../src/rederive.ts';
+import * as rederive from '../src/derive/rederive.ts';
 import { commitStatement } from '../src/statement-import.ts';
 import { derivedColumns, memoryDb } from './helpers.ts';
 
 const failNext = vi.hoisted(() => ({ value: false }));
-vi.mock('../src/rederive.ts', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../src/rederive.ts')>();
+vi.mock('../src/derive/rederive.ts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/derive/rederive.ts')>();
   return {
     ...real,
     rederiveCore: vi.fn(real.rederiveCore),

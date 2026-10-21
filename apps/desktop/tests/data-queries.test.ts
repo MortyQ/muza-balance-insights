@@ -3,8 +3,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import { kyivStartOfDay } from '@mono/core/shared/format';
-import { addConnection, addParticipant } from '@mono/core/participants';
-import { rederiveCore } from '@mono/core/rederive';
+import { addConnection, addParticipant } from '@mono/core/people/participants';
+import { rederiveCore } from '@mono/core/derive/rederive';
 import { insertAccountRow, memoryDb, testConnection } from '@mono/core/test-helpers';
 import { DataService } from '../src/main/data.ts';
 import type { RatesView } from '../src/shared/api.ts';

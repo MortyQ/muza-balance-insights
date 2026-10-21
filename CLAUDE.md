@@ -53,7 +53,7 @@ Rules:
 - `pnpm --filter @mono/mcp recategorize` is run by the agent itself when needed (exactly this command, no arguments, as a
   separate call: it is outside the OS sandbox via `sandbox.excludedCommands`, everything else is sandboxed). Rules:
   - the recategorize code and everything it imports (`apps/mcp/src/cli/recategorize.ts` → `apps/mcp/src/rederive.ts` →
-    `packages/core/src/rederive.ts` → …) does not read `.env`, does not import `config.ts` and does not call `getToken`;
+    `packages/core/src/derive/rederive.ts` → …) does not read `.env`, does not import `config.ts` and does not call `getToken`;
     the DB path comes from `apps/mcp/src/paths.ts`, `MONO_DB_PATH` from the environment only;
   - output is aggregates and diagnostics only: no `description`, `counter_name`, `comment`, `iban`, `masked_pan`;
   - both rules are checked by `apps/mcp/tests/recategorize-safety.test.ts` (the import graph through workspace packages by

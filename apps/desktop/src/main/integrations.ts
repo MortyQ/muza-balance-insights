@@ -1,10 +1,11 @@
 // «Подключения» in main: a participant's bank connections (core participants.ts) together with their tokens
 // (TokenVault) — add, a new token, its accounts on / off, remove. Replies carry numbers only — never a token or the bank's holder id.
 // The list of people with their connections is PeopleService's (people.ts); this service does not use it.
-import { listConnectionAccounts, setAccountEnabled } from '@mono/core/accounts';
-import { ConnectionError, type ConnectionMethod } from '@mono/core/connections';
+import { deleteConnection, setAccountEnabled } from '@mono/core/commands/people';
+import { listConnectionAccounts } from '@mono/core/people/accounts';
+import { ConnectionError, type ConnectionMethod } from '@mono/core/people/connections';
 import type { Db } from '@mono/core/storage/db';
-import { addConnection, addParticipant, deleteConnection, listConnections } from '@mono/core/participants';
+import { addConnection, addParticipant, listConnections } from '@mono/core/people/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 import type {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateDataset, loadDataset, type BenchOptions } from '../bench/generate.ts';
-import { rederiveCore } from '../src/rederive.ts';
+import { rederiveCore } from '../src/derive/rederive.ts';
 import { memoryDb } from './helpers.ts';
 
 const SMALL: BenchOptions = { seed: 7, operations: 3000, days: 400, endSec: Math.floor(Date.UTC(2026, 9, 18, 12) / 1000), payloadBytes: 200 };

@@ -3,16 +3,16 @@
 import fs from 'node:fs';
 import { openLibsql } from '@mono/db-libsql';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setAccountEnabled } from '../src/accounts.ts';
-import { MIGRATIONS, migrate, type Db, type Stmt } from '../src/storage/db.ts';
-import { refreshCrossing } from '../src/derived.ts';
-import { kyivStartOfDay, toKyivDate } from '../src/shared/format.ts';
-import { addConnection, addParticipant, deleteConnection } from '../src/participants.ts';
-import { monobankStatement } from '../src/providers/monobank/statement.ts';
-import { rederiveCore } from '../src/rederive.ts';
-import { commitStatement } from '../src/statement-import.ts';
-import { commitRows } from '../src/sync.ts';
-import { insertAccountRow, insertTransactionRow, memoryDb, testConnection } from './helpers.ts';
+import { deleteConnection, setAccountEnabled } from '../../src/commands/people.ts';
+import { MIGRATIONS, migrate, type Db, type Stmt } from '../../src/storage/db.ts';
+import { refreshCrossing } from '../../src/derive/derived.ts';
+import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
+import { addConnection, addParticipant } from '../../src/people/participants.ts';
+import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import { rederiveCore } from '../../src/derive/rederive.ts';
+import { commitStatement } from '../../src/statement-import.ts';
+import { commitRows } from '../../src/sync.ts';
+import { insertAccountRow, insertTransactionRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());
@@ -100,7 +100,7 @@ describe('refreshCrossing: when the accounts change', () => {
     const conn = await addConnection(db, me, 'monobank', 0, 'file');
     await refreshCrossing(db);
     expect(await fingerprint()).not.toContain('file-card-1');
-    const parsed = monobankStatement.parse(fs.readFileSync(new URL('./providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+    const parsed = monobankStatement.parse(fs.readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
     if (!parsed.ok) throw new Error(parsed.problem);
     await commitStatement(db, conn, parsed.statement, { kind: 'new', id: 'file-card-1', type: 'black' }, 1);
     expect(await fingerprint()).toContain('file-card-1');
@@ -163,14 +163,13 @@ describe('refreshCrossing: nothing changed', () => {
 });
 
 describe('every writer of accounts or coverage refreshes crossing', () => {
-  const SRC = new URL('../src/', import.meta.url);
+  const SRC = new URL('../../src/', import.meta.url);
   const WRITES = /\b(INSERT INTO|UPDATE|DELETE FROM|REPLACE INTO)\s+(accounts|sync_state)\b/;
   /** The functions that write accounts or sync_state, and how each keeps crossing right. */
   const WRITERS: Record<string, Record<string, RegExp>> = {
-    'accounts.ts': { setAccountEnabled: /\brefreshCrossing\(/ },
-    // commitRows refreshes through its derivation pass, deriveSpan (rederive.ts, checked below).
+    'commands/people.ts': { setAccountEnabled: /\brefreshCrossing\(/, deleteConnection: /\brederiveCore\(/ },
+    // commitRows refreshes through its derivation pass, deriveSpan (derive/rederive.ts, checked below).
     'sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\bderiveSpan\(/ },
-    'participants.ts': { deleteConnection: /\brederiveCore\(/ },
     'statement-import.ts': { commitStatement: /\bcommitRows\(/ },
   };
   const bodyOf = (src: string, name: string): string => {
@@ -197,7 +196,7 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   );
 
   it('deriveSpan, the pass of commitRows and of the end of an import, refreshes crossing', () => {
-    expect(bodyOf(fs.readFileSync(new URL('rederive.ts', SRC), 'utf8'), 'deriveSpan')).toMatch(/\brefreshCrossing\(/);
+    expect(bodyOf(fs.readFileSync(new URL('derive/rederive.ts', SRC), 'utf8'), 'deriveSpan')).toMatch(/\brefreshCrossing\(/);
   });
 
   it('every write in the listed files sits in a listed function', () => {

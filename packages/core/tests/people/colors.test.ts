@@ -2,9 +2,9 @@
 // (connections.holder_name, restoreBankLabel). Fictional names only.
 import { openLibsql } from '@mono/db-libsql';
 import { afterEach, describe, expect, it } from 'vitest';
-import { ColorTakenError, COLOR_KEYS, firstFreeColor } from '../src/colors.ts';
-import { ConnectionError } from '../src/connections.ts';
-import { MIGRATIONS, migrate, type Db } from '../src/storage/db.ts';
+import { ColorTakenError, COLOR_KEYS, firstFreeColor } from '../../src/people/colors.ts';
+import { ConnectionError } from '../../src/people/connections.ts';
+import { MIGRATIONS, migrate, type Db } from '../../src/storage/db.ts';
 import {
   addConnection,
   addParticipant,
@@ -13,10 +13,10 @@ import {
   renameParticipant,
   restoreBankLabel,
   setParticipantColor,
-} from '../src/participants.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { syncAccounts } from '../src/sync.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, memoryDb } from './helpers.ts';
+} from '../../src/people/participants.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
+import { syncAccounts } from '../../src/sync.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, memoryDb } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());

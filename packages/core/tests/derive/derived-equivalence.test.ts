@@ -3,17 +3,17 @@
 // connection — and a full rederiveCore afterwards moves no derived value. Fictional data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { setAccountEnabled } from '../src/accounts.ts';
-import type { Db } from '../src/storage/db.ts';
-import { accountInputs, accountInputsChanged } from '../src/derived.ts';
-import { addConnection, addParticipant } from '../src/participants.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { monobankStatement } from '../src/providers/monobank/statement.ts';
-import { rederiveCore, rederiveSpans } from '../src/rederive.ts';
-import { commitStatement } from '../src/statement-import.ts';
-import { WINDOW_SEC, interleavePlan, planHistory, syncAccounts, syncWindow, type SyncContext } from '../src/sync.ts';
-import type { TimeRange } from '../src/transfers.ts';
-import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection, type RawItem } from './helpers.ts';
+import { setAccountEnabled } from '../../src/commands/people.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { accountInputs, accountInputsChanged } from '../../src/derive/derived.ts';
+import { addConnection, addParticipant } from '../../src/people/participants.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
+import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import { rederiveCore, rederiveSpans } from '../../src/derive/rederive.ts';
+import { commitStatement } from '../../src/statement-import.ts';
+import { WINDOW_SEC, interleavePlan, planHistory, syncAccounts, syncWindow, type SyncContext } from '../../src/sync.ts';
+import type { TimeRange } from '../../src/derive/transfers.ts';
+import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection, type RawItem } from '../helpers.ts';
 
 const TOKEN_B = 'test-token-B-SHOULD-NEVER-LEAK-77aa';
 let db: Db;
@@ -105,7 +105,7 @@ describe('incremental derivation equals a full pass', () => {
     await rederiveSpans(db, spans);
 
     const file = await addConnection(db, meParticipant, 'monobank', 0, 'file');
-    const parsed = monobankStatement.parse(readFileSync(new URL('./providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+    const parsed = monobankStatement.parse(readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
     if (!parsed.ok) throw new Error(parsed.problem);
     await commitStatement(db, file, parsed.statement, { kind: 'new', id: 'file-card', type: 'black' }, now);
 

@@ -1,5 +1,5 @@
 import { openLibsql } from '@mono/db-libsql';
-import { ensureDefaultConnection } from '../src/connections.ts';
+import { ensureDefaultConnection } from '../src/people/connections.ts';
 import { migrate, type Db, type SqlArg } from '../src/storage/db.ts';
 import type { Clock } from '../src/shared/platform.ts';
 

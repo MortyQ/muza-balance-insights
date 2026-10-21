@@ -1,5 +1,6 @@
 // Bank providers stay behind their contract (src/providers/types.ts): the domain never reaches into a provider's
-// folder, providers never reach into each other, and re-deriving (rederive.ts) never loads a client with network code.
+// folder, providers never reach into each other, and re-deriving (derive/rederive.ts) never loads a client with network
+// code.
 // The rules are a checker over file texts, so each one is also run against a small broken tree that must fail.
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
@@ -37,11 +38,11 @@ const DOMAIN_MAY_IMPORT = new Set(['providers/types.ts', 'providers/rules.ts', '
 
 /**
  * Bank-specific values that must not appear in domain code (comments stripped).
- * rederive.ts is exempt for «4829» only: it is part of the recategorize report text, which changes only with the
+ * derive/rederive.ts is exempt for «4829» only: it is part of the recategorize report text, which changes only with the
  * user's ok (CLAUDE.md).
  */
 const BANK_LITERALS: ReadonlyArray<{ re: RegExp; what: string; exempt?: ReadonlyArray<string> }> = [
-  { re: /\b4829\b/, what: 'MCC 4829', exempt: ['rederive.ts'] },
+  { re: /\b4829\b/, what: 'MCC 4829', exempt: ['derive/rederive.ts'] },
   { re: /\b6012\b/, what: 'MCC 6012' },
   { re: /['"`]fop['"`]/, what: "account type 'fop'" },
   { re: /Від:|ГУК|З Чорної|Щомісячний/, what: 'Monobank description text' },
@@ -78,16 +79,16 @@ function violations(files: Files): string[] {
       for (const l of BANK_LITERALS) if (l.re.test(code) && !l.exempt?.includes(file)) out.push(`${file}: ${l.what}`);
     }
   }
-  // Re-deriving must not load a client (network code): the closure of rederive.ts over relative imports.
+  // Re-deriving must not load a client (network code): the closure of derive/rederive.ts over relative imports.
   const seen = new Set<string>();
-  const stack = files.has('rederive.ts') ? ['rederive.ts'] : [];
+  const stack = files.has('derive/rederive.ts') ? ['derive/rederive.ts'] : [];
   while (stack.length > 0) {
     const f = stack.pop()!;
     if (seen.has(f) || !files.has(f)) continue;
     seen.add(f);
     stack.push(...localImports(f, files.get(f)!));
   }
-  for (const f of seen) if (/^providers\/[^/]+\/client\.ts$/.test(f)) out.push(`rederive.ts reaches ${f}`);
+  for (const f of seen) if (/^providers\/[^/]+\/client\.ts$/.test(f)) out.push(`derive/rederive.ts reaches ${f}`);
   return out;
 }
 
@@ -104,7 +105,7 @@ function readTree(dir: string, base = dir): Map<string, string> {
 describe('provider boundary', () => {
   it('the real tree has none of the violations', () => {
     const tree = readTree(SRC);
-    expect(tree.has('providers/types.ts') && tree.has('providers/monobank/client.ts') && tree.has('rederive.ts')).toBe(true);
+    expect(tree.has('providers/types.ts') && tree.has('providers/monobank/client.ts') && tree.has('derive/rederive.ts')).toBe(true);
     expect(violations(tree)).toEqual([]);
   });
 
@@ -120,7 +121,7 @@ describe('provider boundary', () => {
     ['providers/x/statement.ts', "import type { StatementFileParser } from '../types.ts';\nimport { TEXTS } from './descriptions.ts';"],
     ['categories.ts', "import { rulesFor } from './providers/rules.ts';"],
     ['statement-import.ts', "import { statementParserOf } from './providers/statements.ts';"],
-    ['rederive.ts', "import { recategorize } from './categories.ts';"],
+    ['derive/rederive.ts', "import { recategorize } from '../categories.ts';"],
   ];
   const broken = (edits: Array<[string, string]>) => violations(new Map([...legal, ...edits]));
 
@@ -134,7 +135,7 @@ describe('provider boundary', () => {
     ['the contract imports something', [['providers/types.ts', "import type { Db } from '../db.ts';"]], 'the contract imports something'],
     ['the registry imports a client', [['providers/rules.ts', "import { c } from './x/client.ts';"]], 'the rules registry imports providers/x/client.ts'],
     ['the statements registry imports a client', [['providers/statements.ts', "import { c } from './x/client.ts';"]], 'the statements registry imports providers/x/client.ts'],
-    ['rederive reaches a client', [['providers/x/rules.ts', "import { c } from './client.ts';"]], 'rederive.ts reaches providers/x/client.ts'],
+    ['rederive reaches a client', [['providers/x/rules.ts', "import { c } from './client.ts';"]], 'derive/rederive.ts reaches providers/x/client.ts'],
     ['MCC in the domain', [['categories.ts', 'const T = 4829;']], 'categories.ts: MCC 4829'],
     ['6012 in the domain', [['summaries.ts', 'if (mcc === 6012) {}']], 'summaries.ts: MCC 6012'],
     ["'fop' in the domain", [['scope.ts', "if (type === 'fop') {}"]], "scope.ts: account type 'fop'"],

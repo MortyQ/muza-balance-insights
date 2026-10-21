@@ -5,11 +5,11 @@
 // (`COALESCE(t.crossing_category, t.category)`, `t.crossing_category IS NULL`); only writers derive it:
 // - range mode — the rows of a committed window's span (commitRows), after its transfer marks;
 // - full mode — when the accounts' fingerprint changed (refreshCrossing), and at the end of rederiveCore.
-import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from './accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from '../people/accounts.ts';
 import { categorize, loadOverrides } from './categories.ts';
-import { accountProviders, providerOf } from './connections.ts';
-import type { Db, Stmt } from './storage/db.ts';
-import { rulesFor } from './providers/rules.ts';
+import { accountProviders, providerOf } from '../people/connections.ts';
+import type { Db, Stmt } from '../storage/db.ts';
+import { rulesFor } from '../providers/rules.ts';
 import type { TimeRange } from './transfers.ts';
 
 /** derived_state key of the accounts' fingerprint crossing was last derived for in full. */

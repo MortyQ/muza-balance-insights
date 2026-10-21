@@ -12,8 +12,8 @@ import { localDate } from '../shared/dates.ts';
 import type { Clock, FetchLike } from '@mono/core/shared/platform';
 import { rulesFor } from '@mono/core/providers/rules';
 import type { ProviderId } from '@mono/core/providers/types';
-import { accountInputs, accountInputsChanged } from '@mono/core/derived';
-import { rederiveCore, rederiveSpans } from '@mono/core/rederive';
+import { accountInputs, accountInputsChanged } from '@mono/core/derive/derived';
+import { rederiveCore, rederiveSpans } from '@mono/core/derive/rederive';
 import {
   ConnectionDuplicateError,
   ConnectionMismatchError,
@@ -23,7 +23,7 @@ import {
   type SyncContext,
   type Window,
 } from '@mono/core/sync';
-import type { TimeRange } from '@mono/core/transfers';
+import type { TimeRange } from '@mono/core/derive/transfers';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';

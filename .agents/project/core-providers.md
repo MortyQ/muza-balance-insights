@@ -12,7 +12,7 @@
     `packages/core/tests/providers-boundary.test.ts` (с «ломающими» примерами);
   - Monobank: `providers/monobank/{rules,descriptions,client,constants}.ts`;
   - провайдер счёта — `connections.provider` его подключения (`accountProviders` / `providerOf` в
-    `packages/core/src/connections.ts`); счёт без подключения — ошибка, а не значение по умолчанию;
+    `packages/core/src/people/connections.ts`); счёт без подключения — ошибка, а не значение по умолчанию;
   - statement files, the provider's third, optional half: `providers/<id>/statement.ts` (a pure `StatementFileParser`:
     text → `ParsedStatement` or a `StatementProblem` code), listed in `providers/statements.ts` — the domain's third door
     (the boundary test allows only `<id>/statement.ts` and `types.ts` there). Monobank takes the card statement in

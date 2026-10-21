@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import { SyncCancelledError } from '@mono/core/shared/cancel';
 import { ConnectionDuplicateError, ConnectionMismatchError, WINDOW_SEC, getSyncState } from '@mono/core/sync';
-import { addConnection, addParticipant } from '@mono/core/participants';
+import { addConnection, addParticipant } from '@mono/core/people/participants';
 import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
 import { FromWorker } from '../src/shared/import-protocol.ts';
 import { RETRY_BUDGET_MS, RETRY_EVERY_MS, RETRY_FIRST_MS, SLEEP_TOLERANCE_MS, sleptDuringPause } from '../src/shared/retry.ts';

@@ -4,10 +4,10 @@
 // Rule: same account, a credit the provider calls a refund candidate (Monobank: MCC 4829, not «Від: …»),
 // amount = |purchase|, the purchase not transfer-like, the credit 0–15 min after the purchase, strictly one-to-one
 // (smallest Δt, ties by id).
-import type { Db, Stmt } from './storage/db.ts';
-import { accountProviders, providerOf } from './connections.ts';
-import { rulesFor } from './providers/rules.ts';
-import type { ProviderId } from './providers/types.ts';
+import type { Db, Stmt } from '../storage/db.ts';
+import { accountProviders, providerOf } from '../people/connections.ts';
+import { rulesFor } from '../providers/rules.ts';
+import type { ProviderId } from '../providers/types.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const REFUND_WINDOW_SEC = 15 * 60;

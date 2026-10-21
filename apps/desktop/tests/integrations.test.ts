@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
-import { BANK_LABEL_PLACEHOLDER } from '@mono/core/participants';
+import { BANK_LABEL_PLACEHOLDER } from '@mono/core/people/participants';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import type { IntegrationsService } from '../src/main/integrations.ts';
 import { registerIpc, type IpcEventLike } from '../src/main/ipc.ts';

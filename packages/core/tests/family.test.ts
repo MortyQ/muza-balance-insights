@@ -4,9 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/storage/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
 import { incomeLines } from '../src/income-lines.ts';
-import { rederiveCore } from '../src/rederive.ts';
+import { rederiveCore } from '../src/derive/rederive.ts';
 import { incomeSummary, spendingSummary } from '../src/summaries.ts';
-import { detectTransfers, type TransferAccount, type TransferTx } from '../src/transfers.ts';
+import { detectTransfers, type TransferAccount, type TransferTx } from '../src/derive/transfers.ts';
 import { insertAccountRow, memoryDb, testConnection } from './helpers.ts';
 
 describe('detectTransfers: family (pure)', () => {

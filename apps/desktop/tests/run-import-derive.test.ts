@@ -3,15 +3,15 @@
 // Mock Monobank, fictional data only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
-import * as rederive from '@mono/core/rederive';
+import * as rederive from '@mono/core/derive/rederive';
 import { WINDOW_SEC } from '@mono/core/sync';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
 import type { FromWorker } from '../src/shared/import-protocol.ts';
 import { runImport } from '../src/worker/run-import.ts';
 
 const failNext = vi.hoisted(() => ({ value: false }));
-vi.mock('@mono/core/rederive', async (importOriginal) => {
-  const real = await importOriginal<typeof import('@mono/core/rederive')>();
+vi.mock('@mono/core/derive/rederive', async (importOriginal) => {
+  const real = await importOriginal<typeof import('@mono/core/derive/rederive')>();
   return {
     ...real,
     rederiveCore: vi.fn(real.rederiveCore),

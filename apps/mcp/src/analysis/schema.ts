@@ -39,7 +39,7 @@ export const ANALYSIS_SCHEMA = {
     { name: 'balance', type: 'INTEGER' },
     { name: 'has_counter', type: 'INTEGER' }, // counter_name IS NOT NULL; the name itself is never read
     { name: 'category', type: 'TEXT' },
-    { name: 'scope', type: 'TEXT' }, // personal | business (src/scope.ts)
+    { name: 'scope', type: 'TEXT' }, // personal | business (packages/core/src/derive/scope.ts)
     { name: 'is_internal_transfer', type: 'INTEGER' },
     { name: 'transfer_rule', type: 'TEXT' }, // pair / pair_fx / pair_fee / jar_reversal / iban / text / family
     { name: 'transfer_pair_id', type: 'TEXT' }, // id of the other half (a transaction id, not a counterparty)

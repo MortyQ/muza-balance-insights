@@ -8,7 +8,7 @@ import { categoryLines } from '../src/category-lines.ts';
 import { startOfDayIn } from '../src/shared/format.ts';
 import { incomeLines } from '../src/income-lines.ts';
 import { findRecurring } from '../src/recurring.ts';
-import { rederiveCore } from '../src/rederive.ts';
+import { rederiveCore } from '../src/derive/rederive.ts';
 import { searchTransactions } from '../src/search.ts';
 import { balancesAt } from '../src/status.ts';
 import { comparePeriods, incomeSummary, spendingGrid, spendingSummary } from '../src/summaries.ts';

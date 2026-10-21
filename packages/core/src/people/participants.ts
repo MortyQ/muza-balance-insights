@@ -3,11 +3,10 @@
 import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
 import { ConnectionError, PARTICIPANT_LABEL_MAX, parseConnectionMethod, parseProviderId, type ConnectionMethod } from './connections.ts';
-import type { Db } from './storage/db.ts';
-import { TIMEZONE } from './shared/constants.ts';
-import { dateIn, dateTimeIn } from './shared/format.ts';
-import type { ProviderId } from './providers/types.ts';
-import { rederiveCore } from './rederive.ts';
+import type { Db } from '../storage/db.ts';
+import { TIMEZONE } from '../shared/constants.ts';
+import { dateIn, dateTimeIn } from '../shared/format.ts';
+import type { ProviderId } from '../providers/types.ts';
 
 /** Label of a participant whose name the bank will give on the first import. */
 export const BANK_LABEL_PLACEHOLDER = 'Новый участник';
@@ -146,36 +145,4 @@ export async function addConnection(
     args: [participantId, parseProviderId(provider), parseConnectionMethod(method), nowSec],
   });
   return Number(rs.rows[0]?.id);
-}
-
-export type DeletedConnection = { accounts: number; transactions: number; participantRemoved: boolean };
-
-/**
- * Deletes a connection with all its data (accounts, transactions, coverage, request slot) in one transaction; its
- * participant goes too if it has no other connection. Then everything derived is recomputed: transfers that paired
- * with the deleted rows (family, pair) are re-matched for the rest.
- */
-export async function deleteConnection(db: Db, id: number): Promise<DeletedConnection> {
-  const c = await db.execute({ sql: 'SELECT participant_id FROM connections WHERE id = ?', args: [id] });
-  const row = c.rows[0];
-  if (!row) throw new ConnectionError('Такого подключения нет');
-  const participantId = Number(row.participant_id);
-  const count = await db.execute({
-    sql: `SELECT (SELECT COUNT(*) FROM accounts WHERE connection_id = ?) AS accounts,
-                 (SELECT COUNT(*) FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE a.connection_id = ?) AS transactions,
-                 (SELECT COUNT(*) FROM connections WHERE participant_id = ? AND id <> ?) AS siblings`,
-    args: [id, id, participantId, id],
-  });
-  const n = count.rows[0];
-  const own = 'SELECT id FROM accounts WHERE connection_id = ?';
-  await db.batch([
-    { sql: `DELETE FROM transactions WHERE account_id IN (${own})`, args: [id] },
-    { sql: `DELETE FROM sync_state WHERE account_id IN (${own})`, args: [id] },
-    { sql: 'DELETE FROM accounts WHERE connection_id = ?', args: [id] },
-    { sql: 'DELETE FROM api_calls WHERE connection_id = ?', args: [id] },
-    { sql: 'DELETE FROM connections WHERE id = ?', args: [id] },
-    { sql: 'DELETE FROM participants WHERE id = ? AND NOT EXISTS (SELECT 1 FROM connections WHERE participant_id = ?)', args: [participantId, participantId] },
-  ]);
-  await rederiveCore(db);
-  return { accounts: Number(n?.accounts ?? 0), transactions: Number(n?.transactions ?? 0), participantRemoved: Number(n?.siblings ?? 0) === 0 };
 }

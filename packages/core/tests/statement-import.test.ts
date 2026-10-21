@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Db } from '../src/storage/db.ts';
-import { addConnection, addParticipant } from '../src/participants.ts';
+import { addConnection, addParticipant } from '../src/people/participants.ts';
 import { monobankStatement } from '../src/providers/monobank/statement.ts';
 import type { ParsedStatement } from '../src/providers/types.ts';
 import { StatementImportError, commitStatement, compareStatement, statementRowIds } from '../src/statement-import.ts';

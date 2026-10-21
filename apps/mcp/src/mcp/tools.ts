@@ -5,12 +5,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { CATEGORY } from '@mono/core/categories';
+import { CATEGORY } from '@mono/core/derive/categories';
 import type { Db } from '../db.ts';
 import { currencyAlpha, currencyNumeric, toMajor } from '@mono/core/shared/currency';
 import { log } from '../log.ts';
 import type { Clock, MonoClient } from '@mono/core/providers/monobank/client';
-import { SCOPES } from '@mono/core/scope';
+import { SCOPES } from '@mono/core/derive/scope';
 import { getBalances, getSyncStatus } from '@mono/core/status';
 import {
   INCOME_GROUP_BY,

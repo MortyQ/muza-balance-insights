@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { exportAnalysis } from '../src/analysis/export.ts';
-import { recategorize } from '@mono/core/categories';
+import { recategorize } from '@mono/core/derive/categories';
 import type { Db } from '../src/db.ts';
 import { createMonoClient, type StatementItem } from '@mono/core/providers/monobank/client';
 import { rederiveAll } from '../src/rederive.ts';
@@ -16,8 +16,8 @@ import {
   removeScopeOverride,
   rescope,
   scopeOverrideCandidates,
-} from '@mono/core/scope';
-import { SettingsError, getSettings, setSetting } from '@mono/core/settings';
+} from '@mono/core/derive/scope';
+import { SettingsError, getSettings, setSetting } from '@mono/core/people/settings';
 import { commitWindow, type SyncContext } from '@mono/core/sync';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
 

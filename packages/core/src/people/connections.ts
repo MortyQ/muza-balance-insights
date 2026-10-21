@@ -1,8 +1,8 @@
 // Participants (who) and connections (a bank + a credential). An account belongs to exactly one connection; the
 // connection says which provider's rules and client apply to it.
 import { firstFreeColor } from './colors.ts';
-import type { Db } from './storage/db.ts';
-import { PROVIDER_IDS, type ProviderId } from './providers/types.ts';
+import type { Db } from '../storage/db.ts';
+import { PROVIDER_IDS, type ProviderId } from '../providers/types.ts';
 
 /** How a connection gets its data: the bank's API with a credential, or statement files the user uploads. */
 export const CONNECTION_METHODS = ['token', 'file'] as const;

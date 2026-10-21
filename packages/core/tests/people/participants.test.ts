@@ -1,20 +1,20 @@
 // People and connections (migration v9, participants.ts), the holder's name from the bank, duplicates, several
 // connections in one run (runPlans), deleting a connection, balances per participant. Fictional data only.
 import { afterEach, describe, expect, it } from 'vitest';
-import { ConnectionError } from '../src/connections.ts';
-import type { Db } from '../src/storage/db.ts';
+import { deleteConnection } from '../../src/commands/people.ts';
+import { ConnectionError } from '../../src/people/connections.ts';
+import type { Db } from '../../src/storage/db.ts';
 import {
   BANK_LABEL_PLACEHOLDER,
   addConnection,
   addParticipant,
-  deleteConnection,
   listConnections,
   listParticipants,
   renameParticipant,
-} from '../src/participants.ts';
-import { MonoApiError, createMonoClient } from '../src/providers/monobank/client.ts';
-import { rederiveCore } from '../src/rederive.ts';
-import { getBalances } from '../src/status.ts';
+} from '../../src/people/participants.ts';
+import { MonoApiError, createMonoClient } from '../../src/providers/monobank/client.ts';
+import { rederiveCore } from '../../src/derive/rederive.ts';
+import { getBalances } from '../../src/status.ts';
 import {
   ConnectionDuplicateError,
   WINDOW_SEC,
@@ -22,8 +22,8 @@ import {
   runPlans,
   syncAccounts,
   type SyncContext,
-} from '../src/sync.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, insertTransactionRow, item, memoryDb, type FakeClock } from './helpers.ts';
+} from '../../src/sync.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, insertTransactionRow, item, memoryDb, type FakeClock } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());

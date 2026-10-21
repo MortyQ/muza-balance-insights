@@ -3,11 +3,11 @@
 // 10 minutes, on a new file and on the app lock. The renderer never gets the path, the name or the text; the log gets
 // a code or a count only.
 import fs from 'node:fs/promises';
-import { listConnectionAccounts } from '@mono/core/accounts';
-import { ConnectionError } from '@mono/core/connections';
+import { listConnectionAccounts } from '@mono/core/people/accounts';
+import { ConnectionError } from '@mono/core/people/connections';
 import type { Db } from '@mono/core/storage/db';
 import { dateIn } from '@mono/core/shared/format';
-import { listConnections } from '@mono/core/participants';
+import { listConnections } from '@mono/core/people/participants';
 import { statementParserOf } from '@mono/core/providers/statements';
 import type { ParsedStatement } from '@mono/core/providers/types';
 import { StatementImportError, commitStatement, compareStatement, type StatementTarget } from '@mono/core/statement-import';

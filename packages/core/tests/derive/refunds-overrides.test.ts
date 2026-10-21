@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { recategorize } from '../src/categories.ts';
-import type { Db } from '../src/storage/db.ts';
-import { OverrideError, addOverride, listOverrides, overrideCandidates, removeOverride } from '../src/overrides.ts';
-import { spendingByCategory, transferDiagnostics } from '../src/queries.ts';
-import { REFUND_WINDOW_SEC, detectRefunds, markRefunds, type RefundTx } from '../src/refunds.ts';
-import { markInternalTransfers } from '../src/transfers.ts';
-import { insertAccount, memoryDb } from './helpers.ts';
+import { recategorize } from '../../src/derive/categories.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { OverrideError, addOverride, listOverrides, overrideCandidates, removeOverride } from '../../src/derive/overrides.ts';
+import { transferDiagnostics } from '../../src/derive/diagnostics.ts';
+import { spendingByCategory } from '../../src/queries.ts';
+import { REFUND_WINDOW_SEC, detectRefunds, markRefunds, type RefundTx } from '../../src/derive/refunds.ts';
+import { markInternalTransfers } from '../../src/derive/transfers.ts';
+import { insertAccount, memoryDb } from '../helpers.ts';
 
 let db: Db;
 

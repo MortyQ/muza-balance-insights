@@ -16,7 +16,7 @@ import {
   removeScopeOverride,
   scopeOverrideCandidates,
   type MatchType,
-} from '@mono/core/scope';
+} from '@mono/core/derive/scope';
 
 const USAGE = [
   'pnpm --filter @mono/mcp scope-overrides:candidates [<limit>]',

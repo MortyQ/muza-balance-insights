@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { transferDiagnostics } from '../src/queries.ts';
-import { syncWindow, type SyncContext } from '../src/sync.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
+import { transferDiagnostics } from '../../src/derive/diagnostics.ts';
+import { syncWindow, type SyncContext } from '../../src/sync.ts';
 import {
   TRANSFER_WINDOW_SEC,
   detectTransfers,
@@ -10,8 +10,8 @@ import {
   type TransferAccount,
   type TransferMark,
   type TransferTx,
-} from '../src/transfers.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from './helpers.ts';
+} from '../../src/derive/transfers.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from '../helpers.ts';
 
 const JAR_TITLE = 'На мрію';
 const ACCOUNTS: TransferAccount[] = [

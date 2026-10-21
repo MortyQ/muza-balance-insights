@@ -3,7 +3,7 @@
 // (own transfers, the family's when viewed whole, cancelled rows) is never a regular payment either. The same rules
 // find regular income (kind 'income') on the income rows (incomeRowsSql): a sender who pays about once a month. Like
 // categoryLines, the answer carries the bank's text: it is for the user's own screen, never an MCP tool or the copy.
-import { CATEGORY } from './categories.ts';
+import { CATEGORY } from './derive/categories.ts';
 import type { Db } from './storage/db.ts';
 import {
   SPENDING_LINE_ARGS,

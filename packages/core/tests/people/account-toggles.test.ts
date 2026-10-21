@@ -3,21 +3,22 @@
 // enabled account and a disabled one is not internal: spending of the sender, income of the receiver. Fictional data only.
 import { openLibsql } from '@mono/db-libsql';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { listConnectionAccounts, setAccountEnabled } from '../src/accounts.ts';
-import { ConnectionError } from '../src/connections.ts';
-import { MIGRATIONS, migrate, type Db } from '../src/storage/db.ts';
-import { kyivStartOfDay, toKyivDate } from '../src/shared/format.ts';
-import { exchangeRates } from '../src/fx.ts';
-import { listConnections } from '../src/participants.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { AUTO_TOPUP_DESCRIPTIONS, GENERIC_TRANSFER_DESCRIPTION, OWN_TRANSFER_DESCRIPTIONS } from '../src/providers/monobank/descriptions.ts';
-import { monobankRules } from '../src/providers/monobank/rules.ts';
-import { rederiveCore } from '../src/rederive.ts';
-import { searchTransactions } from '../src/search.ts';
-import { balancesAt, firstDataDate, getBalances, getSyncStatus } from '../src/status.ts';
-import { comparePeriods, incomeSummary, periodInfo, spendingSummary } from '../src/summaries.ts';
-import { defaultAccountSelection, planHistory, syncAccounts, type SyncContext } from '../src/sync.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, memoryDb, testConnection } from './helpers.ts';
+import { setAccountEnabled } from '../../src/commands/people.ts';
+import { listConnectionAccounts } from '../../src/people/accounts.ts';
+import { ConnectionError } from '../../src/people/connections.ts';
+import { MIGRATIONS, migrate, type Db } from '../../src/storage/db.ts';
+import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
+import { exchangeRates } from '../../src/fx.ts';
+import { listConnections } from '../../src/people/participants.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
+import { AUTO_TOPUP_DESCRIPTIONS, GENERIC_TRANSFER_DESCRIPTION, OWN_TRANSFER_DESCRIPTIONS } from '../../src/providers/monobank/descriptions.ts';
+import { monobankRules } from '../../src/providers/monobank/rules.ts';
+import { rederiveCore } from '../../src/derive/rederive.ts';
+import { searchTransactions } from '../../src/search.ts';
+import { balancesAt, firstDataDate, getBalances, getSyncStatus } from '../../src/status.ts';
+import { comparePeriods, incomeSummary, periodInfo, spendingSummary } from '../../src/summaries.ts';
+import { defaultAccountSelection, planHistory, syncAccounts, type SyncContext } from '../../src/sync.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());

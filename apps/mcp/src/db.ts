@@ -1,6 +1,6 @@
 // Node entry to the database: libsql adapter + core migrations.
 import { migrate, type Db } from '@mono/core/storage/db';
-import { refreshCrossing } from '@mono/core/derived';
+import { refreshCrossing } from '@mono/core/derive/derived';
 import { openLibsql } from '@mono/db-libsql';
 
 export type { Db } from '@mono/core/storage/db';

@@ -1,9 +1,9 @@
 // «Люди» in main: participants (core participants.ts) and, for the list, their connections with each token's status
 // (TokenVault). Replies carry a participant's label and numbers only — never a token or the bank's holder id.
 // Adding, re-keying and removing connections is IntegrationsService's (integrations.ts).
-import { ColorTakenError, type ColorKey as CoreColorKey } from '@mono/core/colors';
+import { ColorTakenError, type ColorKey as CoreColorKey } from '@mono/core/people/colors';
 import type { Db } from '@mono/core/storage/db';
-import { BANK_LABEL_PLACEHOLDER, listConnections, listParticipants, renameParticipant, restoreBankLabel, setParticipantColor } from '@mono/core/participants';
+import { BANK_LABEL_PLACEHOLDER, listConnections, listParticipants, renameParticipant, restoreBankLabel, setParticipantColor } from '@mono/core/people/participants';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 import { systemTimeZone } from '../shared/dates.ts';
 import type { ColorChangeResult, ColorKey, PeopleView, TokenStatus } from '../shared/api.ts';

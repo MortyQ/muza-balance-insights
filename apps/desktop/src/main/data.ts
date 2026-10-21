@@ -2,18 +2,18 @@
 // to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave main —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
 // and income screens). The import worker writes the same file; WAL lets both work.
-import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/accounts';
-import { CATEGORY } from '@mono/core/categories';
+import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
+import { CATEGORY } from '@mono/core/derive/categories';
 import { categoryLines } from '@mono/core/category-lines';
 import { incomeLines } from '@mono/core/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/reserves';
 import { allowance, type AllowanceSeries } from './allowance.ts';
-import { ensureDefaultConnection } from '@mono/core/connections';
+import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
 import { migrate, type Db } from '@mono/core/storage/db';
-import { refreshCrossing } from '@mono/core/derived';
-import { listConnections, listParticipants } from '@mono/core/participants';
+import { refreshCrossing } from '@mono/core/derive/derived';
+import { listConnections, listParticipants } from '@mono/core/people/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/fx';

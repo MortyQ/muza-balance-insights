@@ -12,13 +12,13 @@
   the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
 - Банки учитываются, если `balance > 0` ИЛИ для банки есть запись в `sync_state` (авто-правило; выбор пользователя
   `accounts.sync_choice` сильнее — см. ниже).
-- **Выключенный счёт** (`packages/core/src/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
+- **Выключенный счёт** (`packages/core/src/people/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
   доходах, ни в балансах (`getBalances`, `balancesAt`), ни в курсе обменов, ни в поиске, ни в статусе и покрытии
   (`periodInfo`, `getSyncStatus`, `firstDataDate`, покрытие в `listConnections`); строки остаются в базе и возвращаются,
   как только счёт включён. Перевод включённого счёта с выключенным (пара `transfer_pair_id` на выключенном счёте или
   одиночное совпадение `iban` с ним) — обычная операция: не internal и не `family`, категория —
   как без пометки перевода, источник дохода — по форме. Stored, not computed per query (migration v16,
-  `transactions.crossing_category`, `packages/core/src/derived.ts`): NULL = the row does not cross, otherwise its
+  `transactions.crossing_category`, `packages/core/src/derive/derived.ts`): NULL = the row does not cross, otherwise its
   ordinary category (`categorize` without the transfer mark). Statistics read `COALESCE(t.crossing_category,
   t.category)` and `t.crossing_category IS NULL`; the transfer marks themselves are not changed. Who keeps it right:
   `refreshCrossing(db, span?)` compares a fingerprint of the accounts (id, connection, kind, type, currency, title,
@@ -38,7 +38,7 @@
 - P2P-переводы → категория «переводы людям»; оверрайды категории по `counter_name`.
 - Текстовые эвристики распознавания переводов строятся только на основе реальных данных,
   а не на догадках о формате `description`.
-- Внутренние переводы (`packages/core/src/transfers.ts`) размечаются проходом после записи окна, окно расширяется
+- Внутренние переводы (`packages/core/src/derive/transfers.ts`) размечаются проходом после записи окна, окно расширяется
   на N = 20 с в обе стороны. Правила по приоритету: `pair` (одна валюта, точное зеркало, оба MCC 4829),
   `pair_fx` (разные валюты, оба равенства `operation_amount` ↔ `amount`), `jar_reversal` (откат
   автопополнения в той же банке, плюс раньше минуса), `iban`, `text` (служебные шаблоны без пары,
@@ -73,7 +73,7 @@
 - `groupBy: 'participant'` of `spendingSummary` / `incomeSummary` — internal too, for the desktop's per-person cards:
   one group per participant (key = the id), each with the participant view's rules (family transfers count; every row
   belongs to its account owner), so each group equals that participant's own call. The family total is not their sum.
-- Derivation after a write (`packages/core/src/rederive.ts`): `deriveSpan(db, span)` — transfers and refunds look
+- Derivation after a write (`packages/core/src/derive/rederive.ts`): `deriveSpan(db, span)` — transfers and refunds look
   around the span for partners, then categories, scope and crossing run over everything they touched. `commitRows`
   runs it per window and reports `span` and `derivationFailed`; a statement upload runs `rederiveCore` only when it
   failed. `rederiveSpans` (the end of a desktop import) merges the spans and runs `deriveSpan` on each. The stored
@@ -102,7 +102,7 @@
   карт, `CardTotal.fx`); MCP-тулы не меняются.
 
 - Старое название банки в описаниях до августа принимается как есть (пары покрывают такие строки).
-- Возврат с другим MCC (`packages/core/src/refunds.ts`, колонка `refund_pair_id`, не перевод): тот же счёт, зачисление
+- Возврат с другим MCC (`packages/core/src/derive/refunds.ts`, колонка `refund_pair_id`, не перевод): тот же счёт, зачисление
   MCC 4829 не «Від: …», сумма = |покупка|, покупка не 4829, зачисление через 0–15 мин, один-к-одному.
   Возврат получает категорию покупки. Возврат без покупки в периоде считается возвратом как есть.
 - Оверрайды категорий — через `overrides:*` (только пользователь); категория валидируется по списку,
@@ -112,7 +112,7 @@
 
 ## План фазы 4 (пункты 1–2 готовы, 3–4 после фазы 5)
 
-- ✅ Реализовано (миграция v7, `packages/core/src/scope.ts`, `packages/core/src/settings.ts`): `scope = personal | business`, вычисляется
+- ✅ Реализовано (миграция v7, `packages/core/src/derive/scope.ts`, `packages/core/src/people/settings.ts`): `scope = personal | business`, вычисляется
   после категорий (`rescope` в проходах sync и recategorize), в whitelist копии. Возврат берёт scope покупки. Приоритет:
   1. `scope_overrides` — исключения; шаблон сопоставляется с `counter_name`, а если его нет — с исходным
      `description` (у казначейства и 9311/9399 контрагента нет). Заводит пользователь (`scope-overrides:*`);

@@ -3,8 +3,7 @@
 // A transfer between an enabled account and a disabled one is not internal (and not family): the disabled account is
 // someone else's, so the row is an ordinary operation — stored as transactions.crossing_category (derived.ts).
 import { ConnectionError } from './connections.ts';
-import type { Db } from './storage/db.ts';
-import { refreshCrossing } from './derived.ts';
+import type { Db } from '../storage/db.ts';
 
 /** SQL: the auto rule for account alias `a` — a card always; a jar with money or already imported (has coverage). */
 function autoEnabledSql(a: string): string {
@@ -65,14 +64,4 @@ export async function listConnectionAccounts(db: Db, connectionId: number): Prom
       auto: r.sync_choice === null,
     };
   });
-}
-
-/** The user's choice for one account; it stays until changed (the bank's sync keeps it). Unknown account → ConnectionError. */
-export async function setAccountEnabled(db: Db, accountId: string, enabled: boolean): Promise<void> {
-  const rs = await db.execute({
-    sql: 'UPDATE accounts SET sync_choice = ? WHERE id = ? RETURNING id',
-    args: [enabled ? 1 : 0, accountId],
-  });
-  if (rs.rows.length === 0) throw new ConnectionError('Такого счёта нет');
-  await refreshCrossing(db);
 }
