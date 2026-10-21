@@ -39,15 +39,19 @@ interface SummaryCardProps {
   caption: string;           // «Free · today» / «Own funds · on 3 Oct»
   count: string;             // «3 people · 7 accounts · without 1 account»
   amount: string;
-  approx: string;            // «≈ 1 500 $ · 1 290 €»; '' — none
+  fx: ReadonlyArray<{ symbol: string; code: string; amount: string }>;  // the conversions column (§7); empty — none
   negative: boolean;         // the amount is below zero
   own: { amount: string; negative: boolean } | null;   // «Actually», with reserves only
   reserved: string | null;                             // «Reserved», with reserves only
   net: { label: string; amount: string; value: number } | null;  // «In October», «+12 400 ₴» (no «≈»: the month panel says what was converted)
+  people: { items: ReadonlyArray<{ name: string; color: string; amount: string; value: number }>; more: string; all: string } | null;  // §8
+  freeShare: number | null;  // §9: whole percent free, 0–100; null — no meter
   accents: ReadonlyArray<string>;
   dim: boolean;
 }
 ```
+
+(`approx` was replaced by `fx`, `people` and `freeShare` were added in the follow-up of §7–9.)
 
 `CardFigures` loses `others` (no account ever set it); `BankCardProps = CardFigures` and `MonobankCard` keep the rest.
 `features/balances` `Slide` already nests the card's props by `kind`, so only `slidesOf` changes.
@@ -96,7 +100,43 @@ Derived: `CARD_WIDTH` 400 (row step 416), `STACK_WIDTH` 466, the month panel bes
 uses the room for a 44 px band, a 32 px amount and 14 px tile figures. Alternative: width only (rejected: a strip, not
 a card; the Monobank skin would stretch).
 
+### 7. The conversions column (canvas variant C)
+
+`MoneyFormat` gets `alsoParts(kopecks): Array<{ currency: number; minor: number }>` — the same picked «also»
+currencies with a rate that `approx` / `approxInline` use, as numbers; those two keep their other callers.
+`shared/lib/money` gets `formatAmount(minor, currency, opts)` — `formatMoney` without the symbol — and `formatMoney`
+is built on it. `totalSlide` maps the parts to `{ symbol: currencySymbol, code: currencyAlpha, amount: formatAmount }`.
+The card lays the body out as two columns: on the left the caption, the amount and the count under it; on the right,
+behind a `--border` divider, «≈ at the rate» (`home.balances.atRate`) and a row per currency: a round
+`--surface-sunken` badge with the symbol, the amount (15 px, bold) and the code (11 px, muted). With `fx` empty the
+column is not rendered. At most two rows: three currencies exist and one is the main.
+
+Alternative: chips under the amount (D) or a full-width row (G) (rejected by the user on the canvas).
+
+### 8. The people's shares (canvas variant E)
+
+Only the family's front card, with two or more people. `slidesOf` builds an item per person in the family view's
+order: `amount` / `value` — that person's free amount, their own card's big figure (`ownFunds - reserved`),
+converted; `color` — their accent. The bar is a flex row of `flex-grow: max(value, 0)` parts with 2 px gaps, 6 px
+high; a person at zero or below has no part, and their amount is `text-negative-soft`. All at zero or below — no
+bar, the line only. The line shows up to three people (largest `value` first when there are more), then `more` —
+«+{n}» (`home.balances.morePeople`), '' with three or fewer; `all` — every «name amount» joined by « · », the line's
+`title`.
+
+### 9. The reserve meter (canvas variant H)
+
+A person's summary card (picked, or each person's card in the family row) with reserves and `ownFunds > 0`:
+`freeShare = clamp(round(shown / ownFunds * 100), 0, 100)`; reserved is `100 - freeShare`, so the two always add up
+to 100. The track is `--surface-sunken`; the free part is `--foreground` at 80 %. Labels under it: «{pct}% free»
+(`home.balances.freeShare`), «{pct}% reserved» (`home.balances.reservedShare`). No reserves, or own funds at zero or
+below — `null`, nothing in the middle. The family card never gets the meter: its middle is the shares.
+
 ## Risks / Trade-offs
+
+- [The shares do not add up to the family's free amount] → each person's figure deducts only their own reserves, the
+  family's deducts the common ones too. Accepted: every person's figure matches their own card in the row.
+- [The left column narrows with the conversions column] → about 260 px stay for a 32 px amount; a longer amount
+  truncates with its full text in `title`, like the tiles. Checked by hand (backlog).
 
 - [Long amounts and three tiles in 400 px] → tiles use 14 px figures with `tabular-nums` and `min-w-0`; a figure that
   does not fit truncates with its full text in `title`. Checked by hand (backlog).

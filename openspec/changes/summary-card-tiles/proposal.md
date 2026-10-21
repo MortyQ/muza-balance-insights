@@ -10,8 +10,12 @@ canvas and chose variant B: the same figures, laid out by importance, with the p
 
 - The summary card gets a header band tinted with the colours of the people it adds up (one person: their colour
   fading out), holding the summary icon, the title, the «Total» label and the people's dots.
-- Under the band: the caption («Free · today») with the account count on its right, the amount with its conversion to
-  the other picked currencies on its right.
+- Under the band: the caption («Free · today»), the amount and the account count under it. The conversions to the
+  other picked currencies get a column on the right (variant C of the canvas): «≈ at the rate», then one row per
+  currency — a symbol badge, the amount, the ISO code. No other currency picked — no column.
+- The middle of the card, empty since the cards grew, shows (variant E) the people's shares on the family card: a thin
+  bar in their colours and a line with each person's free amount; (variant H) on one person's card with reserves, a
+  meter of what is free against what is reserved.
 - At the bottom, tiles: «Actually» (own funds) and «Reserved» when reserves are set against the card, and the month's
   net («In October» with the arrow), tinted green when positive and soft red when negative.
 - The foreign-currency rate line («incl. 1 200,00 $ at the rate 41,20») is no longer shown on the summary card. The
@@ -36,7 +40,8 @@ None.
 ### Modified Capabilities
 
 - `desktop-balance-cards`: the requirement «Total card looks like a summary, not a bank card» changes what the card
-  shows (no rate line) and how (header band, tiles, soft red for negatives).
+  shows (no rate line; a conversions column; the people's shares or the reserve meter) and how (header band, tiles,
+  soft red for negatives).
 
 ## Impact
 
@@ -44,5 +49,8 @@ None.
   separate values for the tiles); `CardFigures` / `BankCardProps` lose `others`; `MonobankCard.vue` drops that line.
 - `features/balances`: `slidesOf` builds the new summary props; `othersNote` goes.
 - `theme.css`: soft negative and header-band tint tokens for both themes.
-- Dictionaries: two new keys, the «Actually» tile and the capitalised month tile label, in uk / en / ru.
+- `shared/lib/money`: `formatAmount` (an amount without the symbol); `entities/currency-display` `MoneyFormat`:
+  `alsoParts` (the conversions as numbers).
+- Dictionaries: new keys — the «Actually» tile, the capitalised month tile label, the column's «≈ at the rate», the
+  meter's two shares and the legend's «+N» — in uk / en / ru.
 - Tests: `balances.test.ts`, `balances-block.test.ts`.
