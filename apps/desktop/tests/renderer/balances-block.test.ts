@@ -20,7 +20,7 @@ const slide = (key: string, title: string) => ({
   key,
   kind: 'summary' as const,
   card: {
-    title, caption: 'C', count: 'B', amount: '100 ₴', approx: '', negative: false, own: null, reserved: null,
+    title, caption: 'C', count: 'B', amount: '100 ₴', fx: [], negative: false, own: null, reserved: null, people: null, freeShare: null,
     net: { label: 'L', amount: '+1 ₴', value: 1 }, accents: ['var(--series-blue)'], dim: false,
   },
   flow,

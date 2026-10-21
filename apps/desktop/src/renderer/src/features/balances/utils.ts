@@ -1,10 +1,11 @@
-import { currencyExponent } from '@mono/core/currency';
+import { currencyAlpha, currencyExponent } from '@mono/core/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
+import type { SummaryCardProps } from '@/entities/account';
 import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
-import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, STACK_DEPTH } from './constants.ts';
+import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { Flow, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
@@ -155,6 +156,40 @@ export function fxNote(fx: ReadonlyArray<FxPart>): string {
     .join(' · ');
 }
 
+/** Whole percent of own funds that is free, 0–100; null — no reserves, or nothing of one's own to share out. */
+export function freeShare(ownFunds: number, reserved: number | null): number | null {
+  if (reserved === null || ownFunds <= 0) return null;
+  return Math.min(100, Math.max(0, Math.round(((ownFunds - reserved) / ownFunds) * 100)));
+}
+
+/**
+ * The family card's shares: each person's free amount (their own card's big figure). Two or more people only. The bar
+ * has a part per non-zero amount, in the family's order, and none at all when nobody is above zero.
+ */
+export function sharesOf(
+  people: MonthOverview['people'],
+  label: (p: MonthOverview['people'][number]) => string,
+  fmt: MoneyFormat,
+): SummaryCardProps['people'] {
+  if (people.length < 2) return null;
+  const all = people.map((p) => {
+    const value = p.total.ownFunds - (p.reserved ?? 0);
+    return { name: firstName(label(p)), color: colorVar(p.color), amount: fmt.money(value), negative: value < 0, value };
+  });
+  const sorted = [...all].sort((a, b) => b.value - a.value);
+  return {
+    items: sorted.slice(0, SHARES_NAMED).map(({ name, color, amount, negative }) => ({ name, color, amount, negative })),
+    more: sorted.length > SHARES_NAMED ? t('home.balances.morePeople', { n: sorted.length - SHARES_NAMED }) : '',
+    all: sorted.map((p) => `${p.name} ${p.amount}`).join(' · '),
+    parts: all.some((p) => p.value > 0) ? all.filter((p) => p.value !== 0).map(({ color, value }) => ({ color, value })) : [],
+  };
+}
+
+/** A person's first name for the shares line: the first word of their label. */
+export function firstName(label: string): string {
+  return label.trim().split(/\s+/)[0] ?? '';
+}
+
 export function slidesOf(
   v: MonthOverview,
   ctx: { people: ReadonlyArray<Readonly<PersonView>>; selectedId: number | null; currentYear: number; fmt: MoneyFormat },
@@ -164,7 +199,15 @@ export function slidesOf(
   const monthTitle = monthInTitle(v.month, ctx.currentYear);
   const { fmt } = ctx;
   // `reserved`: today's reserves set against this card — the big figure is what is free, the real balance under it.
-  const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string, reserved: number | null = null): Slide => {
+  const totalSlide = (
+    key: string,
+    title: string,
+    total: CardTotal,
+    accents: string[],
+    countText: string,
+    reserved: number | null,
+    middle: { people: SummaryCardProps['people'] } | 'meter',
+  ): Slide => {
     const approxIncome = total.fx.some((p) => p.rate !== null && p.income !== 0);
     const approxSpending = total.fx.some((p) => p.rate !== null && p.spending !== 0);
     const shown = total.ownFunds - (reserved ?? 0);
@@ -179,11 +222,13 @@ export function slidesOf(
         dim: false,
         count: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
         amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
-        approx: fmt.approxInline(shown),
+        fx: fmt.alsoParts(shown).map((p) => ({ symbol: currencySymbol(p.currency), code: currencyAlpha(p.currency), amount: formatAmount(p.minor, p.currency) })),
         negative: shown < 0,
         own: reserved === null ? null : { amount: fmt.money(total.ownFunds), negative: total.ownFunds < 0 },
         reserved: reserved === null ? null : fmt.money(reserved),
-        net: { label: monthTitle, amount: netText(fmt.convert(net), fmt.currency), value: net },
+        people: middle === 'meter' ? null : middle.people,
+        freeShare: middle === 'meter' ? freeShare(total.ownFunds, reserved) : null,
+        net: { label: monthTitle, amount: net === 0 ? formatMoney(0, fmt.currency, { minorUnits: true }) : netText(fmt.convert(net), fmt.currency), value: net },
       },
       flow: {
         currency: fmt.currency,
@@ -200,12 +245,21 @@ export function slidesOf(
   };
   if (ctx.selectedId === null) {
     const accents = v.people.map((p) => colorVar(p.color));
-    const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`, v.reserved);
+    const label = (p: (typeof v.people)[number]) => (p.labelPending ? t('entities.participant.pending') : p.label);
+    const family = totalSlide(
+      'family',
+      t('entities.participant.family'),
+      v.total,
+      accents,
+      `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`,
+      v.reserved,
+      { people: sharesOf(v.people, label, fmt) },
+    );
     family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: fmt.convert(p.total.income), spending: fmt.convert(p.total.spending) }));
     return [
       family,
       ...v.people.map((p) =>
-        totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts), p.reserved),
+        totalSlide(`p${p.participantId}`, label(p), p.total, [colorVar(p.color)], accountsCount(p.total.accounts), p.reserved, 'meter'),
       ),
     ];
   }
@@ -214,7 +268,7 @@ export function slidesOf(
   const kindOf = (a: MonthOverview['accounts'][number]) =>
     t(a.kind === 'jar' ? 'home.balances.kind.jar' : a.creditLimit > 0 ? 'home.balances.kind.credit' : a.currency !== UAH ? 'home.balances.kind.fx' : 'home.balances.kind.card');
   return [
-    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts), v.reserved),
+    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts), v.reserved, 'meter'),
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,

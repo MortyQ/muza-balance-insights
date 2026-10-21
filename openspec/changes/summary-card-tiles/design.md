@@ -44,7 +44,12 @@ interface SummaryCardProps {
   own: { amount: string; negative: boolean } | null;   // «Actually», with reserves only
   reserved: string | null;                             // «Reserved», with reserves only
   net: { label: string; amount: string; value: number } | null;  // «In October», «+12 400 ₴» (no «≈»: the month panel says what was converted)
-  people: { items: ReadonlyArray<{ name: string; color: string; amount: string; value: number }>; more: string; all: string } | null;  // §8
+  people: {                  // §8
+    items: ReadonlyArray<{ name: string; color: string; amount: string; negative: boolean }>;  // named, at most three
+    more: string;            // «+2»; '' — none
+    all: string;             // everyone, the tooltip
+    parts: ReadonlyArray<{ color: string; value: number }>;  // the bar; empty — none
+  } | null;
   freeShare: number | null;  // §9: whole percent free, 0–100; null — no meter
   accents: ReadonlyArray<string>;
   dim: boolean;

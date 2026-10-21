@@ -28,8 +28,8 @@ export interface SummaryCardProps {
   /** People and accounts: «3 people · 7 accounts · without 1 account». */
   count: string;
   amount: string;
-  /** The amount in the other picked currencies («≈ 250 $ · 200 €»); '' — none. */
-  approx: string;
+  /** The amount in the other picked currencies, one row each of the column on the right; empty — no column. */
+  fx: ReadonlyArray<{ symbol: string; code: string; amount: string }>;
   /** The amount is below zero: drawn in the soft red. */
   negative: boolean;
   /** With reserves set against the card: own funds («Actually») and the reserved amount; null — no reserve. */
@@ -40,6 +40,19 @@ export interface SummaryCardProps {
    * arrow and the tint; null — none.
    */
   net: { label: string; amount: string; value: number } | null;
+  /**
+   * The family card with two or more people: `items` — at most three, the largest first (first name, free amount in
+   * whole units); `more` — «+2» for the rest, '' — none; `all` — everyone, the line's tooltip; `parts` — the bar, a
+   * part per person whose amount is not zero, empty when nobody is above zero. null — no shares.
+   */
+  people: {
+    items: ReadonlyArray<{ name: string; color: string; amount: string; negative: boolean }>;
+    more: string;
+    all: string;
+    parts: ReadonlyArray<{ color: string; value: number }>;
+  } | null;
+  /** A person's card with reserves and own funds above zero: whole percent free, 0–100; null — no meter. */
+  freeShare: number | null;
   /** Colours of the people the card adds up (CSS values): the header band and the dots. */
   accents: ReadonlyArray<string>;
   /** No data at that date: dimmed. */

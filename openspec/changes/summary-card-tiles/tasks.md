@@ -24,22 +24,22 @@
 
 ## 2. Conversions column, the people's shares, the reserve meter (one commit: `feat(desktop): the total card's conversions in a column, the people's shares and the reserve meter in its middle`)
 
-- [ ] 2.1 `shared/lib/money`: `formatAmount` and `formatMoney` built on it; `entities/currency-display` `MoneyFormat.alsoParts`;
+- [x] 2.1 `shared/lib/money`: `formatAmount` and `formatMoney` built on it; `entities/currency-display` `MoneyFormat.alsoParts`;
   verified by unit tests next to the existing `formatMoney` / `moneyFormat` tests
-- [ ] 2.2 `SummaryCardProps` as in design §1 (`fx`, `people`, `freeShare` instead of `approx`); `features/balances`
+- [x] 2.2 `SummaryCardProps` as in design §1 (`fx`, `people`, `freeShare` instead of `approx`); `features/balances`
   `slidesOf` builds them (§7–9); verified by `slidesOf` tests: no «also» currency → empty `fx`; the family with
   people, a person below zero, four people → three named and «+1», first names only, whole-unit amounts; mixed signs, all at zero, all below zero; the month at zero; the meter's clamping and sum, no reserves → null; the
   family card never gets `freeShare`
-- [ ] 2.3 `SummaryCard.vue`: the two-column body, the column, the shares bar and line, the meter; verified by component
+- [x] 2.3 `SummaryCard.vue`: the two-column body, the column, the shares bar and line, the meter; verified by component
   tests in `balances.test.ts` (column rows or none, bar parts per non-zero person with a hatched minus, no bar when
   nobody is above zero, the neutral zero month tile, soft red amount, five dots and
   «+N» in the header, meter widths and labels)
-- [ ] 2.4 Dictionaries: `home.balances.atRate`, `freeShare`, `reservedShare`, `morePeople` in uk, en and ru; verified
+- [x] 2.4 Dictionaries: `home.balances.atRate`, `freeShare`, `reservedShare`, `morePeople` in uk, en and ru; verified
   by `tests/i18n.test.ts`
-- [ ] 2.5 `balances-block.test.ts` fixture moved to the new props; `.agents/project/desktop-renderer.md` summary card
+- [x] 2.5 `balances-block.test.ts` fixture moved to the new props; `.agents/project/desktop-renderer.md` summary card
   paragraph; `CHANGELOG.md` «A clearer total card» entry extended; `docs/backlog.md`: live checks (column with one and
   two currencies, many people, a long amount beside the column)
-- [ ] 2.6 `pnpm test` and `pnpm typecheck` at the root pass
+- [x] 2.6 `pnpm test` and `pnpm typecheck` at the root pass
 
 ## Workflow follow-up
 

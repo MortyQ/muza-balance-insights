@@ -10,6 +10,8 @@ import {
   accountsCount,
   balanceCaption,
   coverageNote,
+  firstName,
+  freeShare,
   flowWidths,
   fxNote,
   monthIn,
@@ -27,7 +29,7 @@ import {
 } from '@/features/balances/utils.ts';
 import MonthPanel from '@/features/balances/components/MonthPanel.vue';
 import type { Slide } from '@/features/balances/types.ts';
-import { formatMoney } from '@/shared/lib';
+import { formatAmount, formatMoney } from '@/shared/lib';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
@@ -390,7 +392,7 @@ describe('balances utils', () => {
     expect(s[0]?.card.amount).toBe(formatMoney(1_000_000, 980, { minorUnits: true }));
   });
 
-  it('slidesOf: total cards carry the «≈» line of the other picked currencies; account cards none', () => {
+  it('slidesOf: total cards carry the other picked currencies as rows of the column; none picked — no column', () => {
     const fmt = moneyFormat(RATES, { main: 980, also: { uah: false, usd: true, eur: true } });
     const v: MonthOverview = {
       month: '2026-09',
@@ -403,10 +405,12 @@ describe('balances utils', () => {
       rates: RATES,
     };
     const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt });
-    expect(s[0]?.card.approx).toBe(fmt.approxInline(1_000_000));
-    expect(s[0]?.card.approx).not.toBe('');
-    expect(s[1]?.card.approx).toBe('');
-    expect(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]?.card.approx).toBe('');
+    expect(summaryOf(s[0]).fx).toEqual([
+      { symbol: '$', code: 'USD', amount: formatAmount(250_00, 840) },
+      { symbol: '€', code: 'EUR', amount: formatAmount(200_00, 978) },
+    ]);
+    expect(accountOf(s[1]).approx).toBe('');
+    expect(summaryOf(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]).fx).toEqual([]);
   });
 
   it('AccountCard: the bank\'s skin (Monobank: the «m» mark), the «≈» line under the amount, none when empty', () => {
@@ -422,13 +426,14 @@ describe('balances utils', () => {
   it('SummaryCard: the band in the people\'s colours, the figures, «Total», a dot per person, no bank mark; a click is the card\'s', async () => {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const props: SummaryCardProps = {
-      title: 'Вся семья', caption: 'Свободно · сегодня', count: '2 человека', amount: '100 ₴', approx: '≈ 2,50 $', negative: false,
+      title: 'Вся семья', caption: 'Свободно · сегодня', count: '2 человека', amount: '100 ₴', negative: false,
+      fx: [{ symbol: '$', code: 'USD', amount: '2' }], people: null, freeShare: null,
       own: { amount: '140 ₴', negative: false }, reserved: '40 ₴', net: { label: 'В сентябре', amount: '−5 ₴', value: -5 },
       accents: ['var(--series-blue)', 'var(--series-orange)'], dim: false,
     };
     const w = mount(SummaryCard, { props, global: { plugins: [i18n] } });
     expect(w.text()).toContain('Итого');
-    for (const t of ['Вся семья', 'Свободно · сегодня', '2 человека', '100 ₴', '≈ 2,50 $', 'На самом деле', '140 ₴', 'В резерве', '40 ₴', 'В сентябре', '−5 ₴']) expect(w.text()).toContain(t);
+    for (const t of ['Вся семья', 'Свободно · сегодня', '2 человека', '100 ₴', 'На самом деле', '140 ₴', 'В резерве', '40 ₴', 'В сентябре', '−5 ₴']) expect(w.text()).toContain(t);
     expect(w.findAll('[data-test="dot"]')).toHaveLength(2);
     expect(w.findAll('span').some((x) => x.text() === 'm')).toBe(false);
     const band = w.get('[data-test="band"]').attributes('style');
@@ -444,7 +449,7 @@ describe('balances utils', () => {
   it('SummaryCard: no reserve — the month tile alone; a minus in the soft red; one person\'s band fades out', async () => {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const props: SummaryCardProps = {
-      title: 'Аня', caption: 'Свои деньги · сегодня', count: '2 счёта', amount: '−3 450 ₴', approx: '', negative: true,
+      title: 'Аня', caption: 'Свои деньги · сегодня', count: '2 счёта', amount: '−3 450 ₴', negative: true, fx: [], people: null, freeShare: null,
       own: null, reserved: null, net: { label: 'В сентябре', amount: '+5 ₴', value: 5 }, accents: ['var(--series-green)'], dim: false,
     };
     const w = mount(SummaryCard, { props, global: { plugins: [i18n] } });
@@ -455,5 +460,116 @@ describe('balances utils', () => {
     expect(w.text()).not.toContain('В резерве');
     const minus = mount(SummaryCard, { props: { ...props, own: { amount: '−1 ₴', negative: true }, reserved: '2 ₴' }, global: { plugins: [i18n] } });
     expect(minus.get('[data-test="tile-own"]').find('.text-negative-soft').exists()).toBe(true);
+  });
+
+  it('slidesOf: the family card\'s shares — first names, whole units, the three largest and «+N», the bar by size', () => {
+    const person = (id: number, label: string, own: number, reserved: number | null = null, color: 'blue' | 'orange' | 'aqua' | 'yellow' = 'blue') =>
+      ({ participantId: id, label, labelPending: false, color, reserved, total: card(own, 0, 0) });
+    const v: MonthOverview = {
+      month: '2026-09', reserved: null, balanceAt: 'now', coverage: { from: '2026-09-01', to: '2026-09-27' }, rates: RATES, accounts: [],
+      total: card(0, 0, 0),
+      people: [person(1, 'Вигадана Перша', 100_050, 50, 'blue'), person(2, 'Друга', 300_000, null, 'orange'), person(3, 'Третя', -50_000, null, 'aqua'), person(4, 'Четверта', 200_000, null, 'yellow')],
+    };
+    const s = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
+    const shares = summaryOf(s[0]).people;
+    expect(shares?.items).toEqual([
+      { name: 'Друга', color: 'var(--series-orange)', amount: formatMoney(300_000, 980), negative: false },
+      { name: 'Четверта', color: 'var(--series-yellow)', amount: formatMoney(200_000, 980), negative: false },
+      { name: 'Вигадана', color: 'var(--series-blue)', amount: formatMoney(100_000, 980), negative: false },
+    ]);
+    expect(shares?.more).toBe('+1');
+    expect(shares?.all).toBe(`Друга ${formatMoney(300_000, 980)} · Четверта ${formatMoney(200_000, 980)} · Вигадана ${formatMoney(100_000, 980)} · Третя ${formatMoney(-50_000, 980)}`);
+    // The bar keeps the family's order and everyone not at zero, a minus too.
+    expect(shares?.parts).toEqual([
+      { color: 'var(--series-blue)', value: 100_000 }, { color: 'var(--series-orange)', value: 300_000 },
+      { color: 'var(--series-aqua)', value: -50_000 }, { color: 'var(--series-yellow)', value: 200_000 },
+    ]);
+    // Each person's own card in the row: no shares; the family card: no meter.
+    expect(s.slice(1).map((x) => summaryOf(x).people)).toEqual([null, null, null, null]);
+    expect(summaryOf(s[0]).freeShare).toBeNull();
+
+    const three = slidesOf({ ...v, people: v.people.slice(0, 3) }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
+    expect(summaryOf(three[0]).people?.more).toBe('');
+    expect(summaryOf(three[0]).people?.items.at(-1)).toMatchObject({ name: 'Третя', negative: true });
+    // Nobody above zero: no bar, the line only; one person: no shares at all.
+    const minus = slidesOf({ ...v, people: [person(1, 'А', -1), person(2, 'Б', -2)] }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
+    expect(summaryOf(minus[0]).people?.parts).toEqual([]);
+    const zero = slidesOf({ ...v, people: [person(1, 'А', 0), person(2, 'Б', 0)] }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
+    expect(summaryOf(zero[0]).people).toMatchObject({ parts: [], items: [{ amount: formatMoney(0, 980) }, { amount: formatMoney(0, 980) }] });
+    expect(summaryOf(slidesOf({ ...v, people: [v.people[0]!] }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[0]).people).toBeNull();
+  });
+
+  it('freeShare, firstName and the month at zero', () => {
+    expect(freeShare(1_000, 260)).toBe(74);
+    expect(freeShare(1_000, null)).toBeNull();
+    expect(freeShare(0, 10)).toBeNull();
+    expect(freeShare(-5, 10)).toBeNull();
+    expect(freeShare(1_000, 2_000)).toBe(0);
+    expect(freeShare(1_000, -10)).toBe(100);
+    expect(firstName('  Вигадана   Перша ')).toBe('Вигадана');
+    const v: MonthOverview = {
+      month: '2026-09', reserved: 260, balanceAt: 'now', coverage: { from: '2026-09-01', to: '2026-09-27' }, rates: RATES, accounts: [],
+      total: card(1_000, 0, 0), people: [],
+    };
+    const p = summaryOf(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]);
+    expect(p.freeShare).toBe(74);
+    expect(p.people).toBeNull();
+    expect(p.net).toEqual({ label: 'В сентябре', amount: formatMoney(0, 980, { minorUnits: true }), value: 0 });
+    expect(summaryOf(slidesOf({ ...v, reserved: null }, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]).freeShare).toBeNull();
+  });
+
+  it('SummaryCard: the conversions column, the shares bar with a hatched minus, «+N», five dots at most', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const accents = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((c) => `var(--series-${c})`);
+    const props: SummaryCardProps = {
+      title: 'Семья', caption: 'Свободно · сегодня', count: '7 человек', amount: '100 ₴', negative: false,
+      fx: [{ symbol: '$', code: 'USD', amount: '2' }, { symbol: '€', code: 'EUR', amount: '1' }],
+      people: {
+        items: [{ name: 'Аня', color: accents[0]!, amount: '90 ₴', negative: false }, { name: 'Ия', color: accents[1]!, amount: '−10 ₴', negative: true }],
+        more: '+5', all: 'Аня 90 ₴ · Ия −10 ₴',
+        parts: [{ color: accents[0]!, value: 90 }, { color: accents[1]!, value: -10 }],
+      },
+      freeShare: null, own: null, reserved: null, net: null, accents, dim: false,
+    };
+    const w = mount(SummaryCard, { props, global: { plugins: [i18n] } });
+    expect(w.get('[data-test="fx"]').text()).toContain('≈ по курсу');
+    expect(w.findAll('[data-test="fx-row"]').map((x) => x.text())).toEqual(['$2USD', '€1EUR']);
+    const parts = w.findAll('[data-test="share-part"]').map((x) => x.attributes('style'));
+    expect(parts[0]).toContain('flex-grow: 90');
+    expect(parts[0]).toContain(`--part: ${accents[0]}`);
+    expect(parts[1]).toContain('flex-grow: 10');
+    expect(parts[1]).toContain('--part: repeating-linear-gradient(135deg, color-mix(in oklch, var(--series-b) 55%, var(--surface))');
+    expect(w.findAll('[data-test="share"]').map((x) => x.text())).toEqual(['Аня90 ₴', 'Ия−10 ₴']);
+    expect(w.findAll('[data-test="share"]')[1]?.find('.text-negative-soft').exists()).toBe(true);
+    expect(w.get('[data-test="share-more"]').text()).toBe('+5');
+    expect(w.findAll('[data-test="dot"]')).toHaveLength(5);
+    expect(w.get('[data-test="more-dots"]').text()).toBe('+2');
+    expect(w.find('[data-test="meter"]').exists()).toBe(false);
+
+    // No other currency: no column; nobody above zero: the line without a bar; a minus turns the column soft red.
+    const bare = mount(SummaryCard, { props: { ...props, fx: [], people: { ...props.people!, parts: [] }, accents: accents.slice(0, 2) }, global: { plugins: [i18n] } });
+    expect(bare.find('[data-test="fx"]').exists()).toBe(false);
+    expect(bare.findAll('[data-test="share-part"]')).toHaveLength(0);
+    expect(bare.findAll('[data-test="share"]')).toHaveLength(2);
+    expect(bare.find('[data-test="more-dots"]').exists()).toBe(false);
+    const red = mount(SummaryCard, { props: { ...props, negative: true }, global: { plugins: [i18n] } });
+    expect(red.get('[data-test="fx-row"]').find('.text-negative-soft').exists()).toBe(true);
+  });
+
+  it('SummaryCard: the reserve meter for one person; the month at zero is neutral, without an arrow', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const props: SummaryCardProps = {
+      title: 'Аня', caption: 'Свободно · сегодня', count: '2 счёта', amount: '74 ₴', negative: false, fx: [], people: null, freeShare: 74,
+      own: { amount: '100 ₴', negative: false }, reserved: '26 ₴', net: { label: 'В сентябре', amount: '0 ₴', value: 0 }, accents: ['var(--series-blue)'], dim: false,
+    };
+    const w = mount(SummaryCard, { props, global: { plugins: [i18n] } });
+    expect(w.get('[data-test="meter-free"]').attributes('style')).toContain('width: 74%');
+    expect(w.get('[data-test="meter"]').text()).toContain('74% свободно');
+    expect(w.get('[data-test="meter"]').text()).toContain('26% в резерве');
+    const net = w.get('[data-test="tile-net"]');
+    expect(net.classes()).toContain('bg-surface-sunken');
+    expect(net.find('svg').exists()).toBe(false);
+    expect(net.text()).toContain('0 ₴');
+    expect(mount(SummaryCard, { props: { ...props, freeShare: null }, global: { plugins: [i18n] } }).find('[data-test="meter"]').exists()).toBe(false);
   });
 });

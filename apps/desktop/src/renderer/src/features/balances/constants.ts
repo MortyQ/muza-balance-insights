@@ -24,3 +24,6 @@ export const CLOSE_STAGGER = 20;
 export const STACK_WIDTH = 466;
 export const PANEL_GAP = 24;
 export const PANEL_MIN = 260;
+
+/** The most people the family card names in its shares line; the rest go into «+N». */
+export const SHARES_NAMED = 3;

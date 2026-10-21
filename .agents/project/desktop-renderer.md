@@ -38,11 +38,16 @@
   `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (spec
   `desktop-balance-cards`): a header band, a gradient of each person's colour mixed into `--surface` by `--card-band-tint`
   (one person: fading to `--card-band-fade`; both in `theme.css`, stronger in the dark theme), with `lucide:layers`, the
-  title, the «Total» chip `home.balances.total` and `accents` as dots; under it the caption with `count`, the amount
-  with `approx`; tiles — «Actually» (`home.balances.actualTile`) and «Reserved» with reserves only, the month's net
-  (`home.balances.inMonthTitle`, `--success-subtle` or `--negative-soft-bg`). Negative figures use `--negative-soft`, a
+  title, the «Total» chip `home.balances.total` and `accents` as dots (at most five, then «+N»,
+  `home.balances.morePeople`); under it the caption, the amount and `count`; on the right a column of the conversions
+  (`fx`: symbol badge, `formatAmount`, ISO code; `MoneyFormat.alsoParts`), none without another picked currency; in the
+  middle the family's shares (`people`, `sharesOf`: two or more people, at most `SHARES_NAMED` first names with whole
+  amounts, then «+N»; a bar part per non-zero amount, a minus hatched; no bar when nobody is above zero) or, on one
+  person's card with reserves, the meter (`freeShare`, `home.balances.freeShare` / `reservedShare`); tiles — «Actually»
+  (`home.balances.actualTile`) and «Reserved» with reserves only, the month's net (`home.balances.inMonthTitle`,
+  `--success-subtle` above zero, `--negative-soft-bg` below, neutral at zero). Negative figures use `--negative-soft`, a
   muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
-  figure apart: `count`, `negative`, `own`, `reserved`, `net { label, amount, value }`);
+  figure apart: `count`, `fx`, `negative`, `own`, `reserved`, `people`, `freeShare`, `net { label, amount, value }`);
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
   `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
   dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
