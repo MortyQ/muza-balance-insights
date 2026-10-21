@@ -11,7 +11,9 @@ import { findRecurring } from '../../src/read/recurring.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
 import { searchTransactions } from '../../src/read/search.ts';
 import { balancesAt } from '../../src/read/status.ts';
-import { comparePeriods, incomeSummary, spendingGrid, spendingSummary } from '../../src/read/summaries.ts';
+import { comparePeriods } from '../../src/read/compare.ts';
+import { incomeSummary } from '../../src/read/income.ts';
+import { spendingGrid, spendingSummary } from '../../src/read/spending.ts';
 import { openTestDb } from '../helpers.ts';
 
 const TZ = 'Europe/Kyiv';

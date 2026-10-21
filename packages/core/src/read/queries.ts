@@ -1,7 +1,7 @@
 // Read-only queries over the real database, shared by the CLI and (phase 5) the MCP tools.
 import { CATEGORY } from '../derive/categories.ts';
 import type { Db } from '../storage/db.ts';
-import { spendingSummary } from './summaries.ts';
+import { spendingSummary } from './spending.ts';
 
 export type CategorySpending = {
   /** Account currency (ISO 4217 numeric). Different currencies are never summed together. */
@@ -17,7 +17,7 @@ export type CategorySpending = {
 
 /**
  * Spending per category and account currency for local_date in [fromDate, toDate] (inclusive).
- * Rules (commission split, internal bodies, refunds) — see spendingSummary in src/read/summaries.ts.
+ * Rules (commission split, internal bodies, refunds) — see spendingSummary in src/read/spending.ts.
  */
 export async function spendingByCategory(db: Db, fromDate: string, toDate: string): Promise<CategorySpending[]> {
   // `now` only feeds the period flags (incomplete, pending holds), which this wrapper drops — the groups don't depend on it.

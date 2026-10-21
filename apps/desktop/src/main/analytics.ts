@@ -1,7 +1,7 @@
 // Pure helpers of the analytics screen in main (DataService.analyticsOverview): the buckets of a period, the period it is
 // compared with, folding account currencies into hryvnia by today's rates, the «usual month» curve.
 import { toUah, type FxRate } from '@mono/core/read/fx';
-import type { SpendingCell } from '@mono/core/read/summaries';
+import type { SpendingCell } from '@mono/core/read/spending';
 import { addMonths, monthSpan } from '../shared/analytics.ts';
 import type { AnalyticsBucketState } from '../shared/api.ts';
 import { monthBounds } from './spending.ts';

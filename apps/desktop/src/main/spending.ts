@@ -1,7 +1,8 @@
 // Pure helpers of the spending block in main (DataService.spendingOverview): the period compared with, and folding
 // account currencies into hryvnia by today's rates.
 import { toUah, type FxRate } from '@mono/core/read/fx';
-import type { PeriodInfo, SpendingCell, SpendingGroup } from '@mono/core/read/summaries';
+import type { PeriodInfo } from '@mono/core/read/filters';
+import type { SpendingCell, SpendingGroup } from '@mono/core/read/spending';
 import type { SpendingAmounts } from '../shared/api.ts';
 
 const pad2 = (n: number) => String(n).padStart(2, '0');

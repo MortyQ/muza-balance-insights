@@ -5,17 +5,10 @@ import { incomeLines } from '../../src/read/income-lines.ts';
 import { kyivStartOfDay } from '../../src/shared/format.ts';
 import { spendingByCategory } from '../../src/read/queries.ts';
 import { getBalances, getSyncStatus } from '../../src/read/status.ts';
-import {
-  INCOME_GROUP_BY,
-  SPENDING_GROUP_BY,
-  SummaryError,
-  comparePeriods,
-  incomeSource,
-  incomeSummary,
-  periodInfo,
-  spendingGrid,
-  spendingSummary,
-} from '../../src/read/summaries.ts';
+import { INCOME_GROUP_BY, incomeSource, incomeSummary } from '../../src/read/income.ts';
+import { SPENDING_GROUP_BY, spendingGrid, spendingSummary } from '../../src/read/spending.ts';
+import { SummaryError, periodInfo } from '../../src/read/filters.ts';
+import { comparePeriods } from '../../src/read/compare.ts';
 import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 let db: Db;

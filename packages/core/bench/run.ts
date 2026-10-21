@@ -10,7 +10,8 @@ import type { Db } from '../src/storage/db.ts';
 import { rederiveCore, rederiveSpans } from '../src/derive/rederive.ts';
 import { balancesAt } from '../src/read/status.ts';
 import { startOfDayIn } from '../src/shared/format.ts';
-import { incomeSummary, spendingGrid, spendingSummary } from '../src/read/summaries.ts';
+import { incomeSummary } from '../src/read/income.ts';
+import { spendingGrid, spendingSummary } from '../src/read/spending.ts';
 import { BUDGETS_MS, type BenchCase } from './budgets.ts';
 import { DEFAULT_BENCH, generateDataset, loadDataset } from './generate.ts';
 

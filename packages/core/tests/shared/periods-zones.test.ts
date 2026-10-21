@@ -6,7 +6,9 @@ import { startOfDayIn, toKyivDate } from '../../src/shared/format.ts';
 import { exchangeRates } from '../../src/read/fx.ts';
 import { periodBuckets } from '../../src/shared/periods.ts';
 import { searchTransactions } from '../../src/read/search.ts';
-import { SummaryError, incomeSummary, periodInfo, spendingSummary } from '../../src/read/summaries.ts';
+import { SummaryError, periodInfo } from '../../src/read/filters.ts';
+import { incomeSummary } from '../../src/read/income.ts';
+import { spendingSummary } from '../../src/read/spending.ts';
 import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 const BERLIN = 'Europe/Berlin';

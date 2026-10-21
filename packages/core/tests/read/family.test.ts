@@ -5,7 +5,8 @@ import type { Db } from '../../src/storage/db.ts';
 import { categoryLines } from '../../src/read/category-lines.ts';
 import { incomeLines } from '../../src/read/income-lines.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
-import { incomeSummary, spendingSummary } from '../../src/read/summaries.ts';
+import { incomeSummary } from '../../src/read/income.ts';
+import { spendingSummary } from '../../src/read/spending.ts';
 import { detectTransfers, type TransferAccount, type TransferTx } from '../../src/derive/transfers.ts';
 import { insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
 

@@ -12,7 +12,7 @@ import type { ProviderId } from '../providers/types.ts';
 import { periodArgs, periodSql } from '../shared/periods.ts';
 import { getSettings } from '../people/settings.ts';
 import { isScope, type Scope } from '../derive/scope.ts';
-import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './summaries.ts';
+import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './filters.ts';
 
 export const SEARCH_DEFAULT_LIMIT = 50;
 export const SEARCH_MAX_LIMIT = 200;

@@ -5,15 +5,9 @@
 // categoryLines, the answer carries the bank's text: it is for the user's own screen, never an MCP tool or the copy.
 import { CATEGORY } from '../derive/categories.ts';
 import type { Db } from '../storage/db.ts';
-import {
-  SPENDING_LINE_ARGS,
-  SPENDING_LINE_SQL,
-  incomeRowsSql,
-  spendingLinesSql,
-  validateFilters,
-  type Period,
-  type SpendingFilters,
-} from './summaries.ts';
+import { SPENDING_LINE_ARGS, SPENDING_LINE_SQL, spendingLinesSql } from './spending.ts';
+import { incomeRowsSql } from './income.ts';
+import { validateFilters, type Period, type SpendingFilters } from './filters.ts';
 
 const DAY = 86_400;
 /** A gap between two payments that keeps a series going: a month, or a month skipped. */

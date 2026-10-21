@@ -4,7 +4,8 @@
 import { accountProviders, providerOf } from '../people/connections.ts';
 import type { Db } from '../storage/db.ts';
 import { rulesFor } from '../providers/rules.ts';
-import { incomeRowsSql, incomeSource, periodInfo, validateFilters, type Filters, type IncomeSource, type Period, type PeriodInfo } from './summaries.ts';
+import { incomeRowsSql, incomeSource, type IncomeSource } from './income.ts';
+import { periodInfo, validateFilters, type Filters, type Period, type PeriodInfo } from './filters.ts';
 
 export type IncomeLine = {
   id: string;

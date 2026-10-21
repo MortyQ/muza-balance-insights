@@ -59,7 +59,7 @@
   возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
-  в `packages/core/src/read/summaries.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).
+  в `packages/core/src/read/spending.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).
 - `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
   operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
 - `spendingSummary` also groups by `day` (a day of the period's zone) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
@@ -148,7 +148,7 @@
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
   null)` finds the payee by a payment of the series. The key holds bank text: the table is in this database only (not
   whitelisted for the copy); «Start over» and «Delete all data» lose it like the overrides.
-- ✅ Пункт 2 реализован: `packages/core/src/read/summaries.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`) и `packages/core/src/read/status.ts`
+- ✅ Пункт 2 реализован: `packages/core/src/read/{spending,compare,income}.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`; shared periods and filters in `read/filters.ts`) и `packages/core/src/read/status.ts`
   (`getBalances`, `getSyncStatus`). Суммы в копейках валюты счёта, валюты не суммируются, без имён и описаний;
   счета — id + подпись `type/CUR`.
 - `getBalances`: поля `own_funds` (основное) = balance − credit_limit, `credit_limit`, `available` (= balance).
