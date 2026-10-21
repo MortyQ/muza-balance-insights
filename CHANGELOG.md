@@ -20,7 +20,7 @@ English interface.
 
 - **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
   it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
-- **A clearer total card.** The card with the total of the family or of a person now has a header in the people's
+- **A clearer total card.** All balance cards are a little larger. The card with the total of the family or of a person now has a header in the people's
   colours, the free amount with its conversion next to it, and tiles for «Actually», «Reserved» and the month's result.
   The line with the exchange rate is gone from the card (the month's figures next to it still show it), and a minus is
   shown in a soft red.

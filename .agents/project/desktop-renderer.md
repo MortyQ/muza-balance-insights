@@ -12,8 +12,8 @@
   `utils.ts` (`slidesOf`, `slidePosition`), CSS-переменные `--x`/`--y`/`--z`/`--o`, `motion-reduce:` без сдвига.
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
   `syncStatus.version`). Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
-  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[44rem]` the month panel
-  sits beside the folded stack (`left: 430px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
+  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[47rem]` the month panel
+  sits beside the folded stack (`left: 490px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
   `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
@@ -46,7 +46,7 @@
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
   `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
   dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
-  + `netText`, `accents`, `dim`). All are 340 × 214, and their root is a `<button>`; `aria-expanded` comes from
+  + `netText`, `accents`, `dim`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
   outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`

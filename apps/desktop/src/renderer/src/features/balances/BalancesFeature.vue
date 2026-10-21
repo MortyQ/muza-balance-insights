@@ -69,14 +69,14 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
         <div
           data-test="panel"
           class="grid transition-[grid-template-rows] duration-400 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none
-                 @[44rem]:absolute @[44rem]:top-0 @[44rem]:right-0 @[44rem]:left-[430px] @[44rem]:grid-rows-[1fr]! @[44rem]:overflow-visible!"
+                 @[47rem]:absolute @[47rem]:top-0 @[47rem]:right-0 @[47rem]:left-[490px] @[47rem]:grid-rows-[1fr]! @[47rem]:overflow-visible!"
           :class="open ? 'grid-rows-[0fr] overflow-hidden' : 'grid-rows-[1fr]'"
           :inert="open"
         >
           <div class="min-h-0">
             <MonthPanel
               class="pt-4 [transition:opacity_.3s_ease,translate_.4s_cubic-bezier(.2,.8,.2,1)] motion-reduce:translate-x-0
-                     motion-reduce:[transition:opacity_.2s_ease] @[44rem]:ml-auto @[44rem]:h-[266px] @[44rem]:max-w-[340px] @[44rem]:pt-0"
+                     motion-reduce:[transition:opacity_.2s_ease] @[47rem]:ml-auto @[47rem]:h-[304px] @[47rem]:max-w-[340px] @[47rem]:pt-0"
               :class="open ? 'pointer-events-none translate-x-8 opacity-0' : 'opacity-100'"
               :title="monthName"
               :note

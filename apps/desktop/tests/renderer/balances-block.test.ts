@@ -59,14 +59,14 @@ async function mountBlock(): Promise<VueWrapper> {
 }
 
 describe('balance block layout', () => {
-  it('the month panel sits beside the stack from 44rem of block width and under it below, never at a fixed width over the stack', async () => {
+  it('the month panel sits beside the stack from 47rem of block width and under it below, never at a fixed width over the stack', async () => {
     const b = await mountBlock();
     const panel = b.get('[data-test="panel"]');
     expect(panel.element.parentElement?.classList.contains('@container')).toBe(true);
-    expect(panel.classes()).toEqual(expect.arrayContaining(['@[44rem]:absolute', '@[44rem]:left-[430px]', '@[44rem]:right-0']));
+    expect(panel.classes()).toEqual(expect.arrayContaining(['@[47rem]:absolute', '@[47rem]:left-[490px]', '@[47rem]:right-0']));
     expect(panel.classes()).not.toContain('absolute');
     expect(b.html()).not.toContain('w-[340px] [transition');
-    expect(b.html()).toContain('@[44rem]:max-w-[340px]');
+    expect(b.html()).toContain('@[47rem]:max-w-[340px]');
   });
 
   it('opening the row folds the panel away (no empty space under the row) and makes it inert', async () => {
@@ -169,14 +169,14 @@ describe('the open row', () => {
     expect(dots()[0]!.attributes('aria-current')).toBe('true');
     expect(dots()[1]!.attributes('aria-current')).toBeUndefined();
     await dots()[3]!.trigger('click');
-    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 3 * 356 }));
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 3 * 416 }));
   });
 
   it('folding a scrolled row goes back to its start first, then stacks; focus returns to the front card', async () => {
     const b = await mountBlock();
     await b.get('button[aria-expanded]').trigger('click');
     const { el, scrollTo, setLeft } = rowOf(b, { endOnScroll: false });
-    setLeft(712);
+    setLeft(832);
     const cards = b.findAll('[data-test="row"] button');
     (cards[2]!.element as HTMLElement).focus();
     await b.get('[data-test="row"]').trigger('keydown', { key: 'Escape' });

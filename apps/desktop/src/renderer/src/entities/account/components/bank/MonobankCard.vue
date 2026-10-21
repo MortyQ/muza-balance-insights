@@ -9,7 +9,7 @@ defineEmits<{ click: [] }>();
 <template>
   <button
     type="button"
-    class="relative flex h-[214px] w-[340px] shrink-0 flex-col justify-between overflow-hidden rounded-[18px] bg-nav p-5 text-left text-white shadow-md
+    class="relative flex h-[252px] w-[400px] shrink-0 flex-col justify-between overflow-hidden rounded-[18px] bg-nav p-5 text-left text-white shadow-md
            transition-[transform,box-shadow] duration-450 ease-[cubic-bezier(.34,1.8,.64,1)] hover:-translate-y-[3px] hover:shadow-lg
            active:scale-[.97] active:duration-100 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-border-focus
            motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"

@@ -88,9 +88,17 @@ Alternative: `--danger` itself (rejected by the user: too loud for a figure that
 `othersNote` goes with `others`. The dictionary keys `home.balances.fxRate` / `fxNoRate` stay: the month panel's
 `fxNote` and `daily-allowance` use them.
 
+### 6. Every balance card grows to 400 × 252
+
+Added after review: the cards were cramped. Both sides grow (+60 / +38 px) so the bank card's proportion stays.
+Derived: `CARD_WIDTH` 400 (row step 416), `STACK_WIDTH` 466, the month panel beside the stack from `left: 490px` and
+`@[47rem]` (490 + 260 = 750 px), the row 308 px high, the panel 304 px; the panel keeps its 340 px. The summary card
+uses the room for a 44 px band, a 32 px amount and 14 px tile figures. Alternative: width only (rejected: a strip, not
+a card; the Monobank skin would stretch).
+
 ## Risks / Trade-offs
 
-- [Long amounts and three tiles in 340 px] → tiles use 13 px figures with `tabular-nums` and `min-w-0`; a figure that
+- [Long amounts and three tiles in 400 px] → tiles use 14 px figures with `tabular-nums` and `min-w-0`; a figure that
   does not fit truncates with its full text in `title`. Checked by hand (backlog).
 - [Contrast of the soft red on the dark surface] → 74% lightness on a 20% surface clears 4.5:1; checked by hand in both
   themes (backlog).

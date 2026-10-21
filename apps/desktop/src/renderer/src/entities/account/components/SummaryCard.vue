@@ -36,14 +36,14 @@ const TILE = {
   <!-- The total of a view, not a card of a bank: a header band in the people's colours, the figures as tiles. -->
   <button
     type="button"
-    class="relative flex h-[214px] w-[340px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-border bg-surface text-left text-foreground shadow-md
+    class="relative flex h-[252px] w-[400px] shrink-0 flex-col overflow-hidden rounded-[18px] border border-border bg-surface text-left text-foreground shadow-md
            transition-[transform,box-shadow] duration-450 ease-[cubic-bezier(.34,1.8,.64,1)] hover:-translate-y-[3px] hover:shadow-lg
            active:scale-[.97] active:duration-100 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-border-focus
            motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
     :class="{ 'opacity-55': dim }"
     @click="$emit('click')"
   >
-    <span data-test="band" class="flex h-10 shrink-0 items-center justify-between gap-3 bg-(image:--band) px-4" :style="{ '--band': band }">
+    <span data-test="band" class="flex h-11 shrink-0 items-center justify-between gap-3 bg-(image:--band) px-4" :style="{ '--band': band }">
       <span class="flex min-w-0 items-center gap-2">
         <VIcon icon="lucide:layers" :size="14" class="shrink-0" />
         <span class="truncate text-[15px] font-bold">{{ title }}</span>
@@ -66,7 +66,7 @@ const TILE = {
           <span class="truncate" :title="count">{{ count }}</span>
         </span>
         <span class="flex items-baseline justify-between gap-3">
-          <span data-test="amount" class="text-[28px] leading-tight font-extrabold tracking-tight whitespace-nowrap tabular-nums" :class="{ 'text-negative-soft': negative }">
+          <span data-test="amount" class="text-[32px] leading-tight font-extrabold tracking-tight whitespace-nowrap tabular-nums" :class="{ 'text-negative-soft': negative }">
             {{ amount }}
           </span>
           <span v-if="approx" class="truncate text-xs text-foreground-muted tabular-nums" :title="approx">{{ approx }}</span>
@@ -74,9 +74,9 @@ const TILE = {
       </span>
       <span v-if="tiles.length" class="grid gap-1.5" :class="COLUMNS[tiles.length]">
         <span v-for="tile in tiles" :key="tile.key" :data-test="`tile-${tile.key}`" class="flex min-w-0 flex-col rounded-[10px] px-2.5 py-1.5" :class="TILE[tile.tone].box">
-          <span class="truncate text-[11px]" :class="TILE[tile.tone].label">{{ tile.label }}</span>
-          <span class="flex items-center gap-0.5 text-[13px] font-bold tabular-nums" :class="TILE[tile.tone].value">
-            <VIcon v-if="tile.arrow" :icon="tile.arrow === 'down' ? 'lucide:arrow-down-right' : 'lucide:arrow-up-right'" :size="13" class="shrink-0" />
+          <span class="truncate text-xs" :class="TILE[tile.tone].label">{{ tile.label }}</span>
+          <span class="flex items-center gap-0.5 text-sm font-bold tabular-nums" :class="TILE[tile.tone].value">
+            <VIcon v-if="tile.arrow" :icon="tile.arrow === 'down' ? 'lucide:arrow-down-right' : 'lucide:arrow-up-right'" :size="14" class="shrink-0" />
             <span class="truncate" :title="tile.amount">{{ tile.amount }}</span>
           </span>
         </span>
