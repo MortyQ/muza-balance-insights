@@ -414,7 +414,7 @@
     "balances": {
       "accountsCount": "{n} account | {n} accounts | {n} accounts",
       "accountsOf": "Accounts · {name}",
-      "actual": "Actually {amount} · reserved {reserved}",
+      "actualTile": "Actually",
       "allAccounts": "All accounts",
       "back": "Back",
       "captionOn": "{label} · on {day} {month}{year}",
@@ -429,6 +429,7 @@
       "fxNoRate": "without {amount} — no rate",
       "fxRate": "incl. {amount} at the rate {rate}",
       "inMonth": "in {month}{year}",
+      "inMonthTitle": "In {month}{year}",
       "income": "In",
       "kind": {
         "card": "Card",

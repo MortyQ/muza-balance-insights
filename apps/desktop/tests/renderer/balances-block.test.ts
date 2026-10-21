@@ -19,7 +19,10 @@ const flow = { currency: 980, income: 100_00, spending: 50_00, color: 'var(--ser
 const slide = (key: string, title: string) => ({
   key,
   kind: 'summary' as const,
-  card: { title, caption: 'C', amount: '100 ₴', approx: '', others: '', actual: '', bottom: 'B', net: 1, netText: '+1 ₴', accents: ['var(--series-blue)'], dim: false },
+  card: {
+    title, caption: 'C', count: 'B', amount: '100 ₴', approx: '', negative: false, own: null, reserved: null,
+    net: { label: 'L', amount: '+1 ₴', value: 1 }, accents: ['var(--series-blue)'], dim: false,
+  },
   flow,
 });
 const SLIDES = [slide('family', 'Семья'), slide('p1', 'Аня'), slide('p2', 'Борис'), slide('p3', 'Вика'), slide('p4', 'Гена')];

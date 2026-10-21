@@ -66,6 +66,12 @@ export function monthIn(month: string, currentYear: number): string {
   return t('home.balances.inMonth', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
 }
 
+/** «In October», «In December 2025»: the month tile of a summary card. */
+export function monthInTitle(month: string, currentYear: number): string {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  return t('home.balances.inMonthTitle', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
+}
+
 /** «1 person», «3 people». */
 export function peopleCount(n: number): string {
   return t('home.balances.peopleCount', n);
@@ -149,28 +155,20 @@ export function fxNote(fx: ReadonlyArray<FxPart>): string {
     .join(' · ');
 }
 
-/** The foreign own funds of a total card: each with today's rate it was folded in at, or left out without one. */
-function othersNote(total: CardTotal): string {
-  return total.others
-    .map((o) => {
-      const amount = formatMoney(o.ownFunds, o.currency, { minorUnits: true });
-      return o.rate === null ? t('home.balances.fxNoRate', { amount }) : t('home.balances.fxRate', { amount, rate: rateText(o.rate, o.currency) });
-    })
-    .join(' · ');
-}
-
 export function slidesOf(
   v: MonthOverview,
   ctx: { people: ReadonlyArray<Readonly<PersonView>>; selectedId: number | null; currentYear: number; fmt: MoneyFormat },
 ): Slide[] {
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
+  const monthTitle = monthInTitle(v.month, ctx.currentYear);
   const { fmt } = ctx;
   // `reserved`: today's reserves set against this card — the big figure is what is free, the real balance under it.
   const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string, reserved: number | null = null): Slide => {
     const approxIncome = total.fx.some((p) => p.rate !== null && p.income !== 0);
     const approxSpending = total.fx.some((p) => p.rate !== null && p.spending !== 0);
     const shown = total.ownFunds - (reserved ?? 0);
+    const net = total.income - total.spending;
     return {
       key,
       kind: 'summary',
@@ -179,13 +177,13 @@ export function slidesOf(
         caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
         accents,
         dim: false,
+        count: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
         amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
         approx: fmt.approxInline(shown),
-        others: othersNote(total),
-        actual: reserved === null ? '' : t('home.balances.actual', { amount: fmt.money(total.ownFunds), reserved: fmt.money(reserved) }),
-        bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
-        net: total.income - total.spending,
-        netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
+        negative: shown < 0,
+        own: reserved === null ? null : { amount: fmt.money(total.ownFunds), negative: total.ownFunds < 0 },
+        reserved: reserved === null ? null : fmt.money(reserved),
+        net: { label: monthTitle, amount: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(net), fmt.currency)}`, value: net },
       },
       flow: {
         currency: fmt.currency,
@@ -229,7 +227,6 @@ export function slidesOf(
           caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
           amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
           approx: '',
-          others: '',
           actual: '',
           bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
           net: a.ownFunds === null ? null : a.income - a.spending,

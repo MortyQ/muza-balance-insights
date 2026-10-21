@@ -33,15 +33,20 @@
   with data at both ends.
   Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
   person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
-  card — shows «Free» (own funds − reserves) big and
-  `actual` («Actually … · reserved …», the summary card) under it; the month panel's «Reserved» line (`reservedLine`,
+  card — shows «Free» (own funds − reserves) big and own funds («Actually») and the reserve as tiles under it; the month panel's «Reserved» line (`reservedLine`,
   `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
-  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (theme surface tinted by the
-  first person's colour, `lucide:layers`, the «Total» chip `home.balances.total`, `accents` as dots, no bank mark);
+  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (spec
+  `desktop-balance-cards`): a header band, a gradient of each person's colour mixed into `--surface` by `--card-band-tint`
+  (one person: fading to `--card-band-fade`; both in `theme.css`, stronger in the dark theme), with `lucide:layers`, the
+  title, the «Total» chip `home.balances.total` and `accents` as dots; under it the caption with `count`, the amount
+  with `approx`; tiles — «Actually» (`home.balances.actualTile`) and «Reserved» with reserves only, the month's net
+  (`home.balances.inMonthTitle`, `--success-subtle` or `--negative-soft-bg`). Negative figures use `--negative-soft`, a
+  muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
+  figure apart: `count`, `negative`, `own`, `reserved`, `net { label, amount, value }`);
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
   `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
-  dark card with the «m» mark. All take `CardFigures` (`title`, `caption`, `amount`, `approx`, `others`, `actual`,
-  `bottom`, `net` + `netText`, `accents`, `dim`), are 340 × 214, and their root is a `<button>`; `aria-expanded` comes from
+  dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
+  + `netText`, `accents`, `dim`). All are 340 × 214, and their root is a `<button>`; `aria-expanded` comes from
   outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`

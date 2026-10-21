@@ -414,7 +414,7 @@
     "balances": {
       "accountsCount": "{n} рахунок | {n} рахунки | {n} рахунків",
       "accountsOf": "Рахунки · {name}",
-      "actual": "Насправді {amount} · у резерві {reserved}",
+      "actualTile": "Насправді",
       "allAccounts": "Усі рахунки",
       "back": "Назад",
       "captionOn": "{label} · на {day} {month}{year}",
@@ -429,6 +429,7 @@
       "fxNoRate": "без {amount} — немає курсу",
       "fxRate": "вкл. {amount} за курсом {rate}",
       "inMonth": "у {month}{year}",
+      "inMonthTitle": "У {month}{year}",
       "income": "Надійшло",
       "kind": {
         "card": "Картка",

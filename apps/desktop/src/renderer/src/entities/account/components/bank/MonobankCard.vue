@@ -2,7 +2,7 @@
 import { VIcon } from '@/shared/ui';
 import type { BankCardProps } from '../../types.ts';
 
-const { title, caption, amount, approx, others, actual, bottom, net, netText, accents, dim } = defineProps<BankCardProps>();
+const { title, caption, amount, approx, actual, bottom, net, netText, accents, dim } = defineProps<BankCardProps>();
 defineEmits<{ click: [] }>();
 </script>
 
@@ -31,7 +31,6 @@ defineEmits<{ click: [] }>();
       <span class="text-sm text-white/65">{{ caption }}</span>
       <span class="text-[30px] leading-none font-bold tracking-tight tabular-nums">{{ amount }}</span>
       <span v-if="approx" class="text-sm text-white/65 tabular-nums">{{ approx }}</span>
-      <span v-if="others" class="text-sm text-white/65 tabular-nums">{{ others }}</span>
       <span v-if="actual" class="text-sm text-white/65 tabular-nums">{{ actual }}</span>
     </span>
     <span class="relative flex items-center justify-between text-sm text-white/70">
