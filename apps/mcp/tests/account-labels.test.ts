@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { MCP_ROOT } from '../src/paths.ts';
-import { accountLabels } from '@mono/core/format';
+import { accountLabels } from '@mono/core/shared/format';
 
 describe('account labels in logs', () => {
   it('type + currency, never a card number; duplicates get an id prefix', () => {

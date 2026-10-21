@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { migrate, SCHEMA_VERSION } from '@mono/core/db';
+import { migrate, SCHEMA_VERSION } from '@mono/core/storage/db';
 import { insertAccount, insertTransactionRow } from '@mono/core/test-helpers';
 import { openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { encryptDatabase, encryptingFiles, MIGRATION_STEPS, type EncryptDeps } from '../src/main/db/encrypt.ts';

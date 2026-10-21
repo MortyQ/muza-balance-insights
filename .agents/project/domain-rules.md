@@ -6,7 +6,7 @@
 
 - Холды: soft-delete через `is_cancelled`, строки не удаляются.
 - Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`)
-  are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
+  are calendar days [from, to] of a time zone (`tz`, `packages/core/src/shared/periods.ts`; absent → Kyiv,
   which the MCP server keeps) and match rows by `time` in [start of `from`, start of the day after `to`). Grouping by
   `day` / `month` reads the zone's own day starts (`periodBuckets` → CTE `buckets`), right across DST. The desktop passes
   the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
@@ -161,5 +161,5 @@
 - `incomeLines` (`packages/core/src/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
   from the same query (`incomeRowsSql`), with source and the «Від: …» sender's name; carries the bank's text, never for
   an MCP tool or the anonymised copy.
-- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
+- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/shared/constants.ts`
   (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.

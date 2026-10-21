@@ -3,13 +3,13 @@
 // so a full name in the query still matches; the answer shows names only as initials (displayCounterName),
 // unless the user turned on settings.reveal_full_names.
 import { ENABLED_ACCOUNT_IDS_SQL } from './accounts.ts';
-import type { Db } from './db.ts';
-import { toMajor } from './currency.ts';
-import { accountLabels, displayCounterName, toKyivDateTime } from './format.ts';
+import type { Db } from './storage/db.ts';
+import { toMajor } from './shared/currency.ts';
+import { accountLabels, displayCounterName, toKyivDateTime } from './shared/format.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';
-import { periodArgs, periodSql } from './periods.ts';
+import { periodArgs, periodSql } from './shared/periods.ts';
 import { getSettings } from './settings.ts';
 import { isScope, type Scope } from './scope.ts';
 import { SummaryError, periodInfo, validatePeriod, type PeriodInfo } from './summaries.ts';

@@ -18,8 +18,8 @@
     (the boundary test allows only `<id>/statement.ts` and `types.ts` there). Monobank takes the card statement in
     Ukrainian (its service texts are the API's); the English one (translated texts) and the FOP one are refused with
     their own codes. Money is read as text into minor units; an absent cell (`—`) stays absent. The CSV reader is
-    `src/csv.ts`. Writing: `src/statement-import.ts` (`compareStatement` — counts and what blocks the write: a token
+    `src/shared/csv.ts`. Writing: `src/statement-import.ts` (`compareStatement` — counts and what blocks the write: a token
     connection, another currency, a hole; `commitStatement` — through `commitRows` of `sync.ts`, the write half of
     `commitWindow`, without hold cancelling). Row ids: account, second, amount and the order among equal rows;
-  - общее для всех клиентов: слот запросов `src/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/errors.ts`
+  - общее для всех клиентов: слот запросов `src/providers/ratelimit.ts` (интервал задаёт провайдер), ошибки `src/shared/errors.ts`
     (`RateLimitError`, `StatementFormatError`).

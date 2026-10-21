@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { kyivStartOfDay } from '@mono/core/format';
+import { kyivStartOfDay } from '@mono/core/shared/format';
 import { CANCEL_KILL_MS, Importer, JOB_FILE, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';

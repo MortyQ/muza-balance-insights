@@ -12,7 +12,7 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
   /^vue-router$/,
   /^pinia$/,
   /^vue-i18n$/,
-  /^@mono\/core\/currency$/,
+  /^@mono\/core\/shared\/currency$/,
   /^~icons\/lucide\/[a-z0-9-]+$/,
   /^@fontsource-variable\/manrope\/wght\.css$/,
 ];

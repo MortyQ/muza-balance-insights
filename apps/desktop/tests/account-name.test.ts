@@ -1,6 +1,6 @@
 // Account names for the balance cards and the import line: parts only, told apart like the core's accountLabels.
 import { describe, expect, it } from 'vitest';
-import { accountLabels } from '@mono/core/format';
+import { accountLabels } from '@mono/core/shared/format';
 import { accountNames } from '../src/shared/account-name.ts';
 
 const ACCOUNTS = [

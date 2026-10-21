@@ -3,7 +3,7 @@
 // aggregates and diagnostics only — no descriptions, counterparties, comments, IBANs or card numbers
 // (apps/mcp/tests/recategorize-safety.test.ts). Change what it prints only after the user's ok.
 import { recategorize } from './categories.ts';
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 import { refreshCrossing, rederiveCrossing } from './derived.ts';
 import { categoryCounts, transferDiagnostics } from './queries.ts';
 import { markRefunds } from './refunds.ts';

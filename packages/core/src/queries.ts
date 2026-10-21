@@ -1,6 +1,6 @@
 // Read-only queries over the real database, shared by the CLI and (phase 5) the MCP tools.
 import { CATEGORY } from './categories.ts';
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import { spendingSummary } from './summaries.ts';

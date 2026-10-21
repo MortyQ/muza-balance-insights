@@ -1,7 +1,7 @@
 // The end of an import re-derives only the spans it touched (rederiveSpans), and decides when a full pass is needed
 // (accountInputsChanged). Fictional data only.
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { accountInputs, accountInputsChanged } from '../src/derived.ts';
 import { mergeSpans, rederiveSpans } from '../src/rederive.ts';
 import { insertAccount, insertAccountRow, insertTransactionRow, memoryDb } from './helpers.ts';

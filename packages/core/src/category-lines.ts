@@ -2,7 +2,7 @@
 // category screen. The same lines by construction (spendingLinesSql), so they sum to that figure. Unlike the
 // summaries, the answer carries the bank's text (description, comment, counter_name): it is for the user's own
 // screen, never for an MCP tool or the anonymised copy.
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 import { SPENDING_LINE_ARGS, SPENDING_LINE_SQL, periodInfo, spendingLinesSql, validateFilters, type Period, type PeriodInfo, type SpendingFilters } from './summaries.ts';
 
 export type CategoryLine = {

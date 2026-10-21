@@ -4,7 +4,7 @@ import { parseArgs } from 'node:util';
 import { refreshAnalysisCopy } from '../analysis/refresh.ts';
 import { RATE_LIMIT_MS, getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
-import { accountLabels, formatDuration, kyivStartOfDay, toKyivDate } from '@mono/core/format';
+import { accountLabels, formatDuration, kyivStartOfDay, toKyivDate } from '@mono/core/shared/format';
 import { log } from '../log.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';

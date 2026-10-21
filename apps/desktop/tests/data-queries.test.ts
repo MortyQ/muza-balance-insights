@@ -1,8 +1,8 @@
 // How many statements the home screen's overviews run: a fixed number per overview, whatever the number of people,
 // accounts and months of history — grouped queries instead of one per person, account or month. Fictional data only.
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
-import { kyivStartOfDay } from '@mono/core/format';
+import type { Db } from '@mono/core/storage/db';
+import { kyivStartOfDay } from '@mono/core/shared/format';
 import { addConnection, addParticipant } from '@mono/core/participants';
 import { rederiveCore } from '@mono/core/rederive';
 import { insertAccountRow, memoryDb, testConnection } from '@mono/core/test-helpers';

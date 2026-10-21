@@ -1,7 +1,7 @@
 // Dates and day starts in a time zone the app passes in (format.ts): the desktop passes the system's, the Kyiv
 // helpers (local_date, MCP output) are the same functions with Europe/Kyiv.
 import { describe, expect, it } from 'vitest';
-import { dateIn, dateTimeIn, kyivStartOfDay, startOfDayIn, toKyivDate, toKyivDateTime } from '../src/format.ts';
+import { dateIn, dateTimeIn, kyivStartOfDay, startOfDayIn, toKyivDate, toKyivDateTime } from '../../src/shared/format.ts';
 
 /** 23:10 in Berlin (CEST) on 5 Oct 2026 — 00:10 on 6 Oct in Kyiv. */
 const BERLIN_LATE = Date.UTC(2026, 9, 5, 21, 10) / 1000;

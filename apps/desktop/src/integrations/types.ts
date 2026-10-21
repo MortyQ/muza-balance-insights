@@ -1,8 +1,8 @@
 // What each bank's folder in src/integrations provides. `desktop.ts` — main's side, checked before anything is stored
 // or sent to the worker (assembled in src/net/providers.ts); `worker.ts` — the import worker's side (assembled in
 // src/worker/providers.ts). The two sides stay in separate files so each process imports only its own.
-import type { Db } from '@mono/core/db';
-import type { Clock, FetchLike } from '@mono/core/platform';
+import type { Db } from '@mono/core/storage/db';
+import type { Clock, FetchLike } from '@mono/core/shared/platform';
 import type { ProviderClient } from '@mono/core/providers/types';
 import type { ErrorKind } from '../shared/import-protocol.ts';
 

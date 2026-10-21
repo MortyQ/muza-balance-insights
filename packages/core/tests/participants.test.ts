@@ -2,7 +2,7 @@
 // connections in one run (runPlans), deleting a connection, balances per participant. Fictional data only.
 import { afterEach, describe, expect, it } from 'vitest';
 import { ConnectionError } from '../src/connections.ts';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import {
   BANK_LABEL_PLACEHOLDER,
   addConnection,

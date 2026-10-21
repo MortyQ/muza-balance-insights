@@ -1,4 +1,4 @@
-import type { Clock } from '@mono/core/platform';
+import type { Clock } from '@mono/core/shared/platform';
 
 /** Wall clock whose sleep ends early (rejects) when the signal aborts — «Остановить» doesn't wait out the 60 s limit. */
 export const abortableClock: Clock = {

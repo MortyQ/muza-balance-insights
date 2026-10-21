@@ -3,8 +3,8 @@
 // The shapes follow the Monobank provider rules, so the derivation passes find every kind of mark they know: own
 // pairs (same currency, fx, with a fee), jar top-ups, an IBAN match, own-transfer texts, family transfers, refunds
 // with a different MCC, holds, commissions — and a jar the auto rule disables, so statistics see crossing rows.
-import { migrate, type Db, type SqlArg, type Stmt } from '../src/db.ts';
-import { toKyivDate } from '../src/format.ts';
+import { migrate, type Db, type SqlArg, type Stmt } from '../src/storage/db.ts';
+import { toKyivDate } from '../src/shared/format.ts';
 
 export type BenchOptions = {
   seed: number;

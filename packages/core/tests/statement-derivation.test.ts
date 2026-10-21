@@ -2,7 +2,7 @@
 // Separate file: vi.mock wraps src/rederive.ts for every test in the file. Invented data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { addConnection, addParticipant } from '../src/participants.ts';
 import { monobankStatement } from '../src/providers/monobank/statement.ts';
 import * as rederive from '../src/rederive.ts';

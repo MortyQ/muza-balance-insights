@@ -1,7 +1,7 @@
 // Stage 1, step 2: proves the Node adapter (libsql, Node-API) loads and works in the Electron main process.
 // Prints versions and aggregates only — no data. The file is opened the way the app opens it (DbAccess: with its key
 // when encrypted), never directly: a direct open would create a plain file before DbAccess decides.
-import { migrate, SCHEMA_VERSION, type Db } from '@mono/core/db';
+import { migrate, SCHEMA_VERSION, type Db } from '@mono/core/storage/db';
 import { openLibsql } from '@mono/db-libsql';
 
 export type SmokeResult =

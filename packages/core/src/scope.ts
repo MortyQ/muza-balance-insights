@@ -8,7 +8,7 @@
 // A refund paired with its purchase (refund_pair_id, credit side) takes the purchase's scope, like the category.
 // Internal transfers get a scope too, but they never count as spending in either scope.
 import { CATEGORY, matchOverride } from './categories.ts';
-import type { Db, Stmt } from './db.ts';
+import type { Db, Stmt } from './storage/db.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { ProviderId } from './providers/types.ts';

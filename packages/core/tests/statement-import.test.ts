@@ -1,7 +1,7 @@
 // A statement file into an account: the comparison (counts only) and the write. Invented data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { addConnection, addParticipant } from '../src/participants.ts';
 import { monobankStatement } from '../src/providers/monobank/statement.ts';
 import type { ParsedStatement } from '../src/providers/types.ts';

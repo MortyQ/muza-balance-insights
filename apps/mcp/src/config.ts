@@ -4,7 +4,7 @@ import { REPO_ROOT, resolveDbPath } from './paths.ts';
 
 export { REPO_ROOT };
 
-export { RESYNC_OVERLAP_SEC, TIMEZONE } from '@mono/core/constants';
+export { RESYNC_OVERLAP_SEC, TIMEZONE } from '@mono/core/shared/constants';
 export { MAX_STATEMENT_WINDOW_SEC, RATE_LIMIT_MS, STATEMENT_PAGE_LIMIT } from '@mono/core/providers/monobank/constants';
 
 const EnvSchema = z.object({

@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { setAccountEnabled } from '../src/accounts.ts';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { accountInputs, accountInputsChanged } from '../src/derived.ts';
 import { addConnection, addParticipant } from '../src/participants.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';

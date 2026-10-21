@@ -3,10 +3,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { openLibsql } from '@mono/db-libsql';
 import { ensureDefaultConnection } from '../src/connections.ts';
-import { MIGRATIONS, migrate, type Db } from '../src/db.ts';
-import { RateLimitError } from '../src/errors.ts';
+import { MIGRATIONS, migrate, type Db } from '../src/storage/db.ts';
+import { RateLimitError } from '../src/shared/errors.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
-import { acquireSlot } from '../src/ratelimit.ts';
+import { acquireSlot } from '../src/providers/ratelimit.ts';
 import { ConnectionMismatchError, syncAccounts, type SyncContext } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, memoryDb } from './helpers.ts';
 

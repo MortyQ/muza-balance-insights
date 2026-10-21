@@ -1,4 +1,4 @@
-import { currencyAlpha } from '@mono/core/currency';
+import { currencyAlpha } from '@mono/core/shared/currency';
 import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { cardTypeName } from '@/entities/bank';

@@ -7,7 +7,7 @@ import { StdioClientTransport, getDefaultEnvironment } from '@modelcontextprotoc
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Db } from '../src/db.ts';
 import { openDb } from '../src/db.ts';
-import { displayCounterName, kyivStartOfDay } from '@mono/core/format';
+import { displayCounterName, kyivStartOfDay } from '@mono/core/shared/format';
 import { createServer } from '../src/mcp/tools.ts';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { MCP_ROOT } from '../src/paths.ts';

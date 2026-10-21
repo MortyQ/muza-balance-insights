@@ -4,7 +4,7 @@
 // neither sees how the key is kept. The key never reaches a log line, an error message or the renderer.
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import type { DbStateView } from '../../shared/db-state.ts';
 import type { SecureStore } from '../secure-store.ts';
 import { encryptingFiles } from './encrypt.ts';

@@ -3,9 +3,9 @@
 // on timing, so this is the deterministic guard behind the benchmark (bench/). Fictional data only (bench/generate.ts).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DEFAULT_BENCH, generateDataset, loadDataset } from '../bench/generate.ts';
-import type { Db, Stmt } from '../src/db.ts';
+import type { Db, Stmt } from '../src/storage/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
-import { startOfDayIn } from '../src/format.ts';
+import { startOfDayIn } from '../src/shared/format.ts';
 import { incomeLines } from '../src/income-lines.ts';
 import { findRecurring } from '../src/recurring.ts';
 import { rederiveCore } from '../src/rederive.ts';

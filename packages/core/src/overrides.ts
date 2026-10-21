@@ -1,7 +1,7 @@
 // Category overrides by counter_name (table category_overrides). Used by scripts/overrides.ts,
 // which only the user runs: candidates show real counterparty names and never go to the analysis copy.
 import { CATEGORY, recategorize } from './categories.ts';
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 
 export type MatchType = 'exact' | 'contains';
 

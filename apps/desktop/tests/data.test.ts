@@ -1,8 +1,8 @@
 // The screen's read side in main: core aggregates → view types. Fictional fixtures only; canaries prove that
 // names, descriptions, card numbers, IBANs and jar titles never reach the renderer.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
-import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
+import type { Db } from '@mono/core/storage/db';
+import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/main/category.ts';
 import { DataService, nextMonthDay } from '../src/main/data.ts';

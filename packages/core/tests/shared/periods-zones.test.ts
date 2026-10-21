@@ -1,13 +1,13 @@
 // Periods in a time zone (periods.ts): rows match by `time` within the zone's days, so a purchase late in the evening in
 // Berlin belongs to that Berlin day and month whatever `local_date` (the Kyiv date) says. No zone → Kyiv, as before.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
-import { startOfDayIn, toKyivDate } from '../src/format.ts';
-import { exchangeRates } from '../src/fx.ts';
-import { periodBuckets } from '../src/periods.ts';
-import { searchTransactions } from '../src/search.ts';
-import { SummaryError, incomeSummary, periodInfo, spendingSummary } from '../src/summaries.ts';
-import { insertAccountRow, memoryDb } from './helpers.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { startOfDayIn, toKyivDate } from '../../src/shared/format.ts';
+import { exchangeRates } from '../../src/fx.ts';
+import { periodBuckets } from '../../src/shared/periods.ts';
+import { searchTransactions } from '../../src/search.ts';
+import { SummaryError, incomeSummary, periodInfo, spendingSummary } from '../../src/summaries.ts';
+import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 const BERLIN = 'Europe/Berlin';
 /** 23:05 in Berlin on 30 Sep 2026 (CEST) — 00:05 on 1 Oct in Kyiv. */

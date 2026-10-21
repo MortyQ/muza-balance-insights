@@ -4,9 +4,9 @@ import fs from 'node:fs';
 import { openLibsql } from '@mono/db-libsql';
 import { afterEach, describe, expect, it } from 'vitest';
 import { setAccountEnabled } from '../src/accounts.ts';
-import { MIGRATIONS, migrate, type Db, type Stmt } from '../src/db.ts';
+import { MIGRATIONS, migrate, type Db, type Stmt } from '../src/storage/db.ts';
 import { refreshCrossing } from '../src/derived.ts';
-import { kyivStartOfDay, toKyivDate } from '../src/format.ts';
+import { kyivStartOfDay, toKyivDate } from '../src/shared/format.ts';
 import { addConnection, addParticipant, deleteConnection } from '../src/participants.ts';
 import { monobankStatement } from '../src/providers/monobank/statement.ts';
 import { rederiveCore } from '../src/rederive.ts';
@@ -181,7 +181,10 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   };
 
   it('the files that write them are exactly the listed ones', () => {
-    const files = fs.readdirSync(SRC).filter((f) => f.endsWith('.ts') && f !== 'db.ts');
+    const files = fs
+      .readdirSync(SRC, { recursive: true, encoding: 'utf8' })
+      .map((f) => f.replaceAll('\\', '/'))
+      .filter((f) => f.endsWith('.ts') && f !== 'storage/db.ts');
     const writing = files.filter((f) => WRITES.test(fs.readFileSync(new URL(f, SRC), 'utf8'))).sort();
     expect(writing).toEqual(Object.keys(WRITERS).sort());
   });

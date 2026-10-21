@@ -10,7 +10,7 @@ A local stdio MCP server: Monobank transactions → SQLite → ready-made spendi
   Node: `.nvmrc` (22).
 - `packages/core` (`@mono/core`): the platform-independent core — bank providers (Monobank for now), sync, categories,
   transfers, refunds, scope, aggregates, migrations and the `Db` interface. No Node, browser or globals: `fetch`, the
-  clock, the logger and ids are passed in (`packages/core/src/platform.ts`). Checked by `packages/core/tests/purity.test.ts`
+  clock, the logger and ids are passed in (`packages/core/src/shared/platform.ts`). Checked by `packages/core/tests/purity.test.ts`
   and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime dependencies: only `zod` and
   `@date-fns/tz`. Exports are TS sources per module: `@mono/core/<module>` → `src/<module>.ts`, no build step.
   Domain tests live in `packages/core/tests` and run on the Node adapter (a devDependency).

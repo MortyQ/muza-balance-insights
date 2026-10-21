@@ -1,6 +1,6 @@
 // First import order: the freshest window of every account first, then older history (round-robin).
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
 import {
   WINDOW_SEC,

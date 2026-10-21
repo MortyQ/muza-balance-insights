@@ -1,7 +1,7 @@
 // Transfers between participants (transfer_rule family): not internal; «семье» for the sender, income (source
 // family) for the receiver when one person is viewed; excluded when the whole family is viewed. Fictional data only.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
 import { incomeLines } from '../src/income-lines.ts';
 import { rederiveCore } from '../src/rederive.ts';

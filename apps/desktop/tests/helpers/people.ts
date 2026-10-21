@@ -1,5 +1,5 @@
 // PeopleService and IntegrationsService on one database and one TokenVault (fake safeStorage), as main wires them.
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { IntegrationsService } from '../../src/main/integrations.ts';
 import { PeopleService } from '../../src/main/people.ts';
 import { TokenVault, type SafeStorageLike } from '../../src/main/token.ts';

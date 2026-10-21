@@ -2,7 +2,7 @@
 // the dark theme). Unique among participants; NULL = none (the palette ran out, or a row from before it existed and
 // past its length). connections.color (migration v10) stays in the schema but is no longer read or written: new
 // connections get NULL.
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 
 /** Categorical order; a new row takes the first free one. No ninth colour is generated. */
 export const COLOR_KEYS = ['blue', 'orange', 'aqua', 'yellow', 'magenta', 'green', 'violet', 'red'] as const;

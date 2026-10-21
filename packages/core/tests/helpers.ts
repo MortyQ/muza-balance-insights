@@ -1,7 +1,7 @@
 import { openLibsql } from '@mono/db-libsql';
 import { ensureDefaultConnection } from '../src/connections.ts';
-import { migrate, type Db, type SqlArg } from '../src/db.ts';
-import type { Clock } from '../src/platform.ts';
+import { migrate, type Db, type SqlArg } from '../src/storage/db.ts';
+import type { Clock } from '../src/shared/platform.ts';
 
 export const TEST_TOKEN = 'test-token-SHOULD-NEVER-LEAK-9f3a';
 

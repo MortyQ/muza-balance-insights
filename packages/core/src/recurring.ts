@@ -4,7 +4,7 @@
 // find regular income (kind 'income') on the income rows (incomeRowsSql): a sender who pays about once a month. Like
 // categoryLines, the answer carries the bank's text: it is for the user's own screen, never an MCP tool or the copy.
 import { CATEGORY } from './categories.ts';
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 import {
   SPENDING_LINE_ARGS,
   SPENDING_LINE_SQL,

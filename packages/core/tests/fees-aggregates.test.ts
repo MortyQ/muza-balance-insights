@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { recategorize } from '../src/categories.ts';
-import type { Db } from '../src/db.ts';
-import { kyivStartOfDay, toKyivDate } from '../src/format.ts';
+import type { Db } from '../src/storage/db.ts';
+import { kyivStartOfDay, toKyivDate } from '../src/shared/format.ts';
 import { spendingByCategory, transferDiagnostics } from '../src/queries.ts';
 import { detectTransfers, markInternalTransfers, type TransferAccount, type TransferTx } from '../src/transfers.ts';
 import { insertAccount, memoryDb } from './helpers.ts';

@@ -1,4 +1,4 @@
-import { currencyExponent } from '@mono/core/currency';
+import { currencyExponent } from '@mono/core/shared/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';

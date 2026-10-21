@@ -3,9 +3,9 @@
 import { accountEnabledSql } from './accounts.ts';
 import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
 import { ConnectionError, PARTICIPANT_LABEL_MAX, parseConnectionMethod, parseProviderId, type ConnectionMethod } from './connections.ts';
-import type { Db } from './db.ts';
-import { TIMEZONE } from './constants.ts';
-import { dateIn, dateTimeIn } from './format.ts';
+import type { Db } from './storage/db.ts';
+import { TIMEZONE } from './shared/constants.ts';
+import { dateIn, dateTimeIn } from './shared/format.ts';
 import type { ProviderId } from './providers/types.ts';
 import { rederiveCore } from './rederive.ts';
 

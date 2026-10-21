@@ -1,17 +1,17 @@
 // Monobank personal API client: requests, response schemas, the shared request slot, pages of a statement.
 // The only Monobank code with network access; the sync loop sees it as a ProviderClient (providers/types.ts).
 import { z } from 'zod';
-import { SyncCancelledError, throwIfCancelled } from '../../cancel.ts';
-import type { Db } from '../../db.ts';
-import { RateLimitError, StatementFormatError } from '../../errors.ts';
-import type { Clock, FetchLike, ResponseLike } from '../../platform.ts';
-import { acquireSlot, recordCall, type RateLimitMode } from '../../ratelimit.ts';
+import { SyncCancelledError, throwIfCancelled } from '../../shared/cancel.ts';
+import type { Db } from '../../storage/db.ts';
+import { RateLimitError, StatementFormatError } from '../../shared/errors.ts';
+import type { Clock, FetchLike, ResponseLike } from '../../shared/platform.ts';
+import { acquireSlot, recordCall, type RateLimitMode } from '../ratelimit.ts';
 import type { NormalizedAccount, NormalizedTx, ProviderClient } from '../types.ts';
 import { RATE_LIMIT_MS, STATEMENT_PAGE_LIMIT } from './constants.ts';
 
-export type { Clock } from '../../platform.ts';
-export type { RateLimitMode } from '../../ratelimit.ts';
-export { RateLimitError, StatementFormatError } from '../../errors.ts';
+export type { Clock } from '../../shared/platform.ts';
+export type { RateLimitMode } from '../ratelimit.ts';
+export { RateLimitError, StatementFormatError } from '../../shared/errors.ts';
 
 const BASE_URL = 'https://api.monobank.ua';
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -80,7 +80,7 @@ export type StatementItem = z.infer<typeof StatementItemSchema> & {
 };
 
 // ---------- errors (never contain the token, URL-with-secrets or headers) ----------
-// RateLimitError and StatementFormatError are shared by every provider (src/errors.ts).
+// RateLimitError and StatementFormatError are shared by every provider (src/shared/errors.ts).
 
 export class MonoApiError extends Error {
   override name = 'MonoApiError';

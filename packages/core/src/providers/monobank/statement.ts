@@ -3,9 +3,9 @@
 // statement translates those texts (`From: …`): refused with its own code, the rules would miss them. The FOP statement
 // (a title line with the holder and the IBAN above the columns) is not supported yet.
 import { TZDate } from '@date-fns/tz';
-import { TIMEZONE } from '../../constants.ts';
-import { parseCsv } from '../../csv.ts';
-import { currencyExponent, currencyNumeric } from '../../currency.ts';
+import { TIMEZONE } from '../../shared/constants.ts';
+import { parseCsv } from '../../shared/csv.ts';
+import { currencyExponent, currencyNumeric } from '../../shared/currency.ts';
 import type { NormalizedTx, StatementFileParser, StatementParseResult } from '../types.ts';
 
 /** A cell the statement leaves empty: an em dash, or nothing. */

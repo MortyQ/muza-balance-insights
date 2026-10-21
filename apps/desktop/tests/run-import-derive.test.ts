@@ -2,7 +2,7 @@
 // accounts' IBANs or jar titles changed (then a full pass). Separate file: vi.mock wraps the core's rederive module.
 // Mock Monobank, fictional data only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import * as rederive from '@mono/core/rederive';
 import { WINDOW_SEC } from '@mono/core/sync';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';

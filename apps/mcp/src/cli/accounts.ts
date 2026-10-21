@@ -2,7 +2,7 @@
 // and lists them. Deliberately prints no IBAN, card numbers or maskedPan. Output goes to stderr.
 import { getToken, loadConfig } from '../config.ts';
 import { openDb } from '../db.ts';
-import { formatDuration } from '@mono/core/format';
+import { formatDuration } from '@mono/core/shared/format';
 import { log } from '../log.ts';
 import { ensureDefaultConnection } from '@mono/core/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';

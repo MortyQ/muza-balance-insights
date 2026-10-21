@@ -3,7 +3,7 @@
 // the API (commitRows; a full pass only when that failed). Only an account of a file connection is written; a token
 // connection's account can be compared with a file (the reference check), never written from one.
 import { ConnectionError, parseConnectionMethod, parseProviderId } from './connections.ts';
-import type { Db, Stmt } from './db.ts';
+import type { Db, Stmt } from './storage/db.ts';
 import type { ParsedStatement } from './providers/types.ts';
 import { rederiveCore } from './rederive.ts';
 import { commitRows, getSyncState, type Window } from './sync.ts';

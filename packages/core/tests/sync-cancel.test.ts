@@ -1,10 +1,10 @@
 // Cooperative cancellation (desktop «Остановить»): checked before each window and page and after rate-limit waits.
 // A fully fetched window is still committed; a cancel never leaves a hole; the next run resumes.
 import { afterEach, describe, expect, it } from 'vitest';
-import { SyncCancelledError } from '../src/cancel.ts';
-import type { Db } from '../src/db.ts';
+import { SyncCancelledError } from '../src/shared/cancel.ts';
+import type { Db } from '../src/storage/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
-import type { Clock } from '../src/platform.ts';
+import type { Clock } from '../src/shared/platform.ts';
 import { WINDOW_SEC, getSyncState, planHistory, runPlan, syncAccounts, type SyncContext } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb, type RawItem } from './helpers.ts';
 

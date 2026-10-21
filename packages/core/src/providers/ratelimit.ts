@@ -1,10 +1,10 @@
 // The request slot, shared across processes via the api_calls table: at most one request per `intervalMs` and
 // connection (a bank's limit is per credential). The interval is the provider's (Monobank: 60 s). connectionId null =
 // calls made without a connection (tests, tools): they share one slot of their own.
-import { cancellableSleep } from './cancel.ts';
-import type { Db } from './db.ts';
-import { RateLimitError } from './errors.ts';
-import type { Clock } from './platform.ts';
+import { cancellableSleep } from '../shared/cancel.ts';
+import type { Db } from '../storage/db.ts';
+import { RateLimitError } from '../shared/errors.ts';
+import type { Clock } from '../shared/platform.ts';
 
 export type RateLimitMode =
   /** CLI: sleep until the shared slot is free. */

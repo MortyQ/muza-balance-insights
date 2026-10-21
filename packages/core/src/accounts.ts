@@ -3,7 +3,7 @@
 // A transfer between an enabled account and a disabled one is not internal (and not family): the disabled account is
 // someone else's, so the row is an ordinary operation — stored as transactions.crossing_category (derived.ts).
 import { ConnectionError } from './connections.ts';
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 import { refreshCrossing } from './derived.ts';
 
 /** SQL: the auto rule for account alias `a` — a card always; a jar with money or already imported (has coverage). */

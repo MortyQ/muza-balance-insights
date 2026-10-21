@@ -1,9 +1,9 @@
 // The CSV reader statement files go through. Invented data only.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseCsv } from '../src/csv.ts';
+import { parseCsv } from '../../src/shared/csv.ts';
 
-const fixture = (name: string) => readFileSync(new URL(`./providers/monobank/fixtures/${name}`, import.meta.url), 'utf8');
+const fixture = (name: string) => readFileSync(new URL(`../providers/monobank/fixtures/${name}`, import.meta.url), 'utf8');
 
 describe('parseCsv', () => {
   it('plain and quoted fields, a doubled quote, a comma inside quotes', () => {

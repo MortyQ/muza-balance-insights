@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { categoryLines } from '../src/category-lines.ts';
 import { incomeLines } from '../src/income-lines.ts';
-import { kyivStartOfDay } from '../src/format.ts';
+import { kyivStartOfDay } from '../src/shared/format.ts';
 import { spendingByCategory } from '../src/queries.ts';
 import { getBalances, getSyncStatus } from '../src/status.ts';
 import {

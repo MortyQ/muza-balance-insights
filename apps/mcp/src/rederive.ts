@@ -2,7 +2,7 @@
 // The agent runs it itself OUTSIDE the OS sandbox — so this module and everything it imports must not touch
 // .env or the token (tests/recategorize-safety.test.ts), and the report holds aggregates and diagnostics only:
 // no descriptions, counterparties, comments, IBANs or card numbers. Change what it prints only after the user's ok.
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { rederiveCore } from '@mono/core/rederive';
 import { exportAnalysis, formatExportSummary } from './analysis/export.ts';
 import { ANALYSIS_DB_PATH } from './analysis/schema.ts';

@@ -8,7 +8,7 @@
 import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from './accounts.ts';
 import { categorize, loadOverrides } from './categories.ts';
 import { accountProviders, providerOf } from './connections.ts';
-import type { Db, Stmt } from './db.ts';
+import type { Db, Stmt } from './storage/db.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { TimeRange } from './transfers.ts';
 

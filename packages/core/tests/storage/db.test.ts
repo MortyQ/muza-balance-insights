@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { migrate, SCHEMA_VERSION, type Db } from '../src/db.ts';
-import { insertAccountRow, openTestDb as openDb } from './helpers.ts';
+import { migrate, SCHEMA_VERSION, type Db } from '../../src/storage/db.ts';
+import { insertAccountRow, openTestDb as openDb } from '../helpers.ts';
 
 let db: Db | undefined;
 let tmpDir: string | undefined;

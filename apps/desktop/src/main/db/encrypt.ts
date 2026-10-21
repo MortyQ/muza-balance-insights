@@ -5,7 +5,7 @@
 // the copy and leaves the old file as it was (it is opened plain and the migration is retried at the next launch).
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { syncDir } from './key-vault.ts';
 
 export const MIGRATION_STEPS = ['checkpoint', 'attach', 'copy', 'verify', 'sync', 'swap', 'cleanup'] as const;

@@ -7,7 +7,7 @@
 - `apps/mcp/src/server.ts` (точка входа, `.env` и токен), `apps/mcp/src/mcp/run.ts` (stdio), `apps/mcp/src/mcp/tools.ts` (тулы).
   Тулы: `spending_summary`, `compare_periods`, `income_summary`, `search_transactions`, `get_balances`, `get_sync_status`,
   `sync_recent`.
-- v1.1 (поездки): `operation_currency` (буквенный ISO, маппинг `packages/core/src/currency.ts`) — group_by и фильтр в `spending_summary`
+- v1.1 (поездки): `operation_currency` (буквенный ISO, маппинг `packages/core/src/shared/currency.ts`) — group_by и фильтр в `spending_summary`
   и `compare_periods`. Суммы в валюте счёта + блок `operation` (валюта операции), только если у группы одна валюта
   операции; суммы по экспоненте ISO (JPY 0, KWD 3). Страну API не отдаёт — в описаниях тулов подсказка про валюту и даты.
 - `search_transactions` (`packages/core/src/search.ts`): текст ищется в JS (`normalizeSearch`: NFKC, `toLocaleLowerCase('uk')`) по

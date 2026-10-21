@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { categorize, recategorize, type CategorizeInput, type CategoryOverride } from '../src/categories.ts';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { insertAccount, memoryDb } from './helpers.ts';
 
 const base: CategorizeInput = { description: '', mcc: 5411, amount: -100, counterName: null, isInternalTransfer: false, isFamilyTransfer: false, provider: 'monobank' };

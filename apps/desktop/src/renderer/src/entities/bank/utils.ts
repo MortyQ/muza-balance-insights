@@ -1,4 +1,4 @@
-import { currencyAlpha } from '@mono/core/currency';
+import { currencyAlpha } from '@mono/core/shared/currency';
 import type { AccountName } from '@contract/account-name.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { t } from '@/shared/lib';

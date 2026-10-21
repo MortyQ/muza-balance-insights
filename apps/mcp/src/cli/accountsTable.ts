@@ -1,5 +1,5 @@
 import type { Db } from '../db.ts';
-import { currencyAlpha, formatMinor } from '@mono/core/format';
+import { currencyAlpha, formatMinor } from '@mono/core/shared/format';
 import { defaultAccountSelection } from '@mono/core/sync';
 
 /**

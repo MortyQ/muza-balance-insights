@@ -3,7 +3,7 @@
 // The list of people with their connections is PeopleService's (people.ts); this service does not use it.
 import { listConnectionAccounts, setAccountEnabled } from '@mono/core/accounts';
 import { ConnectionError, type ConnectionMethod } from '@mono/core/connections';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { addConnection, addParticipant, deleteConnection, listConnections } from '@mono/core/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';

@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { BANK_LABEL_PLACEHOLDER } from '@mono/core/participants';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import type { IntegrationsService } from '../src/main/integrations.ts';

@@ -1,7 +1,7 @@
 // Transaction categories: manual overrides by counter_name, the provider's hint from the shape of the operation
 // (transfers, installments, taxes — providers/<id>/rules.ts), then the MCC table (ISO 18245, not bank-specific).
 // Recomputed after the internal-transfer pass (category depends on is_internal_transfer).
-import type { Db, Stmt } from './db.ts';
+import type { Db, Stmt } from './storage/db.ts';
 import { accountProviders, providerOf } from './connections.ts';
 import { rulesFor } from './providers/rules.ts';
 import type { CategoryHint, ProviderId } from './providers/types.ts';

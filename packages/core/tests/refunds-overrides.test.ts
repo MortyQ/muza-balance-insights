@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { recategorize } from '../src/categories.ts';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { OverrideError, addOverride, listOverrides, overrideCandidates, removeOverride } from '../src/overrides.ts';
 import { spendingByCategory, transferDiagnostics } from '../src/queries.ts';
 import { REFUND_WINDOW_SEC, detectRefunds, markRefunds, type RefundTx } from '../src/refunds.ts';

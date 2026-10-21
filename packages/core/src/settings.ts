@@ -1,6 +1,6 @@
 // User settings (table settings). Changed only by the user via scripts/settings.ts; read by the scope pass
 // and, in phase 5, by the MCP tools. Only non-default values are stored.
-import type { Db } from './db.ts';
+import type { Db } from './storage/db.ts';
 
 export const SETTING_DEFAULTS = {
   /** Treasury payments («ГУК…») from any card count as business. Personal ones (fines, fees) → scope overrides. */

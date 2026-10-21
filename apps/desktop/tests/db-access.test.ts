@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
 import { openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { DB_FILE, DbAccess, DbOpenError, ENCRYPTING_FILE, type DbAccessDeps, type DbState, type EncryptResult } from '../src/main/db/access.ts';
 import { encryptDatabase } from '../src/main/db/encrypt.ts';

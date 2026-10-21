@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { RESYNC_OVERLAP_SEC } from '../src/constants.ts';
+import { RESYNC_OVERLAP_SEC } from '../src/shared/constants.ts';
 import { MAX_STATEMENT_WINDOW_SEC } from '../src/providers/monobank/constants.ts';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
 import type { NormalizedTx } from '../src/providers/types.ts';
 import {

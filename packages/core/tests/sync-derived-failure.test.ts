@@ -1,7 +1,7 @@
 // A failure in the derived-data pass (transfers / categories) must not break the sync.
 // Separate file: vi.mock replaces src/categories.ts for every test in the file.
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { Db } from '../src/db.ts';
+import type { Db } from '../src/storage/db.ts';
 import { createMonoClient } from '../src/providers/monobank/client.ts';
 import { getSyncState, runPlan, type CommitResult, type SyncContext, type Window } from '../src/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from './helpers.ts';

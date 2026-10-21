@@ -4,12 +4,12 @@
 // token is rejected (or belongs to another holder) stops alone, the others finish. At the end only the spans the
 // windows touched are re-derived; a full pass when a window's derivation failed or the accounts' IBANs, jar titles or
 // card types changed (design D7 of core-read-model, accountInputsChanged).
-import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
-import type { Db } from '@mono/core/db';
-import { RateLimitError } from '@mono/core/errors';
+import { SyncCancelledError, cancellableSleep } from '@mono/core/shared/cancel';
+import type { Db } from '@mono/core/storage/db';
+import { RateLimitError } from '@mono/core/shared/errors';
 import { accountNames, type AccountName } from '../shared/account-name.ts';
 import { localDate } from '../shared/dates.ts';
-import type { Clock, FetchLike } from '@mono/core/platform';
+import type { Clock, FetchLike } from '@mono/core/shared/platform';
 import { rulesFor } from '@mono/core/providers/rules';
 import type { ProviderId } from '@mono/core/providers/types';
 import { accountInputs, accountInputsChanged } from '@mono/core/derived';
