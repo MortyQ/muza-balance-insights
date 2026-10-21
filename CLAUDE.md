@@ -10,10 +10,12 @@ A local stdio MCP server: Monobank transactions → SQLite → ready-made spendi
   Node: `.nvmrc` (22).
 - `packages/core` (`@mono/core`): the platform-independent core — bank providers (Monobank for now), sync, categories,
   transfers, refunds, scope, aggregates, migrations and the `Db` interface. No Node, browser or globals: `fetch`, the
-  clock, the logger and ids are passed in (`packages/core/src/shared/platform.ts`). Checked by `packages/core/tests/purity.test.ts`
-  and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime dependencies: only `zod` and
-  `@date-fns/tz`. Exports are TS sources per module: `@mono/core/<module>` → `src/<module>.ts`, no build step.
-  Domain tests live in `packages/core/tests` and run on the Node adapter (a devDependency).
+  clock, the logger and ids are passed in (`packages/core/src/shared/platform.ts`). Checked by
+  `packages/core/tests/purity.test.ts` and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime
+  dependencies: only `zod` and `@date-fns/tz`. `src/` is layered folders (`shared` → `storage` → `providers` → `people`
+  → `derive` → `read` → `ingest` | `commands`; «Layout» in `.agents/project/core-providers.md`). Exports are TS sources
+  per module: `@mono/core/<folder>/<module>` → `src/<folder>/<module>.ts`, no build step. Domain tests live in
+  `packages/core/tests`, in the same folders, and run on the Node adapter (a devDependency).
 - `packages/db-libsql` (`@mono/db-libsql`): the Node libsql adapter → `Db` (PRAGMA, WAL). It does not depend on core
   (the types are repeated; a mismatch fails the core's typecheck), so there is no dependency cycle. Used by apps/mcp and
   the Electron main process.
@@ -104,7 +106,7 @@ been opened yet, read the relevant file yourself before editing.
 
 | File | Read when | Pulled in by |
 |---|---|---|
-| `.agents/project/core-providers.md` | bank providers, the domain boundary | `packages/core/CLAUDE.md` |
+| `.agents/project/core-providers.md` | the core's folder layout, bank providers, the domain boundary | `packages/core/CLAUDE.md` |
 | `.agents/project/core-people.md` | participants, connections, `runPlans`, the order of import windows | `packages/core/CLAUDE.md` |
 | `.agents/project/domain-rules.md` | categories, transfers, refunds, fees, scope, aggregates, `search`, `findRecurring` | `packages/core/CLAUDE.md`, `apps/mcp/CLAUDE.md` |
 | `.agents/project/mcp-server.md` | MCP tools, the response format | `apps/mcp/CLAUDE.md` |

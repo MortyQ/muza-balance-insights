@@ -2,11 +2,36 @@
 
 Перенесено из корневого `CLAUDE.md` (27.09.2026). Область: packages/core.
 
+## Layout
+
+`packages/core/src` is layered. A module imports its own folder and the folders below it, never above; `ingest` and
+`commands` are both top and never import each other. Nothing lives at the root of `src/`. Checked by
+`packages/core/tests/layers.test.ts` (with breaking examples). Bottom up:
+
+| Folder | Holds |
+|---|---|
+| `shared/` | platform services, errors, cancelling, constants, currencies, formatting, periods, CSV |
+| `storage/` | the `Db` contract and `migrate()` (`db.ts`); `migrations.ts` lists `migrations/vNN.ts`, one per version |
+| `providers/` | the provider contract, the registries, the request slot (`ratelimit.ts`), one folder per bank |
+| `people/` | participants, connections, accounts, colors, settings: reads and plain writes |
+| `derive/` | the derivation: transfers, refunds, categories, scope, overrides, crossing, `rederive`, its diagnostics |
+| `read/` | statistics and lookups: `filters`, `spending`, `compare`, `income`, lines, status, fx, recurring, search |
+| `ingest/` | the import: `plan` (windows, order), `commit` (one span in one transaction), `sync` (the loop), statement files |
+| `commands/` | writes on people and accounts that then re-derive (`setAccountEnabled`, `deleteConnection`) |
+
+- A write that must re-derive belongs in `commands/` (or `ingest/`), not in `people/`: a lower layer cannot call
+  `derive/`.
+- A large module is split by job inside its folder (as `ingest/sync.ts` → `plan` / `commit` / `sync`), not with an
+  index file: imports name the module (`@mono/core/read/spending`).
+- A new migration is a new `storage/migrations/vNN.ts` and a new entry at the end of `storage/migrations.ts`.
+- Tests mirror the folders (`packages/core/tests/<folder>/`); structure tests (`purity`, `providers-boundary`,
+  `layers`) stay at the root and read `src/` through `tests/source-tree.ts`.
+
 - **Провайдеры банков** (`packages/core/src/providers/`, спека — `reports/2026-09-26-connections-spec.md`):
   - контракт — `providers/types.ts` (`ProviderRules`, `ProviderClient`, `NormalizedAccount` / `NormalizedTx`), без импортов;
   - провайдер = две половины: **правила** `providers/<id>/rules.ts` (чистые: признаки строки, маскировка, лимиты API) и
     **клиент** `providers/<id>/client.ts` (сеть, страницы, 429). Разметка (`rederive`) клиента не загружает;
-  - домен (`transfers`, `refunds`, `categories`, `scope`, `summaries`, `search`, `queries`, `masking`, `sync`) входит в
+  - домен (every folder but `providers/`: `derive/`, `read/`, `ingest/`, …) входит в
     провайдеры только через `providers/types.ts` и реестр правил `providers/rules.ts`; провайдеры друг друга не импортируют;
     в коде домена нет MCC 4829/6012, текстов Monobank, `'fop'` и хоста банка. Всё это проверяет
     `packages/core/tests/providers-boundary.test.ts` (с «ломающими» примерами);
