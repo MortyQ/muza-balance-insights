@@ -12,7 +12,6 @@ import {
   coverageNote,
   flowWidths,
   fxNote,
-  maxOffset,
   monthIn,
   monthName,
   netText,
@@ -21,6 +20,7 @@ import {
   slideDelay,
   slidePosition,
   reservedLine,
+  rowView,
   savedLine,
   slidesOf,
   spentShare,
@@ -38,13 +38,13 @@ const EUR_FMT = moneyFormat(RATES, { main: 978, also: NONE });
 const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], saved: null, missing, accounts, income, spending, fx: [] });
 
 describe('balances utils', () => {
-  it('slidePosition: a stack of at most 4 visible cards; a row with the offset applied', () => {
-    expect(slidePosition(0, false, 0)).toEqual({ x: 0, y: 52, z: 20, opacity: 1 });
-    expect(slidePosition(2, false, 0)).toEqual({ x: 44, y: 20, z: 18, opacity: 1 });
-    expect(slidePosition(3, false, 0)).toEqual({ x: 66, y: 4, z: 17, opacity: 1 });
-    expect(slidePosition(5, false, 0)).toEqual({ x: 66, y: 4, z: 15, opacity: 0 });
-    expect(slidePosition(3, true, 1)).toEqual({ x: 712, y: 0, z: 17, opacity: 1 });
-    expect(slidePosition(0, true, 2)).toEqual({ x: -712, y: 0, z: 20, opacity: 1 });
+  it('slidePosition: a stack of at most 4 visible cards; the row lays every card out, the scroll moves it', () => {
+    expect(slidePosition(0, false)).toEqual({ x: 0, y: 52, z: 20, opacity: 1 });
+    expect(slidePosition(2, false)).toEqual({ x: 44, y: 20, z: 18, opacity: 1 });
+    expect(slidePosition(3, false)).toEqual({ x: 66, y: 4, z: 17, opacity: 1 });
+    expect(slidePosition(5, false)).toEqual({ x: 66, y: 4, z: 15, opacity: 0 });
+    expect(slidePosition(0, true)).toEqual({ x: 0, y: 0, z: 20, opacity: 1 });
+    expect(slidePosition(3, true)).toEqual({ x: 1068, y: 0, z: 17, opacity: 1 });
   });
 
   it('slideDelay: staggered out of the stack, back from the far end, none while paging', () => {
@@ -55,10 +55,21 @@ describe('balances utils', () => {
     expect(slideDelay(3, 4, true, true)).toBe(0);
   });
 
-  it('maxOffset: two cards fit', () => {
-    expect(maxOffset(1)).toBe(0);
-    expect(maxOffset(2)).toBe(0);
-    expect(maxOffset(9)).toBe(7);
+  it('rowView: the cards wholly in view, the ends, everything fits (card 340, step 356)', () => {
+    // 5 cards: a track of 1764 px; 712 px of row show two cards.
+    expect(rowView(0, 712, 5)).toEqual({ first: 0, last: 1, atStart: true, atEnd: false, fits: false });
+    expect(rowView(356, 712, 5)).toEqual({ first: 1, last: 2, atStart: false, atEnd: false, fits: false });
+    expect(rowView(1052, 712, 5)).toEqual({ first: 3, last: 4, atStart: false, atEnd: true, fits: false });
+    // Half a card scrolled: the half-hidden one is not in view.
+    expect(rowView(178, 712, 5)).toMatchObject({ first: 1, last: 1, atStart: false });
+    // A fractional scroll still counts as the start / the end.
+    expect(rowView(0.6, 712, 5)).toMatchObject({ first: 0, atStart: true });
+    expect(rowView(1051.5, 712, 5)).toMatchObject({ last: 4, atEnd: true });
+    // Narrower than a card: the nearest one.
+    expect(rowView(356, 300, 5)).toMatchObject({ first: 1, last: 1 });
+    // Everything fits: both ends, no scrolling.
+    expect(rowView(0, 1200, 3)).toEqual({ first: 0, last: 2, atStart: true, atEnd: true, fits: true });
+    expect(rowView(0, 700, 1)).toMatchObject({ fits: true, first: 0, last: 0 });
   });
 
   it('captions: today, the month end, another year', () => {

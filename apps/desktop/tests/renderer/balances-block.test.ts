@@ -5,7 +5,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
@@ -74,5 +74,115 @@ describe('balance block layout', () => {
     await b.get('button[aria-expanded]').trigger('click');
     expect(panel.classes()).toContain('grid-rows-[0fr]');
     expect(panel.attributes('inert')).toBeDefined();
+  });
+});
+
+/** The open row's element with a scroll position that happy-dom can hold, and scrollTo / pointer capture stubbed. */
+function rowOf(b: VueWrapper, { endOnScroll = true } = {}) {
+  const el = b.get('[data-test="row"]').element as HTMLElement;
+  let left = 0;
+  Object.defineProperty(el, 'scrollLeft', { configurable: true, get: () => left, set: (v: number) => (left = v) });
+  const scrollTo = vi.fn((o: ScrollToOptions) => {
+    left = o.left ?? left;
+    if (endOnScroll) el.dispatchEvent(new Event('scrollend'));
+  });
+  el.scrollTo = scrollTo as unknown as typeof el.scrollTo;
+  el.setPointerCapture = vi.fn();
+  el.hasPointerCapture = vi.fn(() => true);
+  el.releasePointerCapture = vi.fn();
+  return { el, scrollTo, setLeft: (v: number) => (left = v) };
+}
+const pointer = (type: string, clientX: number, pointerType = 'mouse') =>
+  new PointerEvent(type, { pointerType, clientX, button: 0, pointerId: 1, bubbles: true, cancelable: true });
+const expanded = (b: VueWrapper) => b.get('button[aria-expanded]').attributes('aria-expanded');
+
+describe('the open row', () => {
+  it('is a snapping scroller without a scroll bar; folded, it only clips', async () => {
+    const b = await mountBlock();
+    const row = b.get('[data-test="row"]');
+    expect(row.classes()).toContain('overflow-clip');
+    expect(row.classes()).not.toContain('snap-x');
+    await b.get('button[aria-expanded]').trigger('click');
+    expect(row.classes()).toEqual(expect.arrayContaining(['overflow-x-auto', 'snap-x', 'snap-mandatory', '[scrollbar-width:none]']));
+    // At the start: only the right edge fades.
+    expect(row.attributes('style')).toContain('--fade-l: 0px');
+    expect(row.attributes('style')).toContain('--fade-r: 32px');
+  });
+
+  it('every card takes focus while open, and a focused card is scrolled into view', async () => {
+    const b = await mountBlock();
+    const cards = () => b.findAll('[data-test="row"] button');
+    expect(cards().filter((c) => c.attributes('tabindex') !== '-1')).toHaveLength(1);
+    await cards()[0]!.trigger('click');
+    expect(cards().every((c) => c.attributes('tabindex') !== '-1')).toBe(true);
+    const into = vi.fn();
+    (cards()[3]!.element as HTMLElement).scrollIntoView = into;
+    await cards()[3]!.trigger('focusin');
+    expect(into).toHaveBeenCalledWith({ inline: 'nearest', block: 'nearest' });
+  });
+
+  it('a mouse drag scrolls the row with snapping off, and the click after it does not fold the row', async () => {
+    const b = await mountBlock();
+    await b.get('button[aria-expanded]').trigger('click');
+    const { el } = rowOf(b);
+    const card = b.findAll('[data-test="row"] button')[1]!.element;
+    card.dispatchEvent(pointer('pointerdown', 300));
+    card.dispatchEvent(pointer('pointermove', 298));
+    expect(el.scrollLeft).toBe(0);
+    card.dispatchEvent(pointer('pointermove', 200));
+    await nextTick();
+    expect(el.scrollLeft).toBe(100);
+    expect(b.get('[data-test="row"]').classes()).toContain('snap-none');
+    card.dispatchEvent(pointer('pointerup', 200));
+    await nextTick();
+    expect(b.get('[data-test="row"]').classes()).toContain('snap-x');
+    (card as HTMLElement).click();
+    await flushPromises();
+    expect(expanded(b)).toBe('true');
+  });
+
+  it('touch is left to native scrolling, and a plain click still folds the row', async () => {
+    const b = await mountBlock();
+    await b.get('button[aria-expanded]').trigger('click');
+    const { el } = rowOf(b);
+    const card = b.findAll('[data-test="row"] button')[0]!.element as HTMLElement;
+    card.dispatchEvent(pointer('pointerdown', 300, 'touch'));
+    card.dispatchEvent(pointer('pointermove', 100, 'touch'));
+    expect(el.scrollLeft).toBe(0);
+    card.click();
+    await flushPromises();
+    expect(expanded(b)).toBe('false');
+  });
+
+  it('dots: one per card, named, the cards in view marked, hidden while folded; a dot scrolls to its card', async () => {
+    const b = await mountBlock();
+    const dots = () => b.findAll('[data-test="row-dot"]');
+    expect(dots()).toHaveLength(5);
+    expect(dots()[0]!.element.parentElement?.getAttribute('aria-hidden')).toBe('true');
+    await b.get('button[aria-expanded]').trigger('click');
+    const { scrollTo } = rowOf(b);
+    expect(dots()[0]!.element.parentElement?.getAttribute('aria-hidden')).toBe('false');
+    expect(dots()[0]!.attributes('aria-label')).toBe('Карта 1 из 5: Семья');
+    expect(dots()[0]!.attributes('aria-current')).toBe('true');
+    expect(dots()[1]!.attributes('aria-current')).toBeUndefined();
+    await dots()[3]!.trigger('click');
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 3 * 356 }));
+  });
+
+  it('folding a scrolled row goes back to its start first, then stacks; focus returns to the front card', async () => {
+    const b = await mountBlock();
+    await b.get('button[aria-expanded]').trigger('click');
+    const { el, scrollTo, setLeft } = rowOf(b, { endOnScroll: false });
+    setLeft(712);
+    const cards = b.findAll('[data-test="row"] button');
+    (cards[2]!.element as HTMLElement).focus();
+    await b.get('[data-test="row"]').trigger('keydown', { key: 'Escape' });
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ left: 0 }));
+    await flushPromises();
+    expect(expanded(b)).toBe('true');
+    el.dispatchEvent(new Event('scrollend'));
+    await flushPromises();
+    expect(expanded(b)).toBe('false');
+    expect(document.activeElement).toBe(cards[0]!.element);
   });
 });

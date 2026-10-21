@@ -451,6 +451,7 @@
       "stubLater": "«All accounts» — this section is coming later",
       "stubSoon": "This section is coming later",
       "title": "Balance",
+      "toCard": "Card {n} of {total}: {title}",
       "total": "Total",
       "wholeMonth": "whole month",
       "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"

@@ -29,30 +29,30 @@
 
 ## 3. The open row scrolls — `feat(desktop): swipe the balance cards`
 
-- [ ] 3.1 Pure `rowView(scrollLeft, clientWidth, n)` → `{ first, last, atStart, atEnd, fits }` in
+- [x] 3.1 Pure `rowView(scrollLeft, clientWidth, n)` → `{ first, last, atStart, atEnd, fits }` in
   `features/balances/utils.ts`; `slidePosition` drops `offset`; remove `VISIBLE_CARDS` and `maxOffset`; verify by unit
   tests (start, middle, end, everything fits, a half-scrolled card)
-- [ ] 3.2 `useRowScroll(row, count)`: reads the scroller (rAF-throttled `scroll`, `ResizeObserver`), `prev` / `next`
+- [x] 3.2 `useRowScroll(row, count)`: reads the scroller (rAF-throttled `scroll`, `ResizeObserver`), `prev` / `next`
   by one `CARD_STEP`, `goTo(i)`, `toStart()` returning a promise on `scrollend` with a 500 ms fallback, `smooth` or
   `instant` by `prefers-reduced-motion`; `useCardStack` loses `offset` and resets the scroll on a new month or person;
   update `tests/renderer/card-stack.test.ts` and add tests for `useRowScroll` against a fake `scrollLeft` / `clientWidth`
   / `scrollTo`; verify they pass
-- [ ] 3.3 `CardStack`: the open row is the scroller (`overflow-x-auto`, `snap-x snap-mandatory`, `overscroll-x-contain`,
+- [x] 3.3 `CardStack`: the open row is the scroller (`overflow-x-auto`, `snap-x snap-mandatory`, `overscroll-x-contain`,
   `[scrollbar-width:none]`), cards `snap-start`, all cards focusable while open, `focusin` → `scrollIntoView` (nearest);
   edge fades from `rowView`; the header arrows read `atStart` / `atEnd`; check in the app that snapping lands on cards,
   and if it does not, add the static snap stops of design §Risks; verify the renderer tests for the classes and focus
-- [ ] 3.4 `useDragScroll(row)`: mouse-only drag past 5 px, snapping off during the drag, one swallowed `click` after a
+- [x] 3.4 `useDragScroll(row)`: mouse-only drag past 5 px, snapping off during the drag, one swallowed `click` after a
   drag; verify by a renderer test with synthetic pointer events that a drag moves `scrollLeft` and does not toggle the
   row, and a plain click still does
-- [ ] 3.5 `RowDots.vue`: one button per card, the cards in view marked, `aria-label` `home.balances.toCard` (all three
+- [x] 3.5 `RowDots.vue`: one button per card, the cards in view marked, `aria-label` `home.balances.toCard` (all three
   dictionaries), `aria-current`, hidden while folded or when everything fits, a dot calls `goTo`; verify by a renderer
   test and `tests/i18n.test.ts`
-- [ ] 3.6 `collapse()` scrolls the row to its start before `stack.close()`; verify by a renderer test that `close` runs
+- [x] 3.6 `collapse()` scrolls the row to its start before `stack.close()`; verify by a renderer test that `close` runs
   after `toStart` resolves and focus returns to the front card
-- [ ] 3.7 Update the balance block paragraph of `.agents/project/desktop-renderer.md` (cards, skins, layout, scrolling,
+- [x] 3.7 Update the balance block paragraph of `.agents/project/desktop-renderer.md` (cards, skins, layout, scrolling,
   dots) in English; add to `docs/backlog.md` the live checks: trackpad / touch swipe and snapping, Shift + wheel, mouse
   drag, the narrow layout, no scroll bar on Windows; `CHANGELOG.md`: swipe through the open cards, the arrows still work
 
 ## 4. Integration
 
-- [ ] 4.1 Run `pnpm test` and `pnpm typecheck` at the root; verify both pass
+- [x] 4.1 Run `pnpm test` and `pnpm typecheck` at the root; verify both pass

@@ -11,19 +11,38 @@
   счета» — заглушка (текст «Раздел появится позже», флаг в `useCardStack`). Позиции стопки/ряда — чистые функции в
   `utils.ts` (`slidesOf`, `slidePosition`), CSS-переменные `--x`/`--y`/`--z`/`--o`, `motion-reduce:` без сдвига.
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
-  `syncStatus.version`); `composables/useCardStack.ts` — `open`/`offset`/`toggle`/`prev`/`next`, сбрасывается сменой
-  месяца или человека. Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  `syncStatus.version`). Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[44rem]` the month panel
+  sits beside the folded stack (`left: 430px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
+  `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
+  A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
+  and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
+  The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
+  `i × CARD_STEP` with `snap-start`, `[scrollbar-width:none]` on every OS, the edge with more cards fades
+  (`mask-image`, `--fade-l` / `--fade-r`). `composables/useRowScroll.ts` reads the scroller into `rowView(scrollLeft,
+  clientWidth, n)` (`first`/`last` wholly in view, `atStart`/`atEnd`, `fits`), moves by whole cards (`prev`/`next` —
+  the header arrows, `goTo` — `RowDots`) and `toStart()` (waits for `scrollend`, `SCROLL_END_WAIT` fallback; instant under
+  `prefers-reduced-motion`). `composables/useDragScroll.ts` — mouse drag past `DRAG_THRESHOLD` with snapping off and the
+  next click swallowed; touch and pen are native; the vertical wheel is not translated. Every card takes focus while
+  open and `focusin` scrolls it into view. `RowDots` — a button per card (`home.balances.toCard`), the cards in view as
+  a pill, its place kept while folded. Folding scrolls to the start first, then stacks (`collapse` in
+  `BalancesFeature`); `composables/useCardStack.ts` — `open`/`paging`/`toggle`/`close`, a new month or person calls
+  `onReset` (the row jumps to its start).
   The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
   from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
   with data at both ends.
   Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
   person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
   card — shows «Free» (own funds − reserves) big and
-  `actual` («Actually … · reserved …», `BalanceCard`) under it; the month panel's «Reserved» line (`reservedLine`,
+  `actual` («Actually … · reserved …», the summary card) under it; the month panel's «Reserved» line (`reservedLine`,
   `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
-  `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
-  `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
-  (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).
+  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (theme surface tinted by the
+  first person's colour, `lucide:layers`, the «Total» chip `home.balances.total`, `accents` as dots, no bank mark);
+  `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
+  `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
+  dark card with the «m» mark. All take `CardFigures` (`title`, `caption`, `amount`, `approx`, `others`, `actual`,
+  `bottom`, `net` + `netText`, `accents`, `dim`), are 340 × 214, and their root is a `<button>`; `aria-expanded` comes from
+  outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:

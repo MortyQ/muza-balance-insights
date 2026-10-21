@@ -60,16 +60,38 @@ export interface UseMonthOverviewReturn {
   monthName: ComputedRef<string>;
 }
 
+/** The open row at its current scroll (`rowView`). */
+export interface RowView {
+  /** The cards wholly in view; the nearest card when none fits whole. */
+  first: number;
+  last: number;
+  atStart: boolean;
+  atEnd: boolean;
+  /** Every card is in view: no scrolling, no fades, no dots. */
+  fits: boolean;
+}
+
+export interface UseRowScrollReturn {
+  view: ComputedRef<RowView>;
+  prev: () => void;
+  next: () => void;
+  goTo: (i: number) => void;
+  /** Back to the first card; resolves when the scroll has ended. `instant` — no smooth scrolling. */
+  toStart: (instant?: boolean) => Promise<void>;
+}
+
+export interface UseDragScrollReturn {
+  /** A mouse drag is moving the row: snapping is off until it ends. */
+  dragging: Ref<boolean>;
+}
+
 export interface UseCardStackReturn {
   open: Ref<boolean>;
-  offset: Ref<number>;
-  /** The last move was paging (arrows or a new month): the row slides without the stagger. */
+  /** A new month or person: the cards change in place, without the stagger. */
   paging: Ref<boolean>;
   /** «All accounts» was pressed: the «later» note is shown. */
   stubShown: Ref<boolean>;
   toggle: () => void;
   close: () => void;
-  prev: () => void;
-  next: () => void;
   showStub: () => void;
 }
