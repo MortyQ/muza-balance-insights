@@ -84,3 +84,11 @@
 - **The real payload size**: the bank's item per operation in `transaction_raw`, compared with the 1 KB the benchmark
   assumes (`packages/core/bench/generate.ts`). A much larger payload makes the gain from moving it out bigger; a much
   smaller one makes the bench too optimistic about the old layout.
+- **The speed of the screens on a real database, before and after**: home (the balance cards, the «Now» strip, the
+  spending block), a category screen, analytics for a month and for a range of months; with one person and with
+  several. The bench (`packages/core/bench`, fictional data) shows 1.5–40 ms per statistic after the change; a real
+  database may differ in size, payload and the share of transfers.
+- **The end of an auto-sync on a real database, before and after**: the time of the `rederive` phase (the worker's
+  `rederive: N spans, …` log line marks the incremental pass; a line with the categories count marks a full pass).
+  A routine auto-sync should take the incremental pass; a full one after an ordinary sync means an account's IBAN, jar
+  title or card type looked changed.

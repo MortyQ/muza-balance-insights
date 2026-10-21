@@ -129,10 +129,10 @@
 
 ## 7. Final budgets and checks — `chore(core): final budgets`
 
-- [ ] 7.1 Set `bench/budgets.ts` to the targets in design D8, or tighter when measured lower. Record before and after
+- [x] 7.1 Set `bench/budgets.ts` to the targets in design D8, or tighter when measured lower. Record before and after
   in `baseline.md`.
   - Verify: `pnpm --filter @mono/core bench` passes.
-- [ ] 7.2 Add to `docs/backlog.md` the things to check on a live system: the speed of home, a category, analytics
+- [x] 7.2 Add to `docs/backlog.md` the things to check on a live system: the speed of home, a category, analytics
   and the end of an auto-sync on a real database, before and after.
   - Verify: the backlog lists them.
 - [ ] 7.3 Run `pnpm test` and `pnpm typecheck` at the root.

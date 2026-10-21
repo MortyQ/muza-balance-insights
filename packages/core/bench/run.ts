@@ -7,7 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { openLibsql } from '@mono/db-libsql';
 import type { Db } from '../src/db.ts';
-import { rederiveCore } from '../src/rederive.ts';
+import { rederiveCore, rederiveSpans } from '../src/rederive.ts';
 import { balancesAt } from '../src/status.ts';
 import { startOfDayIn } from '../src/format.ts';
 import { incomeSummary, spendingGrid, spendingSummary } from '../src/summaries.ts';
@@ -18,11 +18,8 @@ const TZ = 'Europe/Kyiv';
 const MONTH = { from: '2026-09-01', to: '2026-09-30', tz: TZ };
 const PREV = { from: '2026-08-01', to: '2026-08-31', tz: TZ };
 const YEAR = { from: '2025-10-01', to: '2026-09-30', tz: TZ };
-const USUAL = ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08'].map((m) => ({
-  from: `${m}-01`,
-  to: `${m}-${new Date(Date.UTC(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0)).getUTCDate()}`,
-  tz: TZ,
-}));
+// The six usual months before the shown one (main/usual.ts), as one span.
+const USUAL = { from: '2026-03-01', to: '2026-08-31', tz: TZ };
 const PEOPLE = [undefined, 1, 2] as const;
 
 function arg(name: string): string | undefined {
@@ -35,8 +32,9 @@ const CASES: Record<BenchCase, { runs: number; fn: (db: Db, now: number) => Prom
   'month income by source': { runs: 5, fn: (db, now) => incomeSummary(db, { ...MONTH }, now) },
   '12 months by month': { runs: 3, fn: (db, now) => spendingSummary(db, { ...YEAR, groupBy: 'month' }, now) },
   '12 months by day': { runs: 3, fn: (db, now) => spendingGrid(db, { ...YEAR, unit: 'day' }, now) },
-  // What the desktop's «Spending» block asks of the core today (main/data.ts spendingOverview): the month and the one
-  // before for the family and each person, then six usual months of spending and income, and this month's income.
+  // What the desktop's «Spending» block asks of the core (main/data.ts spendingOverview): the month and the one before
+  // for the family and each person, then the usual months' spending by month in one grid and their income with this
+  // month's in one query by month.
   'spending block set': {
     runs: 2,
     fn: async (db, now) => {
@@ -45,11 +43,8 @@ const CASES: Record<BenchCase, { runs: number; fn: (db: Db, now: number) => Prom
         await spendingSummary(db, { ...MONTH, ...f, groupBy: 'category', scope: 'personal' }, now);
         await spendingSummary(db, { ...PREV, ...f, groupBy: 'category', scope: 'personal' }, now);
       }
-      for (const m of USUAL) {
-        await spendingSummary(db, { ...m, groupBy: 'category', scope: 'personal' }, now);
-        await incomeSummary(db, { ...m, scope: 'personal' }, now);
-      }
-      await incomeSummary(db, { ...MONTH, scope: 'personal' }, now);
+      await spendingGrid(db, { ...USUAL, unit: 'month', scope: 'personal' }, now);
+      await incomeSummary(db, { ...USUAL, to: MONTH.to, groupBy: 'month', scope: 'personal' }, now);
     },
   },
   // The month overview's balances: the month's end and start, for the family and each person.
@@ -62,6 +57,9 @@ const CASES: Record<BenchCase, { runs: number; fn: (db: Db, now: number) => Prom
     },
   },
   'full re-derivation': { runs: 2, fn: (db) => rederiveCore(db) },
+  // The end of a routine auto-sync (worker/run-import.ts): each account re-read its last window up to now, so the
+  // touched spans merge into the last 31 days.
+  'end of a routine auto-sync': { runs: 3, fn: (db, now) => rederiveSpans(db, [{ from: now - 31 * 86_400, to: now }]) },
 };
 
 async function main(): Promise<void> {
