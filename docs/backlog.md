@@ -76,7 +76,7 @@
 - «Spending»: show today's categories too — most likely a switch right by the category bars (month / today), so the
   block answers «what did I spend on today» without a separate view.
 
-## Check on a live system: core read model (`openspec/changes/core-read-model`)
+## Check on a live system: core read model (`openspec/changes/archive/2026-10-21-core-read-model`)
 
 - **Migration 16 on a real database**: how long the first launch after the update takes (the `transactions` rebuild
   plus the one-time compaction), and whether the `[db] compaction …` line says `done`. A failed compaction leaves

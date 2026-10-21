@@ -1,7 +1,7 @@
 // Budgets of bench/run.ts, ms, for the default dataset (bench/generate.ts DEFAULT_BENCH) in an encrypted file.
-// Set after openspec/changes/core-read-model (its baseline.md has before and after): about five times the measured
-// time, for slower machines and noise, and never above the targets of its design D8. The full re-derivation keeps
-// about twice its time: it is the slowest case and the most stable one.
+// Set after openspec/changes/archive/2026-10-21-core-read-model (its baseline.md has before and after): about five
+// times the measured time, for slower machines and noise, and never above the targets of its design D8. The full
+// re-derivation keeps about twice its time: it is the slowest case and the most stable one.
 export type BenchCase =
   | 'month by category'
   | 'month income by source'
