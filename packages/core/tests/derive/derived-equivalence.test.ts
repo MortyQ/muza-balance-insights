@@ -11,7 +11,8 @@ import { createMonoClient } from '../../src/providers/monobank/client.ts';
 import { monobankStatement } from '../../src/providers/monobank/statement.ts';
 import { rederiveCore, rederiveSpans } from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
-import { WINDOW_SEC, interleavePlan, planHistory, syncAccounts, syncWindow, type SyncContext } from '../../src/ingest/sync.ts';
+import { WINDOW_SEC, interleavePlan } from '../../src/ingest/plan.ts';
+import { planHistory, syncAccounts, syncWindow, type SyncContext } from '../../src/ingest/sync.ts';
 import type { TimeRange } from '../../src/derive/transfers.ts';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection, type RawItem } from '../helpers.ts';
 

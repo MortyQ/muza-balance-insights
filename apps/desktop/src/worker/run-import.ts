@@ -21,8 +21,8 @@ import {
   runPlans,
   syncAccounts,
   type SyncContext,
-  type Window,
 } from '@mono/core/ingest/sync';
+import type { Window } from '@mono/core/ingest/plan';
 import type { TimeRange } from '@mono/core/derive/transfers';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';

@@ -12,7 +12,7 @@ import { addConnection, addParticipant } from '../../src/people/participants.ts'
 import { monobankStatement } from '../../src/providers/monobank/statement.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
-import { commitRows } from '../../src/ingest/sync.ts';
+import { commitRows } from '../../src/ingest/commit.ts';
 import { insertAccountRow, insertTransactionRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;
@@ -169,8 +169,9 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   /** The functions that write accounts or sync_state, and how each keeps crossing right. */
   const WRITERS: Record<string, Record<string, RegExp>> = {
     'commands/people.ts': { setAccountEnabled: /\brefreshCrossing\(/, deleteConnection: /\brederiveCore\(/ },
+    'ingest/sync.ts': { syncAccounts: /\brefreshCrossing\(/ },
     // commitRows refreshes through its derivation pass, deriveSpan (derive/rederive.ts, checked below).
-    'ingest/sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\bderiveSpan\(/ },
+    'ingest/commit.ts': { commitRows: /\bderiveSpan\(/ },
     'ingest/statement-import.ts': { commitStatement: /\bcommitRows\(/ },
   };
   const bodyOf = (src: string, name: string): string => {

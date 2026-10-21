@@ -10,15 +10,8 @@ import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { cliArgs } from '../args.ts';
 import { systemClock } from '../clock.ts';
-import {
-  defaultAccountSelection,
-  listAccountIds,
-  planHistory,
-  runPlan,
-  syncAccounts,
-  type SyncContext,
-  type SyncEvent,
-} from '@mono/core/ingest/sync';
+import { defaultAccountSelection, listAccountIds } from '@mono/core/ingest/plan';
+import { planHistory, runPlan, syncAccounts, type SyncContext, type SyncEvent } from '@mono/core/ingest/sync';
 
 const USAGE = 'Использование: pnpm --filter @mono/mcp sync [--since YYYY-MM-DD] [--account <id>]';
 

@@ -6,20 +6,22 @@ import { createMonoClient } from '../../src/providers/monobank/client.ts';
 import type { NormalizedTx } from '../../src/providers/types.ts';
 import {
   WINDOW_SEC,
-  commitRows,
-  commitWindow,
   defaultAccountSelection,
   getSyncState,
   planAccountWindows,
-  planHistory,
   windowSecFor,
-  runPlan,
   splitWindows,
+  type Window,
+} from '../../src/ingest/plan.ts';
+import { commitRows } from '../../src/ingest/commit.ts';
+import {
+  commitWindow,
+  planHistory,
+  runPlan,
   syncAccounts,
   syncRecent,
   syncWindow,
   type SyncContext,
-  type Window,
 } from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, insertAccount, item, memoryDb, type RawItem } from '../helpers.ts';
 

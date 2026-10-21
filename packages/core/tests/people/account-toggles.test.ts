@@ -18,7 +18,8 @@ import { rederiveCore } from '../../src/derive/rederive.ts';
 import { searchTransactions } from '../../src/read/search.ts';
 import { balancesAt, firstDataDate, getBalances, getSyncStatus } from '../../src/read/status.ts';
 import { comparePeriods, incomeSummary, periodInfo, spendingSummary } from '../../src/read/summaries.ts';
-import { defaultAccountSelection, planHistory, syncAccounts, type SyncContext } from '../../src/ingest/sync.ts';
+import { defaultAccountSelection } from '../../src/ingest/plan.ts';
+import { planHistory, syncAccounts, type SyncContext } from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;

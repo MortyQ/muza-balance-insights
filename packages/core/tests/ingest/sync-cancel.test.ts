@@ -5,7 +5,8 @@ import { SyncCancelledError } from '../../src/shared/cancel.ts';
 import type { Db } from '../../src/storage/db.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
 import type { Clock } from '../../src/shared/platform.ts';
-import { WINDOW_SEC, getSyncState, planHistory, runPlan, syncAccounts, type SyncContext } from '../../src/ingest/sync.ts';
+import { WINDOW_SEC, getSyncState } from '../../src/ingest/plan.ts';
+import { planHistory, runPlan, syncAccounts, type SyncContext } from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb, type RawItem } from '../helpers.ts';
 
 let db: Db;

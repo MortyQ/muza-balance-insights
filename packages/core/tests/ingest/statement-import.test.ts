@@ -6,7 +6,7 @@ import { addConnection, addParticipant } from '../../src/people/participants.ts'
 import { monobankStatement } from '../../src/providers/monobank/statement.ts';
 import type { ParsedStatement } from '../../src/providers/types.ts';
 import { StatementImportError, commitStatement, compareStatement, statementRowIds } from '../../src/ingest/statement-import.ts';
-import { commitRows } from '../../src/ingest/sync.ts';
+import { commitRows } from '../../src/ingest/commit.ts';
 import { insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;

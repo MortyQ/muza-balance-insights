@@ -6,7 +6,8 @@ import { ConnectionError, parseConnectionMethod, parseProviderId } from '../peop
 import type { Db, Stmt } from '../storage/db.ts';
 import type { ParsedStatement } from '../providers/types.ts';
 import { rederiveCore } from '../derive/rederive.ts';
-import { commitRows, getSyncState, type Window } from './sync.ts';
+import { commitRows } from './commit.ts';
+import { getSyncState, type Window } from './plan.ts';
 
 /** Where the rows go: an account of the connection, or a new card of the file's currency. */
 export type StatementTarget =

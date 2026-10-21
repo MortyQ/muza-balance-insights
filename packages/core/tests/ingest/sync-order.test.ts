@@ -2,17 +2,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
-import {
-  WINDOW_SEC,
-  getSyncState,
-  interleavePlan,
-  planHistory,
-  runPlan,
-  syncAccounts,
-  type SyncContext,
-  type SyncEvent,
-  type Window,
-} from '../../src/ingest/sync.ts';
+import { WINDOW_SEC, getSyncState, interleavePlan, type Window } from '../../src/ingest/plan.ts';
+import { planHistory, runPlan, syncAccounts, type SyncContext, type SyncEvent } from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from '../helpers.ts';
 
 let db: Db;

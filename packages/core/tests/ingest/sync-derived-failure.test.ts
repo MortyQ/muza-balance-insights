@@ -3,7 +3,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
-import { getSyncState, runPlan, type CommitResult, type SyncContext, type Window } from '../../src/ingest/sync.ts';
+import { getSyncState, type Window } from '../../src/ingest/plan.ts';
+import { runPlan, type SyncContext } from '../../src/ingest/sync.ts';
+import type { CommitResult } from '../../src/ingest/commit.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccount, item, memoryDb } from '../helpers.ts';
 
 vi.mock('../../src/derive/categories.ts', async (importOriginal) => ({

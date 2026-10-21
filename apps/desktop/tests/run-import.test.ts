@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import { SyncCancelledError } from '@mono/core/shared/cancel';
-import { ConnectionDuplicateError, ConnectionMismatchError, WINDOW_SEC, getSyncState } from '@mono/core/ingest/sync';
+import { ConnectionDuplicateError, ConnectionMismatchError } from '@mono/core/ingest/sync';
+import { WINDOW_SEC, getSyncState } from '@mono/core/ingest/plan';
 import { addConnection, addParticipant } from '@mono/core/people/participants';
 import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
 import { FromWorker } from '../src/shared/import-protocol.ts';

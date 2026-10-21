@@ -1,39 +1,28 @@
 // The sync loop, for any provider: plan windows, fetch one window through the provider's client, write it with
 // sync_state in one transaction, then the derivation passes. What a request, a page or an account looks like at the
 // bank is the client's (providers/<id>/client.ts).
-import { accountEnabledSql } from '../people/accounts.ts';
-import { RESYNC_OVERLAP_SEC } from '../shared/constants.ts';
-import { categorize, loadOverrides, type CategoryOverride } from '../derive/categories.ts';
 import type { Db, Stmt } from '../storage/db.ts';
 import { refreshCrossing } from '../derive/derived.ts';
 import { RateLimitError, StatementFormatError } from '../shared/errors.ts';
 import { toKyivDate } from '../shared/format.ts';
 import type { Clock } from '../shared/platform.ts';
 import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from '../people/connections.ts';
-import { PROVIDER_RULES, rulesFor } from '../providers/rules.ts';
-import type { NormalizedTx, ProviderClient, ProviderId } from '../providers/types.ts';
+import type { NormalizedTx, ProviderClient } from '../providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from '../shared/cancel.ts';
-import { deriveSpan } from '../derive/rederive.ts';
-import type { TimeRange } from '../derive/transfers.ts';
-
-/**
- * Window length we request from `provider`: one hour below its API maximum (Monobank: 31 d + 1 h) as a safety margin
- * against clock differences between us and the bank.
- */
-export function windowSecFor(provider: ProviderId): number {
-  return rulesFor(provider).api.maxWindowSec - 3600;
-}
-
-/** The default for the pure planners: the smallest window of all providers — never too long for any bank. */
-export const WINDOW_SEC = Math.min(...Object.values(PROVIDER_RULES).map((p) => p.api.maxWindowSec)) - 3600;
+import { commitRows, type CommitResult } from './commit.ts';
+import {
+  defaultAccountSelection,
+  getSyncState,
+  interleavePlan,
+  planAccountWindows,
+  windowSecFor,
+  type PlannedWindow,
+  type Window,
+} from './plan.ts';
 
 const MAX_429_RETRIES = 3;
 
 // ---------- types ----------
-
-export type Window = { from: number; to: number };
-
-export type SyncState = { oldest: number; newest: number; lastSyncAt: number | null };
 
 export type SyncEvent =
   | { type: 'accounts'; cards: number; jars: number }
@@ -61,17 +50,6 @@ export type SyncContext = {
    * Pass the same signal to the provider's client so waits and in-flight requests stop too.
    */
   signal?: AbortSignal;
-};
-
-export type CommitResult = {
-  upserted: number;
-  cancelledHolds: number;
-  /** Non-hold transactions in the DB that the API no longer returned. Not touched, only reported. */
-  missingNonHolds: number;
-  /** The span the derivation passes covered (the window when they failed): the end of an import re-derives it. */
-  span: TimeRange;
-  /** The rows are committed but deriving them failed: only a full pass (rederiveCore) repairs it. */
-  derivationFailed: boolean;
 };
 
 // ---------- accounts ----------
@@ -171,96 +149,6 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
   return counts;
 }
 
-export async function listAccountIds(db: Db): Promise<string[]> {
-  // Cards first, then jars — cards are what people usually care about.
-  const rs = await db.execute(`SELECT id FROM accounts ORDER BY kind = 'jar', id`);
-  return rs.rows.map((r) => String(r.id));
-}
-
-export type AccountSelection = {
-  selected: string[];
-  /** Jars the auto rule leaves out (untracked, balance ≤ 0). Sync them only via an explicit --account or by enabling them. */
-  skippedJars: Array<{ id: string; title: string | null }>;
-  /** Accounts the user turned off (accounts.sync_choice = 0): not imported until enabled; an explicit id still imports them. */
-  disabled: string[];
-};
-
-/**
- * Default sync scope: the enabled accounts (accounts.ts) — the user's choice, else every card + jars that have
- * balance > 0 OR are already tracked (have sync_state). A tracked jar stays in scope after it is emptied — otherwise its
- * final withdrawal would never sync.
- * With `connectionId`: only that connection's accounts (a credential can fetch only its own holder's statements).
- */
-export async function defaultAccountSelection(db: Db, connectionId?: number): Promise<AccountSelection> {
-  const rs = await db.execute({
-    sql: `SELECT a.id, a.title, a.sync_choice, ${accountEnabledSql('a')} AS enabled
-          FROM accounts a
-          ${connectionId === undefined ? '' : 'WHERE a.connection_id = ?'}
-          ORDER BY a.kind = 'jar', a.id`,
-    args: connectionId === undefined ? [] : [connectionId],
-  });
-  const out: AccountSelection = { selected: [], skippedJars: [], disabled: [] };
-  for (const r of rs.rows) {
-    const id = String(r.id);
-    if (Number(r.enabled) === 1) out.selected.push(id);
-    else if (r.sync_choice === null) out.skippedJars.push({ id, title: r.title === null ? null : String(r.title) });
-    else out.disabled.push(id);
-  }
-  return out;
-}
-
-// ---------- windows & planning (pure) ----------
-
-/** Splits [from, to] into consecutive windows of ≤ WINDOW_SEC, oldest first. Adjacent windows share the boundary second. */
-export function splitWindows(from: number, to: number, windowSec = WINDOW_SEC): Window[] {
-  const out: Window[] = [];
-  for (let start = from; start < to; start += windowSec) {
-    out.push({ from: start, to: Math.min(start + windowSec, to) });
-  }
-  return out;
-}
-
-/**
- * Windows to fetch for one account, in execution order. Every window touches the already covered range,
- * so coverage [oldest, newest] stays contiguous and an interruption never leaves a hole:
- *  1. forward:  from max(oldest, newest − 3 days) up to now (oldest first) — refreshes holds, catches new data;
- *     with `rereadWindow`, from no later than now − one window: a short gap re-reads a whole window (one request) and
- *     catches late changes to older operations; a gap longer than that plans exactly as without it;
- *  2. backward: from oldest down to `since` (newest first) — only if `since` is older than the coverage.
- * Without coverage: from now down to `since`, newest first.
- */
-export function planAccountWindows(
-  state: SyncState | null,
-  sinceSec: number | null,
-  nowSec: number,
-  windowSec = WINDOW_SEC,
-  rereadWindow = false,
-): Window[] {
-  if (!state) {
-    if (sinceSec === null || sinceSec >= nowSec) return [];
-    return splitWindows(sinceSec, nowSec, windowSec).reverse();
-  }
-  const overlapFrom = state.newest - RESYNC_OVERLAP_SEC;
-  const forwardFrom = Math.max(state.oldest, rereadWindow ? Math.min(overlapFrom, nowSec - windowSec) : overlapFrom);
-  const forward = splitWindows(forwardFrom, nowSec, windowSec);
-  const backward = sinceSec !== null && sinceSec < state.oldest ? splitWindows(sinceSec, state.oldest, windowSec).reverse() : [];
-  return [...forward, ...backward];
-}
-
-export async function getSyncState(db: Db, accountId: string): Promise<SyncState | null> {
-  const rs = await db.execute({
-    sql: 'SELECT oldest_synced_time, newest_synced_time, last_sync_at FROM sync_state WHERE account_id = ?',
-    args: [accountId],
-  });
-  const row = rs.rows[0];
-  if (!row || row.oldest_synced_time === null || row.newest_synced_time === null) return null;
-  return {
-    oldest: Number(row.oldest_synced_time),
-    newest: Number(row.newest_synced_time),
-    lastSyncAt: row.last_sync_at === null ? null : Number(row.last_sync_at),
-  };
-}
-
 // ---------- one window: fetch all pages, then commit atomically ----------
 
 /** Every operation of one window, all pages (the client's job). Nothing is written to the DB here. */
@@ -270,55 +158,6 @@ export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window
     ctx.onEvent?.({ type: 'page', accountId, page, received });
     throwIfCancelled(ctx.signal);
   });
-}
-
-const UPSERT_TX = `INSERT INTO transactions (
-    id, account_id, time, local_date, description, mcc, original_mcc, hold, amount, operation_amount,
-    currency_code, commission_rate, cashback_amount, balance, comment, counter_name, counter_iban,
-    counter_edrpou, receipt_id, category, is_internal_transfer, is_cancelled, synced_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
-  ON CONFLICT(id) DO UPDATE SET
-    account_id = excluded.account_id, time = excluded.time, local_date = excluded.local_date,
-    description = excluded.description, mcc = excluded.mcc, original_mcc = excluded.original_mcc,
-    hold = excluded.hold, amount = excluded.amount, operation_amount = excluded.operation_amount,
-    currency_code = excluded.currency_code, commission_rate = excluded.commission_rate,
-    cashback_amount = excluded.cashback_amount, balance = excluded.balance, comment = excluded.comment,
-    counter_name = excluded.counter_name, counter_iban = excluded.counter_iban,
-    counter_edrpou = excluded.counter_edrpou, receipt_id = excluded.receipt_id,
-    is_cancelled = 0, synced_at = excluded.synced_at`;
-// On conflict, category / is_internal_transfer / transfer_* are left alone: the pass after the commit
-// recomputes them for the window (a row may already be marked internal).
-
-// The bank's item, kept apart from the row statistics scan; written right after its operation, in the same batch.
-const UPSERT_RAW = `INSERT INTO transaction_raw (id, raw_json) VALUES (?, ?)
-  ON CONFLICT(id) DO UPDATE SET raw_json = excluded.raw_json`;
-
-function upsertStatements(
-  accountId: string,
-  it: NormalizedTx,
-  syncedAt: number,
-  overrides: readonly CategoryOverride[],
-  provider: ProviderId,
-): Stmt[] {
-  const description = it.description ?? '';
-  // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
-  const category = categorize(
-    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false, isFamilyTransfer: false, provider },
-    overrides,
-  );
-  // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).
-  return [
-    {
-      sql: UPSERT_TX,
-      args: [
-        it.id, accountId, it.time, toKyivDate(it.time), description, it.mcc, it.originalMcc ?? null,
-        it.hold ? 1 : 0, it.amount, it.operationAmount ?? null, it.currencyCode, it.commissionRate ?? null,
-        it.cashbackAmount ?? null, it.balance ?? null, it.comment ?? null, it.counterName ?? null, it.counterIban ?? null, it.counterEdrpou ?? null,
-        it.receiptId ?? null, category, syncedAt,
-      ],
-    },
-    { sql: UPSERT_RAW, args: [it.id, it.raw] },
-  ];
 }
 
 /**
@@ -342,89 +181,6 @@ export async function commitWindow(
     cancelHolds: true,
     ...(ctx.warn ? { warn: ctx.warn } : {}),
   });
-}
-
-export type CommitRowsInput = {
-  provider: ProviderId;
-  accountId: string;
-  /** The span the rows cover in full: it joins the account's coverage. */
-  window: Window;
-  items: readonly NormalizedTx[];
-  nowSec: number;
-  /** The API's window: holds it no longer returns are cancelled. A statement file is not asked about holds. */
-  cancelHolds: boolean;
-  /** Statements that go first in the same transaction (a statement file's new account). */
-  before?: readonly Stmt[];
-  warn?: (msg: string) => void;
-};
-
-/**
- * Rows of one account and its coverage in ONE transaction, then the derivation passes around the span. Refuses a span
- * that would leave a hole in the coverage (nothing is written).
- */
-export async function commitRows(db: Db, input: CommitRowsInput): Promise<CommitResult> {
-  const { accountId, window: w, items, nowSec } = input;
-
-  const state = await getSyncState(db, accountId);
-  if (state && (w.from > state.newest || w.to < state.oldest)) {
-    throw new Error(`Окно не примыкает к покрытому периоду счёта ${accountId} — это создало бы дыру`);
-  }
-
-  let cancelIds: string[] = [];
-  let missingNonHolds = 0;
-  if (input.cancelHolds) {
-    const fetchedIds = new Set(items.map((i) => i.id));
-    const existing = await db.execute({
-      sql: `SELECT id, hold, time FROM transactions
-            WHERE account_id = ? AND time > ? AND time < ? AND is_cancelled = 0`,
-      args: [accountId, w.from, w.to],
-    });
-    const missing = existing.rows.filter((r) => !fetchedIds.has(String(r.id)));
-    cancelIds = missing.filter((r) => Number(r.hold) === 1).map((r) => String(r.id));
-    const missingNonHold = missing.filter((r) => Number(r.hold) !== 1);
-    for (const r of missingNonHold) {
-      input.warn?.(
-        `Транзакция ${String(r.id)} (${toKyivDate(Number(r.time))}, счёт ${accountId}) не холд, но больше не приходит из API — оставляю как есть`,
-      );
-    }
-    missingNonHolds = missingNonHold.length;
-  }
-
-  const overrides = await loadOverrides(db);
-  const stmts: Stmt[] = [...(input.before ?? []), ...items.flatMap((it) => upsertStatements(accountId, it, nowSec, overrides, input.provider))];
-  if (cancelIds.length > 0) {
-    stmts.push({
-      sql: `UPDATE transactions SET is_cancelled = 1, synced_at = ?
-            WHERE id IN (${cancelIds.map(() => '?').join(', ')}) AND hold = 1`,
-      args: [nowSec, ...cancelIds],
-    });
-  }
-  stmts.push({
-    sql: `INSERT INTO sync_state (account_id, oldest_synced_time, newest_synced_time, last_sync_at)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT(account_id) DO UPDATE SET
-            oldest_synced_time = MIN(oldest_synced_time, excluded.oldest_synced_time),
-            newest_synced_time = MAX(newest_synced_time, excluded.newest_synced_time),
-            last_sync_at = excluded.last_sync_at`,
-    args: [accountId, w.from, w.to, nowSec],
-  });
-  await db.batch(stmts);
-
-  // Derived fields: transfer pairs may straddle windows/accounts, so the pass looks around the window.
-  // The window is already committed: a failure here must not stop the sync. A full pass repairs it.
-  let span: TimeRange = { from: w.from, to: w.to };
-  let derivationFailed = false;
-  try {
-    span = (await deriveSpan(db, w)).span;
-  } catch (err) {
-    derivationFailed = true;
-    input.warn?.(
-      `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${accountId} сохранено, но разметка переводов/категорий/scope ` +
-        `не обновлена (${err instanceof Error ? err.message : 'неизвестная ошибка'}). Запусти recategorize.`,
-    );
-  }
-
-  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds, span, derivationFailed };
 }
 
 /** Fetch (all pages) + atomic commit. In 'wait' mode, a server 429 is waited out and retried. */
@@ -470,25 +226,6 @@ export function describeFormatError(err: StatementFormatError, accountId: string
   const tx = err.transactionId ?? `#${err.itemIndex} (без id)`;
   const win = `${index !== undefined ? `окно ${index}${total !== undefined ? `/${total}` : ''} ` : 'окно '}${toKyivDate(w.from)} … ${toKyivDate(w.to)}`;
   return `Неожиданный формат ответа API: поля [${err.fields.join(', ')}], транзакция ${tx}, счёт ${accountId}, ${win}. Окно не сохранено.`;
-}
-
-export type PlannedWindow = { accountId: string; window: Window; index: number; total: number; round: number };
-
-/**
- * Execution order across accounts: round k = the k-th window of every account (accounts in plan order).
- * Each account's own window order is kept (planAccountWindows: forward, then back in time), so the first
- * round brings every account up to now before any older history — the current month is complete early.
- */
-export function interleavePlan(plan: ReadonlyMap<string, readonly Window[]>): PlannedWindow[] {
-  const out: PlannedWindow[] = [];
-  const rounds = Math.max(0, ...[...plan.values()].map((w) => w.length));
-  for (let k = 0; k < rounds; k++) {
-    for (const [accountId, windows] of plan) {
-      const window = windows[k];
-      if (window) out.push({ accountId, window, index: k + 1, total: windows.length, round: k + 1 });
-    }
-  }
-  return out;
 }
 
 async function runPlannedWindow(ctx: SyncContext, p: PlannedWindow): Promise<void> {

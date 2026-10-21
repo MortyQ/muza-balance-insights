@@ -17,12 +17,12 @@ import { rederiveCore } from '../../src/derive/rederive.ts';
 import { getBalances } from '../../src/read/status.ts';
 import {
   ConnectionDuplicateError,
-  WINDOW_SEC,
   planHistory,
   runPlans,
   syncAccounts,
   type SyncContext,
 } from '../../src/ingest/sync.ts';
+import { WINDOW_SEC } from '../../src/ingest/plan.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, insertTransactionRow, item, memoryDb, type FakeClock } from '../helpers.ts';
 
 let db: Db;
