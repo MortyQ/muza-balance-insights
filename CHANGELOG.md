@@ -16,6 +16,11 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 
+### Fixes
+
+- **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for
+  both side by side, the month's figures move under the cards.
+
 ## 0.1.9 — 2026-10-07
 
 ### Home screen
