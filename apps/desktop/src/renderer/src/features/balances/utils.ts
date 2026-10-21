@@ -4,14 +4,14 @@ import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH } from './constants.ts';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, STACK_DEPTH } from './constants.ts';
 import type { Flow, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
-  if (open) return { x: i * CARD_STEP, y: 0, z: 20 - i, opacity: 1 };
+  if (open) return { x: i * CARD_STEP, y: ROW_INSET, z: 20 - i, opacity: 1 };
   const depth = Math.min(i, STACK_DEPTH);
-  return { x: depth * 22, y: 52 - depth * 16, z: 20 - i, opacity: i <= STACK_DEPTH ? 1 : 0 };
+  return { x: depth * 22, y: ROW_INSET + 52 - depth * 16, z: 20 - i, opacity: i <= STACK_DEPTH ? 1 : 0 };
 }
 
 /** Transition delay of card `i` of `n`, ms: out one by one, back from the far end; paging moves all at once. */

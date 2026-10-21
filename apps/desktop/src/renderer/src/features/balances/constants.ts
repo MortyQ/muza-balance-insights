@@ -2,6 +2,11 @@
 export const CARD_WIDTH = 400;
 export const CARD_GAP = 16;
 export const CARD_STEP = CARD_WIDTH + CARD_GAP;
+/**
+ * Room above the cards inside the row (px): the row scrolls sideways, so it clips vertically too, and a hovered card
+ * rises by 3 px with its shadow. The row is pulled up by as much (`-mt-2` in CardStack), so nothing moves on screen.
+ */
+export const ROW_INSET = 8;
 /** Cards peeking out from behind the front one. */
 export const STACK_DEPTH = 3;
 /** Waiting for the end of a smooth scroll before the row folds, when `scrollend` never comes (ms). */

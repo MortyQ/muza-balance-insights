@@ -52,7 +52,7 @@ const fades = computed(() => ({ '--fade-l': view.atStart ? '0px' : FADE, '--fade
   <div
     ref="row"
     data-test="row"
-    class="relative -mx-1 h-[308px] px-1"
+    class="relative -mx-1 -mt-2 h-[316px] px-1"
     :class="
       open
         ? [

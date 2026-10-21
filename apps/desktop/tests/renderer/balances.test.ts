@@ -49,12 +49,13 @@ const card = (ownFunds: number, income: number, spending: number, missing = 0, a
 
 describe('balances utils', () => {
   it('slidePosition: a stack of at most 4 visible cards; the row lays every card out, the scroll moves it', () => {
-    expect(slidePosition(0, false)).toEqual({ x: 0, y: 52, z: 20, opacity: 1 });
-    expect(slidePosition(2, false)).toEqual({ x: 44, y: 20, z: 18, opacity: 1 });
-    expect(slidePosition(3, false)).toEqual({ x: 66, y: 4, z: 17, opacity: 1 });
-    expect(slidePosition(5, false)).toEqual({ x: 66, y: 4, z: 15, opacity: 0 });
-    expect(slidePosition(0, true)).toEqual({ x: 0, y: 0, z: 20, opacity: 1 });
-    expect(slidePosition(3, true)).toEqual({ x: 1248, y: 0, z: 17, opacity: 1 });
+    expect(slidePosition(0, false)).toEqual({ x: 0, y: 60, z: 20, opacity: 1 });
+    expect(slidePosition(2, false)).toEqual({ x: 44, y: 28, z: 18, opacity: 1 });
+    expect(slidePosition(3, false)).toEqual({ x: 66, y: 12, z: 17, opacity: 1 });
+    expect(slidePosition(5, false)).toEqual({ x: 66, y: 12, z: 15, opacity: 0 });
+    // Open, every card sits ROW_INSET below the row's top: room for a hovered card to rise without being clipped.
+    expect(slidePosition(0, true)).toEqual({ x: 0, y: 8, z: 20, opacity: 1 });
+    expect(slidePosition(3, true)).toEqual({ x: 1248, y: 8, z: 17, opacity: 1 });
   });
 
   it('slideDelay: staggered out of the stack, back from the far end, none while paging', () => {
