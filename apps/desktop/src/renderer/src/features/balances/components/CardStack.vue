@@ -52,7 +52,7 @@ const fades = computed(() => ({ '--fade-l': view.atStart ? '0px' : FADE, '--fade
   <div
     ref="row"
     data-test="row"
-    class="relative -mx-1 h-[270px] px-1"
+    class="relative -mx-1 -mt-2 h-[316px] px-1"
     :class="
       open
         ? [
@@ -68,7 +68,7 @@ const fades = computed(() => ({ '--fade-l': view.atStart ? '0px' : FADE, '--fade
     <div
       v-for="s in items"
       :key="s.slide.key"
-      class="absolute top-(--y) left-(--x) z-(--z) flex w-[340px] snap-start flex-col gap-3 opacity-(--o) transition-[left,top,opacity] delay-(--d) duration-550
+      class="absolute top-(--y) left-(--x) z-(--z) flex w-[400px] snap-start flex-col gap-3 opacity-(--o) transition-[left,top,opacity] delay-(--d) duration-550
              ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-opacity motion-reduce:duration-200"
       :style="s.vars"
       :aria-hidden="open || s.reachable ? undefined : 'true'"

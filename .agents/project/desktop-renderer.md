@@ -12,8 +12,8 @@
   `utils.ts` (`slidesOf`, `slidePosition`), CSS-переменные `--x`/`--y`/`--z`/`--o`, `motion-reduce:` без сдвига.
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
   `syncStatus.version`). Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
-  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[44rem]` the month panel
-  sits beside the folded stack (`left: 430px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
+  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[47rem]` the month panel
+  sits beside the folded stack (`left: 490px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
   `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
@@ -33,15 +33,25 @@
   with data at both ends.
   Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
   person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
-  card — shows «Free» (own funds − reserves) big and
-  `actual` («Actually … · reserved …», the summary card) under it; the month panel's «Reserved» line (`reservedLine`,
+  card — shows «Free» (own funds − reserves) big and own funds («Actually») and the reserve as tiles under it; the month panel's «Reserved» line (`reservedLine`,
   `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
-  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (theme surface tinted by the
-  first person's colour, `lucide:layers`, the «Total» chip `home.balances.total`, `accents` as dots, no bank mark);
+  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (spec
+  `desktop-balance-cards`): a header band, a gradient of each person's colour mixed into `--surface` by `--card-band-tint`
+  (one person: fading to `--card-band-fade`; both in `theme.css`, stronger in the dark theme), with `lucide:layers`, the
+  title, the «Total» chip `home.balances.total` and `accents` as dots (at most five, then «+N»,
+  `home.balances.morePeople`); under it the caption, the amount and `count`; on the right a column of the conversions
+  (`fx`: symbol badge, `formatAmount`, ISO code; `MoneyFormat.alsoParts`), none without another picked currency; in the
+  middle the family's shares (`people`, `sharesOf`: two or more people, at most `SHARES_NAMED` first names with whole
+  amounts, then «+N»; a bar part per non-zero amount, a minus hatched; no bar when nobody is above zero) or, on one
+  person's card with reserves, the meter (`freeShare`, `home.balances.freeShare` / `reservedShare`); tiles — «Actually»
+  (`home.balances.actualTile`) and «Reserved» with reserves only, the month's net (`home.balances.inMonthTitle`,
+  `--success-subtle` above zero, `--negative-soft-bg` below, neutral at zero). Negative figures use `--negative-soft`, a
+  muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
+  figure apart: `count`, `fx`, `negative`, `own`, `reserved`, `people`, `freeShare`, `net { label, amount, value }`);
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
   `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
-  dark card with the «m» mark. All take `CardFigures` (`title`, `caption`, `amount`, `approx`, `others`, `actual`,
-  `bottom`, `net` + `netText`, `accents`, `dim`), are 340 × 214, and their root is a `<button>`; `aria-expanded` comes from
+  dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
+  + `netText`, `accents`, `dim`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
   outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`

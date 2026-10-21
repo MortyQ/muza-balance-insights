@@ -414,8 +414,9 @@
     "balances": {
       "accountsCount": "{n} рахунок | {n} рахунки | {n} рахунків",
       "accountsOf": "Рахунки · {name}",
-      "actual": "Насправді {amount} · у резерві {reserved}",
+      "actualTile": "Насправді",
       "allAccounts": "Усі рахунки",
+      "atRate": "≈ за курсом",
       "back": "Назад",
       "captionOn": "{label} · на {day} {month}{year}",
       "captionToday": "{label} · на сьогодні",
@@ -426,9 +427,11 @@
       "familyCards": "Картки родини",
       "familySubtitle": "загальний підсумок і кожна людина",
       "free": "Вільно",
+      "freeShare": "{pct}% вільно",
       "fxNoRate": "без {amount} — немає курсу",
       "fxRate": "вкл. {amount} за курсом {rate}",
       "inMonth": "у {month}{year}",
+      "inMonthTitle": "У {month}{year}",
       "income": "Надійшло",
       "kind": {
         "card": "Картка",
@@ -437,6 +440,7 @@
         "jar": "Банка"
       },
       "limit": "ліміт {amount}",
+      "morePeople": "+{n}",
       "next": "Далі",
       "noDataOnDate": "Немає даних на цю дату",
       "ownFunds": "Власні гроші",
@@ -444,6 +448,7 @@
       "peopleCount": "{n} людина | {n} людини | {n} людей",
       "readFailed": "Не вдалося прочитати баланси.",
       "reserved": "У резерві",
+      "reservedShare": "{pct}% у резерві",
       "savedIn": "У банки",
       "savedOut": "З банок",
       "spending": "Витрачено",

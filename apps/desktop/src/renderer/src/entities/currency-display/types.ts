@@ -17,4 +17,6 @@ export interface MoneyFormat {
   approx(kopecks: number): string[];
   /** The same on one line: «≈ 100 $ · 80 €»; '' — none. */
   approxInline(kopecks: number): string;
+  /** The same currencies as numbers: minor units of each, in `approx` order. */
+  alsoParts(kopecks: number): Array<{ currency: number; minor: number }>;
 }

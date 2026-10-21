@@ -43,6 +43,7 @@ describe('moneyFormat', () => {
     expect(f.money(4_000_00)).toBe(formatMoney(4_000_00, 980));
     expect(f.approx(4_000_00)).toEqual([`≈ ${formatMoney(100_00, 840)}`, `≈ ${formatMoney(80_00, 978)}`]);
     expect(f.approxInline(4_000_00)).toBe(`≈ ${formatMoney(100_00, 840)} · ${formatMoney(80_00, 978)}`);
+    expect(f.alsoParts(4_000_00)).toEqual([{ currency: 840, minor: 100_00 }, { currency: 978, minor: 80_00 }]);
   });
   it('euro main: amounts in euros, hryvnia as a «≈» line; convert gives euro cents', () => {
     const f = moneyFormat(RATES, { main: 978, also: { uah: true, usd: false, eur: true } });
@@ -57,6 +58,7 @@ describe('moneyFormat', () => {
     expect(f.money(100)).toBe(formatMoney(100, 980));
     expect(f.approx(100)).toEqual([]);
     expect(f.approxInline(100)).toBe('');
+    expect(f.alsoParts(100)).toEqual([]);
   });
 });
 

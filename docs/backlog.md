@@ -80,3 +80,10 @@
   trackpad and touch swipes, Shift + wheel, mouse drag (no fold after a drag), the edge fades, no scroll bar on Windows,
   the month panel under the stack in a narrow window and its fold while the row is open, folding a scrolled row, the
   summary card in the light and dark themes.
+- Not checked on a live system: the summary card (`summary-card-tiles`): the header band in both themes (family and
+  one person, more than four people), long amounts and the «≈» line in 400 px (truncation with the full text on hover),
+  the three tiles with large figures, a person with a negative total (the soft red on the light and the dark surface);
+  the larger cards (400 × 252): from what window width the month panel stands beside the stack (`@[47rem]`); the
+  conversions column with one and two currencies beside a long amount, the shares with 2, 4 and 7 people (the line's
+  truncation, «+N» in the line and the header), mixed signs (the hatched minus in both themes), everyone at zero or
+  below, the reserve meter on a person's card.

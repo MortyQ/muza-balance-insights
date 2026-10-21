@@ -2,7 +2,7 @@
 // Typechecked with the renderer (tsconfig.web.json): months read the dictionaries through the renderer aliases.
 import { effectScope, nextTick, ref } from 'vue';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatMoney, currencySymbol } from '@/shared/lib/money.ts';
+import { formatAmount, formatMoney, currencySymbol } from '@/shared/lib/money.ts';
 import { localToday, shiftMonth, shortDate, syncedWhen } from '@/shared/lib/months.ts';
 import { osFamily } from '@/shared/lib/os.ts';
 import { throttle } from '@/shared/lib/throttle.ts';
@@ -23,6 +23,12 @@ describe('formatMoney', () => {
     [12_345, 414, true, '12,345 KWD'], // exponent 3
   ] as const)('%i of %i (minor units: %s) → %s', (minor, cur, minorUnits, out) => {
     expect(plain(formatMoney(minor, cur, { minorUnits }))).toBe(out);
+  });
+
+  it('formatAmount is the same figure without the symbol', () => {
+    expect(plain(formatAmount(1_234_000, 980))).toBe('12 340');
+    expect(plain(formatAmount(-1_234_056, 980, { minorUnits: true }))).toBe('-12 340,56');
+    expect(plain(formatAmount(12_345, 414, { minorUnits: true }))).toBe('12,345');
   });
 
   it('symbols for common currencies, the ISO code otherwise', () => {
