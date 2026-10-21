@@ -14,3 +14,12 @@ export function change(now: number, prev: number | null): Change | null {
   if (diff < prev * SAME_SHARE) return { kind: 'same', diff, pct };
   return { kind: now > prev ? 'up' : 'down', diff, pct };
 }
+
+/**
+ * A change said in money first, the share in brackets: «1 090 ₴ (9%)»; `signed` puts «+» / «−» before it for a short
+ * chip that has no words to say the direction. `money` formats kopecks in the picked currency.
+ */
+export function changeText(c: Change, money: (kopecks: number) => string, signed = false): string {
+  const sign = signed ? (c.kind === 'down' ? '−' : '+') : '';
+  return `${sign}${money(c.diff)} (${c.pct}%)`;
+}

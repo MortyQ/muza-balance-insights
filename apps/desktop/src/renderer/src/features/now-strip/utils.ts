@@ -2,7 +2,7 @@ import type { NowCategory, NowOverview, SpendingAmounts } from '@contract/api.ts
 import { categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { categoryLink, type LinkPeriod } from '@/shared/config';
-import { change, monthShortName, shortDate, t } from '@/shared/lib';
+import { change, changeText, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
 import type { CategoryBreakdown, CategoryRow, NowPrefs, NowStripView, TopCell, WeekBar } from './types.ts';
@@ -37,25 +37,26 @@ const SR = {
   week: { up: 'home.now.srMoreWeek', down: 'home.now.srLessWeek' },
 } as const;
 
-/** Against a usual day or last week's same days: «+38%» with the arrow, or «as usual»; null — no base or a base ≤ 0. */
-export function nowChip(now: number, base: number | null, against: 'usual' | 'week'): ChangeChipModel | null {
+/** Against a usual day or last week's same days: «+420 ₴ (38%)» with the arrow, or «as usual»; null — no base or a base ≤ 0. */
+export function nowChip(now: number, base: number | null, against: 'usual' | 'week', fmt: MoneyFormat): ChangeChipModel | null {
   if (base === null || base <= 0) return null;
   const c = change(now, base);
   if (!c || c.kind === 'new') return null;
   if (c.kind === 'same') return { text: t(SAME[against]), tone: 'neutral', arrow: null, sr: '' };
   const dir = c.kind === 'up' ? 'up' : 'down';
-  return { text: `${dir === 'up' ? '+' : '−'}${c.pct}%`, tone: dir, arrow: dir, sr: t(SR[against][dir]) };
+  return { text: changeText(c, fmt.money, true), tone: dir, arrow: dir, sr: t(SR[against][dir]) };
 }
 
-/** A category against the same days last week: «+18%», «same», «new»; null — no comparison. */
-export function categoryChip(net: number, prev: number | null): ChangeChipModel | null {
+/** A category against the same days last week: «+120 ₴» (no percent: the row has no room), «same», «new»; null — no comparison. */
+export function categoryChip(net: number, prev: number | null, fmt: MoneyFormat): ChangeChipModel | null {
   if (prev === null) return null;
   const c = change(net, prev);
   if (!c) return null;
   if (c.kind === 'new' || c.kind === 'same') {
     return { text: t(c.kind === 'new' ? 'home.now.cats.new' : 'home.now.cats.same'), tone: 'neutral', arrow: null, sr: '' };
   }
-  return nowChip(net, prev, 'week');
+  const dir = c.kind === 'up' ? 'up' : 'down';
+  return { text: `${dir === 'up' ? '+' : '−'}${fmt.money(c.diff)}`, tone: dir, arrow: dir, sr: t(SR.week[dir]) };
 }
 
 /**
@@ -77,7 +78,7 @@ export function breakdown(
       amount: fmt.money(c.net),
       ops: t('home.now.opsShort', { n: c.purchases }),
       share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
-      chip: categoryChip(c.net, c.prev ?? null),
+      chip: categoryChip(c.net, c.prev ?? null, fmt),
       to: c.categoryId ? categoryLink(c.categoryId, 'personal', period) : null,
     }),
   );
@@ -122,7 +123,7 @@ export function nowView(o: Readonly<NowOverview>, fmt: MoneyFormat): NowStripVie
       amount: fmt.money(o.today.net),
       ops: t('home.now.ops', o.today.purchases),
       conv: fmt.approxInline(o.today.net),
-      chip: stale ? null : nowChip(o.today.net, usual, 'usual'),
+      chip: stale ? null : nowChip(o.today.net, usual, 'usual', fmt),
       context: !stale && usual !== null ? t('home.now.vsUsual', { amount: fmt.money(usual) }) : '',
       until: stale && o.dataUntil !== null ? t('home.now.until', { date: shortDate(o.dataUntil) }) : '',
     },
@@ -130,7 +131,7 @@ export function nowView(o: Readonly<NowOverview>, fmt: MoneyFormat): NowStripVie
       title: t('home.now.week', { days }),
       amount: fmt.money(o.week.total.net),
       conv: fmt.approxInline(o.week.total.net),
-      chip: nowChip(o.week.total.net, prev, 'week'),
+      chip: nowChip(o.week.total.net, prev, 'week', fmt),
       context: prev !== null ? t('home.now.vsWeek', { days }) : '',
       bars: weekBars(o.week.days, o.weekday),
       pending: o.week.pendingHolds,

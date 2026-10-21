@@ -14,11 +14,11 @@ const percent = (share: number): string => `${decimal.format(Math.round(share * 
 const monthOfKey = (key: string): number => Number(key.slice(5, 7));
 const delta = (c: Readonly<{ total: number; prev: number | null }>): number => c.total - (c.prev ?? 0);
 
-/** «+79%» / «−13%» against a base; '' without one. */
-export function pctText(now: number, was: number | null): string {
-  if (was === null || was <= 0) return '';
-  const p = Math.abs(Math.round(((now - was) / was) * 100));
-  return `${now >= was ? '+' : '−'}${p}%`;
+/** «+12 300 ₴ (79%)» / «−1 200 ₴ (13%)» against a base; a base of 0 or less — the amount alone; '' without a base. */
+export function diffText(fmt: MoneyFormat, now: number, was: number | null): string {
+  if (was === null) return '';
+  if (was <= 0) return signed(fmt, now - was);
+  return `${signed(fmt, now - was)} (${Math.abs(Math.round(((now - was) / was) * 100))}%)`;
 }
 
 /** A month: its short name, with the year on January and on the first column; a day: its number. */
@@ -139,8 +139,8 @@ export function kpiView(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): KpiVi
   const rate = income > 0 ? left / income : null;
   const prevRate = prev && prev.income > 0 ? (prev.income - prev.spending) / prev.income : null;
   const vs = (now: number, was: number | undefined) => {
-    const p = pctText(now, was ?? null);
-    return p ? t('analytics.kpi.vsPrev', { change: p }) : '';
+    const d = diffText(fmt, now, was ?? null);
+    return d ? t('analytics.kpi.vsPrev', { change: d }) : '';
   };
   const shown = v.buckets.filter((b) => b.state !== 'none').length || 1;
   const perKey = v.unit === 'day' ? 'analytics.kpi.perDay' : 'analytics.kpi.perMonth';
@@ -177,8 +177,7 @@ export function changesView(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): C
   return picked.map((c) => ({
     key: c.categoryId ?? c.category,
     name: categoryName(c),
-    delta: signed(fmt, delta(c)),
-    pct: pctText(c.total, c.prev),
+    delta: diffText(fmt, c.total, c.prev ?? 0),
     why: peakText(v, c.net),
     up: delta(c) > 0,
   }));
@@ -192,14 +191,13 @@ export function compareRows(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): C
   return rows.map((c) => {
     const d = delta(c);
     const width = (Math.abs(d) / max) * 50;
-    const p = pctText(c.total, c.prev);
     return {
       key: c.categoryId ?? c.category,
       name: categoryName(c),
       up: d >= 0,
       left: d >= 0 ? 50 : 50 - width,
       width,
-      delta: p ? `${signed(fmt, d)} · ${p}` : signed(fmt, d),
+      delta: diffText(fmt, c.total, c.prev ?? 0),
       span: t('analytics.views.was', { was: fmt.money(c.prev ?? 0), now: fmt.money(c.total) }),
     };
   });
@@ -215,7 +213,7 @@ export function miniCards(v: Readonly<AnalyticsOverview>, rows: readonly Categor
     color: r.color,
     total: fmt.money(r.total),
     avg: t(perKey, { amount: fmt.money(Math.round(r.total / shown)) }),
-    chip: pctText(r.total, r.prev),
+    chip: r.prev === null || r.prev <= 0 ? '' : diffText(fmt, r.total, r.prev),
     up: r.prev === null || r.prev <= 0 ? null : r.total >= r.prev,
   }));
 }

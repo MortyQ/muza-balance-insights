@@ -1,4 +1,5 @@
-export interface BalanceCardProps {
+/** What every balance card shows, the summary and an account alike. */
+export interface CardFigures {
   title: string;
   caption: string;
   amount: string;
@@ -12,8 +13,21 @@ export interface BalanceCardProps {
   /** Net of the month: sign decides the arrow; null — no arrow and no text. */
   net: number | null;
   netText: string;
-  /** Colours of the corner circles (CSS values): the family — every person, one person or account — theirs. */
+  /** Colours of the people the card is about (CSS values): the family — every person, one person or account — theirs. */
   accents: ReadonlyArray<string>;
   /** No data at that date: dimmed. */
   dim: boolean;
+}
+
+/** The total of a view: the family, a person. */
+export type SummaryCardProps = CardFigures;
+
+/** Banks with their own account card; a new bank needs a skin in BANK_CARDS. */
+export type CardBank = 'monobank';
+
+/** What a bank's skin takes. */
+export type BankCardProps = CardFigures;
+
+export interface AccountCardProps extends CardFigures {
+  bank: CardBank;
 }

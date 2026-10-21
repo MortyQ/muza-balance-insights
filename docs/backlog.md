@@ -75,3 +75,8 @@
 
 - «Spending»: show today's categories too — most likely a switch right by the category bars (month / today), so the
   block answers «what did I spend on today» without a separate view.
+- Not checked on a live system: the balance block (`balance-cards-row`): snapping of the open row to whole cards
+  (absolutely positioned cards as snap areas; if it does not snap, add static snap stops on the track, design §Risks),
+  trackpad and touch swipes, Shift + wheel, mouse drag (no fold after a drag), the edge fades, no scroll bar on Windows,
+  the month panel under the stack in a narrow window and its fold while the row is open, folding a scrolled row, the
+  summary card in the light and dark themes.

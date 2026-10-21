@@ -16,6 +16,23 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 
+### Home screen
+
+- **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
+  it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
+- **Swipe through the cards.** When the cards are open, swipe them sideways on a trackpad or a touch screen, drag them
+  with the mouse, or use Shift and the wheel; they stop on whole cards. The arrows at the top still work, the dots under
+  the cards show where you are and take you to a card, and folding the cards brings them back to the first one.
+- **Changes in money, not only in percent.** Every comparison with an earlier period — under the spending ring, in
+  the people list, in «Now», «What's unusual», on the category and income screens and in «Analytics» — now shows how
+  much more or less in your currency, with the percent in brackets: «+1 090 ₴ (9%)». A change over a small amount no
+  longer reads as a frightening «+14 500%» on its own. The category lists of «Now» show the amount alone, to fit.
+
+### Fixes
+
+- **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for
+  both side by side, the month's figures move under the cards.
+
 ## 0.1.9 — 2026-10-07
 
 ### Home screen

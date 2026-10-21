@@ -4,12 +4,12 @@ import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
-import type { Flow, Slide } from './types.ts';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH } from './constants.ts';
+import type { Flow, RowView, Slide } from './types.ts';
 
-/** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
-export function slidePosition(i: number, open: boolean, offset: number): { x: number; y: number; z: number; opacity: number } {
-  if (open) return { x: (i - offset) * CARD_STEP, y: 0, z: 20 - i, opacity: 1 };
+/** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
+export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
+  if (open) return { x: i * CARD_STEP, y: 0, z: 20 - i, opacity: 1 };
   const depth = Math.min(i, STACK_DEPTH);
   return { x: depth * 22, y: 52 - depth * 16, z: 20 - i, opacity: i <= STACK_DEPTH ? 1 : 0 };
 }
@@ -20,8 +20,25 @@ export function slideDelay(i: number, n: number, open: boolean, paging: boolean)
   return open ? i * OPEN_STAGGER : (n - i) * CLOSE_STAGGER;
 }
 
-export function maxOffset(n: number): number {
-  return Math.max(0, n - VISIBLE_CARDS);
+/**
+ * What the open row of `n` cards shows at this scroll: the cards wholly in view (`first`..`last`; the nearest one when
+ * none fits whole), whether it is at either end, and whether everything fits. One pixel of slack for fractional scrolls.
+ */
+export function rowView(scrollLeft: number, clientWidth: number, n: number): RowView {
+  const track = n * CARD_STEP - (CARD_STEP - CARD_WIDTH);
+  const fits = n <= 1 || track <= clientWidth + 1;
+  const last = Math.max(0, n - 1);
+  const clamp = (i: number) => Math.min(last, Math.max(0, i));
+  const first = clamp(Math.ceil((scrollLeft - 1) / CARD_STEP));
+  const end = clamp(Math.floor((scrollLeft + clientWidth + 1 - CARD_WIDTH) / CARD_STEP));
+  const nearest = clamp(Math.round(scrollLeft / CARD_STEP));
+  return {
+    first: end < first ? nearest : first,
+    last: end < first ? nearest : end,
+    atStart: fits || scrollLeft <= 1,
+    atEnd: fits || scrollLeft + clientWidth >= track - 1,
+    fits,
+  };
 }
 
 const yearSuffix = (y: number, current: number) => (y === current ? '' : ` ${y}`);
@@ -156,17 +173,20 @@ export function slidesOf(
     const shown = total.ownFunds - (reserved ?? 0);
     return {
       key,
-      title,
-      caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
-      accents,
-      dim: false,
-      amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
-      approx: fmt.approxInline(shown),
-      others: othersNote(total),
-      actual: reserved === null ? '' : t('home.balances.actual', { amount: fmt.money(total.ownFunds), reserved: fmt.money(reserved) }),
-      bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
-      net: total.income - total.spending,
-      netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
+      kind: 'summary',
+      card: {
+        title,
+        caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
+        accents,
+        dim: false,
+        amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
+        approx: fmt.approxInline(shown),
+        others: othersNote(total),
+        actual: reserved === null ? '' : t('home.balances.actual', { amount: fmt.money(total.ownFunds), reserved: fmt.money(reserved) }),
+        bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
+        net: total.income - total.spending,
+        netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
+      },
       flow: {
         currency: fmt.currency,
         income: fmt.convert(total.income),
@@ -200,17 +220,21 @@ export function slidesOf(
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,
-        title: accountName(a.name),
-        accents: [accent],
-        dim: a.ownFunds === null,
-        caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
-        amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
-        approx: '',
-        others: '',
-        actual: '',
-        bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
-        net: a.ownFunds === null ? null : a.income - a.spending,
-        netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
+        kind: 'account',
+        card: {
+          bank: 'monobank',
+          title: accountName(a.name),
+          accents: [accent],
+          dim: a.ownFunds === null,
+          caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
+          amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
+          approx: '',
+          others: '',
+          actual: '',
+          bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
+          net: a.ownFunds === null ? null : a.income - a.spending,
+          netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
+        },
         flow: { currency: a.currency, income: a.income, spending: a.spending, color: accent },
       }),
     ),

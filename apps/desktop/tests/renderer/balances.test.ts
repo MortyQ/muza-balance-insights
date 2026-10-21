@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import type { MonthOverview, PersonView, RatesView } from '@contract/api.ts';
-import { BalanceCard } from '@/entities/account';
+import { AccountCard, SummaryCard } from '@/entities/account';
 import { moneyFormat } from '@/entities/currency-display';
 import {
   accountsCount,
@@ -12,7 +12,6 @@ import {
   coverageNote,
   flowWidths,
   fxNote,
-  maxOffset,
   monthIn,
   monthName,
   netText,
@@ -21,6 +20,7 @@ import {
   slideDelay,
   slidePosition,
   reservedLine,
+  rowView,
   savedLine,
   slidesOf,
   spentShare,
@@ -38,13 +38,13 @@ const EUR_FMT = moneyFormat(RATES, { main: 978, also: NONE });
 const card = (ownFunds: number, income: number, spending: number, missing = 0, accounts = 1) => ({ ownFunds, others: [], saved: null, missing, accounts, income, spending, fx: [] });
 
 describe('balances utils', () => {
-  it('slidePosition: a stack of at most 4 visible cards; a row with the offset applied', () => {
-    expect(slidePosition(0, false, 0)).toEqual({ x: 0, y: 52, z: 20, opacity: 1 });
-    expect(slidePosition(2, false, 0)).toEqual({ x: 44, y: 20, z: 18, opacity: 1 });
-    expect(slidePosition(3, false, 0)).toEqual({ x: 66, y: 4, z: 17, opacity: 1 });
-    expect(slidePosition(5, false, 0)).toEqual({ x: 66, y: 4, z: 15, opacity: 0 });
-    expect(slidePosition(3, true, 1)).toEqual({ x: 712, y: 0, z: 17, opacity: 1 });
-    expect(slidePosition(0, true, 2)).toEqual({ x: -712, y: 0, z: 20, opacity: 1 });
+  it('slidePosition: a stack of at most 4 visible cards; the row lays every card out, the scroll moves it', () => {
+    expect(slidePosition(0, false)).toEqual({ x: 0, y: 52, z: 20, opacity: 1 });
+    expect(slidePosition(2, false)).toEqual({ x: 44, y: 20, z: 18, opacity: 1 });
+    expect(slidePosition(3, false)).toEqual({ x: 66, y: 4, z: 17, opacity: 1 });
+    expect(slidePosition(5, false)).toEqual({ x: 66, y: 4, z: 15, opacity: 0 });
+    expect(slidePosition(0, true)).toEqual({ x: 0, y: 0, z: 20, opacity: 1 });
+    expect(slidePosition(3, true)).toEqual({ x: 1068, y: 0, z: 17, opacity: 1 });
   });
 
   it('slideDelay: staggered out of the stack, back from the far end, none while paging', () => {
@@ -55,10 +55,21 @@ describe('balances utils', () => {
     expect(slideDelay(3, 4, true, true)).toBe(0);
   });
 
-  it('maxOffset: two cards fit', () => {
-    expect(maxOffset(1)).toBe(0);
-    expect(maxOffset(2)).toBe(0);
-    expect(maxOffset(9)).toBe(7);
+  it('rowView: the cards wholly in view, the ends, everything fits (card 340, step 356)', () => {
+    // 5 cards: a track of 1764 px; 712 px of row show two cards.
+    expect(rowView(0, 712, 5)).toEqual({ first: 0, last: 1, atStart: true, atEnd: false, fits: false });
+    expect(rowView(356, 712, 5)).toEqual({ first: 1, last: 2, atStart: false, atEnd: false, fits: false });
+    expect(rowView(1052, 712, 5)).toEqual({ first: 3, last: 4, atStart: false, atEnd: true, fits: false });
+    // Half a card scrolled: the half-hidden one is not in view.
+    expect(rowView(178, 712, 5)).toMatchObject({ first: 1, last: 1, atStart: false });
+    // A fractional scroll still counts as the start / the end.
+    expect(rowView(0.6, 712, 5)).toMatchObject({ first: 0, atStart: true });
+    expect(rowView(1051.5, 712, 5)).toMatchObject({ last: 4, atEnd: true });
+    // Narrower than a card: the nearest one.
+    expect(rowView(356, 300, 5)).toMatchObject({ first: 1, last: 1 });
+    // Everything fits: both ends, no scrolling.
+    expect(rowView(0, 1200, 3)).toEqual({ first: 0, last: 2, atStart: true, atEnd: true, fits: true });
+    expect(rowView(0, 700, 1)).toMatchObject({ fits: true, first: 0, last: 0 });
   });
 
   it('captions: today, the month end, another year', () => {
@@ -123,28 +134,28 @@ describe('balances utils', () => {
       people: [{ participantId: 1, label: 'Вигадана', reserved: null, labelPending: false, color: 'blue', total: card(1_000_000, 0, 0) }],
     };
     const [family, person] = slidesOf(v, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
-    expect(family).toMatchObject({
+    expect(family?.card).toMatchObject({
       caption: balanceCaption('now', 2026, 'Свободно'),
       amount: formatMoney(600_000, 980, { minorUnits: true }),
       actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(400_000, 980)}`,
     });
     expect(family?.flow.reserved).toBe(400_000);
     // A person's card in the family view: only their own reserves; none — the real balance.
-    expect(person).toMatchObject({ caption: balanceCaption('now', 2026), amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
+    expect(person?.card).toMatchObject({ caption: balanceCaption('now', 2026), amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
     expect(person?.flow.reserved).toBeUndefined();
     const own = slidesOf({ ...v, people: [{ ...v.people[0]!, reserved: 100_000 }] }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[1];
-    expect(own).toMatchObject({ amount: formatMoney(900_000, 980, { minorUnits: true }), actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(100_000, 980)}` });
+    expect(own?.card).toMatchObject({ amount: formatMoney(900_000, 980, { minorUnits: true }), actual: `На самом деле ${formatMoney(1_000_000, 980)} · в резерве ${formatMoney(100_000, 980)}` });
 
     // One person picked: their total takes the reserves, their accounts keep their own balances.
     const mine: MonthOverview = { ...v, people: [], accounts: [
       { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 },
     ] };
     const [total, account] = slidesOf(mine, { people: [], selectedId: 1, currentYear: 2026, fmt: EUR_FMT });
-    expect(total?.amount).toBe(formatMoney(EUR_FMT.convert(600_000), 978, { minorUnits: true }));
+    expect(total?.card.amount).toBe(formatMoney(EUR_FMT.convert(600_000), 978, { minorUnits: true }));
     expect(total?.flow.reserved).toBe(EUR_FMT.convert(400_000));
-    expect(account).toMatchObject({ amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
+    expect(account?.card).toMatchObject({ amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
 
-    expect(slidesOf({ ...v, reserved: null }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[0]?.actual).toBe('');
+    expect(slidesOf({ ...v, reserved: null }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[0]?.card.actual).toBe('');
   });
 
   it('reservedLine and the month panel: a link to the planning screen; none without a reserve', async () => {
@@ -210,7 +221,7 @@ describe('balances utils', () => {
       [true, false],
       [true, false],
     ]);
-    expect(s[0]?.netText.startsWith('≈ +')).toBe(true);
+    expect(s[0]?.card.netText.startsWith('≈ +')).toBe(true);
     expect(s[0]?.flow.note).toBe('вкл. 3 162 $ по курсу 44,36');
 
     const unrated: MonthOverview = { ...fam, people: [], total: { ...card(10_000, 5_000, 4_000), fx: [{ ...usd, rate: null }] } };
@@ -219,8 +230,8 @@ describe('balances utils', () => {
     const spent: MonthOverview = { ...unrated, total: { ...card(10_000, 5_000, 4_000), fx: [{ currency: 978, income: 0, spending: 100_900, rate: 52 }] } };
     const e = slidesOf(spent, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
     expect([e[0]?.flow.approxIncome, e[0]?.flow.approxSpending]).toEqual([false, true]);
-    expect(e[0]?.netText.startsWith('≈')).toBe(true);
-    expect(u[0]?.netText).toBe('+10,00 ₴ в сентябре');
+    expect(e[0]?.card.netText.startsWith('≈')).toBe(true);
+    expect(u[0]?.card.netText).toBe('+10,00 ₴ в сентябре');
     expect(u[0]?.flow.note).toBe('без 3 162 $ — нет курса');
 
     const person: MonthOverview = {
@@ -233,7 +244,7 @@ describe('balances utils', () => {
     expect(p[1]?.flow.approxIncome).toBeFalsy();
     expect(p[1]?.flow.approxSpending).toBeFalsy();
     expect(p[1]?.flow.note).toBeUndefined();
-    expect(p[1]?.netText.startsWith('≈')).toBe(false);
+    expect(p[1]?.card.netText.startsWith('≈')).toBe(false);
   });
 
   it('fxNote: the amount and the rate per currency, unrated left out, refunds without a minus', () => {
@@ -269,10 +280,11 @@ describe('balances utils', () => {
       rates: null,
     };
     const s = slidesOf(fam, { people, selectedId: null, currentYear: 2026, fmt: UAH_FMT });
-    expect(s.map((x) => x.title)).toEqual(['Вся семья', 'Сергей', 'Аня']);
-    expect(s[0]?.accents).toEqual(['var(--series-blue)', 'var(--series-orange)']);
-    expect(s.map((x) => x.bottom)).toEqual(['2 человека · 14 счетов', '11 счетов', '3 счёта']);
-    expect(s[0]?.netText).toBe('+10,00 ₴ в сентябре');
+    expect(s.map((x) => x.card.title)).toEqual(['Вся семья', 'Сергей', 'Аня']);
+    expect(s.every((x) => x.kind === 'summary')).toBe(true);
+    expect(s[0]?.card.accents).toEqual(['var(--series-blue)', 'var(--series-orange)']);
+    expect(s.map((x) => x.card.bottom)).toEqual(['2 человека · 14 счетов', '11 счетов', '3 счёта']);
+    expect(s[0]?.card.netText).toBe('+10,00 ₴ в сентябре');
     expect(s[0]?.flow.segments).toEqual([
       { color: 'var(--series-blue)', income: 3_000, spending: 2_000 },
       { color: 'var(--series-orange)', income: 2_000, spending: 2_000 },
@@ -292,23 +304,24 @@ describe('balances utils', () => {
       ],
     };
     const p = slidesOf(one, { people, selectedId: 1, currentYear: 2026, fmt: UAH_FMT });
-    expect(p.map((x) => [x.title, x.dim])).toEqual([
+    expect(p.map((x) => (x.kind === 'account' ? x.card.bank : x.kind))).toEqual(['summary', 'monobank', 'monobank', 'monobank', 'monobank']);
+    expect(p.map((x) => [x.card.title, x.card.dim])).toEqual([
       ['Сергей', false],
       ['Чёрная карта · UAH', false],
       ['Банка · UAH #b123', true],
       ['Iron · UAH', false],
       ['Чёрная карта · USD', false],
     ]);
-    expect(p[0]?.bottom).toBe('4 счёта · без 1 счёта');
-    expect(p[1]?.caption).toBe('Карта · на 30 сентября');
-    expect(p[1]?.bottom).toBe('Monobank · Сергей');
-    expect(p[2]?.amount).toBe('—');
-    expect(p[2]?.caption).toBe('Нет данных на эту дату');
-    expect(p[2]?.net).toBeNull();
-    expect(p[3]?.caption).toBe('Кредитка · на 30 сентября');
-    expect(p[3]?.bottom).toBe('лимит 30 000 ₴');
-    expect(p[4]?.caption).toBe('Валютная карта · на 30 сентября');
-    expect(p.every((x) => x.accents.length === 1 && x.accents[0] === 'var(--series-blue)')).toBe(true);
+    expect(p[0]?.card.bottom).toBe('4 счёта · без 1 счёта');
+    expect(p[1]?.card.caption).toBe('Карта · на 30 сентября');
+    expect(p[1]?.card.bottom).toBe('Monobank · Сергей');
+    expect(p[2]?.card.amount).toBe('—');
+    expect(p[2]?.card.caption).toBe('Нет данных на эту дату');
+    expect(p[2]?.card.net).toBeNull();
+    expect(p[3]?.card.caption).toBe('Кредитка · на 30 сентября');
+    expect(p[3]?.card.bottom).toBe('лимит 30 000 ₴');
+    expect(p[4]?.card.caption).toBe('Валютная карта · на 30 сентября');
+    expect(p.every((x) => x.card.accents.length === 1 && x.card.accents[0] === 'var(--series-blue)')).toBe(true);
   });
   it('slidesOf: euro main — total cards converted, account cards keep their own currency', () => {
     const total = { ...card(1_000_000, 500_000, 200_000, 0, 2), others: [{ currency: 840, ownFunds: 10_000, rate: 40 }] };
@@ -326,12 +339,12 @@ describe('balances utils', () => {
       rates: RATES,
     };
     const p = slidesOf(person, { people: [], selectedId: 1, currentYear: 2026, fmt: EUR_FMT });
-    expect(p[0]?.amount).toBe(formatMoney(20_000, 978, { minorUnits: true }));
-    expect(p[0]?.netText).toBe(`${netText(6_000, 978)} в сентябре`);
+    expect(p[0]?.card.amount).toBe(formatMoney(20_000, 978, { minorUnits: true }));
+    expect(p[0]?.card.netText).toBe(`${netText(6_000, 978)} в сентябре`);
     expect(p[0]?.flow).toMatchObject({ currency: 978, income: 10_000, spending: 4_000 });
-    expect(p[1]?.amount).toBe(formatMoney(600_000, 980, { minorUnits: true }));
+    expect(p[1]?.card.amount).toBe(formatMoney(600_000, 980, { minorUnits: true }));
     expect(p[1]?.flow).toMatchObject({ currency: 980, income: 500_000, spending: 200_000 });
-    expect(p[2]?.amount).toBe(formatMoney(10_000, 840, { minorUnits: true }));
+    expect(p[2]?.card.amount).toBe(formatMoney(10_000, 840, { minorUnits: true }));
 
     const fam: MonthOverview = {
       ...person,
@@ -346,7 +359,7 @@ describe('balances utils', () => {
       { color: 'var(--series-blue)', income: 6_000, spending: 2_000 },
       { color: 'var(--series-orange)', income: 4_000, spending: 2_000 },
     ]);
-    expect(f[1]?.amount).toBe(formatMoney(12_000, 978, { minorUnits: true }));
+    expect(f[1]?.card.amount).toBe(formatMoney(12_000, 978, { minorUnits: true }));
   });
 
   it('slidesOf: the others line — a rated foreign part with its rate, an unrated one left out', () => {
@@ -359,10 +372,10 @@ describe('balances utils', () => {
     };
     const v: MonthOverview = { month: '2026-09', reserved: null, balanceAt: 'now', coverage: { from: '2026-09-01', to: '2026-09-27' }, total, people: [], accounts: [], rates: RATES };
     const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT });
-    expect(s[0]?.others).toBe(
+    expect(s[0]?.card.others).toBe(
       `вкл. ${formatMoney(10_000, 840, { minorUnits: true })} по курсу 40,00 · без ${formatMoney(10_000, 826, { minorUnits: true })} — нет курса`,
     );
-    expect(s[0]?.amount).toBe(formatMoney(1_000_000, 980, { minorUnits: true }));
+    expect(s[0]?.card.amount).toBe(formatMoney(1_000_000, 980, { minorUnits: true }));
   });
 
   it('slidesOf: total cards carry the «≈» line of the other picked currencies; account cards none', () => {
@@ -378,17 +391,34 @@ describe('balances utils', () => {
       rates: RATES,
     };
     const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt });
-    expect(s[0]?.approx).toBe(fmt.approxInline(1_000_000));
-    expect(s[0]?.approx).not.toBe('');
-    expect(s[1]?.approx).toBe('');
-    expect(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]?.approx).toBe('');
+    expect(s[0]?.card.approx).toBe(fmt.approxInline(1_000_000));
+    expect(s[0]?.card.approx).not.toBe('');
+    expect(s[1]?.card.approx).toBe('');
+    expect(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]?.card.approx).toBe('');
   });
 
-  it('BalanceCard: the «≈» line under the amount, none when empty', () => {
-    const props = { title: 'T', caption: 'C', amount: '100 ₴', others: '', actual: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
-    const w = mount(BalanceCard, { props: { ...props, approx: '≈ 2,50 $ · 2,00 €' } });
+  it('AccountCard: the bank\'s skin (Monobank: the «m» mark), the «≈» line under the amount, none when empty', () => {
+    const props = { bank: 'monobank' as const, title: 'T', caption: 'C', amount: '100 ₴', others: '', actual: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
+    const w = mount(AccountCard, { props: { ...props, approx: '≈ 2,50 $ · 2,00 €' } });
+    expect(w.get('button').find('[aria-hidden="true"]').exists()).toBe(true);
+    expect(w.text()).toContain('m');
     const spans = w.findAll('span').map((x) => x.text());
     expect(spans.indexOf('≈ 2,50 $ · 2,00 €')).toBe(spans.indexOf('100 ₴') + 1);
-    expect(mount(BalanceCard, { props: { ...props, approx: '' } }).text()).not.toContain('≈');
+    expect(mount(AccountCard, { props: { ...props, approx: '' } }).text()).not.toContain('≈');
+  });
+
+  it('SummaryCard: the figures, «Total», a dot per person, no bank mark; a click is the card\'s', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const props = {
+      title: 'Вся семья', caption: 'Свои деньги · сегодня', amount: '100 ₴', approx: '≈ 2,50 $', others: '', actual: 'Фактически', bottom: '2 человека',
+      net: -5, netText: '−5 ₴ в сентябре', accents: ['var(--series-blue)', 'var(--series-orange)'], dim: false,
+    };
+    const w = mount(SummaryCard, { props, global: { plugins: [i18n] } });
+    expect(w.text()).toContain('Итого');
+    for (const t of ['Вся семья', 'Свои деньги · сегодня', '100 ₴', '≈ 2,50 $', 'Фактически', '2 человека', '−5 ₴ в сентябре']) expect(w.text()).toContain(t);
+    expect(w.findAll('[data-test="dot"]')).toHaveLength(2);
+    expect(w.findAll('span').some((x) => x.text() === 'm')).toBe(false);
+    await w.get('button').trigger('click');
+    expect(w.emitted('click')).toHaveLength(1);
   });
 });

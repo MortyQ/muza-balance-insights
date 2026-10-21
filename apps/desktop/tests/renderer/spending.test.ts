@@ -5,6 +5,7 @@ import type { CategoryId } from '@contract/categories.ts';
 import {
   amountChip,
   centerChip,
+  diffChip,
   centerConv,
   comparePeriodText,
   familyShareText,
@@ -13,7 +14,6 @@ import {
   opsView,
   opsVs,
   parsePrefs,
-  pctChip,
   peopleRows,
   ringOf,
   ringStops,
@@ -58,16 +58,16 @@ const UAH_FMT = moneyFormat(VIEW.rates, { main: 980, also: NONE });
 const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: false, eur: false } });
 
 describe('change', () => {
-  it('the chip under the ring: more / less with the percent (by this day while partial), new, same', () => {
-    expect(centerChip(114, 100, '2026-09', false)).toMatchObject({ text: 'на 14% больше, чем в августе', tone: 'up', arrow: 'up' });
-    expect(centerChip(86, 100, '2026-09', true)).toMatchObject({ text: 'на 14% меньше, чем к этому дню в августе', tone: 'down', arrow: 'down' });
-    expect(centerChip(101, 100, '2026-09', false)).toMatchObject({ text: 'как в августе', tone: 'neutral', arrow: null });
-    expect(centerChip(50, 0, '2026-09', false)).toMatchObject({ text: 'новое', tone: 'neutral', arrow: null });
-    expect(centerChip(50, null, '2026-09', false)).toBeNull();
+  it('the chip under the ring: more / less with the amount and the percent (by this day while partial), new, same', () => {
+    expect(centerChip(114, 100, '2026-09', UAH_FMT, false)).toMatchObject({ text: `на ${uah(14)} (14%) больше, чем в августе`, tone: 'up', arrow: 'up' });
+    expect(centerChip(86, 100, '2026-09', UAH_FMT, true)).toMatchObject({ text: `на ${uah(14)} (14%) меньше, чем к этому дню в августе`, tone: 'down', arrow: 'down' });
+    expect(centerChip(101, 100, '2026-09', UAH_FMT, false)).toMatchObject({ text: 'как в августе', tone: 'neutral', arrow: null });
+    expect(centerChip(50, 0, '2026-09', UAH_FMT, false)).toMatchObject({ text: 'новое', tone: 'neutral', arrow: null });
+    expect(centerChip(50, null, '2026-09', UAH_FMT, false)).toBeNull();
   });
 
   it('a refund-only last month (net below 0) reads like 0: new, or same; never a negative percent', () => {
-    const texts = [centerChip(50, -10, '2026-09', false)!.text, pctChip(50, -10, '2026-09')!.text, pctChip(0, -10, '2026-09')!.text];
+    const texts = [centerChip(50, -10, '2026-09', UAH_FMT, false)!.text, diffChip(50, -10, '2026-09', UAH_FMT)!.text, diffChip(0, -10, '2026-09', UAH_FMT)!.text];
     expect(texts).toEqual(['новое', 'новое', 'как в августе']);
     for (const text of texts) expect(text).not.toMatch(/[-−]/);
   });
@@ -78,15 +78,15 @@ describe('change', () => {
     expect(amountChip(80_000, 100_000, '2026-09', UAH_FMT, true)!.sr).toBe('меньше, чем к этому дню в августе');
     // the text already says it: no screen-reader extra
     expect(amountChip(101, 100, '2026-09', UAH_FMT)).toMatchObject({ text: 'как в августе', sr: '' });
-    expect(centerChip(114, 100, '2026-09', false)!.sr).toBe('');
+    expect(centerChip(114, 100, '2026-09', UAH_FMT, false)!.sr).toBe('');
   });
 
-  it('pctChip: «+10%» / «−20%» without an arrow, same, new', () => {
-    expect(pctChip(110, 100, '2026-09')).toEqual({ text: '+10%', tone: 'up', arrow: null, sr: 'больше, чем в августе' });
-    expect(pctChip(80, 100, '2026-09', true)).toEqual({ text: '−20%', tone: 'down', arrow: null, sr: 'меньше, чем к этому дню в августе' });
-    expect(pctChip(101, 100, '2026-09')).toMatchObject({ text: 'как в августе', tone: 'neutral' });
-    expect(pctChip(5, 0, '2026-09')).toMatchObject({ text: 'новое' });
-    expect(pctChip(5, null, '2026-09')).toBeNull();
+  it('diffChip: «+0,10 ₴ (10%)» / «−0,20 ₴ (20%)» without an arrow, same, new', () => {
+    expect(diffChip(110, 100, '2026-09', UAH_FMT)).toEqual({ text: `+${uah(10)} (10%)`, tone: 'up', arrow: null, sr: 'больше, чем в августе' });
+    expect(diffChip(80, 100, '2026-09', UAH_FMT, true)).toEqual({ text: `−${uah(20)} (20%)`, tone: 'down', arrow: null, sr: 'меньше, чем к этому дню в августе' });
+    expect(diffChip(101, 100, '2026-09', UAH_FMT)).toMatchObject({ text: 'как в августе', tone: 'neutral' });
+    expect(diffChip(5, 0, '2026-09', UAH_FMT)).toMatchObject({ text: 'новое' });
+    expect(diffChip(5, null, '2026-09', UAH_FMT)).toBeNull();
   });
 });
 
@@ -266,11 +266,11 @@ describe('peopleRows', () => {
     const rows = peopleRows(VIEW, null, P, UAH_FMT);
     expect(rows[0]).toEqual({
       participantId: null, name: 'Вся семья', color: '', dots: ['var(--series-blue)', 'var(--series-orange)'],
-      caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: '+25%', tone: 'up', arrow: null, sr: 'больше, чем в августе' }, pressed: true,
+      caption: 'вместе · 20 оп.', amount: uah(100_000), chip: { text: `+${uah(20_000)} (25%)`, tone: 'up', arrow: null, sr: 'больше, чем в августе' }, pressed: true,
     });
     expect(rows.slice(1).map((r) => [r.participantId, r.name, r.color, r.caption, r.amount, r.chip?.text, r.pressed])).toEqual([
-      [1, 'Сергей', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), '+20%', false],
-      [2, 'Аня', 'var(--series-orange)', '40% · 8 оп.', uah(40_000), '+33%', false],
+      [1, 'Сергей', 'var(--series-blue)', '60% · 12 оп.', uah(60_000), `+${uah(10_000)} (20%)`, false],
+      [2, 'Аня', 'var(--series-orange)', '40% · 8 оп.', uah(40_000), `+${uah(10_000)} (33%)`, false],
     ]);
     expect(peopleRows(VIEW, 2, P, UAH_FMT).map((r) => r.pressed)).toEqual([false, false, true]);
   });
