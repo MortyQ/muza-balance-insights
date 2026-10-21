@@ -135,7 +135,7 @@
 - [x] 7.2 Add to `docs/backlog.md` the things to check on a live system: the speed of home, a category, analytics
   and the end of an auto-sync on a real database, before and after.
   - Verify: the backlog lists them.
-- [ ] 7.3 Run `pnpm test` and `pnpm typecheck` at the root.
+- [x] 7.3 Run `pnpm test` and `pnpm typecheck` at the root.
   - Verify: both pass.
 
 ## Workflow follow-up
