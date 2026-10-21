@@ -32,8 +32,8 @@ function workspacePackages(): Map<string, { dir: string; exports: Record<string,
 const WORKSPACE = workspacePackages();
 
 /**
- * Resolves a workspace import (`@mono/core/sync`, `@mono/db-libsql`) through the package's `exports`, like Node does
- * (exact key first, then `./*` patterns). Fails loudly on a workspace specifier it can't resolve —
+ * Resolves a workspace import (`@mono/core/ingest/sync`, `@mono/db-libsql`) through the package's `exports`, like Node
+ * does (exact key first, then `./*` patterns). Fails loudly on a workspace specifier it can't resolve —
  * an unresolved import would make the graph silently smaller and this test blind.
  */
 function resolveWorkspaceImport(spec: string): string {
@@ -98,7 +98,7 @@ describe('recategorize: no .env, no token', () => {
   });
 
   it('the resolver follows package exports and refuses what it cannot resolve', () => {
-    expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/sync'))).toBe('packages/core/src/sync.ts');
+    expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/ingest/sync'))).toBe('packages/core/src/ingest/sync.ts');
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/test-helpers'))).toBe('packages/core/tests/helpers.ts');
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/db-libsql'))).toBe('packages/db-libsql/src/index.ts');
     expect(() => resolveWorkspaceImport('@mono/unknown/x')).toThrow();
