@@ -4,7 +4,8 @@ import { openLibsql } from '@mono/db-libsql';
 import { afterEach, describe, expect, it } from 'vitest';
 import { ColorTakenError, COLOR_KEYS, firstFreeColor } from '../../src/people/colors.ts';
 import { ConnectionError } from '../../src/people/connections.ts';
-import { MIGRATIONS, migrate, type Db } from '../../src/storage/db.ts';
+import { migrate, type Db } from '../../src/storage/db.ts';
+import { MIGRATIONS } from '../../src/storage/migrations.ts';
 import {
   addConnection,
   addParticipant,

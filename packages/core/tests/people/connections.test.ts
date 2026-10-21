@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { openLibsql } from '@mono/db-libsql';
 import { ensureDefaultConnection } from '../../src/people/connections.ts';
-import { MIGRATIONS, migrate, type Db } from '../../src/storage/db.ts';
+import { migrate, type Db } from '../../src/storage/db.ts';
+import { MIGRATIONS } from '../../src/storage/migrations.ts';
 import { RateLimitError } from '../../src/shared/errors.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
 import { acquireSlot } from '../../src/providers/ratelimit.ts';

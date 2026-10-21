@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import { openLibsql } from '@mono/db-libsql';
 import { afterEach, describe, expect, it } from 'vitest';
 import { deleteConnection, setAccountEnabled } from '../../src/commands/people.ts';
-import { MIGRATIONS, migrate, type Db, type Stmt } from '../../src/storage/db.ts';
+import { migrate, type Db, type Stmt } from '../../src/storage/db.ts';
+import { MIGRATIONS } from '../../src/storage/migrations.ts';
 import { refreshCrossing } from '../../src/derive/derived.ts';
 import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
 import { addConnection, addParticipant } from '../../src/people/participants.ts';
@@ -183,7 +184,7 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
     const files = fs
       .readdirSync(SRC, { recursive: true, encoding: 'utf8' })
       .map((f) => f.replaceAll('\\', '/'))
-      .filter((f) => f.endsWith('.ts') && f !== 'storage/db.ts');
+      .filter((f) => f.endsWith('.ts') && !f.startsWith('storage/migrations/'));
     const writing = files.filter((f) => WRITES.test(fs.readFileSync(new URL(f, SRC), 'utf8'))).sort();
     expect(writing).toEqual(Object.keys(WRITERS).sort());
   });

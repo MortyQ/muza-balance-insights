@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { SCHEMA_VERSION } from '@mono/core/storage/db';
+import { SCHEMA_VERSION } from '@mono/core/storage/migrations';
 import { openLibsql } from '@mono/db-libsql';
 import { runDbSmoke } from '../src/main/smoke.ts';
 

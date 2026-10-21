@@ -5,7 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { openLibsql } from '@mono/db-libsql';
-import { MIGRATIONS, migrate, type CompactionResult, type Db, type Stmt } from '../../src/storage/db.ts';
+import { migrate, type CompactionResult, type Db, type Stmt } from '../../src/storage/db.ts';
+import { MIGRATIONS } from '../../src/storage/migrations.ts';
 
 const open: Db[] = [];
 const dirs: string[] = [];
