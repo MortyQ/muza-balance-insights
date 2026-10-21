@@ -84,8 +84,8 @@ describe('recategorize: no .env, no token', () => {
       expect.arrayContaining([
         'apps/mcp/src/rederive.ts',
         'apps/mcp/src/analysis/export.ts',
-        'packages/core/src/rederive.ts',
-        'packages/core/src/transfers.ts',
+        'packages/core/src/derive/rederive.ts',
+        'packages/core/src/derive/transfers.ts',
         'packages/core/src/storage/db.ts',
         'packages/db-libsql/src/index.ts',
       ]),
@@ -136,7 +136,7 @@ describe('recategorize: no .env, no token', () => {
 
 describe('recategorize: output is aggregates and diagnostics only', () => {
   it('recategorize.ts and both rederive.ts never mention sensitive columns', () => {
-    for (const f of ['apps/mcp/src/cli/recategorize.ts', 'apps/mcp/src/rederive.ts', 'packages/core/src/rederive.ts']) {
+    for (const f of ['apps/mcp/src/cli/recategorize.ts', 'apps/mcp/src/rederive.ts', 'packages/core/src/derive/rederive.ts']) {
       const code = stripComments(fs.readFileSync(path.join(REPO_ROOT, f), 'utf8'));
       expect(code.match(/\b(description|counter_name|counterName|comment|iban|counter_iban|masked_pan|maskedPan|title)\b/g), f).toBeNull();
     }
