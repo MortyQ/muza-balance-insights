@@ -1,8 +1,8 @@
 // Rates of foreign currencies from the user's own exchanges: the hryvnia side of a pair_fx row holds both amounts.
-import { ENABLED_ACCOUNT_IDS_SQL } from './people/accounts.ts';
-import type { Db } from './storage/db.ts';
-import { dateIn, startOfDayIn } from './shared/format.ts';
-import { addDays, zoneOf, type ZonedPeriod } from './shared/periods.ts';
+import { ENABLED_ACCOUNT_IDS_SQL } from '../people/accounts.ts';
+import type { Db } from '../storage/db.ts';
+import { dateIn, startOfDayIn } from '../shared/format.ts';
+import { addDays, zoneOf, type ZonedPeriod } from '../shared/periods.ts';
 
 const UAH = 980;
 

@@ -18,7 +18,7 @@ import {
   syncAccounts,
   type SyncContext,
   type SyncEvent,
-} from '@mono/core/sync';
+} from '@mono/core/ingest/sync';
 
 const USAGE = 'Использование: pnpm --filter @mono/mcp sync [--since YYYY-MM-DD] [--account <id>]';
 

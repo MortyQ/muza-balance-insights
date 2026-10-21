@@ -10,7 +10,7 @@
 - v1.1 (поездки): `operation_currency` (буквенный ISO, маппинг `packages/core/src/shared/currency.ts`) — group_by и фильтр в `spending_summary`
   и `compare_periods`. Суммы в валюте счёта + блок `operation` (валюта операции), только если у группы одна валюта
   операции; суммы по экспоненте ISO (JPY 0, KWD 3). Страну API не отдаёт — в описаниях тулов подсказка про валюту и даты.
-- `search_transactions` (`packages/core/src/search.ts`): текст ищется в JS (`normalizeSearch`: NFKC, `toLocaleLowerCase('uk')`) по
+- `search_transactions` (`packages/core/src/read/search.ts`): текст ищется в JS (`normalizeSearch`: NFKC, `toLocaleLowerCase('uk')`) по
   description + counter_name; `merchant` = description, но имя → инициалы (строка с именем контрагента, «Від: …»,
   4829 не шаблон/казначейство), номер карты → `[картка]`, название банки → `банка`; `counterparty` — `displayCounterName`.
   limit 50 / макс. 200, `total` + `truncated`, итоги по всем совпадениям в валюте счёта и операции.

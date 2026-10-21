@@ -2,16 +2,16 @@
 // Separate file: vi.mock wraps src/derive/rederive.ts for every test in the file. Invented data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { addConnection, addParticipant } from '../src/people/participants.ts';
-import { monobankStatement } from '../src/providers/monobank/statement.ts';
-import * as rederive from '../src/derive/rederive.ts';
-import { commitStatement } from '../src/statement-import.ts';
-import { derivedColumns, memoryDb } from './helpers.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { addConnection, addParticipant } from '../../src/people/participants.ts';
+import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import * as rederive from '../../src/derive/rederive.ts';
+import { commitStatement } from '../../src/ingest/statement-import.ts';
+import { derivedColumns, memoryDb } from '../helpers.ts';
 
 const failNext = vi.hoisted(() => ({ value: false }));
-vi.mock('../src/derive/rederive.ts', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../src/derive/rederive.ts')>();
+vi.mock('../../src/derive/rederive.ts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../src/derive/rederive.ts')>();
   return {
     ...real,
     rederiveCore: vi.fn(real.rederiveCore),
@@ -34,7 +34,7 @@ afterEach(() => db?.close());
 async function upload(): Promise<void> {
   db = await memoryDb();
   const conn = await addConnection(db, await addParticipant(db, { label: 'Вигадана Особа' }, 0), 'monobank', 0, 'file');
-  const r = monobankStatement.parse(readFileSync(new URL('./providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+  const r = monobankStatement.parse(readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
   if (!r.ok) throw new Error(r.problem);
   await commitStatement(db, conn, r.statement, { kind: 'new', id: 'file-card', type: 'black' }, 999);
 }

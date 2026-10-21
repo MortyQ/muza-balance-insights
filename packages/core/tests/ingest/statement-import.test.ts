@@ -1,19 +1,19 @@
 // A statement file into an account: the comparison (counts only) and the write. Invented data only.
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { addConnection, addParticipant } from '../src/people/participants.ts';
-import { monobankStatement } from '../src/providers/monobank/statement.ts';
-import type { ParsedStatement } from '../src/providers/types.ts';
-import { StatementImportError, commitStatement, compareStatement, statementRowIds } from '../src/statement-import.ts';
-import { commitRows } from '../src/sync.ts';
-import { insertAccountRow, memoryDb, testConnection } from './helpers.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { addConnection, addParticipant } from '../../src/people/participants.ts';
+import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import type { ParsedStatement } from '../../src/providers/types.ts';
+import { StatementImportError, commitStatement, compareStatement, statementRowIds } from '../../src/ingest/statement-import.ts';
+import { commitRows } from '../../src/ingest/sync.ts';
+import { insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());
 
 const card = (): ParsedStatement => {
-  const r = monobankStatement.parse(readFileSync(new URL('./providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+  const r = monobankStatement.parse(readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
   if (!r.ok) throw new Error(r.problem);
   return r.statement;
 };

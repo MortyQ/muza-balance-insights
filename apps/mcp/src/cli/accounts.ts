@@ -7,7 +7,7 @@ import { log } from '../log.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { systemClock } from '../clock.ts';
-import { syncAccounts } from '@mono/core/sync';
+import { syncAccounts } from '@mono/core/ingest/sync';
 import { renderAccountsTable } from './accountsTable.ts';
 
 async function main(): Promise<void> {

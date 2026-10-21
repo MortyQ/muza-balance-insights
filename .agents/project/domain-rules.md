@@ -59,7 +59,7 @@
   возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
-  в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).
+  в `packages/core/src/read/summaries.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).
 - `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
   operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
 - `spendingSummary` also groups by `day` (a day of the period's zone) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
@@ -84,7 +84,7 @@
   6012 делится по знаку: зачисления → «поступления», списания → «рассрочки и кредиты».
   8398 → «благотворительность» (донаты в чужие банки через 4829 — позже оверрайдами).
 - Фикстуры тестов — только вымышленные имена и суммы; ничего из реальных данных и отчётов.
-- Остаток на конец месяца (`balancesAt` в `packages/core/src/status.ts`): остаток банка после последней
+- Остаток на конец месяца (`balancesAt` в `packages/core/src/read/status.ts`): остаток банка после последней
   неотменённой операции до конца месяца (`endSec`, исключая саму секунду); если он не сохранён или в последнюю
   секунду покрытия несколько операций — обратный расчёт: текущий остаток минус сумма операций от конца месяца и
   позже. `accounts.balance` — остаток на момент `updated_at` (взят из client-info до выписок), поэтому обратный
@@ -94,7 +94,7 @@
   текущий.
   All accounts answer in one statement (per account an index seek for the last operation; the backward sum runs only
   for an account that needs it); `balancesOf` gives the totals of a part of the answer (one person's accounts).
-- Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/fx.ts`): копейки гривны за минимальную единицу
+- Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/read/fx.ts`): копейки гривны за минимальную единицу
   валюты из строк `pair_fx` на гривневых счетах. Продажи валюты; покупки — только если валюту ни разу не продавали.
   В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца в его поясе,
   равенство → более ранний), `nearest: true`. Общий для семьи, холды входят, отменённые — нет; обменов нет → курса
@@ -134,7 +134,7 @@
   во входе и матчит локально, в ответе маска. Раскрытие — только настройка в `settings`, не параметр тула.
 - `findRecurring`: период 25–35 дней, сумма ±10%, минимум 3 повторения; если валюта операции ≠ валюте счёта —
   сравнивается `operation_amount`.
-- `findRecurring` is implemented (`packages/core/src/recurring.ts`, for the desktop's regular payments screen; carries
+- `findRecurring` is implemented (`packages/core/src/read/recurring.ts`, for the desktop's regular payments screen; carries
   the bank's text like `categoryLines`, never for an MCP tool or the copy). Rows: the spending lines (`spendingLinesSql`,
   bodies with `amount < 0`, holds included). Payee = `counter_iban`, else `counter_edrpou`, else the description
   lower-cased without punctuation and with runs of 3+ digits as `#`; plus the operation currency. A payee's payments
@@ -148,7 +148,7 @@
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
   null)` finds the payee by a payment of the series. The key holds bank text: the table is in this database only (not
   whitelisted for the copy); «Start over» and «Delete all data» lose it like the overrides.
-- ✅ Пункт 2 реализован: `packages/core/src/summaries.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`) и `packages/core/src/status.ts`
+- ✅ Пункт 2 реализован: `packages/core/src/read/summaries.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`) и `packages/core/src/read/status.ts`
   (`getBalances`, `getSyncStatus`). Суммы в копейках валюты счёта, валюты не суммируются, без имён и описаний;
   счета — id + подпись `type/CUR`.
 - `getBalances`: поля `own_funds` (основное) = balance − credit_limit, `credit_limit`, `available` (= balance).
@@ -158,7 +158,7 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
-- `incomeLines` (`packages/core/src/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
+- `incomeLines` (`packages/core/src/read/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
   from the same query (`incomeRowsSql`), with source and the «Від: …» sender's name; carries the bank's text, never for
   an MCP tool or the anonymised copy.
 - Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/shared/constants.ts`

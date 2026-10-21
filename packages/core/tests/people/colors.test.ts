@@ -15,7 +15,7 @@ import {
   setParticipantColor,
 } from '../../src/people/participants.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
-import { syncAccounts } from '../../src/sync.ts';
+import { syncAccounts } from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, memoryDb } from '../helpers.ts';
 
 let db: Db;

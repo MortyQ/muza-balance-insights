@@ -10,7 +10,7 @@ import { dateIn } from '@mono/core/shared/format';
 import { listConnections } from '@mono/core/people/participants';
 import { statementParserOf } from '@mono/core/providers/statements';
 import type { ParsedStatement } from '@mono/core/providers/types';
-import { StatementImportError, commitStatement, compareStatement, type StatementTarget } from '@mono/core/statement-import';
+import { StatementImportError, commitStatement, compareStatement, type StatementTarget } from '@mono/core/ingest/statement-import';
 import type {
   CommitStatementResult,
   CompareStatementResult,

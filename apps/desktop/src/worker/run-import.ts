@@ -22,7 +22,7 @@ import {
   syncAccounts,
   type SyncContext,
   type Window,
-} from '@mono/core/sync';
+} from '@mono/core/ingest/sync';
 import type { TimeRange } from '@mono/core/derive/transfers';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';

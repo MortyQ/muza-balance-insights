@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { kyivStartOfDay } from '../src/shared/format.ts';
-import { amountGroups, findRecurring, payeeKey, RecurringError, setRecurringMark, trailingSeries } from '../src/recurring.ts';
-import { insertAccountRow, memoryDb } from './helpers.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { kyivStartOfDay } from '../../src/shared/format.ts';
+import { amountGroups, findRecurring, payeeKey, RecurringError, setRecurringMark, trailingSeries } from '../../src/read/recurring.ts';
+import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 // "Now" = 2026-03-15 12:00 Kyiv. Fictional payees and amounts only.
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;

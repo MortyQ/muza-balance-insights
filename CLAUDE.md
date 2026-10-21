@@ -68,7 +68,7 @@ Rules:
   `analysis/analysis.sqlite` (read-only, one SELECT/WITH, at most 500 rows). The user rebuilds the copy
   (`pnpm --filter @mono/mcp export:analysis`); it is also rebuilt automatically after sync and recategorize.
 - What the copy holds: only the columns in the whitelist `apps/mcp/src/analysis/schema.ts`. `description` is masked
-  (`packages/core/src/masking.ts` → the provider's `maskDescription`): service templates as is, a jar's name → `[jar]`,
+  (`packages/core/src/read/masking.ts` → the provider's `maskDescription`): service templates as is, a jar's name → `[jar]`,
   everything else → `[other]`, plus `desc_class` by the shape of the line. Instead of `counter_name` — the `has_counter`
   flag. An account has `participant_id` (a number; the participant's label does not go into the copy).
   A new column or template goes into the whitelist / masking only after the user's ok.

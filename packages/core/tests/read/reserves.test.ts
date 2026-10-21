@@ -1,9 +1,9 @@
 // Reserves (reserves.ts): add, list, change, delete; whose; what is refused, by the code and by the table; migration 14.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { openLibsql } from '@mono/db-libsql';
-import { MIGRATIONS, migrate, type Db } from '../src/storage/db.ts';
-import { addReserve, deleteReserve, listReserves, ReserveError, RESERVES_MAX, updateReserve, type ReserveInput } from '../src/reserves.ts';
-import { memoryDb } from './helpers.ts';
+import { MIGRATIONS, migrate, type Db } from '../../src/storage/db.ts';
+import { addReserve, deleteReserve, listReserves, ReserveError, RESERVES_MAX, updateReserve, type ReserveInput } from '../../src/read/reserves.ts';
+import { memoryDb } from '../helpers.ts';
 
 let db: Db;
 beforeEach(async () => {

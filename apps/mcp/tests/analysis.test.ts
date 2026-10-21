@@ -9,7 +9,7 @@ import { QUERIES_DIR, QueryRejected, readQueryFile, runQuery, splitStatements, v
 import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA } from '../src/analysis/schema.ts';
 import { REPO_ROOT } from '../src/config.ts';
 import { MCP_ROOT } from '../src/paths.ts';
-import { maskDescription } from '@mono/core/masking';
+import { maskDescription } from '@mono/core/read/masking';
 import { insertAccountRow, insertTransactionRow, memoryDb } from '@mono/core/test-helpers';
 
 // Every value that must never reach analysis.sqlite.

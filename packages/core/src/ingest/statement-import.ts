@@ -2,10 +2,10 @@
 // the account (new, or its balance), the rows and the coverage in one transaction, then the derivation passes as for
 // the API (commitRows; a full pass only when that failed). Only an account of a file connection is written; a token
 // connection's account can be compared with a file (the reference check), never written from one.
-import { ConnectionError, parseConnectionMethod, parseProviderId } from './people/connections.ts';
-import type { Db, Stmt } from './storage/db.ts';
-import type { ParsedStatement } from './providers/types.ts';
-import { rederiveCore } from './derive/rederive.ts';
+import { ConnectionError, parseConnectionMethod, parseProviderId } from '../people/connections.ts';
+import type { Db, Stmt } from '../storage/db.ts';
+import type { ParsedStatement } from '../providers/types.ts';
+import { rederiveCore } from '../derive/rederive.ts';
 import { commitRows, getSyncState, type Window } from './sync.ts';
 
 /** Where the rows go: an account of the connection, or a new card of the file's currency. */

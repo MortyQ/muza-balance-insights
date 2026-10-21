@@ -4,7 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import * as rederive from '@mono/core/derive/rederive';
-import { WINDOW_SEC } from '@mono/core/sync';
+import { WINDOW_SEC } from '@mono/core/ingest/sync';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
 import type { FromWorker } from '../src/shared/import-protocol.ts';
 import { runImport } from '../src/worker/run-import.ts';

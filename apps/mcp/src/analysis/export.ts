@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createClient, type InValue } from '@libsql/client';
 import type { Db } from '../db.ts';
 import { accountProviders, providerOf } from '@mono/core/people/connections';
-import { JAR_PLACEHOLDER, OTHER_PLACEHOLDER, maskDescription, type DescClass } from '@mono/core/masking';
+import { JAR_PLACEHOLDER, OTHER_PLACEHOLDER, maskDescription, type DescClass } from '@mono/core/read/masking';
 import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA, type AnalysisTable } from './schema.ts';
 
 type Row = Record<string, InValue>;

@@ -2,17 +2,17 @@
 // by a full scan of the operations table. Every statement a statistic runs is captured and EXPLAINed. Plans do not depend
 // on timing, so this is the deterministic guard behind the benchmark (bench/). Fictional data only (bench/generate.ts).
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEFAULT_BENCH, generateDataset, loadDataset } from '../bench/generate.ts';
-import type { Db, Stmt } from '../src/storage/db.ts';
-import { categoryLines } from '../src/category-lines.ts';
-import { startOfDayIn } from '../src/shared/format.ts';
-import { incomeLines } from '../src/income-lines.ts';
-import { findRecurring } from '../src/recurring.ts';
-import { rederiveCore } from '../src/derive/rederive.ts';
-import { searchTransactions } from '../src/search.ts';
-import { balancesAt } from '../src/status.ts';
-import { comparePeriods, incomeSummary, spendingGrid, spendingSummary } from '../src/summaries.ts';
-import { openTestDb } from './helpers.ts';
+import { DEFAULT_BENCH, generateDataset, loadDataset } from '../../bench/generate.ts';
+import type { Db, Stmt } from '../../src/storage/db.ts';
+import { categoryLines } from '../../src/read/category-lines.ts';
+import { startOfDayIn } from '../../src/shared/format.ts';
+import { incomeLines } from '../../src/read/income-lines.ts';
+import { findRecurring } from '../../src/read/recurring.ts';
+import { rederiveCore } from '../../src/derive/rederive.ts';
+import { searchTransactions } from '../../src/read/search.ts';
+import { balancesAt } from '../../src/read/status.ts';
+import { comparePeriods, incomeSummary, spendingGrid, spendingSummary } from '../../src/read/summaries.ts';
+import { openTestDb } from '../helpers.ts';
 
 const TZ = 'Europe/Kyiv';
 const MONTH = { from: '2026-09-01', to: '2026-09-30', tz: TZ };

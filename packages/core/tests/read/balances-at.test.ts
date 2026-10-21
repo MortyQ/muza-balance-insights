@@ -1,10 +1,10 @@
 // End-of-month balances from the stored per-operation balance, with the backward calculation as the fallback.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { kyivStartOfDay } from '../src/shared/format.ts';
-import { addConnection, addParticipant } from '../src/people/participants.ts';
-import { balancesAt, firstDataDate } from '../src/status.ts';
-import { insertAccountRow, memoryDb } from './helpers.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { kyivStartOfDay } from '../../src/shared/format.ts';
+import { addConnection, addParticipant } from '../../src/people/participants.ts';
+import { balancesAt, firstDataDate } from '../../src/read/status.ts';
+import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 let db: Db;
 let seq = 0;

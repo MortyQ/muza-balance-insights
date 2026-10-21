@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { RESYNC_OVERLAP_SEC } from '../src/shared/constants.ts';
-import { MAX_STATEMENT_WINDOW_SEC } from '../src/providers/monobank/constants.ts';
-import type { Db } from '../src/storage/db.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
-import type { NormalizedTx } from '../src/providers/types.ts';
+import { RESYNC_OVERLAP_SEC } from '../../src/shared/constants.ts';
+import { MAX_STATEMENT_WINDOW_SEC } from '../../src/providers/monobank/constants.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
+import type { NormalizedTx } from '../../src/providers/types.ts';
 import {
   WINDOW_SEC,
   commitRows,
@@ -20,8 +20,8 @@ import {
   syncWindow,
   type SyncContext,
   type Window,
-} from '../src/sync.ts';
-import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, insertAccount, item, memoryDb, type RawItem } from './helpers.ts';
+} from '../../src/ingest/sync.ts';
+import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, insertAccount, item, memoryDb, type RawItem } from '../helpers.ts';
 
 const DAY = 86_400;
 let db: Db;

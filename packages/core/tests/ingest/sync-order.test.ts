@@ -1,7 +1,7 @@
 // First import order: the freshest window of every account first, then older history (round-robin).
 import { afterEach, describe, expect, it } from 'vitest';
-import type { Db } from '../src/storage/db.ts';
-import { createMonoClient } from '../src/providers/monobank/client.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { createMonoClient } from '../../src/providers/monobank/client.ts';
 import {
   WINDOW_SEC,
   getSyncState,
@@ -12,8 +12,8 @@ import {
   type SyncContext,
   type SyncEvent,
   type Window,
-} from '../src/sync.ts';
-import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from './helpers.ts';
+} from '../../src/ingest/sync.ts';
+import { TEST_TOKEN, fakeClock, fakeMonobank, item, memoryDb } from '../helpers.ts';
 
 let db: Db;
 afterEach(() => db?.close());

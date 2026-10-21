@@ -26,7 +26,7 @@ export const ANALYSIS_SCHEMA = {
     { name: 'account_id', type: 'TEXT' },
     { name: 'time', type: 'INTEGER' },
     { name: 'local_date', type: 'TEXT' },
-    { name: 'description', type: 'TEXT' }, // masked, see src/masking.ts
+    { name: 'description', type: 'TEXT' }, // masked, see packages/core/src/read/masking.ts
     { name: 'desc_class', type: 'TEXT' }, // derived from the raw description's shape
     { name: 'mcc', type: 'INTEGER' },
     { name: 'original_mcc', type: 'INTEGER' },

@@ -1,7 +1,7 @@
 // Reserves: money the user keeps aside from what «Available per day» spreads over the days — a name of their own, an
 // amount in a main currency (counted at today's rate by the app), an optional last day, whose it is (or common). Like recurring marks, they live
 // in this database only: never an MCP tool, never the analysis copy.
-import type { Db } from './storage/db.ts';
+import type { Db } from '../storage/db.ts';
 
 /** The currencies a reserve is kept in: hryvnia, dollar, euro. */
 export const RESERVE_CURRENCIES = [980, 840, 978] as const;

@@ -1,20 +1,20 @@
 // The sync loop, for any provider: plan windows, fetch one window through the provider's client, write it with
 // sync_state in one transaction, then the derivation passes. What a request, a page or an account looks like at the
 // bank is the client's (providers/<id>/client.ts).
-import { accountEnabledSql } from './people/accounts.ts';
-import { RESYNC_OVERLAP_SEC } from './shared/constants.ts';
-import { categorize, loadOverrides, type CategoryOverride } from './derive/categories.ts';
-import type { Db, Stmt } from './storage/db.ts';
-import { refreshCrossing } from './derive/derived.ts';
-import { RateLimitError, StatementFormatError } from './shared/errors.ts';
-import { toKyivDate } from './shared/format.ts';
-import type { Clock } from './shared/platform.ts';
-import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from './people/connections.ts';
-import { PROVIDER_RULES, rulesFor } from './providers/rules.ts';
-import type { NormalizedTx, ProviderClient, ProviderId } from './providers/types.ts';
-import { cancellableSleep, throwIfCancelled } from './shared/cancel.ts';
-import { deriveSpan } from './derive/rederive.ts';
-import type { TimeRange } from './derive/transfers.ts';
+import { accountEnabledSql } from '../people/accounts.ts';
+import { RESYNC_OVERLAP_SEC } from '../shared/constants.ts';
+import { categorize, loadOverrides, type CategoryOverride } from '../derive/categories.ts';
+import type { Db, Stmt } from '../storage/db.ts';
+import { refreshCrossing } from '../derive/derived.ts';
+import { RateLimitError, StatementFormatError } from '../shared/errors.ts';
+import { toKyivDate } from '../shared/format.ts';
+import type { Clock } from '../shared/platform.ts';
+import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from '../people/connections.ts';
+import { PROVIDER_RULES, rulesFor } from '../providers/rules.ts';
+import type { NormalizedTx, ProviderClient, ProviderId } from '../providers/types.ts';
+import { cancellableSleep, throwIfCancelled } from '../shared/cancel.ts';
+import { deriveSpan } from '../derive/rederive.ts';
+import type { TimeRange } from '../derive/transfers.ts';
 
 /**
  * Window length we request from `provider`: one hour below its API maximum (Monobank: 31 d + 1 h) as a safety margin

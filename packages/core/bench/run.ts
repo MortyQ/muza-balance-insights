@@ -8,9 +8,9 @@ import path from 'node:path';
 import { openLibsql } from '@mono/db-libsql';
 import type { Db } from '../src/storage/db.ts';
 import { rederiveCore, rederiveSpans } from '../src/derive/rederive.ts';
-import { balancesAt } from '../src/status.ts';
+import { balancesAt } from '../src/read/status.ts';
 import { startOfDayIn } from '../src/shared/format.ts';
-import { incomeSummary, spendingGrid, spendingSummary } from '../src/summaries.ts';
+import { incomeSummary, spendingGrid, spendingSummary } from '../src/read/summaries.ts';
 import { BUDGETS_MS, type BenchCase } from './budgets.ts';
 import { DEFAULT_BENCH, generateDataset, loadDataset } from './generate.ts';
 

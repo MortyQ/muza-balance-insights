@@ -18,7 +18,7 @@ import {
   scopeOverrideCandidates,
 } from '@mono/core/derive/scope';
 import { SettingsError, getSettings, setSetting } from '@mono/core/people/settings';
-import { commitWindow, type SyncContext } from '@mono/core/sync';
+import { commitWindow, type SyncContext } from '@mono/core/ingest/sync';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
 
 let db: Db;

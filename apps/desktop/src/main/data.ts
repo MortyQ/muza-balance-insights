@@ -4,10 +4,10 @@
 // and income screens). The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
-import { categoryLines } from '@mono/core/category-lines';
-import { incomeLines } from '@mono/core/income-lines';
-import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/recurring';
-import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/reserves';
+import { categoryLines } from '@mono/core/read/category-lines';
+import { incomeLines } from '@mono/core/read/income-lines';
+import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
+import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -16,9 +16,9 @@ import { refreshCrossing } from '@mono/core/derive/derived';
 import { listConnections, listParticipants } from '@mono/core/people/participants';
 import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/shared/format';
-import { toUah, type FxRate } from '@mono/core/fx';
-import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/status';
-import { incomeSummary, periodInfo, spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/summaries';
+import { toUah, type FxRate } from '@mono/core/read/fx';
+import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
+import { incomeSummary, periodInfo, spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/summaries';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';

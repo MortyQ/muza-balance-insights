@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { recategorize } from '../src/derive/categories.ts';
-import type { Db } from '../src/storage/db.ts';
-import { kyivStartOfDay, toKyivDate } from '../src/shared/format.ts';
-import { transferDiagnostics } from '../src/derive/diagnostics.ts';
-import { spendingByCategory } from '../src/queries.ts';
-import { detectTransfers, markInternalTransfers, type TransferAccount, type TransferTx } from '../src/derive/transfers.ts';
-import { insertAccount, memoryDb } from './helpers.ts';
+import { recategorize } from '../../src/derive/categories.ts';
+import type { Db } from '../../src/storage/db.ts';
+import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
+import { transferDiagnostics } from '../../src/derive/diagnostics.ts';
+import { spendingByCategory } from '../../src/read/queries.ts';
+import { detectTransfers, markInternalTransfers, type TransferAccount, type TransferTx } from '../../src/derive/transfers.ts';
+import { insertAccount, memoryDb } from '../helpers.ts';
 
 // The nine January–February black → white transfers from the phase 3 report (amounts in kopecks):
 // black debit = white credit + 4 % commission. Feb 19 has three of them within 50 s.

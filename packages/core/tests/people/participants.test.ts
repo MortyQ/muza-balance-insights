@@ -14,7 +14,7 @@ import {
 } from '../../src/people/participants.ts';
 import { MonoApiError, createMonoClient } from '../../src/providers/monobank/client.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
-import { getBalances } from '../../src/status.ts';
+import { getBalances } from '../../src/read/status.ts';
 import {
   ConnectionDuplicateError,
   WINDOW_SEC,
@@ -22,7 +22,7 @@ import {
   runPlans,
   syncAccounts,
   type SyncContext,
-} from '../../src/sync.ts';
+} from '../../src/ingest/sync.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, insertTransactionRow, item, memoryDb, type FakeClock } from '../helpers.ts';
 
 let db: Db;

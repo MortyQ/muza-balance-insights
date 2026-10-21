@@ -3,10 +3,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
 import { startOfDayIn, toKyivDate } from '../../src/shared/format.ts';
-import { exchangeRates } from '../../src/fx.ts';
+import { exchangeRates } from '../../src/read/fx.ts';
 import { periodBuckets } from '../../src/shared/periods.ts';
-import { searchTransactions } from '../../src/search.ts';
-import { SummaryError, incomeSummary, periodInfo, spendingSummary } from '../../src/summaries.ts';
+import { searchTransactions } from '../../src/read/search.ts';
+import { SummaryError, incomeSummary, periodInfo, spendingSummary } from '../../src/read/summaries.ts';
 import { insertAccountRow, memoryDb } from '../helpers.ts';
 
 const BERLIN = 'Europe/Berlin';

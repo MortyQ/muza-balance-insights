@@ -10,8 +10,8 @@ import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
 import { addConnection, addParticipant } from '../../src/people/participants.ts';
 import { monobankStatement } from '../../src/providers/monobank/statement.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
-import { commitStatement } from '../../src/statement-import.ts';
-import { commitRows } from '../../src/sync.ts';
+import { commitStatement } from '../../src/ingest/statement-import.ts';
+import { commitRows } from '../../src/ingest/sync.ts';
 import { insertAccountRow, insertTransactionRow, memoryDb, testConnection } from '../helpers.ts';
 
 let db: Db;
@@ -169,8 +169,8 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   const WRITERS: Record<string, Record<string, RegExp>> = {
     'commands/people.ts': { setAccountEnabled: /\brefreshCrossing\(/, deleteConnection: /\brederiveCore\(/ },
     // commitRows refreshes through its derivation pass, deriveSpan (derive/rederive.ts, checked below).
-    'sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\bderiveSpan\(/ },
-    'statement-import.ts': { commitStatement: /\bcommitRows\(/ },
+    'ingest/sync.ts': { syncAccounts: /\brefreshCrossing\(/, commitRows: /\bderiveSpan\(/ },
+    'ingest/statement-import.ts': { commitStatement: /\bcommitRows\(/ },
   };
   const bodyOf = (src: string, name: string): string => {
     const start = src.search(new RegExp(`export async function ${name}\\(`));

@@ -1,4 +1,4 @@
-// MCP tools over src/summaries.ts and src/status.ts. Every answer is JSON:
+// MCP tools over the core's read/summaries.ts and read/status.ts. Every answer is JSON:
 // amounts in major units (hryvnias, dollars…) next to their currency code, a period block with `incomplete`,
 // and `notes` with diagnostics the model should mention. No counterparty names, descriptions, card numbers,
 // IBANs or jar titles — accounts are an id plus a "type/CUR" label.
@@ -11,7 +11,7 @@ import { currencyAlpha, currencyNumeric, toMajor } from '@mono/core/shared/curre
 import { log } from '../log.ts';
 import type { Clock, MonoClient } from '@mono/core/providers/monobank/client';
 import { SCOPES } from '@mono/core/derive/scope';
-import { getBalances, getSyncStatus } from '@mono/core/status';
+import { getBalances, getSyncStatus } from '@mono/core/read/status';
 import {
   INCOME_GROUP_BY,
   SPENDING_GROUP_BY,
@@ -21,9 +21,9 @@ import {
   spendingSummary,
   type OperationAmounts,
   type PeriodInfo,
-} from '@mono/core/summaries';
-import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, searchTransactions } from '@mono/core/search';
-import { syncRecent } from '@mono/core/sync';
+} from '@mono/core/read/summaries';
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, searchTransactions } from '@mono/core/read/search';
+import { syncRecent } from '@mono/core/ingest/sync';
 
 export type ToolDeps = {
   db: Db;
