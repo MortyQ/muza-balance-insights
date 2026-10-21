@@ -1,7 +1,7 @@
 import type { SpendingOverview } from '@contract/api.ts';
 import { categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { t } from '@/shared/lib';
+import { change, changeText, t } from '@/shared/lib';
 import { INSIGHT_BASE, INSIGHT_MAX, INSIGHT_MIN, INSIGHT_SHARE } from '../constants.ts';
 import type { InsightLine, InsightsView } from '../types.ts';
 
@@ -29,7 +29,8 @@ export function insightsView(v: SpendingOverview, fmt: MoneyFormat): InsightsVie
     .slice(0, INSIGHT_MAX)
     .map(({ c, diff }) => {
       const more = diff > 0;
-      const params = { name: categoryName(c), pct: Math.round(Math.abs(offBy(c.net + diff, c.net)) * 100), amount: fmt.money(Math.abs(diff)) };
+      const off = change(c.net + diff, c.net);
+      const params = { name: categoryName(c), diff: off ? changeText(off, fmt.money) : '', amount: fmt.money(Math.abs(diff)) };
       const key = u.running
         ? 'home.spending.insights.overMonth'
         : c.net < INSIGHT_BASE
@@ -43,11 +44,11 @@ export function insightsView(v: SpendingOverview, fmt: MoneyFormat): InsightsVie
   const income = u.income && u.income.usual > 0 ? offBy(u.income.now, u.income.usual) : null;
   const incomeOff = income !== null && Math.abs(income) >= INSIGHT_SHARE;
   if (income !== null && (lines.length > 0 || incomeOff)) {
-    const pct = Math.round(Math.abs(income) * 100);
+    const off = u.income ? change(u.income.now, u.income.usual) : null;
     lines.push({
-      text: !incomeOff
+      text: !incomeOff || !off
         ? t('home.spending.insights.incomeNormal')
-        : t(income > 0 ? 'home.spending.insights.incomeMore' : 'home.spending.insights.incomeLess', { pct }),
+        : t(income > 0 ? 'home.spending.insights.incomeMore' : 'home.spending.insights.incomeLess', { diff: changeText(off, fmt.money) }),
       tone: 'neutral',
     });
   }

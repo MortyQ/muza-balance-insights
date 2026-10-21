@@ -41,7 +41,6 @@ const emit = defineEmits<{ open: [key: string]; all: [] }>();
             <span class="block font-semibold" :class="r.up ? 'text-danger' : 'text-success'">
               <span class="sr-only">{{ r.up ? $t('analytics.changes.more') : $t('analytics.changes.less') }}</span>{{ r.delta }}
             </span>
-            <span class="block text-xs text-foreground-muted">{{ r.pct }}</span>
           </span>
         </button>
       </li>

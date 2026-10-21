@@ -13,7 +13,7 @@ const { list, empty } = defineProps<{ list: CategoryBreakdown; empty: string }>(
       <component
         :is="r.to ? RouterLink : 'div'"
         :to="r.to ?? undefined"
-        class="-mx-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 rounded-lg px-2 py-2 text-sm [grid-template-areas:'name_amount_chip''bar_bar_ops'] @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_6.5rem_4rem_5.5rem] @2xl:[grid-template-areas:'name_bar_amount_ops_chip']"
+        class="-mx-2 grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 rounded-lg px-2 py-2 text-sm [grid-template-areas:'name_amount_chip''bar_bar_ops'] @2xl:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_6.5rem_4rem_7rem] @2xl:[grid-template-areas:'name_bar_amount_ops_chip']"
         :class="{ 'hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-border-focus': r.to }"
         :style="{ '--c': r.color }"
       >

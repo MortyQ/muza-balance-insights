@@ -26,7 +26,7 @@ export function useSummaryView(
         label: who.value || t('home.spending.title'),
         amount: fmt.value.money(total.net),
         perDay: v.period.coveredDays > 0 ? t('home.spending.perDayShort', { amount: fmt.value.money(Math.round(total.net / v.period.coveredDays)) }) : null,
-        chip: centerChip(total.net, total.prev?.net ?? null, v.month, partial),
+        chip: centerChip(total.net, total.prev?.net ?? null, v.month, fmt.value, partial),
         conv: centerConv(total.net, fmt.value),
       },
       compare: { none: v.compare ? '' : noCompareText(v.month), compared, leftOut: leftOutLines(v) },

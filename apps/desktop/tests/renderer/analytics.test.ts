@@ -93,8 +93,8 @@ describe('analytics view builders', () => {
   it('KPIs: income, spending, left and the savings rate with the changes', () => {
     const v = kpiView(RANGE, FMT);
     expect(v.map((x) => x.key)).toEqual(['income', 'spending', 'left', 'rate']);
-    expect(v[0]).toMatchObject({ value: FMT.money(k(1072)), note: '+9% к прошлому периоду', tone: 'good' });
-    expect(v[1]).toMatchObject({ note: '+10% к прошлому периоду', tone: 'bad' });
+    expect(v[0]).toMatchObject({ value: FMT.money(k(1072)), note: `+${FMT.money(k(92))} (9%) к прошлому периоду`, tone: 'good' });
+    expect(v[1]).toMatchObject({ note: `+${FMT.money(k(82))} (10%) к прошлому периоду`, tone: 'bad' });
     expect(v[2]!.value).toBe(FMT.money(k(167)));
     expect(v[3]).toMatchObject({ value: '15,6%', note: 'было 16,0%', tone: 'bad' });
     expect(kpiView(MONTH_VIEW, FMT)[2]!.note).toContain('в день');
@@ -103,8 +103,8 @@ describe('analytics view builders', () => {
   it('what changed: the 4 largest increases, then the largest decrease; where the peak was', () => {
     const v = changesView(RANGE, FMT);
     expect(v.map((r) => r.key)).toEqual(['travel', 'cafes', 'groceries', 'marketplaces', 'home']);
-    expect(v[0]).toMatchObject({ up: true, pct: '+79%', why: 'пик — июнь', delta: `+${FMT.money(k(27))}` });
-    expect(v[4]).toMatchObject({ up: false, pct: '−13%' });
+    expect(v[0]).toMatchObject({ up: true, why: 'пик — июнь', delta: `+${FMT.money(k(27))} (79%)` });
+    expect(v[4]).toMatchObject({ up: false, delta: `−${FMT.money(k(12))} (13%)` });
     expect(changesView({ ...RANGE, compare: null }, FMT)).toEqual([]);
     expect(changesView(MONTH_VIEW, FMT)[0]!.why).toBe('пик — 1 сен');
   });
@@ -127,7 +127,7 @@ describe('analytics view builders', () => {
 
   it('small chart cards: total, average per month, the change', () => {
     const cards = miniCards(RANGE, categoryRows(RANGE.categories), FMT);
-    expect(cards[0]).toMatchObject({ key: 'groceries', total: FMT.money(k(211)), chip: '+12%', up: true });
+    expect(cards[0]).toMatchObject({ key: 'groceries', total: FMT.money(k(211)), chip: `+${FMT.money(k(23))} (12%)`, up: true });
     expect(cards[0]!.avg).toContain('в месяц');
   });
 

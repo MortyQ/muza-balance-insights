@@ -1,6 +1,6 @@
 import type { DetailPeriod } from '@contract/api.ts';
 import { isoWeekday, shiftDate } from '@contract/dates.ts';
-import { change, monthName, monthShortName, t } from '@/shared/lib';
+import { change, changeText, monthName, monthShortName, t } from '@/shared/lib';
 import type { ChangeChipModel, ChartOption } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
 import type { BarView, DayPartView, Money, MonthsView, PersonRef, PersonView, ShareItemView, WhenLine, WhenView } from './types.ts';
@@ -58,6 +58,7 @@ export function changeChip(
   value: number,
   prev: number | null,
   compare: Readonly<{ from: string; partial: boolean }> | null,
+  fmt: Money,
   against: 'month' | 'week' = 'month',
 ): ChangeChipModel | null {
   const c = change(value, prev);
@@ -68,7 +69,7 @@ export function changeChip(
   if (c.kind === 'same') return { text: t(words.same, { month }), tone: 'neutral', arrow: null, sr: '' };
   const up = c.kind === 'up';
   const key = up ? (compare.partial ? words.morePartial : words.more) : (compare.partial ? words.lessPartial : words.less);
-  return { text: t(key, { pct: c.pct, month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
+  return { text: t(key, { diff: changeText(c, fmt.money), month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
 }
 
 /**

@@ -2,7 +2,7 @@
 // The change chip (shared/ui) and the change rule (shared/lib) both the spending block and the now strip use.
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { change } from '@/shared/lib';
+import { change, changeText } from '@/shared/lib';
 import { VChangeChip } from '@/shared/ui';
 
 describe('change', () => {
@@ -13,6 +13,13 @@ describe('change', () => {
     expect(change(50, 0)).toEqual({ kind: 'new', diff: 50, pct: 0 });
     expect(change(0, 0)).toEqual({ kind: 'same', diff: 0, pct: 0 });
     expect(change(50, null)).toBeNull();
+  });
+
+  it('changeText: the amount first, the percent in brackets; the sign only for a short chip', () => {
+    const money = (k: number) => `${k} ₴`;
+    expect(changeText(change(33_500, 1_500)!, money)).toBe('32000 ₴ (2133%)');
+    expect(changeText(change(110, 100)!, money, true)).toBe('+10 ₴ (10%)');
+    expect(changeText(change(80, 100)!, money, true)).toBe('−20 ₴ (20%)');
   });
 });
 

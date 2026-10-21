@@ -265,10 +265,10 @@
       "avg": "avg {amount}",
       "change": {
         "week": {
-          "less": "{pct}% less than last week",
-          "lessPartial": "{pct}% less than by this day last week",
-          "more": "{pct}% more than last week",
-          "morePartial": "{pct}% more than by this day last week",
+          "less": "{diff} less than last week",
+          "lessPartial": "{diff} less than by this day last week",
+          "more": "{diff} more than last week",
+          "morePartial": "{diff} more than by this day last week",
           "same": "as last week"
         }
       },
@@ -414,8 +414,9 @@
     "balances": {
       "accountsCount": "{n} account | {n} accounts | {n} accounts",
       "accountsOf": "Accounts · {name}",
-      "actual": "Actually {amount} · reserved {reserved}",
+      "actualTile": "Actually",
       "allAccounts": "All accounts",
+      "atRate": "≈ at the rate",
       "back": "Back",
       "captionOn": "{label} · on {day} {month}{year}",
       "captionToday": "{label} · today",
@@ -426,9 +427,11 @@
       "familyCards": "Family cards",
       "familySubtitle": "the total and each person",
       "free": "Free",
+      "freeShare": "{pct}% free",
       "fxNoRate": "without {amount} — no rate",
       "fxRate": "incl. {amount} at the rate {rate}",
       "inMonth": "in {month}{year}",
+      "inMonthTitle": "In {month}{year}",
       "income": "In",
       "kind": {
         "card": "Card",
@@ -437,6 +440,7 @@
         "jar": "Jar"
       },
       "limit": "limit {amount}",
+      "morePeople": "+{n}",
       "next": "Next",
       "noDataOnDate": "No data for this date",
       "ownFunds": "Own money",
@@ -444,6 +448,7 @@
       "peopleCount": "{n} person | {n} people | {n} people",
       "readFailed": "Could not read the balances.",
       "reserved": "Reserved",
+      "reservedShare": "{pct}% reserved",
       "savedIn": "Into jars",
       "savedOut": "Out of jars",
       "spending": "Out",
@@ -451,6 +456,8 @@
       "stubLater": "«All accounts» — this section is coming later",
       "stubSoon": "This section is coming later",
       "title": "Balance",
+      "toCard": "Card {n} of {total}: {title}",
+      "total": "Total",
       "wholeMonth": "whole month",
       "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
     },
@@ -603,10 +610,10 @@
         "utilities": "Utilities"
       },
       "change": {
-        "less": "{pct}% less than in {month}",
-        "lessPartial": "{pct}% less than by this day in {month}",
-        "more": "{pct}% more than in {month}",
-        "morePartial": "{pct}% more than by this day in {month}",
+        "less": "{diff} less than in {month}",
+        "lessPartial": "{diff} less than by this day in {month}",
+        "more": "{diff} more than in {month}",
+        "morePartial": "{diff} more than by this day in {month}",
         "new": "new",
         "same": "as in {month}",
         "srLess": "less than in {month}",
@@ -625,12 +632,12 @@
       "importing": "Import in progress — the numbers fill in as the statement downloads.",
       "inMonth": "In {month}",
       "insights": {
-        "incomeLess": "Income is {pct}% below usual",
-        "incomeMore": "Income is {pct}% above usual",
+        "incomeLess": "Income is {diff} below usual",
+        "incomeMore": "Income is {diff} above usual",
         "incomeNormal": "Income is at its usual level",
-        "less": "{name} — {pct}% less than usual (−{amount})",
+        "less": "{name} — {diff} less than usual",
         "months": "{n} month | {n} months | {n} months",
-        "more": "{name} — {pct}% more than usual (+{amount})",
+        "more": "{name} — {diff} more than usual",
         "noteMonth": "Compared with the median of {months}",
         "noteRunning": "Compared with the median whole month of {months}: this month is still running",
         "overMonth": "{name} — already {amount} more than in a usual whole month",

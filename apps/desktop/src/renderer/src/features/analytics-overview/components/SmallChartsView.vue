@@ -16,7 +16,7 @@ const { view, rows, cards, fmt } = defineProps<{ view: AnalyticsOverview; rows: 
         <span class="min-w-0 flex-1 truncate" :title="c.name">{{ c.name }}</span>
         <span
           v-if="c.chip"
-          class="rounded-full px-2 py-0.5 text-xs tabular-nums"
+          class="shrink-0 rounded-full px-2 py-0.5 text-xs whitespace-nowrap tabular-nums"
           :class="c.up ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'"
         >
           {{ c.chip }}

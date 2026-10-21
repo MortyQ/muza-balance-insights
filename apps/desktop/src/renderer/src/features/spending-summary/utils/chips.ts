@@ -1,5 +1,5 @@
 import type { MoneyFormat } from '@/entities/currency-display';
-import { change, monthShortName, t, type Change } from '@/shared/lib';
+import { change, changeText, monthShortName, t, type Change } from '@/shared/lib';
 import type { ChipView, OpsView } from '../types.ts';
 import { prevIn, prevMonthNumber } from './month.ts';
 
@@ -12,7 +12,7 @@ const sameOrNew = (c: Change, month: string): ChipView => ({
   sr: '',
 });
 
-/** For screen readers: what a short difference («+1 090 ₴», «+9%», «+2») means, so it does not rest on colour or the arrow. */
+/** For screen readers: what a short difference («+1 090 ₴», «+1 090 ₴ (9%)», «+2») means, so it does not rest on colour or the arrow. */
 export function directionText(up: boolean, month: string, partial: boolean): string {
   const key = up
     ? (partial ? 'home.spending.change.srMorePartial' : 'home.spending.change.srMore')
@@ -30,23 +30,26 @@ export function amountChip(now: number, prev: number | null, month: string, fmt:
   return { text: `${sign(c)}${fmt.money(c.diff)}`, tone: tone(c), arrow: arrow(c), sr: directionText(c.kind === 'up', month, partial) };
 }
 
-/** The chip under the ring: `home.spending.change.more` / `less` (`…Partial` while the month is in progress); its text says the direction. */
-export function centerChip(now: number, prev: number | null, month: string, partial: boolean): ChipView | null {
+/**
+ * The chip under the ring: `home.spending.change.more` / `less` (`…Partial` while the month is in progress) with
+ * «1 090 ₴ (9%)»; its text says the direction.
+ */
+export function centerChip(now: number, prev: number | null, month: string, fmt: MoneyFormat, partial: boolean): ChipView | null {
   const c = change(now, prev);
   if (!c) return null;
   if (c.kind === 'same' || c.kind === 'new') return sameOrNew(c, month);
   const key = c.kind === 'up'
     ? (partial ? 'home.spending.change.morePartial' : 'home.spending.change.more')
     : (partial ? 'home.spending.change.lessPartial' : 'home.spending.change.less');
-  return { text: t(key, { pct: c.pct, month: prevIn(month) }), tone: tone(c), arrow: arrow(c), sr: '' };
+  return { text: t(key, { diff: changeText(c, fmt.money), month: prevIn(month) }), tone: tone(c), arrow: arrow(c), sr: '' };
 }
 
-/** The short chip of the people list: «+9%». */
-export function pctChip(now: number, prev: number | null, month: string, partial = false): ChipView | null {
+/** The short chip of the people list: «+1 090 ₴ (9%)». */
+export function diffChip(now: number, prev: number | null, month: string, fmt: MoneyFormat, partial = false): ChipView | null {
   const c = change(now, prev);
   if (!c) return null;
   if (c.kind === 'same' || c.kind === 'new') return sameOrNew(c, month);
-  return { text: `${sign(c)}${c.pct}%`, tone: tone(c), arrow: null, sr: directionText(c.kind === 'up', month, partial) };
+  return { text: changeText(c, fmt.money, true), tone: tone(c), arrow: null, sr: directionText(c.kind === 'up', month, partial) };
 }
 
 /** `home.spending.ops` and the difference against last month («+2», `home.spending.opsSame`, `home.spending.change.new`; empty — no comparison). */

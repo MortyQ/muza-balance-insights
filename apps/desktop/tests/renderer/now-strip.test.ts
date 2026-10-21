@@ -67,12 +67,12 @@ describe('now strip helpers', () => {
     ]);
   });
 
-  it('chips: percent with the sign and the arrow, «as usual» under 3%, none without a base or with a base of 0', () => {
-    expect(nowChip(72_000, 52_000, 'usual')).toEqual({ text: '+38%', tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' });
-    expect(nowChip(322_000, 360_000, 'week')).toEqual({ text: '−11%', tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе' });
-    expect(nowChip(52_500, 52_000, 'usual')).toEqual({ text: 'как обычно', tone: 'neutral', arrow: null, sr: '' });
-    expect(nowChip(100, null, 'week')).toBeNull();
-    expect(nowChip(100, 0, 'usual')).toBeNull();
+  it('chips: the amount and the percent with the sign and the arrow, «as usual» under 3%, none without a base or with a base of 0', () => {
+    expect(nowChip(72_000, 52_000, 'usual', OFF)).toEqual({ text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' });
+    expect(nowChip(322_000, 360_000, 'week', OFF)).toEqual({ text: `−${uah(38_000)} (11%)`, tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе' });
+    expect(nowChip(52_500, 52_000, 'usual', OFF)).toEqual({ text: 'как обычно', tone: 'neutral', arrow: null, sr: '' });
+    expect(nowChip(100, null, 'week', OFF)).toBeNull();
+    expect(nowChip(100, 0, 'usual', OFF)).toBeNull();
   });
 
   it('the category colour of the spending block: top 7 by rank, else «other»', () => {
@@ -89,7 +89,7 @@ describe('now strip helpers', () => {
       amount: uah(72_000),
       ops: '3 операции',
       conv: '',
-      chip: { text: '+38%', tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' },
+      chip: { text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' },
       context: `к обычному дню ≈ ${uah(52_000)}`,
       until: '',
     });
@@ -125,21 +125,21 @@ describe('now strip helpers', () => {
 });
 
 describe('now strip categories', () => {
-  it('a category chip against the same days last week: percent, «same», «new»; none without a comparison', () => {
-    expect(categoryChip(125_580, 106_000)).toEqual({ text: '+18%', tone: 'up', arrow: 'up', sr: 'больше, чем на прошлой неделе' });
-    expect(categoryChip(30_000, 50_000)).toMatchObject({ text: '−40%', tone: 'down' });
-    expect(categoryChip(80_000, 80_000)).toEqual({ text: 'так же', tone: 'neutral', arrow: null, sr: '' });
-    expect(categoryChip(40_000, 0)).toEqual({ text: 'новое', tone: 'neutral', arrow: null, sr: '' });
-    expect(categoryChip(40_000, null)).toBeNull();
+  it('a category chip against the same days last week: the amount without the percent, «same», «new»; none without a comparison', () => {
+    expect(categoryChip(125_580, 106_000, OFF)).toEqual({ text: `+${uah(19_580)}`, tone: 'up', arrow: 'up', sr: 'больше, чем на прошлой неделе' });
+    expect(categoryChip(30_000, 50_000, OFF)).toMatchObject({ text: `−${uah(20_000)}`, tone: 'down' });
+    expect(categoryChip(80_000, 80_000, OFF)).toEqual({ text: 'так же', tone: 'neutral', arrow: null, sr: '' });
+    expect(categoryChip(40_000, 0, OFF)).toEqual({ text: 'новое', tone: 'neutral', arrow: null, sr: '' });
+    expect(categoryChip(40_000, null, OFF)).toBeNull();
   });
 
   it('the week: every category with its colour, share, amount, operations, chip; the summary and the note', () => {
     const w = nowView(NOW, OFF).categories.week;
     expect(w.rows.map((r) => [r.name, r.color, r.share, r.amount, r.ops, r.chip?.text ?? null])).toEqual([
-      ['Продукты', 'var(--category-1)', 39, uah(125_580), '11 оп.', '+18%'],
+      ['Продукты', 'var(--category-1)', 39, uah(125_580), '11 оп.', `+${uah(19_580)}`],
       ['Кафе и рестораны', 'var(--category-2)', 25, uah(80_000), '6 оп.', 'так же'],
       ['Доставка', 'var(--category-other)', 12, uah(40_000), '2 оп.', 'новое'],
-      ['Такси и транспорт', 'var(--category-3)', 9, uah(30_000), '5 оп.', '−40%'],
+      ['Такси и транспорт', 'var(--category-3)', 9, uah(30_000), '5 оп.', `−${uah(20_000)}`],
     ]);
     expect(w.summary).toBe(`4 категории · ${uah(322_000)} · 28 операций`);
     expect(w.note).toBe('Сравнение с теми же днями прошлой недели, пн–сб');
@@ -217,7 +217,7 @@ describe('now strip mounted', () => {
     const w = await mountStrip();
     expect(getNowOverview.mock.calls[0]?.[0]).toEqual({});
     expect(w.find('section').attributes('aria-label')).toBe('Сейчас');
-    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), '+38%', 'Эта неделя · пн–сб', 'к прошлой неделе, пн–сб', 'Больше всего за неделю', 'Продукты', '39% недели · 11 оп.']) {
+    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`, 'Эта неделя · пн–сб', 'к прошлой неделе, пн–сб', 'Больше всего за неделю', 'Продукты', '39% недели · 11 оп.']) {
       expect(w.text()).toContain(s);
     }
     expect(w.find('.v-change-chip__sr').text()).toBe('больше, чем в обычный день');

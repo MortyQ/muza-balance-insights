@@ -11,19 +11,48 @@
   счета» — заглушка (текст «Раздел появится позже», флаг в `useCardStack`). Позиции стопки/ряда — чистые функции в
   `utils.ts` (`slidesOf`, `slidePosition`), CSS-переменные `--x`/`--y`/`--z`/`--o`, `motion-reduce:` без сдвига.
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
-  `syncStatus.version`); `composables/useCardStack.ts` — `open`/`offset`/`toggle`/`prev`/`next`, сбрасывается сменой
-  месяца или человека. Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  `syncStatus.version`). Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
+  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[47rem]` the month panel
+  sits beside the folded stack (`left: 490px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
+  `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
+  A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
+  and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
+  The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
+  `i × CARD_STEP` with `snap-start`, `[scrollbar-width:none]` on every OS, the edge with more cards fades
+  (`mask-image`, `--fade-l` / `--fade-r`). `composables/useRowScroll.ts` reads the scroller into `rowView(scrollLeft,
+  clientWidth, n)` (`first`/`last` wholly in view, `atStart`/`atEnd`, `fits`), moves by whole cards (`prev`/`next` —
+  the header arrows, `goTo` — `RowDots`) and `toStart()` (waits for `scrollend`, `SCROLL_END_WAIT` fallback; instant under
+  `prefers-reduced-motion`). `composables/useDragScroll.ts` — mouse drag past `DRAG_THRESHOLD` with snapping off and the
+  next click swallowed; touch and pen are native; the vertical wheel is not translated. Every card takes focus while
+  open and `focusin` scrolls it into view. `RowDots` — a button per card (`home.balances.toCard`), the cards in view as
+  a pill, its place kept while folded. Folding scrolls to the start first, then stacks (`collapse` in
+  `BalancesFeature`); `composables/useCardStack.ts` — `open`/`paging`/`toggle`/`close`, a new month or person calls
+  `onReset` (the row jumps to its start).
   The month panel's «Into jars» / «Out of jars» line (`savedLine`, `Flow.saved`, total cards only) is `CardTotal.saved`
   from main: the jars' own funds at the month's end minus at its start, foreign jars at today's rate; null — no jar
   with data at both ends.
   Reserves (`MonthOverview.reserved`, today's balance only): the total card of the view — the family's, the picked
   person's, and each person's card in the family view with their own reserves (`people[].reserved`); never an account
-  card — shows «Free» (own funds − reserves) big and
-  `actual` («Actually … · reserved …», `BalanceCard`) under it; the month panel's «Reserved» line (`reservedLine`,
+  card — shows «Free» (own funds − reserves) big and own funds («Actually») and the reserve as tiles under it; the month panel's «Reserved» line (`reservedLine`,
   `Flow.reserved`) links to the planning screen (the card itself is a button, a link cannot sit inside it).
-  `entities/account` — только отображение, `components/BalanceCard.vue` (`title`, `caption`, `amount`, `others`,
-  `bottom`, `net` + `netText`, `accents` — цвета кругов, `dim`); корень — `<button>`, `aria-expanded` приходит снаружи
-  (без своего `aria-label`: содержимое карты уже читается экранными читалками, `aria-expanded` даёт состояние).
+  `entities/account` — display only. `components/SummaryCard.vue` — the total of a view (spec
+  `desktop-balance-cards`): a header band, a gradient of each person's colour mixed into `--surface` by `--card-band-tint`
+  (one person: fading to `--card-band-fade`; both in `theme.css`, stronger in the dark theme), with `lucide:layers`, the
+  title, the «Total» chip `home.balances.total` and `accents` as dots (at most five, then «+N»,
+  `home.balances.morePeople`); under it the caption, the amount and `count`; on the right a column of the conversions
+  (`fx`: symbol badge, `formatAmount`, ISO code; `MoneyFormat.alsoParts`), none without another picked currency; in the
+  middle the family's shares (`people`, `sharesOf`: two or more people, at most `SHARES_NAMED` first names with whole
+  amounts, then «+N»; a bar part per non-zero amount, a minus hatched; no bar when nobody is above zero) or, on one
+  person's card with reserves, the meter (`freeShare`, `home.balances.freeShare` / `reservedShare`); tiles — «Actually»
+  (`home.balances.actualTile`) and «Reserved» with reserves only, the month's net (`home.balances.inMonthTitle`,
+  `--success-subtle` above zero, `--negative-soft-bg` below, neutral at zero). Negative figures use `--negative-soft`, a
+  muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
+  figure apart: `count`, `fx`, `negative`, `own`, `reserved`, `people`, `freeShare`, `net { label, amount, value }`);
+  `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
+  `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
+  dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
+  + `netText`, `accents`, `dim`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
+  outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
@@ -188,7 +217,7 @@
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
   Under the cells, «By category» opens a panel (`VCollapse`, unmounted while closed) with a «Today | Week» switch and
   every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
-  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: %, «same», «new»).
+  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: the amount only, no room for %, «same», «new»).
   Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
   default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen,
   which each row opens for that day or week.
@@ -204,7 +233,10 @@
   the main currency, «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
   main served the cached rates offline, or «no rates»).
 - **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
-  one look and one rule for «Spending» and the strip.
+  one look and one rule for «Spending» and the strip. A change against a base is said in money first, the percent in
+  brackets — «+1 090 ₴ (9%)», in a sentence «1 090 ₴ (9%) more than…» (`changeText`; analytics: `diffText`): a
+  percent alone reads wrong over a small base. Dictionary keys take it as `{diff}`. Shares («45% of the family») stay
+  percent only.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
   Шрифт — Manrope Variable из `@fontsource-variable` (в Plus Jakarta Sans нет базовой кириллицы), локальные файлы.

@@ -1,17 +1,18 @@
-import { currencyExponent } from '@mono/core/currency';
+import { currencyAlpha, currencyExponent } from '@mono/core/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
+import type { SummaryCardProps } from '@/entities/account';
 import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
-import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CLOSE_STAGGER, OPEN_STAGGER, STACK_DEPTH, VISIBLE_CARDS } from './constants.ts';
-import type { Flow, Slide } from './types.ts';
+import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
+import type { Flow, RowView, Slide } from './types.ts';
 
-/** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, paged by `offset`. */
-export function slidePosition(i: number, open: boolean, offset: number): { x: number; y: number; z: number; opacity: number } {
-  if (open) return { x: (i - offset) * CARD_STEP, y: 0, z: 20 - i, opacity: 1 };
+/** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
+export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
+  if (open) return { x: i * CARD_STEP, y: ROW_INSET, z: 20 - i, opacity: 1 };
   const depth = Math.min(i, STACK_DEPTH);
-  return { x: depth * 22, y: 52 - depth * 16, z: 20 - i, opacity: i <= STACK_DEPTH ? 1 : 0 };
+  return { x: depth * 22, y: ROW_INSET + 52 - depth * 16, z: 20 - i, opacity: i <= STACK_DEPTH ? 1 : 0 };
 }
 
 /** Transition delay of card `i` of `n`, ms: out one by one, back from the far end; paging moves all at once. */
@@ -20,8 +21,25 @@ export function slideDelay(i: number, n: number, open: boolean, paging: boolean)
   return open ? i * OPEN_STAGGER : (n - i) * CLOSE_STAGGER;
 }
 
-export function maxOffset(n: number): number {
-  return Math.max(0, n - VISIBLE_CARDS);
+/**
+ * What the open row of `n` cards shows at this scroll: the cards wholly in view (`first`..`last`; the nearest one when
+ * none fits whole), whether it is at either end, and whether everything fits. One pixel of slack for fractional scrolls.
+ */
+export function rowView(scrollLeft: number, clientWidth: number, n: number): RowView {
+  const track = n * CARD_STEP - (CARD_STEP - CARD_WIDTH);
+  const fits = n <= 1 || track <= clientWidth + 1;
+  const last = Math.max(0, n - 1);
+  const clamp = (i: number) => Math.min(last, Math.max(0, i));
+  const first = clamp(Math.ceil((scrollLeft - 1) / CARD_STEP));
+  const end = clamp(Math.floor((scrollLeft + clientWidth + 1 - CARD_WIDTH) / CARD_STEP));
+  const nearest = clamp(Math.round(scrollLeft / CARD_STEP));
+  return {
+    first: end < first ? nearest : first,
+    last: end < first ? nearest : end,
+    atStart: fits || scrollLeft <= 1,
+    atEnd: fits || scrollLeft + clientWidth >= track - 1,
+    fits,
+  };
 }
 
 const yearSuffix = (y: number, current: number) => (y === current ? '' : ` ${y}`);
@@ -47,6 +65,12 @@ export function monthName(month: string, currentYear: number): string {
 export function monthIn(month: string, currentYear: number): string {
   const [y, m] = month.split('-').map(Number) as [number, number];
   return t('home.balances.inMonth', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
+}
+
+/** «In October», «In December 2025»: the month tile of a summary card. */
+export function monthInTitle(month: string, currentYear: number): string {
+  const [y, m] = month.split('-').map(Number) as [number, number];
+  return t('home.balances.inMonthTitle', { month: t(`common.monthIn.${m as MonthNumber}`), year: yearSuffix(y, currentYear) });
 }
 
 /** «1 person», «3 people». */
@@ -132,14 +156,38 @@ export function fxNote(fx: ReadonlyArray<FxPart>): string {
     .join(' · ');
 }
 
-/** The foreign own funds of a total card: each with today's rate it was folded in at, or left out without one. */
-function othersNote(total: CardTotal): string {
-  return total.others
-    .map((o) => {
-      const amount = formatMoney(o.ownFunds, o.currency, { minorUnits: true });
-      return o.rate === null ? t('home.balances.fxNoRate', { amount }) : t('home.balances.fxRate', { amount, rate: rateText(o.rate, o.currency) });
-    })
-    .join(' · ');
+/** Whole percent of own funds that is free, 0–100; null — no reserves, or nothing of one's own to share out. */
+export function freeShare(ownFunds: number, reserved: number | null): number | null {
+  if (reserved === null || ownFunds <= 0) return null;
+  return Math.min(100, Math.max(0, Math.round(((ownFunds - reserved) / ownFunds) * 100)));
+}
+
+/**
+ * The family card's shares: each person's free amount (their own card's big figure). Two or more people only. The bar
+ * has a part per non-zero amount, in the family's order, and none at all when nobody is above zero.
+ */
+export function sharesOf(
+  people: MonthOverview['people'],
+  label: (p: MonthOverview['people'][number]) => string,
+  fmt: MoneyFormat,
+): SummaryCardProps['people'] {
+  if (people.length < 2) return null;
+  const all = people.map((p) => {
+    const value = p.total.ownFunds - (p.reserved ?? 0);
+    return { name: firstName(label(p)), color: colorVar(p.color), amount: fmt.money(value), negative: value < 0, value };
+  });
+  const sorted = [...all].sort((a, b) => b.value - a.value);
+  return {
+    items: sorted.slice(0, SHARES_NAMED).map(({ name, color, amount, negative }) => ({ name, color, amount, negative })),
+    more: sorted.length > SHARES_NAMED ? t('home.balances.morePeople', { n: sorted.length - SHARES_NAMED }) : '',
+    all: sorted.map((p) => `${p.name} ${p.amount}`).join(' · '),
+    parts: all.some((p) => p.value > 0) ? all.filter((p) => p.value !== 0).map(({ color, value }) => ({ color, value })) : [],
+  };
+}
+
+/** A person's first name for the shares line: the first word of their label. */
+export function firstName(label: string): string {
+  return label.trim().split(/\s+/)[0] ?? '';
 }
 
 export function slidesOf(
@@ -148,25 +196,40 @@ export function slidesOf(
 ): Slide[] {
   const caption = balanceCaption(v.balanceAt, ctx.currentYear);
   const month = monthIn(v.month, ctx.currentYear);
+  const monthTitle = monthInTitle(v.month, ctx.currentYear);
   const { fmt } = ctx;
   // `reserved`: today's reserves set against this card — the big figure is what is free, the real balance under it.
-  const totalSlide = (key: string, title: string, total: CardTotal, accents: string[], countText: string, reserved: number | null = null): Slide => {
+  const totalSlide = (
+    key: string,
+    title: string,
+    total: CardTotal,
+    accents: string[],
+    countText: string,
+    reserved: number | null,
+    middle: { people: SummaryCardProps['people'] } | 'meter',
+  ): Slide => {
     const approxIncome = total.fx.some((p) => p.rate !== null && p.income !== 0);
     const approxSpending = total.fx.some((p) => p.rate !== null && p.spending !== 0);
     const shown = total.ownFunds - (reserved ?? 0);
+    const net = total.income - total.spending;
     return {
       key,
-      title,
-      caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
-      accents,
-      dim: false,
-      amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
-      approx: fmt.approxInline(shown),
-      others: othersNote(total),
-      actual: reserved === null ? '' : t('home.balances.actual', { amount: fmt.money(total.ownFunds), reserved: fmt.money(reserved) }),
-      bottom: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
-      net: total.income - total.spending,
-      netText: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(total.income - total.spending), fmt.currency)} ${month}`,
+      kind: 'summary',
+      card: {
+        title,
+        caption: reserved === null ? caption : balanceCaption(v.balanceAt, ctx.currentYear, t('home.balances.free')),
+        accents,
+        dim: false,
+        count: [countText, total.missing > 0 ? withoutAccounts(total.missing) : ''].filter((s) => s !== '').join(' · '),
+        amount: formatMoney(fmt.convert(shown), fmt.currency, { minorUnits: true }),
+        fx: fmt.alsoParts(shown).map((p) => ({ symbol: currencySymbol(p.currency), code: currencyAlpha(p.currency), amount: formatAmount(p.minor, p.currency) })),
+        negative: shown < 0,
+        own: reserved === null ? null : { amount: fmt.money(total.ownFunds), negative: total.ownFunds < 0 },
+        reserved: reserved === null ? null : fmt.money(reserved),
+        people: middle === 'meter' ? null : middle.people,
+        freeShare: middle === 'meter' ? freeShare(total.ownFunds, reserved) : null,
+        net: { label: monthTitle, amount: net === 0 ? formatMoney(0, fmt.currency, { minorUnits: true }) : netText(fmt.convert(net), fmt.currency), value: net },
+      },
       flow: {
         currency: fmt.currency,
         income: fmt.convert(total.income),
@@ -182,12 +245,21 @@ export function slidesOf(
   };
   if (ctx.selectedId === null) {
     const accents = v.people.map((p) => colorVar(p.color));
-    const family = totalSlide('family', t('entities.participant.family'), v.total, accents, `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`, v.reserved);
+    const label = (p: (typeof v.people)[number]) => (p.labelPending ? t('entities.participant.pending') : p.label);
+    const family = totalSlide(
+      'family',
+      t('entities.participant.family'),
+      v.total,
+      accents,
+      `${peopleCount(v.people.length)} · ${accountsCount(v.total.accounts)}`,
+      v.reserved,
+      { people: sharesOf(v.people, label, fmt) },
+    );
     family.flow.segments = v.people.map((p) => ({ color: colorVar(p.color), income: fmt.convert(p.total.income), spending: fmt.convert(p.total.spending) }));
     return [
       family,
       ...v.people.map((p) =>
-        totalSlide(`p${p.participantId}`, p.labelPending ? t('entities.participant.pending') : p.label, p.total, [colorVar(p.color)], accountsCount(p.total.accounts), p.reserved),
+        totalSlide(`p${p.participantId}`, label(p), p.total, [colorVar(p.color)], accountsCount(p.total.accounts), p.reserved, 'meter'),
       ),
     ];
   }
@@ -196,21 +268,24 @@ export function slidesOf(
   const kindOf = (a: MonthOverview['accounts'][number]) =>
     t(a.kind === 'jar' ? 'home.balances.kind.jar' : a.creditLimit > 0 ? 'home.balances.kind.credit' : a.currency !== UAH ? 'home.balances.kind.fx' : 'home.balances.kind.card');
   return [
-    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts), v.reserved),
+    totalSlide('person', person?.label ?? '', v.total, [accent], accountsCount(v.total.accounts), v.reserved, 'meter'),
     ...v.accounts.map(
       (a): Slide => ({
         key: a.id,
-        title: accountName(a.name),
-        accents: [accent],
-        dim: a.ownFunds === null,
-        caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
-        amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
-        approx: '',
-        others: '',
-        actual: '',
-        bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
-        net: a.ownFunds === null ? null : a.income - a.spending,
-        netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
+        kind: 'account',
+        card: {
+          bank: 'monobank',
+          title: accountName(a.name),
+          accents: [accent],
+          dim: a.ownFunds === null,
+          caption: a.ownFunds === null ? t('home.balances.noDataOnDate') : balanceCaption(v.balanceAt, ctx.currentYear, kindOf(a)),
+          amount: a.ownFunds === null ? '—' : formatMoney(a.ownFunds, a.currency, { minorUnits: true }),
+          approx: '',
+          actual: '',
+          bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
+          net: a.ownFunds === null ? null : a.income - a.spending,
+          netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
+        },
         flow: { currency: a.currency, income: a.income, spending: a.spending, color: accent },
       }),
     ),

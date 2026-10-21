@@ -265,10 +265,10 @@
       "avg": "ср. {amount}",
       "change": {
         "week": {
-          "less": "на {pct}% меньше, чем на прошлой неделе",
-          "lessPartial": "на {pct}% меньше, чем к этому дню на прошлой неделе",
-          "more": "на {pct}% больше, чем на прошлой неделе",
-          "morePartial": "на {pct}% больше, чем к этому дню на прошлой неделе",
+          "less": "на {diff} меньше, чем на прошлой неделе",
+          "lessPartial": "на {diff} меньше, чем к этому дню на прошлой неделе",
+          "more": "на {diff} больше, чем на прошлой неделе",
+          "morePartial": "на {diff} больше, чем к этому дню на прошлой неделе",
           "same": "как на прошлой неделе"
         }
       },
@@ -414,8 +414,9 @@
     "balances": {
       "accountsCount": "{n} счёт | {n} счёта | {n} счетов",
       "accountsOf": "Счета · {name}",
-      "actual": "На самом деле {amount} · в резерве {reserved}",
+      "actualTile": "На самом деле",
       "allAccounts": "Все счета",
+      "atRate": "≈ по курсу",
       "back": "Назад",
       "captionOn": "{label} · на {day} {month}{year}",
       "captionToday": "{label} · на сегодня",
@@ -426,9 +427,11 @@
       "familyCards": "Карты семьи",
       "familySubtitle": "общий итог и каждый человек",
       "free": "Свободно",
+      "freeShare": "{pct}% свободно",
       "fxNoRate": "без {amount} — нет курса",
       "fxRate": "вкл. {amount} по курсу {rate}",
       "inMonth": "в {month}{year}",
+      "inMonthTitle": "В {month}{year}",
       "income": "Пришло",
       "kind": {
         "card": "Карта",
@@ -437,6 +440,7 @@
         "jar": "Банка"
       },
       "limit": "лимит {amount}",
+      "morePeople": "+{n}",
       "next": "Дальше",
       "noDataOnDate": "Нет данных на эту дату",
       "ownFunds": "Свои деньги",
@@ -444,6 +448,7 @@
       "peopleCount": "{n} человек | {n} человека | {n} человек",
       "readFailed": "Не удалось прочитать балансы.",
       "reserved": "В резерве",
+      "reservedShare": "{pct}% в резерве",
       "savedIn": "В банки",
       "savedOut": "Из банок",
       "spending": "Ушло",
@@ -451,6 +456,8 @@
       "stubLater": "«Все счета» — раздел появится позже",
       "stubSoon": "Раздел появится позже",
       "title": "Баланс",
+      "toCard": "Карта {n} из {total}: {title}",
+      "total": "Итого",
       "wholeMonth": "весь месяц",
       "withoutAccounts": "без {n} счёта | без {n} счетов | без {n} счетов"
     },
@@ -603,10 +610,10 @@
         "utilities": "Коммунальные"
       },
       "change": {
-        "less": "на {pct}% меньше, чем в {month}",
-        "lessPartial": "на {pct}% меньше, чем к этому дню в {month}",
-        "more": "на {pct}% больше, чем в {month}",
-        "morePartial": "на {pct}% больше, чем к этому дню в {month}",
+        "less": "на {diff} меньше, чем в {month}",
+        "lessPartial": "на {diff} меньше, чем к этому дню в {month}",
+        "more": "на {diff} больше, чем в {month}",
+        "morePartial": "на {diff} больше, чем к этому дню в {month}",
         "new": "новое",
         "same": "как в {month}",
         "srLess": "меньше, чем в {month}",
@@ -625,12 +632,12 @@
       "importing": "Идёт импорт — цифры дополняются по мере загрузки выписки.",
       "inMonth": "В {month}",
       "insights": {
-        "incomeLess": "Доходы на {pct}% ниже обычного",
-        "incomeMore": "Доходы на {pct}% выше обычного",
+        "incomeLess": "Доходы на {diff} ниже обычного",
+        "incomeMore": "Доходы на {diff} выше обычного",
         "incomeNormal": "Доходы на обычном уровне",
-        "less": "{name} — на {pct}% меньше обычного (−{amount})",
+        "less": "{name} — на {diff} меньше обычного",
         "months": "{n} месяц | {n} месяца | {n} месяцев",
-        "more": "{name} — на {pct}% больше обычного (+{amount})",
+        "more": "{name} — на {diff} больше обычного",
         "noteMonth": "Сравнение с медианой за {months}",
         "noteRunning": "Сравнение с медианой целых месяцев за {months}: месяц ещё идёт",
         "overMonth": "{name} — уже на {amount} больше, чем обычно за весь месяц",

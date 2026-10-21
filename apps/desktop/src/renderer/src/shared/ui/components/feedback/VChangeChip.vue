@@ -1,4 +1,4 @@
-<!-- Ours, not copied: muzakit has no change chip. A change against a base («+9%», «+1 090 ₴», «as in August»):
+<!-- Ours, not copied: muzakit has no change chip. A change against a base («+1 090 ₴ (9%)», «+1 090 ₴», «as in August»):
      orange = more, blue = less, never red / green; the sign and the arrow carry the direction, `sr` says it to screen
      readers when the text alone does not. Used by the spending block and the now strip. -->
 <script setup lang="ts">
