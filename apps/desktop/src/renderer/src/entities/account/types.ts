@@ -35,7 +35,10 @@ export interface SummaryCardProps {
   /** With reserves set against the card: own funds («Actually») and the reserved amount; null — no reserve. */
   own: { amount: string; negative: boolean } | null;
   reserved: string | null;
-  /** The month's net: «In October», «≈ +12 400 ₴»; `value` decides the arrow and the tint; null — none. */
+  /**
+   * The month's net: «In October», «+12 400 ₴» (no «≈»: the month panel says what was converted); `value` decides the
+   * arrow and the tint; null — none.
+   */
   net: { label: string; amount: string; value: number } | null;
   /** Colours of the people the card adds up (CSS values): the header band and the dots. */
   accents: ReadonlyArray<string>;

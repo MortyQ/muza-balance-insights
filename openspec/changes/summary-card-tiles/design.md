@@ -43,7 +43,7 @@ interface SummaryCardProps {
   negative: boolean;         // the amount is below zero
   own: { amount: string; negative: boolean } | null;   // «Actually», with reserves only
   reserved: string | null;                             // «Reserved», with reserves only
-  net: { label: string; amount: string; value: number } | null;  // «In October», «≈ +12 400 ₴»
+  net: { label: string; amount: string; value: number } | null;  // «In October», «+12 400 ₴» (no «≈»: the month panel says what was converted)
   accents: ReadonlyArray<string>;
   dim: boolean;
 }

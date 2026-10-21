@@ -232,7 +232,7 @@ describe('balances utils', () => {
       [true, false],
       [true, false],
     ]);
-    expect(summaryOf(s[0]).net?.amount.startsWith('≈ +')).toBe(true);
+    expect(summaryOf(s[0]).net?.amount.startsWith('+')).toBe(true);
     expect(s[0]?.flow.note).toBe('вкл. 3 162 $ по курсу 44,36');
 
     const unrated: MonthOverview = { ...fam, people: [], total: { ...card(10_000, 5_000, 4_000), fx: [{ ...usd, rate: null }] } };
@@ -241,7 +241,8 @@ describe('balances utils', () => {
     const spent: MonthOverview = { ...unrated, total: { ...card(10_000, 5_000, 4_000), fx: [{ currency: 978, income: 0, spending: 100_900, rate: 52 }] } };
     const e = slidesOf(spent, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT });
     expect([e[0]?.flow.approxIncome, e[0]?.flow.approxSpending]).toEqual([false, true]);
-    expect(summaryOf(e[0]).net?.amount.startsWith('≈')).toBe(true);
+    // The month tile carries no «≈»: the month panel beside it says what was converted.
+    expect(summaryOf(e[0]).net?.amount.startsWith('≈')).toBe(false);
     expect(summaryOf(u[0]).net).toEqual({ label: 'В сентябре', amount: '+10,00 ₴', value: 1_000 });
     expect(u[0]?.flow.note).toBe('без 3 162 $ — нет курса');
 

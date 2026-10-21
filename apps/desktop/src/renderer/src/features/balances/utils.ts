@@ -183,7 +183,7 @@ export function slidesOf(
         negative: shown < 0,
         own: reserved === null ? null : { amount: fmt.money(total.ownFunds), negative: total.ownFunds < 0 },
         reserved: reserved === null ? null : fmt.money(reserved),
-        net: { label: monthTitle, amount: `${approxIncome || approxSpending ? '≈ ' : ''}${netText(fmt.convert(net), fmt.currency)}`, value: net },
+        net: { label: monthTitle, amount: netText(fmt.convert(net), fmt.currency), value: net },
       },
       flow: {
         currency: fmt.currency,
