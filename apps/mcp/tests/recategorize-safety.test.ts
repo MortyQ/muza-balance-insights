@@ -86,7 +86,7 @@ describe('recategorize: no .env, no token', () => {
         'apps/mcp/src/analysis/export.ts',
         'packages/core/src/rederive.ts',
         'packages/core/src/transfers.ts',
-        'packages/core/src/db.ts',
+        'packages/core/src/storage/db.ts',
         'packages/db-libsql/src/index.ts',
       ]),
     );
