@@ -54,7 +54,7 @@ colour, in both themes.
 #### Scenario: The family's shares
 
 - **WHEN** the family card adds up two or more people
-- **THEN** its middle shows a bar in the people's colours sized by their free amounts and a line with each person's name and free amount, as their own cards show it
+- **THEN** its middle shows a bar in the people's colours sized by their free amounts and a line with each person's first name and free amount in whole units, as their own cards show it
 
 #### Scenario: A person below zero in the shares
 
@@ -64,7 +64,12 @@ colour, in both themes.
 #### Scenario: Many people
 
 - **WHEN** the family has more than three people
-- **THEN** the line names the three with the largest free amounts and «+N» for the rest, the full list in its tooltip
+- **THEN** the line names the three with the largest free amounts and «+N» for the rest, the full list in its tooltip, while the bar keeps a part for everyone above zero
+
+#### Scenario: Many people in the header
+
+- **WHEN** the family has more than five people
+- **THEN** the header shows five dots and «+N» for the rest, and its band keeps every person's colour
 
 #### Scenario: One person's reserves
 

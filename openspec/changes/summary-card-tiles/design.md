@@ -115,13 +115,19 @@ Alternative: chips under the amount (D) or a full-width row (G) (rejected by the
 
 ### 8. The people's shares (canvas variant E)
 
-Only the family's front card, with two or more people. `slidesOf` builds an item per person in the family view's
-order: `amount` / `value` — that person's free amount, their own card's big figure (`ownFunds - reserved`),
-converted; `color` — their accent. The bar is a flex row of `flex-grow: max(value, 0)` parts with 2 px gaps, 6 px
-high; a person at zero or below has no part, and their amount is `text-negative-soft`. All at zero or below — no
-bar, the line only. The line shows up to three people (largest `value` first when there are more), then `more` —
-«+{n}» (`home.balances.morePeople`), '' with three or fewer; `all` — every «name amount» joined by « · », the line's
-`title`.
+Only the family's front card, with two or more people. `slidesOf` builds an item per person: `name` — the first word
+of their label (the first name, no surname; «pending» while the label is), `amount` / `value` — that person's free
+amount, their own card's big figure (`ownFunds - reserved`), converted and formatted in whole units (`fmt.money`, no
+decimals); `color` — their accent. The bar is a flex row of `flex-grow: max(value, 0)` parts (at least 4 px) with 2 px
+gaps, 6 px high, for every person above zero — also those not named in the line; a person at zero or below has no
+part, and their amount is `text-negative-soft`. All at zero or below — no bar, the line only. The line names at most
+three people, the largest `value` first, then `more` — «+{n}» (`home.balances.morePeople`) for the rest, '' with
+three or fewer; names truncate, amounts never; `all` — every «name amount» joined by « · », the line's `title`. The
+header shows at most five dots, then «+{n}» (the same key) for the rest; the band's gradient keeps every person's
+colour.
+
+Alternative: two rows of three, up to six named (canvas M2), or a summary line / initials (M3, M4) (rejected by the
+user: three names stay readable beside the conversions column).
 
 ### 9. The reserve meter (canvas variant H)
 
@@ -133,6 +139,8 @@ below — `null`, nothing in the middle. The family card never gets the meter: i
 
 ## Risks / Trade-offs
 
+- [More than eight people] → the palette has eight colours; a ninth person repeats one or is grey, so the bar and
+  the dots can no longer tell everyone apart. A limit of the palette, not of the card.
 - [The shares do not add up to the family's free amount] → each person's figure deducts only their own reserves, the
   family's deducts the common ones too. Accepted: every person's figure matches their own card in the row.
 - [The left column narrows with the conversions column] → about 260 px stay for a 32 px amount; a longer amount
