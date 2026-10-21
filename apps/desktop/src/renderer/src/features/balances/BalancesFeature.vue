@@ -28,7 +28,7 @@ function onCard(): void {
 }
 
 const head = computed(() => slides.value[0] ?? null);
-const openTitle = computed(() => (isFamily.value ? t('home.balances.familyCards') : t('home.balances.accountsOf', { name: head.value?.title ?? '' })));
+const openTitle = computed(() => (isFamily.value ? t('home.balances.familyCards') : t('home.balances.accountsOf', { name: head.value?.card.title ?? '' })));
 const openSubtitle = computed(() => (isFamily.value ? t('home.balances.familySubtitle') : accountsCount(view.value?.total.accounts ?? 0)));
 const note = computed(() => (view.value ? coverageNote(view.value.month, view.value.coverage) : ''));
 </script>

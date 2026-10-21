@@ -16,6 +16,11 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 
+### Home screen
+
+- **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
+  it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
+
 ### Fixes
 
 - **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for

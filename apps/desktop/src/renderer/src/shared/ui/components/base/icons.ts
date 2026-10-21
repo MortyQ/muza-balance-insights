@@ -43,6 +43,7 @@ import LucideInfo from "~icons/lucide/info";
 import LucideKeyRound from "~icons/lucide/key-round";
 import LucideLandmark from "~icons/lucide/landmark";
 import LucideLanguages from "~icons/lucide/languages";
+import LucideLayers from "~icons/lucide/layers";
 import LucideLayoutDashboard from "~icons/lucide/layout-dashboard";
 import LucideList from "~icons/lucide/list";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
@@ -135,6 +136,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:key-round": LucideKeyRound,
   "lucide:landmark": LucideLandmark,
   "lucide:languages": LucideLanguages,
+  "lucide:layers": LucideLayers,
   "lucide:layout-dashboard": LucideLayoutDashboard,
   "lucide:list": LucideList,
   "lucide:loader-circle": LucideLoaderCircle,

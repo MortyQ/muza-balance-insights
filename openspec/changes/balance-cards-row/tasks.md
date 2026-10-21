@@ -13,19 +13,19 @@
 
 ## 2. Cards: `SummaryCard` and bank skins — `feat(desktop): balance cards`
 
-- [ ] 2.1 Move `BalanceCard.vue` to `entities/account/components/bank/MonobankCard.vue`; add `CardBank`, `AccountCardProps`,
+- [x] 2.1 Move `BalanceCard.vue` to `entities/account/components/bank/MonobankCard.vue`; add `CardBank`, `AccountCardProps`,
   `BANK_CARDS` and `AccountCard.vue` (picks the skin); export `AccountCard`, `SummaryCard` and the types from the slice's
   `index.ts`; verify `tests/architecture.test.ts` accepts the nested `components/bank/` folder (adjust the rule only
   with the user's ok) and `vue-tsc` passes
-- [ ] 2.2 Build `SummaryCard.vue` from scratch (theme surface and border, `lucide:layers` tile — registered in
+- [x] 2.2 Build `SummaryCard.vue` from scratch (theme surface and border, `lucide:layers` tile — registered in
   `icons.ts` if missing, the «Total» chip, accent dots, same figure lines, `<button>` 340 × 214); add
   `home.balances.total` to `uk.json`, `en.json`, `ru.json`; verify by a renderer test that it shows the figures, a dot
   per accent and no bank mark, and `tests/i18n.test.ts` passes
-- [ ] 2.3 Make `Slide` a `kind: 'summary' | 'account'` union; `slidesOf` sets `kind` and `bank: 'monobank'`;
+- [x] 2.3 Make `Slide` a `kind: 'summary' | 'account'` union; `slidesOf` sets `kind` and `bank: 'monobank'`;
   `CardStack` renders `SummaryCard` or `AccountCard`; update the `slidesOf` tests in `tests/renderer/balances.test.ts`
   (family: summaries only; a person: a summary then accounts) and the `BalanceCard` test to the new components; verify
   they pass
-- [ ] 2.4 `CHANGELOG.md`: the total card has its own look, so it no longer reads as one more card; verify as in 1.3
+- [x] 2.4 `CHANGELOG.md`: the total card has its own look, so it no longer reads as one more card; verify as in 1.3
 
 ## 3. The open row scrolls — `feat(desktop): swipe the balance cards`
 

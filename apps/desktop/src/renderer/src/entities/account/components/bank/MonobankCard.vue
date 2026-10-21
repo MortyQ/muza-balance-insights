@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { VIcon } from '@/shared/ui';
-import type { BalanceCardProps } from '../types.ts';
+import type { BankCardProps } from '../../types.ts';
 
-const { title, caption, amount, approx, others, actual, bottom, net, netText, accents, dim } = defineProps<BalanceCardProps>();
+const { title, caption, amount, approx, others, actual, bottom, net, netText, accents, dim } = defineProps<BankCardProps>();
 defineEmits<{ click: [] }>();
 </script>
 

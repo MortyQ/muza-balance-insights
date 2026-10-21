@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { MonthOverview } from '@contract/api.ts';
-import type { BalanceCardProps } from '@/entities/account';
+import type { AccountCardProps, SummaryCardProps } from '@/entities/account';
 import type { Loadable } from '@/shared/lib';
 
 /** One part of a bar: a person's income and spending, in the bar's currency. */
@@ -30,11 +30,11 @@ export interface Flow {
   reserved?: number;
 }
 
-/** A card of the stack / row, in row order. */
-export interface Slide extends BalanceCardProps {
+/** A card of the stack / row, in row order: the total of a view, or one account in its bank's look. */
+export type Slide = ({ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }) & {
   key: string;
   flow: Flow;
-}
+};
 
 export interface LegendItem {
   participantId: number;

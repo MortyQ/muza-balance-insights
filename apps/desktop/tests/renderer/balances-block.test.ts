@@ -17,7 +17,10 @@ vi.mock('@/entities/participant', async () => {
 
 const flow = { currency: 980, income: 100_00, spending: 50_00, color: 'var(--series-blue)' };
 const slide = (key: string, title: string) => ({
-  key, title, caption: 'C', amount: '100 ₴', approx: '', others: '', actual: '', bottom: 'B', net: 1, netText: '+1 ₴', accents: ['var(--series-blue)'], dim: false, flow,
+  key,
+  kind: 'summary' as const,
+  card: { title, caption: 'C', amount: '100 ₴', approx: '', others: '', actual: '', bottom: 'B', net: 1, netText: '+1 ₴', accents: ['var(--series-blue)'], dim: false },
+  flow,
 });
 const SLIDES = [slide('family', 'Семья'), slide('p1', 'Аня'), slide('p2', 'Борис'), slide('p3', 'Вика'), slide('p4', 'Гена')];
 

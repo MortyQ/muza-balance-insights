@@ -51,8 +51,9 @@ entities/account/
 - `CardBank` is the account's own literal union (`'monobank'`), not `BankId` of `entities/bank`: the slices cannot
   import each other, and a skin is not a bank's display data. `vue-tsc` checks that `BANK_CARDS` covers every
   `CardBank` (`Record`), so a new bank fails the build until it has a skin.
-- `features/balances` `Slide` becomes a union: `{ kind: 'summary' } & SummaryCardProps` |
-  `{ kind: 'account'; bank: CardBank } & AccountCardProps`. `slidesOf` sets `bank: 'monobank'` on every account slide
+- `features/balances` `Slide` becomes a union with the card's props nested, so they can be bound as a whole without
+  splitting a union by rest: `{ kind: 'summary'; card: SummaryCardProps }` | `{ kind: 'account'; card:
+  AccountCardProps }`, plus `key` and `flow`. `slidesOf` sets `bank: 'monobank'` on every account slide
   (the only bank in data); `CardStack` renders `SummaryCard` or `AccountCard` by `kind`.
 
 Alternatives: a `variant` prop on the one card (rejected: the user wants the summary card built separately, and each
