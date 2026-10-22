@@ -47,8 +47,11 @@ describe('ui components copied from muzakit', () => {
   });
 
   it('no dependency that muzakit pulled in and this app does not ship', () => {
+    // vue-router: the navigation sidebar keeps its router-link (approved by the user; ui/README.md); no other copy.
+    const sidebarDir = path.join(uiDir, 'components', 'navigation-sidebar');
     for (const f of filesUnder(uiDir, /\.(vue|ts|scss|css)$/)) {
-      expect(read(f), f).not.toMatch(/from\s+["'](vue-router|@vueuse\/[^"']+|@iconify\/vue|@muzakit\/[^"']+)["']/);
+      expect(read(f), f).not.toMatch(/from\s+["'](@vueuse\/[^"']+|@iconify\/vue|@muzakit\/[^"']+)["']/);
+      if (!f.startsWith(sidebarDir)) expect(read(f), f).not.toMatch(/from\s+["']vue-router["']/);
     }
   });
 
@@ -80,7 +83,9 @@ describe('ui components copied from muzakit', () => {
       'resolveCssColors.ts',
     ]);
     for (const f of filesUnder(uiDir, /\.(vue|ts|scss|css)$/)) {
-      const own = ownFiles.has(path.basename(f)) || path.relative(uiDir, f).startsWith(`table${path.sep}`);
+      // The navigation sidebar is copied whole, its index.ts files included.
+      const inSidebar = path.relative(uiDir, f).startsWith(path.join('components', 'navigation-sidebar') + path.sep);
+      const own = (ownFiles.has(path.basename(f)) && !inSidebar) || path.relative(uiDir, f).startsWith(`table${path.sep}`);
       expect((read(f).split('\n', 1)[0] ?? '').includes('copied from muzakit'), f).toBe(!own);
     }
   });
