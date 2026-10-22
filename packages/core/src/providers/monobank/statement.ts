@@ -5,7 +5,8 @@
 import { TZDate } from '@date-fns/tz';
 import { TIMEZONE } from '../../shared/constants.ts';
 import { parseCsv } from '../../shared/csv.ts';
-import { currencyExponent, currencyNumeric } from '../../shared/currency.ts';
+import { currencyNumeric } from '../../shared/currency.ts';
+import { toMinor } from '../../shared/money.ts';
 import type { NormalizedTx, StatementFileParser, StatementParseResult } from '../types.ts';
 
 /** A cell the statement leaves empty: an em dash, or nothing. */
@@ -43,19 +44,6 @@ function parseTime(s: string): number | null {
   const t = new TZDate(y, mo - 1, d, h, mi, se, TIMEZONE);
   if (t.getFullYear() !== y || t.getMonth() !== mo - 1 || t.getDate() !== d || t.getMinutes() !== mi || t.getSeconds() !== se) return null;
   return Math.floor(t.getTime() / 1000);
-}
-
-/** A decimal string → minor units of the currency, without floating point (`-845.5` → -84550); null if it does not read. */
-export function toMinor(s: string, currencyCode: number): number | null {
-  const m = /^(-)?(\d+)(?:\.(\d+))?$/.exec(s.trim());
-  if (!m) return null;
-  const exp = currencyExponent(currencyCode);
-  const frac = m[3] ?? '';
-  // Extra decimals are allowed only as zeros (`1000.0` for a currency without a minor unit).
-  if (frac.length > exp && /[^0]/.test(frac.slice(exp))) return null;
-  const minor = Number(`${m[2]}${frac.slice(0, exp).padEnd(exp, '0')}`);
-  if (!Number.isSafeInteger(minor)) return null;
-  return m[1] && minor !== 0 ? -minor : minor;
 }
 
 type Columns = Record<Field, number> & { currencyCode: number };

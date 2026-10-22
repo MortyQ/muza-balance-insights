@@ -2,7 +2,7 @@
 // their own codes. Invented data only (fixtures/).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { monobankStatement, toMinor } from '../../../src/providers/monobank/statement.ts';
+import { monobankStatement } from '../../../src/providers/monobank/statement.ts';
 import type { ParsedStatement } from '../../../src/providers/types.ts';
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
@@ -16,24 +16,6 @@ function parsed(text: string): ParsedStatement {
 
 const HEADER =
   '"Дата i час операції","Деталі операції",MCC,"Сума в валюті картки (UAH)","Сума в валюті операції",Валюта,Курс,"Сума комісій (UAH)","Сума кешбеку (UAH)","Залишок після операції"';
-
-describe('toMinor', () => {
-  it.each([
-    ['530.0', 980, 53000],
-    ['-845.5', 980, -84550],
-    ['0.95', 980, 95],
-    ['188234.26', 980, 18823426],
-    ['-0.0', 980, 0],
-    ['1000.0', 392, 1000],
-    ['12', 980, 1200],
-  ])('%s (%i) → %i', (s, code, minor) => {
-    expect(toMinor(s, code)).toBe(minor);
-  });
-
-  it.each([['12.345'], ['1 000.00'], ['1,5'], [''], ['—'], ['1e3'], ['1000.5']])('%s does not read', (s) => {
-    expect(toMinor(s, s === '1000.5' ? 392 : 980)).toBeNull();
-  });
-});
 
 describe('the Ukrainian card statement', () => {
   it('reads every row, oldest first, with the exact minor units and Kyiv times', () => {
