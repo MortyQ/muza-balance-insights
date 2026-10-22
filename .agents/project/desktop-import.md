@@ -56,23 +56,23 @@
   family's `balancesAt` split by owner (core `balancesOf`), their income and spending one `incomeSummary` /
   `spendingSummary` grouped by `participant` each (an internal grouping: every group follows that person's own view of
   family transfers); `balancesAt` itself is one statement for all accounts. `tests/data-queries.test.ts` checks that every overview runs a
-  fixed number of statements, whatever the people, accounts and months. `SpendingOverview.usual` (`main/usual.ts`): the whole-month medians per category,
+  fixed number of statements, whatever the people, accounts and months. `SpendingOverview.usual` (`data/usual.ts`): the whole-month medians per category,
   of the total and of income over up to 6 months before that the data covers from their first day, same person and
   scope, today's rates; `running` while the shown month runs, and then no income (its day decides it); null with fewer
   than 3 such months. Whole months even for a running one: a few days of lumpy spending make «up to the same day» noise. The usual months run up to the shown one without a gap, so they come from one
   `spendingGrid` by month and one `incomeSummary` by month (to the shown month's end); each month folds as its own
-  summary would (`cellGroups` in `main/spending.ts`: per currency and key, then today's rates). `getNowOverview` takes only `participantId` (main
+  summary would (`cellGroups` in `data/spending.ts`: per currency and key, then today's rates). `getNowOverview` takes only `participantId` (main
   decides «today» in the system time zone; categories of today and of the week, the week's with last week's same days —
   categories and numbers only, no bank text; one `spendingGrid` by day × category over the widest span — the usual day's
   window, this month, last week — folded per span with `cellGroups`, plus `periodInfo` for the window and the week);
   like the other data channels it is closed while locked and while the
   database is not ready.
   `getCategoryOverview({ period, category: CategoryId, scope, participantId? })` (the category screen; main:
-  `DataService.categoryOverview`, helpers in `main/category.ts`; `period` — `DetailPeriod`: `{ kind: 'day', date }`,
-  `{ kind: 'week', from }` (a Monday) or `{ kind: 'month', month }`; zod checks the shape, `main/period.ts` the days
+  `DataService.categoryOverview`, helpers in `data/category.ts`; `period` — `DetailPeriod`: `{ kind: 'day', date }`,
+  `{ kind: 'week', from }` (a Monday) or `{ kind: 'month', month }`; zod checks the shape, `data/period.ts` the days
   (`periodBounds`: a Monday, not after today) and what it is compared with (`periodCompare`: last month; last week cut
   to the weekdays the data reaches; a day — nothing); the 12 months only for a month) and `getIncomeOverview({ period, participantId? })` (the
-  income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `main/category.ts`) are the **only** data channels that
+  income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `data/category.ts`) are the **only** data channels that
   carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
@@ -87,21 +87,21 @@
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
   `getAllowanceOverview({ participantId? })` («Available per day»; `DataService.allowanceOverview`, pure calculation in
-  `main/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
+  `data/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over
   `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
   core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
   — the last day it counts or null; migration 14: `participant_id` — whose, or null for common; a removed person's become
   common; with one person only, the reserves so far became theirs; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
-  never in the analysis copy or an MCP tool). Whose counts where (`reserveFor` in `main/data.ts`): the family view —
+  never in the analysis copy or an MCP tool). Whose counts where (`reserveFor` in `data/data.ts`): the family view —
   all; a person — their own only, never a common one. `reserves` in the answer lists the view's: `active` (no end, or
   `until` ≥ today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
   `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits (`src/shared/allowance.ts`
   re-exports core's). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
-  in `main/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:
+  in `data/analytics.ts`): whole months `YYYY-MM`, `from ≤ to`, at most `ANALYTICS_MAX_MONTHS` (`src/shared/analytics.ts`:
   the import's 36 + the current one; zod refuses more, main refuses a range ending after this month). One month → per
   day, a range → per month; all scopes, the balances' fold (core `spendingGrid` + `incomeSummary` by day / month, today's
   rates, a currency without a rate in `leftOut`); the period before (`comparePeriod` for a month, the same number of

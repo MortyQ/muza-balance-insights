@@ -6,7 +6,7 @@ import { kyivStartOfDay } from '@mono/core/shared/format';
 import { addConnection, addParticipant } from '@mono/core/people/participants';
 import { rederiveCore } from '@mono/core/derive/rederive';
 import { insertAccountRow, memoryDb, testConnection } from '@mono/core/test-helpers';
-import { DataService } from '../src/main/data.ts';
+import { DataService } from '../src/data/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;

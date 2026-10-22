@@ -17,6 +17,7 @@
     "src/shared",
     "src/net",
     "src/worker",
+    "src/data",
     "src/integrations",
     "scripts",
     "tests",

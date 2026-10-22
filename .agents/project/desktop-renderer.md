@@ -2,7 +2,7 @@
 
 Перенесено из корневого `CLAUDE.md` (27.09.2026). Область: apps/desktop/src/renderer.
 
-- Экран данных (шаг 7): main отдаёт узкие view-типы из `apps/desktop/src/shared/api.ts` (`apps/desktop/src/main/data.ts` поверх
+- Экран данных (шаг 7): main отдаёт узкие view-типы из `apps/desktop/src/shared/api.ts` (`apps/desktop/src/data/data.ts` поверх
   `spendingSummary` / `getMonthOverview` ядра) — категории, суммы в минимальных единицах, даты, подписи `black/UAH`.
   Renderer из ядра импортирует только `@mono/core/shared/currency` (формат сумм). По умолчанию — текущий месяц (Киев), «личное».
 - **Блок балансов** (`features/balances`, `BalancesFeature.vue`): карта на главной с итогом месяца, приходом и тратами.
@@ -52,7 +52,7 @@
   Per-connection progress is not in the IPC: no per-person spinner.
 - **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
-  `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
+  `data/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
   `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
   before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils/` (by subject: `rows`, `people`, `chips`, `ring`, `totals`, `texts`, `prefs`, shared `month`; one `index.ts`) builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
@@ -102,7 +102,7 @@
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
   and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
   `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
-  12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
+  12 months: main picks the window (`monthsWindow` in `data/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
   The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
@@ -179,7 +179,7 @@
   currency per month, or per week); a small chart's bar has a tooltip with its bucket and amount. `utils.ts` is pure and tested
   (`tests/renderer/analytics.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
-  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
+  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `data/now.ts`; main decides
   «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
   under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
   = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; today's Monobank rates (the answer carries `rates`).

@@ -1,6 +1,6 @@
-// Pure helpers of the category screen in main (src/main/category.ts). Fictional data only.
+// Pure helpers of the category screen (src/data/category.ts). Fictional data only.
 import { describe, expect, it } from 'vitest';
-import { incomeStats, last12Months, lineStats, merchantKey, merchantText, monthsWindow } from '../src/main/category.ts';
+import { incomeStats, last12Months, lineStats, merchantKey, merchantText, monthsWindow } from '../src/data/category.ts';
 import type { CategoryLineView, IncomeLineView } from '../src/shared/api.ts';
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({

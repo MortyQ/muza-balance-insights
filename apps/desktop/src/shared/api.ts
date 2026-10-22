@@ -326,7 +326,7 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
-  /** «Usual»: the same span of the months before (main/usual.ts); null — fewer than 3 covered months. */
+  /** «Usual»: the same span of the months before (data/usual.ts); null — fewer than 3 covered months. */
   usual: SpendingUsual | null;
 };
 

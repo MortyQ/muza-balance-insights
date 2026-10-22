@@ -11,7 +11,7 @@ import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
-import { DataService } from './data.ts';
+import { DataService } from '../data/data.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';

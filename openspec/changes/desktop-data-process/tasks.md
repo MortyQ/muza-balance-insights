@@ -5,8 +5,8 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 1. Move DataService and its helpers to src/data (refactor(desktop): data service folder)
 
-- [ ] 1.1 `git mv` `src/main/data.ts`, `spending.ts`, `usual.ts`, `category.ts`, `analytics.ts`, `now.ts`, `period.ts` and `allowance.ts` to `src/data/`, and rewrite only the imports: the moved files' own imports, `src/main/index.ts` and `people.ts`, and the tests that import them (`data*.test.ts`, `spending-main`, `usual`, `category`, `analytics-main`, `now-main`, `allowance` and `period` users). Verify that a line diff of each moved file shows only import lines changed.
-- [ ] 1.2 Update the doc paths that name these files (`.agents/project/desktop-*.md`, `apps/desktop` comments that cite a path). Verify `apps/desktop`'s tsc for node and web and its vitest pass.
+- [x] 1.1 `git mv` `src/main/data.ts`, `spending.ts`, `usual.ts`, `category.ts`, `analytics.ts`, `now.ts`, `period.ts` and `allowance.ts` to `src/data/`, and rewrite only the imports: the moved files' own imports, `src/main/index.ts` and `people.ts`, and the tests that import them (`data*.test.ts`, `spending-main`, `usual`, `category`, `analytics-main`, `now-main`, `allowance` and `period` users). Verify that a line diff of each moved file shows only import lines changed.
+- [x] 1.2 Update the doc paths that name these files (`.agents/project/desktop-*.md`, `apps/desktop` comments that cite a path). Verify `apps/desktop`'s tsc for node and web and its vitest pass.
 
 ## 2. The data host: the database halves out of main's services (feat(desktop): data host)
 

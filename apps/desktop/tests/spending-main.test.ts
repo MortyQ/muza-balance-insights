@@ -1,7 +1,7 @@
 // Pure helpers of the spending block in main: which period is compared, how account currencies fold into hryvnia.
 import { describe, expect, it } from 'vitest';
 import type { SpendingGroup } from '@mono/core/read/spending';
-import { comparePeriod, foldByCategory, rankedCategories, type CategoryGroups } from '../src/main/spending.ts';
+import { comparePeriod, foldByCategory, rankedCategories, type CategoryGroups } from '../src/data/spending.ts';
 
 describe('comparePeriod', () => {
   it('a complete month → the whole previous month', () => {

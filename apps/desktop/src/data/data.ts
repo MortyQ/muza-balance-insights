@@ -23,7 +23,7 @@ import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
-import { labelPending } from './people.ts';
+import { labelPending } from '../main/people.ts';
 import { cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
@@ -357,7 +357,7 @@ export class DataService {
   }
 
   /**
-   * The block's «usual» (main/usual.ts): whole months before the shown one, spending by category and income, folded by
+   * The block's «usual» (data/usual.ts): whole months before the shown one, spending by category and income, folded by
    * today's rates. Income only for a month that is over.
    */
   private async spendingUsual(

@@ -7,7 +7,7 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import { memoryDb } from '@mono/core/test-helpers';
-import { DataService } from '../src/main/data.ts';
+import { DataService } from '../src/data/data.ts';
 import { STATEMENT_KEEP_MS, STATEMENT_MAX_BYTES, StatementsService } from '../src/main/statements.ts';
 import { TokenError } from '../src/main/token.ts';
 import { TOKEN, services } from './helpers/people.ts';

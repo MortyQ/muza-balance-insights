@@ -4,10 +4,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
-import { last12Months } from '../src/main/category.ts';
-import { DataService, nextMonthDay } from '../src/main/data.ts';
+import { last12Months } from '../src/data/category.ts';
+import { DataService, nextMonthDay } from '../src/data/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
-import { shiftDate } from '../src/main/now.ts';
+import { shiftDate } from '../src/data/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
