@@ -131,6 +131,6 @@ watch(
   </div>
 </template>
 
-<style>
-@import '../../styles/components/navigation-sidebar/sidebar.scss';
+<style lang="scss">
+@use '../../styles/components/navigation-sidebar/sidebar.scss';
 </style>
