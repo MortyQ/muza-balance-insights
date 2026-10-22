@@ -819,7 +819,9 @@
       "compareFailed": "Could not compare the file with the account.",
       "problem": {
         "unknownFormat": "The file does not look like this bank's CSV statement.",
-        "english": "The statement is in English: its service texts are translated and transfers are not recognised. Make the statement in Ukrainian.",
+        "ambiguous": "The file fits more than one statement format. Nothing was written.",
+        "otherBank": "This is another bank's statement. Upload it into a connection of that bank.",
+        "language": "The statement is in English: its service texts are translated and transfers are not recognised. Make the statement in Ukrainian.",
         "unsupportedKind": "A FOP statement is not supported yet, only a card statement.",
         "empty": "The file has no operations.",
         "badRow": "Line {row} of the file does not read.",

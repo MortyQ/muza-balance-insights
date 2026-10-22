@@ -112,12 +112,13 @@ describe('stored ids', () => {
     const statement: ParsedStatement = {
       kind: 'card',
       currencyCode: 980,
+      account: { iban: null, cards: [], type: null },
       rows: [{ time: T, amount: -300, currencyCode: 980, hold: false, description: 'Fictional shop', raw: '{}' }],
       closingBalance: 700,
     };
 
-    await commitStatement(db, ficFile, statement, { kind: 'new', id: 'file-1', type: null }, 1);
-    await commitStatement(db, monoFile, statement, { kind: 'new', id: 'file-1', type: null }, 1);
+    await commitStatement(db, ficFile, [statement], [{ kind: 'new', id: 'file-1', type: null }], 1);
+    await commitStatement(db, monoFile, [statement], [{ kind: 'new', id: 'file-1', type: null }], 1);
 
     expect(await rows('SELECT id FROM accounts ORDER BY id')).toEqual([{ id: 'fictional:file-1' }, { id: 'file-1' }]);
     expect(await rows('SELECT id, account_id FROM transactions ORDER BY id')).toEqual([
@@ -125,6 +126,6 @@ describe('stored ids', () => {
       { id: `file-1:${T}:-300:0`, account_id: 'file-1' },
     ]);
     // The taken-id check looks at the stored id.
-    await expect(commitStatement(db, ficFile, statement, { kind: 'new', id: 'file-1', type: null }, 2)).rejects.toThrow(/taken/);
+    await expect(commitStatement(db, ficFile, [statement], [{ kind: 'new', id: 'file-1', type: null }], 2)).rejects.toThrow(/taken/);
   });
 });

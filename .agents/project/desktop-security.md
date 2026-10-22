@@ -23,7 +23,7 @@
   Тесты со scrypt — с таймаутом 30 с на `describe` (реальный KDF под параллельным прогоном).
 - **Statement files** (`main/statements.ts`): the file is picked in the system open dialog (CSV only) and read in main
   only — at most 10 MiB (by size before reading and after), UTF-8; the renderer gets counts, dates and codes, never the
-  path, the name or the text; the log gets `[statement] <code>` or a count. The parsed statement is kept in main for
+  path, the name or the text; the log gets `[statement] <code>` or a count. The read statement is kept in main for
   compare and commit — one at a time, 10 minutes — and dropped on the lock and on «Delete all data». No network.
 - **Сеть — список доверенных сервисов** (`apps/desktop/src/net/allowlist.ts`, `TRUSTED_SERVICES`): `github` (обновления:
   `github.com`, `release-assets.githubusercontent.com`), `monobank` (`api.monobank.ua`). Каждый потребитель ограничен своими

@@ -49,9 +49,9 @@ beforeEach(() => {
 
 describe('texts', () => {
   it('every problem code has its text; a bad row names its line; a cancelled dialog says nothing', () => {
-    expect(Object.keys(PROBLEM_TEXT).sort()).toEqual(['bad-row', 'empty', 'english', 'no-format', 'too-large', 'unknown-format', 'unsupported-kind']);
+    expect(Object.keys(PROBLEM_TEXT).sort()).toEqual(['ambiguous', 'bad-row', 'empty', 'language', 'no-format', 'other-bank', 'too-large', 'unknown-format', 'unsupported-kind']);
     expect(openProblemText({ opened: false, reason: 'problem', problem: 'bad-row', row: 3 })).toBe('Строка 3 файла не читается.');
-    expect(openProblemText({ opened: false, reason: 'problem', problem: 'english', row: null })).toMatch(/на украинском/);
+    expect(openProblemText({ opened: false, reason: 'problem', problem: 'language', row: null })).toMatch(/на украинском/);
     expect(openProblemText({ opened: false, reason: 'cancelled' })).toBe('');
     expect(openProblemText(OPENED)).toBe('');
   });

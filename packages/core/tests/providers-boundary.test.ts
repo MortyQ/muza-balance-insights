@@ -109,7 +109,7 @@ describe('provider boundary', () => {
     ['providers/x/client.ts', "import { acquireSlot } from '../ratelimit.ts';"],
     ['providers/ratelimit.ts', 'export const acquireSlot = 1;'],
     ['providers/statements.ts', "import { xStatement } from './x/statement.ts';\nimport type { ProviderId } from './types.ts';"],
-    ['providers/x/statement.ts', "import type { StatementFileParser } from '../types.ts';\nimport { TEXTS } from './descriptions.ts';"],
+    ['providers/x/statement.ts', "import type { StatementReader } from '../types.ts';\nimport { TEXTS } from './descriptions.ts';"],
     ['providers/info.ts', "import { xInfo } from './x/info.ts';\nimport type { ProviderId } from './types.ts';"],
     ['providers/x/info.ts', "import type { ProviderInfo } from '../types.ts';\nimport { LIMIT } from './constants.ts';"],
     ['providers/x/constants.ts', 'export const LIMIT = 1;'],
@@ -117,7 +117,7 @@ describe('provider boundary', () => {
     ['categories.ts', "import { rulesFor } from './providers/rules.ts';"],
     ['plan.ts', "import { apiOf } from './providers/info.ts';"],
     ['sync.ts', "import { storedId } from './providers/ids.ts';"],
-    ['statement-import.ts', "import { statementParserOf } from './providers/statements.ts';"],
+    ['statement-import.ts', "import { pickReader } from './providers/statements.ts';"],
     ['derive/rederive.ts', "import { recategorize } from '../categories.ts';"],
   ];
   const broken = (edits: Array<[string, string]>) => violations(new Map([...legal, ...edits]));

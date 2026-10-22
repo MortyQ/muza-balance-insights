@@ -84,7 +84,7 @@ export type DataResult<M extends DataMethod> = DataMethods[M]['result'];
 
 const none = z.tuple([]);
 
-// A row of a parsed statement file (core NormalizedTx without its id): only the fields the parsers fill.
+// A row of a read statement file (core NormalizedTx without its id): only the fields the readers fill.
 const statementRow = z.strictObject({
   time: z.number().int(),
   amount: z.number().int(),
@@ -108,6 +108,11 @@ const statementRow = z.strictObject({
 const parsedStatement = z.strictObject({
   kind: z.literal('card'),
   currencyCode: z.number().int(),
+  account: z.strictObject({
+    iban: z.string().max(34).nullable(),
+    cards: z.array(z.string().max(32)).max(16),
+    type: z.string().max(40).nullable(),
+  }),
   rows: z.array(statementRow).min(1),
   closingBalance: z.number().int().nullable(),
 }) satisfies z.ZodType<ParsedStatement>;

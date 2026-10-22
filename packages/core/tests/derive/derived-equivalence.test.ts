@@ -8,7 +8,7 @@ import type { Db } from '../../src/storage/db.ts';
 import { accountInputs, accountInputsChanged } from '../../src/derive/derived.ts';
 import { addConnection, addParticipant } from '../../src/people/participants.ts';
 import { createMonoClient } from '../../src/providers/monobank/client.ts';
-import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import { monobankCardReader } from '../../src/providers/monobank/statement.ts';
 import { rederiveCore, rederiveSpans } from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
 import { WINDOW_SEC, interleavePlan } from '../../src/ingest/plan.ts';
@@ -106,9 +106,9 @@ describe('incremental derivation equals a full pass', () => {
     await rederiveSpans(db, spans);
 
     const file = await addConnection(db, meParticipant, 'monobank', 0, 'file');
-    const parsed = monobankStatement.parse(readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+    const parsed = monobankCardReader.read({ format: 'text', text: readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8') });
     if (!parsed.ok) throw new Error(parsed.problem);
-    await commitStatement(db, file, parsed.statement, { kind: 'new', id: 'file-card', type: 'black' }, now);
+    await commitStatement(db, file, parsed.statements, [{ kind: 'new', id: 'file-card', type: 'black' }], now);
 
     // The scenario has what it is meant to test.
     const stored = await derivedColumns(db);

@@ -9,7 +9,7 @@ import { MIGRATIONS } from '../../src/storage/migrations.ts';
 import { refreshCrossing } from '../../src/derive/derived.ts';
 import { kyivStartOfDay, toKyivDate } from '../../src/shared/format.ts';
 import { addConnection, addParticipant } from '../../src/people/participants.ts';
-import { monobankStatement } from '../../src/providers/monobank/statement.ts';
+import { monobankCardReader } from '../../src/providers/monobank/statement.ts';
 import { rederiveCore } from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
 import { commitRows } from '../../src/ingest/commit.ts';
@@ -101,9 +101,9 @@ describe('refreshCrossing: when the accounts change', () => {
     const conn = await addConnection(db, me, 'monobank', 0, 'file');
     await refreshCrossing(db);
     expect(await fingerprint()).not.toContain('file-card-1');
-    const parsed = monobankStatement.parse(fs.readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8'));
+    const parsed = monobankCardReader.read({ format: 'text', text: fs.readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8') });
     if (!parsed.ok) throw new Error(parsed.problem);
-    await commitStatement(db, conn, parsed.statement, { kind: 'new', id: 'file-card-1', type: 'black' }, 1);
+    await commitStatement(db, conn, parsed.statements, [{ kind: 'new', id: 'file-card-1', type: 'black' }], 1);
     expect(await fingerprint()).toContain('file-card-1');
   });
 
@@ -170,10 +170,12 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
   const WRITERS: Record<string, Record<string, RegExp>> = {
     'commands/people.ts': { setAccountEnabled: /\brefreshCrossing\(/, deleteConnection: /\brederiveCore\(/ },
     'ingest/sync.ts': { syncAccounts: /\brefreshCrossing\(/ },
-    // commitRows refreshes through its derivation pass, deriveSpan (derive/rederive.ts, checked below).
-    'ingest/commit.ts': { commitRows: /\bderiveSpan\(/ },
-    'ingest/statement-import.ts': { commitStatement: /\bcommitRows\(/ },
+    // prepareRows only builds the statements, never runs them; whoever runs them derives right after (below).
+    'ingest/commit.ts': { prepareRows: /^(?![\s\S]*\.batch\()/ },
+    'ingest/statement-import.ts': { commitStatement: /\bderiveCommitted\(/ },
   };
+  /** The functions that run prepareRows' statements; each derives through deriveCommitted → deriveSpan. */
+  const RUN_PREPARED: Record<string, string> = { 'ingest/commit.ts': 'commitRows', 'ingest/statement-import.ts': 'commitStatement' };
   const bodyOf = (src: string, name: string): string => {
     const start = src.search(new RegExp(`export async function ${name}\\(`));
     if (start < 0) throw new Error(`${name} not found`);
@@ -196,6 +198,21 @@ describe('every writer of accounts or coverage refreshes crossing', () => {
       expect(bodyOf(fs.readFileSync(new URL(file, SRC), 'utf8'), fn)).toMatch(call);
     },
   );
+
+  it('whoever runs prepareRows derives right after it', () => {
+    const files = fs
+      .readdirSync(SRC, { recursive: true, encoding: 'utf8' })
+      .map((f) => f.replaceAll('\\', '/'))
+      .filter((f) => f.endsWith('.ts'));
+    const calling = files.filter((f) => /\bprepareRows\(/.test(fs.readFileSync(new URL(f, SRC), 'utf8').replace(/export async function prepareRows\(/, ''))).sort();
+    expect(calling).toEqual(Object.keys(RUN_PREPARED).sort());
+    for (const [file, fn] of Object.entries(RUN_PREPARED)) {
+      const body = bodyOf(fs.readFileSync(new URL(file, SRC), 'utf8'), fn);
+      expect(body, `${file} ${fn}`).toMatch(/\bprepareRows\(/);
+      expect(body, `${file} ${fn}`).toMatch(/\bderiveCommitted\(/);
+    }
+    expect(bodyOf(fs.readFileSync(new URL('ingest/commit.ts', SRC), 'utf8'), 'deriveCommitted')).toMatch(/\bderiveSpan\(/);
+  });
 
   it('deriveSpan, the pass of commitRows and of the end of an import, refreshes crossing', () => {
     expect(bodyOf(fs.readFileSync(new URL('derive/rederive.ts', SRC), 'utf8'), 'deriveSpan')).toMatch(/\brefreshCrossing\(/);

@@ -2,7 +2,6 @@
 // Electron here (process.ts wires it), so tests run it on an in-memory database. Calls run one at a time, in the order
 // they arrive. Arguments are checked before anything runs; an error goes back as a code and its name, never its message.
 import { deleteConnection, setAccountEnabled } from '@mono/core/commands/people';
-import { compareStatement } from '@mono/core/ingest/statement-import';
 import { ConnectionError } from '@mono/core/people/connections';
 import { renameParticipant, restoreBankLabel } from '@mono/core/people/participants';
 import {
@@ -17,7 +16,7 @@ import {
 import { connectionAccounts, connectionList, createConnection } from './connections.ts';
 import { DataService, type DataServiceDeps } from './data.ts';
 import { participantColor, peopleRows } from './people.ts';
-import { writeStatement } from './statements.ts';
+import { compareOne, writeStatement } from './statements.ts';
 
 type Handlers = { [M in DataMethod]: (...args: DataArgs<M>) => Promise<DataResult<M>> };
 
@@ -67,7 +66,7 @@ export class DataHost {
       setAccountEnabled: async (accountId, enabled) => {
         await setAccountEnabled(await db(), accountId, enabled);
       },
-      compareStatement: async (id, statement, target) => compareStatement(await db(), id, statement, target),
+      compareStatement: async (id, statement, target) => compareOne(await db(), id, statement, target),
       commitStatement: async (id, statement, target) => writeStatement(await db(), id, statement, target, d.nowSec()),
     };
   }

@@ -1,17 +1,22 @@
-// Monobank statement files: the Ukrainian card statement is read; the English one and the FOP one are refused with
-// their own codes. Invented data only (fixtures/).
+// Monobank statement files: the Ukrainian card statement is read; the English one and the FOP one are recognised and
+// refused with their own codes; the reader is picked by the document alone. Invented data only (fixtures/).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { monobankStatement } from '../../../src/providers/monobank/statement.ts';
-import type { ParsedStatement } from '../../../src/providers/types.ts';
+import { monobankCardReader } from '../../../src/providers/monobank/statement.ts';
+import { pickReader } from '../../../src/providers/statements.ts';
+import type { ParsedStatement, StatementDocument, StatementReader } from '../../../src/providers/types.ts';
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 const kyiv = (iso: string) => Math.floor(Date.parse(`${iso}+03:00`) / 1000);
 
-function parsed(text: string): ParsedStatement {
-  const r = monobankStatement.parse(text);
+const text = (t: string): StatementDocument => ({ format: 'text', text: t });
+const read = (t: string) => monobankCardReader.read(text(t));
+
+function parsed(t: string): ParsedStatement {
+  const r = read(t);
   if (!r.ok) throw new Error(`not parsed: ${r.problem}`);
-  return r.statement;
+  expect(r.statements).toHaveLength(1);
+  return r.statements[0]!;
 }
 
 const HEADER =
@@ -58,22 +63,22 @@ describe('the Ukrainian card statement', () => {
 
 describe('refused files', () => {
   it('the English statement: its service texts are translated', () => {
-    expect(monobankStatement.parse(fixture('statement-card.csv'))).toEqual({ ok: false, problem: 'english' });
+    expect(read(fixture('statement-card.csv'))).toEqual({ ok: false, problem: 'language' });
   });
 
   it('the FOP statement: not supported yet', () => {
-    expect(monobankStatement.parse(fixture('statement-fop.csv'))).toEqual({ ok: false, problem: 'unsupported-kind' });
+    expect(read(fixture('statement-fop.csv'))).toEqual({ ok: false, problem: 'unsupported-kind' });
   });
 
   it('a header without rows, an empty file', () => {
-    expect(monobankStatement.parse(`${HEADER}\n`)).toEqual({ ok: false, problem: 'empty' });
-    expect(monobankStatement.parse('')).toEqual({ ok: false, problem: 'empty' });
+    expect(read(`${HEADER}\n`)).toEqual({ ok: false, problem: 'empty' });
+    expect(read('')).toEqual({ ok: false, problem: 'empty' });
   });
 
   it('anything else is an unknown format', () => {
-    expect(monobankStatement.parse('a,b,c\n1,2,3\n')).toEqual({ ok: false, problem: 'unknown-format' });
-    expect(monobankStatement.parse(HEADER.replace('MCC,', ''))).toEqual({ ok: false, problem: 'unknown-format' });
-    expect(monobankStatement.parse('"unclosed\n')).toEqual({ ok: false, problem: 'unknown-format' });
+    expect(read('a,b,c\n1,2,3\n')).toEqual({ ok: false, problem: 'unknown-format' });
+    expect(read(HEADER.replace('MCC,', ''))).toEqual({ ok: false, problem: 'unknown-format' });
+    expect(read('"unclosed\n')).toEqual({ ok: false, problem: 'unknown-format' });
   });
 
   it('a row that does not read names its line; nothing is guessed', () => {
@@ -85,7 +90,55 @@ describe('refused files', () => {
       ok.replace(',UAH,', ',XYZ,'),
       ok.replace('9.0', 'n/a'),
     ]) {
-      expect(monobankStatement.parse(`${HEADER}\n${ok}\n${bad}\n`)).toEqual({ ok: false, problem: 'bad-row', row: 3 });
+      expect(read(`${HEADER}\n${ok}\n${bad}\n`)).toEqual({ ok: false, problem: 'bad-row', row: 3 });
     }
+  });
+});
+
+describe('the card statement states no account', () => {
+  it('one statement, no IBAN, no card, no type', () => {
+    expect(parsed(fixture('statement-card-uk.csv')).account).toEqual({ iban: null, cards: [], type: null });
+  });
+});
+
+describe('detect and pickReader', () => {
+  it('scores: the Ukrainian and the English card statements by their columns, the FOP one by its title line', () => {
+    expect(monobankCardReader.detect(text(fixture('statement-card-uk.csv')))).toBe(2);
+    expect(monobankCardReader.detect(text(fixture('statement-card.csv')))).toBe(2);
+    expect(monobankCardReader.detect(text(fixture('statement-fop.csv')))).toBe(1);
+    expect(monobankCardReader.detect(text('a,b,c\n1,2,3\n'))).toBe(0);
+    expect(monobankCardReader.detect(text('just one column\nand another line\n'))).toBe(0);
+    expect(monobankCardReader.detect(text(''))).toBe(0);
+  });
+
+  it('a document of another format is never its own', () => {
+    expect(monobankCardReader.detect({ format: 'sheets', sheets: [{ name: 'Sheet1', rows: [[{ t: 's', v: 'MCC' }]] }] })).toBe(0);
+    expect(monobankCardReader.detect({ format: 'pdf', pages: [] })).toBe(0);
+    expect(monobankCardReader.read({ format: 'pdf', pages: [] })).toEqual({ ok: false, problem: 'unknown-format' });
+  });
+
+  it('the real registry picks Monobank from the content alone: a document has no file name, so a renamed file reads the same', () => {
+    const picked = pickReader(text(fixture('statement-card-uk.csv')));
+    expect(picked.ok && picked.reader.id).toBe('monobank-card-uk');
+    const r = picked.ok ? picked.reader.read(text(fixture('statement-card-uk.csv'))) : null;
+    expect(r).toEqual(read(fixture('statement-card-uk.csv')));
+    expect(pickReader(text('a,b,c\n1,2,3\n'))).toEqual({ ok: false, problem: 'unknown-format' });
+  });
+
+  const decoy = (id: string, score: 0 | 1 | 2): StatementReader => ({
+    provider: 'monobank',
+    id,
+    detect: () => score,
+    read: () => ({ ok: false, problem: 'empty' }),
+  });
+
+  it('the most sure reader wins; none → unknown-format; two equally sure → ambiguous', () => {
+    const doc = text(fixture('statement-card-uk.csv'));
+    const one = pickReader(doc, [decoy('weak', 1), monobankCardReader]);
+    expect(one.ok && one.reader.id).toBe('monobank-card-uk');
+    expect(pickReader(doc, [decoy('a', 0), decoy('b', 0)])).toEqual({ ok: false, problem: 'unknown-format' });
+    expect(pickReader(doc, [])).toEqual({ ok: false, problem: 'unknown-format' });
+    expect(pickReader(doc, [decoy('twin', 2), monobankCardReader])).toEqual({ ok: false, problem: 'ambiguous' });
+    expect(pickReader(doc, [decoy('a', 1), decoy('b', 1)])).toEqual({ ok: false, problem: 'ambiguous' });
   });
 });

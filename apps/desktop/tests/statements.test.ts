@@ -111,7 +111,7 @@ describe('StatementsService', () => {
   it('a cancelled dialog, a refused file, a file past the limit, bytes that are not UTF-8', async () => {
     const conn = await fileConnection();
     expect(await harness({ file: null }).svc.open(conn)).toEqual({ opened: false, reason: 'cancelled' });
-    expect(await harness({ file: path.join(FIXTURES, 'statement-card.csv') }).svc.open(conn)).toEqual({ opened: false, reason: 'problem', problem: 'english', row: null });
+    expect(await harness({ file: path.join(FIXTURES, 'statement-card.csv') }).svc.open(conn)).toEqual({ opened: false, reason: 'problem', problem: 'language', row: null });
     expect(await harness({ file: path.join(FIXTURES, 'statement-fop.csv') }).svc.open(conn)).toEqual({ opened: false, reason: 'problem', problem: 'unsupported-kind', row: null });
 
     const big = path.join(dir, 'big.csv');

@@ -29,9 +29,9 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 4. Statement readers over a neutral document (feat(core): statement readers)
 
-- [ ] 4.1 Add to `providers/types.ts`: `StatementDocument`, `Cell`, `StatementReader` and the per-account `ParsedStatement` with `account { iban, cards, type }`, plus the problem codes `ambiguous`, `other-bank`, and `language` (renamed from `english`). Add `shared/excel-date.ts` with tests in `tests/shared/`. Before this group's commit, move `toMinor` from `monobank/statement.ts` to `shared/money.ts` in its own commit (`refactor(core): toMinor to shared`), lines unchanged, as `core-layout.md` asks for moves. Verify that the moved lines are identical and that core's tsc passes.
-- [ ] 4.2 Port the Monobank CSV reader to `StatementReader` (`detect` from the header: 2 for the Ukrainian card statement, 2 for the English one, which reads as `language`, and 1 for the FOP title line, which reads as `unsupported-kind`). `providers/statements.ts` → `STATEMENT_READERS` and `pickReader`. Verify with `tests/providers/monobank/statement.test.ts`: the same rows as before on the same fixtures, renamed extension irrelevant, and `pickReader` gives `unknown-format` / `ambiguous` with fictional decoy readers.
-- [ ] 4.3 `compareStatement` / `commitStatement` over a whole file:
+- [x] 4.1 Add to `providers/types.ts`: `StatementDocument`, `Cell`, `StatementReader` and the per-account `ParsedStatement` with `account { iban, cards, type }`, plus the problem codes `ambiguous`, `other-bank`, and `language` (renamed from `english`). Add `shared/excel-date.ts` with tests in `tests/shared/`. Before this group's commit, move `toMinor` from `monobank/statement.ts` to `shared/money.ts` in its own commit (`refactor(core): toMinor to shared`), lines unchanged, as `core-layout.md` asks for moves. Verify that the moved lines are identical and that core's tsc passes.
+- [x] 4.2 Port the Monobank CSV reader to `StatementReader` (`detect` from the header: 2 for the Ukrainian card statement, 2 for the English one, which reads as `language`, and 1 for the FOP title line, which reads as `unsupported-kind`). `providers/statements.ts` → `STATEMENT_READERS` and `pickReader`. Verify with `tests/providers/monobank/statement.test.ts`: the same rows as before on the same fixtures, renamed extension irrelevant, and `pickReader` gives `unknown-format` / `ambiguous` with fictional decoy readers.
+- [x] 4.3 `compareStatement` / `commitStatement` over a whole file:
   - matching by IBAN, then by masked card, else new;
   - per-statement targets and comparisons;
   - one batch for every account (split `commitRows` into building and running its statements);
@@ -45,7 +45,7 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
   - two equal rows in one minute;
   - a file IBAN that another bank's row names makes that row an `iban` transfer;
   - stored values equal a full re-derivation.
-- [ ] 4.4 Update `core-providers.md` (readers, neutral document, matching). Verify core's tsc and vitest.
+- [x] 4.4 Update `core-providers.md` (readers, neutral document, matching). Verify core's tsc and vitest.
 
 ## 5. The statement decoder process (feat(desktop): statement decoder)
 

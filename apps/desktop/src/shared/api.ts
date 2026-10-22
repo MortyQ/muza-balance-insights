@@ -116,7 +116,16 @@ export type ConnectionAccountView = {
 // ---------- statement files ----------
 
 /** Why a statement file was not taken (core StatementProblem), plus main's own: too big, a bank without a file format. */
-export type StatementProblemCode = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row' | 'too-large' | 'no-format';
+export type StatementProblemCode =
+  | 'unknown-format'
+  | 'ambiguous'
+  | 'other-bank'
+  | 'language'
+  | 'unsupported-kind'
+  | 'empty'
+  | 'bad-row'
+  | 'too-large'
+  | 'no-format';
 
 export type OpenStatementResult =
   | {

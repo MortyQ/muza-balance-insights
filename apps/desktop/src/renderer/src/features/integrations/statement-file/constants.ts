@@ -6,7 +6,9 @@ import type { MessageKey } from '@contract/i18n/index.ts';
 /** Why main did not take a file. `bad-row` carries the row in its text. */
 export const PROBLEM_TEXT: Readonly<Record<StatementProblemCode, MessageKey>> = {
   'unknown-format': 'integrations.statement.problem.unknownFormat',
-  english: 'integrations.statement.problem.english',
+  ambiguous: 'integrations.statement.problem.ambiguous',
+  'other-bank': 'integrations.statement.problem.otherBank',
+  language: 'integrations.statement.problem.language',
   'unsupported-kind': 'integrations.statement.problem.unsupportedKind',
   empty: 'integrations.statement.problem.empty',
   'bad-row': 'integrations.statement.problem.badRow',

@@ -192,28 +192,58 @@ export interface ProviderClient {
 /** What a statement file turned out to be. */
 export type StatementKind = 'card';
 
-/** A parsed statement file: the account's currency and its rows, oldest first, without ids (the importer sets them). */
+/**
+ * A statement file as the core reads it: never bytes. The caller turns the file into one of these (text decoded from
+ * UTF-8; a workbook into sheets; a PDF into positioned text items) — the core holds no archive or PDF code.
+ */
+export type StatementDocument =
+  | { format: 'text'; text: string }
+  | { format: 'sheets'; sheets: Array<{ name: string; rows: Cell[][] }> }
+  | {
+      format: 'pdf';
+      pages: Array<{ width: number; height: number; items: Array<{ x: number; y: number; w: number; h: number; text: string }> }>;
+    };
+
+/** A spreadsheet cell: its stored value as text (numbers never as floats), typed string, number or boolean; null = empty. */
+export type Cell = { t: 's' | 'n' | 'b'; v: string } | null;
+
+/** What identifies a statement's account in the file, as far as the file states it. */
+export interface StatementAccount {
+  iban: string | null;
+  /** Masked card numbers of the account. */
+  cards: string[];
+  /** The provider's card type, when the file states it. */
+  type: string | null;
+}
+
+/** One account of a statement file: its currency and its rows, oldest first, without ids (the importer sets them). */
 export interface ParsedStatement {
   kind: StatementKind;
   /** The account currency (ISO 4217 numeric), from the file. */
   currencyCode: number;
+  account: StatementAccount;
   rows: Array<Omit<NormalizedTx, 'id'>>;
   /** The balance after the newest row, when the file states it. */
   closingBalance: number | null;
 }
 
 /**
- * Why a file was not taken — a code the UI words: not a statement of this bank, a statement in a language whose
- * service texts the rules do not know, a kind of statement not supported yet, no rows, a row that does not read.
+ * Why a file was not taken — a code the UI words, never text from the file: no reader knows it, two readers claim it,
+ * another bank's statement than the connection's, a language whose service texts the rules do not know, a kind of
+ * statement not supported yet, no rows, a row that does not read.
  */
-export type StatementProblem = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row';
+export type StatementProblem = 'unknown-format' | 'ambiguous' | 'other-bank' | 'language' | 'unsupported-kind' | 'empty' | 'bad-row';
 
-export type StatementParseResult =
-  | { ok: true; statement: ParsedStatement }
-  | { ok: false; problem: StatementProblem; /** 1-based line of the file, for `bad-row`. */ row?: number };
+export type StatementReadResult =
+  | { ok: true; /** One per account the file holds. */ statements: ParsedStatement[] }
+  | { ok: false; problem: StatementProblem; /** 1-based row of the document, for `bad-row`. */ row?: number };
 
-/** Text of a statement file → rows. Pure: no file system, no clock. */
-export interface StatementFileParser {
+/** One kind of statement file of one bank. Pure: no file system, no clock. */
+export interface StatementReader {
   provider: ProviderId;
-  parse(text: string): StatementParseResult;
+  /** Unique among readers, e.g. 'monobank-card-uk'. */
+  id: string;
+  /** 0 = not mine, 1 = its format and part of its signature, 2 = its whole signature. */
+  detect(doc: StatementDocument): 0 | 1 | 2;
+  read(doc: StatementDocument): StatementReadResult;
 }

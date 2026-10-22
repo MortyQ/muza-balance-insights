@@ -1,10 +1,10 @@
-// Statement files in main: the system dialog picks the file, main reads and parses it (core providers/statements.ts),
-// keeps the parsed statement for the next two steps — compare with an account, write — and forgets it after them, after
-// 10 minutes, on a new file and on the app lock. The renderer never gets the path, the name or the text; the log gets
-// a code or a count only.
+// Statement files in main: the system dialog picks the file, main reads it with the reader its content picks (core
+// providers/statements.ts; another bank's reader is refused), keeps the read statement for the next two steps —
+// compare with an account, write — and forgets it after them, after 10 minutes, on a new file and on the app lock. The
+// renderer never gets the path, the name or the text; the log gets a code or a count only.
 import fs from 'node:fs/promises';
 import { dateIn } from '@mono/core/shared/format';
-import { statementParserOf } from '@mono/core/providers/statements';
+import { STATEMENT_READERS, pickReader } from '@mono/core/providers/statements';
 import type { ParsedStatement } from '@mono/core/providers/types';
 import type { StatementTarget } from '@mono/core/ingest/statement-import';
 import { DataCallError } from '../shared/data-protocol.ts';
@@ -60,8 +60,7 @@ export class StatementsService {
     this.kept = null;
     const connection = (await this.d.data.connections()).find((c) => c.id === connectionId);
     if (!connection) throw new DataCallError('connection', 'ConnectionError', 'No such connection');
-    const parser = statementParserOf(connection.provider);
-    if (!parser) return this.problem('no-format');
+    if (STATEMENT_READERS[connection.provider].length === 0) return this.problem('no-format');
 
     const file = await this.d.pickFile();
     if (file === null) return { opened: false, reason: 'cancelled' };
@@ -73,10 +72,16 @@ export class StatementsService {
     } catch {
       return this.problem('unknown-format');
     }
-    const parsed = parser.parse(text);
-    if (!parsed.ok) return this.problem(parsed.problem, parsed.row ?? null);
+    const doc = { format: 'text', text: text.replace(/^\uFEFF/, '') } as const;
+    const picked = pickReader(doc);
+    if (!picked.ok) return this.problem(picked.problem);
+    if (picked.reader.provider !== connection.provider) return this.problem('other-bank');
+    const read = picked.reader.read(doc);
+    if (!read.ok) return this.problem(read.problem, read.row ?? null);
+    // One account per upload until the comparison lists every account of a file.
+    const [statement, more] = read.statements;
+    if (!statement || more) return this.problem('unsupported-kind');
 
-    const { statement } = parsed;
     const id = this.d.randomId();
     this.kept = { id, connectionId, statement, until: this.d.nowMs() + STATEMENT_KEEP_MS };
     const accounts = (await this.d.data.connectionAccounts(connectionId)).filter((a) => a.kind === 'card' && a.currencyCode === statement.currencyCode);

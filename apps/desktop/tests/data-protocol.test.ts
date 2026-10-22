@@ -5,7 +5,7 @@ import { ARG_SCHEMAS } from '../src/shared/ipc-args.ts';
 import { CallMessage, DATA_ARG_SCHEMAS, DATA_METHODS, FromData, ToData } from '../src/shared/data-protocol.ts';
 
 const row = { time: 1_700_000_000, amount: -12_345, currencyCode: 980, hold: false, mcc: 5411, description: 'Вигаданий магазин', raw: 'a;b;c' };
-const statement = { kind: 'card', currencyCode: 980, rows: [row], closingBalance: null };
+const statement = { kind: 'card', currencyCode: 980, account: { iban: null, cards: [], type: null }, rows: [row], closingBalance: null };
 const NEW_ID = 'file-00000000-0000-4000-8000-000000000001';
 
 describe('data protocol', () => {
@@ -49,6 +49,17 @@ describe('data protocol', () => {
     expect(ok([{ ...row, mcc: '5411' }], { kind: 'account', accountId: 'acc-1' })).toBe(false);
     expect(ok([], { kind: 'account', accountId: 'acc-1' })).toBe(false);
     expect(ok([row], { kind: 'new', id: 'acc-1', type: null })).toBe(false);
+  });
+
+  it("a statement's account: what the file states, within limits, nothing else", () => {
+    const ok = (account: unknown) =>
+      DATA_ARG_SCHEMAS.commitStatement.safeParse([1, { ...statement, account }, { kind: 'account', accountId: 'acc-1' }]).success;
+    expect(ok({ iban: 'UA003000000000000000000000001', cards: ['4441 11** **** 1111'], type: 'black' })).toBe(true);
+    expect(ok({ iban: null, cards: [], type: null })).toBe(true);
+    expect(ok({ iban: 'U'.repeat(35), cards: [], type: null })).toBe(false);
+    expect(ok({ iban: null, cards: Array.from({ length: 17 }, () => '4441'), type: null })).toBe(false);
+    expect(ok({ iban: null, cards: [], type: null, holder: 'Вигадана' })).toBe(false);
+    expect(ok(undefined)).toBe(false);
   });
 
   it('the key: 64 lowercase hex characters or null, only in `open`', () => {

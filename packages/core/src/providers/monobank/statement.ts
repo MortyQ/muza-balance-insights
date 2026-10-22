@@ -1,13 +1,14 @@
-// Monobank's statement files (the CSV the app downloads). Taken: the card statement in Ukrainian — its service texts
-// («Від: …», «З Чорної картки» …) are the API's, so the Monobank rules read its rows as they read the API's. The English
-// statement translates those texts (`From: …`): refused with its own code, the rules would miss them. The FOP statement
-// (a title line with the holder and the IBAN above the columns) is not supported yet.
+// Monobank's statement files (the CSV the app downloads), as text documents. Taken: the card statement in Ukrainian —
+// its service texts («Від: …», «З Чорної картки» …) are the API's, so the Monobank rules read its rows as they read the
+// API's. The English statement translates those texts (`From: …`): recognised and refused as `language`, the rules
+// would miss them. The FOP statement (a title line with the holder and the IBAN above the columns) is recognised and
+// not supported yet. The card statement states neither the IBAN nor the card number.
 import { TZDate } from '@date-fns/tz';
 import { TIMEZONE } from '../../shared/constants.ts';
 import { parseCsv } from '../../shared/csv.ts';
 import { currencyNumeric } from '../../shared/currency.ts';
 import { toMinor } from '../../shared/money.ts';
-import type { NormalizedTx, StatementFileParser, StatementParseResult } from '../types.ts';
+import type { NormalizedTx, StatementDocument, StatementReadResult, StatementReader } from '../types.ts';
 
 /** A cell the statement leaves empty: an em dash, or nothing. */
 const ABSENT = new Set(['—', '']);
@@ -96,18 +97,36 @@ function readRow(cells: readonly string[], header: readonly string[], c: Columns
   return tx;
 }
 
-function parse(text: string): StatementParseResult {
-  let table: string[][];
+/** The document's CSV table, or null when it is not text or not CSV. */
+function tableOf(doc: StatementDocument): string[][] | null {
+  if (doc.format !== 'text') return null;
   try {
-    table = parseCsv(text);
+    return parseCsv(doc.text);
   } catch {
-    return { ok: false, problem: 'unknown-format' };
+    return null;
   }
+}
+
+/** The FOP statement's title line names the account's IBAN. */
+const FOP_TITLE_RE = /\bUA\d{27}\b/;
+
+const isFopTitle = (table: string[][]) => table.length > 1 && table[0]?.length === 1 && FOP_TITLE_RE.test(table[0][0] ?? '');
+
+function detect(doc: StatementDocument): 0 | 1 | 2 {
+  const header = tableOf(doc)?.[0];
+  if (!header) return 0;
+  if (cardColumns(header) || norm(header[0] ?? '') === CARD_EN_FIRST) return 2;
+  // A title line above the columns: the FOP statement, recognised by the line alone.
+  return isFopTitle(tableOf(doc) ?? []) ? 1 : 0;
+}
+
+function read(doc: StatementDocument): StatementReadResult {
+  const table = tableOf(doc);
+  if (!table) return { ok: false, problem: 'unknown-format' };
   const header = table[0];
   if (!header) return { ok: false, problem: 'empty' };
-  // A title line (the holder, the account, the period) above the columns: the FOP statement.
-  if (header.length === 1 && table.length > 1) return { ok: false, problem: 'unsupported-kind' };
-  if (norm(header[0] ?? '') === CARD_EN_FIRST) return { ok: false, problem: 'english' };
+  if (isFopTitle(table)) return { ok: false, problem: 'unsupported-kind' };
+  if (norm(header[0] ?? '') === CARD_EN_FIRST) return { ok: false, problem: 'language' };
   const columns = cardColumns(header);
   if (!columns) return { ok: false, problem: 'unknown-format' };
 
@@ -124,8 +143,18 @@ function parse(text: string): StatementParseResult {
   const newest = rows.at(-1);
   return {
     ok: true,
-    statement: { kind: 'card', currencyCode: columns.currencyCode, rows, closingBalance: newest?.balance ?? null },
+    statements: [
+      {
+        kind: 'card',
+        currencyCode: columns.currencyCode,
+        account: { iban: null, cards: [], type: null },
+        rows,
+        closingBalance: newest?.balance ?? null,
+      },
+    ],
   };
 }
 
-export const monobankStatement: StatementFileParser = { provider: 'monobank', parse };
+export const monobankCardReader: StatementReader = { provider: 'monobank', id: 'monobank-card-uk', detect, read };
+
+export const readers: readonly StatementReader[] = [monobankCardReader];

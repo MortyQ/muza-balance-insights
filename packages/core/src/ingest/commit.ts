@@ -91,11 +91,14 @@ export type CommitRowsInput = {
   warn?: (msg: string) => void;
 };
 
+/** A span's statements, built but not run: the rows, hold cancelling and the coverage of one account. */
+export type PreparedRows = { stmts: Stmt[]; cancelledHolds: number; missingNonHolds: number };
+
 /**
- * Rows of one account and its coverage in ONE transaction, then the derivation passes around the span. Refuses a span
- * that would leave a hole in the coverage (nothing is written).
+ * Builds the statements that write one account's rows and its coverage; nothing is written. Refuses a span that would
+ * leave a hole in the coverage.
  */
-export async function commitRows(db: Db, input: CommitRowsInput): Promise<CommitResult> {
+export async function prepareRows(db: Db, input: CommitRowsInput): Promise<PreparedRows> {
   const { accountId, window: w, items, nowSec } = input;
 
   const state = await getSyncState(db, accountId);
@@ -141,21 +144,44 @@ export async function commitRows(db: Db, input: CommitRowsInput): Promise<Commit
             last_sync_at = excluded.last_sync_at`,
     args: [accountId, w.from, w.to, nowSec],
   });
-  await db.batch(stmts);
+  return { stmts, cancelledHolds: cancelIds.length, missingNonHolds };
+}
 
-  // Derived fields: transfer pairs may straddle windows/accounts, so the pass looks around the window.
-  // The window is already committed: a failure here must not stop the sync. A full pass repairs it.
-  let span: TimeRange = { from: w.from, to: w.to };
-  let derivationFailed = false;
+/**
+ * The derivation passes around a committed span. The rows are already committed: a failure here must not stop the
+ * import, it is reported (`derivationFailed`) and only a full pass repairs it.
+ */
+export async function deriveCommitted(
+  db: Db,
+  w: Window,
+  where: string,
+  warn?: (msg: string) => void,
+): Promise<{ span: TimeRange; derivationFailed: boolean }> {
+  // Transfer pairs may straddle windows/accounts, so the pass looks around the window.
   try {
-    span = (await deriveSpan(db, w)).span;
+    return { span: (await deriveSpan(db, w)).span, derivationFailed: false };
   } catch (err) {
-    derivationFailed = true;
-    input.warn?.(
-      `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${accountId} сохранено, но разметка переводов/категорий/scope ` +
+    warn?.(
+      `Окно ${toKyivDate(w.from)} … ${toKyivDate(w.to)} счёта ${where} сохранено, но разметка переводов/категорий/scope ` +
         `не обновлена (${err instanceof Error ? err.message : 'неизвестная ошибка'}). Запусти recategorize.`,
     );
+    return { span: { from: w.from, to: w.to }, derivationFailed: true };
   }
+}
 
-  return { upserted: items.length, cancelledHolds: cancelIds.length, missingNonHolds, span, derivationFailed };
+/**
+ * Rows of one account and its coverage in ONE transaction, then the derivation passes around the span. Refuses a span
+ * that would leave a hole in the coverage (nothing is written).
+ */
+export async function commitRows(db: Db, input: CommitRowsInput): Promise<CommitResult> {
+  const prepared = await prepareRows(db, input);
+  await db.batch(prepared.stmts);
+  const { span, derivationFailed } = await deriveCommitted(db, input.window, input.accountId, input.warn);
+  return {
+    upserted: input.items.length,
+    cancelledHolds: prepared.cancelledHolds,
+    missingNonHolds: prepared.missingNonHolds,
+    span,
+    derivationFailed,
+  };
 }
