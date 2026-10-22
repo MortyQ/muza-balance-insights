@@ -30,6 +30,7 @@ function tx(id: string, accountId: string, time: number, amount: number, extra: 
     commissionRate: 0,
     mcc: 4829,
     description: '',
+    bankCategory: null,
     counterIban: null,
     ...extra,
   };
@@ -41,6 +42,11 @@ function marksOf(rows: TransferTx[]): Record<string, TransferMark | undefined> {
 }
 
 describe('detectTransfers: pair', () => {
+  it('rows without an MCC are not Monobank transfers: a mirror without codes is no pair', () => {
+    const m = marksOf([tx('out', 'black', 100, -500, { mcc: null }), tx('in', 'white', 105, 500, { mcc: null })]);
+    expect(m).toEqual({ out: undefined, in: undefined });
+  });
+
   it('pairs the card-side jar debit with the jar top-up, not the purchase that triggered it', () => {
     const m = marksOf([
       tx('buy', 'black', 1000, -63_660, { mcc: 5411, description: 'Сільпо' }),

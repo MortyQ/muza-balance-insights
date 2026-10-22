@@ -3,6 +3,7 @@
 import type { Db } from '../storage/db.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import type { TransferRule } from './transfers.ts';
 
 export type TransferDiagnostics = {
@@ -32,11 +33,14 @@ export async function transferDiagnostics(db: Db): Promise<TransferDiagnostics> 
   const jars = await db.execute(`SELECT title FROM accounts WHERE kind = 'jar' AND title IS NOT NULL`);
   const jarTitles = new Set(jars.rows.map((r) => String(r.title).trim()));
   const unpaired = await db.execute(
-    `SELECT account_id, description, mcc, amount FROM transactions WHERE is_cancelled = 0 AND transfer_pair_id IS NULL`,
+    `SELECT account_id, description, mcc, amount, bank_category FROM transactions WHERE is_cancelled = 0 AND transfer_pair_id IS NULL`,
   );
   const providers = await accountProviders(db);
   const unpairedService4829 = unpaired.rows.filter((r) =>
-    rulesFor(providerOf(providers, String(r.account_id))).isServiceTransferText({ description: String(r.description ?? ''), mcc: Number(r.mcc), amount: Number(r.amount) }, { jarTitles }),
+    rulesFor(providerOf(providers, String(r.account_id))).isServiceTransferText(
+      { description: String(r.description ?? ''), mcc: numOrNull(r.mcc), amount: Number(r.amount), bankCategory: textOrNull(r.bank_category) },
+      { jarTitles },
+    ),
   ).length;
 
   const refunds = await db.execute(

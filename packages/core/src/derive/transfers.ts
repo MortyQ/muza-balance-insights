@@ -15,6 +15,7 @@ import type { Db, Stmt } from '../storage/db.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
 import type { ProviderId, ProviderRules } from '../providers/types.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 
 /** Max |Δt| between the two halves of a pair, seconds. */
 export const TRANSFER_WINDOW_SEC = 20;
@@ -29,8 +30,9 @@ export type TransferTx = {
   operationAmount: number | null;
   /** Commission in account currency, minor units; already included in `amount`. */
   commissionRate: number;
-  mcc: number;
+  mcc: number | null;
   description: string;
+  bankCategory: string | null;
   counterIban: string | null;
 };
 
@@ -169,7 +171,7 @@ export type TimeRange = { from: number; to: number };
 
 type StoredRow = TransferTx & { isCancelled: boolean; pairId: string | null; isInternal: boolean; rule: string | null };
 
-const ROW_COLUMNS = `id, account_id, time, amount, operation_amount, commission_rate, mcc, description, counter_iban,
+const ROW_COLUMNS = `id, account_id, time, amount, operation_amount, commission_rate, mcc, description, bank_category, counter_iban,
   is_cancelled, is_internal_transfer, transfer_pair_id, transfer_rule`;
 
 /**
@@ -262,8 +264,9 @@ async function loadRows(db: Db, sql: string, args: Array<string | number>): Prom
     amount: Number(r.amount),
     operationAmount: r.operation_amount === null ? null : Number(r.operation_amount),
     commissionRate: r.commission_rate === null ? 0 : Number(r.commission_rate),
-    mcc: Number(r.mcc),
+    mcc: numOrNull(r.mcc),
     description: String(r.description ?? ''),
+    bankCategory: textOrNull(r.bank_category),
     counterIban: r.counter_iban === null ? null : String(r.counter_iban),
     isCancelled: Number(r.is_cancelled) === 1,
     pairId: r.transfer_pair_id === null ? null : String(r.transfer_pair_id),

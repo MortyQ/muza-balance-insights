@@ -83,6 +83,18 @@
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.
   6012 делится по знаку: зачисления → «поступления», списания → «рассрочки и кредиты».
   8398 → «благотворительность» (донаты в чужие банки через 4829 — позже оверрайдами).
+- **Operations without an MCC** (migration v16 made `transactions.mcc` nullable; `NormalizedTx.mcc` is optional,
+  `RuleTx.mcc` is `number | null`): a missing code is unknown, never 0 or another code. Domain reads go through
+  `numOrNull` / `textOrNull` (`src/shared/sql-values.ts`). The MCC table maps numbers only, so such a row gets the
+  provider's hint, else «другое». `spendingSummary` grouped by `mcc` puts them under `NO_MCC_KEY` (`'none'`), apart
+  from the commission lines (`COMMISSION_KEY`). Monobank's rules never call a row without an MCC a transfer.
+- **The bank's own category** (migration v17, `transactions.bank_category`, `NormalizedTx.bankCategory`,
+  `RuleTx.bankCategory`): stored as the bank states it, and mapped by the provider in `categoryHint`. Hints are the
+  domain categories of `CATEGORY_HINTS` (`providers/types.ts`): every category but «комиссии банка», «свои переводы»
+  and «семье», which only the derivation sets (a compile-time check in `derive/categories.ts`). The order stays
+  internal → family → override → hint → MCC → default, so an override wins over the bank's category, and a corrected
+  mapping applies to stored rows at the next re-derivation. Bank text: the main database only, never the analysis copy
+  (`apps/mcp/tests/analysis.test.ts` carries a canary).
 - Фикстуры тестов — только вымышленные имена и суммы; ничего из реальных данных и отчётов.
 - Остаток на конец месяца (`balancesAt` в `packages/core/src/read/status.ts`): остаток банка после последней
   неотменённой операции до конца месяца (`endSec`, исключая саму секунду); если он не сохранён или в последнюю

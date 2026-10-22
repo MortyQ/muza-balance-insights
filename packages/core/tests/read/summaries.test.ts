@@ -6,7 +6,7 @@ import { kyivStartOfDay } from '../../src/shared/format.ts';
 import { spendingByCategory } from '../../src/read/queries.ts';
 import { getBalances, getSyncStatus } from '../../src/read/status.ts';
 import { INCOME_GROUP_BY, incomeSource, incomeSummary } from '../../src/read/income.ts';
-import { SPENDING_GROUP_BY, spendingGrid, spendingSummary } from '../../src/read/spending.ts';
+import { COMMISSION_KEY, NO_MCC_KEY, SPENDING_GROUP_BY, spendingGrid, spendingSummary } from '../../src/read/spending.ts';
 import { SummaryError, periodInfo } from '../../src/read/filters.ts';
 import { comparePeriods } from '../../src/read/compare.ts';
 import { insertAccountRow, memoryDb } from '../helpers.ts';
@@ -30,7 +30,7 @@ async function tx(
   date: string,
   amount: number,
   o: {
-    category?: string; mcc?: number; scope?: string; internal?: boolean; commission?: number; hold?: boolean; description?: string;
+    category?: string; mcc?: number | null; scope?: string; internal?: boolean; commission?: number; hold?: boolean; description?: string;
     cancelled?: boolean; opCurrency?: number; opAmount?: number;
   } = {},
 ) {
@@ -41,7 +41,7 @@ async function tx(
             commission_rate, category, is_internal_transfer, scope, is_cancelled, synced_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, 0)`,
     args: [
-      id, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? '', o.mcc ?? 5411, o.hold ? 1 : 0, amount, o.opAmount ?? amount,
+      id, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? '', o.mcc === undefined ? 5411 : o.mcc, o.hold ? 1 : 0, amount, o.opAmount ?? amount,
       o.opCurrency ?? null, accountId, o.commission ?? 0, o.category ?? 'продукты', o.internal ? 1 : 0, o.scope ?? 'personal', o.cancelled ? 1 : 0,
     ],
   });
@@ -206,6 +206,17 @@ describe('spendingSummary', () => {
     expect(JSON.stringify(acc)).not.toMatch(/CANARY|7777/);
   });
 
+  it('mcc key: operations without an MCC form their own group; their commissions stay in the commission group', async () => {
+    const before = (await spendingSummary(db, { ...Q, groupBy: 'mcc' }, NOW)).groups.filter((g) => g.currency === 980);
+    await tx('black', '2026-02-07', -5_300, { mcc: null, commission: 300, category: 'другое' });
+    await tx('black', '2026-02-08', -1_000, { mcc: null, category: 'другое' });
+    const keys = (await spendingSummary(db, { ...Q, groupBy: 'mcc' }, NOW)).groups.filter((g) => g.currency === 980).map((g) => [g.key, g.net]);
+    expect(keys).toContainEqual([NO_MCC_KEY, 6_000]);
+    const commission = (k: Array<{ key: string; net: number }>) => k.find((g) => g.key === COMMISSION_KEY)?.net;
+    expect(keys.find(([k]) => k === COMMISSION_KEY)?.[1]).toBe((commission(before) ?? 0) + 300);
+    expect(NO_MCC_KEY).not.toBe(COMMISSION_KEY);
+  });
+
   it('filters: scope, account, category (incl. commissions); an unknown groupBy / scope is an error', async () => {
     expect((await spendingSummary(db, { ...Q, scope: 'business' }, NOW)).totals).toEqual([
       { currency: 980, lines: 1, purchases: 1, gross: 7_000, refunds: 0, net: 7_000, netPerDay: 119, operation: { currency: 980, gross: 7_000, refunds: 0, net: 7_000 } },
@@ -267,7 +278,7 @@ describe('incomeSummary', () => {
     expect((await incomeSummary(db, { from: '2026-02-01', to: '2026-02-28', groupBy: 'account' }, NOW)).groups.map((g) => g.label)).toEqual([
       'black/USD', 'black/UAH',
     ]);
-    expect(incomeSource(5411, '', 'monobank')).toBe('other');
+    expect(incomeSource({ mcc: 5411, description: '', bankCategory: null }, 'monobank')).toBe('other');
   });
 
   it('incomeLines: the rows behind incomeSummary, newest first, with source and sender; same filters', async () => {

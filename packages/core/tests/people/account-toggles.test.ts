@@ -41,7 +41,7 @@ describe('migration v11', () => {
     await db.execute(`INSERT INTO connections (id, participant_id, provider, created_at) VALUES (1, 1, 'monobank', 0)`);
     await db.execute(`INSERT INTO accounts (id, connection_id, kind, currency_code, balance, updated_at) VALUES ('a', 1, 'card', 980, 0, 0)`);
 
-    expect(await migrate(db, 0)).toEqual([11, 12, 13, 14, 15, 16]);
+    expect(await migrate(db, 0)).toEqual([11, 12, 13, 14, 15, 16, 17]);
     expect(await rows('SELECT id, sync_choice FROM accounts')).toEqual([{ id: 'a', sync_choice: null }]);
     await expect(db.execute(`UPDATE accounts SET sync_choice = 2 WHERE id = 'a'`)).rejects.toThrow(/CHECK/i);
   });
@@ -359,7 +359,7 @@ describe('transfers made after the toggle: no pair, marked `text` by the provide
 
 describe('monobank ownTransferCounterpart (pure)', () => {
   const ctx = { jarTitles: new Set(['Вигадана мрія']) };
-  const of = (description: string) => monobankRules.ownTransferCounterpart({ description, mcc: 4829, amount: -1 }, ctx);
+  const of = (description: string) => monobankRules.ownTransferCounterpart({ description, mcc: 4829, amount: -1, bankCategory: null }, ctx);
 
   it('every own-transfer text names the other side; jar templates and titles name the jar', () => {
     for (const d of OWN_TRANSFER_DESCRIPTIONS) expect(of(d)).toMatchObject({ kind: 'card' });
@@ -371,7 +371,7 @@ describe('monobank ownTransferCounterpart (pure)', () => {
 
   it('auto top-ups, the generic text and anything else name nothing', () => {
     for (const d of [...AUTO_TOPUP_DESCRIPTIONS, GENERIC_TRANSFER_DESCRIPTION, 'Вигаданий Магазин']) expect(of(d)).toBeNull();
-    expect(monobankRules.ownTransferCounterpart({ description: 'На білу картку', mcc: 5411, amount: -1 }, ctx)).toBeNull();
+    expect(monobankRules.ownTransferCounterpart({ description: 'На білу картку', mcc: 5411, amount: -1, bankCategory: null }, ctx)).toBeNull();
   });
 });
 

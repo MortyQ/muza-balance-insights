@@ -17,7 +17,7 @@ describe('detectTransfers: family (pure)', () => {
     { id: 'her-black', kind: 'card', currencyCode: 980, iban: 'UA00HER', title: null, provider: 'monobank', participantId: 2 },
   ];
   const tx = (id: string, accountId: string, time: number, amount: number, counterIban: string | null = null): TransferTx => ({
-    id, accountId, time, amount, operationAmount: null, commissionRate: 0, mcc: 4829, description: 'Вигаданий переказ', counterIban,
+    id, accountId, time, amount, operationAmount: null, commissionRate: 0, mcc: 4829, description: 'Вигаданий переказ', bankCategory: null, counterIban,
   });
 
   it('a mirror pair between two participants is family; between one participant\'s cards it stays pair', () => {

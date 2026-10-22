@@ -55,16 +55,17 @@ describe('migration v8', () => {
       indexes: await indexes(db),
     };
 
-    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(await migrate(db, 0)).toEqual([8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
 
     expect(await rows(db, 'SELECT id, label, created_at FROM participants')).toEqual([{ id: 1, label: 'Я', created_at: 222 }]);
     expect(await rows(db, 'SELECT id, participant_id, provider, external_client_id FROM connections')).toEqual([
       { id: 1, participant_id: 1, provider: 'monobank', external_client_id: null },
     ]);
     expect(await rows(db, 'SELECT * FROM accounts ORDER BY id')).toEqual(before.accounts.map((a) => ({ ...a, connection_id: 1, sync_choice: null })));
-    // v16 moves the payload to transaction_raw and adds crossing_category (filled by derived.ts).
+    // v16 moves the payload to transaction_raw and adds crossing_category (filled by derived.ts); v17 adds
+    // bank_category and transfer_fee (NULL).
     expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(
-      before.transactions.map(({ raw_json: _raw, ...t }) => ({ ...t, crossing_category: null })),
+      before.transactions.map(({ raw_json: _raw, ...t }) => ({ ...t, crossing_category: null, bank_category: null, transfer_fee: null })),
     );
     expect(await rows(db, 'SELECT id, raw_json FROM transaction_raw ORDER BY id')).toEqual(
       before.transactions.map((t) => ({ id: t.id, raw_json: t.raw_json })),

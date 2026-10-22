@@ -8,7 +8,8 @@ import { toMajor } from '../shared/currency.ts';
 import { accountLabels, displayCounterName, toKyivDateTime } from '../shared/format.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
-import type { ProviderId } from '../providers/types.ts';
+import type { ProviderId, RuleTx } from '../providers/types.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import { periodArgs, periodSql } from '../shared/periods.ts';
 import { getSettings } from '../people/settings.ts';
 import { isScope, type Scope } from '../derive/scope.ts';
@@ -48,7 +49,8 @@ export type FoundTransaction = {
   /** counter_name as initials, or null. */
   counterparty: string | null;
   category: string;
-  mcc: number;
+  /** null = the bank sends none. */
+  mcc: number | null;
   account: string;
   scope: string;
   internal: boolean;
@@ -94,7 +96,7 @@ const JAR_LABEL = 'банка';
 export function merchantForOutput(
   description: string,
   counterName: string | null,
-  mcc: number,
+  row: Pick<RuleTx, 'mcc' | 'bankCategory'>,
   jarTitles: ReadonlySet<string>,
   reveal: boolean,
   provider: ProviderId,
@@ -108,7 +110,7 @@ export function merchantForOutput(
   if (CARD_PAN.test(d)) return '[картка]';
   const name = counterName?.trim();
   if (name && normalizeSearch(d).includes(normalizeSearch(name))) return displayCounterName(d, false) ?? '';
-  if (d !== JAR_LABEL && rules.isPersonTransfer({ description: d, mcc, amount: 0 }, { jarTitles })) {
+  if (d !== JAR_LABEL && rules.isPersonTransfer({ ...row, description: d, amount: 0 }, { jarTitles })) {
     return displayCounterName(d, false) ?? '';
   }
   return d;
@@ -132,7 +134,7 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   const rs = await db.execute({
-    sql: `SELECT t.id, t.account_id, t.time, t.description, t.counter_name, t.mcc, t.amount, t.operation_amount,
+    sql: `SELECT t.id, t.account_id, t.time, t.description, t.counter_name, t.mcc, t.bank_category, t.amount, t.operation_amount,
                  t.currency_code AS op_currency, a.currency_code AS currency, COALESCE(t.crossing_category, t.category) AS category, t.scope,
                  t.is_internal_transfer = 1 AND t.crossing_category IS NULL AS internal, t.hold
           FROM transactions t JOIN accounts a ON a.id = t.account_id
@@ -186,10 +188,17 @@ export async function searchTransactions(db: Db, q: SearchQuery, nowSec: number)
         currency: Number(r.currency),
         operationAmount: Number(r.operation_amount ?? r.amount),
         operationCurrency: Number(r.op_currency),
-        merchant: merchantForOutput(String(r.description ?? ''), counterName, Number(r.mcc), jarTitles, reveal, providerOf(providers, String(r.account_id))),
+        merchant: merchantForOutput(
+          String(r.description ?? ''),
+          counterName,
+          { mcc: numOrNull(r.mcc), bankCategory: textOrNull(r.bank_category) },
+          jarTitles,
+          reveal,
+          providerOf(providers, String(r.account_id)),
+        ),
         counterparty: displayCounterName(counterName, reveal),
         category: String(r.category),
-        mcc: Number(r.mcc),
+        mcc: numOrNull(r.mcc),
         account: labels.get(String(r.account_id)) ?? String(r.account_id),
         scope: String(r.scope),
         internal: Number(r.internal) === 1,

@@ -5,6 +5,7 @@ import type { Db, Stmt } from '../storage/db.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
 import type { CategoryHint, ProviderId } from '../providers/types.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const DEFAULT_CATEGORY = 'другое';
@@ -40,12 +41,13 @@ export const CATEGORY = {
   other: DEFAULT_CATEGORY,
 } as const;
 
-const HINT_CATEGORY: Readonly<Record<CategoryHint, string>> = {
-  installments: CATEGORY.installments,
-  taxes: CATEGORY.taxes,
-  income: CATEGORY.income,
-  p2p: CATEGORY.p2p,
-};
+/** Only the derivation sets these; every other category a provider may suggest (CATEGORY_HINTS). */
+type DerivedOnly = 'fees' | 'ownTransfers' | 'family';
+// Compile-time: the hints are exactly the categories but the derived-only ones.
+const HINTS_ARE_CATEGORIES: [Exclude<keyof typeof CATEGORY, CategoryHint | DerivedOnly>, Exclude<CategoryHint, keyof typeof CATEGORY>] extends [never, never]
+  ? true
+  : false = true;
+void HINTS_ARE_CATEGORIES;
 
 /**
  * MCCs seen in real data (phase 3 reports). Anything else falls back to «другое».
@@ -114,8 +116,11 @@ export type CategoryOverride = { pattern: string; matchType: 'exact' | 'contains
 
 export type CategorizeInput = {
   description: string;
-  mcc: number;
+  /** null = the bank sends none. */
+  mcc: number | null;
   amount: number;
+  /** The bank's own category; its provider's rules map it. */
+  bankCategory: string | null;
   counterName: string | null;
   isInternalTransfer: boolean;
   /** transfer_rule = family: money between two participants. */
@@ -133,8 +138,8 @@ export function categorize(tx: CategorizeInput, overrides: readonly CategoryOver
   if (override) return override.category;
 
   const hint = rulesFor(tx.provider).categoryHint(tx);
-  if (hint) return HINT_CATEGORY[hint];
-  return MCC_CATEGORY.get(tx.mcc) ?? DEFAULT_CATEGORY;
+  if (hint) return CATEGORY[hint];
+  return (tx.mcc === null ? undefined : MCC_CATEGORY.get(tx.mcc)) ?? DEFAULT_CATEGORY;
 }
 
 /**
@@ -172,7 +177,7 @@ export async function loadOverrides(db: Db): Promise<CategoryOverride[]> {
  */
 export async function recategorize(db: Db, range?: TimeRange | null): Promise<number> {
   const [overrides, providers] = await Promise.all([loadOverrides(db), accountProviders(db)]);
-  const cols = 'id, account_id, description, mcc, amount, counter_name, is_internal_transfer, transfer_rule, category, refund_pair_id';
+  const cols = 'id, account_id, description, mcc, amount, bank_category, counter_name, is_internal_transfer, transfer_rule, category, refund_pair_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM transactions WHERE time BETWEEN ? AND ?`, args: [range.from, range.to] })
     : await db.execute(`SELECT ${cols} FROM transactions`);
@@ -184,8 +189,9 @@ export async function recategorize(db: Db, range?: TimeRange | null): Promise<nu
       categorize(
         {
           description: String(r.description ?? ''),
-          mcc: Number(r.mcc),
+          mcc: numOrNull(r.mcc),
           amount: Number(r.amount),
+          bankCategory: textOrNull(r.bank_category),
           counterName: r.counter_name === null ? null : String(r.counter_name),
           isInternalTransfer: Number(r.is_internal_transfer) === 1,
           isFamilyTransfer: r.transfer_rule === 'family',

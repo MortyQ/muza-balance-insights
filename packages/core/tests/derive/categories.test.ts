@@ -1,9 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { categorize, recategorize, type CategorizeInput, type CategoryOverride } from '../../src/derive/categories.ts';
 import type { Db } from '../../src/storage/db.ts';
+import { monobankRules } from '../../src/providers/monobank/rules.ts';
+import { CATEGORY_HINTS } from '../../src/providers/types.ts';
 import { insertAccount, memoryDb } from '../helpers.ts';
 
-const base: CategorizeInput = { description: '', mcc: 5411, amount: -100, counterName: null, isInternalTransfer: false, isFamilyTransfer: false, provider: 'monobank' };
+const base: CategorizeInput = { description: '', mcc: 5411, amount: -100, bankCategory: null, counterName: null, isInternalTransfer: false, isFamilyTransfer: false, provider: 'monobank' };
 const cat = (over: Partial<CategorizeInput>, overrides: CategoryOverride[] = []) => categorize({ ...base, ...over }, overrides);
 
 describe('categorize', () => {
@@ -38,6 +40,29 @@ describe('categorize', () => {
     expect(cat({ mcc: 4829, amount: -45_804, description: 'Щомісячний платіж ' })).toBe('рассрочки и кредиты');
   });
 
+  it("a provider's hint from the bank's own category lands; an override still wins; every hint is a category", () => {
+    // A fictional mapping, as a bank whose rows carry its own category would have.
+    const spy = vi.spyOn(monobankRules, 'categoryHint').mockImplementation((tx) => (tx.bankCategory === 'Вигадані супермаркети' ? 'groceries' : null));
+    try {
+      expect(cat({ mcc: null, bankCategory: 'Вигадані супермаркети' })).toBe('продукты');
+      expect(cat({ mcc: null, bankCategory: 'Інше' })).toBe('другое');
+      const override: CategoryOverride = { pattern: 'Вигадана Особа', matchType: 'exact', category: 'подарки' };
+      expect(cat({ mcc: null, bankCategory: 'Вигадані супермаркети', counterName: 'Вигадана Особа' }, [override])).toBe('подарки');
+      for (const hint of CATEGORY_HINTS) {
+        spy.mockReturnValue(hint);
+        expect(cat({ mcc: 5411 }), hint).not.toMatch(/^(свои переводы|семье|комиссии банка)$/);
+      }
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('no MCC: unknown, never a code — the provider hint still applies, else «другое»', () => {
+    expect(cat({ mcc: null })).toBe('другое');
+    expect(cat({ mcc: null, amount: 500 })).toBe('другое');
+    expect(cat({ mcc: null, amount: -45_804, description: 'Щомісячний платіж' })).toBe('рассрочки и кредиты');
+  });
+
   it('overrides by counter_name: exact beats contains, longest contains wins, case-insensitive', () => {
     const overrides: CategoryOverride[] = [
       { pattern: 'уніка', matchType: 'contains', category: 'страхование' },
@@ -60,7 +85,7 @@ describe('recategorize (DB)', () => {
   afterEach(() => db.close());
 
   it('uses category_overrides and writes only changed rows', async () => {
-    const ins = (id: string, mcc: number, amount: number, counter: string | null, internal = 0) =>
+    const ins = (id: string, mcc: number | null, amount: number, counter: string | null, internal = 0) =>
       db.execute({
         sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code,
                 counter_name, is_internal_transfer, synced_at)
@@ -70,15 +95,19 @@ describe('recategorize (DB)', () => {
     await ins('shop', 5411, -100, null);
     await ins('p2p', 4829, -500, 'Тестова Особа');
     await ins('own', 4829, -500, null, 1);
+    await ins('nomcc', null, -300, null);
+    await db.execute(`UPDATE transactions SET category = 'продукты' WHERE id = 'nomcc'`);
     await db.execute(`INSERT INTO category_overrides (pattern, match_type, category) VALUES ('Тестова Особа', 'exact', 'подарки')`);
 
-    expect(await recategorize(db)).toBe(3);
+    expect(await recategorize(db)).toBe(4);
     const rows = await db.execute('SELECT id, category FROM transactions ORDER BY id');
     expect(Object.fromEntries(rows.rows.map((r) => [String(r.id), String(r.category)]))).toEqual({
+      nomcc: 'другое',
       own: 'свои переводы',
       p2p: 'подарки',
       shop: 'продукты',
     });
+    expect((await db.execute(`SELECT mcc FROM transactions WHERE id = 'nomcc'`)).rows[0]?.mcc).toBeNull();
     expect(await recategorize(db)).toBe(0);
   });
 });

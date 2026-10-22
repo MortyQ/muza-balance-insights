@@ -22,8 +22,8 @@ export type CommitResult = {
 const UPSERT_TX = `INSERT INTO transactions (
     id, account_id, time, local_date, description, mcc, original_mcc, hold, amount, operation_amount,
     currency_code, commission_rate, cashback_amount, balance, comment, counter_name, counter_iban,
-    counter_edrpou, receipt_id, category, is_internal_transfer, is_cancelled, synced_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
+    counter_edrpou, receipt_id, bank_category, category, is_internal_transfer, is_cancelled, synced_at
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?)
   ON CONFLICT(id) DO UPDATE SET
     account_id = excluded.account_id, time = excluded.time, local_date = excluded.local_date,
     description = excluded.description, mcc = excluded.mcc, original_mcc = excluded.original_mcc,
@@ -31,7 +31,7 @@ const UPSERT_TX = `INSERT INTO transactions (
     currency_code = excluded.currency_code, commission_rate = excluded.commission_rate,
     cashback_amount = excluded.cashback_amount, balance = excluded.balance, comment = excluded.comment,
     counter_name = excluded.counter_name, counter_iban = excluded.counter_iban,
-    counter_edrpou = excluded.counter_edrpou, receipt_id = excluded.receipt_id,
+    counter_edrpou = excluded.counter_edrpou, receipt_id = excluded.receipt_id, bank_category = excluded.bank_category,
     is_cancelled = 0, synced_at = excluded.synced_at`;
 // On conflict, category / is_internal_transfer / transfer_* are left alone: the pass after the commit
 // recomputes them for the window (a row may already be marked internal).
@@ -50,7 +50,16 @@ function upsertStatements(
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
-    { description, mcc: it.mcc, amount: it.amount, counterName: it.counterName ?? null, isInternalTransfer: false, isFamilyTransfer: false, provider },
+    {
+      description,
+      mcc: it.mcc ?? null,
+      amount: it.amount,
+      bankCategory: it.bankCategory ?? null,
+      counterName: it.counterName ?? null,
+      isInternalTransfer: false,
+      isFamilyTransfer: false,
+      provider,
+    },
     overrides,
   );
   // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).
@@ -58,10 +67,10 @@ function upsertStatements(
     {
       sql: UPSERT_TX,
       args: [
-        it.id, accountId, it.time, toKyivDate(it.time), description, it.mcc, it.originalMcc ?? null,
+        it.id, accountId, it.time, toKyivDate(it.time), description, it.mcc ?? null, it.originalMcc ?? null,
         it.hold ? 1 : 0, it.amount, it.operationAmount ?? null, it.currencyCode, it.commissionRate ?? null,
         it.cashbackAmount ?? null, it.balance ?? null, it.comment ?? null, it.counterName ?? null, it.counterIban ?? null, it.counterEdrpou ?? null,
-        it.receiptId ?? null, category, syncedAt,
+        it.receiptId ?? null, it.bankCategory ?? null, category, syncedAt,
       ],
     },
     { sql: UPSERT_RAW, args: [it.id, it.raw] },

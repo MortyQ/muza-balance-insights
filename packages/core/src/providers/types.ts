@@ -13,8 +13,11 @@ export type ProviderId = (typeof PROVIDER_IDS)[number];
 /** A stored row as the rules see it (columns of `transactions`). */
 export interface RuleTx {
   description: string;
-  mcc: number;
+  /** null = the bank sends no merchant category code: unknown, never 0. */
+  mcc: number | null;
   amount: number;
+  /** The bank's own category of the row, as the bank states it; null = none. */
+  bankCategory: string | null;
 }
 
 /** Per-database context some rules need: titles of the jars (a description equal to one is a jar operation). */
@@ -28,8 +31,17 @@ export interface RuleContext {
  */
 export type OwnTransferCounterpart = { kind: 'jar'; title: string } | { kind: 'card'; type: string; currencyCode: number | null };
 
-/** Categories a provider may suggest from the shape of an operation; the domain maps them to its names. */
-export type CategoryHint = 'installments' | 'taxes' | 'income' | 'p2p';
+/**
+ * The domain categories a provider may suggest — from the shape of an operation, or from the bank's own category of
+ * it; the domain maps each to its name (derive/categories.ts). Not here: bank fees, own and family transfers, which
+ * only the derivation sets.
+ */
+export const CATEGORY_HINTS = [
+  'groceries', 'cafes', 'transport', 'health', 'beauty', 'clothing', 'home', 'telecom', 'entertainment', 'travel', 'sport',
+  'pets', 'insurance', 'taxes', 'cash', 'delivery', 'education', 'gifts', 'utilities', 'marketplaces', 'charity', 'p2p',
+  'installments', 'income', 'other',
+] as const;
+export type CategoryHint = (typeof CATEGORY_HINTS)[number];
 
 /**
  * Where income came from, by the shape of the operation (never by name):
@@ -99,7 +111,7 @@ export interface ProviderRules {
   isTreasury(description: string): boolean;
   /** Accounts of the owner's business (FOP): business scope. `type` as stored in accounts.type. */
   isBusinessAccount(account: { type: string | null }): boolean;
-  /** Category from the shape of the operation, before the MCC table; null = no opinion. */
+  /** Category from the shape of the operation or the bank's category, before the MCC table; null = no opinion. */
   categoryHint(tx: RuleTx): CategoryHint | null;
   incomeSource(tx: RuleTx): ProviderIncomeSource;
   /** A named incoming transfer split into the bank's label and the sender's name («Від: Name» → «Від:», «Name»), or null. */
@@ -137,7 +149,10 @@ export interface NormalizedTx {
   amount: number;
   currencyCode: number;
   hold: boolean;
-  mcc: number;
+  /** Absent = the bank sends no merchant category code. */
+  mcc?: number;
+  /** The bank's own category, as the bank states it (its rules map it). */
+  bankCategory?: string;
   description?: string;
   originalMcc?: number;
   operationAmount?: number;

@@ -10,6 +10,7 @@ import { categorize, loadOverrides } from './categories.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import type { Db, Stmt } from '../storage/db.ts';
 import { rulesFor } from '../providers/rules.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import type { TimeRange } from './transfers.ts';
 
 /** derived_state key of the accounts' fingerprint crossing was last derived for in full. */
@@ -60,17 +61,18 @@ function crossesDisabledSql(t: string): string {
         AND UPPER(REPLACE(ia.iban, ' ', '')) = UPPER(REPLACE(${t}.counter_iban, ' ', '')) AND NOT ${accountEnabledSql('ia')}))))`;
 }
 
-type Row = { id: string; accountId: string; description: string; mcc: number; amount: number; counterName: string | null };
+type Row = { id: string; accountId: string; description: string; mcc: number | null; amount: number; bankCategory: string | null; counterName: string | null };
 
-const COLS = 't.id, t.account_id, t.description, t.mcc, t.amount, t.counter_name';
+const COLS = 't.id, t.account_id, t.description, t.mcc, t.amount, t.bank_category, t.counter_name';
 
 function toRow(r: Record<string, unknown>): Row {
   return {
     id: String(r.id),
     accountId: String(r.account_id),
     description: String(r.description ?? ''),
-    mcc: Number(r.mcc),
+    mcc: numOrNull(r.mcc),
     amount: Number(r.amount),
+    bankCategory: textOrNull(r.bank_category),
     counterName: r.counter_name === null || r.counter_name === undefined ? null : String(r.counter_name),
   };
 }
@@ -134,6 +136,7 @@ async function deriveCrossing(db: Db, accounts: readonly Account[], range: TimeR
               description: r.description,
               mcc: r.mcc,
               amount: r.amount,
+              bankCategory: r.bankCategory,
               counterName: r.counterName,
               isInternalTransfer: false,
               isFamilyTransfer: false,

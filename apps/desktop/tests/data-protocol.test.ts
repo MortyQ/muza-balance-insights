@@ -43,6 +43,10 @@ describe('data protocol', () => {
     expect(ok([row], { kind: 'new', id: NEW_ID, type: 'black' })).toBe(true);
     expect(ok([row], { kind: 'account', accountId: 'acc-1' })).toBe(true);
     expect(ok([{ ...row, extra: 1 }], { kind: 'account', accountId: 'acc-1' })).toBe(false);
+    // A bank that sends no MCC, with its own category; an MCC is still a whole number when present.
+    const { mcc: _mcc, ...noMcc } = row;
+    expect(ok([{ ...noMcc, bankCategory: 'Вигадана категорія' }], { kind: 'account', accountId: 'acc-1' })).toBe(true);
+    expect(ok([{ ...row, mcc: '5411' }], { kind: 'account', accountId: 'acc-1' })).toBe(false);
     expect(ok([], { kind: 'account', accountId: 'acc-1' })).toBe(false);
     expect(ok([row], { kind: 'new', id: 'acc-1', type: null })).toBe(false);
   });

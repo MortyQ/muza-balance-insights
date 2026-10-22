@@ -66,7 +66,7 @@ describe('pair_fee', () => {
       { id: 'white', kind: 'card', currencyCode: 980, iban: null, title: null, provider: 'monobank', participantId: 1 },
     ];
     const tx = (id: string, acc: string, amount: number, commissionRate = 0): TransferTx => ({
-      id, accountId: acc, time: 100, amount, operationAmount: amount, commissionRate, mcc: 4829, description: '', counterIban: null,
+      id, accountId: acc, time: 100, amount, operationAmount: amount, commissionRate, mcc: 4829, description: '', bankCategory: null, counterIban: null,
     });
     const marks = detectTransfers([tx('o', 'black', -104_000, 4_000), tx('i', 'white', 100_000)], accounts);
     expect(marks.get('o')).toEqual({ rule: 'pair_fee', pairId: 'i' });

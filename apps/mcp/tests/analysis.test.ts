@@ -30,6 +30,7 @@ const CANARY = {
   newColumn: 'canary-value-in-a-column-added-later',
   participantLabel: 'Canary Participantenko',
   holderName: 'Canary Holderenko',
+  bankCategory: 'Canary bank category',
 };
 
 let tmpDir: string;
@@ -64,6 +65,7 @@ async function seed(db: Db): Promise<void> {
       id, account_id: account, time, local_date: '2026-08-05', description, mcc: 4829, hold: 0, amount, operation_amount: amount,
       currency_code: 980, balance: 0, comment: extra.comment ?? null, counter_name: extra.counterName ?? null,
       counter_iban: extra.counterIban ?? null, counter_edrpou: extra.counterEdrpou ?? null, receipt_id: extra.receiptId ?? null,
+      bank_category: extra.bankCategory ?? null,
       raw_json: JSON.stringify({ id, payload: CANARY.rawJson }), synced_at: 1,
     });
 
@@ -76,6 +78,7 @@ async function seed(db: Db): Promise<void> {
     counterEdrpou: CANARY.counterEdrpou,
     comment: CANARY.comment,
     receiptId: CANARY.receiptId,
+    bankCategory: CANARY.bankCategory,
   });
   await tx('t5', 'card1', 400, -2000, CANARY.cardPanDescription);
   await tx('t6', 'card1', 500, 3000, CANARY.fromDescription, { counterName: '   ' });

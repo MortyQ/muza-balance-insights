@@ -4,7 +4,7 @@
 import { accountProviders, providerOf } from '../people/connections.ts';
 import type { Db } from '../storage/db.ts';
 import { rulesFor } from '../providers/rules.ts';
-import { incomeRowsSql, incomeSource, type IncomeSource } from './income.ts';
+import { incomeRowsSql, incomeRuleRow, incomeSource, type IncomeSource } from './income.ts';
 import { periodInfo, validateFilters, type Filters, type Period, type PeriodInfo } from './filters.ts';
 
 export type IncomeLine = {
@@ -55,7 +55,7 @@ export async function incomeLines(db: Db, q: Period & Filters, nowSec: number): 
         comment: text(r.comment),
         counterName: text(r.counter_name),
         sender: rulesFor(provider).namedSender(description)?.name.trim() || null,
-        source: r.transfer_rule === 'family' ? 'family' : incomeSource(Number(r.mcc), description, provider),
+        source: r.transfer_rule === 'family' ? 'family' : incomeSource(incomeRuleRow(r), provider),
         hold: Number(r.hold) === 1,
       };
     }),

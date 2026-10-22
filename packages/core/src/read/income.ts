@@ -6,7 +6,8 @@ import { dateIn } from '../shared/format.ts';
 import { periodArgs, periodSql, zoneOf } from '../shared/periods.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
-import type { ProviderId, ProviderIncomeSource } from '../providers/types.ts';
+import type { ProviderId, ProviderIncomeSource, RuleTx } from '../providers/types.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import {
   accountWhere,
   CATEGORY_SQL,
@@ -31,10 +32,17 @@ const INCOME_GROUPS: ReadonlyArray<IncomeGroupBy> = [...INCOME_GROUP_BY, 'day', 
 export type IncomeSource = ProviderIncomeSource | 'family';
 
 /** Where a credit came from, by the shape of the operation (never by name) — the provider's rule. */
-export function incomeSource(mcc: number, description: string, provider: ProviderId): ProviderIncomeSource {
+export function incomeSource(row: Pick<RuleTx, 'mcc' | 'description' | 'bankCategory'>, provider: ProviderId): ProviderIncomeSource {
   // Income rows are credits: the amount only says so.
-  return rulesFor(provider).incomeSource({ mcc, description, amount: 1 });
+  return rulesFor(provider).incomeSource({ ...row, amount: 1 });
 }
+
+/** The rules' view of an income row of incomeRowsSql. */
+export const incomeRuleRow = (r: Record<string, unknown>): Pick<RuleTx, 'mcc' | 'description' | 'bankCategory'> => ({
+  mcc: numOrNull(r.mcc),
+  description: String(r.description ?? ''),
+  bankCategory: textOrNull(r.bank_category),
+});
 
 export type IncomeGroup = { currency: number; key: string; label?: string; lines: number; total: number; totalPerDay: number | null };
 export type IncomeSummary = {
@@ -48,7 +56,7 @@ export type IncomeSummary = {
 /**
  * `WITH … SELECT` of the income rows in the period — the one place the income rules live (incomeSummary, incomeLines):
  * non-internal «поступления» rows; family transfers only in a participant's view (personView); only enabled accounts.
- * Columns: id, currency (the account's), account_id, participant_id, time, mcc, scope, description, comment, counter_name,
+ * Columns: id, currency (the account's), account_id, participant_id, time, mcc, bank_category, scope, description, comment, counter_name,
  * hold, amount, op_currency, op_amount, transfer_rule (null for a row crossing to a disabled account). Newest first.
  */
 export async function incomeRowsSql(db: Db, q: Period & Filters & { groupBy?: IncomeGroupBy }): Promise<{ sql: string; args: Array<string | number> }> {
@@ -58,7 +66,7 @@ export async function incomeRowsSql(db: Db, q: Period & Filters & { groupBy?: In
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   accountWhere(q, where, args);
   return {
-    sql: `SELECT t.id, a.currency_code AS currency, t.account_id, c.participant_id, t.time, t.mcc, t.scope, t.description,
+    sql: `SELECT t.id, a.currency_code AS currency, t.account_id, c.participant_id, t.time, t.mcc, t.bank_category, t.scope, t.description,
                  t.comment, t.counter_name, t.hold, t.amount, t.currency_code AS op_currency,
                  COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                  CASE WHEN t.crossing_category IS NULL THEN t.transfer_rule END AS transfer_rule
@@ -95,7 +103,7 @@ export async function incomeSummary(
       groupBy === 'source'
         ? r.transfer_rule === 'family'
           ? ('family' satisfies IncomeSource)
-          : incomeSource(Number(r.mcc), String(r.description ?? ''), providerOf(providers, String(r.account_id)))
+          : incomeSource(incomeRuleRow(r), providerOf(providers, String(r.account_id)))
       : groupBy === 'day' ? dateIn(Number(r.time), zoneOf(q))
       : groupBy === 'month' ? dateIn(Number(r.time), zoneOf(q)).slice(0, 7)
       : groupBy === 'account' ? String(r.account_id)

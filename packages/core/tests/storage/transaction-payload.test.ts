@@ -64,10 +64,11 @@ describe('migration v16', () => {
     const db = await v15(':memory:', 60, 200);
     const before = await rows(db, 'SELECT * FROM transactions ORDER BY id');
 
-    expect(await migrate(db, 0)).toEqual([16]);
+    expect(await migrate(db, 0)).toEqual([16, 17]);
 
     expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(
-      before.map(({ raw_json: _raw, ...t }) => ({ ...t, crossing_category: null })),
+      // bank_category and transfer_fee: migration v17, which runs right after.
+      before.map(({ raw_json: _raw, ...t }) => ({ ...t, crossing_category: null, bank_category: null, transfer_fee: null })),
     );
     expect(await rows(db, 'SELECT id, raw_json FROM transaction_raw ORDER BY id')).toEqual(before.map((t) => ({ id: t.id, raw_json: t.raw_json })));
     expect(await rows(db, 'PRAGMA foreign_key_check')).toEqual([]);
@@ -132,7 +133,7 @@ describe('compaction after migration v16', () => {
     const ok: CompactionResult[] = [];
     const a = await openLibsql(`file:${compacted}`);
     open.push(a);
-    expect(await migrate(a, 0, (r) => ok.push(r))).toEqual([16]);
+    expect(await migrate(a, 0, (r) => ok.push(r))).toEqual([16, 17]);
     expect(ok).toEqual([{ ok: true }]);
     expect(await rows(a, 'PRAGMA freelist_count')).toEqual([{ freelist_count: 0 }]);
     a.close();
@@ -141,10 +142,10 @@ describe('compaction after migration v16', () => {
     const bad: CompactionResult[] = [];
     const b = await openLibsql(`file:${failed}`);
     open.push(b);
-    expect(await migrate(vacuumFails(b), 0, (r) => bad.push(r))).toEqual([16]);
+    expect(await migrate(vacuumFails(b), 0, (r) => bad.push(r))).toEqual([16, 17]);
     expect(bad).toHaveLength(1);
     expect(bad[0]?.ok).toBe(false);
-    expect(await rows(b, 'SELECT MAX(version) AS v FROM schema_migrations')).toEqual([{ v: 16 }]);
+    expect(await rows(b, 'SELECT MAX(version) AS v FROM schema_migrations')).toEqual([{ v: 17 }]);
     expect(await rows(b, 'SELECT COUNT(*) AS n FROM transaction_raw')).toEqual([{ n: 1500 }]);
     // Not retried on the next launch.
     const again: CompactionResult[] = [];

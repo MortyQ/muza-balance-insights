@@ -31,6 +31,9 @@ const GROUP_BY: ReadonlyArray<SpendingGroupBy> = [...SPENDING_GROUP_BY, 'day', '
 /** Key of the commission line when grouping by MCC (it has no MCC of its own). */
 export const COMMISSION_KEY = 'commission';
 
+/** Key of the lines whose operation has no MCC (the bank sends none), when grouping by MCC: apart from the commission. */
+export const NO_MCC_KEY = 'none';
+
 /** The same lines in the operation currency — only when all of a group's lines share one operation currency. */
 export type OperationAmounts = { currency: number; gross: number; refunds: number; net: number };
 
@@ -82,7 +85,7 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
   category: 'category',
   month: 'bucket',
   account: 'account_id',
-  mcc: `COALESCE(CAST(mcc AS TEXT), '${COMMISSION_KEY}')`,
+  mcc: `CASE WHEN kind = 'commission' THEN '${COMMISSION_KEY}' ELSE COALESCE(CAST(mcc AS TEXT), '${NO_MCC_KEY}') END`,
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
   day: 'bucket',

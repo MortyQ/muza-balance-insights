@@ -8,6 +8,7 @@ import type { Db, Stmt } from '../storage/db.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
 import type { ProviderId } from '../providers/types.ts';
+import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import type { TimeRange } from './transfers.ts';
 
 export const REFUND_WINDOW_SEC = 15 * 60;
@@ -17,8 +18,9 @@ export type RefundTx = {
   accountId: string;
   time: number;
   amount: number;
-  mcc: number;
+  mcc: number | null;
   description: string;
+  bankCategory: string | null;
   /** An own (internal) or family transfer: never a purchase or a refund. */
   isInternal: boolean;
   /** Whose rules apply (the account's connection's provider). */
@@ -57,7 +59,7 @@ function cmp(a: string, b: string): number {
 
 type StoredRow = RefundTx & { isCancelled: boolean; pairId: string | null };
 
-const COLUMNS = 'id, account_id, time, amount, mcc, description, is_internal_transfer, transfer_rule, is_cancelled, refund_pair_id';
+const COLUMNS = 'id, account_id, time, amount, mcc, description, bank_category, is_internal_transfer, transfer_rule, is_cancelled, refund_pair_id';
 
 /**
  * Recomputes refund pairs: all rows, or rows within [from − W, to + W] of a synced window plus their
@@ -110,8 +112,9 @@ async function load(db: Db, sql: string, args: Array<string | number>): Promise<
     accountId: String(r.account_id),
     time: Number(r.time),
     amount: Number(r.amount),
-    mcc: Number(r.mcc),
+    mcc: numOrNull(r.mcc),
     description: String(r.description ?? ''),
+    bankCategory: textOrNull(r.bank_category),
     // A family transfer is not a refund either.
     isInternal: Number(r.is_internal_transfer) === 1 || r.transfer_rule === 'family',
     isCancelled: Number(r.is_cancelled) === 1,
