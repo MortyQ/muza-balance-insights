@@ -18,4 +18,4 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Run `pnpm test` and `pnpm typecheck` at the root. Verify: both pass
+- [x] 4.1 Run `pnpm test` and `pnpm typecheck` at the root. Verify: both pass
