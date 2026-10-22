@@ -101,7 +101,8 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
           :class="open ? 'grid-rows-[0fr] overflow-hidden' : 'grid-rows-[1fr]'"
           :inert="open"
         >
-          <div class="min-h-0">
+          <!-- min-w-0: a grid item never shrinks below its content, so the chart's canvas would keep its old width. -->
+          <div class="min-h-0 min-w-0">
             <PacePanel
               class="pt-4 [transition:opacity_.3s_ease] motion-reduce:[transition:opacity_.2s_ease]
                      @[74rem]:h-[304px] @[74rem]:border-l @[74rem]:border-border-subtle @[74rem]:pt-0 @[74rem]:pl-6"

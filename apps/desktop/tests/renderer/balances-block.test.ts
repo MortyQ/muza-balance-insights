@@ -80,6 +80,8 @@ describe('balance block layout', () => {
     expect(pace.classes()).toEqual(expect.arrayContaining(['@[74rem]:absolute', '@[74rem]:left-[854px]', '@[74rem]:right-0']));
     expect(pace.classes()).not.toContain('absolute');
     expect(b.get('[data-test="panel"]').classes()).toEqual(expect.arrayContaining(['@[74rem]:right-auto', '@[74rem]:w-[340px]']));
+    // The chart's box may shrink with the block (a grid item keeps its content's width otherwise).
+    expect(pace.element.firstElementChild?.classList.contains('min-w-0')).toBe(true);
   });
 
   it('opening the row folds the month pace away too, inert', async () => {
