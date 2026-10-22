@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { PROVIDER_IDS, type ProviderId, type ParsedStatement } from '@mono/core/providers/types';
 import type { StatementBlock, StatementComparison, StatementTarget } from '@mono/core/ingest/statement-import';
 import type { ReserveInput } from './allowance.ts';
-import { DB_KEY_RE } from './db-key.ts';
+import { DB_KEY_RE } from './db-open.ts';
 import { ARG_SCHEMAS, accountId, cardType, id, participant } from './ipc-args.ts';
 import type {
   AllowanceOverview,
@@ -149,6 +149,18 @@ export const DATA_ARG_SCHEMAS = {
 
 export const DATA_METHODS = Object.keys(DATA_ARG_SCHEMAS) as DataMethod[];
 
+/** The methods that convert by today's rates: main sends the rates ahead of them whenever they changed. */
+export const RATED_METHODS = [
+  'monthOverview',
+  'spendingOverview',
+  'nowOverview',
+  'categoryOverview',
+  'incomeOverview',
+  'recurringOverview',
+  'allowanceOverview',
+  'analyticsOverview',
+] as const satisfies ReadonlyArray<DataMethod>;
+
 /** `connection`: an unknown connection or account (core ConnectionError); `invalid`: arguments refused; `failed`: anything else. */
 export const DATA_ERRORS = ['connection', 'invalid', 'failed'] as const;
 export type DataErrorCode = (typeof DATA_ERRORS)[number];
@@ -157,7 +169,7 @@ const callId = z.number().int().nonnegative();
 const errorName = z.string().max(80);
 
 export const OpenMessage = z.strictObject({ type: z.literal('open'), dbPath: z.string().min(1), dbKey: z.string().regex(DB_KEY_RE).nullable() });
-/** Today's rates (main's RatesService), whenever they change; the overviews use the last ones. */
+/** Today's rates (main's RatesService), ahead of a rated call whenever they changed; the overviews use the last ones. */
 export const RatesMessage = z.strictObject({
   type: z.literal('rates'),
   rates: z

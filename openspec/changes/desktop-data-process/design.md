@@ -126,9 +126,10 @@ The move of `DataService` and its helpers is its own commit and changes no code,
 
 ### 4. Lifecycle (`src/main/data-client.ts`, `DataClient`)
 
-- **Start.** `start()` runs after `DbAccess.init()` is ready, after `afterWipe()` and after «Start over». It takes
-  `access.forWorker()` (renamed to `forProcess()`, which both users share), forks, and sends `open` and then the
-  current rates. Calls made before `ready` wait in order.
+- **Start.** `start()` forks once at launch, after the dev smoke (it migrates too) and before the window, so the
+  migration runs before the first screen asks. Any call forks the process when none runs, which also covers the time
+  after «Delete all data» and «Start over». The fork takes `access.forProcess()` (renamed from `forWorker()`, which both
+  users share) and sends `open`. Calls wait for `ready`.
 - **Open.**
   - The data process runs `migrate` and `refreshCrossing` before `ready`, as `DataService.conn()` does today.
   - `open-failed { kind: 'unreadable' }` calls a new `DbAccess.markUnreadable()`. It is the same transition that
@@ -144,8 +145,11 @@ The move of `DataService` and its helpers is its own commit and changes no code,
     files on every OS, so `releaseClosedFiles()` is no longer needed on this path. It stays for `DbAccess` and
     `encrypt.ts`, which still open and close in main at launch.
 - **Quit.** `before-quit` kills the process, as it does for the importer.
-- **Rates.** `RatesService` gains an `onChange` callback. On each change the client sends `rates`, and the host keeps
-  the last list for `DataService`'s `rates()` dependency.
+- **Rates.** Before a call of `RATED_METHODS` (the eight overviews), the client takes `RatesService.current()` and sends
+  `rates` ahead of the call when they differ from the last ones sent to this process. `current()` still waits for a
+  refresh in flight, so the launch screen gets today's rates as it does now. A push on change (`RatesService`
+  `onChange`) was the first plan; it would lose that wait. The process keeps the last rates for `DataService`'s
+  `rates()`.
 
 ### 5. What main may import
 

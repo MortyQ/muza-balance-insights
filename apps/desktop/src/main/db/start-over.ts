@@ -18,7 +18,8 @@ export type StartOverDeps = {
   confirm: () => Promise<boolean>;
   tokens: { saved(): Promise<number[]>; get(connectionId: number): Promise<string | null>; clearAll(): Promise<void> };
   importer: { stop(): Promise<void> };
-  data: { close(): Promise<void> };
+  /** The data process: closed, and its exit waited for, before the database files go. */
+  data: { stop(): Promise<void> };
   integrations: {
     addConnection(input: { participant: { fromBank: true }; provider: ProviderId; token: string; remember: boolean }): Promise<{ added: boolean }>;
   };
@@ -37,7 +38,7 @@ export async function startOver(d: StartOverDeps): Promise<StartOverResult> {
   if (d.access.isReady()) return { done: false, reason: 'not-needed' };
   if (!(await d.confirm())) return { done: false, reason: 'cancelled' };
   await d.importer.stop();
-  await d.data.close();
+  await d.data.stop();
 
   const kept: Array<{ provider: ProviderId; token: string }> = [];
   for (const id of await d.tokens.saved()) {

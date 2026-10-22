@@ -3,6 +3,7 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, powerMonitor, p
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
+import dataPath from '../data/process.ts?modulePath';
 import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { systemTimeZone } from '../shared/dates.ts';
 import { resolveLocale } from '../shared/locale.ts';
@@ -11,8 +12,7 @@ import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
-import { DataHost } from '../data/host.ts';
-import { dataApi } from './data-api.ts';
+import { DataClient } from './data-client.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
@@ -161,10 +161,17 @@ app.whenReady().then(async () => {
     },
   });
   app.on('will-quit', () => rates.stop());
-  const host = new DataHost({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current(), log: (line) => process.stderr.write(`${line}\n`) });
-  let callId = 0;
-  const data = dataApi((method, args) => host.handle({ type: 'call', id: callId++, method, args }));
-  const dataFiles = { close: () => host.close() };
+  // Every query of the screens runs in the data process, so main never waits on one. Long-lived; empty env: it inherits
+  // nothing from ours. stdout/stderr visible only in dev. A call forks it; it is also started before the window, below.
+  const dataProcess = new DataClient({
+    fork: () => utilityProcess.fork(dataPath, [], { serviceName: 'balance-data', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
+    db: () => access.forProcess(),
+    rates: () => rates.current(),
+    unreadable: () => access.markUnreadable(),
+    log: (msg) => process.stderr.write(`[data] ${msg}\n`),
+  });
+  app.on('before-quit', () => dataProcess.kill());
+  const data = dataProcess.api;
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {
@@ -180,7 +187,7 @@ app.whenReady().then(async () => {
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
-    db: () => access.forWorker(),
+    db: () => access.forProcess(),
     nowSec: () => Math.floor(Date.now() / 1000),
     // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
     send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),
@@ -301,7 +308,7 @@ app.whenReady().then(async () => {
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
-      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data: dataFiles, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
+      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data: dataProcess, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         statements.forget();
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
@@ -354,7 +361,7 @@ app.whenReady().then(async () => {
           confirm: () => confirm('startOver'),
           tokens: vault,
           importer,
-          data: dataFiles,
+          data: dataProcess,
           integrations,
           userDataDir: userData,
           log: (m) => process.stderr.write(`[db] ${m}\n`),
@@ -379,6 +386,8 @@ app.whenReady().then(async () => {
       : ({ ok: false, error: st.kind } as const);
     process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, forcedGc, devOrigin })}\n`);
   }
+  // After the dev smoke (it migrates too): the migration runs before the first screen asks.
+  if (access.isReady()) dataProcess.start();
 
   // The saved theme before the window exists: its frame colours and the first paint already follow it.
   nativeTheme.themeSource = readPrefs(userData).theme;

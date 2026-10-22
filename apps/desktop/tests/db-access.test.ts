@@ -71,13 +71,13 @@ describe('DbAccess.init — no database yet', () => {
     expect(calls.create).toBe(1);
     await (await a.open()).execute('CREATE TABLE t (x)');
     expect(fs.readFileSync(file()).subarray(0, 15).toString('latin1')).not.toBe('SQLite format 3');
-    expect(a.forWorker()).toEqual({ dbPath: file(), dbKey: NEW_KEY });
+    expect(a.forProcess()).toEqual({ dbPath: file(), dbKey: NEW_KEY });
   });
 
   it('2: no secure store → plain, no-secure-storage', async () => {
     const { a } = access({ create: { kind: 'insecure' } });
     expect(await a.init()).toEqual(ready(false, 'no-secure-storage'));
-    expect(a.forWorker()).toEqual({ dbPath: file(), dbKey: null });
+    expect(a.forProcess()).toEqual({ dbPath: file(), dbKey: null });
   });
 
   it('3: store unavailable → plain, encrypt-pending', async () => {
@@ -137,7 +137,7 @@ describe('DbAccess.init — a plain database', () => {
     const { a, logs } = access({ encrypt: async () => ({ ok: false, step: 'copy' }) });
     expect(await a.init()).toEqual(ready(false, 'encrypt-pending'));
     expect(logs).toContain('encrypt failed at step=copy');
-    expect(a.forWorker()?.dbKey).toBeNull();
+    expect(a.forProcess()?.dbKey).toBeNull();
   });
 
   it('no migration wired yet → plain, encrypt-pending', async () => {
@@ -180,7 +180,7 @@ describe('DbAccess.init — an encrypted (or unrecognisable) file: nothing is cr
     expect(await a.init()).toEqual({ kind });
     expect(calls.create).toBe(0);
     expect(hashes()).toEqual(before);
-    expect(a.forWorker()).toBeNull();
+    expect(a.forProcess()).toBeNull();
     await expect(a.open()).rejects.toBeInstanceOf(DbOpenError);
   });
 
@@ -207,6 +207,21 @@ describe('DbAccess — around init', () => {
     expect(logs).toEqual(['state=ready encrypted=true']);
     expect(changes).toEqual([ready(true)]);
     expect(JSON.stringify(logs)).not.toContain(KEY);
+  });
+
+  it('markUnreadable (the data process got SQLITE_NOTADB): the key goes, db-unreadable once, files untouched', async () => {
+    await makeDb(KEY);
+    const { a, logs, changes } = access({ load: { kind: 'ok', key: KEY } });
+    await a.init();
+    const before = fs.readFileSync(file());
+    a.markUnreadable();
+    a.markUnreadable();
+    expect(a.state()).toEqual({ kind: 'db-unreadable' });
+    expect(a.forProcess()).toBeNull();
+    expect(changes).toEqual([ready(true), { kind: 'db-unreadable' }]);
+    expect(logs.at(-1)).toBe('state=db-unreadable');
+    expect(fs.readFileSync(file()).equals(before)).toBe(true);
+    await expect(a.open()).rejects.toBeInstanceOf(DbOpenError);
   });
 
   it('afterWipe: key and database gone → decided again (a new key)', async () => {
@@ -261,7 +276,7 @@ describe('DbAccess.reset («Начать заново»)', () => {
     expect(calls.release).toBe(releasedBefore + 1);
     expect(calls.clear).toBe(1);
     expect(calls.create).toBe(1);
-    expect(a.forWorker()).toEqual({ dbPath: file(), dbKey: NEW_KEY });
+    expect(a.forProcess()).toEqual({ dbPath: file(), dbKey: NEW_KEY });
     for (const f of [DB_FILE, `${DB_FILE}-wal`, `${DB_FILE}-journal`, ENCRYPTING_FILE]) expect(fs.existsSync(path.join(dir, f)), f).toBe(false);
     const db = await a.open();
     expect((await db.execute("SELECT COUNT(*) AS n FROM sqlite_schema WHERE name = 't'")).rows[0]?.n).toBe(0);

@@ -33,8 +33,8 @@ describe('worker entry', () => {
     const main = read('../src/main/index.ts');
     expect(main).toMatch(/utilityProcess\.fork\(workerPath, \[\], \{ serviceName: 'balance-import', env: \{\}/);
     expect(main).not.toMatch(/fork\([^)]*token/i);
-    expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker)/i);
-    expect(main).toMatch(/db: \(\) => access\.forWorker\(\)/);
+    expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker|forProcess)/i);
+    expect(main).toMatch(/db: \(\) => access\.forProcess\(\)/);
   });
 
   it('the database key comes only in the start message and opens the file; its error is a fixed text', () => {

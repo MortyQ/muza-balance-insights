@@ -4,7 +4,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { DB_KEY_RE } from '../../shared/db-key.ts';
+import { DB_KEY_RE } from '../../shared/db-open.ts';
 import type { SecureStore } from '../secure-store.ts';
 
 export const DB_KEY_FILE = 'db-key.bin';

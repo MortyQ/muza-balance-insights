@@ -17,18 +17,18 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 3. The data process and the client (feat(desktop): data process)
 
-- [ ] 3.1 Add `src/data/process.ts`: the `utilityProcess` entry over the host, which validates incoming messages and parses outgoing ones, sends `ready` / `open-failed`, and exits on `close` after closing the connection. Verify with `tests/data-entry.test.ts`, checked as source like `worker-entry.test.ts`: `safeParse` in, `parse` out, no `net`, one `process.exit`.
-- [ ] 3.2 Add `src/main/data-client.ts` (`DataClient`): fork, `open`, rates, calls queued until `ready`, replies matched to pending ids, `exit` → pending calls fail and the next call forks again, `stop()` (`close`, kill after 5 s, resolve on `exit`), and `open-failed: unreadable` → `DbAccess.markUnreadable()`. Verify with `tests/data-client.test.ts` using a fake child, as `importer.test.ts` does: order, crash mid-call, restart on demand, stop with a hanging child, a reply with an unknown id ignored, and errors rethrown as `ConnectionError` or `DataCallError`.
-- [ ] 3.3 Add `DbAccess.markUnreadable()` and rename `forWorker()` to `forProcess()` (importer and client). Add `RatesService`'s `onChange`. Verify with `tests/db-access.test.ts`, which covers the same state and push as a `SQLITE_NOTADB` open, and `tests/rates.test.ts`, which covers a change notifying once and `forget()` notifying none.
-- [ ] 3.4 Wire `src/main/index.ts`:
+- [x] 3.1 Add `src/data/process.ts`: the `utilityProcess` entry over the host, which validates incoming messages and parses outgoing ones, sends `ready` / `open-failed`, and exits on `close` after closing the connection. Verify with `tests/data-entry.test.ts`, checked as source like `worker-entry.test.ts`: `safeParse` in, `parse` out, no `net`, one `process.exit`.
+- [x] 3.2 Add `src/main/data-client.ts` (`DataClient`): fork, `open`, rates, calls queued until `ready`, replies matched to pending ids, `exit` → pending calls fail and the next call forks again, `stop()` (`close`, kill after 5 s, resolve on `exit`), and `open-failed: unreadable` → `DbAccess.markUnreadable()`. Verify with `tests/data-client.test.ts` using a fake child, as `importer.test.ts` does: order, crash mid-call, restart on demand, stop with a hanging child, a reply with an unknown id ignored, and errors rethrown as `ConnectionError` or `DataCallError`.
+- [x] 3.3 Add `DbAccess.markUnreadable()` and rename `forWorker()` to `forProcess()` (importer and client). Today's rates go ahead of a rated call from `RatesService.current()` (design §4), so `RatesService` is unchanged. Verify with `tests/db-access.test.ts`, which covers the state, the push and the log, and no file touched, and with `tests/data-client.test.ts` (rates sent only when changed).
+- [x] 3.4 Wire `src/main/index.ts`:
   - fork with `?modulePath`, `serviceName: 'balance-data'` and `env: {}`;
-  - start after `init`, `afterWipe` and «Start over»;
+  - start once at launch after the dev smoke; any call forks it again when none runs (after «Delete all data» and «Start over» too);
   - IPC handlers, importer, auto-sync and the legacy token go through the client;
   - `before-quit` kills the process;
   - `wipe.ts` and `db/start-over.ts` call `stop()` instead of `data.close()`.
 
-  Verify that `tests/wipe.test.ts` and `db-start-over.test.ts` assert the process exited before any file is removed, and that `tests/ipc.test.ts` still passes.
-- [ ] 3.5 Update `.agents/project/desktop-import.md` with a new section «The data process», plus who runs the people, connections and data channels. Update `desktop-security.md`: the key in `open`, no network, Windows release by process exit, and `releaseClosedFiles` kept for launch only. Verify `apps/desktop`'s tsc for node and web and its vitest pass.
+  Verify that `tests/wipe.test.ts` and `db-start-over.test.ts` assert the stop comes before any file is removed (stop() resolves on the exit: `data-client.test.ts`), that `tests/data-entry.test.ts` checks the fork, and that `tests/ipc.test.ts` still passes.
+- [x] 3.5 Update `.agents/project/desktop-import.md` with a new section «The data process», plus who runs the people, connections and data channels. Update `desktop-security.md`: the key in `open`, no network, Windows release by process exit, and `releaseClosedFiles` kept for launch only. Verify `apps/desktop`'s tsc for node and web and its vitest pass.
 
 ## 4. Main imports no query code (test(desktop): main import graph)
 

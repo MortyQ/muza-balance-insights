@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { DESKTOP_PROVIDERS } from '../net/providers.ts';
-import { DB_KEY_RE } from './db-key.ts';
+import { DB_KEY_RE } from './db-open.ts';
 import { WORKER_ERRORS } from './progress.ts';
 
 export const MAX_CONNECTIONS = 10;

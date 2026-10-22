@@ -29,7 +29,7 @@ same request with the same data version.
 - **Lifecycle.**
   - Main starts the data process once the database is ready and passes it the key in a message, as it does for the
     import worker.
-  - It forwards today's rates whenever they change.
+  - It sends today's rates ahead of an overview call whenever they changed.
   - After a crash it starts the process again on the next call.
   - Before «Delete all data» and «Start over» it stops the process and waits for it to exit.
 - **No query work in main.** Main no longer imports the core's database modules at run time: no `read`, `derive`,

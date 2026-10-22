@@ -18,6 +18,25 @@
   `worker.ts` (сторона worker: клиент, тексты и разбор ошибок); общие типы — `integrations/types.ts`. Таблицы
   `DESKTOP_PROVIDERS` (`net/providers.ts`) и `WORKER_PROVIDERS` (`worker/providers.ts`) только собирают их в
   `Record<ProviderId, …>`: main не импортирует код worker. Сеть банка сюда не входит — она в `FETCH` (`worker/import.ts`).
+- **The data process** (`src/data/process.ts`, a long-lived `utilityProcess`, `serviceName: 'balance-data'`, `env: {}`):
+  every database read and write behind the renderer's IPC runs there, so main never waits on a query. Main keeps the IPC
+  gates, the tokens, the dialogs, reading and parsing a statement file, and `DbAccess` (it still opens the file at
+  launch to decide its state and to encrypt a plain one; `smoke.ts` in dev). The handler table is `src/data/host.ts`
+  (`DataService` in `src/data/data.ts` and the database halves in `src/data/people.ts`, `connections.ts`,
+  `statements.ts`); the closed list of methods, their argument schemas and the messages are
+  `src/shared/data-protocol.ts` (the IPC methods reuse `src/shared/ipc-args.ts`). Main reaches it through
+  `DataClient` (`src/main/data-client.ts`, `.api` is the typed `DataApi` of `src/main/data-api.ts`):
+  - `open { dbPath, dbKey }` first (`DbAccess.forProcess()`, the key only in this message); calls wait for `ready`;
+    `open-failed: unreadable` → `DbAccess.markUnreadable()` (the recovery screen), `failed` → the call fails;
+  - today's rates (`RatesService.current()`, which still waits for a refresh in flight) go ahead of a call of
+    `RATED_METHODS` whenever they changed since the last sent;
+  - calls run one at a time in the order they arrive; an error comes back as a code (`connection`, `invalid`,
+    `failed`) and the error's name only, and main rethrows it as `DataCallError` (a refusal such as a taken colour or
+    a blocked statement is a value, as before);
+  - an exit fails the calls in flight; the next call forks a new process (no crash timer: a restart only on demand);
+  - `stop()` (`close`, killed after `STOP_KILL_MS`, resolves on the exit) before «Delete all data» and «Start over»
+    delete the files; on quit it is killed. Forked once at launch after the dev smoke, so the migration runs early.
+  Tests: `tests/data-host.test.ts`, `data-client.test.ts`, `data-protocol.test.ts`, `data-entry.test.ts` (as source).
 - **The end of an import** (the `rederive` progress phase, `worker/run-import.ts`): every committed window was
   already derived by its own pass (`commitRows` → core `deriveSpan`), so the end re-derives only the spans they
   touched (core `rederiveSpans`, merged; log line `rederive: N spans, categories changed: M`). A full `rederiveCore`
@@ -25,7 +44,7 @@
   accounts' IBANs, jar titles or card types changed during the run (`accountInputs` / `accountInputsChanged` in core
   `derived.ts`, read before the first window and at the end). A connection's first import brings new IBANs, so it
   ends with a full pass. Checked by `tests/run-import-derive.test.ts`.
-- File connections (`connections.method = 'file'`) are outside the import: `DataService.connections()` lists token
+- File connections (`connections.method = 'file'`) are outside the import: the data process's `tokenConnections` (`DataService.connections()`) lists token
   connections only, so the start, the resume and auto-sync never see them; their accounts are filled by statement
   uploads (`main/statements.ts`), refused while an import runs.
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
@@ -35,9 +54,9 @@
   (`auth`) или чужой / уже подключённый владелец (`other-holder` / `already-connected`) выключает только своё подключение: итог — `done` с
   `failed`; если не прошло ни одно — `error` первого. Подключение без токена main пропускает и добавляет в `failed`.
   При запуске задача продолжается для подключений с токеном в Keychain; нет ни одного — `needs-token` с их id.
-- IPC людей и подключений: люди — `PeopleService` (`apps/desktop/src/main/people.ts`: `listPeople`, `renameParticipant`,
+- IPC людей и подключений (main's halves; their database halves run in the data process, above): люди — `PeopleService` (`apps/desktop/src/main/people.ts`: `listPeople`, `renameParticipant`,
   `restoreBankName`, `setParticipantColor`), подключения и их токены — `IntegrationsService` (`main/integrations.ts`:
-  `addConnection`, `setConnectionToken`, `removeConnection`, `listConnectionAccounts`, `setAccountEnabled`; людей берёт из ядра, не из
+  `addConnection`, `setConnectionToken`, `removeConnection`, `listConnectionAccounts`, `setAccountEnabled`; людей берёт из data-процесса, не из
   `PeopleService`); `ipc.ts` только направляет вызовы. `listPeople` (подпись участника — единственное
   имя, что уходит в renderer; без токена и `external_client_id`), `addConnection({ participant: { id } | { label } |
   { fromBank: true }, provider, token, remember })` (у нового человека — свой `color?`; у подключения цвета нет) (форма токена до записи; тот же токен второй раз — `duplicate`; токен не

@@ -55,6 +55,9 @@
     (на Windows с повторами). До rename старый файл не пишется; сбой — копия удаляется, база остаётся открытой;
   - ключ в worker — только в сообщении `start` (`dbKey`, `DB_KEY_RE`), не в argv и env; `Importer` проверяет `StartMessage`
     до `postMessage`, не-ready база → `db-unavailable`;
+  - the data process (`src/data/process.ts`) gets the key the same way, only in `open` (`DB_KEY_RE`), never in argv or
+    env; it has no network and no channel to the renderer: every call reaches it through main's IPC gates. A key that
+    stops fitting there (`SQLITE_NOTADB`) sets `db-unreadable` through `DbAccess.markUnreadable()`;
   - IPC: отправитель → замок → **база** → аргументы; не-ready база пропускает только `ALLOWED_WHEN_DB_UNAVAILABLE`
     (методы замка, `lockNow`, `getDbState`, `relaunchApp`, `startOver`, `quitApp`). Push при не-ready базе — только
     `balance:lock` и `balance:db-state`. `DbStateView` — только перечисления и boolean;
@@ -71,6 +74,9 @@
     помогает, помогает только сборка мусора (замерено в CI на `windows-latest`, 27.09.2026). Поэтому после `close()` и
     перед переименованием или удалением файлов базы — `releaseClosedFiles()` из `@mono/db-libsql` (принудительный gc через
     `v8.setFlagsFromString('--expose-gc')`): зависимость `release` у `encryptDatabase` (перед swap и удалением копии),
-    `DbAccess.reset`, `DataService.close` («Удалить все данные», «Начать заново»). Недоступный gc — строка `[db] forced gc
+    `DbAccess.reset`. Недоступный gc — строка `[db] forced gc
     unavailable` при запуске и `forcedGc` в `[smoke]`. Проверка — `packages/db-libsql/tests/release-files.test.ts`
     (обязательна на Windows вместе с тестами шифрования). В main-процессе Electron gc вживую на Windows ещё не проверен.
+    The data process's connection is released by the process's exit: «Delete all data» and «Start over» call
+    `DataClient.stop()`, which resolves only on the exit, so `releaseClosedFiles()` remains for main's own launch-time opens
+    (`DbAccess`, `encrypt.ts`).

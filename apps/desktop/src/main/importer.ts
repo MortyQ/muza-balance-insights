@@ -40,7 +40,7 @@ export type ImporterDeps = {
   };
   powerSaveBlocker: { start(type: 'prevent-app-suspension'): number; stop(id: number): void };
   userDataDir: string;
-  /** The database for the worker (DbAccess.forWorker): its path and key; null while the database is unavailable. */
+  /** The database for the worker (DbAccess.forProcess): its path and key; null while the database is unavailable. */
   db: () => { dbPath: string; dbKey: string | null } | null;
   nowSec: () => number;
   /** To the renderer (PROGRESS_CHANNEL). */

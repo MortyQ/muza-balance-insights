@@ -46,7 +46,7 @@ class FakeChild extends EventEmitter implements ChildLike {
 type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null };
 
 /** Default: one Monobank connection (id 1) whose token is in secure storage. `connections` replaces it. */
-/** `db`: what DbAccess.forWorker() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
+/** `db`: what DbAccess.forProcess() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
 function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null; connections?: Conn[]; db?: { dbPath: string; dbKey: string | null } | null } = {}) {
   const children: FakeChild[] = [];
   const sent: ImportProgress[] = [];
