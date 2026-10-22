@@ -32,12 +32,12 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 4. Main imports no query code (test(desktop): main import graph)
 
-- [ ] 4.1 Extend `tests/architecture.test.ts` with the rules of design §5:
-  - the run-time import graph from `src/main/index.ts` reaches only the allowed core folders and their stated exceptions;
+- [x] 4.1 Add `tests/main-imports.test.ts` (rules in `tests/helpers/main-imports.ts`) with the rules of design §5:
+  - the run-time import graph from `src/main/index.ts` reaches only the allowed core folders and their stated exceptions, and never `src/data/`;
   - `@mono/db-libsql` is imported only where allowed;
-  - `src/data/` imports `electron` only in `process.ts` and never `src/net/`, `src/worker/` or `src/main/`.
+  - the graph of `src/data/process.ts` imports no `electron` and never reaches `src/net/`, `src/worker/` or `src/main/`.
 
-  Add a legal decoy tree and one breaking example per rule. Verify the test passes on the real tree and fails on each example.
+  Add a legal decoy tree and one breaking example per rule. Verify the test passes on the real tree and fails on each example, and on a temporary bad import in the real tree.
 
 ## 5. The read cache in the renderer (feat(desktop): read cache)
 

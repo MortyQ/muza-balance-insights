@@ -36,7 +36,10 @@
   - an exit fails the calls in flight; the next call forks a new process (no crash timer: a restart only on demand);
   - `stop()` (`close`, killed after `STOP_KILL_MS`, resolves on the exit) before «Delete all data» and «Start over»
     delete the files; on quit it is killed. Forked once at launch after the dev smoke, so the migration runs early.
-  Tests: `tests/data-host.test.ts`, `data-client.test.ts`, `data-protocol.test.ts`, `data-entry.test.ts` (as source).
+  Tests: `tests/data-host.test.ts`, `data-client.test.ts`, `data-protocol.test.ts`, `data-entry.test.ts` (as source);
+  `tests/main-imports.test.ts`: main's run-time import graph reaches core only in `shared/` and `providers/` (plus the
+  dev smoke's `storage/` and the reserve limits through `src/shared/allowance.ts`), never `src/data/`; the data
+  process's graph has no Electron, network, main or worker code.
 - **The end of an import** (the `rederive` progress phase, `worker/run-import.ts`): every committed window was
   already derived by its own pass (`commitRows` → core `deriveSpan`), so the end re-derives only the spans they
   touched (core `rederiveSpans`, merged; log line `rederive: N spans, categories changed: M`). A full `rederiveCore`

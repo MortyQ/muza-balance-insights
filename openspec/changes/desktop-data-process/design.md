@@ -153,20 +153,22 @@ The move of `DataService` and its helpers is its own commit and changes no code,
 
 ### 5. What main may import
 
-The architecture test (`tests/architecture.test.ts`) walks the import graph from `src/main/index.ts`, as
-`recategorize-safety.test.ts` walks `recategorize`'s graph. It follows relative imports and `@mono/*` by their
-`exports`. Type-only imports do not count. Allowed at run time:
+`tests/main-imports.test.ts` (rules in `tests/helpers/main-imports.ts`; `tests/architecture.test.ts` stays the renderer's)
+walks the run-time import graph from `src/main/index.ts` through relative imports inside `src/`. Type-only imports do
+not count, and a `?modulePath` import is a fork target, not followed. Where the graph enters a workspace package, the
+import itself is checked; core's own layer test keeps `shared/` and `providers/` free of query code. Allowed at run time:
 
 - `@mono/core/shared/*`;
 - `@mono/core/providers/*`: statement parsing and the provider ids;
-- `@mono/core/storage/*`: only from `src/main/db/` and `src/main/smoke.ts`, the launch-time open and the dev smoke;
+- `@mono/core/storage/*`: only from `src/main/smoke.ts`, the dev smoke (`DbAccess` and the encryption take the open as
+  a dependency and import core types only);
 - `@mono/core/read/reserves`: only through `src/shared/allowance.ts`. It holds the reserve limits that zod shares with
   core, and nothing in main calls its functions;
 - `@mono/db-libsql`: only from `src/main/index.ts` (the `DbAccess` wiring) and `src/main/smoke.ts`.
 
-The test also checks `src/data/`:
-- only `process.ts` imports `electron`;
-- nothing there imports `src/net/`, `src/worker/` or `src/main/`;
+The test also walks the graph of `src/data/process.ts`:
+- nothing in it imports `electron` (the process uses only its parent port);
+- it never reaches `src/net/`, `src/worker/` or `src/main/`;
 - `process.ts` validates incoming messages and parses outgoing ones, checked as source like `worker-entry.test.ts`.
 
 Each rule has a breaking example.
