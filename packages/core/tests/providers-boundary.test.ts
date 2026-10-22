@@ -9,8 +9,8 @@ import { importsOf, localImports, readTree, SRC, stripComments, type Files } fro
 const providerOf = (file: string): string | null => /^providers\/([^/]+)\//.exec(file)?.[1] ?? null;
 const isDomain = (file: string) => !file.startsWith('providers/');
 
-/** The domain's doors into providers: the contract, the rules registry and the statement parsers registry. */
-const DOMAIN_MAY_IMPORT = new Set(['providers/types.ts', 'providers/rules.ts', 'providers/statements.ts']);
+/** The domain's doors into providers: the contract, the rules registry, the statement parsers registry and the info registry. */
+const DOMAIN_MAY_IMPORT = new Set(['providers/types.ts', 'providers/rules.ts', 'providers/statements.ts', 'providers/info.ts']);
 
 /**
  * Bank-specific values that must not appear in domain code (comments stripped).
@@ -50,6 +50,21 @@ function violations(files: Files): string[] {
         }
       }
     }
+    if (file === 'providers/info.ts') {
+      for (const target of localImports(file, text)) {
+        if (target !== 'providers/types.ts' && !/^providers\/[^/]+\/info\.ts$/.test(target)) {
+          out.push(`${file}: the info registry imports ${target} (only <id>/info.ts and types.ts)`);
+        }
+      }
+    }
+    // A bank's info is pure data (the renderer imports it): the contract and its own constants, nothing else.
+    if (own !== null && file === `providers/${own}/info.ts`) {
+      for (const target of localImports(file, text)) {
+        if (target !== 'providers/types.ts' && target !== `providers/${own}/constants.ts`) {
+          out.push(`${file}: a bank's info imports ${target} (only types.ts and its constants.ts)`);
+        }
+      }
+    }
     if (isDomain(file)) {
       const code = stripComments(text);
       for (const l of BANK_LITERALS) if (l.re.test(code) && !l.exempt?.includes(file)) out.push(`${file}: ${l.what}`);
@@ -85,7 +100,11 @@ describe('provider boundary', () => {
     ['providers/ratelimit.ts', 'export const acquireSlot = 1;'],
     ['providers/statements.ts', "import { xStatement } from './x/statement.ts';\nimport type { ProviderId } from './types.ts';"],
     ['providers/x/statement.ts', "import type { StatementFileParser } from '../types.ts';\nimport { TEXTS } from './descriptions.ts';"],
+    ['providers/info.ts', "import { xInfo } from './x/info.ts';\nimport type { ProviderId } from './types.ts';"],
+    ['providers/x/info.ts', "import type { ProviderInfo } from '../types.ts';\nimport { LIMIT } from './constants.ts';"],
+    ['providers/x/constants.ts', 'export const LIMIT = 1;'],
     ['categories.ts', "import { rulesFor } from './providers/rules.ts';"],
+    ['plan.ts', "import { apiOf } from './providers/info.ts';"],
     ['statement-import.ts', "import { statementParserOf } from './providers/statements.ts';"],
     ['derive/rederive.ts', "import { recategorize } from '../categories.ts';"],
   ];
@@ -101,6 +120,8 @@ describe('provider boundary', () => {
     ['the contract imports something', [['providers/types.ts', "import type { Db } from '../db.ts';"]], 'the contract imports something'],
     ['the registry imports a client', [['providers/rules.ts', "import { c } from './x/client.ts';"]], 'the rules registry imports providers/x/client.ts'],
     ['the statements registry imports a client', [['providers/statements.ts', "import { c } from './x/client.ts';"]], 'the statements registry imports providers/x/client.ts'],
+    ['the info registry imports rules', [['providers/info.ts', "import { r } from './x/rules.ts';"]], 'the info registry imports providers/x/rules.ts'],
+    ["a bank's info imports its client", [['providers/x/info.ts', "import { c } from './client.ts';"]], "providers/x/info.ts: a bank's info imports providers/x/client.ts"],
     ['rederive reaches a client', [['providers/x/rules.ts', "import { c } from './client.ts';"]], 'derive/rederive.ts reaches providers/x/client.ts'],
     ['MCC in the domain', [['categories.ts', 'const T = 4829;']], 'categories.ts: MCC 4829'],
     ['6012 in the domain', [['summaries.ts', 'if (mcc === 6012) {}']], 'summaries.ts: MCC 6012'],

@@ -5,7 +5,7 @@ import type { Db } from '../storage/db.ts';
 import { accountLabels, dateIn, toKyivDate, toKyivDateTime } from '../shared/format.ts';
 import { RESYNC_OVERLAP_SEC, TIMEZONE } from '../shared/constants.ts';
 import { parseProviderId } from '../people/connections.ts';
-import { PROVIDER_RULES, rulesFor } from '../providers/rules.ts';
+import { apiOf, TOKEN_PROVIDER_IDS } from '../providers/info.ts';
 import { transferDiagnostics, type TransferDiagnostics } from '../derive/diagnostics.ts';
 import { scopeCounts, type Scope } from '../derive/scope.ts';
 
@@ -241,9 +241,9 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
     `SELECT c.provider, MAX(k.called_at) AS last FROM api_calls k LEFT JOIN connections c ON c.id = k.connection_id
      GROUP BY k.connection_id`,
   );
-  const longest = Math.max(...Object.values(PROVIDER_RULES).map((p) => p.api.requestIntervalMs));
+  const longest = Math.max(...TOKEN_PROVIDER_IDS.map((p) => apiOf(p).requestIntervalMs));
   const frees = api.rows.map(
-    (r) => Number(r.last) + (r.provider === null ? longest : rulesFor(parseProviderId(r.provider)).api.requestIntervalMs),
+    (r) => Number(r.last) + (r.provider === null ? longest : apiOf(parseProviderId(r.provider)).requestIntervalMs),
   );
   const nextMs = frees.length === 0 ? null : Math.max(...frees);
 

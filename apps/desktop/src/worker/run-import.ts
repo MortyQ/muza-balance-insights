@@ -10,7 +10,7 @@ import { RateLimitError } from '@mono/core/shared/errors';
 import { accountNames, type AccountName } from '../shared/account-name.ts';
 import { localDate } from '../shared/dates.ts';
 import type { Clock, FetchLike } from '@mono/core/shared/platform';
-import { rulesFor } from '@mono/core/providers/rules';
+import { apiOf, type TokenProviderId } from '@mono/core/providers/info';
 import type { ProviderId } from '@mono/core/providers/types';
 import { accountInputs, accountInputsChanged } from '@mono/core/derive/derived';
 import { rederiveCore, rederiveSpans } from '@mono/core/derive/rederive';
@@ -27,14 +27,14 @@ import type { TimeRange } from '@mono/core/derive/transfers';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
-import { WORKER_PROVIDERS } from './providers.ts';
+import { WORKER_PROVIDERS, workerProviderOf } from './providers.ts';
 
 export type ImportConnection = { connectionId: number; provider: ProviderId; token: string };
 
 export type RunImportDeps = {
   db: Db;
   /** Network for one provider, already allowlisted to its services (src/net/providers.ts). */
-  fetchFor: (provider: ProviderId) => FetchLike;
+  fetchFor: (provider: TokenProviderId) => FetchLike;
   clock: Clock;
   connections: ReadonlyArray<ImportConnection>;
   sinceSec: number;
@@ -132,7 +132,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   };
 
   for (const input of d.connections) {
-    const api = WORKER_PROVIDERS[input.provider].create({
+    const api = workerProviderOf(input.provider).create({
       connectionId: input.connectionId,
       token: input.token,
       db: d.db,
@@ -143,7 +143,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
     });
     const run: Run = {
       input,
-      intervalSec: rulesFor(input.provider).api.requestIntervalMs / 1000,
+      intervalSec: apiOf(input.provider).requestIntervalMs / 1000,
       accountsDone: false,
       remaining: null,
       ctx: {

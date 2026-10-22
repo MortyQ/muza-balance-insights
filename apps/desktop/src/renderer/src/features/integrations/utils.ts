@@ -1,9 +1,9 @@
-import type { ProviderKey } from '@contract/api.ts';
+import type { ProviderId } from '@contract/api.ts';
 import { t } from '@/shared/lib';
 import { DEFAULT_PROVIDER, PROVIDER_FORMS } from './constants.ts';
 import type { ProviderForms } from './shared/types.ts';
 
-export function isProviderKey(id: string): id is ProviderKey {
+export function isProviderKey(id: string): id is ProviderId {
   return Object.hasOwn(PROVIDER_FORMS, id);
 }
 

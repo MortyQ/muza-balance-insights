@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ProviderKey } from '@contract/api.ts';
+import type { ProviderId } from '@contract/api.ts';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import type { ConnectFormProps } from '../../shared/types.ts';
 import { useFileConnect } from '../composables/useFileConnect.ts';
 
 // The owner fields come in the default slot, at the top of the form, as in a bank's token form.
-const { provider, owner, submitText } = defineProps<ConnectFormProps & { provider: ProviderKey }>();
+const { provider, owner, submitText } = defineProps<ConnectFormProps & { provider: ProviderId }>();
 const emit = defineEmits<{ added: [] }>();
 
 const { submit, save } = useFileConnect(() => provider, () => owner);

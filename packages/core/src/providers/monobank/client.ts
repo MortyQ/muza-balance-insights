@@ -8,12 +8,13 @@ import type { Clock, FetchLike, ResponseLike } from '../../shared/platform.ts';
 import { acquireSlot, recordCall, type RateLimitMode } from '../ratelimit.ts';
 import type { NormalizedAccount, NormalizedTx, ProviderClient } from '../types.ts';
 import { RATE_LIMIT_MS, STATEMENT_PAGE_LIMIT } from './constants.ts';
+import { monobankInfo } from './info.ts';
 
 export type { Clock } from '../../shared/platform.ts';
 export type { RateLimitMode } from '../ratelimit.ts';
 export { RateLimitError, StatementFormatError } from '../../shared/errors.ts';
 
-const BASE_URL = 'https://api.monobank.ua';
+const BASE_URL = monobankInfo.access.token.api.origin;
 const REQUEST_TIMEOUT_MS = 30_000;
 
 // ---------- response schemas (don't trust the format blindly) ----------
@@ -118,7 +119,7 @@ export function createMonoClient(opts: MonoClientOptions): MonoClient {
   const { token, db } = opts;
   const { fetch: doFetch, clock } = opts;
   const mode = opts.rateLimitMode ?? 'wait';
-  const limit = { intervalMs: RATE_LIMIT_MS, bank: 'Monobank', connectionId: opts.connectionId ?? null };
+  const limit = { intervalMs: RATE_LIMIT_MS, bank: monobankInfo.name, connectionId: opts.connectionId ?? null };
 
   const redact = (s: string): string => (token ? s.split(token).join('***') : s);
 

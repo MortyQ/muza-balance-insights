@@ -2,22 +2,16 @@
 // (TokenVault) — add, a new token, its accounts on / off, remove. Replies carry numbers only — never a token or the bank's holder id.
 // The list of people with their connections is PeopleService's (people.ts); this service does not use it.
 import type { ProviderId } from '@mono/core/providers/types';
-import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { credentialFits, infoOf } from '@mono/core/providers/info';
 import type {
   AddConnectionInput,
   AddConnectionResult,
   ConnectionAccountView,
-  ProviderKey,
   RemoveConnectionResult,
   SetAccountEnabledResult,
 } from '../shared/api.ts';
 import type { DataApi } from './data-api.ts';
 import { TokenError } from './token.ts';
-
-// The renderer's provider key is exactly the core's provider id.
-type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
-const PROVIDER_KEYS_MATCH: Same<ProviderKey, ProviderId> = true;
-void PROVIDER_KEYS_MATCH;
 
 export type IntegrationsDeps = {
   data: Pick<DataApi, 'connections' | 'createConnection' | 'deleteConnection' | 'connectionAccounts' | 'setAccountEnabled'>;
@@ -45,8 +39,7 @@ export class IntegrationsService {
       const { connectionId, participantId } = await data.createConnection(input.participant, input.provider, 'file');
       return { added: true, connectionId, participantId, stored: null };
     }
-    const { bank, credential } = DESKTOP_PROVIDERS[input.provider];
-    if (!credential.test(input.token)) throw new TokenError(`Not a ${bank} token`);
+    if (!credentialFits(input.provider, input.token)) throw new TokenError(`Not a ${infoOf(input.provider).name} token`);
     for (const c of await data.connections()) {
       if (c.provider === input.provider && (await this.d.tokens.get(c.id)) === input.token) return { added: false, reason: 'duplicate' };
     }

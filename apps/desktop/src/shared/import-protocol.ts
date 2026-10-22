@@ -4,8 +4,7 @@
 // hold them: progress is typed data, errors are codes (log lines: names, statuses and counts); connections appear by
 // their numeric id only, never by a participant's name.
 import { z } from 'zod';
-import { PROVIDER_IDS } from '@mono/core/providers/types';
-import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { credentialFits, TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
 import { DB_KEY_RE } from './db-open.ts';
 import { WORKER_ERRORS } from './progress.ts';
 
@@ -15,8 +14,8 @@ export const MAX_CONNECTIONS = 10;
 const connectionId = z.number().int().positive();
 
 export const StartConnection = z
-  .strictObject({ connectionId, provider: z.enum(PROVIDER_IDS), token: z.string() })
-  .refine((c) => DESKTOP_PROVIDERS[c.provider].credential.test(c.token), { message: 'not a credential' });
+  .strictObject({ connectionId, provider: z.enum(TOKEN_PROVIDER_IDS), token: z.string() })
+  .refine((c) => credentialFits(c.provider, c.token), { message: 'not a credential' });
 
 export const StartMessage = z.strictObject({
   type: z.literal('start'),

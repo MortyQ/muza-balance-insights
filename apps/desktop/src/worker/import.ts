@@ -4,10 +4,10 @@
 import { net } from 'electron';
 import { migrate, type Db } from '@mono/core/storage/db';
 import { refreshCrossing } from '@mono/core/derive/derived';
-import type { FetchLike } from '@mono/core/shared/platform';
-import type { ProviderId } from '@mono/core/providers/types';
+import type { TokenProviderId } from '@mono/core/providers/info';
 import { openLibsql } from '@mono/db-libsql';
 import { allowlistedFetch } from '../net/allowlist.ts';
+import { DESKTOP_PROVIDERS } from '../net/providers.ts';
 import { FromWorker, ToWorker } from '../shared/import-protocol.ts';
 import { abortableClock } from './clock.ts';
 import { runImport } from './run-import.ts';
@@ -15,10 +15,9 @@ import { runImport } from './run-import.ts';
 /** Main closes the worker once the final message (done / error) arrives; this exit is only a fallback. */
 const EXIT_FALLBACK_MS = 5_000;
 
-// Each provider's client reaches only its own services: a bank token can never go to another trusted service.
-const FETCH: Record<ProviderId, FetchLike> = {
-  monobank: allowlistedFetch(net.fetch, ['monobank']),
-};
+
+/** The one trusted service a provider's client may reach (src/integrations/<bank>/desktop.ts). */
+const serviceOf = (provider: TokenProviderId) => DESKTOP_PROVIDERS[provider].service;
 
 const port = process.parentPort;
 const controller = new AbortController();
@@ -47,7 +46,8 @@ port.on('message', (event: { data: unknown }) => {
       await refreshCrossing(db);
       await runImport({
         db,
-        fetchFor: (provider) => FETCH[provider],
+        // Each provider's client reaches only the service its desktop entry names: a bank token never reaches another.
+        fetchFor: (provider) => allowlistedFetch(net.fetch, [serviceOf(provider)]),
         clock: abortableClock,
         connections: msg.connections,
         sinceSec: msg.sinceSec,

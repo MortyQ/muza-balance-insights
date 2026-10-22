@@ -1,7 +1,7 @@
 // «Люди» in main: the people and their connections from the data process, with each token's status (TokenVault).
 // Replies carry a participant's label and numbers only — never a token or the bank's holder id.
 // Adding, re-keying and removing connections is IntegrationsService's (integrations.ts).
-import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { infoOf } from '@mono/core/providers/info';
 import type { ColorChangeResult, ColorKey, PeopleView, TokenStatus } from '../shared/api.ts';
 import type { DataApi } from './data-api.ts';
 
@@ -21,7 +21,7 @@ export class PeopleService {
     for (const p of await this.d.data.people()) {
       const connections = [];
       for (const c of p.connections) {
-        connections.push({ ...c, bank: DESKTOP_PROVIDERS[c.provider].bank, token: c.method === 'token' ? await this.d.tokens.status(c.id) : null });
+        connections.push({ ...c, bank: infoOf(c.provider).name, token: c.method === 'token' ? await this.d.tokens.status(c.id) : null });
       }
       people.push({ ...p, connections });
     }

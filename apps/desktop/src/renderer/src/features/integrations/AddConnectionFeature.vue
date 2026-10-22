@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, watch } from 'vue';
-import type { ProviderKey } from '@contract/api.ts';
+import type { ProviderId } from '@contract/api.ts';
 import { bankOf } from '@/entities/bank';
 import { ColorSwatches, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
@@ -15,7 +15,7 @@ const {
   submitText = undefined,
   autofocus = false,
 } = defineProps<{
-  provider: ProviderKey;
+  provider: ProviderId;
   defaultLabel?: string;
   submitText?: string;
   autofocus?: boolean;

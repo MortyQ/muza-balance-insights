@@ -1,16 +1,16 @@
-// What each bank's folder in src/integrations provides. `desktop.ts` — main's side, checked before anything is stored
-// or sent to the worker (assembled in src/net/providers.ts); `worker.ts` — the import worker's side (assembled in
+// What each bank's folder in src/integrations provides (banks with an API only; a file-only bank has no folder here).
+// `desktop.ts` — which trusted service its client may reach (assembled in src/net/providers.ts); `worker.ts` — the import worker's side (assembled in
 // src/worker/providers.ts). The two sides stay in separate files so each process imports only its own.
 import type { Db } from '@mono/core/storage/db';
 import type { Clock, FetchLike } from '@mono/core/shared/platform';
 import type { ProviderClient } from '@mono/core/providers/types';
+import type { ServiceId } from '../net/allowlist.ts';
 import type { ErrorKind } from '../shared/import-protocol.ts';
 
+/** A bank with an API, main's side. Its name and credential shape are the core's (providers/info.ts). */
 export interface DesktopProvider {
-  /** Name in the UI. */
-  bank: string;
-  /** A credential-shaped string; nothing else is kept. */
-  credential: RegExp;
+  /** The trusted service its client may reach (net/allowlist.ts); a provider names one, it cannot add hosts. */
+  service: ServiceId;
 }
 
 export type ClientDeps = {

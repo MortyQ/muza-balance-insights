@@ -5,14 +5,14 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 1. The provider info registry (feat(core): provider info registry)
 
-- [ ] 1.1 Add `ProviderInfo` to `providers/types.ts` (name, `access` with `token: { credential, api } | null` and `file`, `ids`, `cardTypes`, `defaultCardType`), `providers/monobank/info.ts` and the registry `providers/info.ts`. Move `api` out of `ProviderRules`. `ingest/plan.ts` (`WINDOW_SEC`, `windowSecFor`) and `read/status.ts` read `api` of token providers only. Extend `tests/providers-boundary.test.ts`: `providers/info.ts` is a fourth door, it may import only `<id>/info.ts` and `types.ts`, and each `<id>/info.ts` imports only `types.ts`. Add one breaking example per new rule. Verify that core's tsc and vitest pass with no figure test changed.
-- [ ] 1.2 Desktop:
+- [x] 1.1 Add `ProviderInfo` to `providers/types.ts` (name, `access` with `token: { credential, api } | null` and `file`, `ids`, `cardTypes`, `defaultCardType`), `providers/monobank/info.ts` and the registry `providers/info.ts`. Move `api` out of `ProviderRules`. `ingest/plan.ts` (`WINDOW_SEC`, `windowSecFor`) and `read/status.ts` read `api` of token providers only. Extend `tests/providers-boundary.test.ts`: `providers/info.ts` is a fourth door, it may import only `<id>/info.ts` and `types.ts`, and each `<id>/info.ts` imports only `types.ts`. Add one breaking example per new rule. Verify that core's tsc and vitest pass with no figure test changed.
+- [x] 1.2 Desktop:
   - `DESKTOP_PROVIDERS` becomes `{ service }` for token providers. The bank name comes from `PROVIDERS` (`main/people.ts`) and the credential from `PROVIDERS` (`main/integrations.ts`, `main/token.ts`, `shared/import-protocol.ts`).
   - `WORKER_PROVIDERS` and `FETCH` become maps over token providers, with `FETCH` built from `service`.
   - `ProviderKey` becomes core's `ProviderId` (`src/shared/api.ts`).
 
   Verify that `tests/providers.test.ts` checks the keys equal the token providers and that the Monobank client's host is among its service's hosts, and that `apps/desktop` tsc (node and web) and vitest pass.
-- [ ] 1.3 Update `apps/mcp` only where the contract moves (`api`), and rewrite `.agents/project/core-providers.md` in English around the registry. Verify that `apps/mcp` tsc and vitest pass, apart from the 7 known sandbox-only `cli-args` failures.
+- [x] 1.3 Update `apps/mcp` only where the contract moves (`api`), and rewrite `.agents/project/core-providers.md` in English around the registry. Verify that `apps/mcp` tsc and vitest pass, apart from the 7 known sandbox-only `cli-args` failures.
 
 ## 2. Operations without an MCC and the bank's category (feat(core): rows without an MCC)
 

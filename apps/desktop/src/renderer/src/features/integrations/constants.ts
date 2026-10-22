@@ -1,4 +1,4 @@
-import type { ProviderKey } from '@contract/api.ts';
+import type { ProviderId } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import type { BankAuth } from '@/entities/bank';
 import MonobankConnectFeature from './monobank/MonobankConnectFeature.vue';
@@ -11,7 +11,7 @@ import type { ProviderForms } from './shared/types.ts';
  * `tokenField` — the token field of «Enter token again» in a connection row; `accessNote` — the first screen's line;
  * `cardTypes` — the bank's card types for «Accounts»; `fileSteps` — how to get a statement file (null: no file format).
  */
-export const PROVIDER_FORMS: Record<ProviderKey, ProviderForms> = {
+export const PROVIDER_FORMS: Record<ProviderId, ProviderForms> = {
   monobank: {
     connect: MonobankConnectFeature,
     tokenField: MonobankTokenField,
@@ -22,7 +22,7 @@ export const PROVIDER_FORMS: Record<ProviderKey, ProviderForms> = {
 };
 
 /** The bank «Add connection» adds (the only one available), and the forms of a provider this app does not know. */
-export const DEFAULT_PROVIDER: ProviderKey = 'monobank';
+export const DEFAULT_PROVIDER: ProviderId = 'monobank';
 
 /** The ways the add form can show (an OAuth sign-in is not built yet). */
 export type ConnectWay = Extract<BankAuth, 'token' | 'file'>;

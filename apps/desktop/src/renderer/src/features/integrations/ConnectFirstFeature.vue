@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { ProviderKey } from '@contract/api.ts';
+import type { ProviderId } from '@contract/api.ts';
 import { type Bank, BankMark } from '@/entities/bank';
 import { VButton } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
@@ -10,7 +10,7 @@ import { isProviderKey } from './utils.ts';
 
 const emit = defineEmits<{ connected: [] }>();
 
-const selected = ref<{ bank: Readonly<Bank>; provider: ProviderKey } | null>(null);
+const selected = ref<{ bank: Readonly<Bank>; provider: ProviderId } | null>(null);
 
 function select(bank: Readonly<Bank>) {
   if (isProviderKey(bank.id)) selected.value = { bank, provider: bank.id };

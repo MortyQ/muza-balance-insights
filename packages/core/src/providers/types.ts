@@ -48,17 +48,41 @@ export type MaskedDescription = { description: string; descClass: DescClass };
 
 /** Facts about the bank's API the domain plans around (no network code). */
 export interface ProviderApiInfo {
-  /** Name in messages: «Monobank». */
-  bank: string;
+  /** Where the client sends its requests (`https://host`); the desktop allowlist must hold this host. */
+  origin: string;
   /** Minimum time between two requests with one credential. */
   requestIntervalMs: number;
   /** Longest statement window one request may ask for. */
   maxWindowSec: number;
 }
 
+/** Access with a credential through the bank's API. */
+export interface ProviderTokenAccess {
+  /** A credential-shaped string (the whole string); nothing else is kept. */
+  credential: RegExp;
+  api: ProviderApiInfo;
+}
+
+/**
+ * What the app knows about a bank before any of its code runs: its name, how it can be connected, how its ids are
+ * stored, its card types. Pure data (providers/<id>/info.ts), listed in providers/info.ts — the only list of banks.
+ */
+export interface ProviderInfo {
+  id: ProviderId;
+  /** The brand name, not translated. */
+  name: string;
+  /** null token = no API: the bank is connected by statement files only. */
+  access: { token: ProviderTokenAccess | null; file: boolean };
+  /** 'bare' — the bank's ids are stored as they are (Monobank only, by history); 'prefixed' — as `<id>:<bank id>`. */
+  ids: 'bare' | 'prefixed';
+  /** The bank's card types (accounts.type), for names on screens and a new card from a file. */
+  cardTypes: ReadonlyArray<string>;
+  /** The type a new card from a file gets unless the user picks another; null = none. */
+  defaultCardType: string | null;
+}
+
 export interface ProviderRules {
   id: ProviderId;
-  api: ProviderApiInfo;
   /** A money transfer (either side), as opposed to a purchase: the only rows transfer pairs are made of. */
   isTransferLike(tx: RuleTx): boolean;
   /** A bank-generated text of a transfer between the owner's own accounts (the single-row `text` rule). */

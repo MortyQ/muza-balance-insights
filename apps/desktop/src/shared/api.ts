@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { ProviderId } from '@mono/core/providers/types';
 import type { ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
@@ -25,8 +26,8 @@ export type TokenStatus = {
 // A participant's label is the one name that reaches the renderer (typed by the user, or the holder's name from the
 // bank): the screen shows it. Nothing else of a connection — no holder id, no token.
 
-/** Must equal the core's ProviderId (checked in src/main/integrations.ts). */
-export type ProviderKey = 'monobank';
+/** A bank: the core's provider id (the registry, @mono/core/providers/info). */
+export type { ProviderId };
 
 export type { ColorKey };
 
@@ -35,7 +36,7 @@ export type ConnectionMethod = 'token' | 'file';
 
 export type ConnectionView = {
   id: number;
-  provider: ProviderKey;
+  provider: ProviderId;
   method: ConnectionMethod;
   /** «Monobank». */
   bank: string;
@@ -75,8 +76,8 @@ export type PeopleView = {
 export type ParticipantChoice = { id: number } | { label: string; color?: ColorKey } | { fromBank: true; color?: ColorKey };
 
 export type AddConnectionInput =
-  | { participant: ParticipantChoice; provider: ProviderKey; method?: 'token'; token: string; remember: boolean }
-  | { participant: ParticipantChoice; provider: ProviderKey; method: 'file' };
+  | { participant: ParticipantChoice; provider: ProviderId; method?: 'token'; token: string; remember: boolean }
+  | { participant: ParticipantChoice; provider: ProviderId; method: 'file' };
 
 /** taken: another person has this colour. */
 export type ColorChangeResult = { changed: true } | { changed: false; reason: 'taken' };

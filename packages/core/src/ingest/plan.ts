@@ -2,7 +2,7 @@
 import { accountEnabledSql } from '../people/accounts.ts';
 import { RESYNC_OVERLAP_SEC } from '../shared/constants.ts';
 import type { Db } from '../storage/db.ts';
-import { PROVIDER_RULES, rulesFor } from '../providers/rules.ts';
+import { apiOf, TOKEN_PROVIDER_IDS } from '../providers/info.ts';
 import type { ProviderId } from '../providers/types.ts';
 
 /**
@@ -10,11 +10,11 @@ import type { ProviderId } from '../providers/types.ts';
  * against clock differences between us and the bank.
  */
 export function windowSecFor(provider: ProviderId): number {
-  return rulesFor(provider).api.maxWindowSec - 3600;
+  return apiOf(provider).maxWindowSec - 3600;
 }
 
-/** The default for the pure planners: the smallest window of all providers — never too long for any bank. */
-export const WINDOW_SEC = Math.min(...Object.values(PROVIDER_RULES).map((p) => p.api.maxWindowSec)) - 3600;
+/** The default for the pure planners: the smallest window of all API providers — never too long for any bank. */
+export const WINDOW_SEC = Math.min(...TOKEN_PROVIDER_IDS.map((p) => apiOf(p).maxWindowSec)) - 3600;
 
 export type Window = { from: number; to: number };
 

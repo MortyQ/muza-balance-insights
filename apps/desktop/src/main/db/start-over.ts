@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { ProviderId } from '@mono/core/providers/types';
 import type { StartOverResult } from '../../shared/db-state.ts';
-import { DESKTOP_PROVIDERS } from '../../net/providers.ts';
+import { credentialFits, TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
 import { JOB_FILE } from '../importer.ts';
 import type { DbState } from './access.ts';
 
@@ -30,7 +30,7 @@ export type StartOverDeps = {
 
 /** The one provider whose credential shape the token has; none or several → the token is not kept. */
 function providerOf(token: string): ProviderId | null {
-  const ids = (Object.keys(DESKTOP_PROVIDERS) as ProviderId[]).filter((p) => DESKTOP_PROVIDERS[p].credential.test(token));
+  const ids = TOKEN_PROVIDER_IDS.filter((p) => credentialFits(p, token));
   return ids.length === 1 ? ids[0]! : null;
 }
 

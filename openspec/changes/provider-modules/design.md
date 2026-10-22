@@ -91,9 +91,12 @@ fourth door. It allows `<id>/info.ts` there and requires every `<id>/info.ts` to
 Desktop:
 - `DESKTOP_PROVIDERS` shrinks to `{ service: ServiceId }` for token providers only. The bank name and credential come
   from `PROVIDERS`.
-- `WORKER_PROVIDERS` and `FETCH` become maps over token providers, with `FETCH` built from each entry's `service`.
+- `WORKER_PROVIDERS` becomes a map over token providers. The worker's `FETCH` table goes: `fetchFor` scopes each
+  provider's fetch to the `service` its entry names (`serviceOf`), so the service is declared once.
 - `tests/providers.test.ts` checks that their keys are exactly the token providers, and that the core client's host is
   one of its service's hosts.
+- `main/token.ts` reads credential shapes from `@mono/core/providers/info`. `tests/token.test.ts` keeps its guarantee
+  that nothing `token.ts` loads can write, log or reach the network, by walking that module's whole closure.
 
 `TRUSTED_SERVICES` stays written out literally in `net/allowlist.ts`, so the network allowlist is still reviewed in
 one place. A provider names its service but cannot add hosts.
