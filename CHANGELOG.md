@@ -22,6 +22,10 @@ English interface.
   and they no longer slow down as you add people, accounts or months of history. An update of your data finishes
   sooner once it is downloaded. The first start after this update can take a few seconds longer: the app reorganizes
   the data it keeps on this computer once.
+- **No more freezes while the app recalculates.** Turning an account on or off, removing a connection and uploading a
+  statement no longer freeze the window: you can move it and use the menu while the numbers update.
+- **Screens you go back to open at once.** Switching back to a month, a person or a category you just looked at shows
+  its numbers immediately; after new data comes in, they are refreshed in the background.
 
 ## 0.1.9 — 2026-10-07
 

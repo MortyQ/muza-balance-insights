@@ -92,3 +92,18 @@
   `rederive: N spans, …` log line marks the incremental pass; a line with the categories count marks a full pass).
   A routine auto-sync should take the incremental pass; a full one after an ordinary sync means an account's IBAN, jar
   title or card type looked changed.
+
+## Check on a live system: the data process (`openspec/changes/desktop-data-process`)
+
+- **The build**: `pnpm --filter @mono/desktop build` (and `dev`) bundles `src/data/process.ts` as its own entry
+  (`?modulePath`, like the import worker), and the packaged app starts it (`[data] …` lines in the dev log; no
+  `data: database unavailable` while the database is ready).
+- **Responsiveness on a real database**: turn an account off (a full re-derivation) and, while it runs, move the
+  window, open the menu and switch screens; the same while a statement upload commits. The window must not freeze.
+- **«Delete all data» and «Start over» on Windows**: the database files go without `EBUSY` now that the data process
+  exits before they are deleted.
+- **The data process's memory**: its resident size next to main's and the import worker's, after a few screens.
+- **A crash**: kill the `balance-data` process from the OS, then open a screen: the first load may show the failure
+  line, the next one is answered by a new process.
+- **The read cache by eye**: going back to a month or a category shows its numbers at once; after an import window or
+  a write (a reserve, a recurring mark, an account toggle) the screen shows the new numbers within one quiet reload.

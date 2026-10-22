@@ -53,8 +53,8 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 6. Release notes and checks (docs(desktop): data process notes)
 
-- [ ] 6.1 Add the user-visible entry to `CHANGELOG.md` under `## 0.1.10 — unreleased`, in plain words with no internal terms: the window stays responsive while the app recalculates, and screens you go back to open at once. Verify that `tests/release-notes.test.ts` passes.
-- [ ] 6.2 Add the live checks of design «Migration Plan» to `docs/backlog.md`:
+- [x] 6.1 Add the user-visible entry to `CHANGELOG.md` under `## 0.1.10 — unreleased`, in plain words with no internal terms: the window stays responsive while the app recalculates, and screens you go back to open at once. Verify that `tests/release-notes.test.ts` passes.
+- [x] 6.2 Add the live checks of design «Migration Plan» to `docs/backlog.md`:
   - responsiveness while an account is turned off on real data;
   - Windows «Delete all data» and «Start over»;
   - the process's memory;
