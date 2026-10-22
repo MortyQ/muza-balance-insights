@@ -106,6 +106,11 @@ describe('MasterLayout', () => {
     expect(entry(w, '/second').attributes('aria-current')).toBeUndefined();
     expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.general'));
     expect(w.get('aside.sidebar .v-sidebar-footer a').attributes('href')).toBe('/settings');
+    // The header and the screen sit in one panel next to the sidebar, the filters in the panel's header row.
+    const panel = w.get('[data-test="layout-panel"]');
+    expect(panel.find('[data-test="filters"]').exists()).toBe(true);
+    expect(panel.find('[data-test="layout-scroll"]').exists()).toBe(true);
+    expect(panel.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
     w.unmount();
   });
