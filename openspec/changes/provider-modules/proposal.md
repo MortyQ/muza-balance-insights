@@ -1,8 +1,5 @@
 # Proposal
 
-> Draft. It records the decisions agreed so far. Specs, design and tasks are written after `core-read-model` (change 1)
-> and the database/worker change (change 2) land. Not ready for apply.
-
 ## Why
 
 The app's purpose is one combined view of a person's or family's money across every bank. Today only Monobank is
@@ -18,8 +15,9 @@ Adding a bank has to be a contained task: one provider folder plus its reader, w
 
 - **Provider modules.** A provider declares its halves in one place: rules, an optional API client, optional statement
   readers, and desktop metadata (access method, credential shape, network services). Core, worker, main and renderer
-  read the provider from one registry instead of naming Monobank. This removes the Monobank-specific names and
-  fallbacks found in the audit (`monobank.db`, the rates source, `ProviderKey`, renderer fallbacks).
+  read the provider from one registry instead of naming Monobank. This removes `ProviderKey`, the default provider
+  and the renderer's fallbacks to Monobank. What is Monobank's by nature stays: the database file name, the rates
+  source and the legacy token file (design, decision 9).
 - **Statement readers with automatic detection.**
   - One reader contract. Every reader says how sure it is that a document is its own, and reads it into statements.
   - A registry picks the reader from the file itself (format signature, then column or header signature), not from
@@ -52,8 +50,20 @@ Adding a bank has to be a contained task: one provider folder plus its reader, w
 
 ## Capabilities
 
-To be listed when the specs are written. Expected: `core-provider-modules`, `core-statement-readers`,
-`core-cross-bank-transfers`, plus deltas to `core-derived-data` (change 1) for the new pairing rule.
+### New Capabilities
+
+- `core-provider-modules`: one registry of bank providers and what each declares; namespaced ids; operations without
+  an MCC and the bank's own category; the conformance suite every provider passes.
+- `core-statement-readers`: one reader contract over a neutral document; the reader picked from the file itself;
+  several accounts in one file; re-uploads add only what is new.
+- `core-cross-bank-transfers`: own and family transfers between accounts in different banks, with the time and fee
+  tolerance and the implicit fee as its own spending category.
+- `desktop-statement-decoding`: binary statement files are decoded into the neutral document outside the main process,
+  with no network, no database key and fixed limits.
+
+### Modified Capabilities
+
+- `core-derived-data`: the implicit inter-bank fee joins the derived values stored per operation.
 
 ## Impact
 
@@ -61,10 +71,14 @@ To be listed when the specs are written. Expected: `core-provider-modules`, `cor
   - `packages/core`: providers, statement import, transfers, categories, scope, connections;
   - `apps/desktop`: `integrations/`, `net/`, `worker/`, `main/statements.ts`, renderer `entities/bank`,
     `features/integrations`.
-  - A PDF text extractor and an XLSX reader become new dependencies of the desktop app (choice in the design).
+  - A PDF text extractor and an XLSX reader become new dependencies of the desktop app (`pdfjs-dist`, `fflate`,
+    `fast-xml-parser`; design, decision 8).
+  - Migration 17: two nullable columns on `transactions`, no rebuild.
+  - `apps/mcp`: only what the contract changes require to compile; its Monobank wiring stays.
 - **Trust anchors:** expected none. The network allowlist test changes only if a provider brings an API host, and
   these two banks do not.
-- **User-visible:** yes. New banks by file, combined statistics, inter-bank fees as their own category. The
-  `CHANGELOG.md` entry is written with the specs.
+- **User-visible:** not yet. With Monobank alone no figure changes; the bank picker loses the «soon» tiles. New banks
+  by file, transfers between banks and the transfer-fee category become visible when the first new bank's reader
+  lands, and that change writes the `CHANGELOG.md` entries.
 - **Out of scope:** the PrivatBank and A-Bank readers themselves (the other team's work on top of this contract),
   open banking / OAuth, and new API providers.
