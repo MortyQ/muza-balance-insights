@@ -1,0 +1,47 @@
+// copied from muzakit/libs/ui/src (2026-10-22); changes: ui/README.md
+// ── Sidebar Nav ────────────────────────────────────────────────────────────
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--ui-space-sm) var(--ui-space-lg) var(--ui-space-lg);
+
+  // P18: Paint constraint
+  contain: layout style;
+
+  // Firefox scrollbar
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--ui-foreground) 20%, transparent) transparent;
+
+  // WebKit scrollbar
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklch, var(--ui-foreground) 15%, transparent);
+    border-radius: 2px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklch, var(--ui-foreground) 25%, transparent);
+  }
+
+  &--collapsed {
+    padding-left: var(--ui-space-lg);
+    padding-right: var(--ui-space-lg);
+  }
+}
+
+.sidebar-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2xs);
+}
+
+

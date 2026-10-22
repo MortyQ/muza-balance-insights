@@ -1,0 +1,77 @@
+// copied from muzakit/libs/ui/src (2026-10-22); changes: ui/README.md
+// ── Sidebar Container ──────────────────────────────────────────────────────
+
+// Breakpoint at which mobile sidebar takes over
+$sidebar-mobile-breakpoint: 45rem;
+
+.sidebar {
+  --sidebar-width: 15rem;
+  --sidebar-collapsed-width: 3.5rem;
+  --sidebar-transition: 300ms ease-in-out;
+  // VButton's glyph size
+  --sidebar-icon-size: 0.9375rem;
+  --sidebar-guide-gap: var(--ui-space-sm);
+  --sidebar-guide-color: color-mix(in oklch, var(--ui-foreground) 14%, transparent);
+
+  // Balance: a column of the layout under the title bar, not fixed over the page (ui/README.md)
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-width);
+  height: 100%;
+  background-color: var(--ui-surface);
+  border-right: 1px solid var(--ui-border-subtle);
+  transition: width var(--sidebar-transition);
+  overflow: hidden;
+  z-index: 40;
+
+  // WebKit: GPU compositing for smooth width transition
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+
+  // P18: Paint constraint
+  contain: layout style;
+
+  // Subtle right edge gradient
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    var(--ui-border-subtle) 10%,
+                    var(--ui-border-subtle) 90%,
+                    transparent 100%
+    );
+    pointer-events: none;
+  }
+
+  &--collapsed {
+    width: var(--sidebar-collapsed-width);
+  }
+}
+
+// Flat variant: no background decoration, merges with page background
+.sidebar--flat {
+  background-color: transparent;
+  border-right: none;
+  box-shadow: none;
+
+  &::after {
+    display: none;
+  }
+}
+
+// Hide desktop sidebar on mobile — mobile sidebar takes over
+@media (max-width: #{$sidebar-mobile-breakpoint - 0.01rem}) {
+  .sidebar {
+    display: none !important;
+  }
+}
+

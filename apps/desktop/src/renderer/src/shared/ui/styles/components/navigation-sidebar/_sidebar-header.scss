@@ -1,0 +1,100 @@
+// copied from muzakit/libs/ui/src (2026-10-22); changes: ui/README.md
+// ── Sidebar Header ─────────────────────────────────────────────────────────
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ui-space-md);
+  height: 3.5rem;
+  padding: 0 var(--ui-space-lg);
+  flex-shrink: 0;
+
+  &--collapsed {
+    justify-content: center;
+  }
+}
+
+.sidebar-header__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-md);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar-header__logo,
+.sidebar-header__mark {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+// Stands in for a logo: the brand's initial on a brand-coloured tile
+.sidebar-header__mark {
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    145deg,
+    color-mix(in oklch, var(--ui-primary) 80%, var(--ui-surface)),
+    var(--ui-primary)
+  );
+  box-shadow: var(--ui-shadow-xs), inset 0 1px 0 color-mix(in oklch, var(--ui-primary-foreground) 25%, transparent);
+  color: var(--ui-primary-foreground);
+  font-size: var(--ui-text-sm);
+  line-height: 1;
+  font-weight: 700;
+}
+
+.sidebar-header__name {
+  font-size: var(--ui-text-base);
+  line-height: var(--ui-leading-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ui-foreground);
+}
+
+.sidebar-header__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ui-space-xs);
+  flex-shrink: 0;
+}
+
+.sidebar-header__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ui-control-h);
+  height: var(--ui-control-h);
+  border-radius: var(--ui-radius-lg);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ui-foreground-muted);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background-color: color-mix(in oklch, var(--ui-foreground) 4%, transparent);
+      border-color: color-mix(in oklch, var(--ui-foreground) 8%, transparent);
+      color: var(--ui-foreground);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-border-focus);
+    outline-offset: -2px;
+  }
+}
