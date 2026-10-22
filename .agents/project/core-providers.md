@@ -24,13 +24,14 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
   - **client** (`client.ts`): network, pages, 429. Optional, for a bank with an API. Re-derivation (`rederive`) never
     loads a client.
   - **statement** (`statement.ts`): optional, a statement file reader (below).
-- **The domain reaches a provider only through four doors**. The domain is every folder but `providers/`:
+- **The domain reaches a provider only through five doors**. The domain is every folder but `providers/`:
   `derive/`, `read/`, `ingest/` and the rest.
   - `providers/types.ts`, the contract;
   - `providers/info.ts`, the only list of banks: `PROVIDERS`, `infoOf`, `TOKEN_PROVIDER_IDS` / `TokenProviderId`,
     `isTokenProvider`, `apiOf` (an error for a bank without an API) and `credentialFits`;
   - `providers/rules.ts`, the rules registry (`rulesFor`);
-  - `providers/statements.ts`, the statement parsers registry.
+  - `providers/statements.ts`, the statement parsers registry;
+  - `providers/ids.ts`, stored ids (below). It imports only `info.ts` and `types.ts`.
 
   Each registry imports only its own half of each bank, plus `types.ts`. Providers never import each other.
 
@@ -46,11 +47,27 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
   read banks from it: their names, whether a credential fits, which banks have an API. `PROVIDER_IDS` (in
   `types.ts`) stays the one id list.
 
+## Ids
+
+- **Stored ids never collide between banks.** `ProviderInfo.ids` says how a bank's account and operation ids are
+  stored:
+  - `'bare'`: as the bank sends them. Monobank only; its ids contain no `:`.
+  - `'prefixed'`: `<provider>:<bank id>`. Every other bank.
+- **One place turns a bank id into a stored id**: `storedId(provider, bankId)` in `providers/ids.ts`. It is applied
+  where ids enter storage, and nowhere else:
+  - `syncAccounts`, for the accounts the client sends;
+  - `commitWindow`, for the operations of a window;
+  - `commitStatement`, for a new file account (the caller's fresh id).
+- **Back to the bank.** `fetchWindow` asks the client by `bankIdOf(provider, storedId)`. A stored id without the
+  provider's prefix is an error.
+- **Statement row ids** derive from the stored account id, so they inherit the prefix.
+- **No rewrite.** Monobank's stored ids stay as they are; no migration touches them.
+
 ## Monobank
 
 - Its files are `providers/monobank/{info,rules,descriptions,client,constants,statement}.ts`.
 - The client takes its origin and name from `info.ts`.
-- Its ids are `'bare'`: they are stored as the bank sends them.
+- Its ids are `'bare'`: they are stored as the bank sends them (see «Ids»).
 
 ## Accounts and connections
 

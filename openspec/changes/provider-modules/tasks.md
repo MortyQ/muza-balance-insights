@@ -24,8 +24,8 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 3. Ids that never collide (feat(core): namespaced ids)
 
-- [ ] 3.1 Add `storedId(provider, bankId)` (`providers/ids.ts`, by `ProviderInfo.ids`) and apply it in `syncAccounts`, `commitWindow` and a new file account in `commitStatement`. Verify with a fictional `'prefixed'` provider in `tests/ingest/`: two providers send the same account and operation ids, both are stored, and statement row ids inherit the prefix. Verify also that Monobank's ids are byte-for-byte unchanged (`sync.test.ts`, `statement-import.test.ts`).
-- [ ] 3.2 Document the id rule in `core-providers.md`. Verify core's tsc and vitest.
+- [x] 3.1 Add `storedId(provider, bankId)` (`providers/ids.ts`, by `ProviderInfo.ids`) and apply it in `syncAccounts`, `commitWindow` and a new file account in `commitStatement`. Verify with a fictional `'prefixed'` provider in `tests/ingest/`: two providers send the same account and operation ids, both are stored, and statement row ids inherit the prefix. Verify also that Monobank's ids are byte-for-byte unchanged (`sync.test.ts`, `statement-import.test.ts`).
+- [x] 3.2 Document the id rule in `core-providers.md`. Verify core's tsc and vitest.
 
 ## 4. Statement readers over a neutral document (feat(core): statement readers)
 

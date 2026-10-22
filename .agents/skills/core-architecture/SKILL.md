@@ -25,7 +25,7 @@ guard is `packages/core/tests/layers.test.ts`: when it fails, fix the placement,
 3. Pick the module. Add to an existing module only if it is the same job and stays under about 400 lines. Otherwise
    create a new module named after the job (`commit.ts`, not `utils.ts`). No `index.ts`, no barrels.
 4. Bank-specific code goes to `providers/<id>/` and reaches the domain only through `providers/types.ts`,
-   `providers/rules.ts`, `providers/statements.ts` or `providers/info.ts` (`core-providers.md`).
+   `providers/rules.ts`, `providers/statements.ts`, `providers/info.ts` or `providers/ids.ts` (`core-providers.md`).
 5. Put the test in `packages/core/tests/<layer>/`, named after the module or the behaviour.
 
 ## 2. Add a migration

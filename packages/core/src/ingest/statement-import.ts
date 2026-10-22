@@ -4,6 +4,7 @@
 // connection's account can be compared with a file (the reference check), never written from one.
 import { ConnectionError, parseConnectionMethod, parseProviderId } from '../people/connections.ts';
 import type { Db, Stmt } from '../storage/db.ts';
+import { storedId } from '../providers/ids.ts';
 import type { ParsedStatement } from '../providers/types.ts';
 import { rederiveCore } from '../derive/rederive.ts';
 import { commitRows } from './commit.ts';
@@ -12,7 +13,13 @@ import { getSyncState, type Window } from './plan.ts';
 /** Where the rows go: an account of the connection, or a new card of the file's currency. */
 export type StatementTarget =
   | { kind: 'account'; accountId: string }
-  | { kind: 'new'; /** A fresh id from the caller (the core makes no ids). */ id: string; /** The provider's card type, or null. */ type: string | null };
+  | {
+      kind: 'new';
+      /** A fresh id from the caller (the core makes no ids); it is stored under storedId. */
+      id: string;
+      /** The provider's card type, or null. */
+      type: string | null;
+    };
 
 /** Why a file is not written: a token connection, another currency, a hole in the account's coverage. */
 export type StatementBlock = 'token' | 'currency' | 'gap';
@@ -60,7 +67,7 @@ async function resolve(db: Db, connectionId: number, target: StatementTarget): P
   if (!conn) throw new ConnectionError('No such connection');
   const base = { provider: parseProviderId(conn.provider), file: parseConnectionMethod(conn.method) === 'file' };
   if (target.kind === 'new') {
-    const taken = await db.execute({ sql: 'SELECT 1 FROM accounts WHERE id = ?', args: [target.id] });
+    const taken = await db.execute({ sql: 'SELECT 1 FROM accounts WHERE id = ?', args: [storedId(base.provider, target.id)] });
     if (taken.rows.length > 0) throw new ConnectionError('The new account id is taken');
     return { ...base, account: null };
   }
@@ -152,7 +159,7 @@ export async function commitStatement(
   const comparison = await compareStatement(db, connectionId, statement, target);
   if (comparison.blocked) throw new StatementImportError(comparison.blocked);
   const { provider, account } = await resolve(db, connectionId, target);
-  const accountId = target.kind === 'new' ? target.id : target.accountId;
+  const accountId = target.kind === 'new' ? storedId(provider, target.id) : target.accountId;
   const span = comparison.span;
   const newestTime = span.to;
   const ids = statementRowIds(accountId, statement.rows);

@@ -21,7 +21,7 @@ count the same as value imports. Bottom up:
 | `commands/` | writes on people and accounts that then re-derive (`setAccountEnabled`, `deleteConnection`) | all but `ingest` |
 
 Inside `providers/` the boundary of `core-providers.md` holds as well: the domain enters a provider only through
-`providers/types.ts`, `providers/rules.ts`, `providers/statements.ts` and `providers/info.ts`.
+`providers/types.ts`, `providers/rules.ts`, `providers/statements.ts`, `providers/info.ts` and `providers/ids.ts`.
 
 ## Where new code goes
 

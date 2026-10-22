@@ -50,6 +50,9 @@ describe('a file connection', () => {
       { oldest_synced_time: kyiv('2026-10-03T09:05:11'), newest_synced_time: kyiv('2026-10-07T12:15:42') },
     ]);
     expect((await rows('SELECT COUNT(*) AS n FROM transactions'))[0]?.n).toBe(5);
+    // Monobank's ids are bare: the account is stored under the caller's id, and its rows' ids start with it.
+    expect(await rows('SELECT id FROM accounts')).toEqual([{ id: 'file-card-1' }]);
+    expect((await rows('SELECT id FROM transactions')).every((r) => String(r.id).startsWith('file-card-1:'))).toBe(true);
     // Each row's payload is the file's own row, stored apart, next to its operation.
     const payload = await rows('SELECT r.raw_json FROM transaction_raw r JOIN transactions t ON t.id = r.id');
     expect(payload.map((r) => String(r.raw_json)).sort()).toEqual(st.rows.map((r) => r.raw).sort());

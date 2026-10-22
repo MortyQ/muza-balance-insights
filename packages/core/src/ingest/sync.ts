@@ -7,6 +7,7 @@ import { RateLimitError, StatementFormatError } from '../shared/errors.ts';
 import { toKyivDate } from '../shared/format.ts';
 import type { Clock } from '../shared/platform.ts';
 import { PARTICIPANT_LABEL_MAX, ensureDefaultConnection } from '../people/connections.ts';
+import { bankIdOf, storedId } from '../providers/ids.ts';
 import type { NormalizedTx, ProviderClient } from '../providers/types.ts';
 import { cancellableSleep, throwIfCancelled } from '../shared/cancel.ts';
 import { commitRows, type CommitResult } from './commit.ts';
@@ -77,7 +78,8 @@ export async function syncConnectionId(ctx: SyncContext): Promise<number> {
  */
 export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; jars: number }> {
   const connectionId = await syncConnectionId(ctx);
-  const { externalClientId, holderName, accounts: all } = await ctx.api.accounts();
+  const { externalClientId, holderName, accounts: fetched } = await ctx.api.accounts();
+  const all = fetched.map((a) => ({ ...a, id: storedId(ctx.api.provider, a.id) }));
   const now = Math.floor(ctx.clock.nowMs() / 1000);
 
   const conn = await ctx.db.execute({
@@ -151,17 +153,18 @@ export async function syncAccounts(ctx: SyncContext): Promise<{ cards: number; j
 
 // ---------- one window: fetch all pages, then commit atomically ----------
 
-/** Every operation of one window, all pages (the client's job). Nothing is written to the DB here. */
+/** Every operation of one window, all pages (the client's job, by the bank's account id). Nothing is written to the DB here. */
 export async function fetchWindow(ctx: SyncContext, accountId: string, w: Window): Promise<NormalizedTx[]> {
   throwIfCancelled(ctx.signal);
-  return ctx.api.statementWindow(accountId, w, (page, received) => {
+  return ctx.api.statementWindow(bankIdOf(ctx.api.provider, accountId), w, (page, received) => {
     ctx.onEvent?.({ type: 'page', accountId, page, received });
     throwIfCancelled(ctx.signal);
   });
 }
 
 /**
- * Writes a fully fetched window and advances sync_state in ONE transaction.
+ * Writes a fully fetched window and advances sync_state in ONE transaction. The items carry the bank's ids; they are
+ * stored under storedId.
  * Also soft-cancels holds that the API no longer returns for this window.
  * Cancellation only looks strictly inside (from, to): boundary seconds are ambiguous
  * (whether the API treats `from`/`to` as inclusive is not stated), so they're never cancelled.
@@ -176,7 +179,7 @@ export async function commitWindow(
     provider: ctx.api.provider,
     accountId,
     window: w,
-    items,
+    items: items.map((it) => ({ ...it, id: storedId(ctx.api.provider, it.id) })),
     nowSec: Math.floor(ctx.clock.nowMs() / 1000),
     cancelHolds: true,
     ...(ctx.warn ? { warn: ctx.warn } : {}),
