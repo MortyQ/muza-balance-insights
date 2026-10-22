@@ -34,6 +34,15 @@ English interface.
   much more or less in your currency, with the percent in brackets: «+1 090 ₴ (9%)». A change over a small amount no
   longer reads as a frightening «+14 500%» on its own. The category lists of «Now» show the amount alone, to fit.
 
+### Navigation
+
+- **The menu at the window's edge.** «General», «Analytics», «Regular payments» and «Planning» are now a menu along the
+  left edge of the window, with «Settings» at its bottom. Fold it to icons with the button at its top — the names then
+  show when you point at an icon — and the app remembers your choice. In a medium-wide window the menu shows icons only;
+  in a narrow one it hides behind the menu button next to the screen's name.
+- **Screens use the whole window.** The screen's name, the month, the currency and the people sit in one row above the
+  screen, and the blocks stretch across the window instead of a narrow column in its middle.
+
 ### Fixes
 
 - **The window title on macOS.** «Balance Insights» in the title bar is centred on the window, in line with the

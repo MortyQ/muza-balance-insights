@@ -15,9 +15,9 @@
 
 ## 3. docs(desktop): shell rules and changelog
 
-- [ ] 3.1 Root `CLAUDE.md` settings-ui block: «Side menu» (app navigation is the copied sidebar, `SideNav` is the settings section menu) and «Layouts» (header, width cap, width steps); `.agents/project/desktop-renderer.md`: the `vue-router` exception for this copy. Verify: both files mention `navigation-sidebar` and the 45rem / 64rem steps
-- [ ] 3.2 `CHANGELOG.md`, `0.1.10 — unreleased`: one plain-English entry about the menu at the window's edge, folding to icons, and screens using the whole window. Verify: `tests/release-notes.test.ts` passes
-- [ ] 3.3 `docs/backlog.md`: live checks — traffic lights and Windows overlay buttons against the sidebar, drawer on a narrow window, fold state after relaunch. Verify: items listed
+- [x] 3.1 Root `CLAUDE.md` settings-ui block: «Side menu» (app navigation is the copied sidebar, `SideNav` is the settings section menu) and «Layouts» (header, width cap, width steps); `.agents/project/desktop-renderer.md`: the `vue-router` exception for this copy. Verify: both files mention `navigation-sidebar` and the 45rem / 64rem steps
+- [x] 3.2 `CHANGELOG.md`, `0.1.10 — unreleased`: one plain-English entry about the menu at the window's edge, folding to icons, and screens using the whole window. Verify: `tests/release-notes.test.ts` passes
+- [x] 3.3 `docs/backlog.md`: live checks — traffic lights and Windows overlay buttons against the sidebar, drawer on a narrow window, fold state after relaunch. Verify: items listed
 
 ## 4. Verification
 

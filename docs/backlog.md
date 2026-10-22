@@ -55,6 +55,13 @@
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
 
+## To check live: app shell (desktop-app-shell)
+
+- The sidebar under the title bar: macOS traffic lights and the Windows / Linux overlay buttons do not cover it.
+- A narrow window (< 45rem): the menu button opens the drawer; a pick, Escape and a click outside close it.
+- A medium window (45–64rem): icons only, tooltips on hover; widening restores the stored choice.
+- Fold, relaunch: the menu opens folded.
+
 ## Later: currencies
 
 - PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the
