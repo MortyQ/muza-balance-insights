@@ -10,7 +10,7 @@ import { memoryDb } from '@mono/core/test-helpers';
 import { DataService } from '../src/data/data.ts';
 import { STATEMENT_KEEP_MS, STATEMENT_MAX_BYTES, StatementsService } from '../src/main/statements.ts';
 import { TokenError } from '../src/main/token.ts';
-import { TOKEN, services } from './helpers/people.ts';
+import { TOKEN, localData, services } from './helpers/people.ts';
 
 const FIXTURES = path.resolve(__dirname, '../../../packages/core/tests/providers/monobank/fixtures');
 
@@ -30,7 +30,7 @@ function harness(opts: { file?: string | null; running?: boolean } = {}) {
   let now = 1_800_000_000_000;
   let ids = 0;
   const svc = new StatementsService({
-    db: async () => db,
+    data: localData(db, Math.floor(now / 1000)),
     pickFile: async () => (opts.file === undefined ? path.join(FIXTURES, 'statement-card-uk.csv') : opts.file),
     importRunning: () => opts.running ?? false,
     randomId: () => `00000000-0000-4000-8000-${String(++ids).padStart(12, '0')}`,
@@ -152,7 +152,7 @@ describe('StatementsService', () => {
     const conn = await fileConnection();
     const running = { value: true };
     const svc = new StatementsService({
-      db: async () => db,
+      data: localData(db, 0),
       pickFile: async () => path.join(FIXTURES, 'statement-card-uk.csv'),
       importRunning: () => running.value,
       randomId: () => '00000000-0000-4000-8000-000000000001',

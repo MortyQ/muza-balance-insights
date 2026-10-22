@@ -3,7 +3,6 @@ import {
   ALLOWED_WHEN_DB_UNAVAILABLE,
   ALLOWED_WHEN_LOCKED,
   DB_UNAVAILABLE,
-  ARG_SCHEMAS,
   FAILED,
   FORBIDDEN,
   INVALID_ARGS,
@@ -15,6 +14,7 @@ import {
   type IpcEventLike,
 } from '../src/main/ipc.ts';
 import { CHANNEL_PREFIX, METHODS, channel } from '../src/shared/channels.ts';
+import { ARG_SCHEMAS } from '../src/shared/ipc-args.ts';
 
 const WC = { id: 1 };
 const WIN = { webContents: WC };

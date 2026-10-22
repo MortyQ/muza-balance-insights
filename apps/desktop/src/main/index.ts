@@ -11,7 +11,8 @@ import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
-import { DataService } from '../data/data.ts';
+import { DataHost } from '../data/host.ts';
+import { dataApi } from './data-api.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
@@ -160,7 +161,10 @@ app.whenReady().then(async () => {
     },
   });
   app.on('will-quit', () => rates.stop());
-  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current(), log: (line) => process.stderr.write(`${line}\n`) });
+  const host = new DataHost({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current(), log: (line) => process.stderr.write(`${line}\n`) });
+  let callId = 0;
+  const data = dataApi((method, args) => host.handle({ type: 'call', id: callId++, method, args }));
+  const dataFiles = { close: () => host.close() };
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {
@@ -172,7 +176,7 @@ app.whenReady().then(async () => {
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
-    connections: () => data.connections(),
+    connections: () => data.tokenConnections(),
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
@@ -209,7 +213,7 @@ app.whenReady().then(async () => {
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
   const statements = new StatementsService({
-    db: () => data.database(),
+    data,
     pickFile: async () => {
       const opts = { properties: ['openFile' as const], filters: [{ name: 'CSV', extensions: ['csv'] }] };
       const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
@@ -260,13 +264,12 @@ app.whenReady().then(async () => {
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
   };
-  const people = new PeopleService({ db: () => data.database(), tokens: vault });
+  const people = new PeopleService({ data, tokens: vault });
   const integrations = new IntegrationsService({
-    db: () => data.database(),
+    data,
     tokens: vault,
     importRunning: () => importer.running,
     confirmRemove: () => confirm('removeConnection'),
-    nowSec: () => Math.floor(Date.now() / 1000),
   });
   // None of these handlers ever returns the token, a statement file's path or its text; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
@@ -298,7 +301,7 @@ app.whenReady().then(async () => {
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
-      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
+      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data: dataFiles, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         statements.forget();
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
@@ -351,7 +354,7 @@ app.whenReady().then(async () => {
           confirm: () => confirm('startOver'),
           tokens: vault,
           importer,
-          data,
+          data: dataFiles,
           integrations,
           userDataDir: userData,
           log: (m) => process.stderr.write(`[db] ${m}\n`),

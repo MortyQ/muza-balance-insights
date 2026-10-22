@@ -1,5 +1,5 @@
-// Read side of the screen in main: the same core aggregates as the MCP tools (spendingSummary, balancesAt), mapped
-// to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave main —
+// Read side of the screen in the data process: the same core aggregates as the MCP tools (spendingSummary, balancesAt),
+// mapped to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
 // and income screens). The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
@@ -23,7 +23,7 @@ import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
-import { labelPending } from '../main/people.ts';
+import { labelPending } from './people.ts';
 import { cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
@@ -141,7 +141,7 @@ export class DataService {
     return opening;
   }
 
-  /** The migrated connection, for the other services of main (people.ts, integrations.ts). */
+  /** The migrated connection, for the other modules of the data process (host.ts). */
   database(): Promise<Db> {
     return this.conn();
   }

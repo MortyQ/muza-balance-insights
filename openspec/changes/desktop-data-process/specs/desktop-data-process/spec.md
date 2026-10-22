@@ -49,7 +49,7 @@ carry SQL or name an arbitrary function. An error SHALL reach main as a code and
 
 #### Scenario: An unknown message
 - **WHEN** the data process receives a message that is not one of the listed methods with valid arguments
-- **THEN** it ignores it and runs nothing
+- **THEN** it runs nothing, and a call of a listed method with wrong arguments is answered with a failure, so main never waits for it
 
 #### Scenario: A failing query
 - **WHEN** a method fails inside the data process

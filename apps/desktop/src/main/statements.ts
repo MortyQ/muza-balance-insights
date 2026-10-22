@@ -3,14 +3,11 @@
 // 10 minutes, on a new file and on the app lock. The renderer never gets the path, the name or the text; the log gets
 // a code or a count only.
 import fs from 'node:fs/promises';
-import { listConnectionAccounts } from '@mono/core/people/accounts';
-import { ConnectionError } from '@mono/core/people/connections';
-import type { Db } from '@mono/core/storage/db';
 import { dateIn } from '@mono/core/shared/format';
-import { listConnections } from '@mono/core/people/participants';
 import { statementParserOf } from '@mono/core/providers/statements';
 import type { ParsedStatement } from '@mono/core/providers/types';
-import { StatementImportError, commitStatement, compareStatement, type StatementTarget } from '@mono/core/ingest/statement-import';
+import type { StatementTarget } from '@mono/core/ingest/statement-import';
+import { DataCallError } from '../shared/data-protocol.ts';
 import type {
   CommitStatementResult,
   CompareStatementResult,
@@ -18,13 +15,14 @@ import type {
   StatementProblemCode,
   StatementTargetInput,
 } from '../shared/api.ts';
+import type { DataApi } from './data-api.ts';
 
 /** Larger than any real statement: a year of a busy card is well under 1 MiB. */
 export const STATEMENT_MAX_BYTES = 10 * 1024 * 1024;
 export const STATEMENT_KEEP_MS = 10 * 60 * 1000;
 
 export type StatementsDeps = {
-  db: () => Promise<Db>;
+  data: Pick<DataApi, 'connections' | 'connectionAccounts' | 'compareStatement' | 'commitStatement'>;
   /** The system open dialog (CSV only); null = cancelled. */
   pickFile: () => Promise<string | null>;
   importRunning: () => boolean;
@@ -60,9 +58,8 @@ export class StatementsService {
 
   async open(connectionId: number): Promise<OpenStatementResult> {
     this.kept = null;
-    const db = await this.d.db();
-    const connection = (await listConnections(db)).find((c) => c.id === connectionId);
-    if (!connection) throw new ConnectionError('No such connection');
+    const connection = (await this.d.data.connections()).find((c) => c.id === connectionId);
+    if (!connection) throw new DataCallError('connection', 'ConnectionError', 'No such connection');
     const parser = statementParserOf(connection.provider);
     if (!parser) return this.problem('no-format');
 
@@ -82,18 +79,7 @@ export class StatementsService {
     const { statement } = parsed;
     const id = this.d.randomId();
     this.kept = { id, connectionId, statement, until: this.d.nowMs() + STATEMENT_KEEP_MS };
-    const accounts = (await listConnectionAccounts(db, connectionId))
-      .filter((a) => a.kind === 'card' && a.currencyCode === statement.currencyCode)
-      .map((a) => ({
-        id: a.id,
-        kind: a.kind,
-        type: a.type,
-        currencyCode: a.currencyCode,
-        maskedPanTail: a.maskedPanTail,
-        jarTitle: a.jarTitle,
-        enabled: a.enabled,
-        auto: a.auto,
-      }));
+    const accounts = (await this.d.data.connectionAccounts(connectionId)).filter((a) => a.kind === 'card' && a.currencyCode === statement.currencyCode);
     const times = statement.rows.map((r) => r.time);
     this.d.log(`[statement] opened ${statement.rows.length}`);
     return {
@@ -110,7 +96,7 @@ export class StatementsService {
   async compare(statementId: string, target: StatementTargetInput): Promise<CompareStatementResult> {
     const kept = this.take(statementId);
     if (!kept) return { ok: false, reason: 'expired' };
-    const c = await compareStatement(await this.d.db(), kept.connectionId, kept.statement, this.target(target));
+    const c = await this.d.data.compareStatement(kept.connectionId, kept.statement, this.target(target));
     return {
       ok: true,
       comparison: {
@@ -129,15 +115,11 @@ export class StatementsService {
     const kept = this.take(statementId);
     if (!kept) return { written: false, reason: 'expired' };
     if (this.d.importRunning()) return { written: false, reason: 'import-running' };
-    try {
-      const { added } = await commitStatement(await this.d.db(), kept.connectionId, kept.statement, this.target(target), Math.floor(this.d.nowMs() / 1000));
-      this.kept = null;
-      this.d.log(`[statement] added ${added}`);
-      return { written: true, added };
-    } catch (err) {
-      if (err instanceof StatementImportError) return { written: false, reason: err.reason };
-      throw err;
-    }
+    const r = await this.d.data.commitStatement(kept.connectionId, kept.statement, this.target(target));
+    if (!r.written) return r;
+    this.kept = null;
+    this.d.log(`[statement] added ${r.added}`);
+    return r;
   }
 
   private problem(problem: StatementProblemCode, row: number | null = null): OpenStatementResult {
