@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { DataStatus } from '@contract/api.ts';
-import { shortDate, t } from '@/shared/lib';
+import { invalidateReads, shortDate, t } from '@/shared/lib';
 import { useSyncStatusRequest } from '../api/useSyncStatusRequest.ts';
 
 /** What has been imported so far, and a counter the data screens reload on. */
@@ -9,7 +9,7 @@ export const useSyncStatusStore = defineStore('sync-status', () => {
   const { fetchStatus } = useSyncStatusRequest();
   const status = ref<DataStatus | null>(null);
   const failed = ref(false);
-  /** Bumped whenever the numbers may have changed: the data features reload on it. */
+  /** Bumped whenever the numbers may have changed: the data features reload on it (their kept answers are stale by then). */
   const version = ref(0);
 
   const hasData = computed(() => status.value?.hasData === true);
@@ -27,6 +27,7 @@ export const useSyncStatusStore = defineStore('sync-status', () => {
       // Never read a failure as «no data»: say so, keep what was shown.
       failed.value = true;
     }
+    invalidateReads();
     version.value += 1;
   }
 

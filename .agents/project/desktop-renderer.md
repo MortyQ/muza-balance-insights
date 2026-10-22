@@ -278,6 +278,19 @@
     `participant` по `ConnectionView.enabledAccounts`) → `hasData` ложно, но подключения есть: главная (не экран
     подключения) с плашкой «Все счета выключены…» и кнопкой в «Подключения» (`widgets/home-notices`);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
+  - **The read cache** (`shared/lib/readCache.ts`, `ReadCache`, the one `readCache`): the answers of the eight data reads
+    (`CACHED_READS` in `shared/api/methods.ts`: the month, spending, now, category, income, recurring, allowance and
+    analytics overviews), keyed by `readKey(method, args)`, at most `READ_CACHE_SIZE` (50, least recently used dropped
+    first), memory only (the lock's reload leaves nothing; bank text in the lines never reaches storage). Fresh = no data
+    change since its request started and younger than `READ_FRESH_MS` (60 s). `shared/api/balance.ts` wraps the bridge
+    once (`wrapBridge`): a cached read keeps its answer under the generation read at its start (one that raced a write
+    lands stale), a failure keeps nothing; `PASS_THROUGH` methods pass as they are; every other method is a write and
+    makes all kept answers stale once it succeeds (a new write method needs no entry). The sync-status store's
+    `refresh()` (an imported window, the end of an import, after writes and «Delete all data») calls `invalidateReads()`
+    before it bumps `version`. A data feature's `api/` segment has a `peek<X>` next to its fetch, and its composable
+    builds one `query()` for both and passes `cached: () => peek(query())` to `useAsyncData`: fresh → shown without a
+    request, stale → shown at once and replaced by a quiet load, none → as before; `reload()` always asks. Tests:
+    `tests/renderer/read-cache.test.ts`, the store's part in `sync-status.test.ts`.
 - **Interface texts** — every text on a screen goes through vue-i18n, no literals:
   - templates: `$t('key')`, `$t('key', { name })`, plurals `$t('key', n)`; script code (`utils.ts`, composables,
     stores): `t` from `@/shared/lib`, called when the text is needed — never at module load (a constant built with `t`

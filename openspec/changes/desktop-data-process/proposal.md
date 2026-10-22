@@ -68,8 +68,9 @@ process.
   - **New:** `src/shared/data-protocol.ts` (the messages, zod-checked on both sides) and `src/main/data-client.ts`.
   - **Rewired:** `src/main/index.ts`, `people.ts`, `integrations.ts`, `statements.ts`, `wipe.ts`, `db/start-over.ts`,
     `importer.ts`, `auto-sync.ts`.
-  - **Renderer:** `shared/api` (the cache and its generation), `shared/lib/useAsyncData` (start from a cached answer),
-    the data features' composables, and the sync-status store (it moves the generation).
+  - **Renderer:** `shared/lib` (the read cache, and `useAsyncData` starting from a kept answer), `shared/api` (the
+    bridge wrapper that fills the cache and makes it stale), the data features' `api/` segments and composables, and
+    the sync-status store (it makes the kept answers stale).
   - **Tests:** the existing main tests follow the moved files; new tests cover the protocol, the client, the host and
     the cache; the architecture test gains the main-imports rule.
 - **Not affected:** `packages/core`, `packages/db-libsql` and `apps/mcp`.

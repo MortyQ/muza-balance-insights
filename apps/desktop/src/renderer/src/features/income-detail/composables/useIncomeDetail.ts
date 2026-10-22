@@ -12,19 +12,21 @@ import type { UseIncomeDetailReturn } from '../types.ts';
  * changes, and quietly when the data changes.
  */
 export function useIncomeDetail(period: MaybeRefOrGetter<DetailPeriod>): UseIncomeDetailReturn {
-  const { fetchIncomeOverview } = useIncomeRequest();
+  const { fetchIncomeOverview, peekIncomeOverview } = useIncomeRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return { period: toValue(period), ...(id !== null ? { participantId: id } : {}) };
+  };
   const { state } = useAsyncData(
-    () => {
-      const id = participantId();
-      return fetchIncomeOverview({ period: toValue(period), ...(id !== null ? { participantId: id } : {}) });
-    },
+    () => fetchIncomeOverview(query()),
     // The period by value: a page that rebuilds the same period does not reload.
     [() => JSON.stringify(toValue(period)), participantId],
-    { quiet: [() => syncStatus.version] },
+    { quiet: [() => syncStatus.version], cached: () => peekIncomeOverview(query()) },
   );
 
   // Also publishes the answer's rates to the currency button of the global filters.

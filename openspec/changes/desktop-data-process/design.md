@@ -175,30 +175,32 @@ Each rule has a breaking example.
 
 ### 6. The renderer cache (FSD placement)
 
-- **Layer `shared`, segment `api`: `shared/api/read-cache.ts`.**
-  - `ReadCache` holds a generation counter and an LRU of at most 50 entries:
-    `key → { data, generation, at }`.
-  - The key is `method + JSON of the arguments`.
+- **Layer `shared`, segment `lib`: `shared/lib/readCache.ts`.**
+  - `ReadCache` holds a generation counter and an LRU of at most 50 entries: `key → { data, generation, at }`. The
+    renderer has one, `readCache`.
+  - The key is `readKey(method, args)`: the method (typed as a `Method`, so a typo fails `vue-tsc`) and the JSON of its
+    arguments.
   - An entry is fresh when its generation equals the current one and it is under 60 s old.
-- **`shared/api/balance.ts` wraps the bridge.**
-  - The eight data reads (`getMonthOverview`, `getSpendingOverview`, `getNowOverview`, `getCategoryOverview`,
-    `getIncomeOverview`, `getRecurringOverview`, `getAllowanceOverview`, `getAnalyticsOverview`) store their answer
-    under the generation read when the request started, so an answer that raced a write lands stale.
-  - Every method in `READ_ONLY` passes straight through. It lists the other reads: status, lists, lock, theme, locale
-    and so on.
-  - Any other method bumps the generation once it succeeds. A new write method is covered by default.
-  - A test checks that every method in `METHODS` is either a cached read, in `READ_ONLY`, or a write.
-  - `peekRead(method, args)` returns `{ data, fresh } | null`.
-  - `invalidateReads()` bumps the generation.
-- **Layer `entities`, slice `sync-status`, segment `api`:** re-exports `invalidateReads`. `refresh()` calls it before
-  bumping `version`.
+  - `invalidateReads()` moves the generation on.
+  - It lives in `lib`, not `api`, because it is pure and the features' composables and the sync-status store read it,
+    and because the renderer tests mock `@/shared/api` whole: the cache stays real there and simply stays empty.
+- **Layer `shared`, segment `api`: `shared/api/balance.ts` wraps the bridge once (`wrapBridge`)**, with the method lists
+  in `shared/api/methods.ts`.
+  - The eight data reads (`CACHED_READS`) store their answer under the generation read when the request started, so
+    an answer that raced a write lands stale; a failure stores nothing.
+  - Every method in `PASS_THROUGH` passes straight through: the other reads and the actions that change no data
+    (status, lists, lock, theme, locale, updates, the import's start and cancel).
+  - Any other method bumps the generation once it succeeds. A new write method is covered by default. `WRITES` names
+    today's writes only for the test that checks every method in `METHODS` is placed exactly once.
+- **Layer `entities`, slice `sync-status`, segment `store`:** `refresh()` calls `invalidateReads()` (from `@/shared/lib`)
+  before bumping `version`.
 - **Layer `shared`, segment `lib`: `useAsyncData`** gains an option `cached?: () => { data: T; fresh: boolean } | null`.
-  `shared/lib` does not import `shared/api`, so the feature passes the peek in.
   - **Fresh:** success, no load.
   - **Stale:** success with the stale data, then a quiet load.
   - **None:** today's behaviour.
-- **Layer `features`, the data features' `api/` segments:** each gains a `peek` next to its fetch, and their
-  composables pass it.
+  - `reload()` always asks.
+- **Layer `features`, the data features' `api/` segments:** each gains a `peek<X>` next to its fetch. Each composable
+  builds one `query()` for both and passes `cached: () => peek(query())`.
 
 The cache holds the same data the screens already hold while shown, bank text included (category, income and recurring
 lines). It is never persisted. The lock reloads the renderer, so it goes with the page.

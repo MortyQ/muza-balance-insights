@@ -232,3 +232,16 @@ describe('GlobalFilters', () => {
     w.unmount();
   });
 });
+
+describe('the sync-status store and the read cache', () => {
+  it('every refresh makes the kept answers stale before the data screens reload on `version`', async () => {
+    setActivePinia(createPinia());
+    const { readCache } = await import('@/shared/lib');
+    const store = useSyncStatusStore();
+    const before = readCache.generation;
+    const version = store.version;
+    await store.refresh();
+    expect(readCache.generation).toBe(before + 1);
+    expect(store.version).toBe(version + 1);
+  });
+});

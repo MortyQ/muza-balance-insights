@@ -14,26 +14,40 @@ export interface UseAsyncDataReturn<T> {
   reload: () => Promise<void>;
 }
 
-export interface UseAsyncDataOptions {
+export interface UseAsyncDataOptions<T = unknown> {
   /**
    * Sources that reload in the background: the status stays as it is until the answer comes (no «loading» dimming),
    * e.g. the data version that grows with every imported window.
    */
   quiet?: ReadonlyArray<WatchSource>;
+  /**
+   * The kept answer for the current inputs (readCache), if any: a fresh one is shown without a request, a stale one is
+   * shown at once and replaced by a quiet load. `reload()` always asks.
+   */
+  cached?: () => { data: T; fresh: boolean } | null;
 }
 
-/** Loads now and on every change of `sources` (or `quiet`); an answer to an older request is dropped. */
+/**
+ * Loads now and on every change of `sources` (or `quiet`); an answer to an older request is dropped. With `cached`, a
+ * kept answer is shown first (and a fresh one is not asked for again).
+ */
 export function useAsyncData<T>(
   load: () => Promise<T>,
   sources: ReadonlyArray<WatchSource>,
-  { quiet = [] }: UseAsyncDataOptions = {},
+  { quiet = [], cached }: UseAsyncDataOptions<T> = {},
 ): UseAsyncDataReturn<T> {
   // `as`: ref() types its value as UnwrapRef<T>; T is plain data from main (no refs inside), so that is T itself.
   const state = ref({ status: 'loading', data: null }) as Ref<Loadable<T>>;
   let request = 0;
 
-  async function run(background: boolean): Promise<void> {
+  async function run(background: boolean, ask = false): Promise<void> {
     const id = ++request;
+    const kept = ask ? null : (cached?.() ?? null);
+    if (kept) {
+      state.value = { status: 'success', data: kept.data };
+      if (kept.fresh) return;
+      background = true;
+    }
     if (!background) state.value = { status: 'loading', data: state.value.data };
     try {
       const data = await load();
@@ -45,5 +59,5 @@ export function useAsyncData<T>(
 
   watch([...sources], () => void run(false), { immediate: true });
   if (quiet.length > 0) watch([...quiet], () => void run(true));
-  return { state, reload: () => run(false) };
+  return { state, reload: () => run(false, true) };
 }

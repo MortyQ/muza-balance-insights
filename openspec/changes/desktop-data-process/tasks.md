@@ -41,15 +41,15 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 5. The read cache in the renderer (feat(desktop): read cache)
 
-- [ ] 5.1 Add `shared/api/read-cache.ts` (`ReadCache`: generation, LRU of 50, 60 s freshness). Wrap the bridge in `shared/api/balance.ts`: the eight data reads are kept under the generation from the start of their request, `READ_ONLY` passes through, any other method bumps the generation on success, and `peekRead` and `invalidateReads` are exported. Verify with `tests/renderer/read-cache.test.ts`:
+- [x] 5.1 Add `shared/lib/readCache.ts` (`ReadCache`, one `readCache`, `readKey`, `invalidateReads`: generation, LRU of 50, 60 s freshness) and the method lists `shared/api/methods.ts`. Wrap the bridge in `shared/api/balance.ts` (`wrapBridge`): the eight data reads are kept under the generation from the start of their request, `PASS_THROUGH` passes through, any other method bumps the generation on success. Verify with `tests/renderer/read-cache.test.ts`:
   - fresh, stale by generation and stale by age;
   - LRU drop;
   - a failure is not kept;
   - an answer that raced a write lands stale;
-  - every method in `METHODS` is classified.
-- [ ] 5.2 Add the `cached` option to `useAsyncData`: fresh → no load; stale → shown, then a quiet load; an older answer never replaces a newer one. Verify with `tests/renderer/use-async-data.test.ts`, which covers each case and that today's behaviour holds without the option.
-- [ ] 5.3 Pass a peek from the data features' `api/` segments into their composables (balances, spending, now strip, category detail, income detail, recurring screen and teaser, allowance, analytics). In `useSyncStatusStore.refresh()`, call `invalidateReads()` through `entities/sync-status/api` before bumping `version`. Verify that the renderer tests show a month switched back with no new request and that a reserve added makes the month overview load again. Also verify that `tests/architecture.test.ts` still passes, since `@/shared/api` is imported only from `api/` segments and `app/listeners.ts`.
-- [ ] 5.4 Update `.agents/project/desktop-renderer.md` (`useAsyncData` and the read cache: what is kept, what invalidates it, in memory only). Verify that `vue-tsc -p tsconfig.web.json` and the renderer tests pass.
+  - every method in `METHODS` is placed exactly once.
+- [x] 5.2 Add the `cached` option to `useAsyncData`: fresh → no load; stale → shown, then a quiet load; `reload()` always asks; an older answer never replaces a newer one. Verify with `tests/renderer/read-cache.test.ts`, which covers each case; today's behaviour without the option stays covered by `tests/renderer/lib.test.ts`.
+- [x] 5.3 Add a `peek<X>` to the data features' `api/` segments (balances, spending, now strip, category detail, income detail, recurring screen and teaser, allowance, analytics) and pass it from their composables through one `query()`. In `useSyncStatusStore.refresh()`, call `invalidateReads()` before bumping `version`. Verify in `tests/renderer/read-cache.test.ts` that a month switched back sends no new request and that an added reserve makes the month load again, in `sync-status.test.ts` that a refresh makes the kept answers stale, and that `tests/architecture.test.ts` still passes.
+- [x] 5.4 Update `.agents/project/desktop-renderer.md` (`useAsyncData` and the read cache: what is kept, what invalidates it, in memory only). Verify that `vue-tsc -p tsconfig.web.json` and the renderer tests pass.
 
 ## 6. Release notes and checks (docs(desktop): data process notes)
 
