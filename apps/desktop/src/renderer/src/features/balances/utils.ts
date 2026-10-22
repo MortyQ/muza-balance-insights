@@ -1,12 +1,13 @@
 import { currencyAlpha, currencyExponent } from '@mono/core/currency';
-import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
+import type { AnalyticsOverview, CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import type { SummaryCardProps } from '@/entities/account';
 import { accountName } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
-import type { Flow, RowView, Slide } from './types.ts';
+import type { ChartOption } from '@/shared/ui';
+import type { Flow, PaceView, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
@@ -290,4 +291,59 @@ export function slidesOf(
       }),
     ),
   ];
+}
+
+/**
+ * The month pace from one month of the analytics answer: the spending added up by day up to the last day with data,
+ * the usual month's running spending, and the figures under the chart. null — not one day of the month has data.
+ */
+export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null): PaceView | null {
+  if (a.unit !== 'day') return null;
+  const last = a.buckets.findLastIndex((b) => b.state !== 'none');
+  if (last < 0) return null;
+  let sum = 0;
+  const spent = a.buckets.map((b, i) => {
+    sum += a.spending[i] ?? 0;
+    return i <= last && b.state !== 'none' ? sum : null;
+  });
+  const running = a.buckets.some((b) => b.state === 'running');
+  return {
+    days: a.buckets.map((b) => String(Number(b.key.slice(8, 10)))),
+    spent,
+    usual: a.usual,
+    last,
+    running,
+    spentTotal: spent[last] ?? 0,
+    usualByNow: a.usual?.[last] ?? null,
+    perDay: running ? perDay : null,
+  };
+}
+
+/** The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them). */
+export function paceChartOption(v: Readonly<PaceView>): ChartOption {
+  const point = v.running ? [{ coord: [v.last, v.spentTotal] }] : [];
+  return {
+    grid: { left: 0, right: 8, top: 10, bottom: 22 },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: v.days,
+      axisLine: { lineStyle: { color: 'var(--border-subtle)' } },
+      axisTick: { show: false },
+      axisLabel: { fontSize: 11, color: 'var(--foreground-muted)', interval: (i: number) => i % 5 === 0 },
+    },
+    yAxis: { type: 'value', min: 0, show: false },
+    series: [
+      ...(v.usual === null
+        ? []
+        : [{ type: 'line', data: v.usual, symbol: 'none', silent: true, lineStyle: { type: 'dashed', width: 1.5, color: 'var(--foreground-muted)' } }]),
+      {
+        type: 'line',
+        data: v.spent,
+        symbol: 'none',
+        lineStyle: { width: 3, color: 'var(--primary)' },
+        markPoint: { silent: true, symbol: 'circle', symbolSize: 9, itemStyle: { color: 'var(--primary)' }, label: { show: false }, data: point },
+      },
+    ],
+  };
 }

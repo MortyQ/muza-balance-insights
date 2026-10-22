@@ -1,0 +1,38 @@
+import { computed } from 'vue';
+import { useMoneyFormat } from '@/entities/currency-display';
+import { useParticipantStore } from '@/entities/participant';
+import { useMonthStore } from '@/entities/period';
+import { useSyncStatusStore } from '@/entities/sync-status';
+import { useAsyncData } from '@/shared/lib';
+import { usePaceRequest } from '../api/usePaceRequest.ts';
+import type { UseMonthPaceReturn } from '../types.ts';
+import { paceView } from '../utils.ts';
+
+/**
+ * The month pace of the block's month and person: one month of the analytics answer, plus «Available per day» while the
+ * month is the current one (its failure only drops that figure). Reloads like the block, quietly on new data.
+ */
+export function useMonthPace(): UseMonthPaceReturn {
+  const { fetchAnalytics, fetchAllowance } = usePaceRequest();
+  const syncStatus = useSyncStatusStore();
+  const participant = useParticipantStore();
+  const monthStore = useMonthStore();
+
+  const { state } = useAsyncData(
+    async () => {
+      const id = participant.selectedId;
+      const month = monthStore.month;
+      const who = id !== null ? { participantId: id } : {};
+      const [analytics, perDay] = await Promise.all([
+        fetchAnalytics({ from: month, to: month, ...who }),
+        month === monthStore.thisMonth ? fetchAllowance(who).then((a) => a.perDay, () => null) : Promise.resolve(null),
+      ]);
+      return { analytics, perDay };
+    },
+    [() => monthStore.month, () => participant.selectedId],
+    { quiet: [() => syncStatus.version] },
+  );
+  const view = computed(() => (state.value.data ? paceView(state.value.data.analytics, state.value.data.perDay) : null));
+  const fmt = useMoneyFormat(() => state.value.data?.analytics.rates);
+  return { view, fmt };
+}

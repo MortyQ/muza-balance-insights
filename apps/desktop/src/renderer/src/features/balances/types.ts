@@ -1,6 +1,7 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { MonthOverview } from '@contract/api.ts';
 import type { AccountCardProps, SummaryCardProps } from '@/entities/account';
+import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable } from '@/shared/lib';
 
 /** One part of a bar: a person's income and spending, in the bar's currency. */
@@ -94,4 +95,27 @@ export interface UseCardStackReturn {
   toggle: () => void;
   close: () => void;
   showStub: () => void;
+}
+
+/** The month pace (spec desktop-balance-cards, «Month pace»): hryvnia kopecks, one point per day of the month. */
+export interface PaceView {
+  /** Day of the month, as the axis shows it. */
+  days: string[];
+  /** Spending added up day by day; null — a day not reached yet (not drawn). */
+  spent: Array<number | null>;
+  /** The usual month's running spending by day; null — fewer than 3 whole months before. */
+  usual: number[] | null;
+  /** The last day with data: today while the month runs, the month's last day for a past month. */
+  last: number;
+  running: boolean;
+  spentTotal: number;
+  /** The usual spending by `last`; null without a usual month. */
+  usualByNow: number | null;
+  /** «Available per day»: the current month only. */
+  perDay: number | null;
+}
+
+export interface UseMonthPaceReturn {
+  view: ComputedRef<PaceView | null>;
+  fmt: ComputedRef<MoneyFormat>;
 }
