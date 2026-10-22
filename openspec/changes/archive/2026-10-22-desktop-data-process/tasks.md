@@ -61,7 +61,7 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
   - a killed data process and the next screen load.
 
   Verify that the entries are present.
-- [ ] 6.3 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
+- [x] 6.3 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
 
 ## Workflow follow-up
 
