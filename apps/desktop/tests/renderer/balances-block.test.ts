@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// The balance block mounted (features/balances, BalancesFeature): layout of the stack and the month panel. The data
+// The balance block mounted (features/balances, BalancesFeature): layout of the stack, the month panel and the month pace. The data
 // composable is replaced by fixed slides; the participant store is a fake, the month store is the real one.
 // Fictional fixtures only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -38,6 +38,20 @@ vi.mock('@/features/balances/composables/useMonthOverview.ts', () => ({
   }),
 }));
 
+vi.mock('@/features/balances/composables/useMonthPace.ts', async () => {
+  const { moneyFormat } = await import('@/entities/currency-display');
+  return {
+    useMonthPace: () => ({
+      view: computed(() => ({ days: ['1', '2'], spent: [10_00, 30_00], usual: [8_00, 16_00], last: 1, running: false, spentTotal: 30_00, usualByNow: 16_00, perDay: null })),
+      fmt: computed(() => moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } })),
+    }),
+  };
+});
+vi.mock('@/shared/ui/components/charts/VChart.vue', async () => {
+  const { defineComponent, h } = await import('vue');
+  return { default: defineComponent({ props: { option: Object }, setup: () => () => h('div') }) };
+});
+
 let w: VueWrapper | null = null;
 beforeEach(() => setActivePinia(createPinia()));
 afterEach(() => {
@@ -59,6 +73,24 @@ async function mountBlock(): Promise<VueWrapper> {
 }
 
 describe('balance block layout', () => {
+  it('the month pace sits beside the month panel from 74rem, the panel then keeps 340 px; under them below', async () => {
+    const b = await mountBlock();
+    const pace = b.get('[data-test="pace"]');
+    expect(pace.element.parentElement?.classList.contains('@container')).toBe(true);
+    expect(pace.classes()).toEqual(expect.arrayContaining(['@[74rem]:absolute', '@[74rem]:left-[854px]', '@[74rem]:right-0']));
+    expect(pace.classes()).not.toContain('absolute');
+    expect(b.get('[data-test="panel"]').classes()).toEqual(expect.arrayContaining(['@[74rem]:right-auto', '@[74rem]:w-[340px]']));
+  });
+
+  it('opening the row folds the month pace away too, inert', async () => {
+    const b = await mountBlock();
+    const pace = b.get('[data-test="pace"]');
+    expect(pace.attributes('inert')).toBeUndefined();
+    await b.get('button[aria-expanded]').trigger('click');
+    expect(pace.classes()).toContain('grid-rows-[0fr]');
+    expect(pace.attributes('inert')).toBeDefined();
+  });
+
   it('the month panel sits beside the stack from 47rem of block width and under it below, never at a fixed width over the stack', async () => {
     const b = await mountBlock();
     const panel = b.get('[data-test="panel"]');

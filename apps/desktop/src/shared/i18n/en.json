@@ -459,7 +459,17 @@
       "toCard": "Card {n} of {total}: {title}",
       "total": "Total",
       "wholeMonth": "whole month",
-      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
+      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts",
+      "pace": {
+        "title": "Month pace",
+        "subtitle": "spending so far against a usual month",
+        "chart": "The month’s spending so far against a usual month",
+        "spent": "Spent",
+        "usualByNow": "Usually by this day",
+        "usualMonth": "Usually in a month",
+        "perDay": "Available per day",
+        "noUsual": "A usual month shows once there are three whole months of history"
+      }
     },
     "filters": {
       "percent": "{pct}%",

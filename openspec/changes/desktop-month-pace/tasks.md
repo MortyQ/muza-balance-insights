@@ -7,8 +7,8 @@
 
 ## 2. feat(desktop): month pace panel in the balances block
 
-- [ ] 2.1 `components/PacePanel.vue` (title, `VChart`, three figures through `MoneyFormat`, the note without a usual) and its texts as keys in `uk.json`, `en.json`, `ru.json`. Verify: `tests/i18n.test.ts` passes; a component test renders the figures and the note
-- [ ] 2.2 `BalancesFeature.vue` layout: beside the month panel from `@[74rem]`, under stack and panel below it, folding with the open row where it is under the stack; `PACE_MIN` and the step in `constants.ts`. Verify: `tests/renderer/balances-block.test.ts` extended — the panel is present, inert while the row is open in the folding wrapper; the card stack's tests unchanged and green
+- [x] 2.1 `components/PacePanel.vue` (title, `VChart`, three figures through `MoneyFormat`, the note without a usual) and its texts as keys in `uk.json`, `en.json`, `ru.json`. Verify: `tests/i18n.test.ts` passes; a component test renders the figures and the note
+- [x] 2.2 `BalancesFeature.vue` layout: beside the month panel from `@[74rem]`, under stack and panel below it, folding with the open row where it is under the stack; `PACE_MIN` and the step in `constants.ts`. Verify: `tests/renderer/balances-block.test.ts` extended — the panel is present, inert while the row is open in the folding wrapper; the card stack's tests unchanged and green
 
 ## 3. docs(desktop): month pace rules and changelog
 
