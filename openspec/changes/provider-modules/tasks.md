@@ -49,17 +49,17 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 5. The statement decoder process (feat(desktop): statement decoder)
 
-- [ ] 5.1 Add the dependencies (`fflate`, `fast-xml-parser`, `pdfjs-dist`) at exact versions, after checking licences and `pnpm audit`, and record what was checked in the commit body. Spike: decode a generated fictional PDF in plain Node with the legacy build and the chosen options, as a test in `tests/decoder-pdf.test.ts`. Verify the test passes.
-- [ ] 5.2 Add `src/shared/decoder-protocol.ts`: zod schemas of `decode` and the reply, with the limits in the schema. Add `src/decoder/xlsx.ts` (only the workbook, shared strings and sheets inflated; declared size cap; cached formula values) and `src/decoder/pdf.ts` (text items with x, y, w, h). Verify with `tests/decoder.test.ts` on fixtures generated in the test (a zip of hand-written workbook XML, a hand-written PDF):
+- [x] 5.1 Add the dependencies (`fflate`, `fast-xml-parser`, `pdfjs-dist`) at exact versions, after checking licences and `pnpm audit`, and record what was checked in the commit body. Spike: decode a generated fictional PDF in plain Node with the legacy build and the chosen options, as a test in `tests/decoder-pdf.test.ts`. Verify the test passes.
+- [x] 5.2 Add `src/shared/decoder-protocol.ts`: zod schemas of `decode` and the reply, with the limits in the schema. Add `src/decoder/xlsx.ts` (only the workbook, shared strings and sheets inflated; declared size cap; cached formula values) and `src/decoder/pdf.ts` (text items with x, y, w, h). Verify with `tests/decoder.test.ts` on fixtures generated in the test (a zip of hand-written workbook XML, a hand-written PDF):
   - cells as typed text;
   - a zip bomb refused by its declared size;
   - limits refused with their codes;
   - an answer that breaks the schema refused.
-- [ ] 5.3 Add `src/decoder/process.ts` (one message, one reply, exit) and `src/main/decoder-client.ts` (fork per upload with `?modulePath`, `serviceName: 'balance-decoder'`, `env: {}`, killed after `DECODE_TIMEOUT_MS`), and the format sniffing by leading bytes in main. Verify with:
+- [x] 5.3 Add `src/decoder/process.ts` (one message, one reply, exit) and `src/main/decoder-client.ts` (fork per upload with `?modulePath`, `serviceName: 'balance-decoder'`, `env: {}`, killed after `DECODE_TIMEOUT_MS`), and the format sniffing by leading bytes in main. Verify with:
   - `tests/decoder-entry.test.ts`, as source like `data-entry`: `safeParse` in, `parse` out, one exit;
   - a fake-child test of the client: timeout kill, bad reply, exit without a reply;
   - sniffing cases.
-- [ ] 5.4 Extend `tests/main-imports.test.ts` with the decoder graph rule (no `electron`, `net`, `src/data/`, `src/worker/`, `src/main/`, `@mono/db-libsql`, and core only `shared/` and `providers/types.ts`), with a breaking example. Update `.agents/project/desktop-security.md` (the decoder: what it gets, what it cannot reach, limits) and the build entry in `electron.vite.config`. Verify `apps/desktop` tsc and vitest pass.
+- [x] 5.4 Extend `tests/main-imports.test.ts` with the decoder graph rule (no `electron`, `net`, `src/data/`, `src/worker/`, `src/main/`, `@mono/db-libsql`, and core only `shared/` and `providers/types.ts`), with a breaking example. Update `.agents/project/desktop-security.md` (the decoder: what it gets, what it cannot reach, limits) and the build entry in `electron.vite.config`. Verify `apps/desktop` tsc and vitest pass.
 
 ## 6. Upload any bank's statement (feat(desktop): statement upload by file kind)
 

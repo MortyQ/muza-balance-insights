@@ -288,7 +288,7 @@ Alternatives considered:
   - forked per upload with `serviceName: 'balance-decoder'` and `env: {}`;
   - one `decode { format, bytes }` message;
   - one reply, `document` or `failure { code }`;
-  - then it exits.
+  - then main kills it. It never exits by itself: the import worker lost its last message that way.
 - **Main's checks.** It zod-checks the reply (`src/shared/decoder-protocol.ts`), including the limits. It kills the
   process after `DECODE_TIMEOUT_MS` (30 s). Then it runs `pickReader` and `read`, which are pure core code on a
   checked document.
@@ -298,8 +298,10 @@ Alternatives considered:
   - only `xl/workbook.xml`, `xl/sharedStrings.xml` and `xl/worksheets/*.xml` are inflated;
   - formulas are not evaluated (their cached value is read);
   - external links are never followed.
-- **PDF.** `pdfjs-dist`'s legacy build with `isEvalSupported: false`, `disableFontFace: true`, no worker and no
-  system fonts. Text items come back with their transform turned into x, y, w, h.
+- **PDF.** `pdfjs-dist`'s legacy build with `disableFontFace: true`, `useWasm: false`, no worker thread and no system
+  fonts. pdf.js 6 has no eval path at all (its `isEvalSupported` option was removed); a test scans the build for
+  `new Function` and `eval`. Its optional native canvas is not installed (`ignoredOptionalDependencies`): text needs
+  none. Text items come back with their transform turned into x, y, w, h; whitespace-only items are dropped.
 - **Versions.** Exact versions are pinned at apply time, after checking their licences and advisories (`pnpm audit`).
 - **The import graph.** `tests/main-imports.test.ts` gains the rule that the decoder's graph reaches no `electron`,
   `net`, `src/data/`, `src/worker/`, `src/main/`, `@mono/db-libsql` or core outside `shared/` and

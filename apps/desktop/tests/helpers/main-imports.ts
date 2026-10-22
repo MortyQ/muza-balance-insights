@@ -1,4 +1,5 @@
-// What main and the data process may import at run time (design of desktop-data-process, §5). A checker over file
+// What main, the data process and the statement decoder may import at run time (design of desktop-data-process, §5;
+// the decoder: provider-modules, decision 8). A checker over file
 // texts: the run-time import graph from an entry, following relative imports inside src/; type-only imports do not
 // count, and a `?modulePath` import is another process (a fork target), not followed. Where the graph enters a
 // workspace package, the import itself is checked; core's own layers (packages/core/tests/layers.test.ts) keep its
@@ -73,6 +74,7 @@ export function mainViolations(files: Files): string[] {
   const out: string[] = [];
   for (const { from, spec, target } of graph(files, 'main/index.ts')) {
     if (target?.startsWith('data/')) out.push(`${from}: reaches the data process's code (${target})`);
+    else if (target?.startsWith('decoder/')) out.push(`${from}: reaches the decoder's code (${target})`);
     else if (spec.startsWith('@mono/core/') && !coreAllowed(from, spec)) out.push(`${from}: imports ${spec} at run time`);
     else if (spec === '@mono/db-libsql' && !LIBSQL_IN_MAIN.has(from)) out.push(`${from}: imports @mono/db-libsql`);
   }
@@ -85,6 +87,22 @@ export function dataViolations(files: Files): string[] {
   for (const { from, spec, target } of graph(files, 'data/process.ts')) {
     if (spec === 'electron') out.push(`${from}: imports electron`);
     else if (target && /^(main|net|worker)\//.test(target)) out.push(`${from}: reaches ${target}`);
+  }
+  return out;
+}
+
+/** Packages the decoder may load: its schemas, the unzip, the XML reader, pdf.js's legacy build; core's pure helpers. */
+const DECODER_PACKAGES = /^(zod|fflate|fast-xml-parser|pdfjs-dist\/legacy\/build\/pdf(\.worker)?\.mjs|@mono\/core\/shared\/.+)$/;
+
+/**
+ * The graph of decoder/process.ts: no Electron, no network, no main, worker or data process code, no database; of
+ * packages only DECODER_PACKAGES (core's providers/types.ts is imported for types only, which do not count).
+ */
+export function decoderViolations(files: Files): string[] {
+  const out: string[] = [];
+  for (const { from, spec, target } of graph(files, 'decoder/process.ts')) {
+    if (target && /^(main|net|worker|data)\//.test(target)) out.push(`${from}: reaches ${target}`);
+    else if (!target && !spec.startsWith('.') && !DECODER_PACKAGES.test(spec)) out.push(`${from}: imports ${spec}`);
   }
   return out;
 }

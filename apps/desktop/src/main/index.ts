@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
 import dataPath from '../data/process.ts?modulePath';
+import decoderPath from '../decoder/process.ts?modulePath';
 import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { systemTimeZone } from '../shared/dates.ts';
 import { resolveLocale } from '../shared/locale.ts';
@@ -13,6 +14,7 @@ import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler 
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
 import { DataClient } from './data-client.ts';
+import { DecoderClient } from './decoder-client.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
@@ -219,6 +221,13 @@ app.whenReady().then(async () => {
     send: (v) => void push(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
+  // A statement spreadsheet or PDF is decoded in a process of its own, forked per file: empty env, no key, no token, no
+  // database, no network. stdout/stderr visible only in dev.
+  const decoder = new DecoderClient({
+    fork: () => utilityProcess.fork(decoderPath, [], { serviceName: 'balance-decoder', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
+    log: (msg) => process.stderr.write(`[statement] ${msg}\n`),
+  });
+  app.on('before-quit', () => decoder.kill());
   const statements = new StatementsService({
     data,
     pickFile: async () => {

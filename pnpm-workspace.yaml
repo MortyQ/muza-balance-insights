@@ -7,6 +7,9 @@ allowBuilds:
   esbuild: false
   pnpm: false
   vue-demi: false
+# pdfjs-dist's optional native canvas: the statement decoder reads text only and never renders.
+ignoredOptionalDependencies:
+  - '@napi-rs/canvas'
 # Optional native packages (libsql) for both Mac architectures, so one machine builds the arm64 and the x64 .dmg.
 # On Windows / Linux "current" is what that runner needs.
 supportedArchitectures:
