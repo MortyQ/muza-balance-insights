@@ -12,9 +12,9 @@
 
 ## 3. docs(desktop): month pace rules and changelog
 
-- [ ] 3.1 `.agents/project/desktop-renderer.md` «Блок балансов»: the pace panel, its data and width steps. Verify: the file names `PacePanel` and `@[74rem]`
-- [ ] 3.2 `CHANGELOG.md`, `0.1.10 — unreleased`, «Home screen»: the month's pace against a usual month. Verify: `tests/release-notes.test.ts` passes
-- [ ] 3.3 `docs/backlog.md`: live check of the three widths and of a past month. Verify: item listed
+- [x] 3.1 `.agents/project/desktop-renderer.md` «Блок балансов»: the pace panel, its data and width steps. Verify: the file names `PacePanel` and `@[74rem]`
+- [x] 3.2 `CHANGELOG.md`, `0.1.10 — unreleased`, «Home screen»: the month's pace against a usual month. Verify: `tests/release-notes.test.ts` passes
+- [x] 3.3 `docs/backlog.md`: live check of the three widths and of a past month. Verify: item listed
 
 ## 4. Verification
 

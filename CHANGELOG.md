@@ -18,6 +18,9 @@ English interface.
 
 ### Home screen
 
+- **The month's pace.** Next to the balance, a chart shows how your spending has added up day by day this month
+  against a usual month, with what you have spent, what you usually spend by this day and «Available per day». In a
+  narrower window it sits under the cards. The usual month appears once you have three whole months of history.
 - **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
   it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
 - **A clearer total card.** All balance cards are a little larger. The card with the total of the family or of a person now has a header in the people's

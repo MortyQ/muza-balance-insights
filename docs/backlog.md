@@ -62,6 +62,11 @@
 - A medium window (45–64rem): icons only, tooltips on hover; widening restores the stored choice.
 - Fold, relaunch: the menu opens folded.
 
+## To check live: month pace (desktop-month-pace)
+
+- The balances block at three widths: the pace beside the month panel (wide), under them (medium, narrow), folding
+  with the open row; a past month (whole month, no «Available per day»); a person picked.
+
 ## Later: currencies
 
 - PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the

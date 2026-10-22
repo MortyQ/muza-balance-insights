@@ -15,6 +15,14 @@
   Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[47rem]` the month panel
   sits beside the folded stack (`left: 490px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
   `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
+  The month pace (`components/PacePanel.vue`, spec `desktop-balance-cards`, «Month pace»): `composables/useMonthPace.ts`
+  asks `getAnalyticsOverview` for the block's month and person (one month: day buckets, `spending`, `usual`) and, for
+  the current month only, `getAllowanceOverview` (its failure drops only «Available per day»); `paceView` /
+  `paceChartOption` in `utils.ts` (pure, `tests/renderer/month-pace.test.ts`) — the spending added up by day up to the
+  last day with data, the usual dashed, today's point while the month runs; figures: spent, usual by the same day (a
+  past month: usual in a month), per day. No pace for a month without data; no usual line or figure with fewer than 3
+  whole months, a note instead. From `@[74rem]` it sits beside the month panel (that keeps 340 px at `left: 490px`,
+  the pace at `left: 854px`; `PACE_MIN`), narrower under the stack and the panel, folding with the open row there.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
