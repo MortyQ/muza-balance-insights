@@ -8,10 +8,10 @@
 
 ## 2. feat(desktop): adaptive app shell
 
-- [ ] 2.1 `app/layouts/utils.ts`: `navItems(routes, translate)` → sidebar entries from `meta.nav` (order, icon, label); `useAppSidebar` with key `app.sidebar`, forced icons from 45rem to 64rem via `matchMedia`, unreadable storage → unfolded. Verify: unit tests for `navItems` order and for the forced/stored fold combination
-- [ ] 2.2 `DefaultLayout`: sidebar (footer «Settings» entry), header row (menu button below 45rem, `<h1>` with the current entry's label, `GlobalFilters`), scroll area with `max-w-[100rem]`; `SideNav` no longer used there (settings keep it). Verify: `tests/renderer/layouts.test.ts` updated — current entry on home, category screen marks «General», title text, settings route has no sidebar
-- [ ] 2.3 New texts (sidebar label, fold / unfold, open / close menu) as keys in `uk.json`, `en.json`, `ru.json`. Verify: `tests/i18n.test.ts` passes
-- [ ] 2.4 Home blocks and their order untouched. Verify: `git diff` shows no change under `features/balances`, `features/now-strip`, `features/spending-summary`
+- [x] 2.1 `app/layouts/utils.ts`: `navItems(routes, translate)` → sidebar entries from `meta.nav` (order, icon, label); `useAppSidebar` with key `app.sidebar`, forced icons from 45rem to 64rem via `matchMedia`, unreadable storage → unfolded. Verify: unit tests for `navItems` order and for the forced/stored fold combination
+- [x] 2.2 `DefaultLayout`: sidebar (footer «Settings» entry), header row (menu button below 45rem, `<h1>` with the current entry's label, `GlobalFilters`), scroll area with `max-w-[100rem]`; `SideNav` no longer used there (settings keep it). Verify: `tests/renderer/layouts.test.ts` updated — current entry on home, category screen marks «General», title text, settings route has no sidebar
+- [x] 2.3 New texts (sidebar label, fold / unfold, open / close menu) as keys in `uk.json`, `en.json`, `ru.json`. Verify: `tests/i18n.test.ts` passes
+- [x] 2.4 Home blocks and their order untouched. Verify: `git diff` shows no change under `features/balances`, `features/now-strip`, `features/spending-summary`
 
 ## 3. docs(desktop): shell rules and changelog
 

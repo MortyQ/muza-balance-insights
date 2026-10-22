@@ -12,9 +12,11 @@ import { useNavigation } from "./composables/useNavigation";
 import { buildSidebarState } from "./composables/useSidebarState";
 import type { SidebarInstance, SidebarNavItem } from "./types";
 
-const { sidebar } = defineProps<{
+const { sidebar, footerItems = [] } = defineProps<{
   /** Sidebar instance created via createSidebar() */
   sidebar: SidebarInstance
+  /** Balance: entries in the footer (muzakit's SidebarFooter takes them, its NavigationSidebar did not pass them) */
+  footerItems?: SidebarNavItem[]
 }>();
 
 const emit = defineEmits<{
@@ -89,7 +91,7 @@ watch(
 
       <SidebarNav />
 
-      <SidebarFooter>
+      <SidebarFooter :items="footerItems">
         <template
           v-if="$slots['footer-start']"
           #start
@@ -106,7 +108,7 @@ watch(
     </aside>
 
     <!-- Mobile sidebar (lazy loaded — desktop users don't download this) -->
-    <SidebarMobile>
+    <SidebarMobile :footer-items="footerItems">
       <template
         v-if="$slots['subtitle-block']"
         #context

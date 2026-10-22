@@ -38,14 +38,13 @@ const { mode } = useParticipantLayout({
   <!-- No aria-busy here: it can hold back the status's live-region announcement. -->
   <header
     ref="row"
-    class="relative grid items-center gap-3 border-b border-border-subtle py-2"
+    class="relative grid items-center gap-3 py-2"
     :class="mode === 'buttons' ? 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_0_auto]'"
   >
     <!-- The filters every home block reads (person, month, currency); the app name and the settings button live in the
          window's title bar (widgets/app-header). Outside the home screen's scroll area: it stays put while the blocks
-         scroll. The page sets its width (the grid's).
+         scroll. The layout places it after the screen title (that is the page's h1) and draws the row's border.
          Person: buttons centred in the row, or a select before the month (useParticipantLayout). -->
-    <h1 class="sr-only">Balance Insights</h1>
     <div class="flex min-w-0 flex-wrap items-center gap-3">
       <template v-if="syncStatus.hasData">
         <ParticipantFilter v-if="mode === 'select'" mode="select" :failed />

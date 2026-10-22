@@ -525,7 +525,11 @@
       "general": "General",
       "label": "Home sections",
       "planning": "Planning",
-      "recurring": "Regular payments"
+      "recurring": "Regular payments",
+      "collapse": "Collapse menu",
+      "expand": "Expand menu",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
