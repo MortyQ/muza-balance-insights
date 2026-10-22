@@ -359,9 +359,7 @@
     }
   },
   "header": {
-    "settings": "Settings",
-    "settingsMac": "Settings (⌘,)",
-    "settingsOther": "Settings (Ctrl+,)"
+    "settings": "Settings"
   },
   "home": {
     "allowance": {
@@ -459,7 +457,17 @@
       "toCard": "Card {n} of {total}: {title}",
       "total": "Total",
       "wholeMonth": "whole month",
-      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
+      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts",
+      "pace": {
+        "title": "Month pace",
+        "subtitle": "spending so far against a usual month",
+        "chart": "The month’s spending so far against a usual month",
+        "spent": "Spent",
+        "usualByNow": "Usually by this day",
+        "usualMonth": "Usually in a month",
+        "perDay": "Available per day",
+        "noUsual": "A usual month shows once there are three whole months of history"
+      }
     },
     "filters": {
       "percent": "{pct}%",
@@ -525,7 +533,11 @@
       "general": "General",
       "label": "Home sections",
       "planning": "Planning",
-      "recurring": "Regular payments"
+      "recurring": "Regular payments",
+      "collapse": "Collapse menu",
+      "expand": "Expand menu",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",

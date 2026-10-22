@@ -128,8 +128,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   in hex, checked by `tests/window.test.ts`; main repaints them on a theme change via `nativeTheme` → `setTitleBarOverlay`);
   Linux also `autoHideMenuBar`. macOS: traffic lights, title centred. Height — `TITLE_BAR_HEIGHT`
   (`src/shared/titlebar.ts`, 36 px). The strip is `widgets/app-header` (`AppHeader`) over every screen (`App.vue`; only the
-  screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
-  hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
+  screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): an empty drag strip — the logo and name are in
+  the app navigation sidebar's header (`app/assets/logo.svg`), settings in its footer and on CmdOrCtrl+,. The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
   filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
   outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
@@ -192,15 +192,23 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
   items (`nextItem`), roving tabindex. A column on wide windows (sticky at `--side-nav-top`, default 1.5rem), a strip on
-  top below 45rem. Used by settings (`NAV_GROUPS`) and the default layout (items from the routes' `meta.nav`: «General» =
-  `home`, «Analytics» = `analytics`, `features/analytics-overview`). On a route with `meta.periodFilter: 'range'`
+  top below 45rem. The settings screen's section menu only (`NAV_GROUPS`).
+- **App navigation** (spec `openspec/specs/desktop-app-shell`) — the default layout's sidebar is `NavigationSidebar`,
+  a copy of muzakit's in `shared/ui/components/navigation-sidebar` (divergences in `shared/ui/README.md`; `router-link`
+  inside, approved). Entries — `navItems(routes, t)` (`app/layouts/utils.ts`: the routes' `meta.nav`, «General» = `home`,
+  «Analytics» = `analytics`, `features/analytics-overview`, …; `activeFor` — the routes naming it in `meta.navParent`),
+  the footer — «Settings»; `useAppSidebar` creates it: the fold choice in `localStorage` `app.sidebar`, icons only from
+  45rem to 64rem (`ICONS_ONLY_QUERY`, `forceCollapsed`, the stored choice untouched, the toggle hidden), below 45rem a
+  drawer opened by the header's menu button. Arrow keys move between the entries and open them. On a route with `meta.periodFilter: 'range'`
   (analytics) `GlobalFilters` shows `PeriodRangeFilter` (whole months, a range or one) instead of `MonthFilter`; with
   `'none'` (regular payments, planning) no period at all.
 - **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
   picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
-  `app/layouts/types.ts`). `DefaultLayout` — the data screens: pinned `GlobalFilters`, then a scroll area with the
-  settings grid: `SideNav` on the left (`useNav`: `navGroups(router.getRoutes())` — routes with `meta.nav { label, icon,
-  order }`; current = the open route, a pick pushes it), the screen on the right. `EmptyLayout` — the screen alone (lock,
+  `app/layouts/types.ts`). `DefaultLayout` — the data screens: the app navigation sidebar at the window's left edge on
+  the window's background, then a panel (`bg-surface`, rounded, bordered, 0.75rem from the window's right and bottom
+  edges; edge to edge below 45rem): a pinned header row (the menu button below 45rem, the current entry's name as the screen's `<h1>` —
+  `useNav`: `navGroups(router.getRoutes())`, current = `meta.navParent ?? route.name` — and `GlobalFilters`), then a
+  scroll area whose content is `max-w-[100rem]`, centred. `EmptyLayout` — the screen alone (lock,
   recovery, connect, settings: `meta.layout: 'empty'`). The routes are `app/router/routes.ts`. The screen goes into the
   layout's slot (MasterLayout's `RouterView` slot), not a `RouterView` inside the layout: a leaving layout keeps its old
   screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each

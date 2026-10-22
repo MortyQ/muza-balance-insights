@@ -1,0 +1,11 @@
+// copied from muzakit/libs/ui/src (2026-10-22); changes: ui/README.md
+// NavigationSidebar — Component Styles
+// Entry file: imports all partials in dependency order
+
+@use 'sidebar-container';
+@use 'sidebar-header';
+@use 'sidebar-context';
+@use 'sidebar-nav';
+@use 'sidebar-item';
+@use 'sidebar-footer';
+@use 'sidebar-mobile';

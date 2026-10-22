@@ -5,13 +5,16 @@ import { VCard, VInfoNotice } from '@/shared/ui';
 import BalancesHeader from './components/BalancesHeader.vue';
 import CardStack from './components/CardStack.vue';
 import MonthPanel from './components/MonthPanel.vue';
+import PacePanel from './components/PacePanel.vue';
 import RowDots from './components/RowDots.vue';
 import { useCardStack } from './composables/useCardStack.ts';
 import { useMonthOverview } from './composables/useMonthOverview.ts';
+import { useMonthPace } from './composables/useMonthPace.ts';
 import { useRowScroll } from './composables/useRowScroll.ts';
 import { accountsCount, coverageNote } from './utils.ts';
 
 const { state, view, slides, isFamily, legend, monthName } = useMonthOverview();
+const pace = useMonthPace();
 const block = useTemplateRef<HTMLElement>('block');
 const cards = useTemplateRef<{ focusFront: () => void; row: HTMLElement | null }>('cards');
 const scroll = useRowScroll(() => cards.value?.row ?? null, () => slides.value.length);
@@ -69,7 +72,8 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
         <div
           data-test="panel"
           class="grid transition-[grid-template-rows] duration-400 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none
-                 @[47rem]:absolute @[47rem]:top-0 @[47rem]:right-0 @[47rem]:left-[490px] @[47rem]:grid-rows-[1fr]! @[47rem]:overflow-visible!"
+                 @[47rem]:absolute @[47rem]:top-0 @[47rem]:right-0 @[47rem]:left-[490px] @[47rem]:grid-rows-[1fr]! @[47rem]:overflow-visible!
+                 @[74rem]:right-auto @[74rem]:w-[340px]"
           :class="open ? 'grid-rows-[0fr] overflow-hidden' : 'grid-rows-[1fr]'"
           :inert="open"
         >
@@ -84,6 +88,27 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
               :legend
               :stub-shown
               @stub="stack.showStub"
+            />
+          </div>
+        </div>
+        <!-- The month pace (spec desktop-balance-cards): beside the month panel from @[74rem] (constants.ts: PACE_MIN),
+             under the stack and the panel otherwise, folding with the open row there. -->
+        <div
+          v-if="pace.view.value"
+          data-test="pace"
+          class="grid transition-[grid-template-rows] duration-400 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none
+                 @[74rem]:absolute @[74rem]:top-0 @[74rem]:right-0 @[74rem]:left-[854px] @[74rem]:grid-rows-[1fr]! @[74rem]:overflow-visible!"
+          :class="open ? 'grid-rows-[0fr] overflow-hidden' : 'grid-rows-[1fr]'"
+          :inert="open"
+        >
+          <!-- min-w-0: a grid item never shrinks below its content, so the chart's canvas would keep its old width. -->
+          <div class="min-h-0 min-w-0">
+            <PacePanel
+              class="pt-4 [transition:opacity_.3s_ease] motion-reduce:[transition:opacity_.2s_ease]
+                     @[74rem]:h-[304px] @[74rem]:border-l @[74rem]:border-border-subtle @[74rem]:pt-0 @[74rem]:pl-6"
+              :class="open ? 'pointer-events-none opacity-0' : 'opacity-100'"
+              :view="pace.view.value"
+              :fmt="pace.fmt.value"
             />
           </div>
         </div>

@@ -18,6 +18,9 @@ English interface.
 
 ### Home screen
 
+- **The month's pace.** Next to the balance, a chart shows how your spending has added up day by day this month
+  against a usual month, with what you have spent, what you usually spend by this day and «Available per day». In a
+  narrower window it sits under the cards. The usual month appears once you have three whole months of history.
 - **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
   it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
 - **A clearer total card.** All balance cards are a little larger. The card with the total of the family or of a person now has a header in the people's
@@ -34,8 +37,21 @@ English interface.
   much more or less in your currency, with the percent in brackets: «+1 090 ₴ (9%)». A change over a small amount no
   longer reads as a frightening «+14 500%» on its own. The category lists of «Now» show the amount alone, to fit.
 
+### Navigation
+
+- **The menu at the window's edge.** «General», «Analytics», «Regular payments» and «Planning» are now a menu along the
+  left edge of the window, with «Settings» at its bottom. Fold it to icons with the button at its top — the names then
+  show when you point at an icon — and the app remembers your choice. In a medium-wide window the menu shows icons only;
+  in a narrow one it hides behind the menu button next to the screen's name.
+  The app's name and logo now sit at the top of the menu, and the window's title bar is left clear.
+  The screen with its name and filters sits on one rounded panel next to the menu.
+- **Screens use the whole window.** The screen's name, the month, the currency and the people sit in one row above the
+  screen, and the blocks stretch across the window instead of a narrow column in its middle.
+
 ### Fixes
 
+- **The window title on macOS.** «Balance Insights» in the title bar is centred on the window, in line with the
+  filters under it.
 - **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for
   both side by side, the month's figures move under the cards.
 
