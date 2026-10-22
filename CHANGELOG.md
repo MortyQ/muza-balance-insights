@@ -36,6 +36,8 @@ English interface.
 
 ### Fixes
 
+- **The window title on macOS.** «Balance Insights» in the title bar is centred on the window, in line with the
+  filters under it.
 - **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for
   both side by side, the month's figures move under the cards.
 

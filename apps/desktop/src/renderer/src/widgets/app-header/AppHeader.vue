@@ -26,8 +26,8 @@ function openSettings() {
   -->
   <header
     :style="{ '--title-bar-h': `${TITLE_BAR_HEIGHT}px` }"
-    class="grid h-(--title-bar-h) shrink-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center select-none [-webkit-app-region:drag]"
-    :class="mac ? 'pr-2 pl-20' : 'pr-[calc(100vw_-_env(titlebar-area-x,0px)_-_env(titlebar-area-width,calc(100vw_-_138px))_+_4px)] pl-3'"
+    class="relative grid h-(--title-bar-h) shrink-0 items-center select-none [-webkit-app-region:drag]"
+    :class="mac ? 'grid-cols-[auto_minmax(0,1fr)_auto] pr-2 pl-20' : 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] pr-[calc(100vw_-_env(titlebar-area-x,0px)_-_env(titlebar-area-width,calc(100vw_-_138px))_+_4px)] pl-3'"
   >
     <div class="flex min-w-0 items-center gap-2">
       <template v-if="!mac">
@@ -48,7 +48,7 @@ function openSettings() {
         <span class="truncate text-xs text-foreground-secondary">Balance Insights</span>
       </template>
     </div>
-    <span v-if="mac" class="text-sm font-semibold text-foreground-secondary">Balance Insights</span>
+    <span v-if="mac" class="pointer-events-none absolute inset-x-20 truncate text-center text-sm font-semibold text-foreground-secondary">Balance Insights</span>
     <span v-else />
     <div class="flex justify-end">
       <button
