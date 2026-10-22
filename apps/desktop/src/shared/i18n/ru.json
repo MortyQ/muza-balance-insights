@@ -359,9 +359,7 @@
     }
   },
   "header": {
-    "settings": "Настройки",
-    "settingsMac": "Настройки (⌘,)",
-    "settingsOther": "Настройки (Ctrl+,)"
+    "settings": "Настройки"
   },
   "home": {
     "allowance": {

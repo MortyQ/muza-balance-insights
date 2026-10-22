@@ -7,6 +7,8 @@ import { navItems } from '../utils.ts';
 
 /** Where the fold choice is kept on this computer (a convenience, like the spending block's menu). */
 export const SIDEBAR_STORAGE_KEY = 'app.sidebar';
+/** The app's logo for the sidebar's header (a file, not a data: URL — the prod CSP allows 'self' only). */
+const LOGO_URL = Object.values(import.meta.glob('../../assets/logo.svg', { eager: true, query: '?url', import: 'default' }))[0] ?? '';
 /** A medium window: the sidebar shows icons only, whatever the user chose. Narrower — the drawer (its own styles). */
 export const ICONS_ONLY_QUERY = '(min-width: 45rem) and (max-width: 63.99rem)';
 
@@ -34,6 +36,8 @@ export function useAppSidebar(): UseAppSidebarReturn {
   const routes = useRouter().getRoutes();
   const sidebar = createSidebar({
     items: computed(() => navItems(routes, (key) => t(key))),
+    brandName: 'Balance Insights',
+    logoUrl: LOGO_URL,
     storageKey: SIDEBAR_STORAGE_KEY,
     forceCollapsed: useMedia(ICONS_ONLY_QUERY),
     labels: () => ({

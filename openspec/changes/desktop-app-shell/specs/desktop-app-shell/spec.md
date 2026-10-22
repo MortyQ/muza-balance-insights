@@ -96,8 +96,22 @@ directly under them, then «Spending». Each block SHALL behave as before this c
 ### Requirement: Settings keep their own menu
 
 The settings screen SHALL keep its own section menu and layout; the app navigation sidebar SHALL NOT appear there.
-«Settings» SHALL be reachable from the sidebar's footer and from the title bar.
+«Settings» SHALL be reachable from the sidebar's footer and with CmdOrCtrl+,.
 
 #### Scenario: Open settings from the sidebar
 - **WHEN** the user picks «Settings» in the sidebar's footer
 - **THEN** the settings screen opens with its own section menu and no app navigation sidebar
+
+### Requirement: App name in the sidebar
+
+The sidebar's header SHALL show the app's logo and name; folded, it SHALL show the logo alone, which unfolds the sidebar
+unless the window's width forces icons. The title bar SHALL be an empty strip that drags the window, with no name, logo
+or controls of its own.
+
+#### Scenario: Unfolded sidebar
+- **WHEN** the sidebar is unfolded
+- **THEN** its header shows the logo and «Balance Insights», and the title bar above shows neither
+
+#### Scenario: Folded sidebar
+- **WHEN** the user folds the sidebar and presses the logo
+- **THEN** the sidebar unfolds

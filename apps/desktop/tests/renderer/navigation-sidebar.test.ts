@@ -87,6 +87,29 @@ describe('NavigationSidebar', () => {
     w.unmount();
   });
 
+  it('brand: logo and name unfolded; folded, the logo alone unfolds the sidebar; forced icons keep a plain logo', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', name: 'a', component: page('a') }] });
+    await router.push('/');
+    const forced = ref(false);
+    const sidebar = createSidebar({ items: ITEMS.slice(0, 1), storageKey: 'test.sidebar', brandName: 'Brand', logoUrl: 'logo.svg', forceCollapsed: forced });
+    const w = mount(NavigationSidebar, { props: { sidebar }, global: { plugins: [router] } });
+    await flushPromises();
+    expect(w.get('aside.sidebar .sidebar-header__name').text()).toBe('Brand');
+    expect(w.get('aside.sidebar .sidebar-header__brand img').attributes('src')).toBe('logo.svg');
+    sidebar.toggleCollapse();
+    await flushPromises();
+    expect(w.find('aside.sidebar .sidebar-header__name').exists()).toBe(false);
+    const logo = w.get('aside.sidebar button.sidebar-header__toggle');
+    expect(logo.find('img').attributes('src')).toBe('logo.svg');
+    await logo.trigger('click');
+    expect(sidebar.isCollapsed.value).toBe(false);
+    forced.value = true;
+    await flushPromises();
+    expect(w.find('aside.sidebar button.sidebar-header__toggle').exists()).toBe(false);
+    expect(w.get('aside.sidebar .sidebar-header__logo img').attributes('alt')).toBe('Brand');
+    w.unmount();
+  });
+
   it('texts come from the labels option', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', name: 'a', component: page('a') }] });
     await router.push('/');

@@ -128,8 +128,8 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   in hex, checked by `tests/window.test.ts`; main repaints them on a theme change via `nativeTheme` → `setTitleBarOverlay`);
   Linux also `autoHideMenuBar`. macOS: traffic lights, title centred. Height — `TITLE_BAR_HEIGHT`
   (`src/shared/titlebar.ts`, 36 px). The strip is `widgets/app-header` (`AppHeader`) over every screen (`App.vue`; only the
-  screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): logo and name, gear → settings. The gear is
-  hidden on the lock and «База недоступна» screens (the router would send settings back there anyway). The menu object
+  screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): an empty drag strip — the logo and name are in
+  the app navigation sidebar's header (`app/assets/logo.svg`), settings in its footer and on CmdOrCtrl+,. The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
   filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
   outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),

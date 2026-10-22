@@ -44,8 +44,26 @@ const brandInitial = options.brandName.charAt(0).toUpperCase();
       </div>
     </Transition>
 
+    <!-- Balance: folded, the logo stays; it unfolds the sidebar unless the window's width forces icons -->
+    <button
+      v-if="isCollapsed && options.logoUrl && !isForcedCollapsed"
+      :aria-label="options.labels().expand"
+      class="sidebar-header__toggle"
+      type="button"
+      @click="toggleCollapse"
+    >
+      <span class="sidebar-header__logo"><img alt="" :src="options.logoUrl"></span>
+    </button>
+    <span
+      v-else-if="isCollapsed && options.logoUrl"
+      class="sidebar-header__logo"
+    ><img :alt="options.brandName" :src="options.logoUrl"></span>
+
     <!-- Controls -->
-    <div class="sidebar-header__controls">
+    <div
+      v-if="!isCollapsed || !options.logoUrl"
+      class="sidebar-header__controls"
+    >
       <slot name="end" />
       <button
         v-if="!isForcedCollapsed"

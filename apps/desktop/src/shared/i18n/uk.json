@@ -359,9 +359,7 @@
     }
   },
   "header": {
-    "settings": "Налаштування",
-    "settingsMac": "Налаштування (⌘,)",
-    "settingsOther": "Налаштування (Ctrl+,)"
+    "settings": "Налаштування"
   },
   "home": {
     "allowance": {
