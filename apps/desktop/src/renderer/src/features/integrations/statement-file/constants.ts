@@ -14,6 +14,10 @@ export const PROBLEM_TEXT: Readonly<Record<StatementProblemCode, MessageKey>> = 
   'bad-row': 'integrations.statement.problem.badRow',
   'too-large': 'integrations.statement.problem.tooLarge',
   'no-format': 'integrations.statement.problem.noFormat',
+  unreadable: 'integrations.statement.problem.unreadable',
+  encrypted: 'integrations.statement.problem.encrypted',
+  'over-limits': 'integrations.statement.problem.overLimits',
+  timeout: 'integrations.statement.problem.timeout',
 };
 
 /** Why the file is compared but not written. `gap` carries its dates. */

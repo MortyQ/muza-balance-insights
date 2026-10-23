@@ -21,10 +21,13 @@
   замком, установка — после разблокировки (скачанное обновление ставится при выходе и под замком). «Идёт импорт» —
   по фазе прогресса (`importActive`), не по живому worker. `electron` — только в `lock/electron.ts`.
   Тесты со scrypt — с таймаутом 30 с на `describe` (реальный KDF под параллельным прогоном).
-- **Statement files** (`main/statements.ts`): the file is picked in the system open dialog (CSV only) and read in main
-  only — at most 10 MiB (by size before reading and after), UTF-8; the renderer gets counts, dates and codes, never the
-  path, the name or the text; the log gets `[statement] <code>` or a count. The read statement is kept in main for
-  compare and commit — one at a time, 10 minutes — and dropped on the lock and on «Delete all data». No network.
+- **Statement files** (`main/statements.ts`): the file is picked in the system open dialog (the extensions the
+  connection's bank's readers name, then «All files») and read in main only — at most 10 MiB (by size before reading and
+  after). Its kind comes from its leading bytes (`sniffFormat`), never the name: text is decoded as UTF-8 in main, a
+  spreadsheet or a PDF goes to the decoder process (below). The renderer gets, per account of the file, counts, dates,
+  the currency, the card type and the last 4 card digits, plus codes — never the path, the name, the content or an
+  IBAN; the log gets `[statement] <code>` or counts. The read statements are kept in main for compare and commit — one
+  file at a time, 10 minutes — and dropped on the lock and on «Delete all data». No network.
 - **The statement decoder** (`src/decoder/process.ts`, a `utilityProcess` forked per file by `main/decoder-client.ts`,
   `serviceName: 'balance-decoder'`, `env: {}`, nothing on the command line). A spreadsheet (`PK\3\4`) or a PDF
   (`%PDF-`) — main tells them by the leading bytes (`sniffFormat`); text stays in main — is decoded there, so a flaw

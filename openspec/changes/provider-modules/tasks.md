@@ -63,20 +63,20 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 6. Upload any bank's statement (feat(desktop): statement upload by file kind)
 
-- [ ] 6.1 Main:
+- [x] 6.1 Main:
   - `StatementsService.open` reads, sniffs, decodes (text in main, binary through the decoder), runs `pickReader`, refuses `other-bank`, reads, and keeps the statements under one id;
   - the dialog offers the extensions the readers know plus «All files»;
   - the data protocol's `parsedStatement` becomes the per-account list, with targets per statement.
 
   Verify with `tests/statements.test.ts`: a Monobank CSV as before, a renamed CSV, another bank's fictional reader refused as `other-bank`, a decoder failure, too large; with `tests/data-protocol.test.ts`; and with `ipc.test.ts`.
-- [ ] 6.2 Renderer, `features/integrations/statement-file`:
+- [x] 6.2 Renderer, `features/integrations/statement-file`:
   - the comparison lists one row per statement (card type, currency, last card digits, counts, target select);
   - one «Write» covers all;
   - new problem codes are worded;
   - the «CSV» wording becomes generic.
 
   New keys go in `uk.json`, `en.json` and `ru.json`. Verify with `tests/renderer/statement-upload.test.ts` (one and two accounts, a blocked account, each problem code) and `tests/i18n.test.ts`.
-- [ ] 6.3 Update `.agents/project/desktop-import.md` (the upload flow by file kind, the decoder, several accounts). Verify `apps/desktop` tsc (node and web) and vitest pass.
+- [x] 6.3 Update `.agents/project/desktop-import.md` (the upload flow by file kind, the decoder, several accounts). Verify `apps/desktop` tsc (node and web) and vitest pass.
 
 ## 7. Transfers between banks (feat(core): transfers between banks)
 

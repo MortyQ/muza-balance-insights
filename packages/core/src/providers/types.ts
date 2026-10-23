@@ -243,6 +243,8 @@ export interface StatementReader {
   provider: ProviderId;
   /** Unique among readers, e.g. 'monobank-card-uk'. */
   id: string;
+  /** Extensions its files usually have, lowercase without the dot: the open dialog's filter only, never how it is picked. */
+  extensions: readonly string[];
   /** 0 = not mine, 1 = its format and part of its signature, 2 = its whole signature. */
   detect(doc: StatementDocument): 0 | 1 | 2;
   read(doc: StatementDocument): StatementReadResult;

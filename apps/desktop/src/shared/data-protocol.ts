@@ -8,7 +8,7 @@ import { PROVIDER_IDS, type ProviderId, type ParsedStatement } from '@mono/core/
 import type { StatementBlock, StatementComparison, StatementTarget } from '@mono/core/ingest/statement-import';
 import type { ReserveInput } from './allowance.ts';
 import { DB_KEY_RE } from './db-open.ts';
-import { ARG_SCHEMAS, accountId, cardType, id, participant } from './ipc-args.ts';
+import { ARG_SCHEMAS, STATEMENT_ACCOUNTS_MAX, accountId, cardType, id, participant } from './ipc-args.ts';
 import type {
   AllowanceOverview,
   AllowanceQuery,
@@ -74,8 +74,8 @@ export type DataMethods = {
   deleteConnection: { args: [number]; result: void };
   connectionAccounts: { args: [number]; result: ConnectionAccountView[] };
   setAccountEnabled: { args: [string, boolean]; result: void };
-  compareStatement: { args: [number, ParsedStatement, StatementTarget]; result: StatementComparison };
-  commitStatement: { args: [number, ParsedStatement, StatementTarget]; result: StatementWriteResult };
+  compareStatement: { args: [number, ParsedStatement[], Array<StatementTarget | null>]; result: StatementComparison[] };
+  commitStatement: { args: [number, ParsedStatement[], StatementTarget[]]; result: StatementWriteResult };
 };
 
 export type DataMethod = keyof DataMethods;
@@ -116,6 +116,8 @@ const parsedStatement = z.strictObject({
   rows: z.array(statementRow).min(1),
   closingBalance: z.number().int().nullable(),
 }) satisfies z.ZodType<ParsedStatement>;
+// Every account of one file, in the file's order.
+const statements = z.array(parsedStatement).min(1).max(STATEMENT_ACCOUNTS_MAX);
 // A new card's id is main's (StatementsService: `file-` + a random UUID).
 const statementTarget = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('account'), accountId }),
@@ -149,8 +151,12 @@ export const DATA_ARG_SCHEMAS = {
   deleteConnection: z.tuple([id]),
   connectionAccounts: ARG_SCHEMAS.listConnectionAccounts,
   setAccountEnabled: ARG_SCHEMAS.setAccountEnabled,
-  compareStatement: z.tuple([id, parsedStatement, statementTarget]),
-  commitStatement: z.tuple([id, parsedStatement, statementTarget]),
+  compareStatement: z
+    .tuple([id, statements, z.array(statementTarget.nullable()).max(STATEMENT_ACCOUNTS_MAX)])
+    .refine(([, s, t]) => s.length === t.length, 'One target per statement'),
+  commitStatement: z
+    .tuple([id, statements, z.array(statementTarget).max(STATEMENT_ACCOUNTS_MAX)])
+    .refine(([, s, t]) => s.length === t.length, 'One target per statement'),
 } as const satisfies Record<DataMethod, z.ZodType<unknown[]>>;
 
 export const DATA_METHODS = Object.keys(DATA_ARG_SCHEMAS) as DataMethod[];

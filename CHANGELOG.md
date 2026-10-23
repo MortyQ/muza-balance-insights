@@ -9,7 +9,8 @@ English interface.
 
 - **Connect Monobank by a statement file.** When you add a connection, choose «Token» or «Statement file». With a
   file there is no token: download a card statement as CSV in Ukrainian from the Monobank app, then press «Upload
-  statement» next to the connection and pick the file. Before anything is added you see how many operations the file
+  statement» next to the connection and pick the file. The app recognises a statement by its content, so a renamed
+  file works too. Before anything is added you see how many operations the file
   has, how many are already in the app and how many are new; uploading the same or an overlapping file again adds only
   what is new. The data does not update by itself — upload a new statement when you want fresh numbers. The file is
   read on this computer and is not kept. A statement in English or a FOP statement is not supported yet.

@@ -155,6 +155,6 @@ function read(doc: StatementDocument): StatementReadResult {
   };
 }
 
-export const monobankCardReader: StatementReader = { provider: 'monobank', id: 'monobank-card-uk', detect, read };
+export const monobankCardReader: StatementReader = { provider: 'monobank', id: 'monobank-card-uk', extensions: ['csv'], detect, read };
 
 export const readers: readonly StatementReader[] = [monobankCardReader];

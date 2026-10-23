@@ -1,7 +1,7 @@
 // The messages between main and the data process (src/shared/data-protocol.ts): a closed list of methods, each with
 // its own argument tuple; the key only in `open`; errors as a code and a name. Fictional data only.
 import { describe, expect, it } from 'vitest';
-import { ARG_SCHEMAS } from '../src/shared/ipc-args.ts';
+import { ARG_SCHEMAS, STATEMENT_ACCOUNTS_MAX } from '../src/shared/ipc-args.ts';
 import { CallMessage, DATA_ARG_SCHEMAS, DATA_METHODS, FromData, ToData } from '../src/shared/data-protocol.ts';
 
 const row = { time: 1_700_000_000, amount: -12_345, currencyCode: 980, hold: false, mcc: 5411, description: 'Вигаданий магазин', raw: 'a;b;c' };
@@ -39,7 +39,7 @@ describe('data protocol', () => {
   });
 
   it('a statement: its rows as the parsers fill them, nothing else; a new card only with main\'s id', () => {
-    const ok = (rows: unknown[], target: unknown) => DATA_ARG_SCHEMAS.commitStatement.safeParse([1, { ...statement, rows }, target]).success;
+    const ok = (rows: unknown[], target: unknown) => DATA_ARG_SCHEMAS.commitStatement.safeParse([1, [{ ...statement, rows }], [target]]).success;
     expect(ok([row], { kind: 'new', id: NEW_ID, type: 'black' })).toBe(true);
     expect(ok([row], { kind: 'account', accountId: 'acc-1' })).toBe(true);
     expect(ok([{ ...row, extra: 1 }], { kind: 'account', accountId: 'acc-1' })).toBe(false);
@@ -53,13 +53,28 @@ describe('data protocol', () => {
 
   it("a statement's account: what the file states, within limits, nothing else", () => {
     const ok = (account: unknown) =>
-      DATA_ARG_SCHEMAS.commitStatement.safeParse([1, { ...statement, account }, { kind: 'account', accountId: 'acc-1' }]).success;
+      DATA_ARG_SCHEMAS.commitStatement.safeParse([1, [{ ...statement, account }], [{ kind: 'account', accountId: 'acc-1' }]]).success;
     expect(ok({ iban: 'UA003000000000000000000000001', cards: ['4441 11** **** 1111'], type: 'black' })).toBe(true);
     expect(ok({ iban: null, cards: [], type: null })).toBe(true);
     expect(ok({ iban: 'U'.repeat(35), cards: [], type: null })).toBe(false);
     expect(ok({ iban: null, cards: Array.from({ length: 17 }, () => '4441'), type: null })).toBe(false);
     expect(ok({ iban: null, cards: [], type: null, holder: 'Вигадана' })).toBe(false);
     expect(ok(undefined)).toBe(false);
+  });
+
+  it('a whole file: one target per account, at most STATEMENT_ACCOUNTS_MAX accounts; a comparison may leave a target to the file', () => {
+    const acc = { kind: 'account', accountId: 'acc-1' };
+    const fresh = { kind: 'new', id: NEW_ID, type: null };
+    const commit = (n: number, targets: unknown[]) => DATA_ARG_SCHEMAS.commitStatement.safeParse([1, Array.from({ length: n }, () => statement), targets]).success;
+    const compare = (n: number, targets: unknown[]) => DATA_ARG_SCHEMAS.compareStatement.safeParse([1, Array.from({ length: n }, () => statement), targets]).success;
+    expect(commit(2, [acc, fresh])).toBe(true);
+    expect(commit(2, [acc])).toBe(false);
+    expect(commit(2, [acc, null])).toBe(false);
+    expect(commit(0, [])).toBe(false);
+    expect(compare(2, [null, acc])).toBe(true);
+    expect(compare(2, [null])).toBe(false);
+    expect(compare(STATEMENT_ACCOUNTS_MAX, Array.from({ length: STATEMENT_ACCOUNTS_MAX }, () => null))).toBe(true);
+    expect(compare(STATEMENT_ACCOUNTS_MAX + 1, Array.from({ length: STATEMENT_ACCOUNTS_MAX + 1 }, () => null))).toBe(false);
   });
 
   it('the key: 64 lowercase hex characters or null, only in `open`', () => {

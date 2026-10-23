@@ -3,7 +3,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { monobankCardReader } from '../../../src/providers/monobank/statement.ts';
-import { pickReader } from '../../../src/providers/statements.ts';
+import { STATEMENT_READERS, pickReader } from '../../../src/providers/statements.ts';
 import type { ParsedStatement, StatementDocument, StatementReader } from '../../../src/providers/types.ts';
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
@@ -111,6 +111,11 @@ describe('detect and pickReader', () => {
     expect(monobankCardReader.detect(text(''))).toBe(0);
   });
 
+  it('every reader names the extensions its files usually have, lowercase without the dot; Monobank: csv', () => {
+    expect(monobankCardReader.extensions).toEqual(['csv']);
+    for (const r of Object.values(STATEMENT_READERS).flat()) for (const e of r.extensions) expect(e).toMatch(/^[a-z0-9]{1,8}$/);
+  });
+
   it('a document of another format is never its own', () => {
     expect(monobankCardReader.detect({ format: 'sheets', sheets: [{ name: 'Sheet1', rows: [[{ t: 's', v: 'MCC' }]] }] })).toBe(0);
     expect(monobankCardReader.detect({ format: 'pdf', pages: [] })).toBe(0);
@@ -128,6 +133,7 @@ describe('detect and pickReader', () => {
   const decoy = (id: string, score: 0 | 1 | 2): StatementReader => ({
     provider: 'monobank',
     id,
+    extensions: [],
     detect: () => score,
     read: () => ({ ok: false, problem: 'empty' }),
   });

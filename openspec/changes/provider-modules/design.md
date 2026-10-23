@@ -188,6 +188,7 @@ type StatementDocument =
 interface StatementReader {
   provider: ProviderId;
   id: string;                                   // 'monobank-card-uk'
+  extensions: readonly string[];                // ['csv']: the open dialog's filter only, never how it is picked
   /** 0 = not mine, 1 = its format and part of its signature, 2 = its whole signature. */
   detect(doc: StatementDocument): 0 | 1 | 2;
   read(doc: StatementDocument): StatementReadResult;

@@ -1,12 +1,29 @@
-import type { CommitStatementResult, OpenStatementResult, StatementComparisonView } from '@contract/api.ts';
+import { currencyAlpha } from '@mono/core/shared/currency';
+import type { CommitStatementResult, OpenStatementResult, OpenedStatementView, StatementComparisonView } from '@contract/api.ts';
+import type { MessageKey } from '@contract/i18n/index.ts';
+import { cardTypeName } from '@/entities/bank';
 import { fullDate, t } from '@/shared/lib';
-import { BLOCK_TEXT, PROBLEM_TEXT } from './constants.ts';
-import type { TargetChoice } from './types.ts';
+import { BLOCK_TEXT, DEFAULT_NEW_CARD_TYPE, PROBLEM_TEXT } from './constants.ts';
+import type { OpenedStatement, TargetChoice } from './types.ts';
 
 /** Why a file was not opened, or '' (opened or cancelled). */
 export function openProblemText(r: Readonly<OpenStatementResult>): string {
   if (r.opened || r.reason === 'cancelled') return '';
   return t(PROBLEM_TEXT[r.problem], { row: r.row ?? 0 });
+}
+
+/**
+ * An account of the file: «Black card · UAH · •• 1234». A type the bank's names do not know is not shown: it would be
+ * the file's own word.
+ */
+export function statementLabel(s: Readonly<OpenedStatementView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
+  const type = s.type !== null && Object.hasOwn(cardTypes, s.type) ? s.type : null;
+  return [cardTypeName(type, cardTypes), currencyAlpha(s.currencyCode), s.cardTail === null ? '' : `•• ${s.cardTail}`].filter((x) => x !== '').join(' · ');
+}
+
+/** A new card's type: the file's when the bank's names know it, else the default. */
+export function newCardType(s: Readonly<OpenedStatementView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
+  return s.type !== null && Object.hasOwn(cardTypes, s.type) ? s.type : DEFAULT_NEW_CARD_TYPE;
 }
 
 /** «Operations in the file: 5 · 03.10.2026 – 07.10.2026». */
@@ -40,4 +57,24 @@ export function commitText(r: Readonly<CommitStatementResult>): string {
 export function defaultTarget(accounts: ReadonlyArray<{ id: string }>, fileConnection: boolean): TargetChoice {
   if (accounts.length === 1 || (!fileConnection && accounts.length > 0)) return accounts[0]?.id ?? 'new';
   return 'new';
+}
+
+/**
+ * The accounts to offer first, one per account of the file: the one its IBAN or card number matched, else
+ * defaultTarget among the cards no other account of the file took. Each card goes to one account at most.
+ */
+export function initialTargets(file: Readonly<OpenedStatement>, comparisons: ReadonlyArray<StatementComparisonView>, fileConnection: boolean): TargetChoice[] {
+  const taken = new Set(comparisons.flatMap((c) => (c.match.kind === 'account' ? [c.match.accountId] : [])));
+  return file.statements.map((s, i) => {
+    const match = comparisons[i]?.match;
+    if (match?.kind === 'account') return match.accountId;
+    const choice = defaultTarget(s.accounts.filter((a) => !taken.has(a.id)), fileConnection);
+    if (choice !== 'new') taken.add(choice);
+    return choice;
+  });
+}
+
+/** What the file would add now: every account compared, none blocked, something new. */
+export function canWrite(comparisons: ReadonlyArray<StatementComparisonView>): boolean {
+  return comparisons.every((c) => c.blocked === null) && comparisons.some((c) => c.added > 0);
 }

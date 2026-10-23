@@ -179,14 +179,18 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['openStatement', [0]],
     ['openStatement', ['/Users/someone/statement.csv']],
     ['openStatement', [1, '/tmp/x.csv']],
-    ['compareStatement', ['not-a-uuid', { kind: 'account', accountId: 'a' }]],
-    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'account' }]],
-    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'account', accountId: 'a', path: '/tmp/x.csv' }]],
-    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new', type: 'black', id: 'chosen-id' }]],
-    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new', type: '../x' }]],
-    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'new' }]],
+    ['compareStatement', ['not-a-uuid', [{ kind: 'account', accountId: 'a' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'account', accountId: 'a' }]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'account' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'account', accountId: 'a', path: '/tmp/x.csv' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'new', type: 'black', id: 'chosen-id' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'new', type: '../x' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'new' }]]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', []]],
+    ['compareStatement', ['00000000-0000-4000-8000-000000000000', Array.from({ length: 51 }, () => null)]],
     ['commitStatement', ['00000000-0000-4000-8000-000000000000']],
-    ['commitStatement', ['00000000-0000-4000-8000-000000000000', { kind: 'file', path: '/tmp/x.csv' }]],
+    ['commitStatement', ['00000000-0000-4000-8000-000000000000', [null]]],
+    ['commitStatement', ['00000000-0000-4000-8000-000000000000', [{ kind: 'file', path: '/tmp/x.csv' }]]],
     ['listConnectionAccounts', []],
     ['listConnectionAccounts', [0]],
     ['listConnectionAccounts', ['1']],
@@ -318,9 +322,15 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     await expect(ipc.handlers.get('balance:openStatement')!(good, 4)).resolves.toEqual({ m: 'openStatement', a: [4] });
     for (const target of [{ kind: 'account', accountId: 'file-1' }, { kind: 'new', type: 'black' }, { kind: 'new', type: null }]) {
       for (const m of ['compareStatement', 'commitStatement']) {
-        await expect(ipc.handlers.get(`balance:${m}`)!(good, '00000000-0000-4000-8000-000000000000', target)).resolves.toEqual({ m, a: ['00000000-0000-4000-8000-000000000000', target] });
+        const targets = [target, { kind: 'new', type: 'white' }];
+        await expect(ipc.handlers.get(`balance:${m}`)!(good, '00000000-0000-4000-8000-000000000000', targets)).resolves.toEqual({ m, a: ['00000000-0000-4000-8000-000000000000', targets] });
       }
     }
+    // A comparison may leave an account's target to the file (its IBAN or card number).
+    await expect(ipc.handlers.get('balance:compareStatement')!(good, '00000000-0000-4000-8000-000000000000', [null, null])).resolves.toEqual({
+      m: 'compareStatement',
+      a: ['00000000-0000-4000-8000-000000000000', [null, null]],
+    });
     const flat = { name: 'Квартира', currency: 978, amount: 120_000, until: '2026-12-01', participantId: 2 };
     await expect(ipc.handlers.get('balance:addReserve')!(good, flat)).resolves.toEqual({ m: 'addReserve', a: [flat] });
     await expect(ipc.handlers.get('balance:updateReserve')!(good, 3, { ...flat, until: null, participantId: null })).resolves.toEqual({ m: 'updateReserve', a: [3, { ...flat, until: null, participantId: null }] });

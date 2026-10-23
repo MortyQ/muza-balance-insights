@@ -49,6 +49,8 @@ const statementTarget = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('account'), accountId }),
   z.strictObject({ kind: z.literal('new'), type: cardType.nullable() }),
 ]);
+/** Accounts one statement file may hold; main refuses a file with more (`over-limits`). */
+export const STATEMENT_ACCOUNTS_MAX = 50;
 const autoSync = z.strictObject({
   enabled: z.boolean(),
   triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
@@ -72,8 +74,8 @@ export const ARG_SCHEMAS = {
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
   openStatement: z.tuple([id]),
-  compareStatement: z.tuple([statementId, statementTarget]),
-  commitStatement: z.tuple([statementId, statementTarget]),
+  compareStatement: z.tuple([statementId, z.array(statementTarget.nullable()).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
+  commitStatement: z.tuple([statementId, z.array(statementTarget).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),

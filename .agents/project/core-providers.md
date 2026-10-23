@@ -85,6 +85,7 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
   The core holds no archive or PDF code (the desktop decodes them).
 - **The readers.** `providers/<id>/statement.ts` exports `readers: StatementReader[]`, one per kind of file of that
   bank. A reader is pure:
+  - `extensions`: what its files are usually named with (lowercase, no dot), for the open dialog's filter only;
   - `detect(doc)`: 0 — not mine, 1 — its format and part of its signature, 2 — its whole signature;
   - `read(doc)`: one `ParsedStatement` per account the file holds (currency, rows oldest first, closing balance, and
     `account { iban, cards, type }` as far as the file states them), or a `StatementProblem` code (with the row for
@@ -93,7 +94,7 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
   none → `unknown-format`, two → `ambiguous`. Never by the file's name or the bank the user expected. The upload refuses
   a reader of another provider than the connection's as `other-bank`. The boundary test allows only `<id>/statement.ts`
   and `types.ts` in the registry.
-- **Monobank's reader** (`monobank-card-uk`) takes the card statement in Ukrainian, because its service texts are the
+- **Monobank's reader** (`monobank-card-uk`, `csv`) takes the card statement in Ukrainian, because its service texts are the
   API's. It also recognises the English one (refused as `language`: translated texts) and the FOP one by its title line
   (score 1, refused as `unsupported-kind`). The card statement states no IBAN and no card number.
 - **Reading values.**

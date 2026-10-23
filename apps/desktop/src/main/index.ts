@@ -230,11 +230,14 @@ app.whenReady().then(async () => {
   app.on('before-quit', () => decoder.kill());
   const statements = new StatementsService({
     data,
-    pickFile: async () => {
-      const opts = { properties: ['openFile' as const], filters: [{ name: 'CSV', extensions: ['csv'] }] };
+    pickFile: async (extensions) => {
+      const t = translator(locale());
+      const filters = [{ name: t('main.dialog.statementFiles'), extensions: [...extensions] }, { name: t('main.dialog.allFiles'), extensions: ['*'] }];
+      const opts = { properties: ['openFile' as const], filters };
       const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
       return r.canceled ? null : (r.filePaths[0] ?? null);
     },
+    decode: (format, bytes) => decoder.decode(format, bytes),
     importRunning: () => importer.running,
     randomId: () => randomUUID(),
     nowMs: () => Date.now(),
@@ -299,8 +302,8 @@ app.whenReady().then(async () => {
     listConnectionAccounts: (id) => integrations.listConnectionAccounts(id),
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
     openStatement: (connectionId) => statements.open(connectionId),
-    compareStatement: (statementId, target) => statements.compare(statementId, target),
-    commitStatement: (statementId, target) => statements.commit(statementId, target),
+    compareStatement: (statementId, targets) => statements.compare(statementId, targets),
+    commitStatement: (statementId, targets) => statements.commit(statementId, targets),
     startImport: (from) => importer.start(from),
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),

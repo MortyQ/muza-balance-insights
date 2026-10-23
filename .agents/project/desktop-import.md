@@ -53,6 +53,24 @@
 - File connections (`connections.method = 'file'`) are outside the import: the data process's `tokenConnections` (`DataService.connections()`) lists token
   connections only, so the start, the resume and auto-sync never see them; their accounts are filled by statement
   uploads (`main/statements.ts`), refused while an import runs.
+- **Statement upload** (IPC `openStatement`, `compareStatement`, `commitStatement`; main `StatementsService`):
+  - `open(connectionId)`: no reader for the bank → `no-format`; the dialog offers the readers' `extensions` and «All
+    files»; the file is read (10 MiB), its kind told by its bytes (`sniffFormat`): text in main, a spreadsheet or a PDF
+    through `DecoderClient` (`main/decoder-client.ts`, a process per file; its codes become the screen's:
+    `unreadable` — also `crashed` and `bad-reply` —, `encrypted`, `over-limits` — every size and count limit —,
+    `timeout`). Then core `pickReader` picks the reader by the document alone, a reader of another provider is refused
+    as `other-bank`, `read` gives one `ParsedStatement` per account (more than `STATEMENT_ACCOUNTS_MAX` (50) →
+    `over-limits`). Every account is kept under one `statementId`; the answer is `statements: OpenedStatementView[]`
+    (currency, rows, dates, the file's card type, the last 4 digits of its first card, the connection's cards of that
+    currency);
+  - `compare(statementId, targets)`: one target per account (`StatementTargetInput`, or null — the file's match: IBAN,
+    then card number, else new); each comparison carries its `match`;
+  - `commit(statementId, targets)`: one explicit target per account; the whole file in one batch or nothing (core
+    `commitStatement`, a block on any account refuses it); a new card's id is main's (`file-` + a UUID).
+  A target list of another length than the file's accounts is an error (zod checks the shape only). The data process
+  gets the statements and targets (`DATA_ARG_SCHEMAS`: same length, at most 50) and runs core `compareStatement` /
+  `writeStatement` (`data/statements.ts`). Tests: `tests/statements.test.ts` (a renamed file, a zip under any name,
+  two accounts, another bank, each decoder refusal), `data-protocol.test.ts`, `ipc.test.ts`.
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
   `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
   банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`, из папок банков,

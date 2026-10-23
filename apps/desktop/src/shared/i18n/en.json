@@ -796,7 +796,7 @@
       "fileHint": "No token: you upload a statement file whenever you want fresh data. Nothing updates by itself."
     },
     "file": {
-      "connectNote": "Once added, press «Upload statement» next to the connection and pick the CSV file."
+      "connectNote": "Once added, press «Upload statement» next to the connection and pick the statement file."
     },
     "statement": {
       "pick": "Choose file",
@@ -818,15 +818,19 @@
       "importRunning": "Wait for the import to finish first.",
       "compareFailed": "Could not compare the file with the account.",
       "problem": {
-        "unknownFormat": "The file does not look like this bank's CSV statement.",
+        "unknownFormat": "The file does not look like this bank's statement.",
         "ambiguous": "The file fits more than one statement format. Nothing was written.",
         "otherBank": "This is another bank's statement. Upload it into a connection of that bank.",
         "language": "The statement is in English: its service texts are translated and transfers are not recognised. Make the statement in Ukrainian.",
-        "unsupportedKind": "A FOP statement is not supported yet, only a card statement.",
+        "unsupportedKind": "This kind of statement is not supported yet, only a card statement.",
         "empty": "The file has no operations.",
         "badRow": "Line {row} of the file does not read.",
         "tooLarge": "The file is too large: over 10 MB.",
-        "noFormat": "This bank cannot be uploaded by file yet."
+        "noFormat": "This bank cannot be uploaded by file yet.",
+        "unreadable": "The file does not read: it may be damaged.",
+        "encrypted": "The file is password-protected. Save the statement without a password.",
+        "overLimits": "The file has too many pages, sheets, rows or accounts to read.",
+        "timeout": "Reading the file took too long and was stopped."
       }
     }
   },
@@ -847,7 +851,9 @@
         "confirm": "Start over",
         "detail": "Downloaded transactions, people and their names, overrides and settings will be deleted. Saved tokens stay if they can be read — transactions are downloaded from the bank again. This cannot be undone.",
         "message": "Start over?"
-      }
+      },
+      "statementFiles": "Statement files",
+      "allFiles": "All files"
     },
     "menu": {
       "about": "About",
