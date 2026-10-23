@@ -62,7 +62,7 @@ describe('category screen helpers', () => {
   it('summary: name, colour by rank, the change against last month, the figures', () => {
     const s = summaryView(VIEW, 'Вся семья', 'Личное', FMT);
     expect(s).toMatchObject({ name: 'Такси и транспорт', icon: 'lucide:bus', color: 'var(--category-4)', subtitle: 'Сентябрь 2026 · Вся семья · Личное', amount: uah(141_000) });
-    expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: 'на 41% больше, чем в августе' });
+    expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `на ${uah(41_000)} (41%) больше, чем в августе` });
     expect(s.prev).toBe(`в августе было ${uah(100_000)}`);
     expect(s.note).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
     expect(s.stats.map((x) => [x.label, x.value])).toEqual([
@@ -214,14 +214,14 @@ describe('category screen of a week or a day', () => {
   it('a week: its dates in the header, the change against last week, the figures without the 12 months', () => {
     const s = summaryView(WEEK, '', 'Личное', FMT);
     expect(s.subtitle).toBe('Неделя 14 сен – 20 сен · Личное');
-    expect(s.chip).toMatchObject({ tone: 'up', text: 'на 7% больше, чем на прошлой неделе' });
+    expect(s.chip).toMatchObject({ tone: 'up', text: `на ${uah(4_200)} (7%) больше, чем на прошлой неделе` });
     expect(s.prev).toBe(`на прошлой неделе было ${uah(59_800)}`);
     expect(s.stats.map((x) => x.label)).toEqual(['Операций', 'Средний чек', 'В день', 'Доля всех трат', 'Самая крупная', 'Кэшбэк']);
     expect(s.stats[0]!.note).toBe('на прошлой неделе — 1');
     expect(s.stats[2]!.note).toBe('дней с тратами: 2 из 7');
     expect(s.stats[3]!.note).toBe('2-е место за неделю');
     expect(summaryView({ ...WEEK, compare: { ...WEEK.compare!, partial: true } }, '', 'Личное', FMT).chip?.text).toBe(
-      'на 7% больше, чем к этому дню на прошлой неделе',
+      `на ${uah(4_200)} (7%) больше, чем к этому дню на прошлой неделе`,
     );
     expect(monthsView(WEEK, FMT)).toBeNull();
   });

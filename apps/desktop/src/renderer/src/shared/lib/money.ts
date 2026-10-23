@@ -22,8 +22,13 @@ function formatter(digits: number): Intl.NumberFormat {
   return f;
 }
 
+/** The amount alone, no symbol: «12 340», «12 340,56». Same options as `formatMoney`. */
+export function formatAmount(minor: number, currency: number, opts: { minorUnits?: boolean } = {}): string {
+  const digits = opts.minorUnits ? currencyExponent(currency) : 0;
+  return formatter(digits).format(toMajor(minor, currency));
+}
+
 /** `minor` in minor units of `currency`. `minorUnits: false` rounds to whole units. */
 export function formatMoney(minor: number, currency: number, opts: { minorUnits?: boolean } = {}): string {
-  const digits = opts.minorUnits ? currencyExponent(currency) : 0;
-  return `${formatter(digits).format(toMajor(minor, currency))} ${currencySymbol(currency)}`;
+  return `${formatAmount(minor, currency, opts)} ${currencySymbol(currency)}`;
 }

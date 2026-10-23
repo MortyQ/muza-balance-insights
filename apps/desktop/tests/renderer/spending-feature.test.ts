@@ -101,7 +101,7 @@ describe('spending block: a pick with no spending', () => {
     const ring = w.findComponent(CategoryRing).text();
     expect(ring).toContain('Оля');
     expect(ring).toContain(formatMoney(0, 980));
-    expect(ring).toContain('на 100% меньше, чем в августе');
+    expect(ring).toContain(`на ${formatMoney(5_000, 980)} (100%) меньше, чем в августе`);
     expect(category(w)).toHaveLength(0);
     expect(w.text()).not.toContain('Трат за этот месяц нет');
 
@@ -329,7 +329,7 @@ describe('spending block: what is unusual', () => {
     current = { ...VIEW, usual: USUAL };
     const w = await mountBlock();
     const text = w.find('section[aria-label="Что необычно"]').text();
-    expect(text).toContain(`Продукты — на 50% меньше обычного (−${formatMoney(50_000, 980)})`);
+    expect(text).toContain(`Продукты — на ${formatMoney(50_000, 980)} (50%) меньше обычного`);
     // Cafés: none this month, 10 000 usually — 100% less, 100 ₴ is under the threshold.
     expect(text).not.toContain('Кафе');
     expect(text).toContain('Доходы на обычном уровне');

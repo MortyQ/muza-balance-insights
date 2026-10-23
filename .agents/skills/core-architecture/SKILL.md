@@ -95,6 +95,8 @@ Desktop (`apps/desktop`):
      entry;
    - its look: `src/renderer/src/entities/bank/looks/<id>.ts` (`export const look`) and/or a logo
      `entities/bank/assets/<id>.svg|png|webp`; without them the bank gets the neutral mark;
+   - its account card on home: a skin `src/renderer/src/entities/account/components/bank/<Name>Card.vue` (takes
+     `BankCardProps`) and an entry in `BANK_CARDS`; without one the bank's accounts get the neutral card;
    - a bank with a token, or its own file steps: `features/integrations/<id>/` and an entry in `PROVIDER_FORMS`. A bank
      with files only and no entry gets the generic file flow.
 7. A user-visible bank is a `CHANGELOG.md` entry.

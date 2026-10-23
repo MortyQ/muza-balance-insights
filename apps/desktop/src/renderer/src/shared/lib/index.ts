@@ -1,5 +1,5 @@
-export { change, type Change } from './change.ts';
-export { currencySymbol, formatMoney, UAH } from './money.ts';
+export { change, changeText, type Change } from './change.ts';
+export { currencySymbol, formatAmount, formatMoney, UAH } from './money.ts';
 export { dayMonthName, fullDate, localToday, monthName, monthOf, monthShortName, shiftMonth, shortDate, syncedWhen, type YearMonth } from './months.ts';
 export { osFamily, osStoreName, type OsFamily } from './os.ts';
 export { invalidateReads, readCache, readKey, ReadCache, READ_CACHE_SIZE, READ_FRESH_MS } from './readCache.ts';

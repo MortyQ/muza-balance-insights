@@ -3,7 +3,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { t } from '@/shared/lib';
 import { REST_COLOR } from '../constants.ts';
 import type { BlockPerson, PersonRowView } from '../types.ts';
-import { pctChip } from './chips.ts';
+import { diffChip } from './chips.ts';
 import { partial } from './month.ts';
 import { percentOf } from './totals.ts';
 
@@ -19,7 +19,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
     dots: people.map((p) => p.color),
     caption: t('home.spending.together', { ops: t('home.spending.opsShort', { n: view.total.purchases }) }),
     amount: fmt.money(view.total.net),
-    chip: pctChip(view.total.net, view.total.prev?.net ?? null, view.month, partial(view)),
+    chip: diffChip(view.total.net, view.total.prev?.net ?? null, view.month, fmt, partial(view)),
     pressed: pick === null,
   };
   return [
@@ -33,7 +33,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
         dots: [],
         caption: t('home.spending.personShare', { pct: percentOf(p.net, view.total.net), ops: t('home.spending.opsShort', { n: p.purchases }) }),
         amount: fmt.money(p.net),
-        chip: pctChip(p.net, p.prev?.net ?? null, view.month, partial(view)),
+        chip: diffChip(p.net, p.prev?.net ?? null, view.month, fmt, partial(view)),
         pressed: pick === p.participantId,
       };
     }),

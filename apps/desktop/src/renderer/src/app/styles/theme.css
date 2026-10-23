@@ -72,6 +72,8 @@
     --color-danger-foreground: var(--danger-foreground);
     --color-danger-subtle:     var(--danger-subtle);
     --color-danger-muted:      var(--danger-muted);
+    --color-negative-soft:     var(--negative-soft);
+    --color-negative-soft-bg:  var(--negative-soft-bg);
 
     /* ─── Status — Info ──────────────────────────────── */
     --color-info:            var(--info);
@@ -266,6 +268,12 @@
     /* The analytics heatmap: above / below a category's usual level (orange / blue: apart in hue and lightness). */
     --heat-hot:  oklch(66% 0.16 50);
     --heat-cold: oklch(62% 0.13 240);
+    /* The summary balance card: how much of a person's colour tints its header band (the start / a single person's
+       fade), and a minus told apart without the full danger colour. */
+    --card-band-tint: 16%;
+    --card-band-fade: 6%;
+    --negative-soft:    oklch(55% 0.13 25);
+    --negative-soft-bg: oklch(95% 0.05 25);
     --border-focus:  oklch(52% 0.27 280);
 
     --overlay: oklch(0% 0 0 / 0.5);
@@ -376,6 +384,10 @@
     --category-other: oklch(60% 0.025 250);
     --heat-hot:  oklch(70% 0.15 50);
     --heat-cold: oklch(66% 0.12 240);
+    --card-band-tint: 24%;
+    --card-band-fade: 8%;
+    --negative-soft:    oklch(74% 0.12 25);
+    --negative-soft-bg: oklch(24% 0.06 25);
     --border-focus:  oklch(65% 0.25 280);
 
     --overlay: oklch(0% 0 0 / 0.65);

@@ -69,7 +69,7 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     subtitle: [periodTitle(v.range), who, scope].filter(Boolean).join(' · '),
     amount: fmt.money(s.net),
     conv: fmt.approxInline(s.net),
-    chip: changeChip(s.net, s.prev?.net ?? null, v.compare, v.range.kind === 'week' ? 'week' : 'month'),
+    chip: changeChip(s.net, s.prev?.net ?? null, v.compare, fmt, v.range.kind === 'week' ? 'week' : 'month'),
     prev: s.prev ? prev.amount(fmt.money(s.prev.net)) : '',
     note: s.refunds > 0 ? t('category.summary.gross', { gross: fmt.money(s.gross), refunds: fmt.money(s.refunds) }) : '',
     stats,

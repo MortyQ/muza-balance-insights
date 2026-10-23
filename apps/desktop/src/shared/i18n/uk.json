@@ -265,10 +265,10 @@
       "avg": "сер. {amount}",
       "change": {
         "week": {
-          "less": "на {pct}% менше, ніж минулого тижня",
-          "lessPartial": "на {pct}% менше, ніж до цього дня минулого тижня",
-          "more": "на {pct}% більше, ніж минулого тижня",
-          "morePartial": "на {pct}% більше, ніж до цього дня минулого тижня",
+          "less": "на {diff} менше, ніж минулого тижня",
+          "lessPartial": "на {diff} менше, ніж до цього дня минулого тижня",
+          "more": "на {diff} більше, ніж минулого тижня",
+          "morePartial": "на {diff} більше, ніж до цього дня минулого тижня",
           "same": "як минулого тижня"
         }
       },
@@ -414,8 +414,9 @@
     "balances": {
       "accountsCount": "{n} рахунок | {n} рахунки | {n} рахунків",
       "accountsOf": "Рахунки · {name}",
-      "actual": "Насправді {amount} · у резерві {reserved}",
+      "actualTile": "Насправді",
       "allAccounts": "Усі рахунки",
+      "atRate": "≈ за курсом",
       "back": "Назад",
       "captionOn": "{label} · на {day} {month}{year}",
       "captionToday": "{label} · на сьогодні",
@@ -426,9 +427,11 @@
       "familyCards": "Картки родини",
       "familySubtitle": "загальний підсумок і кожна людина",
       "free": "Вільно",
+      "freeShare": "{pct}% вільно",
       "fxNoRate": "без {amount} — немає курсу",
       "fxRate": "вкл. {amount} за курсом {rate}",
       "inMonth": "у {month}{year}",
+      "inMonthTitle": "У {month}{year}",
       "income": "Надійшло",
       "kind": {
         "card": "Картка",
@@ -437,6 +440,7 @@
         "jar": "Банка"
       },
       "limit": "ліміт {amount}",
+      "morePeople": "+{n}",
       "next": "Далі",
       "noDataOnDate": "Немає даних на цю дату",
       "ownFunds": "Власні гроші",
@@ -444,6 +448,7 @@
       "peopleCount": "{n} людина | {n} людини | {n} людей",
       "readFailed": "Не вдалося прочитати баланси.",
       "reserved": "У резерві",
+      "reservedShare": "{pct}% у резерві",
       "savedIn": "У банки",
       "savedOut": "З банок",
       "spending": "Витрачено",
@@ -451,6 +456,8 @@
       "stubLater": "«Усі рахунки» — розділ з'явиться пізніше",
       "stubSoon": "Розділ з'явиться пізніше",
       "title": "Баланс",
+      "toCard": "Картка {n} з {total}: {title}",
+      "total": "Разом",
       "wholeMonth": "весь місяць",
       "withoutAccounts": "без {n} рахунку | без {n} рахунків | без {n} рахунків"
     },
@@ -604,10 +611,10 @@
         "utilities": "Комунальні"
       },
       "change": {
-        "less": "на {pct}% менше, ніж у {month}",
-        "lessPartial": "на {pct}% менше, ніж до цього дня у {month}",
-        "more": "на {pct}% більше, ніж у {month}",
-        "morePartial": "на {pct}% більше, ніж до цього дня у {month}",
+        "less": "на {diff} менше, ніж у {month}",
+        "lessPartial": "на {diff} менше, ніж до цього дня у {month}",
+        "more": "на {diff} більше, ніж у {month}",
+        "morePartial": "на {diff} більше, ніж до цього дня у {month}",
         "new": "нове",
         "same": "як у {month}",
         "srLess": "менше, ніж у {month}",
@@ -626,12 +633,12 @@
       "importing": "Триває імпорт — цифри доповнюються в міру завантаження виписки.",
       "inMonth": "У {month}",
       "insights": {
-        "incomeLess": "Доходи на {pct}% нижчі, ніж зазвичай",
-        "incomeMore": "Доходи на {pct}% вищі, ніж зазвичай",
+        "incomeLess": "Доходи на {diff} нижчі, ніж зазвичай",
+        "incomeMore": "Доходи на {diff} вищі, ніж зазвичай",
         "incomeNormal": "Доходи на звичайному рівні",
-        "less": "{name} — на {pct}% менше, ніж зазвичай (−{amount})",
+        "less": "{name} — на {diff} менше, ніж зазвичай",
         "months": "{n} місяць | {n} місяці | {n} місяців",
-        "more": "{name} — на {pct}% більше, ніж зазвичай (+{amount})",
+        "more": "{name} — на {diff} більше, ніж зазвичай",
         "noteMonth": "Порівняння з медіаною за {months}",
         "noteRunning": "Порівняння з медіаною цілих місяців за {months}: місяць ще триває",
         "overMonth": "{name} — уже на {amount} більше, ніж зазвичай за весь місяць",

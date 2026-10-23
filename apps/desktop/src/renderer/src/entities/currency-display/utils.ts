@@ -52,13 +52,15 @@ export function moneyFormat(rates: RatesView | null, choice: Readonly<CurrencyCh
     const r = rateOf(rates, c.currency);
     return r === null ? [] : [{ currency: c.currency, rate: r }];
   });
-  const parts = (k: number) => also.map((c) => formatMoney(Math.round(k / c.rate), c.currency));
+  const alsoParts = (k: number) => also.map((c) => ({ currency: c.currency, minor: Math.round(k / c.rate) }));
+  const parts = (k: number) => alsoParts(k).map((p) => formatMoney(p.minor, p.currency));
   const convert = (k: number) => Math.round(k / rate);
   return {
     currency,
     convert,
     money: (k) => formatMoney(convert(k), currency),
     approx: (k) => parts(k).map((p) => `≈ ${p}`),
+    alsoParts,
     approxInline: (k) => {
       const p = parts(k);
       return p.length === 0 ? '' : `≈ ${p.join(' · ')}`;
