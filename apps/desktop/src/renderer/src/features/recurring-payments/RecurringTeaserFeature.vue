@@ -8,7 +8,7 @@ const { view } = useRecurringTeaser();
 </script>
 
 <template>
-  <VCard v-if="view" as="section" padding="none" :aria-label="$t('recurring.title')" data-test="recurring-teaser">
+  <VCard v-if="view" as="section" padding="none" class="@[79rem]:col-span-3" :aria-label="$t('recurring.title')" data-test="recurring-teaser">
     <!-- A home tile (spec desktop-home-tiles): the monthly total of regular payments; the whole tile opens their screen. -->
     <RouterLink
       :to="{ name: ROUTE.recurring }"

@@ -10,11 +10,11 @@ const template = (src: string) => src.slice(src.indexOf('<template>') + '<templa
 describe('home tile grid', () => {
   const page = read('pages/home/HomePage.vue');
 
-  it('one column, two from 47rem, three from 74rem of the grid\'s own width', () => {
+  it('one column, two from 47rem, twelve from 79rem of the grid\'s own width', () => {
     const grid = /<div [^>]*data-test="home-grid"[^>]*>/.exec(page)?.[0] ?? '';
     expect(grid).toContain('grid-cols-1');
     expect(grid).toContain('@[47rem]:grid-cols-2');
-    expect(grid).toContain('@[74rem]:grid-cols-[32rem_minmax(0,1.4fr)_minmax(17rem,1fr)]');
+    expect(grid).toContain('@[79rem]:grid-cols-12');
     expect(page).toMatch(/class="@container">\s*<div [^>]*data-test="home-grid"/);
   });
 

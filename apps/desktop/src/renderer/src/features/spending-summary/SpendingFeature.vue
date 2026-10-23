@@ -25,10 +25,10 @@ const { subtitle, hasData, empty, leftOut, summary, categories, people, insights
     <!-- Tiles of the home grid (spec desktop-home-tiles): «What's unusual» (in the «Now» row; the page hides it while
          the «Now» details take its place), «Spending by category» (two columns, two rows), «Who spent what» (the family
          view's people, picking the person for this block). -->
-    <VCard v-if="insights && !insightsHidden" as="section" padding="md" class="col-span-full @[74rem]:col-span-1" :aria-label="$t('home.spending.insights.title')" data-test="spending-unusual">
+    <VCard v-if="insights && !insightsHidden" as="section" padding="md" class="col-span-full @[79rem]:col-span-4" :aria-label="$t('home.spending.insights.title')" data-test="spending-unusual">
       <SpendingInsights :insights />
     </VCard>
-    <VCard padding="md" class="col-span-full @[74rem]:col-span-2 @[74rem]:row-span-2" data-test="spending-tile">
+    <VCard padding="md" class="col-span-full @[79rem]:col-span-9 @[79rem]:row-span-2" data-test="spending-tile">
       <div class="@container flex flex-col gap-4">
         <SpendingHeader v-model:scope="scope" :subtitle :prefs :family @set="prefsStore.set" />
         <SpendingNotices
@@ -43,7 +43,7 @@ const { subtitle, hasData, empty, leftOut, summary, categories, people, insights
         <p v-if="hasData" class="text-sm text-foreground-muted">{{ $t('home.spending.footnote') }}</p>
       </div>
     </VCard>
-    <VCard v-if="summary && hasData && people.length > 0" as="section" padding="md" :aria-label="$t('home.spending.whoSpent')" data-test="spending-people">
+    <VCard v-if="summary && hasData && people.length > 0" as="section" padding="md" class="@[79rem]:col-span-3" :aria-label="$t('home.spending.whoSpent')" data-test="spending-people">
       <div class="flex flex-col gap-2" :class="{ 'opacity-60': state.status === 'loading' }">
         <h3 class="text-sm font-bold">{{ $t('home.spending.whoSpent') }}</h3>
         <PeopleList :rows="people" @pick="onPick" />

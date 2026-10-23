@@ -20,10 +20,11 @@ const nowDetails = ref(false);
     <HomeNotices />
     <AppLockHintFeature />
     <UpdateBannerFeature />
-    <!-- The tile grid (spec desktop-home-tiles): one column, two from 47rem, three from 74rem of its own width. Features
+    <!-- The tile grid (spec desktop-home-tiles): one column, two from 47rem, twelve from 79rem of its own width (the folded
+         stack, 466 px, fits 5 of them from there; rows 5·4·3, 4·4·4, 9·3). Features
          render their tiles straight into it (`contents` roots), in this order; each tile says its own span. -->
     <div v-if="syncStatus.hasData" class="@container">
-      <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[74rem]:grid-cols-[32rem_minmax(0,1.4fr)_minmax(17rem,1fr)]" data-test="home-grid">
+      <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[79rem]:grid-cols-12" data-test="home-grid">
         <BalancesFeature />
         <NowStripFeature v-model:details="nowDetails" />
         <SpendingFeature :insights-hidden="nowDetails" />

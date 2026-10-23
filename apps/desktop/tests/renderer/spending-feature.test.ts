@@ -363,8 +363,9 @@ describe('spending tiles', () => {
     const w = await mountBlock();
     const root = w.element as HTMLElement;
     expect(root.classList.contains('contents')).toBe(true);
-    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['@[74rem]:col-span-2', '@[74rem]:row-span-2']));
+    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['@[79rem]:col-span-9', '@[79rem]:row-span-2']));
     const people = w.get('[data-test="spending-people"]');
+    expect(people.classes()).toContain('@[79rem]:col-span-3');
     expect(people.text()).toContain('Кто сколько');
     expect(w.get('[data-test="spending-tile"]').findComponent(PeopleList).exists()).toBe(false);
     expect(people.findComponent(PeopleList).exists()).toBe(true);

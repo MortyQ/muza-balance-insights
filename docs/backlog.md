@@ -69,8 +69,8 @@
 
 ## To check live: home tiles (desktop-home-tiles)
 
-- The grid's steps: one column in a narrow window, two from about 750 px of content, three from about 1180 px; no tile
-  cut or overlapping, the folded stack fits its tile at the three-column step.
+- The grid's steps: one column in a narrow window, two from about 750 px of content, twelve columns (5·4·3, 4·4·4,
+  9·3) from about 1260 px; no tile cut or overlapping, the folded stack fits its 5 columns.
 - Opening and folding the cards: «Balance» takes the whole row, the pace chart and «Month» come back at once and the
   chart fits its tile; the free line follows the card in front while the row scrolls.
 - «Today» / «This week»: equal heights with one and with three categories, the details tile, its switch and close; an

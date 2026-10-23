@@ -224,6 +224,7 @@ describe('now strip mounted', () => {
     const today = w.get('[data-test="now-today"]');
     const week = w.get('[data-test="now-week"]');
     expect(today.attributes('aria-label')).toBe('Сегодня · сб, 3 окт');
+    expect([today, week].map((t) => t.classes())).toEqual([expect.arrayContaining(['@[79rem]:col-span-4']), expect.arrayContaining(['@[79rem]:col-span-4'])]);
     for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`]) expect(today.text()).toContain(s);
     for (const s of ['Эта неделя · пн–сб', 'к прошлой неделе, пн–сб']) expect(week.text()).toContain(s);
     expect(today.findAll('[data-test="tile-categories"] li')).toHaveLength(2);

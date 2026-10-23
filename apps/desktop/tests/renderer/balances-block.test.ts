@@ -73,13 +73,15 @@ async function mountBlock(): Promise<VueWrapper> {
 }
 
 describe('balance tiles', () => {
-  it('three tiles straight into the page grid: «Balance», «Month pace», «Month»; «Balance» spans two columns of two', async () => {
+  it('three tiles straight into the page grid: «Balance», «Month pace», «Month»; «Balance» spans two columns of two; 5 · 4 · 3 of twelve', async () => {
     const b = await mountBlock();
     const root = b.element as HTMLElement;
     expect(root.classList.contains('contents')).toBe(true);
     const tiles = [...root.children].map((c) => c.getAttribute('data-test'));
     expect(tiles).toEqual(['balance-tile', 'pace', 'panel']);
-    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(expect.arrayContaining(['@[47rem]:col-span-2', '@[74rem]:col-span-1']));
+    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(expect.arrayContaining(['@[47rem]:col-span-2', '@[79rem]:col-span-5']));
+    expect(b.get('[data-test="pace"]').classes()).toContain('@[79rem]:col-span-4');
+    expect(b.get('[data-test="panel"]').classes()).toContain('@[79rem]:col-span-3');
     // The chart's tile may shrink with the grid (a grid item keeps its content's width otherwise).
     expect(b.get('[data-test="pace"]').classes()).toContain('min-w-0');
   });

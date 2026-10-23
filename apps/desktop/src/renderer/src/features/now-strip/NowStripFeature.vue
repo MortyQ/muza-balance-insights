@@ -38,7 +38,7 @@ const list = computed(() => view.value?.categories[period.value] ?? null);
          their button opens the details tile in their place (with «What's unusual», which the page hides meanwhile). -->
     <template v-if="visible && view">
       <template v-if="!open">
-        <VCard as="section" padding="md" :aria-label="view.today.title" data-test="now-today">
+        <VCard as="section" padding="md" class="@[79rem]:col-span-4" :aria-label="view.today.title" data-test="now-today">
           <div class="flex h-full flex-col gap-3">
             <div>
               <h3 class="text-sm font-bold">{{ view.today.title }}</h3>
@@ -64,7 +64,7 @@ const list = computed(() => view.value?.categories[period.value] ?? null);
           </div>
         </VCard>
 
-        <VCard as="section" padding="md" :aria-label="view.week.title" data-test="now-week">
+        <VCard as="section" padding="md" class="@[79rem]:col-span-4" :aria-label="view.week.title" data-test="now-week">
           <div class="flex h-full flex-col gap-3">
             <div class="flex items-end justify-between gap-3">
               <div class="min-w-0">
