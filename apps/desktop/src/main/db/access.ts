@@ -1,10 +1,11 @@
 // The one place that knows whether the database is encrypted and holds its key. Decides at launch (init), before
 // anything else opens the file, what state the database is in — and never deletes a database itself: a key that is
-// missing or not readable only sets the state. DataService opens through open(), the import worker gets forWorker();
-// neither sees how the key is kept. The key never reaches a log line, an error message or the renderer.
+// missing or not readable only sets the state. The data process and the import worker get forProcess(); the data
+// process reports a key that stops fitting back (markUnreadable). Neither sees how the key is kept. The key never reaches a log line, an error message or the renderer.
 import fs from 'node:fs';
 import path from 'node:path';
-import type { Db } from '@mono/core/db';
+import type { Db } from '@mono/core/storage/db';
+import { notADatabase } from '../../shared/db-open.ts';
 import type { DbStateView } from '../../shared/db-state.ts';
 import type { SecureStore } from '../secure-store.ts';
 import { encryptingFiles } from './encrypt.ts';
@@ -47,9 +48,6 @@ export type DbAccessDeps = {
   log: (msg: string) => void;
 };
 
-const NOT_A_DB = /SQLITE_NOTADB|file is not a database/i;
-const notADatabase = (err: unknown) => err instanceof Error && (NOT_A_DB.test(err.message) || (err as { code?: unknown }).code === 'SQLITE_NOTADB');
-
 export class DbAccess {
   private current: DbState = { kind: 'db-unreadable' };
   private key: string | null = null;
@@ -88,23 +86,29 @@ export class DbAccess {
     return next;
   }
 
-  /** For DataService. Not ready → DbOpenError('unavailable'); a key that stops fitting → db-unreadable. */
+  /** For the launch-time smoke in dev. Not ready → DbOpenError('unavailable'); a key that stops fitting → db-unreadable. */
   async open(): Promise<Db> {
     if (!this.isReady()) throw new DbOpenError('unavailable');
     try {
       return await this.d.openDb(this.url(), this.key ? { encryptionKey: this.key } : {});
     } catch (err) {
       if (!notADatabase(err)) throw err;
-      this.key = null;
-      this.set({ kind: 'db-unreadable' });
-      this.d.log('state=db-unreadable');
+      this.markUnreadable();
       throw new DbOpenError('unreadable');
     }
   }
 
-  /** For the import worker: the path and the key (null for a plain database). Not ready → null. */
-  forWorker(): { dbPath: string; dbKey: string | null } | null {
+  /** For the data process and the import worker: the path and the key (null for a plain database). Not ready → null. */
+  forProcess(): { dbPath: string; dbKey: string | null } | null {
     return this.isReady() ? { dbPath: this.file, dbKey: this.key } : null;
+  }
+
+  /** The key no longer opens the file (the data process got SQLITE_NOTADB): the key goes, the state is unreadable. */
+  markUnreadable(): void {
+    if (!this.isReady()) return;
+    this.key = null;
+    this.set({ kind: 'db-unreadable' });
+    this.d.log('state=db-unreadable');
   }
 
   /** After «Удалить все данные»: no key and no database — decided again (a fresh install gets a new key). */

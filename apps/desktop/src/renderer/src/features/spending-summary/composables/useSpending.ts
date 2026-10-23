@@ -16,7 +16,7 @@ import { periodNote } from '../utils/index.ts';
  * quietly when the data changes. The block's own person pick resets with them.
  */
 export function useSpending(): UseSpendingReturn {
-  const { fetchSpendingOverview } = useSpendingRequest();
+  const { fetchSpendingOverview, peekSpendingOverview } = useSpendingRequest();
   const syncStatus = useSyncStatusStore();
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
@@ -25,13 +25,15 @@ export function useSpending(): UseSpendingReturn {
   const pick = ref<number | null>(null);
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return { month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}) };
+  };
   const { state } = useAsyncData(
-    () => {
-      const id = participantId();
-      return fetchSpendingOverview({ month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}) });
-    },
+    () => fetchSpendingOverview(query()),
     [month, scope, participantId],
-    { quiet: [() => syncStatus.version] },
+    { quiet: [() => syncStatus.version], cached: () => peekSpendingOverview(query()) },
   );
   watch([month, scope, participantId], () => {
     pick.value = null;

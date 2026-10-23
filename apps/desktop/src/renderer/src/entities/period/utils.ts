@@ -28,7 +28,7 @@ export function rangePresets(thisMonth: YearMonth, floor: YearMonth): { month: M
   };
 }
 
-/** The picker's note: what the pick is compared with (main's rule, src/main/analytics.ts), and whether it reaches this running month. */
+/** The picker's note: what the pick is compared with (main's rule, src/data/analytics.ts), and whether it reaches this running month. */
 export function compareText(r: { from: string; to: string }, thisMonth: string, dataFrom: string | null): { compare: string; running: string | null } {
   const n = span(r.from, r.to);
   const pFrom = shiftMonth(r.from as YearMonth, -n);

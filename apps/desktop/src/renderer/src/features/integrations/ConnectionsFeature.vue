@@ -1,28 +1,38 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { bankOf } from '@/entities/bank';
+import type { ProviderId } from '@contract/api.ts';
+import { BANKS, type Bank, bankOf, isProviderId } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { SettingsList, SettingsSection } from '@/shared/layout';
 import { EXPAND_TRANSITION, t } from '@/shared/lib';
 import { VButton, VInfoNotice } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
-import { DEFAULT_PROVIDER } from './constants.ts';
+import BankPicker from './shared/components/BankPicker.vue';
 import ConnectionRow from './shared/components/ConnectionRow.vue';
 import StatementUploadFeature from './statement-file/StatementUploadFeature.vue';
 import { useConnectionActions } from './shared/composables/useConnectionActions.ts';
-import { formsOf, newConnectionTitle } from './utils.ts';
+import { fileStepsOf, formsOf, newConnectionTitle } from './utils.ts';
 
 const participant = useParticipantStore();
 const importProgress = useImportProgressStore();
 const { error, setToken, remove, accounts, loadAccounts, savingAccount, setAccountEnabled } = useConnectionActions();
-const newTitle = computed(() => newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name)));
 const adding = ref(false);
 const added = ref(false);
+// The bank being added: picked in the panel while the registry has several, else the only one.
+const onlyBank = BANKS.length === 1 ? (BANKS[0]?.id ?? null) : null;
+const picked = ref<ProviderId | null>(null);
+const provider = computed<ProviderId | null>(() => picked.value ?? (onlyBank !== null && isProviderId(onlyBank) ? onlyBank : null));
+const newTitle = computed(() => (provider.value ? newConnectionTitle(bankOf(provider.value).name) : t('integrations.connections.add')));
+
+function pick(bank: Readonly<Bank>) {
+  if (isProviderId(bank.id)) picked.value = bank.id;
+}
 
 onMounted(() => void participant.refresh().catch(() => undefined));
 
 function startAdding() {
+  picked.value = null;
   adding.value = true;
   added.value = false;
 }
@@ -55,10 +65,9 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           :key="c.id"
           :connection="c"
           :secure-storage="participant.secureStorage"
-          :token-field="formsOf(c.provider).tokenField"
+          :token-field="formsOf(c.provider)?.tokenField ?? null"
           :accounts="accounts.get(c.id)"
-          :card-types="formsOf(c.provider).cardTypes"
-          :statement-files="formsOf(c.provider).fileSteps !== null"
+          :statement-files="fileStepsOf(c.provider) !== null"
           :import-running="importProgress.running"
           :saving-account
           @set-token="(token, remember, done) => onSetToken(c.id, token, remember, done)"
@@ -67,12 +76,7 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
           @set-account-enabled="(accountId, enabled, done) => onSetAccountEnabled(c.id, accountId, enabled, done)"
         >
           <template #statement>
-            <StatementUploadFeature
-              v-if="formsOf(c.provider).fileSteps"
-              :connection="c"
-              :card-types="formsOf(c.provider).cardTypes"
-              :steps="formsOf(c.provider).fileSteps ?? []"
-            />
+            <StatementUploadFeature v-if="fileStepsOf(c.provider)" :connection="c" :steps="fileStepsOf(c.provider) ?? []" />
           </template>
         </ConnectionRow>
       </SettingsList>
@@ -100,7 +104,13 @@ async function onSetToken(connectionId: number, token: string, remember: boolean
                 <h3 class="text-base font-semibold">{{ newTitle }}</h3>
                 <VButton variant="neutral" :text="$t('integrations.connections.cancel')" @click="adding = false" />
               </div>
-              <AddConnectionFeature :provider="DEFAULT_PROVIDER" :submit-text="$t('integrations.add.submitShort')" autofocus @added="onAdded" />
+              <template v-if="provider">
+                <div v-if="picked">
+                  <VButton variant="link" icon="lucide:chevron-left" :text="$t('integrations.first.otherBank')" @click="picked = null" />
+                </div>
+                <AddConnectionFeature :key="provider" :provider :submit-text="$t('integrations.add.submitShort')" autofocus @added="onAdded" />
+              </template>
+              <BankPicker v-else @select="pick" />
             </div>
           </div>
         </div>

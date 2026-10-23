@@ -1,0 +1,148 @@
+// Managing people and their connections (the desktop app's «Люди и подключения»). A participant's label is personal
+// data: it lives in this database only — never in the analysis copy, logs or the recategorize report.
+import { accountEnabledSql } from './accounts.ts';
+import { ColorTakenError, colorForNew, parseColor, takenColors, type ColorKey, type ColorTable } from './colors.ts';
+import { ConnectionError, PARTICIPANT_LABEL_MAX, parseConnectionMethod, parseProviderId, type ConnectionMethod } from './connections.ts';
+import type { Db } from '../storage/db.ts';
+import { TIMEZONE } from '../shared/constants.ts';
+import { dateIn, dateTimeIn } from '../shared/format.ts';
+import type { ProviderId } from '../providers/types.ts';
+
+/** Label of a participant whose name the bank will give on the first import. */
+export const BANK_LABEL_PLACEHOLDER = 'Новый участник';
+
+export type LabelSource = 'user' | 'bank';
+
+export type Participant = { id: number; label: string; labelSource: LabelSource; color: ColorKey | null };
+
+export type ConnectionInfo = {
+  id: number;
+  participantId: number;
+  provider: ProviderId;
+  method: ConnectionMethod;
+  accounts: number;
+  /** Of `accounts`, the ones imported and counted (the toggle, else the auto rule). */
+  enabledAccounts: number;
+  /** Dates (in listConnections' zone) of the range covered by all its imported enabled accounts; null = not imported yet. */
+  coveredFrom: string | null;
+  coveredTo: string | null;
+  lastSyncAt: string | null;
+};
+
+/** Trimmed, inner whitespace collapsed; empty or too long → ConnectionError. */
+export function normalizeLabel(label: string): string {
+  const v = label.replace(/\s+/g, ' ').trim();
+  if (v.length === 0 || v.length > PARTICIPANT_LABEL_MAX) {
+    throw new ConnectionError(`Имя — от 1 до ${PARTICIPANT_LABEL_MAX} символов`);
+  }
+  return v;
+}
+
+export async function listParticipants(db: Db): Promise<Participant[]> {
+  const rs = await db.execute('SELECT id, label, label_source, color FROM participants ORDER BY sort, id');
+  return rs.rows.map((r) => ({
+    id: Number(r.id),
+    label: String(r.label),
+    labelSource: r.label_source === 'bank' ? 'bank' : 'user',
+    color: parseColor(r.color),
+  }));
+}
+
+/**
+ * A new participant, last in the order: with a typed name, or waiting for the bank's name. Its colour: the one asked
+ * for (taken → ColorTakenError) or the first free one.
+ */
+export async function addParticipant(
+  db: Db,
+  who: ({ label: string } | { fromBank: true }) & { color?: ColorKey },
+  nowSec: number,
+): Promise<number> {
+  const [label, source] = 'label' in who ? [normalizeLabel(who.label), 'user'] : [BANK_LABEL_PLACEHOLDER, 'bank'];
+  const color = await colorForNew(db, 'participants', who.color);
+  const rs = await db.execute({
+    sql: `INSERT INTO participants (label, label_source, color, sort, created_at)
+          VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort), -1) + 1 FROM participants), ?) RETURNING id`,
+    args: [label, source, color, nowSec],
+  });
+  return Number(rs.rows[0]?.id);
+}
+
+/** The user's name wins from now on: the bank no longer changes it. */
+export async function renameParticipant(db: Db, id: number, label: string): Promise<void> {
+  const rs = await db.execute({
+    sql: `UPDATE participants SET label = ?, label_source = 'user' WHERE id = ? RETURNING id`,
+    args: [normalizeLabel(label), id],
+  });
+  if (rs.rows.length === 0) throw new ConnectionError('Такого участника нет');
+}
+
+/**
+ * «Взять имя из банка» after a rename: the bank names the participant again from now on, and the holder's name it last
+ * sent (the first of its connections that has one) applies at once. None yet → the label stays until the next import.
+ */
+export async function restoreBankLabel(db: Db, id: number): Promise<void> {
+  const rs = await db.execute({
+    sql: `UPDATE participants SET label_source = 'bank', label = COALESCE(
+            (SELECT holder_name FROM connections WHERE participant_id = participants.id AND holder_name IS NOT NULL ORDER BY id LIMIT 1),
+            label)
+          WHERE id = ? RETURNING id`,
+    args: [id],
+  });
+  if (rs.rows.length === 0) throw new ConnectionError('Такого участника нет');
+}
+
+async function setColor(db: Db, table: ColorTable, id: number, color: ColorKey, missing: string): Promise<void> {
+  if ((await takenColors(db, table, id)).has(color)) throw new ColorTakenError();
+  const rs = await db.execute({ sql: `UPDATE ${table} SET color = ? WHERE id = ? RETURNING id`, args: [color, id] });
+  if (rs.rows.length === 0) throw new ConnectionError(missing);
+}
+
+/** Another participant's colour → ColorTakenError. */
+export function setParticipantColor(db: Db, id: number, color: ColorKey): Promise<void> {
+  return setColor(db, 'participants', id, color, 'Такого участника нет');
+}
+
+/**
+ * Every connection with what the UI shows about it. The bank's holder id is not part of it. Dates and times are in
+ * `timeZone` (the desktop passes the system's; Kyiv by default).
+ */
+export async function listConnections(db: Db, timeZone: string = TIMEZONE): Promise<ConnectionInfo[]> {
+  const rs = await db.execute(
+    `SELECT c.id, c.participant_id, c.provider, c.method, COUNT(a.id) AS accounts,
+            SUM(CASE WHEN a.id IS NOT NULL AND ${accountEnabledSql('a')} THEN 1 ELSE 0 END) AS enabled_accounts,
+            MAX(s.oldest_synced_time) AS oldest, MIN(s.newest_synced_time) AS newest, MAX(s.last_sync_at) AS last_sync
+     FROM connections c
+     LEFT JOIN accounts a ON a.connection_id = c.id
+     LEFT JOIN sync_state s ON s.account_id = a.id AND ${accountEnabledSql('a')}
+     GROUP BY c.id ORDER BY c.id`,
+  );
+  const date = (v: unknown) => (v === null || v === undefined ? null : dateIn(Number(v), timeZone));
+  return rs.rows.map((r) => ({
+    id: Number(r.id),
+    participantId: Number(r.participant_id),
+    provider: parseProviderId(r.provider),
+    method: parseConnectionMethod(r.method),
+    accounts: Number(r.accounts),
+    enabledAccounts: Number(r.enabled_accounts ?? 0),
+    coveredFrom: date(r.oldest),
+    coveredTo: date(r.newest),
+    lastSyncAt: r.last_sync === null ? null : dateTimeIn(Number(r.last_sync), timeZone),
+  }));
+}
+
+/** A new connection has no colour (only people have one; the column stays for older rows). */
+export async function addConnection(
+  db: Db,
+  participantId: number,
+  provider: ProviderId,
+  nowSec: number,
+  method: ConnectionMethod = 'token',
+): Promise<number> {
+  const p = await db.execute({ sql: 'SELECT 1 FROM participants WHERE id = ?', args: [participantId] });
+  if (p.rows.length === 0) throw new ConnectionError('Такого участника нет');
+  const rs = await db.execute({
+    sql: 'INSERT INTO connections (participant_id, provider, method, created_at) VALUES (?, ?, ?, ?) RETURNING id',
+    args: [participantId, parseProviderId(provider), parseConnectionMethod(method), nowSec],
+  });
+  return Number(rs.rows[0]?.id);
+}

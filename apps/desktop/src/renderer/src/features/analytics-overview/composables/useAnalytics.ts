@@ -12,19 +12,21 @@ import { categoryRows } from '../utils.ts';
 
 /** The analytics of the picked period and person (or the family): reloads when either changes, quietly when the data does; the views' own state. */
 export function useAnalytics(): UseAnalyticsReturn {
-  const { fetchAnalyticsOverview } = useAnalyticsRequest();
+  const { fetchAnalyticsOverview, peekAnalyticsOverview } = useAnalyticsRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
   const { range } = storeToRefs(useRangeStore());
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return { from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}) };
+  };
   const { state } = useAsyncData(
-    () => {
-      const id = participantId();
-      return fetchAnalyticsOverview({ from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}) });
-    },
+    () => fetchAnalyticsOverview(query()),
     [range, participantId],
-    { quiet: [() => syncStatus.version] },
+    { quiet: [() => syncStatus.version], cached: () => peekAnalyticsOverview(query()) },
   );
 
   // Also publishes the answer's rates to the currency button of the global filters.

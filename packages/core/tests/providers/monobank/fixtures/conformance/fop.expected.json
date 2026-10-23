@@ -1,0 +1,7 @@
+{
+  "reader": "monobank-card-uk",
+  "result": {
+    "ok": false,
+    "problem": "unsupported-kind"
+  }
+}

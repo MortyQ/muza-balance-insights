@@ -1,6 +1,6 @@
 // Pure helpers of the «Now» strip in main: Kyiv calendar days, the week from Monday, the usual day.
 import { describe, expect, it } from 'vitest';
-import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, weekDays } from '../src/main/now.ts';
+import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, weekDays } from '../src/data/now.ts';
 
 const a = (net: number, purchases = 1) => ({ net, purchases });
 

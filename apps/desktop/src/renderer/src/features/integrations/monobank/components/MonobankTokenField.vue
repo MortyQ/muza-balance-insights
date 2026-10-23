@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import { MONOBANK } from '@/entities/bank';
+import { bankOf } from '@/entities/bank';
 import { VCheckbox, VInfoNotice, VInput } from '@/shared/ui';
 import type { TokenFieldProps } from '../../shared/types.ts';
 import { TOKEN_PLACEHOLDER, TOKEN_STEPS } from '../constants.ts';
@@ -24,7 +24,7 @@ onMounted(() => {
     <VInput
       ref="input"
       v-model="token"
-      :name="$t('integrations.monobank.tokenName', { bank: $t(MONOBANK.name) })"
+      :name="$t('integrations.monobank.tokenName', { bank: bankOf('monobank').name })"
       :placeholder="$t(TOKEN_PLACEHOLDER)"
       autocomplete="off"
       spellcheck="false"

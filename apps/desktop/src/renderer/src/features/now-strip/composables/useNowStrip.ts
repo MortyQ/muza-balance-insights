@@ -14,19 +14,21 @@ import { nowView } from '../utils.ts';
  * and on a new local day; shown only while the month filter is this month (the strip is always about now).
  */
 export function useNowStrip(): UseNowStripReturn {
-  const { fetchNowOverview } = useNowRequest();
+  const { fetchNowOverview, peekNowOverview } = useNowRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
   const { month, thisMonth, today } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return id !== null ? { participantId: id } : {};
+  };
   const { state } = useAsyncData(
-    () => {
-      const id = participantId();
-      return fetchNowOverview(id !== null ? { participantId: id } : {});
-    },
+    () => fetchNowOverview(query()),
     [participantId],
-    { quiet: [() => syncStatus.version, today] },
+    { quiet: [() => syncStatus.version, today], cached: () => peekNowOverview(query()) },
   );
 
   const fmt = useMoneyFormat(() => state.value.data?.rates);

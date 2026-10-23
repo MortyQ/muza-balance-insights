@@ -13,8 +13,11 @@ export type ProviderId = (typeof PROVIDER_IDS)[number];
 /** A stored row as the rules see it (columns of `transactions`). */
 export interface RuleTx {
   description: string;
-  mcc: number;
+  /** null = the bank sends no merchant category code: unknown, never 0. */
+  mcc: number | null;
   amount: number;
+  /** The bank's own category of the row, as the bank states it; null = none. */
+  bankCategory: string | null;
 }
 
 /** Per-database context some rules need: titles of the jars (a description equal to one is a jar operation). */
@@ -28,8 +31,17 @@ export interface RuleContext {
  */
 export type OwnTransferCounterpart = { kind: 'jar'; title: string } | { kind: 'card'; type: string; currencyCode: number | null };
 
-/** Categories a provider may suggest from the shape of an operation; the domain maps them to its names. */
-export type CategoryHint = 'installments' | 'taxes' | 'income' | 'p2p';
+/**
+ * The domain categories a provider may suggest — from the shape of an operation, or from the bank's own category of
+ * it; the domain maps each to its name (derive/categories.ts). Not here: bank fees, own and family transfers, which
+ * only the derivation sets.
+ */
+export const CATEGORY_HINTS = [
+  'groceries', 'cafes', 'transport', 'health', 'beauty', 'clothing', 'home', 'telecom', 'entertainment', 'travel', 'sport',
+  'pets', 'insurance', 'taxes', 'cash', 'delivery', 'education', 'gifts', 'utilities', 'marketplaces', 'charity', 'p2p',
+  'installments', 'income', 'other',
+] as const;
+export type CategoryHint = (typeof CATEGORY_HINTS)[number];
 
 /**
  * Where income came from, by the shape of the operation (never by name):
@@ -48,17 +60,41 @@ export type MaskedDescription = { description: string; descClass: DescClass };
 
 /** Facts about the bank's API the domain plans around (no network code). */
 export interface ProviderApiInfo {
-  /** Name in messages: «Monobank». */
-  bank: string;
+  /** Where the client sends its requests (`https://host`); the desktop allowlist must hold this host. */
+  origin: string;
   /** Minimum time between two requests with one credential. */
   requestIntervalMs: number;
   /** Longest statement window one request may ask for. */
   maxWindowSec: number;
 }
 
+/** Access with a credential through the bank's API. */
+export interface ProviderTokenAccess {
+  /** A credential-shaped string (the whole string); nothing else is kept. */
+  credential: RegExp;
+  api: ProviderApiInfo;
+}
+
+/**
+ * What the app knows about a bank before any of its code runs: its name, how it can be connected, how its ids are
+ * stored, its card types. Pure data (providers/<id>/info.ts), listed in providers/info.ts — the only list of banks.
+ */
+export interface ProviderInfo {
+  id: ProviderId;
+  /** The brand name, not translated. */
+  name: string;
+  /** null token = no API: the bank is connected by statement files only. */
+  access: { token: ProviderTokenAccess | null; file: boolean };
+  /** 'bare' — the bank's ids are stored as they are (Monobank only, by history); 'prefixed' — as `<id>:<bank id>`. */
+  ids: 'bare' | 'prefixed';
+  /** The bank's card types (accounts.type), for names on screens and a new card from a file. */
+  cardTypes: ReadonlyArray<string>;
+  /** The type a new card from a file gets unless the user picks another; null = none. */
+  defaultCardType: string | null;
+}
+
 export interface ProviderRules {
   id: ProviderId;
-  api: ProviderApiInfo;
   /** A money transfer (either side), as opposed to a purchase: the only rows transfer pairs are made of. */
   isTransferLike(tx: RuleTx): boolean;
   /** A bank-generated text of a transfer between the owner's own accounts (the single-row `text` rule). */
@@ -75,7 +111,7 @@ export interface ProviderRules {
   isTreasury(description: string): boolean;
   /** Accounts of the owner's business (FOP): business scope. `type` as stored in accounts.type. */
   isBusinessAccount(account: { type: string | null }): boolean;
-  /** Category from the shape of the operation, before the MCC table; null = no opinion. */
+  /** Category from the shape of the operation or the bank's category, before the MCC table; null = no opinion. */
   categoryHint(tx: RuleTx): CategoryHint | null;
   incomeSource(tx: RuleTx): ProviderIncomeSource;
   /** A named incoming transfer split into the bank's label and the sender's name («Від: Name» → «Від:», «Name»), or null. */
@@ -113,7 +149,10 @@ export interface NormalizedTx {
   amount: number;
   currencyCode: number;
   hold: boolean;
-  mcc: number;
+  /** Absent = the bank sends no merchant category code. */
+  mcc?: number;
+  /** The bank's own category, as the bank states it (its rules map it). */
+  bankCategory?: string;
   description?: string;
   originalMcc?: number;
   operationAmount?: number;
@@ -153,28 +192,60 @@ export interface ProviderClient {
 /** What a statement file turned out to be. */
 export type StatementKind = 'card';
 
-/** A parsed statement file: the account's currency and its rows, oldest first, without ids (the importer sets them). */
+/**
+ * A statement file as the core reads it: never bytes. The caller turns the file into one of these (text decoded from
+ * UTF-8; a workbook into sheets; a PDF into positioned text items) — the core holds no archive or PDF code.
+ */
+export type StatementDocument =
+  | { format: 'text'; text: string }
+  | { format: 'sheets'; sheets: Array<{ name: string; rows: Cell[][] }> }
+  | {
+      format: 'pdf';
+      pages: Array<{ width: number; height: number; items: Array<{ x: number; y: number; w: number; h: number; text: string }> }>;
+    };
+
+/** A spreadsheet cell: its stored value as text (numbers never as floats), typed string, number or boolean; null = empty. */
+export type Cell = { t: 's' | 'n' | 'b'; v: string } | null;
+
+/** What identifies a statement's account in the file, as far as the file states it. */
+export interface StatementAccount {
+  iban: string | null;
+  /** Masked card numbers of the account. */
+  cards: string[];
+  /** The provider's card type, when the file states it. */
+  type: string | null;
+}
+
+/** One account of a statement file: its currency and its rows, oldest first, without ids (the importer sets them). */
 export interface ParsedStatement {
   kind: StatementKind;
   /** The account currency (ISO 4217 numeric), from the file. */
   currencyCode: number;
+  account: StatementAccount;
   rows: Array<Omit<NormalizedTx, 'id'>>;
   /** The balance after the newest row, when the file states it. */
   closingBalance: number | null;
 }
 
 /**
- * Why a file was not taken — a code the UI words: not a statement of this bank, a statement in a language whose
- * service texts the rules do not know, a kind of statement not supported yet, no rows, a row that does not read.
+ * Why a file was not taken — a code the UI words, never text from the file: no reader knows it, two readers claim it,
+ * another bank's statement than the connection's, a language whose service texts the rules do not know, a kind of
+ * statement not supported yet, no rows, a row that does not read.
  */
-export type StatementProblem = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row';
+export type StatementProblem = 'unknown-format' | 'ambiguous' | 'other-bank' | 'language' | 'unsupported-kind' | 'empty' | 'bad-row';
 
-export type StatementParseResult =
-  | { ok: true; statement: ParsedStatement }
-  | { ok: false; problem: StatementProblem; /** 1-based line of the file, for `bad-row`. */ row?: number };
+export type StatementReadResult =
+  | { ok: true; /** One per account the file holds. */ statements: ParsedStatement[] }
+  | { ok: false; problem: StatementProblem; /** 1-based row of the document, for `bad-row`. */ row?: number };
 
-/** Text of a statement file → rows. Pure: no file system, no clock. */
-export interface StatementFileParser {
+/** One kind of statement file of one bank. Pure: no file system, no clock. */
+export interface StatementReader {
   provider: ProviderId;
-  parse(text: string): StatementParseResult;
+  /** Unique among readers, e.g. 'monobank-card-uk'. */
+  id: string;
+  /** Extensions its files usually have, lowercase without the dot: the open dialog's filter only, never how it is picked. */
+  extensions: readonly string[];
+  /** 0 = not mine, 1 = its format and part of its signature, 2 = its whole signature. */
+  detect(doc: StatementDocument): 0 | 1 | 2;
+  read(doc: StatementDocument): StatementReadResult;
 }

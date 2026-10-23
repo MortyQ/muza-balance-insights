@@ -9,8 +9,8 @@ import { QUERIES_DIR, QueryRejected, readQueryFile, runQuery, splitStatements, v
 import { ANALYSIS_DB_PATH, ANALYSIS_SCHEMA } from '../src/analysis/schema.ts';
 import { REPO_ROOT } from '../src/config.ts';
 import { MCP_ROOT } from '../src/paths.ts';
-import { maskDescription } from '@mono/core/masking';
-import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
+import { maskDescription } from '@mono/core/read/masking';
+import { insertAccountRow, insertTransactionRow, memoryDb } from '@mono/core/test-helpers';
 
 // Every value that must never reach analysis.sqlite.
 const CANARY = {
@@ -30,6 +30,7 @@ const CANARY = {
   newColumn: 'canary-value-in-a-column-added-later',
   participantLabel: 'Canary Participantenko',
   holderName: 'Canary Holderenko',
+  bankCategory: 'Canary bank category',
 };
 
 let tmpDir: string;
@@ -60,16 +61,12 @@ async function seed(db: Db): Promise<void> {
   await db.execute(`INSERT INTO sync_state (account_id, oldest_synced_time, newest_synced_time, last_sync_at) VALUES ('jar1', 1, 2, 3)`);
 
   const tx = (id: string, account: string, time: number, amount: number, description: string, extra: Record<string, string | null> = {}) =>
-    db.execute({
-      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-              currency_code, balance, comment, counter_name, counter_iban, counter_edrpou, receipt_id, raw_json, synced_at)
-            VALUES (?, ?, ?, '2026-08-05', ?, 4829, 0, ?, ?, 980, 0, ?, ?, ?, ?, ?, ?, 1)`,
-      args: [
-        id, account, time, description, amount, amount,
-        extra.comment ?? null, extra.counterName ?? null, extra.counterIban ?? null,
-        extra.counterEdrpou ?? null, extra.receiptId ?? null,
-        JSON.stringify({ id, payload: CANARY.rawJson }),
-      ],
+    insertTransactionRow(db, {
+      id, account_id: account, time, local_date: '2026-08-05', description, mcc: 4829, hold: 0, amount, operation_amount: amount,
+      currency_code: 980, balance: 0, comment: extra.comment ?? null, counter_name: extra.counterName ?? null,
+      counter_iban: extra.counterIban ?? null, counter_edrpou: extra.counterEdrpou ?? null, receipt_id: extra.receiptId ?? null,
+      bank_category: extra.bankCategory ?? null,
+      raw_json: JSON.stringify({ id, payload: CANARY.rawJson }), synced_at: 1,
     });
 
   await tx('t1', 'card1', 100, -6366, CANARY.jarTitle);
@@ -81,6 +78,7 @@ async function seed(db: Db): Promise<void> {
     counterEdrpou: CANARY.counterEdrpou,
     comment: CANARY.comment,
     receiptId: CANARY.receiptId,
+    bankCategory: CANARY.bankCategory,
   });
   await tx('t5', 'card1', 400, -2000, CANARY.cardPanDescription);
   await tx('t6', 'card1', 500, 3000, CANARY.fromDescription, { counterName: '   ' });

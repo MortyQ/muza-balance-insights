@@ -3,6 +3,7 @@ import type { Component } from "vue";
 import LucideArrowDownRight from "~icons/lucide/arrow-down-right";
 import LucideArrowLeftRight from "~icons/lucide/arrow-left-right";
 import LucideArrowUpRight from "~icons/lucide/arrow-up-right";
+import LucideBadgePercent from "~icons/lucide/badge-percent";
 import LucideBanknote from "~icons/lucide/banknote";
 import LucideBus from "~icons/lucide/bus";
 import LucideCalculator from "~icons/lucide/calculator";
@@ -95,6 +96,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:arrow-down-right": LucideArrowDownRight,
   "lucide:arrow-left-right": LucideArrowLeftRight,
   "lucide:arrow-up-right": LucideArrowUpRight,
+  "lucide:badge-percent": LucideBadgePercent,
   "lucide:banknote": LucideBanknote,
   "lucide:bus": LucideBus,
   "lucide:calculator": LucideCalculator,

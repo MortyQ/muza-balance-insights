@@ -2,9 +2,10 @@
 
 Перенесено из корневого `CLAUDE.md` (27.09.2026). Область: apps/desktop/src/renderer.
 
-- Экран данных (шаг 7): main отдаёт узкие view-типы из `apps/desktop/src/shared/api.ts` (`apps/desktop/src/main/data.ts` поверх
+- Экран данных (шаг 7): main отдаёт узкие view-типы из `apps/desktop/src/shared/api.ts` (`apps/desktop/src/data/data.ts` поверх
   `spendingSummary` / `getMonthOverview` ядра) — категории, суммы в минимальных единицах, даты, подписи `black/UAH`.
-  Renderer из ядра импортирует только `@mono/core/currency` (формат сумм). По умолчанию — текущий месяц (Киев), «личное».
+  From the core the renderer imports only `@mono/core/shared/currency` (money format) and `@mono/core/providers/info`
+  (the bank registry, pure data). По умолчанию — текущий месяц (Киев), «личное».
 - **Блок балансов** (`features/balances`, `BalancesFeature.vue`): карта на главной с итогом месяца, приходом и тратами.
   Клик (или Enter/пробел) раскрывает стопку в ряд: у семьи — общая карта, затем карта каждого человека в его цвете
   (`legend`); у одного человека — его общая карта, затем каждый его счёт (карты, кредитки, банки, валютные); «Все
@@ -81,7 +82,7 @@
   Per-connection progress is not in the IPC: no per-person spinner.
 - **Spending block** (`features/spending-summary`, `SpendingFeature.vue`; spec `docs/superpowers/specs/2026-10-02-spending-block-design.md`):
   one IPC `getSpendingOverview({ month, scope, participantId? })` (main: `DataService.spendingOverview`, helpers in
-  `main/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
+  `data/spending.ts`) — categories in hryvnia (account currencies folded by today's Monobank rates, `leftOut` without a rate; the answer carries `rates`),
   `purchases`, the compared period (`compare`: last month, cut to the same day while the month is incomplete; null
   before the data), for the family (more than one participant) each participant's part of every category. Renderer: `utils/` (by subject: `rows`, `people`, `chips`, `ring`, `totals`, `texts`, `prefs`, shared `month`; one `index.ts`) builds rows for the
   family or the block's own pick (`rowsFor`, top 7 + «N more categories» — not «Other», a bank category; colours by the
@@ -131,7 +132,7 @@
   the months with data), who / where / when, the list (merchants matched case-insensitively, search by text, comment
   and amount digits; the list total is the category's own figure while nothing filters it). Bars and marks are
   `aria-hidden` with sr-only text; the list is a `role="table"` grid that scrolls sideways in a narrow window.
-  12 months: main picks the window (`monthsWindow` in `main/category.ts`: up to the current month while the picked one
+  12 months: main picks the window (`monthsWindow` in `data/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
   The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
@@ -208,7 +209,7 @@
   currency per month, or per week); a small chart's bar has a tooltip with its bucket and amount. `utils.ts` is pure and tested
   (`tests/renderer/analytics.test.ts`).
 - **«Now» strip** (`features/now-strip`, `NowStripFeature.vue`; spec `docs/superpowers/specs/2026-10-03-now-strip-design.md`):
-  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `main/now.ts`; main decides
+  one IPC `getNowOverview({ participantId? })` (main: `DataService.nowOverview`, helpers in `data/now.ts`; main decides
   «today» in the system time zone, `src/shared/dates.ts`) — today vs a usual day (median of the 30 covered days before today, a day without spending = 0, none
   under 7 days), this week Monday … today vs the same days of last week, seven bars, the week's top category (its colour
   = its rank in this month's categories, as in «Spending»), pending holds. Personal scope always; today's Monobank rates (the answer carries `rates`).
@@ -257,7 +258,9 @@
     импортируют (кроме сегментов `shared`: `api`, `config`, `layout`, `lib`, `ui`); внутри слайса — относительные импорты;
   - снаружи слайс доступен только через `index.ts` (`@/features/x`, без глубоких путей); `index.ts` только реэкспортирует;
   - алиасы: `@/` → `src/renderer/src`, `@contract/` → `src/shared` (типы и константы, общие с main и preload);
-  - пакеты в renderer — только белый список (`vue`, `vue-router`, `pinia`, `@mono/core/currency`, `~icons/lucide/*`, шрифт);
+  - пакеты в renderer — только белый список (`vue`, `vue-router`, `pinia`, `@mono/core/shared/currency`,
+    `@mono/core/providers/info` — its closure is pinned to `providers/types.ts`, the registry and each bank's `info.ts` /
+    `constants.ts` by `coreInfoViolations` —, `~icons/lucide/*`, шрифт);
     `electron`, `node:*` и новая зависимость — ошибка теста;
   - `window.balance` читает только `shared/api/balance.ts`; `balanceApi` вызывают только сегменты `api/` слайсов
     (`api/use<X>Request.ts`, возвращают объект функций) и подписки в `app/listeners.ts`;
@@ -288,14 +291,20 @@
     `composables/useConnectionOwner.ts` — чьё подключение и цвет нового человека; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
     `participantChoice`, `removeText`, `accountLabel`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
     «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвет нового человека — в слот
-    формы банка; `provider` обязателен) и `constants.ts` — таблица `PROVIDER_FORMS` (`provider → { connect, tokenField, accessNote }`,
-    `cardTypes` — названия типов карт банка для «Счета», `Component<ConnectFormProps>` / `Component<TokenFieldProps>`: vue-tsc проверяет, что компонент банка принимает эти
-    пропсы; пропсы в месте `<component :is>` не проверяются) и `DEFAULT_PROVIDER` (банк «Добавить подключение»);
-    `utils.ts` — `isProviderKey`, `formsOf` (незнакомый провайдер → формы банка по умолчанию). Только корень импортирует
-    папки банков, строка подключения получает поле токена своего банка пропсом. В корневых файлах нет текстов конкретного
-    банка: имя — из `entities/bank` (`bankOf`), строка первого экрана — `accessNote` из папки банка. Наружу — `ConnectionsFeature`
-    (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у `settings`. Новый банк —
-    своя папка и запись в `PROVIDER_FORMS`;
+    формы банка; `provider` обязателен) и `constants.ts` — `PROVIDER_FORMS`, a `Partial` map of the banks that need their
+    own forms (`provider → { connect, tokenField, accessNote, fileSteps? }`; `Component<ConnectFormProps>` /
+    `Component<TokenFieldProps>`: vue-tsc checks that the bank's component takes those props; props at `<component :is>`
+    are not checked). Every token bank has an entry (a test checks it); a bank with statement files only may have none and
+    gets the generic file flow (`statement-file/`: `GENERIC_FILE_STEPS`, `FILE_ACCESS_NOTE`). `utils.ts` — `formsOf`
+    (null for a bank without its own forms or an unknown provider — never another bank's), `fileStepsOf` (the bank's own
+    steps, else the generic ones; null when the registry gives the bank no files), `accessNoteOf`. «Add connection» shows
+    `BankPicker` while the registry has more than one bank, then the add form for the picked one (with «Other bank» to go
+    back); with one bank it opens that bank's form. The add form offers «Token» only when the bank has its own forms.
+    Only the root imports the bank folders; a connection row gets its bank's token field as a prop. The root files carry
+    no bank's texts: the name comes from `entities/bank` (`bankOf`), the first screen's line from `accessNoteOf`. Наружу —
+    `ConnectionsFeature` (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у
+    `settings`. A new bank needs nothing here unless it has a token or its own steps: then its folder and a
+    `PROVIDER_FORMS` entry;
   - **«Счета» подключения** (`ConnectionRow`): кнопка «Счета · N» («Счета · X из N», если часть выключена;
     `accountsButtonText`, `aria-expanded`) раскрывает панель, как у токена (открыта
     одна из двух); список грузится при каждом открытии (`useConnectionActions.accounts`: `loading | ready | error`, старый
@@ -310,6 +319,19 @@
     `participant` по `ConnectionView.enabledAccounts`) → `hasData` ложно, но подключения есть: главная (не экран
     подключения) с плашкой «Все счета выключены…» и кнопкой в «Подключения» (`widgets/home-notices`);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
+  - **The read cache** (`shared/lib/readCache.ts`, `ReadCache`, the one `readCache`): the answers of the eight data reads
+    (`CACHED_READS` in `shared/api/methods.ts`: the month, spending, now, category, income, recurring, allowance and
+    analytics overviews), keyed by `readKey(method, args)`, at most `READ_CACHE_SIZE` (50, least recently used dropped
+    first), memory only (the lock's reload leaves nothing; bank text in the lines never reaches storage). Fresh = no data
+    change since its request started and younger than `READ_FRESH_MS` (60 s). `shared/api/balance.ts` wraps the bridge
+    once (`wrapBridge`): a cached read keeps its answer under the generation read at its start (one that raced a write
+    lands stale), a failure keeps nothing; `PASS_THROUGH` methods pass as they are; every other method is a write and
+    makes all kept answers stale once it succeeds (a new write method needs no entry). The sync-status store's
+    `refresh()` (an imported window, the end of an import, after writes and «Delete all data») calls `invalidateReads()`
+    before it bumps `version`. A data feature's `api/` segment has a `peek<X>` next to its fetch, and its composable
+    builds one `query()` for both and passes `cached: () => peek(query())` to `useAsyncData`: fresh → shown without a
+    request, stale → shown at once and replaced by a quiet load, none → as before; `reload()` always asks. Tests:
+    `tests/renderer/read-cache.test.ts`, the store's part in `sync-status.test.ts`.
 - **Interface texts** — every text on a screen goes through vue-i18n, no literals:
   - templates: `$t('key')`, `$t('key', { name })`, plurals `$t('key', n)`; script code (`utils.ts`, composables,
     stores): `t` from `@/shared/lib`, called when the text is needed — never at module load (a constant built with `t`
@@ -325,17 +347,31 @@
   `app/router/routes.ts` (`meta.layout` / `meta.nav` — лаяут и пункт бокового меню, см. «Layouts» в корневом `CLAUDE.md`),
   имена — `ROUTE` в `shared/config`. Guard (`app/router/guards.ts` + `startRoute.ts`): экран подключения — только если нет ни
   одного подключения и нет данных; подключение без токена → главный с плашкой «Ввести токен»; настройки доступны всегда.
-  Банки — `entities/bank`, только отображение (`BANKS`: `id`, `name`, монограмма / логотип, `status` — доступен / «Скоро»;
-  у доступного — `ways: ReadonlyArray<'token' | 'oauth' | 'file'>`, the ways the add form offers, the first is the default;
-  Monobank `['token', 'file']`; `bankOf` — банк подключения, незнакомый → Monobank); как подключать — в папке банка в
-  `features/integrations`. Подключение — `addConnection` в main (пока только Monobank).
+  Banks — `entities/bank`, display only, from the core registry (`@mono/core/providers/info`): `BANKS` is the
+  registry's list in its order; a bank is `{ id, name, ways, monogram, monogramClass }` — the brand name, not translated;
+  `ways` from its access (`token` first, then `file`); its look from `entities/bank/looks/<id>.ts` (`export const look`,
+  found by `import.meta.glob`), else the neutral mark (its first letter on a muted square). `bankOf(id)` — a bank the
+  registry does not know (a database from a newer version) gets a neutral entry with its id as the name and no ways,
+  never another bank's look. The bank picker adds the disabled «Other banks» tile (`OTHER_BANKS`, not a bank). Card
+  types: `cardTypesOf` / `defaultCardTypeOf` from the registry; names `entities.bank.cardType.<provider>.<type>`
+  (`cardTypeName(provider, type)`; a type the bank does not list → «Card»; a test checks every listed type has a name).
+  `AccountName` carries the provider, so `accountName` names any bank's cards; the balance card's bottom line takes the
+  bank's name from `bankOf`. The history download is one import for every token connection: its list is headed by the
+  token banks' names. Как подключать — в `features/integrations`.
 - Statement files (`features/integrations/statement-file`): the add form shows «Token» / «Statement file» when the bank
   has both (`FileConnectForm`: no token, no «Use the name from the bank» — a file has no holder's name). A connection
   row gets «Upload statement» (a file connection) or «Check against a statement» (a token connection with accounts:
-  compare only) when the bank's forms have `fileSteps`; the panel (`StatementUploadFeature`) comes into the row's
-  `statement` slot from the domain root, since `shared/` must not import a sub-feature. `useStatementUpload`: main
-  opens the file (the renderer never gets its path or text), every change of the card or the new card's type compares
-  again, «Add» writes and refreshes people and the data status. Home with file connections only points to «Upload
+  compare only) when the registry gives the bank statement files (`fileStepsOf`); the panel (`StatementUploadFeature`)
+  comes into the row's `statement` slot from the domain root, since `shared/` must not import a sub-feature.
+  `useStatementUpload(connection)`: main opens the file (the renderer never gets its path or content); the panel shows
+  one `section` per account of the file (`statementLabel`: the bank's card type name if it lists the type, else «Card»,
+  currency, last digits; the summary; the account select, a card taken by another row is not offered; the new card's
+  type, `newCardType` — the file's if the bank lists it, else the bank's `defaultCardType`; no type select for a bank
+  that lists no types; its comparison lines). The first comparison sends null targets (the file's own
+  match), then `initialTargets` offers the matched card, else `defaultTarget` among the free cards, and compares again
+  only if that differs; every change of a target or a type compares the whole file again. One «Add» writes every
+  account (`canWrite`: none blocked, something new) and refreshes people and the data status. Problem texts name no
+  file format. Home with file connections only points to «Upload
   statement» instead of the import.
 - Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «Люди» — `features/settings/people`
   (имя и «Переименовать», «Взять имя из банка», цвет человека); раздел «Подключения» — `features/integrations`
@@ -348,5 +384,5 @@
   `entities/participant` (radiogroup, занятые видны, но недоступны; своего компонента в muzakit нет), в форме добавления
   по умолчанию — первый свободный; «Изменить цвет» в «Люди» применяется сразу; «Взять имя из банка»
   в «Переименовать».
-  Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма.
+  Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма (`looks/<id>.ts`, else neutral).
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.

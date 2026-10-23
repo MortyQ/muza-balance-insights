@@ -26,7 +26,7 @@ function deps(confirmed: boolean) {
       confirm: async () => (order.push('confirm'), confirmed),
       tokens: { clearAll: async () => void order.push('token') },
       importer: { stop: async () => void order.push('importer') },
-      data: { close: async () => void order.push('db') },
+      data: { stop: async () => void order.push('db') },
       userDataDir: dir,
       log: (m: string) => void order.push(`log:${m}`),
     },

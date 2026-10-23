@@ -1,4 +1,4 @@
-// Monobank, main's side: the shape of its credential.
+// Monobank, the desktop's side: its client reaches only the `monobank` service.
 import type { DesktopProvider } from '../types.ts';
 
-export const monobank = { bank: 'Monobank', credential: /^\S{20,200}$/ } as const satisfies DesktopProvider;
+export const monobank = { service: 'monobank' } as const satisfies DesktopProvider;

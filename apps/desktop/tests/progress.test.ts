@@ -10,7 +10,7 @@ const CASES: Array<[ImportProgress, boolean]> = [
   [
     {
       phase: 'windows',
-      account: { kind: 'card', type: 'black', currency: 980, tag: null },
+      account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null },
       from: '2026-01-01',
       to: '2026-01-31',
       round: 1,

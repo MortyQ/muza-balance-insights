@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import type { ProviderKey } from '@contract/api.ts';
-import { type Bank, BankMark } from '@/entities/bank';
+import type { ProviderId } from '@contract/api.ts';
+import { type Bank, BankMark, isProviderId } from '@/entities/bank';
 import { VButton } from '@/shared/ui';
 import AddConnectionFeature from './AddConnectionFeature.vue';
-import { PROVIDER_FORMS } from './constants.ts';
 import BankPicker from './shared/components/BankPicker.vue';
-import { isProviderKey } from './utils.ts';
+import { accessNoteOf } from './utils.ts';
 
 const emit = defineEmits<{ connected: [] }>();
 
-const selected = ref<{ bank: Readonly<Bank>; provider: ProviderKey } | null>(null);
+const selected = ref<{ bank: Readonly<Bank>; provider: ProviderId } | null>(null);
 
 function select(bank: Readonly<Bank>) {
-  if (isProviderKey(bank.id)) selected.value = { bank, provider: bank.id };
+  if (isProviderId(bank.id)) selected.value = { bank, provider: bank.id };
 }
 </script>
 
@@ -37,8 +36,8 @@ function select(bank: Readonly<Bank>) {
         <div class="flex items-center gap-3">
           <BankMark :bank="selected.bank" size="lg" />
           <div class="flex flex-col">
-            <h2 class="text-lg font-semibold">{{ $t(selected.bank.name) }}</h2>
-            <span class="text-sm text-foreground-muted">{{ $t(PROVIDER_FORMS[selected.provider].accessNote) }}</span>
+            <h2 class="text-lg font-semibold">{{ selected.bank.name }}</h2>
+            <span class="text-sm text-foreground-muted">{{ $t(accessNoteOf(selected.provider)) }}</span>
           </div>
         </div>
         <AddConnectionFeature :provider="selected.provider" :default-label="$t('integrations.first.defaultLabel')" autofocus @added="emit('connected')" />

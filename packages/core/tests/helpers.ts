@@ -1,7 +1,7 @@
 import { openLibsql } from '@mono/db-libsql';
-import { ensureDefaultConnection } from '../src/connections.ts';
-import { migrate, type Db, type SqlArg } from '../src/db.ts';
-import type { Clock } from '../src/platform.ts';
+import { ensureDefaultConnection } from '../src/people/connections.ts';
+import { migrate, type Db, type SqlArg } from '../src/storage/db.ts';
+import type { Clock } from '../src/shared/platform.ts';
 
 export const TEST_TOKEN = 'test-token-SHOULD-NEVER-LEAK-9f3a';
 
@@ -150,6 +150,23 @@ export async function insertAccountRow(db: Db, row: Readonly<Record<string, SqlA
   });
 }
 
+/**
+ * Inserts one operation with exactly the given columns (a fixture), plus the bank's payload (`raw_json`, default
+ * `'{}'`) wherever the schema keeps it. Tests use this instead of a raw INSERT so that a change in where the payload
+ * lives is made in one place.
+ */
+export async function insertTransactionRow(db: Db, row: Readonly<Record<string, SqlArg>>): Promise<void> {
+  const { raw_json: raw = '{}', ...tx } = row;
+  const cols = Object.keys(tx);
+  await db.batch([
+    {
+      sql: `INSERT INTO transactions (${cols.join(', ')}) VALUES (${cols.map(() => '?').join(', ')})`,
+      args: cols.map((c) => tx[c] as SqlArg),
+    },
+    { sql: 'INSERT INTO transaction_raw (id, raw_json) VALUES (?, ?)', args: [tx.id as SqlArg, raw] },
+  ]);
+}
+
 /** The single Monobank connection of a test database (created on first use). */
 export async function testConnection(db: Db): Promise<number> {
   return ensureDefaultConnection(db, 'monobank', 0);
@@ -167,4 +184,13 @@ export async function allTextInDb(db: Db): Promise<string> {
     out += JSON.stringify(rs.rows);
   }
   return out;
+}
+
+/** Every derived column of every operation, by id: what incremental derivation must leave equal to a full pass. */
+export async function derivedColumns(db: Db): Promise<Array<Record<string, unknown>>> {
+  const rs = await db.execute(
+    `SELECT id, is_internal_transfer, transfer_rule, transfer_pair_id, transfer_fee, refund_pair_id, category, crossing_category, scope
+     FROM transactions ORDER BY id`,
+  );
+  return rs.rows.map((r) => ({ ...r }));
 }

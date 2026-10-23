@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { kyivStartOfDay } from '@mono/core/format';
+import { kyivStartOfDay } from '@mono/core/shared/format';
 import { CANCEL_KILL_MS, Importer, JOB_FILE, type ChildLike } from '../src/main/importer.ts';
 import { RETRY_BUDGET_MS } from '../src/shared/retry.ts';
 import type { ToWorker } from '../src/shared/import-protocol.ts';
@@ -46,7 +46,7 @@ class FakeChild extends EventEmitter implements ChildLike {
 type Conn = { connectionId: number; token: string | null; stored?: 'secure' | 'memory' | null };
 
 /** Default: one Monobank connection (id 1) whose token is in secure storage. `connections` replaces it. */
-/** `db`: what DbAccess.forWorker() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
+/** `db`: what DbAccess.forProcess() gives (default: encrypted with DB_KEY); null — the database is unavailable. */
 function setup(opts: { token?: string | null; stored?: 'secure' | 'memory' | null; connections?: Conn[]; db?: { dbPath: string; dbKey: string | null } | null } = {}) {
   const children: FakeChild[] = [];
   const sent: ImportProgress[] = [];
@@ -215,7 +215,7 @@ describe('Importer', () => {
     // A window committed between crashes → the streak starts over.
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
     expect(await crash()).toMatchObject({ attempt: 2, inSec: 900 });
-    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
+    children.at(-1)!.reply({ type: 'progress', progress: { phase: 'windows', account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-03-01', to: '2026-03-31', round: 1, index: 1, total: 1, windowsDone: 1, windowsTotal: 2, transactions: 3, etaSec: 60, waitingSec: null } });
     expect(await crash()).toMatchObject({ attempt: 1, inSec: 60 });
 
     let last: ImportProgress;

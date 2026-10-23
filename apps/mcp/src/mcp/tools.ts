@@ -1,29 +1,23 @@
-// MCP tools over src/summaries.ts and src/status.ts. Every answer is JSON:
+// MCP tools over the core's read/ statistics (spending, compare, income, status). Every answer is JSON:
 // amounts in major units (hryvnias, dollars…) next to their currency code, a period block with `incomplete`,
 // and `notes` with diagnostics the model should mention. No counterparty names, descriptions, card numbers,
 // IBANs or jar titles — accounts are an id plus a "type/CUR" label.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { CATEGORY } from '@mono/core/categories';
+import { CATEGORY } from '@mono/core/derive/categories';
 import type { Db } from '../db.ts';
-import { currencyAlpha, currencyNumeric, toMajor } from '@mono/core/currency';
+import { currencyAlpha, currencyNumeric, toMajor } from '@mono/core/shared/currency';
 import { log } from '../log.ts';
 import type { Clock, MonoClient } from '@mono/core/providers/monobank/client';
-import { SCOPES } from '@mono/core/scope';
-import { getBalances, getSyncStatus } from '@mono/core/status';
-import {
-  INCOME_GROUP_BY,
-  SPENDING_GROUP_BY,
-  SummaryError,
-  comparePeriods,
-  incomeSummary,
-  spendingSummary,
-  type OperationAmounts,
-  type PeriodInfo,
-} from '@mono/core/summaries';
-import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, searchTransactions } from '@mono/core/search';
-import { syncRecent } from '@mono/core/sync';
+import { SCOPES } from '@mono/core/derive/scope';
+import { getBalances, getSyncStatus } from '@mono/core/read/status';
+import { INCOME_GROUP_BY, incomeSummary } from '@mono/core/read/income';
+import { SPENDING_GROUP_BY, spendingSummary, type OperationAmounts } from '@mono/core/read/spending';
+import { SummaryError, type PeriodInfo } from '@mono/core/read/filters';
+import { comparePeriods } from '@mono/core/read/compare';
+import { SEARCH_DEFAULT_LIMIT, SEARCH_MAX_LIMIT, searchTransactions } from '@mono/core/read/search';
+import { syncRecent } from '@mono/core/ingest/sync';
 
 export type ToolDeps = {
   db: Db;

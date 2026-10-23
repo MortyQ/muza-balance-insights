@@ -1,16 +1,19 @@
 // The import itself, as a function: the utilityProcess entry (import.ts) only wires Electron to it, tests call it
 // directly with a mock bank. Core code does the work — no copies of sync logic here. Several connections run in one
 // job: their windows take turns (runPlans), each with its own client, token and request slot; a connection whose
-// token is rejected (or belongs to another holder) stops alone, the others finish.
-import { SyncCancelledError, cancellableSleep } from '@mono/core/cancel';
-import type { Db } from '@mono/core/db';
-import { RateLimitError } from '@mono/core/errors';
+// token is rejected (or belongs to another holder) stops alone, the others finish. At the end only the spans the
+// windows touched are re-derived; a full pass when a window's derivation failed or the accounts' IBANs, jar titles or
+// card types changed (design D7 of core-read-model, accountInputsChanged).
+import { SyncCancelledError, cancellableSleep } from '@mono/core/shared/cancel';
+import type { Db } from '@mono/core/storage/db';
+import { RateLimitError } from '@mono/core/shared/errors';
 import { accountNames, type AccountName } from '../shared/account-name.ts';
 import { localDate } from '../shared/dates.ts';
-import type { Clock, FetchLike } from '@mono/core/platform';
-import { rulesFor } from '@mono/core/providers/rules';
+import type { Clock, FetchLike } from '@mono/core/shared/platform';
+import { apiOf, type TokenProviderId } from '@mono/core/providers/info';
 import type { ProviderId } from '@mono/core/providers/types';
-import { rederiveCore } from '@mono/core/rederive';
+import { accountInputs, accountInputsChanged } from '@mono/core/derive/derived';
+import { rederiveCore, rederiveSpans } from '@mono/core/derive/rederive';
 import {
   ConnectionDuplicateError,
   ConnectionMismatchError,
@@ -18,19 +21,20 @@ import {
   runPlans,
   syncAccounts,
   type SyncContext,
-  type Window,
-} from '@mono/core/sync';
+} from '@mono/core/ingest/sync';
+import type { Window } from '@mono/core/ingest/plan';
+import type { TimeRange } from '@mono/core/derive/transfers';
 import type { ErrorKind, FromWorker } from '../shared/import-protocol.ts';
 import type { RetryReason, WindowProgress } from '../shared/progress.ts';
 import { nextRetryDelay, sleptDuringPause } from '../shared/retry.ts';
-import { WORKER_PROVIDERS } from './providers.ts';
+import { WORKER_PROVIDERS, workerProviderOf } from './providers.ts';
 
 export type ImportConnection = { connectionId: number; provider: ProviderId; token: string };
 
 export type RunImportDeps = {
   db: Db;
   /** Network for one provider, already allowlisted to its services (src/net/providers.ts). */
-  fetchFor: (provider: ProviderId) => FetchLike;
+  fetchFor: (provider: TokenProviderId) => FetchLike;
   clock: Clock;
   connections: ReadonlyArray<ImportConnection>;
   sinceSec: number;
@@ -108,6 +112,9 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   let failingSince: number | null = null;
   let attempt = 0;
   const failed = new Map<number, Exclude<ErrorKind, 'cancelled'>>();
+  // What the end of the import re-derives: the committed windows' spans, or everything.
+  const spans: TimeRange[] = [];
+  let derivationFailed = false;
 
   const runs: Run[] = [];
   const active = () => runs.filter((r) => !failed.has(r.input.connectionId));
@@ -125,7 +132,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   };
 
   for (const input of d.connections) {
-    const api = WORKER_PROVIDERS[input.provider].create({
+    const api = workerProviderOf(input.provider).create({
       connectionId: input.connectionId,
       token: input.token,
       db: d.db,
@@ -136,7 +143,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
     });
     const run: Run = {
       input,
-      intervalSec: rulesFor(input.provider).api.requestIntervalMs / 1000,
+      intervalSec: apiOf(input.provider).requestIntervalMs / 1000,
       accountsDone: false,
       remaining: null,
       ctx: {
@@ -166,6 +173,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
           } else if (e.type === 'window-done') {
             windowsDone += 1;
             transactions += e.result.upserted;
+            spans.push(e.result.span);
+            derivationFailed ||= e.result.derivationFailed;
             failingSince = null;
             attempt = 0;
             const left = run.remaining?.get(e.accountId);
@@ -184,6 +193,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   }
 
   try {
+    const inputsBefore = await accountInputs(d.db);
     for (;;) {
       try {
         if (active().some((r) => !r.accountsDone)) {
@@ -198,9 +208,15 @@ export async function runImport(d: RunImportDeps): Promise<void> {
               fail(r, err);
             }
           }
-          const rs = await d.db.execute('SELECT id, kind, type, currency_code FROM accounts');
+          const rs = await d.db.execute('SELECT a.id, c.provider, a.kind, a.type, a.currency_code FROM accounts a JOIN connections c ON c.id = a.connection_id');
           names = accountNames(
-            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })),
+            rs.rows.map((r) => ({
+              id: String(r.id),
+              provider: String(r.provider),
+              kind: String(r.kind),
+              type: r.type === null ? null : String(r.type),
+              currency: Number(r.currency_code),
+            })),
           );
         }
         for (const r of active()) {
@@ -242,8 +258,13 @@ export async function runImport(d: RunImportDeps): Promise<void> {
       return;
     }
     d.emit({ type: 'progress', progress: { phase: 'rederive' } });
-    const report = await rederiveCore(d.db);
-    d.emit({ type: 'log', message: `rederive: ${report[0] ?? ''}`.slice(0, 300) });
+    if (derivationFailed || accountInputsChanged(inputsBefore, await accountInputs(d.db))) {
+      const report = await rederiveCore(d.db);
+      d.emit({ type: 'log', message: `rederive: ${report[0] ?? ''}`.slice(0, 300) });
+    } else {
+      const r = await rederiveSpans(d.db, spans);
+      d.emit({ type: 'log', message: `rederive: ${r.spans} spans, categories changed: ${r.changed}` });
+    }
     d.emit({ type: 'done', windowsTotal, transactions, failed: [...failed].map(([connectionId, kind]) => ({ connectionId, kind })) });
   } catch (err) {
     // The log line first: main closes the worker as soon as the final message (error / done) arrives.

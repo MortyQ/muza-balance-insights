@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, useId, type Component } from 'vue';
 import type { ConnectionAccountView, ConnectionView } from '@contract/api.ts';
-import type { MessageKey } from '@contract/i18n/index.ts';
 import { BankMark, bankOf } from '@/entities/bank';
 import { coverageLine, tokenBadge, tokenLine } from '@/entities/participant';
 import { SettingsList, SettingsRow } from '@/shared/layout';
@@ -11,15 +10,13 @@ import { DISABLED_ACCOUNT_HINT, IMPORT_RUNNING_ACCOUNTS_TEXT } from '../constant
 import type { AccountsState } from '../types.ts';
 import { accountLabel, accountSwitchChange, accountsButtonText } from '../utils.ts';
 
-const { connection, secureStorage, tokenField, accounts, cardTypes, statementFiles, importRunning, savingAccount } = defineProps<{
+const { connection, secureStorage, tokenField, accounts, statementFiles, importRunning, savingAccount } = defineProps<{
   connection: Readonly<ConnectionView>;
   secureStorage: boolean;
-  /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Enter token again». */
-  tokenField: Component;
+  /** The bank's token field (v-model:token, v-model:remember, secureStorage, autofocus): «Enter token again»; null — none. */
+  tokenField: Component | null;
   /** «Accounts»: undefined until first opened. */
   accounts: AccountsState | undefined;
-  /** The bank's card types → dictionary keys of their names. */
-  cardTypes: Readonly<Record<string, MessageKey>>;
   /** The bank has a statement file format: «Upload statement» (a file connection) or «Check against a statement». */
   statementFiles: boolean;
   /** The switches wait for the import to end. */
@@ -117,7 +114,7 @@ function save() {
           @click="toggleStatement"
         />
         <VButton
-          v-if="connection.token"
+          v-if="connection.token && tokenField"
           :variant="connection.token.present ? 'neutral' : 'primary'"
           :text="panel === 'token' ? $t('integrations.row.cancel') : connection.token.present ? $t('integrations.row.reenterToken') : $t('integrations.row.enterToken')"
           :aria-expanded="panel === 'token'"
@@ -162,7 +159,7 @@ function save() {
                 <SettingsRow
                   v-for="a in accounts.accounts"
                   :key="a.id"
-                  :title="accountLabel(a, cardTypes)"
+                  :title="accountLabel(a, connection.provider)"
                   :hint="a.enabled ? undefined : $t(DISABLED_ACCOUNT_HINT)"
                   :label-for="`${id}-${a.id}`"
                 >

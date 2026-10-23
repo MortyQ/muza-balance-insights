@@ -1,6 +1,6 @@
 // The category ids the renderer translates are exactly the core's CATEGORY keys, and each has a text.
 import { describe, expect, it } from 'vitest';
-import { CATEGORY } from '@mono/core/categories';
+import { CATEGORY } from '@mono/core/derive/categories';
 import { CATEGORY_IDS } from '../src/shared/categories.ts';
 import { MESSAGES } from '../src/shared/i18n/index.ts';
 import { LOCALES } from '../src/shared/locale.ts';

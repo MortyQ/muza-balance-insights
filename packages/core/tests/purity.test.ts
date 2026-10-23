@@ -1,5 +1,5 @@
 // packages/core must run anywhere (Node, Electron main, a worker, later a browser): no platform code in src/.
-// Platform services come in through parameters (src/platform.ts). Second line of defence: tsconfig.json
+// Platform services come in through parameters (src/shared/platform.ts). Second line of defence: tsconfig.json
 // compiles src/ with lib WebWorker and no @types/node, so Node globals don't even typecheck.
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';

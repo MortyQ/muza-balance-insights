@@ -1,13 +1,13 @@
 // The screen's read side in main: core aggregates → view types. Fictional fixtures only; canaries prove that
 // names, descriptions, card numbers, IBANs and jar titles never reach the renderer.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
-import { kyivStartOfDay, toKyivDateTime } from '@mono/core/format';
+import type { Db } from '@mono/core/storage/db';
+import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
-import { last12Months } from '../src/main/category.ts';
-import { DataService, nextMonthDay } from '../src/main/data.ts';
+import { last12Months } from '../src/data/category.ts';
+import { DataService, nextMonthDay } from '../src/data/data.ts';
 import type { RatesView } from '../src/shared/api.ts';
-import { shiftDate } from '../src/main/now.ts';
+import { shiftDate } from '../src/data/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
 
 const NOW = kyivStartOfDay('2026-03-15') + 12 * 3600;
@@ -44,8 +44,8 @@ type TxOpts = {
 async function tx(accountId: string, date: string, amount: number, category: string, o: TxOpts = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, counter_name, mcc, hold, amount, operation_amount,
-            currency_code, commission_rate, balance, category, is_internal_transfer, transfer_rule, scope, is_cancelled, raw_json, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, '{}', 0)`,
+            currency_code, commission_rate, balance, category, is_internal_transfer, transfer_rule, scope, is_cancelled, synced_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, 0)`,
     args: [
       `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
       o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? (o.family ? 'family' : null), o.scope ?? 'personal',
@@ -210,7 +210,7 @@ describe('DataService.monthOverview', () => {
     expect(v.coverage).toEqual({ from: '2026-01-01', to: '2026-01-01' });
 
     const person = await svc.monthOverview({ month: '2025-11', participantId: me });
-    expect(person.accounts).toEqual([{ id: 'uah', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
+    expect(person.accounts).toEqual([{ id: 'uah', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 }]);
   });
 
   it('a month straddling the account\'s coverage start: balanceAt its last day, own funds from the backward calculation', async () => {
@@ -245,7 +245,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.people).toEqual([]);
     expect(person.accounts).toEqual([
-      { id: 'hers', name: { kind: 'card', type: 'white', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
+      { id: 'hers', name: { provider: 'monobank', kind: 'card', type: 'white', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 20_000, income: 0, spending: 400 },
     ]);
   });
 
@@ -364,7 +364,7 @@ describe('DataService.monthOverview', () => {
     const person = await svc.monthOverview({ month: '2026-03', participantId: her });
     expect(person.total.fx).toEqual([{ currency: 840, income: 0, spending: 500, rate: 40 }]);
     expect(person.accounts).toEqual([
-      { id: 'herusd', name: { kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
+      { id: 'herusd', name: { provider: 'monobank', kind: 'card', type: 'white', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 0, spending: 500 },
     ]);
   });
 
@@ -1156,7 +1156,7 @@ describe('DataService.recurringOverview (the regular payments screen)', () => {
       ['Streamio •••', 'telecom', 19_900, 980, 19_900, 3, '2026-03-05'],
     ]);
     expect(v.active[1]!.next).toBe('2026-04-05');
-    expect(v.active[0]!.account).toEqual({ kind: 'card', type: 'white', currency: 840, tag: null });
+    expect(v.active[0]!.account).toEqual({ provider: 'monobank', kind: 'card', type: 'white', currency: 840, tag: null });
     expect(v.ended.map((p) => [p.name, p.categoryId, p.last])).toEqual([['Gym Fictional', 'sport', '2026-01-04']]);
     expect(v.monthly).toBe(40_000 + 19_900);
     expect(v.rates).toEqual(RATES);

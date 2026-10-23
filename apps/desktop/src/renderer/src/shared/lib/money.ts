@@ -1,6 +1,6 @@
 // Money on screen: «12 340 ₴» (summary tables, no minor units) or «12 340,56 ₴» (details). Amounts arrive as integer
 // minor units of an ISO 4217 numeric currency; the exponent (JPY 0, KWD 3) comes from the core.
-import { currencyAlpha, currencyExponent, toMajor } from '@mono/core/currency';
+import { currencyAlpha, currencyExponent, toMajor } from '@mono/core/shared/currency';
 
 /** Hryvnia, ISO 4217 numeric: the currency every total on screen is in. */
 export const UAH = 980;

@@ -5,8 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { currencyExponent } from '@mono/core/currency';
-import type { FetchLike } from '@mono/core/platform';
+import { currencyExponent } from '@mono/core/shared/currency';
+import type { FetchLike } from '@mono/core/shared/platform';
 import type { RatesView } from '../shared/api.ts';
 
 export const RATES_URL = 'https://api.monobank.ua/bank/currency';

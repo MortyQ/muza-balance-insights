@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { renderAccountsTable } from '../src/cli/accountsTable.ts';
 import type { Db } from '../src/db.ts';
-import { formatMinor } from '@mono/core/format';
+import { formatMinor } from '@mono/core/shared/format';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
-import { syncAccounts } from '@mono/core/sync';
+import { syncAccounts } from '@mono/core/ingest/sync';
 import { TEST_TOKEN, fakeClock, fakeMonobank, memoryDb } from '@mono/core/test-helpers';
 
 let db: Db;

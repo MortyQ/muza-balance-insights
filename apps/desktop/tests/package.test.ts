@@ -61,7 +61,17 @@ describe('electron-builder config', () => {
     // Frozen after the first release (.agents/project/desktop-app.md): bundle id, updates, Windows install identity.
     expect(config.appId).toBe(APP_ID);
     // Source maps stay out, including the ones runtime deps (electron-updater, js-yaml …) ship in node_modules.
-    expect(config.files).toEqual(['out/**', 'package.json', '!**/*.map']);
+    // Of pdfjs-dist (35 MB) only the legacy build's pdf.mjs and pdf.worker.mjs: the statement decoder loads no font,
+    // cmap, wasm or viewer file.
+    expect(config.files).toEqual([
+      'out/**',
+      'package.json',
+      '!**/*.map',
+      '!node_modules/pdfjs-dist/{build,web,image_decoders,types,wasm,iccs,cmaps,standard_fonts}/**',
+      '!node_modules/pdfjs-dist/legacy/{web,image_decoders}/**',
+      '!node_modules/pdfjs-dist/{,legacy/}webpack.mjs',
+      '!node_modules/pdfjs-dist/legacy/build/{pdf.min.mjs,pdf.worker.min.mjs,pdf.sandbox.mjs,pdf.sandbox.min.mjs}',
+    ]);
     expect(config.asar).toBe(true);
     expect(config.asarUnpack).toEqual(['**/*.node']);
     expect(config.npmRebuild).toBe(false);
