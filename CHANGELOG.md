@@ -48,6 +48,11 @@ English interface.
 - **Screens use the whole window.** The screen's name, the month, the currency and the people sit in one row above the
   screen, and the blocks stretch across the window instead of a narrow column in its middle.
 
+### Look
+
+- **A calmer dark theme.** The dark theme now uses neutral graphite greys with a soft blue accent instead of deep
+  violet. Secondary text and the edges of blocks are easier to see.
+
 ### Fixes
 
 - **The window title on macOS.** «Balance Insights» in the title bar is centred on the window, in line with the

@@ -4,7 +4,7 @@ import { TITLE_BAR_HEIGHT } from '../shared/titlebar.ts';
 // theme.css --background / --foreground as hex: the native buttons (Windows, Linux) sit on our strip.
 const OVERLAY_COLORS = {
   light: { color: '#eff1fc', symbolColor: '#0c0d14' },
-  dark: { color: '#090d18', symbolColor: '#e7e7ec' },
+  dark: { color: '#101215', symbolColor: '#e9ebef' },
 } as const;
 
 export function titleBarOverlay(dark: boolean) {
