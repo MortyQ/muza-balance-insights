@@ -130,10 +130,11 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
   - the decoder's memory on a large PDF.
 
   Verify that the entries are present.
-- [ ] 10.2 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
+- [x] 10.2 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
 
   Agent, 23.10.2026: per package, all pass (core 425, mcp 97, db-libsql 14, desktop 1614 + 7 skipped; every
-  tsc / vue-tsc clean). The root `pnpm test` / `pnpm typecheck`, the desktop build and `test:package` are the user's.
+  tsc / vue-tsc clean). The root `pnpm test` / `pnpm typecheck`, the desktop build and `test:package`: run by the user,
+  23.10.2026, all pass.
 
 ## Workflow follow-up
 
