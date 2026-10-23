@@ -284,6 +284,7 @@ describe('now strip mounted', () => {
     const details = w.get('[data-test="now-details"]');
     expect(details.classes()).toContain('col-span-full');
     expect(details.findAll('li')).toHaveLength(4);
+    expect(details.get('ul').classes()).toContain('@3xl:grid-cols-2');
     expect(details.text()).toContain('Сравнение с теми же днями прошлой недели, пн–сб');
     expect(details.find('a').attributes('href')).toBe('/category/groceries?scope=personal&week=2026-09-28');
 

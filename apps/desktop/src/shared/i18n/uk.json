@@ -471,7 +471,9 @@
       "freeLine": {
         "free": "Вільно",
         "reservedAmount": "у резерві {amount}"
-      }
+      },
+      "monthTile": "Місяць",
+      "monthResult": "Результат місяця"
     },
     "filters": {
       "percent": "{pct}%",

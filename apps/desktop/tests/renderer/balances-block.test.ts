@@ -99,6 +99,16 @@ describe('balance tiles', () => {
     }
   });
 
+  it('«Month»: the title, then the month\'s result under the bars, in green above zero', async () => {
+    const b = await mountBlock();
+    const panel = b.get('[data-test="panel"]');
+    expect(panel.find('h3').text()).toBe('Месяц');
+    const result = panel.get('[data-test="month-result"]');
+    expect(result.text()).toContain('Итог месяца');
+    expect(result.text()).toContain('+50 ₴');
+    expect(result.find('.text-success').exists()).toBe(true);
+  });
+
   it('under the stack: the front card\'s free amount', async () => {
     const b = await mountBlock();
     expect(b.get('[data-test="free-line"]').text()).toContain('100 ₴');
@@ -106,11 +116,26 @@ describe('balance tiles', () => {
 });
 
 describe('free line', () => {
-  it('a total with a reserve shows it and the free share; an account its own funds; a dim card nothing', async () => {
+  it('money above the reserves: the free part as the bar — the family card too', async () => {
     const { freeLineOf } = await import('@/features/balances/utils.ts');
     const total = slide('family', 'Семья');
-    expect(freeLineOf({ ...total, card: { ...total.card, reserved: '40 ₴', freeShare: 60 } })).toEqual({ free: '100 ₴', negative: false, reserved: '40 ₴', share: 60 });
-    expect(freeLineOf(total)).toEqual({ free: '100 ₴', negative: false, reserved: null, share: null });
+    expect(freeLineOf({ ...total, card: { ...total.card, reserved: '40 ₴' }, split: { own: 100_00, reserved: 40_00 } })).toEqual({
+      free: '100 ₴', negative: false, reserved: '40 ₴', share: 60, short: false,
+    });
+  });
+
+  it('reserves above the money: short, the bar is the part the money covers; money below zero covers nothing', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    const short = { ...total, card: { ...total.card, amount: '−20 ₴', negative: true, reserved: '80 ₴' } };
+    expect(freeLineOf({ ...short, split: { own: 60_00, reserved: 80_00 } })).toEqual({ free: '−20 ₴', negative: true, reserved: '80 ₴', share: 75, short: true });
+    expect(freeLineOf({ ...short, split: { own: -10_00, reserved: 80_00 } })?.share).toBe(0);
+  });
+
+  it('no reserve: no bar; an account: its own funds; a dim card: nothing', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    expect(freeLineOf(total)).toEqual({ free: '100 ₴', negative: false, reserved: null, share: null, short: false });
     expect(freeLineOf({ ...total, card: { ...total.card, dim: true } })).toBeNull();
     expect(freeLineOf(null)).toBeNull();
   });

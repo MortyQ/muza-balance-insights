@@ -471,7 +471,9 @@
       "freeLine": {
         "free": "Free",
         "reservedAmount": "reserved {amount}"
-      }
+      },
+      "monthTile": "Month",
+      "monthResult": "Month's result"
     },
     "filters": {
       "percent": "{pct}%",

@@ -4,7 +4,7 @@ import { RouterLink } from 'vue-router';
 import { ROUTE, incomeLink } from '@/shared/config';
 import { VButton, VIcon } from '@/shared/ui';
 import type { Flow, LegendItem } from '../types.ts';
-import { reservedLine, savedLine, spentShare } from '../utils.ts';
+import { reservedLine, savedLine, signedMoney, spentShare } from '../utils.ts';
 import FlowBars from './FlowBars.vue';
 
 const { title, note, flow, legend, stubShown } = defineProps<{
@@ -22,16 +22,26 @@ const emit = defineEmits<{ stub: [] }>();
 const spent = computed(() => spentShare(flow.income, flow.spending));
 const saved = computed(() => savedLine(flow));
 const reserved = computed(() => reservedLine(flow));
+const result = computed(() => {
+  const value = flow.income - flow.spending;
+  return { value, text: signedMoney(value, flow.currency, value < 0 ? '−' : '+') };
+});
 </script>
 
 <template>
   <div class="flex flex-col justify-center gap-4">
     <div class="flex items-baseline justify-between gap-3">
-      <h3 class="text-base font-bold">{{ title }}</h3>
-      <span class="text-xs text-foreground-muted">{{ note }}<template v-if="spent !== null"> · {{ $t('home.balances.spentShare', { spent }) }}</template></span>
+      <h3 class="text-base font-bold">{{ $t('home.balances.monthTile') }}</h3>
+      <span class="text-xs text-foreground-muted">{{ title }} · {{ note }}</span>
     </div>
     <div class="flex flex-col gap-2">
       <FlowBars :flow size="md" :income-to="incomeLink()" />
+      <!-- The month's result under a dashed line, as on the home mockup. -->
+      <p class="mt-1 flex justify-between gap-3 border-t border-dashed border-border pt-2.5 text-sm" data-test="month-result">
+        <span class="text-foreground-secondary">{{ $t('home.balances.monthResult') }}</span>
+        <span class="font-bold tabular-nums" :class="result.value > 0 ? 'text-success' : result.value < 0 ? 'text-negative-soft' : ''">{{ result.text }}</span>
+      </p>
+      <p v-if="spent !== null" class="text-xs text-foreground-muted">{{ $t('home.balances.spentShare', { spent }) }}</p>
       <p v-if="saved" class="flex justify-between text-sm">
         <span class="text-foreground-secondary">{{ saved.label }}</span>
         <span class="font-bold tabular-nums">{{ saved.amount }}</span>

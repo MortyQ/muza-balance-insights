@@ -242,6 +242,7 @@ export function slidesOf(
         ...(total.saved ? { saved: { amount: fmt.convert(total.saved.amount), approx: total.saved.approx } } : {}),
         ...(reserved !== null ? { reserved: fmt.convert(reserved) } : {}),
       },
+      ...(reserved !== null ? { split: { own: total.ownFunds, reserved } } : {}),
     };
   };
   if (ctx.selectedId === null) {
@@ -387,7 +388,13 @@ export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) =>
 /** What the line under the stack shows for a card: a total's free amount with its reserve, an account's own funds. */
 export function freeLineOf(slide: Readonly<Slide> | null): FreeLineView | null {
   if (!slide || slide.card.dim) return null;
-  if (slide.kind === 'account') return { free: slide.card.amount, negative: false, reserved: null, share: null };
+  if (slide.kind === 'account') return { free: slide.card.amount, negative: false, reserved: null, share: null, short: false };
   const c = slide.card;
-  return { free: c.amount, negative: c.negative, reserved: c.reserved, share: c.reserved ? c.freeShare : null };
+  const split = slide.split;
+  if (!split || c.reserved === null) return { free: c.amount, negative: c.negative, reserved: null, share: null, short: false };
+  const short = split.own < split.reserved;
+  const share = short
+    ? split.reserved > 0 ? Math.max(0, Math.min(100, Math.round((split.own / split.reserved) * 100))) : 0
+    : Math.min(100, Math.max(0, Math.round(((split.own - split.reserved) / split.own) * 100)));
+  return { free: c.amount, negative: c.negative, reserved: c.reserved, share, short };
 }

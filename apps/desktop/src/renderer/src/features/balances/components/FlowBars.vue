@@ -25,12 +25,13 @@ const rows = computed(() => {
       const widths = flowWidths(segments.map((s) => s[pick]), value, other);
       return segments.map((s, i) => ({ w: widths[i] ?? 0, color: s.color })).filter((p) => p.w > 0);
     }
-    const tone = pick === 'income' ? color : `color-mix(in oklch, ${color} 55%, var(--surface))`;
+    // The month panel (md): «In» green, «Out» soft red; a card's thin bars keep the person's colour.
+    const tone = size === 'md' ? (pick === 'income' ? 'var(--success)' : 'var(--negative-soft)') : pick === 'income' ? color : `color-mix(in oklch, ${color} 55%, var(--surface))`;
     return [{ w: flowWidths([value], value, other)[0] ?? 0, color: tone }].filter((p) => p.w > 0);
   };
   return [
-    { label: t('home.balances.income'), amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income'), to: incomeTo },
-    { label: t('home.balances.spending'), amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending'), to: null },
+    { label: t('home.balances.income'), amount: mark(approxIncome) + signedMoney(income, currency, '+'), parts: parts(income, spending, 'income'), to: incomeTo, tone: 'text-success' },
+    { label: t('home.balances.spending'), amount: mark(approxSpending) + signedMoney(spending, currency, '−'), parts: parts(spending, income, 'spending'), to: null, tone: 'text-negative-soft' },
   ];
 });
 </script>
@@ -52,10 +53,10 @@ const rows = computed(() => {
           <span class="inline-flex items-center gap-0.5 text-foreground-secondary">
             {{ row.label }}<VIcon v-if="row.to" icon="lucide:chevron-right" class="size-3.5" />
           </span>
-          <span class="font-bold tabular-nums">{{ row.amount }}</span>
+          <span class="font-bold tabular-nums" :class="row.tone">{{ row.amount }}</span>
         </div>
-        <div class="flex h-3 gap-0.5" aria-hidden="true">
-          <div v-for="(p, i) in row.parts" :key="i" class="bg-(--c) w-(--w) last:rounded-r-md" :style="{ '--c': p.color, '--w': `${p.w}%` }" />
+        <div class="flex h-2 gap-0.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
+          <div v-for="(p, i) in row.parts" :key="i" class="bg-(--c) w-(--w) first:rounded-l-full last:rounded-r-full" :style="{ '--c': p.color, '--w': `${p.w}%` }" />
         </div>
       </component>
       <template v-else>

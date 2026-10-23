@@ -35,6 +35,8 @@ export interface Flow {
 export type Slide = ({ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }) & {
   key: string;
   flow: Flow;
+  /** A total with reserves set against it: own funds and the reserves, in hryvnia minor units (the free line's bar). */
+  split?: { own: number; reserved: number };
 };
 
 export interface LegendItem {
@@ -120,10 +122,15 @@ export interface UseMonthPaceReturn {
   fmt: ComputedRef<MoneyFormat>;
 }
 
-/** The line under the stack: the free amount of the card in front, its reserve and the free share (null — no bar). */
+/**
+ * The line under the stack: the free amount of the card in front and its reserve. `share` — the bar, 0–100 (null — no
+ * reserve, no bar): the free part of the money, or, when the reserves are more than the money (`short`), the part of
+ * the reserves the money covers.
+ */
 export interface FreeLineView {
   free: string;
   negative: boolean;
   reserved: string | null;
   share: number | null;
+  short: boolean;
 }
