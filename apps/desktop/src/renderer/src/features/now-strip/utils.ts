@@ -1,11 +1,11 @@
 import type { NowCategory, NowOverview, SpendingAmounts } from '@contract/api.ts';
-import { categoryColor, categoryName } from '@/entities/category';
+import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { categoryLink, type LinkPeriod } from '@/shared/config';
 import { change, changeText, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
-import { MIN_BAR } from './constants.ts';
-import type { CategoryBreakdown, CategoryRow, NowPrefs, NowStripView, TopCell, WeekBar } from './types.ts';
+import { MIN_BAR, SHOWN_CATEGORIES } from './constants.ts';
+import type { CategoryBreakdown, CategoryRow, NowPrefs, NowStripView, WeekBar } from './types.ts';
 
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 // The contract's weekday is 1–7 by construction (main's isoWeekday).
@@ -70,6 +70,7 @@ export function breakdown(
   fmt: MoneyFormat,
   note = '',
 ): CategoryBreakdown {
+  const biggest = Math.max(0, ...cats.map((c) => c.net));
   const rows = cats.map(
     (c): CategoryRow => ({
       key: c.category,
@@ -78,16 +79,20 @@ export function breakdown(
       amount: fmt.money(c.net),
       ops: t('home.now.opsShort', { n: c.purchases }),
       share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
+      bar: biggest > 0 ? Math.max(0, Math.round((c.net / biggest) * 100)) : 0,
+      icon: CATEGORY_ICON[c.categoryId ?? 'other'],
       chip: categoryChip(c.net, c.prev ?? null, fmt),
       to: c.categoryId ? categoryLink(c.categoryId, 'personal', period) : null,
     }),
   );
-  if (rows.length === 0) return { rows, summary: '', note: '' };
+  if (rows.length === 0) return { rows, summary: '', note: '', more: '' };
   const summary = [t('home.now.cats.count', rows.length), fmt.money(total.net), t('home.now.ops', total.purchases)].join(' · ');
-  return { rows, summary, note };
+  const rest = cats.slice(SHOWN_CATEGORIES);
+  const more = rest.length > 0 ? t('home.now.cats.more', { n: rest.length, amount: fmt.money(rest.reduce((sum, c) => sum + c.net, 0)) }, rest.length) : '';
+  return { rows, summary, note, more };
 }
 
-/** Stored choices, each field forgiven on its own: closed, the week. */
+/** Stored choices, each field forgiven on its own: the week. */
 export function parsePrefs(raw: string | null): NowPrefs {
   let v: unknown = null;
   try {
@@ -96,19 +101,7 @@ export function parsePrefs(raw: string | null): NowPrefs {
     // Damaged: the defaults.
   }
   const o = typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : {};
-  return { open: o['open'] === true, period: o['period'] === 'today' ? 'today' : 'week' };
-}
-
-function topCell(top: NowOverview['week']['top'], weekNet: number, fmt: MoneyFormat): TopCell | null {
-  if (!top) return null;
-  // Refunds in another category can pull the week's net below the top category's own: the share stops at 100%.
-  const pct = weekNet > 0 ? Math.min(100, Math.round((top.net / weekNet) * 100)) : 0;
-  return {
-    name: categoryName(top),
-    color: categoryColor(top.rank),
-    amount: fmt.money(top.net),
-    caption: t('home.now.topShare', { pct, ops: t('home.now.opsShort', { n: top.purchases }) }),
-  };
+  return { period: o['period'] === 'today' ? 'today' : 'week' };
 }
 
 /** Everything the strip shows for one answer, every amount in the home-wide main currency. */
@@ -136,7 +129,6 @@ export function nowView(o: Readonly<NowOverview>, fmt: MoneyFormat): NowStripVie
       bars: weekBars(o.week.days, o.weekday),
       pending: o.week.pendingHolds,
     },
-    top: topCell(o.week.top, o.week.total.net, fmt),
     categories: {
       today: breakdown(o.todayCategories, o.today, { kind: 'day', date: o.date }, fmt),
       week: breakdown(o.week.categories, o.week.total, { kind: 'week', from: o.week.from }, fmt, o.week.prev !== null ? t('home.now.cats.vsWeek', { days }) : ''),

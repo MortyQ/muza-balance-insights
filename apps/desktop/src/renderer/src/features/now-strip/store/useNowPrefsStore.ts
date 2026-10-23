@@ -12,7 +12,7 @@ function read(): NowPrefs {
   }
 }
 
-/** The category panel: open or closed, today or the week — remembered on this computer (a convenience). */
+/** The details' period, today or the week — remembered on this computer (a convenience). */
 export const useNowPrefsStore = defineStore('now-prefs', () => {
   const prefs = ref<NowPrefs>(read());
 

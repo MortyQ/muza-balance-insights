@@ -21,10 +21,10 @@
 
 ## 4. Today and week — feat(desktop): the «Now» strip as tiles with period details
 
-- [ ] 4.1 «Today» and «This week» tiles: amount, chip, at most 3 categories with icon and bar, the button (with the hidden count and total on «This week»), the empty-day line; drop the «top category» cell
-- [ ] 4.2 The details tile: «Today / This week» switch, total, all categories in two columns, close; state in the now strip's store
-- [ ] 4.3 `HomePage` passes `insights-hidden` from the now strip's state to `SpendingFeature`
-- [ ] 4.4 Dictionary keys in uk/en/ru; now-strip tests for the 3-row limit, the button text and the details switch
+- [x] 4.1 «Today» and «This week» tiles: amount, chip, at most 3 categories with icon and bar, the button (with the hidden count and total on «This week»), the empty-day line; drop the «top category» cell
+- [x] 4.2 The details tile: «Today / This week» switch, total, all categories in two columns, close; state in the now strip's store
+- [x] 4.3 `HomePage` passes `insights-hidden` from the now strip's state to `SpendingFeature`
+- [x] 4.4 Dictionary keys in uk/en/ru; now-strip tests for the 3-row limit, the button text and the details switch
 
 ## 5. Spending — feat(desktop): spending, people and unusual as tiles
 

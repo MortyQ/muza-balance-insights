@@ -571,7 +571,10 @@
         "today": "Today",
         "toggle": "By category",
         "vsWeek": "Compared with the same days last week, {days}",
-        "week": "Week"
+        "week": "Week",
+        "more": "{n} more category · {amount} | {n} more categories · {amount} | {n} more categories · {amount}",
+        "details": "Details",
+        "close": "Close"
       },
       "date": "{weekday}, {month} {day}",
       "label": "Now",
@@ -587,8 +590,6 @@
       "srMoreUsual": "more than on a usual day",
       "srMoreWeek": "more than last week",
       "today": "Today · {date}",
-      "top": "Most this week",
-      "topShare": "{pct}% of the week · {ops}",
       "until": "Data until {date}",
       "vsUsual": "vs a usual day ≈ {amount}",
       "vsWeek": "vs last week, {days}",

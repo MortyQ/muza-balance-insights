@@ -82,7 +82,7 @@ describe('now strip helpers', () => {
     expect(categoryColor(null)).toBe('var(--category-other)');
   });
 
-  it('the view: titles, amounts, chips with context, the top category, conversions only when switched on', () => {
+  it('the view: titles, amounts, chips with context, conversions only when switched on', () => {
     const v = nowView(NOW, OFF);
     expect(v.today).toEqual({
       title: 'Сегодня · сб, 3 окт',
@@ -94,11 +94,10 @@ describe('now strip helpers', () => {
       until: '',
     });
     expect(v.week).toMatchObject({ title: 'Эта неделя · пн–сб', amount: uah(322_000), context: 'к прошлой неделе, пн–сб', pending: 0 });
-    expect(v.top).toEqual({ name: 'Продукты', color: 'var(--category-1)', amount: uah(125_580), caption: '39% недели · 11 оп.' });
     expect(nowView(NOW, moneyFormat(NOW.rates, { main: 980, also: { uah: true, usd: true, eur: true } })).today.conv).toBe(`≈ ${formatMoney(Math.round(72_000 / 41), 840)} · ${formatMoney(1_600, 978)}`);
   });
 
-  it('euro main: every amount in euros (the top category too), «≈» in the other picked currencies', () => {
+  it('euro main: every amount in euros, «≈» in the other picked currencies', () => {
     const fmt = moneyFormat(NOW.rates, { main: 978, also: { uah: true, usd: false, eur: true } });
     const v = nowView(NOW, fmt);
     expect(v.today.amount).toBe(fmt.money(72_000));
@@ -107,20 +106,26 @@ describe('now strip helpers', () => {
     expect(v.today.conv).toBe(`≈ ${uah(72_000)}`);
     expect(v.today.context).toBe(`к обычному дню ≈ ${fmt.money(52_000)}`);
     expect(v.week).toMatchObject({ amount: fmt.money(322_000), conv: fmt.approxInline(322_000) });
-    expect(v.top?.amount).toBe(fmt.money(125_580));
+    expect(v.categories.week.rows[0]?.amount).toBe(fmt.money(125_580));
   });
 
-  it('stale data: «data until» instead of the chip; no usual day or last week: no chip, no context; an empty week: no top', () => {
+  it('stale data: «data until» instead of the chip; no usual day or last week: no chip, no context', () => {
     expect(nowView({ ...NOW, dataUntil: '2026-10-02' }, OFF).today).toMatchObject({ chip: null, context: '', until: 'Данные до 02.10' });
     const bare = nowView({ ...NOW, usualDay: 0, week: { ...NOW.week, prev: null, top: null } }, OFF);
     expect(bare.today).toMatchObject({ chip: null, context: '' });
     expect(bare.week).toMatchObject({ chip: null, context: '' });
-    expect(bare.top).toBeNull();
   });
 
-  it('the top category\'s share stays within 100% when refunds in other categories pull the week below it', () => {
-    const v = nowView({ ...NOW, week: { ...NOW.week, total: { net: 100_000, purchases: 12 } } }, OFF);
-    expect(v.top?.caption).toBe('100% недели · 11 оп.');
+  it('a tile row: the category\'s icon and a bar against the period\'s biggest category; the rest past 3 counted with their total', () => {
+    const w = nowView(NOW, OFF).categories.week;
+    expect(w.rows.map((r) => [r.icon, r.bar])).toEqual([
+      [expect.stringMatching(/^lucide:/), 100],
+      [expect.any(String), 64],
+      [expect.any(String), 32],
+      [expect.any(String), 24],
+    ]);
+    expect(w.more).toBe(`Ещё 1 категория · ${uah(30_000)}`);
+    expect(nowView(NOW, OFF).categories.today.more).toBe('');
   });
 });
 
@@ -166,16 +171,16 @@ describe('now strip categories', () => {
   });
 
   it('an empty period: no rows, no summary; a share stops at 100%', () => {
-    expect(breakdown([], { net: 0, purchases: 0 }, { kind: 'day', date: '2026-10-03' }, OFF)).toEqual({ rows: [], summary: '', note: '' });
+    expect(breakdown([], { net: 0, purchases: 0 }, { kind: 'day', date: '2026-10-03' }, OFF)).toEqual({ rows: [], summary: '', note: '', more: '' });
     const over = breakdown([{ category: 'продукты', categoryId: 'groceries', net: 10_000, purchases: 1, rank: 0 }], { net: 8_000, purchases: 2 }, { kind: 'day', date: '2026-10-03' }, OFF);
     expect(over.rows[0]?.share).toBe(100);
   });
 
-  it('stored choices: each field forgiven on its own, closed on the week by default', () => {
-    expect(parsePrefs(null)).toEqual({ open: false, period: 'week' });
-    expect(parsePrefs('{')).toEqual({ open: false, period: 'week' });
-    expect(parsePrefs('{"open":true,"period":"month"}')).toEqual({ open: true, period: 'week' });
-    expect(parsePrefs('{"open":"yes","period":"today"}')).toEqual({ open: false, period: 'today' });
+  it('stored choice: the details\' period, the week by default', () => {
+    expect(parsePrefs(null)).toEqual({ period: 'week' });
+    expect(parsePrefs('{')).toEqual({ period: 'week' });
+    expect(parsePrefs('{"open":true,"period":"month"}')).toEqual({ period: 'week' });
+    expect(parsePrefs('{"period":"today"}')).toEqual({ period: 'today' });
   });
 });
 
@@ -213,13 +218,18 @@ describe('now strip mounted', () => {
     return w;
   }
 
-  it('three cells for the whole family, the bars hidden from screen readers', async () => {
+  it('two tiles, «Today» and «This week», each with at most 3 categories; the bars hidden from screen readers', async () => {
     const w = await mountStrip();
     expect(getNowOverview.mock.calls[0]?.[0]).toEqual({});
-    expect(w.find('section').attributes('aria-label')).toBe('Сейчас');
-    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`, 'Эта неделя · пн–сб', 'к прошлой неделе, пн–сб', 'Больше всего за неделю', 'Продукты', '39% недели · 11 оп.']) {
-      expect(w.text()).toContain(s);
-    }
+    const today = w.get('[data-test="now-today"]');
+    const week = w.get('[data-test="now-week"]');
+    expect(today.attributes('aria-label')).toBe('Сегодня · сб, 3 окт');
+    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`]) expect(today.text()).toContain(s);
+    for (const s of ['Эта неделя · пн–сб', 'к прошлой неделе, пн–сб']) expect(week.text()).toContain(s);
+    expect(today.findAll('[data-test="tile-categories"] li')).toHaveLength(2);
+    expect(week.findAll('[data-test="tile-categories"] li')).toHaveLength(3);
+    expect(today.get('[data-test="now-open-today"]').text()).toBe('Подробнее');
+    expect(week.get('[data-test="now-open-week"]').text()).toBe(`Ещё 1 категория · ${uah(30_000)}`);
     expect(w.find('.v-change-chip__sr').text()).toBe('больше, чем в обычный день');
     const bars = w.findComponent(WeekBars);
     expect(bars.attributes('aria-hidden')).toBe('true');
@@ -255,7 +265,7 @@ describe('now strip mounted', () => {
     await flushPromises();
     expect(w.text()).toContain(`≈ ${formatMoney(Math.round(72_000 / 41), 840)}`);
 
-    current = { ...NOW, week: { ...NOW.week, pendingHolds: 2, top: null } };
+    current = { ...NOW, week: { ...NOW.week, pendingHolds: 2, top: null, categories: [] } };
     const { useSyncStatusStore } = await import('@/entities/sync-status');
     useSyncStatusStore().version++;
     await flushPromises();
@@ -264,35 +274,32 @@ describe('now strip mounted', () => {
     expect(w.text()).toContain('На этой неделе трат ещё нет');
   });
 
-  it('the category panel: closed at first; opens on the week, switches to today, remembers both', async () => {
+  it('the details: open on the chosen period in place of the tiles, switch period in place, close; the period is remembered', async () => {
     const w = await mountStrip();
-    const toggle = w.get('[data-test="now-categories-toggle"]');
-    expect(toggle.text()).toBe('По категориям');
-    expect(toggle.attributes('aria-expanded')).toBe('false');
-    expect(w.find('[role="region"]').exists()).toBe(false);
+    expect(w.find('[data-test="now-details"]').exists()).toBe(false);
+    await w.get('[data-test="now-open-week"]').trigger('click');
+    expect(w.emitted('update:details')?.at(-1)).toEqual([true]);
+    await w.setProps({ details: true });
+    expect(w.find('[data-test="now-today"]').exists()).toBe(false);
+    const details = w.get('[data-test="now-details"]');
+    expect(details.classes()).toContain('col-span-full');
+    expect(details.findAll('li')).toHaveLength(4);
+    expect(details.text()).toContain('Сравнение с теми же днями прошлой недели, пн–сб');
+    expect(details.find('a').attributes('href')).toBe('/category/groceries?scope=personal&week=2026-09-28');
 
-    await toggle.trigger('click');
-    expect(toggle.attributes('aria-expanded')).toBe('true');
-    const panel = w.get('[role="region"]');
-    expect(panel.attributes('aria-label')).toBe('Траты по категориям');
-    expect(panel.findAll('li')).toHaveLength(4);
-    expect(panel.text()).toContain('Доставка');
-    expect(panel.text()).toContain('4 категории');
-    expect(panel.text()).toContain('Сравнение с теми же днями прошлой недели, пн–сб');
-    expect(panel.find('a').attributes('href')).toBe('/category/groceries?scope=personal&week=2026-09-28');
-
-    const today = panel.findAll('button').find((b) => b.text() === 'Сегодня');
+    const today = details.findAll('button').find((b) => b.text() === 'Сегодня');
     await today?.trigger('click');
-    expect(w.get('[role="region"]').findAll('li')).toHaveLength(2);
-    expect(w.get('[role="region"]').text()).not.toContain('Сравнение');
-    expect(JSON.parse(localStorage.getItem('now.categories') ?? 'null')).toEqual({ open: true, period: 'today' });
+    expect(w.get('[data-test="now-details"]').findAll('li')).toHaveLength(2);
+    expect(JSON.parse(localStorage.getItem('now.categories') ?? 'null')).toEqual({ period: 'today' });
+
+    await w.get('[data-test="now-close"]').trigger('click');
+    expect(w.emitted('update:details')?.at(-1)).toEqual([false]);
   });
 
-  it('the category panel opens as left; an empty day says so', async () => {
-    localStorage.setItem('now.categories', JSON.stringify({ open: true, period: 'today' }));
+  it('an empty day says so and offers no details', async () => {
     current = { ...NOW, todayCategories: [], today: { net: 0, purchases: 0 } };
     const w = await mountStrip();
-    expect(w.get('[data-test="now-categories-toggle"]').attributes('aria-expanded')).toBe('true');
-    expect(w.get('[role="region"]').text()).toContain('Сегодня трат ещё нет');
+    expect(w.get('[data-test="now-none-today"]').text()).toBe('Сегодня трат ещё нет');
+    expect(w.find('[data-test="now-open-today"]').exists()).toBe(false);
   });
 });

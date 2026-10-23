@@ -9,6 +9,9 @@ import { useSpending } from './composables/useSpending.ts';
 import { useSpendingView } from './composables/useSpendingView.ts';
 import { useSpendingPrefsStore } from './store/useSpendingPrefsStore.ts';
 
+/** The page hides «What's unusual» while the «Now» details tile takes its place. */
+const { insightsHidden = false } = defineProps<{ insightsHidden?: boolean }>();
+
 const base = useSpending();
 const { scope, state, view, periodNote, importing, family } = base;
 const prefsStore = useSpendingPrefsStore();
@@ -28,7 +31,7 @@ const { subtitle, hasData, empty, leftOut, summary, categories, people, insights
         :empty
         :left-out
       />
-      <SpendingInsights v-if="insights" :insights />
+      <SpendingInsights v-if="insights && !insightsHidden" :insights />
       <SpendingBody v-if="summary && hasData" :summary :categories :people :dim="state.status === 'loading'" @pick="onPick" />
       <p v-if="hasData" class="text-sm text-foreground-muted">{{ $t('home.spending.footnote') }}</p>
     </div>

@@ -32,13 +32,6 @@ export interface WeekCell {
   pending: number;
 }
 
-export interface TopCell {
-  name: string;
-  color: string;
-  amount: string;
-  caption: string;
-}
-
 export type NowPeriod = 'today' | 'week';
 
 export interface CategoryRow {
@@ -50,6 +43,9 @@ export interface CategoryRow {
   ops: string;
   /** % of the period's net, 0–100. */
   share: number;
+  /** % of the period's biggest category, 0–100: the row's bar in the tiles. */
+  bar: number;
+  icon: string;
   /** Against the same days last week (the week only); null — none. */
   chip: ChangeChipModel | null;
   /** The category's screen for this day or week; null — a category the app does not know. */
@@ -62,19 +58,18 @@ export interface CategoryBreakdown {
   summary: string;
   /** `home.now.cats.vsWeek` under the week's list; '' — no comparison. */
   note: string;
+  /** «9 more categories · 1 830 ₴» for the rows a tile does not list (`SHOWN_CATEGORIES`); '' — none. */
+  more: string;
 }
 
 export interface NowStripView {
   today: TodayCell;
   week: WeekCell;
-  /** null — no spending this week. */
-  top: TopCell | null;
   categories: Record<NowPeriod, CategoryBreakdown>;
 }
 
 /** The panel's choices, remembered on this computer. */
 export interface NowPrefs {
-  open: boolean;
   period: NowPeriod;
 }
 

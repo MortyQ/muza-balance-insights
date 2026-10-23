@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { BalancesFeature } from '@/features/balances';
 import { NowStripFeature } from '@/features/now-strip';
@@ -8,6 +9,8 @@ import { SpendingFeature } from '@/features/spending-summary';
 import { HomeNotices } from '@/widgets/home-notices';
 
 const syncStatus = useSyncStatusStore();
+/** The «Now» details tile is open: it takes «What's unusual»'s place too. */
+const nowDetails = ref(false);
 </script>
 
 <template>
@@ -22,8 +25,8 @@ const syncStatus = useSyncStatusStore();
     <div v-if="syncStatus.hasData" class="@container">
       <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[74rem]:grid-cols-[32rem_minmax(0,1.4fr)_minmax(17rem,1fr)]" data-test="home-grid">
         <BalancesFeature />
-        <NowStripFeature class="col-span-full" />
-        <SpendingFeature class="col-span-full" />
+        <NowStripFeature v-model:details="nowDetails" />
+        <SpendingFeature class="col-span-full" :insights-hidden="nowDetails" />
         <RecurringTeaserFeature class="col-span-full" />
       </div>
     </div>
