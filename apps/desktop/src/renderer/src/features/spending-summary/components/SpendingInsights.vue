@@ -8,14 +8,14 @@ const ICON = { up: 'lucide:arrow-up-right', down: 'lucide:arrow-down-right', neu
 </script>
 
 <template>
-  <section class="flex flex-col gap-1.5 rounded-xl bg-surface-sunken px-3 py-2.5" :aria-label="$t('home.spending.insights.title')">
-    <h3 class="text-xs font-semibold text-foreground-muted">{{ $t('home.spending.insights.title') }}</h3>
-    <ul class="flex flex-col gap-1">
-      <li v-for="(l, i) in insights.lines" :key="i" class="flex items-start gap-1.5 text-sm">
+  <div class="flex h-full flex-col gap-2">
+    <h3 class="text-sm font-bold">{{ $t('home.spending.insights.title') }}</h3>
+    <ul class="flex flex-col gap-1.5">
+      <li v-for="(l, i) in insights.lines" :key="i" class="flex items-start gap-2 rounded-lg bg-surface-sunken px-2.5 py-2 text-sm">
         <VIcon :icon="ICON[l.tone]" class="mt-0.5 size-4 shrink-0" :class="OPS_TONE[l.tone]" />
         <span>{{ l.text }}</span>
       </li>
     </ul>
-    <p class="text-xs text-foreground-muted">{{ insights.note }}</p>
-  </section>
+    <p class="mt-auto text-xs text-foreground-muted">{{ insights.note }}</p>
+  </div>
 </template>

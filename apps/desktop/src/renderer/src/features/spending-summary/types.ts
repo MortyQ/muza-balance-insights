@@ -54,6 +54,8 @@ export interface PersonRowView {
   amount: string;
   chip: ChipView | null;
   pressed: boolean;
+  /** A person's part of the family's spending, 0–100: the row's bar; null — «Whole family». */
+  share: number | null;
 }
 
 /** The block's own menu choices (its gear). */

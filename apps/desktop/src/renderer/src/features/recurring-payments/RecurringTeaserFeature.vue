@@ -8,11 +8,11 @@ const { view } = useRecurringTeaser();
 </script>
 
 <template>
-  <!-- Home: the monthly total of regular payments; the whole line opens their screen. -->
-  <VCard v-if="view" as="section" padding="none" :aria-label="$t('recurring.title')">
+  <VCard v-if="view" as="section" padding="none" :aria-label="$t('recurring.title')" data-test="recurring-teaser">
+    <!-- A home tile (spec desktop-home-tiles): the monthly total of regular payments; the whole tile opens their screen. -->
     <RouterLink
       :to="{ name: ROUTE.recurring }"
-      class="flex items-center gap-3 rounded-[inherit] px-4 py-3 hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-border-focus"
+      class="flex h-full items-center gap-3 rounded-[inherit] px-4 py-3 hover:bg-surface-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-border-focus"
     >
       <VIcon icon="lucide:repeat" class="size-4 shrink-0 text-foreground-muted" />
       <span class="flex min-w-0 flex-1 flex-col">

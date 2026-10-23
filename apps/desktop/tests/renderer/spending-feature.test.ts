@@ -345,3 +345,45 @@ describe('spending block: what is unusual', () => {
     expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
   });
 });
+
+describe('spending tiles', () => {
+  const cat = (category: string, categoryId: 'groceries' | 'cafes' | 'transport' | 'delivery' | 'health' | 'clothing', net: number) => ({
+    category, categoryId, net, purchases: 1, prev: null,
+    people: [part(1, net, 1, null), part(2, 0, 0, null), part(3, 0, 0, null)],
+  });
+  const MANY: SpendingOverview = {
+    ...VIEW,
+    categories: [
+      cat('продукты', 'groceries', 20_000), cat('кафе и рестораны', 'cafes', 10_000), cat('такси и транспорт', 'transport', 8_000),
+      cat('доставка', 'delivery', 6_000), cat('аптеки и здоровье', 'health', 4_000), cat('одежда', 'clothing', 2_000),
+    ],
+  };
+
+  it('straight into the page grid: «Spending by category» two columns wide, «Who spent what» beside it in the family view', async () => {
+    const w = await mountBlock();
+    const root = w.element as HTMLElement;
+    expect(root.classList.contains('contents')).toBe(true);
+    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['@[74rem]:col-span-2', '@[74rem]:row-span-2']));
+    const people = w.get('[data-test="spending-people"]');
+    expect(people.text()).toContain('Кто сколько');
+    expect(w.get('[data-test="spending-tile"]').findComponent(PeopleList).exists()).toBe(false);
+    expect(people.findComponent(PeopleList).exists()).toBe(true);
+  });
+
+  it('4 category rows, the rest unfold in place and fold back', async () => {
+    current = MANY;
+    const w = await mountBlock();
+    const rows = () => w.get('[data-test="spending-tile"]').findAll('a[href*="/category/"]');
+    expect(rows()).toHaveLength(4);
+    const more = w.get('[data-test="spending-more"]');
+    expect(more.text()).toBe('Показать ещё 2');
+    await more.trigger('click');
+    expect(rows()).toHaveLength(6);
+    expect(w.get('[data-test="spending-more"]').text()).toBe('Свернуть');
+  });
+
+  it('«What\'s unusual» is never inside «Spending by category»', async () => {
+    const w = await mountBlock();
+    expect(w.get('[data-test="spending-tile"]').text()).not.toContain('Что необычного');
+  });
+});

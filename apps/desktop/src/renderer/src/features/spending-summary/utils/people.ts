@@ -21,6 +21,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
     amount: fmt.money(view.total.net),
     chip: diffChip(view.total.net, view.total.prev?.net ?? null, view.month, fmt, partial(view)),
     pressed: pick === null,
+    share: null,
   };
   return [
     family,
@@ -35,6 +36,7 @@ export function peopleRows(view: Readonly<SpendingOverview>, pick: number | null
         amount: fmt.money(p.net),
         chip: diffChip(p.net, p.prev?.net ?? null, view.month, fmt, partial(view)),
         pressed: pick === p.participantId,
+        share: percentOf(p.net, view.total.net),
       };
     }),
   ];

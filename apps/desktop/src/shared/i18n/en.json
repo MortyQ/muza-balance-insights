@@ -692,7 +692,10 @@
       },
       "title": "Spending",
       "together": "together · {ops}",
-      "whole": "Whole family"
+      "whole": "Whole family",
+      "showMore": "Show {n} more | Show {n} more | Show {n} more",
+      "showLess": "Show less",
+      "whoSpent": "Who spent what"
     }
   },
   "income": {

@@ -28,11 +28,11 @@
 
 ## 5. Spending — feat(desktop): spending, people and unusual as tiles
 
-- [ ] 5.1 `SpendingFeature`: `contents` root; «Spending by category» tile with the summary column and the restyled category rows (4 rows, the rest unfolds in place)
-- [ ] 5.2 «Who spent what» tile from the block's people list (family view only), picking as before
-- [ ] 5.3 «What's unusual» tile from the block's insight lines, hidden while the period details are open
-- [ ] 5.4 `RecurringTeaserFeature` as a tile in the `recurring` area
-- [ ] 5.5 Spending tests updated: rows limit, people tile shown only for a family, insights out of the block
+- [x] 5.1 `SpendingFeature`: `contents` root; «Spending by category» tile with the summary column and the restyled category rows (4 rows, the rest unfolds in place)
+- [x] 5.2 «Who spent what» tile from the block's people list (family view only), picking as before
+- [x] 5.3 «What's unusual» tile from the block's insight lines, hidden while the period details are open
+- [x] 5.4 `RecurringTeaserFeature` as a tile in the `recurring` area
+- [x] 5.5 Spending tests updated: rows limit, people tile shown only for a family, insights out of the block
 
 ## 6. Docs and checks — docs(desktop): home tiles rules and live checks
 

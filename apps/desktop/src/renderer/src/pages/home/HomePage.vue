@@ -26,8 +26,8 @@ const nowDetails = ref(false);
       <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[74rem]:grid-cols-[32rem_minmax(0,1.4fr)_minmax(17rem,1fr)]" data-test="home-grid">
         <BalancesFeature />
         <NowStripFeature v-model:details="nowDetails" />
-        <SpendingFeature class="col-span-full" :insights-hidden="nowDetails" />
-        <RecurringTeaserFeature class="col-span-full" />
+        <SpendingFeature :insights-hidden="nowDetails" />
+        <RecurringTeaserFeature />
       </div>
     </div>
   </main>
