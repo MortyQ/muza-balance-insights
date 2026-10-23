@@ -72,45 +72,47 @@ async function mountBlock(): Promise<VueWrapper> {
   return w;
 }
 
-describe('balance block layout', () => {
-  it('the month pace sits beside the month panel from 74rem, the panel then keeps 340 px; under them below', async () => {
+describe('balance tiles', () => {
+  it('three tiles straight into the page grid: «Balance», «Month pace», «Month»; «Balance» spans two columns of two', async () => {
+    const b = await mountBlock();
+    const root = b.element as HTMLElement;
+    expect(root.classList.contains('contents')).toBe(true);
+    const tiles = [...root.children].map((c) => c.getAttribute('data-test'));
+    expect(tiles).toEqual(['balance-tile', 'pace', 'panel']);
+    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(expect.arrayContaining(['@[47rem]:col-span-2', '@[74rem]:col-span-1']));
+    // The chart's tile may shrink with the grid (a grid item keeps its content's width otherwise).
+    expect(b.get('[data-test="pace"]').classes()).toContain('min-w-0');
+  });
+
+  it('opening the row widens «Balance» to the whole row and hides the other two, kept mounted and inert', async () => {
     const b = await mountBlock();
     const pace = b.get('[data-test="pace"]');
-    expect(pace.element.parentElement?.classList.contains('@container')).toBe(true);
-    expect(pace.classes()).toEqual(expect.arrayContaining(['@[74rem]:absolute', '@[74rem]:left-[854px]', '@[74rem]:right-0']));
-    expect(pace.classes()).not.toContain('absolute');
-    expect(b.get('[data-test="panel"]').classes()).toEqual(expect.arrayContaining(['@[74rem]:right-auto', '@[74rem]:w-[340px]']));
-    // The chart's box may shrink with the block (a grid item keeps its content's width otherwise).
-    expect(pace.element.firstElementChild?.classList.contains('min-w-0')).toBe(true);
-  });
-
-  it('opening the row folds the month pace away too, inert', async () => {
-    const b = await mountBlock();
-    const pace = b.get('[data-test="pace"]');
-    expect(pace.attributes('inert')).toBeUndefined();
-    await b.get('button[aria-expanded]').trigger('click');
-    expect(pace.classes()).toContain('grid-rows-[0fr]');
-    expect(pace.attributes('inert')).toBeDefined();
-  });
-
-  it('the month panel sits beside the stack from 47rem of block width and under it below, never at a fixed width over the stack', async () => {
-    const b = await mountBlock();
     const panel = b.get('[data-test="panel"]');
-    expect(panel.element.parentElement?.classList.contains('@container')).toBe(true);
-    expect(panel.classes()).toEqual(expect.arrayContaining(['@[47rem]:absolute', '@[47rem]:left-[490px]', '@[47rem]:right-0']));
-    expect(panel.classes()).not.toContain('absolute');
-    expect(b.html()).not.toContain('w-[340px] [transition');
-    expect(b.html()).toContain('@[47rem]:max-w-[340px]');
-  });
-
-  it('opening the row folds the panel away (no empty space under the row) and makes it inert', async () => {
-    const b = await mountBlock();
-    const panel = b.get('[data-test="panel"]');
-    expect(panel.classes()).toContain('grid-rows-[1fr]');
+    expect(pace.isVisible()).toBe(true);
     expect(panel.attributes('inert')).toBeUndefined();
     await b.get('button[aria-expanded]').trigger('click');
-    expect(panel.classes()).toContain('grid-rows-[0fr]');
-    expect(panel.attributes('inert')).toBeDefined();
+    expect(b.get('[data-test="balance-tile"]').classes()).toContain('col-span-full');
+    for (const tile of [pace, panel]) {
+      expect(tile.element.isConnected).toBe(true);
+      expect(tile.isVisible()).toBe(false);
+      expect(tile.attributes('inert')).toBeDefined();
+    }
+  });
+
+  it('under the stack: the front card\'s free amount', async () => {
+    const b = await mountBlock();
+    expect(b.get('[data-test="free-line"]').text()).toContain('100 ₴');
+  });
+});
+
+describe('free line', () => {
+  it('a total with a reserve shows it and the free share; an account its own funds; a dim card nothing', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    expect(freeLineOf({ ...total, card: { ...total.card, reserved: '40 ₴', freeShare: 60 } })).toEqual({ free: '100 ₴', negative: false, reserved: '40 ₴', share: 60 });
+    expect(freeLineOf(total)).toEqual({ free: '100 ₴', negative: false, reserved: null, share: null });
+    expect(freeLineOf({ ...total, card: { ...total.card, dim: true } })).toBeNull();
+    expect(freeLineOf(null)).toBeNull();
   });
 });
 

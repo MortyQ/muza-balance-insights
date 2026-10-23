@@ -17,11 +17,15 @@ const syncStatus = useSyncStatusStore();
     <HomeNotices />
     <AppLockHintFeature />
     <UpdateBannerFeature />
-    <template v-if="syncStatus.hasData">
-      <BalancesFeature />
-      <NowStripFeature />
-      <SpendingFeature />
-      <RecurringTeaserFeature />
-    </template>
+    <!-- The tile grid (spec desktop-home-tiles): one column, two from 47rem, three from 74rem of its own width. Features
+         render their tiles straight into it (`contents` roots), in this order; each tile says its own span. -->
+    <div v-if="syncStatus.hasData" class="@container">
+      <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[74rem]:grid-cols-[32rem_minmax(0,1.4fr)_minmax(17rem,1fr)]" data-test="home-grid">
+        <BalancesFeature />
+        <NowStripFeature class="col-span-full" />
+        <SpendingFeature class="col-span-full" />
+        <RecurringTeaserFeature class="col-span-full" />
+      </div>
+    </div>
   </main>
 </template>

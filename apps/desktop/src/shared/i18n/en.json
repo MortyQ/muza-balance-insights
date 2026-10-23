@@ -467,6 +467,10 @@
         "usualMonth": "Usually in a month",
         "perDay": "Available per day",
         "noUsual": "A usual month shows once there are three whole months of history"
+      },
+      "freeLine": {
+        "free": "Free",
+        "reservedAmount": "reserved {amount}"
       }
     },
     "filters": {

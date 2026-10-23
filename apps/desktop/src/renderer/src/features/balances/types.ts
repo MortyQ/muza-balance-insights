@@ -119,3 +119,11 @@ export interface UseMonthPaceReturn {
   view: ComputedRef<PaceView | null>;
   fmt: ComputedRef<MoneyFormat>;
 }
+
+/** The line under the stack: the free amount of the card in front, its reserve and the free share (null — no bar). */
+export interface FreeLineView {
+  free: string;
+  negative: boolean;
+  reserved: string | null;
+  share: number | null;
+}

@@ -55,10 +55,22 @@ describe('paceView', () => {
 });
 
 describe('paceChartOption', () => {
+  it('as on the home mockup: a filled area under the month, today\'s amount in a pill, amounts on a faint grid', () => {
+    const o = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]), null)!, (n) => `${n} ₴`) as {
+      yAxis: { splitLine: unknown; axisLabel: { formatter: (n: number) => string } };
+      series: Array<{ areaStyle?: unknown; markPoint?: { data: Array<{ label: { formatter: string } }> } }>;
+    };
+    expect(o.series[1]?.areaStyle).toBeDefined();
+    expect(o.series[0]?.areaStyle).toBeUndefined();
+    expect(o.series[1]?.markPoint?.data[0]?.label.formatter).toBe('30 ₴');
+    expect(o.yAxis.axisLabel.formatter(20)).toBe('20 ₴');
+    expect(o.yAxis.splitLine).toBeDefined();
+  });
+
   it('the usual dashed before the month; today marked only while the month runs', () => {
     const running = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]), null)!) as { series: Array<{ lineStyle: { type?: string }; markPoint?: { data: unknown[] } }> };
     expect(running.series.map((s) => s.lineStyle.type ?? 'solid')).toEqual(['dashed', 'solid']);
-    expect(running.series[1]?.markPoint?.data).toEqual([{ coord: [1, 30] }]);
+    expect(running.series[1]?.markPoint?.data).toEqual([expect.objectContaining({ coord: [1, 30] })]);
     const past = paceChartOption(paceView(month(['full', 'full'], [10, 20], null), null)!) as { series: Array<{ markPoint?: { data: unknown[] } }> };
     expect(past.series).toHaveLength(1);
     expect(past.series[0]?.markPoint?.data).toEqual([]);

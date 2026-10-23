@@ -7,7 +7,7 @@ import { paceChartOption } from '../utils.ts';
 
 const { view, fmt } = defineProps<{ view: Readonly<PaceView>; fmt: Readonly<MoneyFormat> }>();
 
-const option = computed(() => paceChartOption(view));
+const option = computed(() => paceChartOption(view, (n) => fmt.money(n)));
 </script>
 
 <template>
@@ -17,7 +17,7 @@ const option = computed(() => paceChartOption(view));
       <h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3>
       <span class="text-xs text-foreground-muted">{{ $t('home.balances.pace.subtitle') }}</span>
     </div>
-    <div class="h-40 min-h-0 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">
+    <div class="h-44 min-h-0 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">
       <VChart :option class="size-full" />
     </div>
     <div class="flex flex-wrap gap-x-8 gap-y-2">

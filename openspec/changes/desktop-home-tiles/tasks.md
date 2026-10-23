@@ -13,11 +13,11 @@
 
 ## 3. Home grid and balances tiles — feat(desktop): home as tiles, the balances block split
 
-- [ ] 3.1 `HomePage`: the grid with named areas and the three container-query steps of design §2
-- [ ] 3.2 `BalancesFeature`: `contents` root; «Balance», «Month pace», «Month» as three `VCard` tiles; remove the absolute positioning and the width constants it no longer needs
-- [ ] 3.3 The free / reserved line with the split bar under the stack, for the card in front; dictionary keys in uk/en/ru
-- [ ] 3.4 Open row: «Balance» spans the row, the other two `v-show` + `inert`; the chart refits on return
-- [ ] 3.5 `tests/renderer/balances-block.test.ts` and a home grid test: areas, open/fold, the free line
+- [x] 3.1 `HomePage`: the grid with named areas and the three container-query steps of design §2
+- [x] 3.2 `BalancesFeature`: `contents` root; «Balance», «Month pace», «Month» as three `VCard` tiles; remove the absolute positioning and the width constants it no longer needs
+- [x] 3.3 The free / reserved line with the split bar under the stack, for the card in front; dictionary keys in uk/en/ru
+- [x] 3.4 Open row: «Balance» spans the row, the other two `v-show` + `inert`; the chart refits on return
+- [x] 3.5 `tests/renderer/balances-block.test.ts` and a home grid test: areas, open/fold, the free line
 
 ## 4. Today and week — feat(desktop): the «Now» strip as tiles with period details
 

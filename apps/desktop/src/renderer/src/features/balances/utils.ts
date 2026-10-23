@@ -7,7 +7,7 @@ import { colorVar } from '@/entities/participant';
 import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { ChartOption } from '@/shared/ui';
-import type { Flow, PaceView, RowView, Slide } from './types.ts';
+import type { Flow, FreeLineView, PaceView, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
@@ -320,30 +320,74 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
 }
 
 /** The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them). */
-export function paceChartOption(v: Readonly<PaceView>): ChartOption {
-  const point = v.running ? [{ coord: [v.last, v.spentTotal] }] : [];
+export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) => string = String): ChartOption {
+  // Today's point carries its amount in a pill above it, as the home mockup draws it.
+  const point = v.running
+    ? [
+        {
+          coord: [v.last, v.spentTotal],
+          label: {
+            show: true,
+            position: 'top',
+            distance: 10,
+            formatter: money(v.spentTotal),
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'var(--foreground)',
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--border)',
+            borderWidth: 1,
+            borderRadius: 7,
+            padding: [4, 8],
+          },
+        },
+      ]
+    : [];
   return {
-    grid: { left: 0, right: 8, top: 10, bottom: 22 },
+    grid: { left: 4, right: 12, top: 30, bottom: 22, containLabel: true },
     xAxis: {
       type: 'category',
       boundaryGap: false,
       data: v.days,
-      axisLine: { lineStyle: { color: 'var(--border-subtle)' } },
+      axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { fontSize: 11, color: 'var(--foreground-muted)', interval: (i: number) => i % 5 === 0 },
+      axisLabel: { fontSize: 10, color: 'var(--foreground-muted)', interval: (i: number) => i % 7 === 0 },
     },
-    yAxis: { type: 'value', min: 0, show: false },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      splitNumber: 3,
+      axisLabel: { fontSize: 10, color: 'var(--foreground-muted)', formatter: (n: number) => (n === 0 ? '0' : money(n)) },
+      splitLine: { lineStyle: { color: 'var(--border-subtle)' } },
+    },
     series: [
       ...(v.usual === null
         ? []
-        : [{ type: 'line', data: v.usual, symbol: 'none', silent: true, lineStyle: { type: 'dashed', width: 1.5, color: 'var(--foreground-muted)' } }]),
+        : [
+            {
+              type: 'line',
+              data: v.usual,
+              symbol: 'none',
+              silent: true,
+              lineStyle: { type: 'dashed', width: 2, color: 'color-mix(in oklch, var(--primary) 35%, var(--surface))' },
+            },
+          ]),
       {
         type: 'line',
         data: v.spent,
         symbol: 'none',
-        lineStyle: { width: 3, color: 'var(--primary)' },
+        lineStyle: { width: 2.5, color: 'var(--primary)' },
+        areaStyle: { color: 'var(--primary)', opacity: 0.12 },
         markPoint: { silent: true, symbol: 'circle', symbolSize: 9, itemStyle: { color: 'var(--primary)' }, label: { show: false }, data: point },
       },
     ],
   };
+}
+
+/** What the line under the stack shows for a card: a total's free amount with its reserve, an account's own funds. */
+export function freeLineOf(slide: Readonly<Slide> | null): FreeLineView | null {
+  if (!slide || slide.card.dim) return null;
+  if (slide.kind === 'account') return { free: slide.card.amount, negative: false, reserved: null, share: null };
+  const c = slide.card;
+  return { free: c.amount, negative: c.negative, reserved: c.reserved, share: c.reserved ? c.freeShare : null };
 }
