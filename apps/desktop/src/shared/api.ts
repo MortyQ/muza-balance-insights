@@ -389,9 +389,12 @@ export type DetailPeriod = { kind: 'day'; date: string } | { kind: 'week'; from:
 
 export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number };
 
-/** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
+/**
+ * One spending line of the category screen: a transaction's body, its commission as a «Bank fees» line, or a transfer
+ * between banks' implicit fee as a «Transfer fees» line.
+ */
 export type CategoryLineView = {
-  /** Unique per line: the transaction's id, «:fee» for its commission line. */
+  /** Unique per line: the transaction's id, «:fee» for its commission line, «:transfer-fee» for its transfer fee line. */
   key: string;
   /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
   date: string;
@@ -412,6 +415,7 @@ export type CategoryLineView = {
   amount: number;
   /** The operation's own currency and amount when it differs from the account's. */
   operation: { currency: number; amount: number } | null;
+  /** A fee line: a commission or a transfer fee. */
   commission: boolean;
   hold: boolean;
   /** A hold of the last 3 days: it may still change. */

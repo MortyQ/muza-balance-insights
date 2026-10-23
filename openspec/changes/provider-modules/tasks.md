@@ -80,20 +80,21 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 7. Transfers between banks (feat(core): transfers between banks)
 
-- [ ] 7.1 In `derive/transfers.ts`, add the cross-bank pass after `pair_fee`:
+- [x] 7.1 In `derive/transfers.ts`, add the cross-bank pass after `pair_fee`:
   - different providers, one currency, both transfer-like, `0 ≤ dt ≤ 180`, `0 ≤ d`, `100·d ≤ 5·credit`;
   - nearest, then smallest difference, then ids;
   - `pair` / `pair_fee` / `family`;
   - `transfer_fee` on the debit, cleared when the pair goes.
 
   Widen the pass context and `deriveSpan` only when two providers exist. Verify with `tests/derive/transfers.test.ts` (each spec scenario of `core-cross-bank-transfers`) and that the Monobank-only fixtures' marks are unchanged.
-- [ ] 7.2 Add the `transfer_fee` line kind to `spendingLinesSql` with the `transferFees` category, its body rule and the crossing rule. Add `home.spending.category.transferFees` to the three dictionaries. Verify with `tests/read/fees-aggregates.test.ts` and `family.test.ts`:
+- [x] 7.2 Add the `transfer_fee` line kind to `spendingLinesSql` with the `transferFees` category, its body rule and the crossing rule. Add `home.spending.category.transferFees` to the three dictionaries. Verify with `tests/read/fees-aggregates.test.ts` and `family.test.ts`:
   - an implicit fee in the person and family views;
   - a stated commission as bank fees;
   - a crossing pair counted whole;
   - `spendingSummary`, `spendingGrid` and the desktop overviews agree.
-- [ ] 7.3 Add a two-bank fixture to `tests/derive/derived-equivalence.test.ts` and to the performance harness. Verify that incremental equals full and the budgets hold.
-- [ ] 7.4 Update `domain-rules.md` (cross-bank pairs, the transfer fee, the tolerance and why there is no floor). Verify core's and desktop's tsc and vitest.
+- [x] 7.3 Add a two-bank fixture to `tests/derive/derived-equivalence.test.ts` and to the performance harness. Verify that incremental equals full and the budgets hold.
+  The harness part is deferred to `docs/backlog.md` («The benchmark with two banks»): the bench uses the real registry, which holds Monobank only. A one-off run with a mocked second bank showed no slowdown.
+- [x] 7.4 Update `domain-rules.md` (cross-bank pairs, the transfer fee, the tolerance and why there is no floor). Verify core's and desktop's tsc and vitest.
 
 ## 8. Banks from the registry in the renderer (feat(desktop): banks from the registry)
 

@@ -85,7 +85,7 @@ const KEY_SQL: Record<SpendingGroupBy, string> = {
   category: 'category',
   month: 'bucket',
   account: 'account_id',
-  mcc: `CASE WHEN kind = 'commission' THEN '${COMMISSION_KEY}' ELSE COALESCE(CAST(mcc AS TEXT), '${NO_MCC_KEY}') END`,
+  mcc: `CASE WHEN kind <> 'body' THEN '${COMMISSION_KEY}' ELSE COALESCE(CAST(mcc AS TEXT), '${NO_MCC_KEY}') END`,
   scope: 'scope',
   operation_currency: `COALESCE(CAST(op_currency AS TEXT), '${COMMISSION_KEY}')`,
   day: 'bucket',
@@ -101,7 +101,9 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  * - a row with commission_rate > 0 (amount < 0) is split: the body (`kind` body, amount + commission) keeps its
  *   category, the commission is a separate «комиссии банка» line (`kind` commission, no operation currency);
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays;
- * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
+ * - a cross-bank debit's implicit fee (`transfer_fee`, transfers.ts) is a separate «комиссии за переводы» line (`kind`
+ *   transfer_fee) in every view, and the body is the rest (amount + commission + transfer_fee), excluded as above;
+ * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation, counted whole.
  * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket,
  * participant_id (the account owner's, only when grouped by participant, else NULL). The caller
  * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
@@ -131,20 +133,26 @@ export async function spendingLinesSql(
                    ${excludedTransferSql(personView(q))} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission,
+                   CASE WHEN t.amount < 0 AND t.crossing_category IS NULL THEN COALESCE(t.transfer_fee, 0) ELSE 0 END AS transfer_fee,
                    ${unit ? 'b.k' : 'NULL'} AS bucket, ${byPerson ? 'c.participant_id' : 'NULL'} AS participant_id
             FROM ${unit ? 'buckets b CROSS JOIN transactions t INDEXED BY idx_tx_time ON t.time >= b.s AND t.time < b.e' : 'transactions t'}
               JOIN accounts a ON a.id = t.account_id${byPerson ? ' JOIN connections c ON c.id = a.connection_id' : ''}
             WHERE ${where.join(' AND ')}
           ),
           lines AS (
-            -- body: account-currency amount without the commission; the operation amount never includes it
-            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission AS amount, op_currency, op_amount, bucket, participant_id
+            -- body: account-currency amount without the commission and the transfer fee; the operation amount never
+            -- includes the commission, and loses the transfer fee when it is in the account currency
+            SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission + transfer_fee AS amount, op_currency,
+                   CASE WHEN op_currency = currency THEN op_amount + transfer_fee ELSE op_amount END AS op_amount, bucket, participant_id
             FROM base WHERE internal = 0
             UNION ALL
             -- commission: account currency only, no operation currency
             SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket, participant_id FROM base WHERE commission > 0
+            UNION ALL
+            -- transfer fee: the same, in every view
+            SELECT id, 'transfer_fee', currency, account_id, time, NULL, scope, ?, -transfer_fee, NULL, NULL, bucket, participant_id FROM base WHERE transfer_fee > 0
           )`,
-    args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees],
+    args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees, CATEGORY.transferFees],
   };
 }
 
@@ -153,7 +161,7 @@ export async function spendingLinesSql(
  * - a row with commission_rate > 0 (amount < 0) is split: body = amount + commission keeps its category,
  *   the commission is a separate «комиссии банка» line;
  * - internal transfers (and family ones when the whole family is viewed): the body is excluded, the commission stays
- *   spending;
+ *   spending; a cross-bank transfer's implicit fee is a «комиссии за переводы» line in every view;
  * - refunds are positive lines in a spending category; «поступления» and «свои переводы» are excluded;
  * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation.
  * Filters: scope, accountId, participantId, category (applies to lines, so «комиссии банка» works too).

@@ -1,8 +1,10 @@
 // Incremental derivation equals a full pass: a two-connection import window by window (each window's own pass), an
 // account turned off half way, the end-of-import pass over the touched spans, then a statement upload to a file
-// connection — and a full rederiveCore afterwards moves no derived value. Fictional data only.
+// connection — and a full rederiveCore afterwards moves no derived value. Then two banks: a second, fictional bank
+// (added to the registries by mocks only, it borrows Monobank's rules and API facts) whose statement uploads pair with
+// Monobank's windows across banks, before and after them. Fictional data only.
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setAccountEnabled } from '../../src/commands/people.ts';
 import type { Db } from '../../src/storage/db.ts';
 import { accountInputs, accountInputsChanged } from '../../src/derive/derived.ts';
@@ -13,8 +15,26 @@ import { rederiveCore, rederiveSpans } from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
 import { WINDOW_SEC, interleavePlan } from '../../src/ingest/plan.ts';
 import { planHistory, syncAccounts, syncWindow, type SyncContext } from '../../src/ingest/sync.ts';
-import type { TimeRange } from '../../src/derive/transfers.ts';
+import { CROSS_BANK_WINDOW_SEC, type TimeRange } from '../../src/derive/transfers.ts';
+import type { ParsedStatement, ProviderId, ProviderInfo } from '../../src/providers/types.ts';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection, type RawItem } from '../helpers.ts';
+
+vi.mock('../../src/providers/types.ts', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/providers/types.ts')>()),
+  PROVIDER_IDS: ['monobank', 'fictional'],
+}));
+vi.mock('../../src/providers/info.ts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../src/providers/info.ts')>();
+  const providers: Record<string, ProviderInfo> = {
+    ...real.PROVIDERS,
+    fictional: { ...real.PROVIDERS.monobank, id: 'fictional' as ProviderId, name: 'Fictional Bank', ids: 'prefixed' },
+  };
+  return { ...real, PROVIDERS: providers, infoOf: (p: string) => providers[p], apiOf: (p: string) => providers[p]?.access.token?.api };
+});
+vi.mock('../../src/providers/rules.ts', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../src/providers/rules.ts')>();
+  return { ...real, rulesFor: (p: string) => real.rulesFor(p === 'fictional' ? 'monobank' : (p as ProviderId)) };
+});
 
 const TOKEN_B = 'test-token-B-SHOULD-NEVER-LEAK-77aa';
 let db: Db;
@@ -117,6 +137,77 @@ describe('incremental derivation equals a full pass', () => {
     expect(stored.some((r) => r.crossing_category !== null)).toBe(true);
     expect(stored.some((r) => r.refund_pair_id !== null)).toBe(true);
     expect(stored.filter((r) => String(r.id).startsWith('file-card')).length).toBeGreaterThan(0);
+
+    await rederiveCore(db);
+    expect(await derivedColumns(db)).toEqual(stored);
+  });
+
+  it('two banks: statement uploads of another bank pair with Monobank windows, before and after them', async () => {
+    db = await memoryDb();
+    const clock = fakeClock();
+    const now = Math.floor(clock.nowMs() / 1000);
+    const since = now - 3 * WINDOW_SEC + 100;
+    const me = await testConnection(db);
+    const meParticipant = Number((await db.execute({ sql: 'SELECT participant_id FROM connections WHERE id = ?', args: [me] })).rows[0]?.participant_id);
+    const her = await addParticipant(db, { label: 'Вигадана Особа' }, 0);
+    const statements: Record<string, RawItem[]> = {};
+    const mono = fakeMonobank({ accounts: [{ id: 'm-black', iban: 'UA00FICTIONALM1' }], clientId: 'holder-m', statements });
+    const ctx: SyncContext = { db, clock, connectionId: me, api: createMonoClient({ token: TEST_TOKEN, db, fetch: mono.fetch, clock, rateLimitMode: 'wait', connectionId: me }) };
+    await syncAccounts(ctx);
+    const plan = await planHistory(ctx, { sinceSec: since });
+    const bounds = [...new Set([...plan.values()].flat().map((w) => w.from))].filter((t) => t > since).sort();
+    expect(bounds.length).toBeGreaterThanOrEqual(2);
+
+    const FICTIONAL = 'fictional' as ProviderId;
+    const mine = await addConnection(db, meParticipant, FICTIONAL, 0, 'file');
+    const hers = await addConnection(db, her, FICTIONAL, 0, 'file');
+    const transfer = { mcc: 4829, description: 'Fictional transfer' };
+    const fileRow = (time: number, amount: number) => ({ time, amount, currencyCode: 980, hold: false, ...transfer, raw: '{}' });
+    const fileOf = (rows: ReturnType<typeof fileRow>[]): ParsedStatement => ({
+      kind: 'card', currencyCode: 980, account: { iban: null, cards: [], type: null }, rows: [...rows].sort((x, y) => x.time - y.time), closingBalance: null,
+    });
+
+    const rnd = lcg(11);
+    let n = 0;
+    const monoRow = (time: number, amount: number, extra: Partial<RawItem> = {}) => (statements['m-black'] ??= []).push(item(`m-${++n}`, time, amount, extra));
+    const mineRows: ReturnType<typeof fileRow>[] = [];
+    const hersRows: ReturnType<typeof fileRow>[] = [];
+    for (let t = since + 900; t < now - 900; t += 5 * 3600 + Math.floor(rnd() * 7200)) {
+      monoRow(t, -Math.floor(1000 + rnd() * 40_000), { mcc: 5411 });
+      // Monobank → the other bank, 1–3 minutes later, up to a 4% fee; and back, exact.
+      const credit = Math.floor(2000 + rnd() * 50_000);
+      monoRow(t + 600, -(credit + Math.floor((credit * Math.floor(rnd() * 5)) / 100)), transfer);
+      mineRows.push(fileRow(t + 600 + 60 + Math.floor(rnd() * 120), credit));
+      mineRows.push(fileRow(t + 1800, -credit));
+      monoRow(t + 1800 + 30 + Math.floor(rnd() * 100), credit, transfer);
+    }
+    // Pairs that straddle a window boundary by more than the same-bank window, and a family one with a fee.
+    monoRow(bounds[0]! - 40, -5150, transfer);
+    mineRows.push(fileRow(bounds[0]! + CROSS_BANK_WINDOW_SEC - 50, 5000));
+    mineRows.push(fileRow(bounds[1]! - 60, -8000));
+    monoRow(bounds[1]! + 100, 8000, transfer);
+    monoRow(bounds[1]! + 2000, -10_400, transfer);
+    hersRows.push(fileRow(bounds[1]! + 2100, 10_000));
+
+    // Half of her bank's rows come before the Monobank windows, all of them after.
+    const half = mineRows.filter((r) => r.time < bounds[1]!);
+    await commitStatement(db, mine, [fileOf(half)], [{ kind: 'new', id: 'file-mine', type: null }], now);
+    const spans: TimeRange[] = [];
+    for (const p of interleavePlan(plan)) {
+      const r = await syncWindow(ctx, p.accountId, p.window);
+      expect(r.derivationFailed).toBe(false);
+      spans.push(r.span);
+    }
+    await rederiveSpans(db, spans);
+    await commitStatement(db, mine, [fileOf(mineRows)], [{ kind: 'account', accountId: 'fictional:file-mine' }], now);
+    await commitStatement(db, hers, [fileOf(hersRows)], [{ kind: 'new', id: 'file-hers', type: null }], now);
+
+    const stored = await derivedColumns(db);
+    const cross = stored.filter((r) => String(r.id).startsWith('m-') && String(r.transfer_pair_id ?? '').startsWith('fictional:'));
+    expect(cross.length).toBeGreaterThan(10);
+    expect(cross.some((r) => r.transfer_rule === 'pair_fee' && Number(r.transfer_fee) > 0)).toBe(true);
+    expect(cross.some((r) => r.transfer_rule === 'pair')).toBe(true);
+    expect(cross.some((r) => r.transfer_rule === 'family' && Number(r.transfer_fee) === 400)).toBe(true);
 
     await rederiveCore(db);
     expect(await derivedColumns(db)).toEqual(stored);

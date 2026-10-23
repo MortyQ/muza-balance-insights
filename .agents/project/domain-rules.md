@@ -45,6 +45,24 @@
   кроме «Переказ на картку»). После `pair_fx` идёт `pair_fee`: одна валюта,
   `out.amount + out.commission_rate = −in.amount`, комиссия > 0. Пары строго один-к-одному: минимальный Δt,
   при равенстве — id.
+- **Transfers between banks** (`derive/transfers.ts`, the cross-bank pass right after `pair_fee`, only on rows the
+  same-bank rules left free, and only when accounts of two providers exist): a debit and a credit of accounts of
+  different providers, one currency, both transfer-like by their own provider's rules, the credit 0–180 s after the
+  debit (`CROSS_BANK_WINDOW_SEC`; banks take longer than Monobank's 0–14 s), the debit larger by `d ≥ 0` with
+  `100·d ≤ 5·credit` (`CROSS_BANK_FEE_PERCENT`, integers only). Greedy, one-to-one: nearest, then the smallest
+  difference, then ids. `d = 0` → `pair`, else `pair_fee`; between two participants `family`, as any pair. The debit
+  stores `transfer_fee = d − commission_rate` when positive (migration v17): the fee the banks took without stating it;
+  a row that loses the pair loses the fee. With two providers `markInternalTransfers` looks 180 s around a span
+  instead of 20 s (its returned span, and so `deriveSpan`'s, widens with it); with Monobank alone nothing changes.
+  - In the figures (`spendingLinesSql`): the implicit fee is its own line, `kind` `transfer_fee`, in the category
+    «комиссии за переводы» (`CATEGORY.transferFees`, derived-only, never on a row, no override), in every view — the
+    whole family's too; the body is `amount + commission + transfer_fee` and is excluded for internal and (whole family)
+    family rows as before; a stated commission stays «комиссии банка». A pair with a disabled account counts whole:
+    no fee line. Grouped by MCC or operation currency the fee line is under `COMMISSION_KEY`.
+  - No absolute floor: a small transfer whose fee is above 5% is not paired and counts as spending and income, the safe
+    failure. Real fee data decides whether a floor is needed (`docs/backlog.md`).
+  - Tests: `tests/derive/cross-bank-transfers.test.ts`, `tests/read/cross-bank-aggregates.test.ts`, the two-bank case
+    of `tests/derive/derived-equivalence.test.ts` (a fictional second bank added by mocks).
 - Шаблоны описаний Monobank — один источник в `packages/core/src/providers/monobank/descriptions.ts`, их используют и
   маскировка, и разметка (через правила провайдера).
 - «Щомісячний платіж» → «рассрочки и кредиты», не internal. Двойного счёта с исходной покупкой нет

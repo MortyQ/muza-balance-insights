@@ -33,6 +33,7 @@ export const CATEGORY = {
   marketplaces: 'маркетплейсы',
   charity: 'благотворительность',
   fees: 'комиссии банка', // never assigned to a row: the commission part of a row, split in aggregates
+  transferFees: 'комиссии за переводы', // never assigned to a row: a cross-bank transfer's implicit fee (transfer_fee)
   p2p: 'переводы людям',
   family: 'семье', // a transfer to another participant (transfer_rule family), the sender's side
   installments: 'рассрочки и кредиты',
@@ -42,7 +43,7 @@ export const CATEGORY = {
 } as const;
 
 /** Only the derivation sets these; every other category a provider may suggest (CATEGORY_HINTS). */
-type DerivedOnly = 'fees' | 'ownTransfers' | 'family';
+type DerivedOnly = 'fees' | 'transferFees' | 'ownTransfers' | 'family';
 // Compile-time: the hints are exactly the categories but the derived-only ones.
 const HINTS_ARE_CATEGORIES: [Exclude<keyof typeof CATEGORY, CategoryHint | DerivedOnly>, Exclude<CategoryHint, keyof typeof CATEGORY>] extends [never, never]
   ? true

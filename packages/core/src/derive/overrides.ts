@@ -7,7 +7,7 @@ export type MatchType = 'exact' | 'contains';
 
 /** Categories an override may assign: every row category except the derived ones. */
 export const OVERRIDE_CATEGORIES: readonly string[] = Object.values(CATEGORY).filter(
-  (c) => c !== CATEGORY.ownTransfers && c !== CATEGORY.fees,
+  (c) => c !== CATEGORY.ownTransfers && c !== CATEGORY.fees && c !== CATEGORY.transferFees,
 );
 
 export class OverrideError extends Error {

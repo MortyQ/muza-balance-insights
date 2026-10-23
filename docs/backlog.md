@@ -107,3 +107,11 @@
   line, the next one is answered by a new process.
 - **The read cache by eye**: going back to a month or a category shows its numbers at once; after an import window or
   a write (a reserve, a recurring mark, an account toggle) the screen shows the new numbers within one quiet reload.
+
+## Check on a live system: provider modules (`openspec/changes/provider-modules`)
+
+- **The benchmark with two banks**: `packages/core/bench` builds its data through the real provider registry, which
+  holds Monobank only, so it cannot hold a second bank yet. When the first real second bank lands, add its accounts
+  and cross-bank pairs to `bench/generate.ts` and check the budgets. A one-off run with a mocked second bank
+  (23.10.2026, not kept) gave a full re-derivation of 1160 ms with one bank and 1151 ms with two, and 6 / 5 ms for a
+  3-day span: the cross-bank pass adds no measurable time.

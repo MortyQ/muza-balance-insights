@@ -466,7 +466,7 @@ export class DataService {
     const lines: CategoryLineView[] = raw.lines.map((l) => {
       const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
       return {
-        key: l.kind === 'body' ? l.id : `${l.id}:fee`,
+        key: l.kind === 'body' ? l.id : l.kind === 'commission' ? `${l.id}:fee` : `${l.id}:transfer-fee`,
         date,
         time,
         weekday: isoWeekday(date),
@@ -481,7 +481,7 @@ export class DataService {
           l.operationCurrency !== null && l.operationAmount !== null && l.operationCurrency !== l.currency
             ? { currency: l.operationCurrency, amount: l.operationAmount }
             : null,
-        commission: l.kind === 'commission',
+        commission: l.kind !== 'body',
         hold: l.hold,
         pending: l.hold && l.time >= now - RESYNC_OVERLAP_SEC,
         refund: l.amount > 0,

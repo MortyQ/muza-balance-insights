@@ -9,8 +9,11 @@ import { periodInfo, validateFilters, type Period, type PeriodInfo, type Spendin
 export type CategoryLine = {
   /** The transaction's id; a body and its commission line share it. */
   id: string;
-  /** body = the row without its commission; commission = that commission as a «комиссии банка» line. */
-  kind: 'body' | 'commission';
+  /**
+   * body = the row without its commission and transfer fee; commission = that commission as a «комиссии банка» line;
+   * transfer_fee = a cross-bank transfer's implicit fee as a «комиссии за переводы» line.
+   */
+  kind: 'body' | 'commission' | 'transfer_fee';
   /** Unix seconds. */
   time: number;
   accountId: string;
@@ -26,7 +29,7 @@ export type CategoryLine = {
   counterName: string | null;
   mcc: number | null;
   hold: boolean;
-  /** Cashback of the row, account currency minor units (0 for a commission line). */
+  /** Cashback of the row, account currency minor units (0 for a commission or transfer fee line). */
   cashback: number;
   /** One half of a purchase–refund pair (refunds.ts). */
   refundPair: boolean;
@@ -57,7 +60,7 @@ export async function categoryLines(db: Db, q: Period & SpendingFilters & { cate
       const body = r.kind === 'body';
       return {
         id: String(r.id),
-        kind: body ? 'body' : 'commission',
+        kind: body ? 'body' : r.kind === 'commission' ? 'commission' : 'transfer_fee',
         time: Number(r.time),
         accountId: String(r.account_id),
         participantId: Number(r.participant_id),
