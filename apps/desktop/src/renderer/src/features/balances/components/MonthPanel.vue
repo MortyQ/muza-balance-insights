@@ -29,7 +29,7 @@ const result = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col justify-center gap-4">
+  <div class="flex flex-col gap-4">
     <div class="flex items-baseline justify-between gap-3">
       <h3 class="text-base font-bold">{{ $t('home.balances.monthTile') }}</h3>
       <span class="text-xs text-foreground-muted">{{ title }} · {{ note }}</span>
@@ -65,7 +65,7 @@ const result = computed(() => {
         {{ p.label }}
       </li>
     </ul>
-    <div class="flex items-center gap-2.5">
+    <div class="mt-auto flex items-center gap-2.5">
       <VButton variant="primary" size="md" :text="$t('home.balances.allAccounts')" @click="emit('stub')" />
       <span v-if="stubShown" class="text-xs text-foreground-muted" role="status">{{ $t('home.balances.stubSoon') }}</span>
     </div>
