@@ -2,8 +2,8 @@
 
 ## 1. Specs baseline — docs(openspec): sync and archive desktop-app-shell and desktop-month-pace
 
-- [ ] 1.1 Sync the specs of `desktop-app-shell` and `desktop-month-pace` into `openspec/specs/` and archive both changes
-- [ ] 1.2 `pnpm openspec validate desktop-home-tiles` passes against the synced specs
+- [x] 1.1 Sync the specs of `desktop-app-shell` and `desktop-month-pace` into `openspec/specs/` and archive both changes
+- [x] 1.2 `pnpm openspec validate desktop-home-tiles` passes against the synced specs
 
 ## 2. Layout — feat(desktop): data screens on the window's background
 

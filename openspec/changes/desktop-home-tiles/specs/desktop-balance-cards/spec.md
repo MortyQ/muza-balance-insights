@@ -1,6 +1,13 @@
-## MODIFIED Requirements
+## REMOVED Requirements
 
 ### Requirement: Stack and month panel never overlap
+
+**Reason**: the stack, the month panel and the pace panel are no longer arranged inside one block.
+**Migration**: replaced by «Balance tiles never overlap» below and spec `desktop-home-tiles`.
+
+## ADDED Requirements
+
+### Requirement: Balance tiles never overlap
 
 The card stack, the month panel («In» / «Out», the month's result) and the pace panel SHALL be separate tiles on home
 (spec `desktop-home-tiles`). While the row is folded, the three tiles SHALL sit in one row when they fit at their

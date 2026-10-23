@@ -64,13 +64,20 @@ The «What's unusual» lines SHALL be shown in their own tile in the second row,
 - **WHEN** the month has categories above or below usual
 - **THEN** they are listed in the «What's unusual» tile only
 
-### Requirement: Spending by category tile
+### Requirement: Spending by category summary
 
 «Spending by category» SHALL show on its left the ring with the month's total and per-day amount inside, the change
-against the compared period, the number of operations with its change, and last month's total; on its right the
-category rows, each with its icon, name, share, operations, change chip, amount and a bar with last month's mark and
-the people split when those options are on. It SHALL list 4 categories and unfold the rest in place. The block's own
-person pick and options SHALL work as before.
+against the compared period, the number of operations with its change, and last month's total.
+
+#### Scenario: Month compared
+- **WHEN** the shown month has a compared period
+- **THEN** the change, the operations and last month's total sit under the ring
+
+### Requirement: Spending by category rows
+
+On its right «Spending by category» SHALL list category rows, each with icon, name, share, operations, change chip,
+amount and a bar; the bar SHALL carry last month's mark and the people split when those options are on. It SHALL list
+4 categories and unfold the rest in place. The block's own person pick and options SHALL work as before.
 
 #### Scenario: Many categories
 - **WHEN** the month has 15 categories with spending
