@@ -115,3 +115,19 @@
   and cross-bank pairs to `bench/generate.ts` and check the budgets. A one-off run with a mocked second bank
   (23.10.2026, not kept) gave a full re-derivation of 1160 ms with one bank and 1151 ms with two, and 6 / 5 ms for a
   3-day span: the cross-bank pass adds no measurable time.
+- **A real transfer between two banks and its fee**: once a second bank's statements are in, send money from one bank
+  to the other (with and without a fee) and check that the two rows pair: the credit within `CROSS_BANK_WINDOW_SEC`
+  (180 s) of the debit, the fee within `CROSS_BANK_FEE_PERCENT` (5%) of the credit (`packages/core/src/derive/transfers.ts`).
+  The fee must show under «Transfer fees» (`CATEGORY.transferFees`), and neither half under spending or income. Note the
+  real gaps between the halves and the real fees, to confirm or tune both constants.
+- **The fee floor**: a small transfer whose fee is above 5% is not paired and counts as spending and income. Collect the
+  real fees on small amounts (a fixed fee on a 100 ₴ transfer is more than 5%); decide from them whether an absolute
+  floor is needed.
+- **Real PrivatBank `.xlsx` and A-Bank `.pdf` files**: before their readers ship, the team adding them checks that the
+  decoder (`apps/desktop/src/decoder/`) turns real files into the document their readers expect: sheets with values kept
+  as stored (dates as Excel serials, no floats), PDF text items with positions that put a row's cells on one line. A
+  file the decoder refuses (`unreadable`, `encrypted`, a passed limit of `DECODE_LIMITS` in
+  `src/shared/decoder-protocol.ts`) shows which assumption broke. Only masked layouts in fixtures.
+- **The decoder's memory on a large PDF**: upload a long PDF statement (hundreds of pages, near `STATEMENT_MAX_BYTES`,
+  10 MiB) and watch the `balance-decoder` process: its peak resident size, the time against `DECODE_TIMEOUT_MS` (30 s),
+  and that it is gone after the reply. Lower the page or item limits if the peak is too high for a weak machine.

@@ -123,7 +123,7 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 10. Checks (docs: provider modules checks)
 
-- [ ] 10.1 Add the live checks of the design's migration plan to `docs/backlog.md`:
+- [x] 10.1 Add the live checks of the design's migration plan to `docs/backlog.md`:
   - a real two-bank pair and its fee;
   - the fee floor;
   - decoding real PrivatBank `.xlsx` and A-Bank `.pdf` files;
@@ -131,6 +131,9 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
   Verify that the entries are present.
 - [ ] 10.2 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
+
+  Agent, 23.10.2026: per package, all pass (core 425, mcp 97, db-libsql 14, desktop 1614 + 7 skipped; every
+  tsc / vue-tsc clean). The root `pnpm test` / `pnpm typecheck`, the desktop build and `test:package` are the user's.
 
 ## Workflow follow-up
 
