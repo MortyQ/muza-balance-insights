@@ -17,10 +17,12 @@ vi.mock('@/shared/api', () => ({ balanceApi: api }));
 const { accountLabel, accountSwitchChange, accountToggleText, accountsButtonText, participantChoice, removeText } = await import('@/features/integrations/shared/utils.ts');
 const { useConnectionActions } = await import('@/features/integrations/shared/composables/useConnectionActions.ts');
 const { useSyncStatusStore } = await import('@/entities/sync-status');
-const { CARD_TYPE_NAMES } = await import('@/features/integrations/monobank/constants.ts');
-const { DEFAULT_PROVIDER, PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
-const { formsOf, isProviderKey, newConnectionTitle } = await import('@/features/integrations/utils.ts');
-const { BANKS, MONOBANK, bankOf } = await import('@/entities/bank');
+const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
+const { accessNoteOf, fileStepsOf, formsOf, newConnectionTitle } = await import('@/features/integrations/utils.ts');
+const { FILE_STEPS } = await import('@/features/integrations/monobank/constants.ts');
+const { BANKS, bankOf, cardTypeName, cardTypesOf, defaultCardTypeOf, isProviderId } = await import('@/entities/bank');
+const { PROVIDERS } = await import('@mono/core/providers/info');
+const uk = (await import('@contract/i18n/uk.json')).default;
 const { t } = await import('@/shared/lib');
 const { ACCESS_NOTE, CONSENT_TEXT, DUPLICATE_TOKEN_TEXT, TOKEN_PLACEHOLDER, TOKEN_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 
@@ -44,29 +46,35 @@ describe('a new connection', () => {
 });
 
 describe('banks and their forms', () => {
-  it('a bank’s forms by provider; an unknown provider gets the default bank’s', () => {
-    expect(isProviderKey('monobank')).toBe(true);
-    expect(isProviderKey('privatbank')).toBe(false);
-    expect(isProviderKey('toString')).toBe(false);
+  it('a bank’s own forms by provider; an unknown provider gets none, never another bank’s', () => {
+    expect(isProviderId('monobank')).toBe(true);
+    expect(isProviderId('privatbank')).toBe(false);
+    expect(isProviderId('toString')).toBe(false);
     expect(formsOf('monobank')).toBe(PROVIDER_FORMS.monobank);
-    expect(formsOf('unknown')).toBe(PROVIDER_FORMS.monobank);
+    expect(formsOf('unknown')).toBeNull();
+    expect(fileStepsOf('monobank')).toBe(FILE_STEPS);
+    expect(fileStepsOf('unknown')).toBeNull();
+    expect(accessNoteOf('monobank')).toBe(ACCESS_NOTE);
   });
 
-  it('every available bank has forms: enabling a bank without them is not a silent no-op click', () => {
-    const available = BANKS.filter((b) => b.status === 'available');
-    expect(available.length).toBeGreaterThan(0);
-    for (const b of available) expect(isProviderKey(b.id), b.id).toBe(true);
+  it('the banks are the registry’s; every token bank has its own forms, so its token way is offered', () => {
+    expect(BANKS.map((b) => b.id)).toEqual(Object.keys(PROVIDERS));
+    for (const b of BANKS) if (b.ways.includes('token')) expect(formsOf(b.id), b.id).not.toBeNull();
   });
 
-  it('the bank entity is display only; Monobank’s token texts live in its folder', () => {
-    expect(bankOf('monobank')).toBe(MONOBANK);
-    expect(bankOf('unknown')).toBe(MONOBANK);
-    expect(MONOBANK).toMatchObject({ id: 'monobank', name: 'entities.bank.monobank', status: 'available', ways: ['token', 'file'] });
-    expect(t(MONOBANK.name)).toBe('Monobank');
+  it('the bank entity is display only: the registry’s name, its ways, its look; Monobank’s token texts live in its folder', () => {
+    expect(bankOf('monobank')).toEqual({ id: 'monobank', name: 'Monobank', ways: ['token', 'file'], monogram: 'm', monogramClass: 'bg-black text-white' });
     for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
     expect(t(TOKEN_STEPS[0])).toMatch(/api\.monobank\.ua/);
     expect(t(TOKEN_PLACEHOLDER)).toBe('Токен с api.monobank.ua');
-    expect(PROVIDER_FORMS.monobank.accessNote).toBe(ACCESS_NOTE);
+    expect(PROVIDER_FORMS.monobank?.accessNote).toBe(ACCESS_NOTE);
+  });
+
+  it('a bank the registry does not know: a neutral mark and its id, no ways, no card types', () => {
+    expect(bankOf('privatbank')).toEqual({ id: 'privatbank', name: 'privatbank', ways: [], monogram: 'P', monogramClass: 'bg-surface-sunken text-foreground-muted' });
+    expect(cardTypesOf('privatbank')).toEqual([]);
+    expect(defaultCardTypeOf('privatbank')).toBeNull();
+    expect(cardTypeName('privatbank', 'black')).toBe('Карта');
   });
 
   it('the Monobank texts are the same as before the bank got its folder', () => {
@@ -80,7 +88,7 @@ describe('banks and their forms', () => {
       'Токен выпускает сам владелец счетов в своём Monobank и передаёт его тебе. Токен открывает чтение всех его выписок и балансов — добавляй только с его согласия.',
     );
     expect(t(DUPLICATE_TOKEN_TEXT)).toEqual('Этот токен уже подключён.');
-    expect(newConnectionTitle(t(bankOf(DEFAULT_PROVIDER).name))).toEqual('Новое подключение Monobank');
+    expect(newConnectionTitle(bankOf('monobank').name)).toEqual('Новое подключение Monobank');
   });
 });
 
@@ -95,16 +103,16 @@ describe('«Accounts» of a connection', () => {
   });
 
   it('an account’s label: card type · currency · last digits; a jar by its title', () => {
-    expect(accountLabel(account(), CARD_TYPE_NAMES)).toBe('Чёрная карта · UAH · •• 1234');
-    expect(accountLabel(account({ type: 'white', currencyCode: 840, maskedPanTail: null }), CARD_TYPE_NAMES)).toBe('Белая карта · USD');
-    expect(accountLabel(account({ type: 'fop' }), CARD_TYPE_NAMES)).toBe('Счёт ФОП · UAH · •• 1234');
-    expect(accountLabel(account({ type: 'madeInUkraine' }), CARD_TYPE_NAMES)).toBe('Национальный кешбэк · UAH · •• 1234');
-    // An unknown type shows as the bank sent it; an inherited key is not a name.
-    expect(accountLabel(account({ type: 'newKind' }), CARD_TYPE_NAMES)).toBe('newKind · UAH · •• 1234');
-    expect(accountLabel(account({ type: 'toString' }), CARD_TYPE_NAMES)).toBe('toString · UAH · •• 1234');
-    expect(accountLabel(account({ type: null }), CARD_TYPE_NAMES)).toBe('Карта · UAH · •• 1234');
-    expect(accountLabel(account({ kind: 'jar', type: null, maskedPanTail: null, jarTitle: ' Відпустка ' }), CARD_TYPE_NAMES)).toBe('Банка «Відпустка» · UAH');
-    expect(accountLabel(account({ kind: 'jar', type: null, maskedPanTail: null, jarTitle: null, currencyCode: 978 }), CARD_TYPE_NAMES)).toBe('Банка · EUR');
+    expect(accountLabel(account(), 'monobank')).toBe('Чёрная карта · UAH · •• 1234');
+    expect(accountLabel(account({ type: 'white', currencyCode: 840, maskedPanTail: null }), 'monobank')).toBe('Белая карта · USD');
+    expect(accountLabel(account({ type: 'fop' }), 'monobank')).toBe('Счёт ФОП · UAH · •• 1234');
+    expect(accountLabel(account({ type: 'madeInUkraine' }), 'monobank')).toBe('Национальный кешбэк · UAH · •• 1234');
+    // A type the bank does not list reads «Card»; an inherited key is not a type.
+    expect(accountLabel(account({ type: 'newKind' }), 'monobank')).toBe('Карта · UAH · •• 1234');
+    expect(accountLabel(account({ type: 'toString' }), 'monobank')).toBe('Карта · UAH · •• 1234');
+    expect(accountLabel(account({ type: null }), 'monobank')).toBe('Карта · UAH · •• 1234');
+    expect(accountLabel(account({ kind: 'jar', type: null, maskedPanTail: null, jarTitle: ' Відпустка ' }), 'monobank')).toBe('Банка «Відпустка» · UAH');
+    expect(accountLabel(account({ kind: 'jar', type: null, maskedPanTail: null, jarTitle: null, currencyCode: 978 }), 'monobank')).toBe('Банка · EUR');
     expect(accountToggleText({ changed: true })).toBe('');
     expect(accountToggleText({ changed: false, reason: 'import-running' })).toMatch(/после него/);
   });
@@ -132,8 +140,14 @@ describe('«Accounts» of a connection', () => {
     expect(other.checked).toBe(false);
   });
 
-  it('every Monobank type the database knows has a name', () => {
-    for (const type of ['black', 'white', 'platinum', 'iron', 'fop', 'yellow', 'eAid']) expect(CARD_TYPE_NAMES[type], type).toBeTruthy();
+  it('every card type of every bank has a name in the dictionary; Monobank’s types are the ones the database knows', () => {
+    for (const type of ['black', 'white', 'platinum', 'iron', 'fop', 'yellow', 'eAid']) expect(cardTypesOf('monobank'), type).toContain(type);
+    const names: Record<string, Record<string, string>> = uk.entities.bank.cardType;
+    for (const b of BANKS) {
+      for (const type of cardTypesOf(b.id)) expect(names[b.id]?.[type], `${b.id}.${type}`).toBeTruthy();
+      const fallback = defaultCardTypeOf(b.id);
+      if (fallback !== null) expect(cardTypesOf(b.id), b.id).toContain(fallback);
+    }
   });
 
   it('loads the list on open; a toggle updates the row and refreshes people and the data status', async () => {

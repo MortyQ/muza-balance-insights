@@ -13,6 +13,8 @@ export const ALLOWED_PACKAGES: ReadonlyArray<RegExp> = [
   /^pinia$/,
   /^vue-i18n$/,
   /^@mono\/core\/shared\/currency$/,
+  // The bank registry: pure data, its closure pinned by coreInfoViolations.
+  /^@mono\/core\/providers\/info$/,
   /^~icons\/lucide\/[a-z0-9-]+$/,
   /^@fontsource-variable\/manrope\/wght\.css$/,
 ];
@@ -130,6 +132,35 @@ export function violations(files: Files): string[] {
     if (file.endsWith('/index.ts') && file.split('/').length === 3 && from.layer !== 'app') {
       const code = text.split('\n').filter((l) => l.trim() !== '' && !l.trim().startsWith('//'));
       if (code.some((l) => !/^export (type )?(\{[^}]*\}|\*) from (['"])\.\/[^'"]+\3;$/.test(l))) found.push(`${file}: a public API only re-exports`);
+    }
+  }
+  return found;
+}
+
+/**
+ * What `@mono/core/providers/info` may load, as paths in core's src/: the contract, the registry, each bank's info and
+ * the constants it names. No rules, reader, client or package: the renderer bundles all of it.
+ */
+export const CORE_INFO_FILES = /^providers\/(types|info|[a-z0-9-]+\/(info|constants))\.ts$/;
+
+/** The closure of core's info registry over `files` (core's src/, posix path → text), as findings. */
+export function coreInfoViolations(files: Files, entry = 'providers/info.ts'): string[] {
+  const found: string[] = [];
+  const seen = new Set<string>();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const file = queue.pop()!;
+    if (seen.has(file)) continue;
+    seen.add(file);
+    if (!CORE_INFO_FILES.test(file)) found.push(`${file}: reached from ${entry}, outside the bank registry's files`);
+    const text = files.get(file);
+    if (text === undefined) {
+      found.push(`${file}: not found`);
+      continue;
+    }
+    for (const spec of importsOf(text)) {
+      if (spec.startsWith('.')) queue.push(path.posix.normalize(path.posix.join(path.posix.dirname(file), spec)));
+      else found.push(`${file} → ${spec}: the bank registry imports a package`);
     }
   }
   return found;

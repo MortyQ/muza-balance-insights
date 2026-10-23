@@ -1,6 +1,5 @@
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue';
 import type { ConnectionView, StatementComparisonView, StatementTargetInput } from '@contract/api.ts';
-import type { MessageKey } from '@contract/i18n/index.ts';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { failedText, t } from '@/shared/lib';
@@ -13,16 +12,13 @@ import { canWrite, commitText, initialTargets, newCardType, openProblemText } fr
  * lets the file pick each account's target (IBAN, card number), then every change of a target compares the whole file
  * again; «Add» writes every account of it. A token connection's file is compared only.
  */
-export function useStatementUpload(
-  connection: MaybeRefOrGetter<Readonly<ConnectionView>>,
-  cardTypes: MaybeRefOrGetter<Readonly<Record<string, MessageKey>>>,
-): UseStatementUploadReturn {
+export function useStatementUpload(connection: MaybeRefOrGetter<Readonly<ConnectionView>>): UseStatementUploadReturn {
   const request = useConnectionsRequest();
   const participant = useParticipantStore();
   const syncStatus = useSyncStatusStore();
   const state = ref<UploadState>({ step: 'idle' });
   const targets = ref<TargetChoice[]>([]);
-  const newTypes = ref<string[]>([]);
+  const newTypes = ref<Array<string | null>>([]);
   // Set while the first comparison fills the targets: that is not the user's change.
   let filling = false;
 
@@ -62,7 +58,7 @@ export function useStatementUpload(
     const chosen = initialTargets(file, comparisons, toValue(connection).method === 'file');
     filling = true;
     targets.value = chosen;
-    newTypes.value = file.statements.map((s) => newCardType(s, toValue(cardTypes)));
+    newTypes.value = file.statements.map((s) => newCardType(s, toValue(connection).provider));
     filling = false;
     // A card offered where the file matched none: the shown comparison is not that one's.
     if (chosen.some((c, i) => c !== matched[i])) void compare();
@@ -78,7 +74,7 @@ export function useStatementUpload(
       }
       filling = true;
       targets.value = r.statements.map(() => 'new');
-      newTypes.value = r.statements.map((s) => newCardType(s, toValue(cardTypes)));
+      newTypes.value = r.statements.map((s) => newCardType(s, toValue(connection).provider));
       filling = false;
       state.value = { step: 'opened', file: r, comparison: { status: 'loading' } };
       await compare(true);

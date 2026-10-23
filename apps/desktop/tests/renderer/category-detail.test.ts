@@ -20,7 +20,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
   key: 'k', date: '2026-09-05', time: '23:30', weekday: 6, merchant: 'Vigadane Taxi', comment: null, participantId: 1,
-  account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: -20_000, currency: 980, amount: -20_000, operation: null,
+  account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: -20_000, currency: 980, amount: -20_000, operation: null,
   commission: false, hold: false, pending: false, refund: false, refunded: false, cashback: 0, ...o,
 });
 

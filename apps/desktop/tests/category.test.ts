@@ -5,7 +5,7 @@ import type { CategoryLineView, IncomeLineView } from '../src/shared/api.ts';
 
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
   key: 'k', date: '2026-03-02', time: '12:00', weekday: 1, merchant: 'Vigadane Taxi', comment: null, participantId: 1,
-  account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: -1_000, currency: 980, amount: -1_000, operation: null,
+  account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: -1_000, currency: 980, amount: -1_000, operation: null,
   commission: false, hold: false, pending: false, refund: false, refunded: false, cashback: 0, ...o,
 });
 
@@ -43,7 +43,7 @@ describe('lineStats', () => {
 describe('incomeStats', () => {
   const income = (o: Partial<IncomeLineView>): IncomeLineView => ({
     key: 'k', date: '2026-03-02', time: '10:00', weekday: 1, sender: 'Vigadana Osoba', comment: null, source: 'named_sender', participantId: 1,
-    account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: 10_000, currency: 980, amount: 10_000, operation: null,
+    account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: 10_000, currency: 980, amount: 10_000, operation: null,
     hold: false, pending: false, ...o,
   });
   it('a line without a rate counts nowhere; senders case-insensitively, sources, people, median, the largest line', () => {

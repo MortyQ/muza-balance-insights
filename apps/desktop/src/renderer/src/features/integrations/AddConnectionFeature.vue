@@ -5,9 +5,10 @@ import { bankOf } from '@/entities/bank';
 import { ColorSwatches, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
 import { VCheckbox, VInput, VSegmentedControl, VSelect, type SegmentOption, type VSelectOption } from '@/shared/ui';
-import { PROVIDER_FORMS, WAY_TEXT, type ConnectWay } from './constants.ts';
+import { WAY_TEXT, type ConnectWay } from './constants.ts';
 import { useConnectionOwner } from './shared/composables/useConnectionOwner.ts';
 import FileConnectForm from './statement-file/components/FileConnectForm.vue';
+import { formsOf } from './utils.ts';
 
 const {
   provider,
@@ -28,19 +29,19 @@ const personId = useId();
 
 const submitLabel = computed(() => submitText ?? t('integrations.add.submit'));
 
-/** The ways this bank offers; a choice only when there are several (and the app knows how to show them). */
-const ways = computed<ReadonlyArray<ConnectWay>>(() => {
-  const bank = bankOf(provider);
-  return bank.status === 'available' ? bank.ways.filter((w): w is ConnectWay => w === 'token' || w === 'file') : ['token'];
-});
-const way = ref<ConnectWay>(ways.value[0] ?? 'token');
+const own = computed(() => formsOf(provider));
+/** The ways this bank offers; a choice only when there are several (a token needs the bank's own form). */
+const ways = computed<ReadonlyArray<ConnectWay>>(() =>
+  bankOf(provider).ways.filter((w): w is ConnectWay => (w === 'token' && own.value !== null) || w === 'file'),
+);
+const way = ref<ConnectWay>(ways.value[0] ?? 'file');
 const wayOptions = computed<SegmentOption<ConnectWay>[]>(() => ways.value.map((w) => ({ label: t(WAY_TEXT[w].label), value: w })));
 // A file has no holder's name: «Use the name from the bank» would wait forever.
 watch(way, (w) => {
   if (w === 'file') fromBank.value = false;
 });
 // Only the file form takes the bank: a bank's own form knows it.
-const form = computed(() => (way.value === 'file' ? { is: FileConnectForm, provider } : { is: PROVIDER_FORMS[provider].connect }));
+const form = computed(() => (way.value === 'token' && own.value ? { is: own.value.connect } : { is: FileConnectForm, provider }));
 
 const personOptions = computed<VSelectOption[]>(() => [
   ...participant.people.map((p) => ({ label: p.label, value: p.id })),

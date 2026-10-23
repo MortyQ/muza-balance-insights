@@ -216,20 +216,20 @@
     "bank": {
       "card": "Card",
       "jar": "Jar",
-      "monobank": "Monobank",
-      "monobankCard": {
-        "black": "Black card",
-        "eAid": "eSupport",
-        "fop": "Sole proprietor account",
-        "iron": "Iron",
-        "madeInUkraine": "National cashback",
-        "platinum": "Platinum",
-        "rebuilding": "eRecovery",
-        "white": "White card",
-        "yellow": "Children's card"
+      "cardType": {
+        "monobank": {
+          "black": "Black card",
+          "eAid": "eSupport",
+          "fop": "Sole proprietor account",
+          "iron": "Iron",
+          "madeInUkraine": "National cashback",
+          "platinum": "Platinum",
+          "rebuilding": "eRecovery",
+          "white": "White card",
+          "yellow": "Children's card"
+        }
       },
-      "other": "Other banks",
-      "privatbank": "PrivatBank"
+      "other": "Other banks"
     },
     "color": {
       "aqua": "Aqua",
@@ -772,6 +772,7 @@
     },
     "picker": {
       "available": "Personal token, read-only",
+      "files": "Statement files from the bank",
       "later": "Coming later",
       "soon": "Soon"
     },
@@ -818,6 +819,9 @@
       "expired": "Choose the file again.",
       "importRunning": "Wait for the import to finish first.",
       "compareFailed": "Could not compare the file with the account.",
+      "fileAccessNote": "Data comes in only from the statement files you upload.",
+      "genericStep1": "In the bank's app or on its website, make a card statement.",
+      "genericStep2": "Save the file on this computer and pick it here.",
       "problem": {
         "unknownFormat": "The file does not look like this bank's statement.",
         "ambiguous": "The file fits more than one statement format. Nothing was written.",

@@ -18,7 +18,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 
 const payment = (o: Partial<RecurringPaymentView>): RecurringPaymentView => ({
   key: 'k', name: 'Streamio', category: 'связь и цифровые сервисы', categoryId: 'telecom', participantId: 1,
-  account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: 19_900, currency: 980, amount: 19_900, operation: null,
+  account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: 19_900, currency: 980, amount: 19_900, operation: null,
   payments: 4, mark: null, first: '2026-06-05', last: '2026-09-05', next: '2026-10-05', ...o,
 });
 

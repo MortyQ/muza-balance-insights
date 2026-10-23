@@ -137,7 +137,7 @@ describe('balances utils', () => {
 
     // One person picked: their total takes the reserves, their accounts keep their own balances.
     const mine: MonthOverview = { ...v, people: [], accounts: [
-      { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 },
+      { id: 'a', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 },
     ] };
     const [total, account] = slidesOf(mine, { people: [], selectedId: 1, currentYear: 2026, fmt: EUR_FMT });
     expect(total?.amount).toBe(formatMoney(EUR_FMT.convert(600_000), 978, { minorUnits: true }));
@@ -226,7 +226,7 @@ describe('balances utils', () => {
     const person: MonthOverview = {
       ...fam,
       people: [],
-      accounts: [{ id: 'd', name: { kind: 'card', type: 'fop', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 316_200, spending: 0 }],
+      accounts: [{ id: 'd', name: { provider: 'monobank', kind: 'card', type: 'fop', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 0, income: 316_200, spending: 0 }],
     };
     const p = slidesOf(person, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT });
     expect(p[0]?.flow.approxIncome).toBe(true);
@@ -285,10 +285,10 @@ describe('balances utils', () => {
       people: [],
       total: card(6_000, 3_000, 2_000, 1, 4),
       accounts: [
-        { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 6_000, income: 3_000, spending: 2_000 },
-        { id: 'b', name: { kind: 'jar', type: null, currency: 980, tag: 'b123' }, kind: 'jar', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 },
-        { id: 'c', name: { kind: 'card', type: 'iron', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 3_000_000, ownFunds: -678_000, income: 0, spending: 10_000 },
-        { id: 'd', name: { kind: 'card', type: 'black', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 125_000, income: 0, spending: 0 },
+        { id: 'a', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 6_000, income: 3_000, spending: 2_000 },
+        { id: 'b', name: { provider: 'monobank', kind: 'jar', type: null, currency: 980, tag: 'b123' }, kind: 'jar', currency: 980, creditLimit: 0, ownFunds: null, income: 0, spending: 0 },
+        { id: 'c', name: { provider: 'monobank', kind: 'card', type: 'iron', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 3_000_000, ownFunds: -678_000, income: 0, spending: 10_000 },
+        { id: 'd', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 125_000, income: 0, spending: 0 },
       ],
     };
     const p = slidesOf(one, { people, selectedId: 1, currentYear: 2026, fmt: UAH_FMT });
@@ -309,6 +309,16 @@ describe('balances utils', () => {
     expect(p[3]?.bottom).toBe('лимит 30 000 ₴');
     expect(p[4]?.caption).toBe('Валютная карта · на 30 сентября');
     expect(p.every((x) => x.accents.length === 1 && x.accents[0] === 'var(--series-blue)')).toBe(true);
+
+    // The bank's name comes from the registry; a bank it does not know shows its id and no other bank's card names.
+    const unknown = slidesOf(
+      {
+        ...one,
+        accounts: [{ id: 'x', name: { provider: 'privatbank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 100, income: 0, spending: 0 }],
+      },
+      { people, selectedId: 1, currentYear: 2026, fmt: UAH_FMT },
+    );
+    expect([unknown[1]?.title, unknown[1]?.bottom]).toEqual(['Карта · UAH', 'privatbank · Сергей']);
   });
   it('slidesOf: euro main — total cards converted, account cards keep their own currency', () => {
     const total = { ...card(1_000_000, 500_000, 200_000, 0, 2), others: [{ currency: 840, ownFunds: 10_000, rate: 40 }] };
@@ -320,8 +330,8 @@ describe('balances utils', () => {
       total,
       people: [],
       accounts: [
-        { id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 600_000, income: 500_000, spending: 200_000 },
-        { id: 'd', name: { kind: 'card', type: 'black', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 10_000, income: 0, spending: 0 },
+        { id: 'a', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 600_000, income: 500_000, spending: 200_000 },
+        { id: 'd', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 840, tag: null }, kind: 'card', currency: 840, creditLimit: 0, ownFunds: 10_000, income: 0, spending: 0 },
       ],
       rates: RATES,
     };
@@ -374,7 +384,7 @@ describe('balances utils', () => {
       coverage: { from: '2026-09-01', to: '2026-09-27' },
       total: card(1_000_000, 0, 0),
       people: [],
-      accounts: [{ id: 'a', name: { kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 }],
+      accounts: [{ id: 'a', name: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 1_000_000, income: 0, spending: 0 }],
       rates: RATES,
     };
     const s = slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt });

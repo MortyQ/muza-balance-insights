@@ -19,4 +19,6 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
   /** Vite: files matching the pattern at build time, as URLs (bank logos). No match = an empty object. */
   glob(pattern: string, opts: { eager: true; query: '?url'; import: 'default' }): Record<string, string>;
+  /** Vite: one named export of each matching module, loaded at build time (bank looks). No match = an empty object. */
+  glob<T>(pattern: string, opts: { eager: true; import: string }): Record<string, T>;
 }

@@ -19,7 +19,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 
 const line = (o: Partial<IncomeLineView>): IncomeLineView => ({
   key: 'k', date: '2026-09-05', time: '10:00', weekday: 6, sender: 'Vigadana Osoba', comment: null, source: 'named_sender', participantId: 1,
-  account: { kind: 'card', type: 'black', currency: 980, tag: null }, uah: 20_000, currency: 980, amount: 20_000, operation: null,
+  account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: 20_000, currency: 980, amount: 20_000, operation: null,
   hold: false, pending: false, ...o,
 });
 

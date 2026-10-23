@@ -208,9 +208,15 @@ export async function runImport(d: RunImportDeps): Promise<void> {
               fail(r, err);
             }
           }
-          const rs = await d.db.execute('SELECT id, kind, type, currency_code FROM accounts');
+          const rs = await d.db.execute('SELECT a.id, c.provider, a.kind, a.type, a.currency_code FROM accounts a JOIN connections c ON c.id = a.connection_id');
           names = accountNames(
-            rs.rows.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })),
+            rs.rows.map((r) => ({
+              id: String(r.id),
+              provider: String(r.provider),
+              kind: String(r.kind),
+              type: r.type === null ? null : String(r.type),
+              currency: Number(r.currency_code),
+            })),
           );
         }
         for (const r of active()) {

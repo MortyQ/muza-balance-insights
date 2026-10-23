@@ -2,22 +2,21 @@
 import { computed, useId } from 'vue';
 import type { ConnectionView, OpenedStatementView } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
+import { cardTypeName, cardTypesOf } from '@/entities/bank';
 import { t } from '@/shared/lib';
 import { VButton, VInfoNotice, VSelect, type VSelectOption } from '@/shared/ui';
 import { accountLabel } from '../shared/utils.ts';
 import { useStatementUpload } from './composables/useStatementUpload.ts';
 import { comparisonLines, statementLabel, summaryText } from './utils.ts';
 
-const { connection, cardTypes, steps } = defineProps<{
+const { connection, steps } = defineProps<{
   connection: Readonly<ConnectionView>;
-  /** The bank's card types → dictionary keys of their names. */
-  cardTypes: Readonly<Record<string, MessageKey>>;
   /** How to get the file, step by step. */
   steps: ReadonlyArray<MessageKey>;
 }>();
 
 const id = useId();
-const { state, targets, newTypes, canAdd, open, add } = useStatementUpload(() => connection, () => cardTypes);
+const { state, targets, newTypes, canAdd, open, add } = useStatementUpload(() => connection);
 const fileConnection = computed(() => connection.method === 'file');
 
 const file = computed(() => (state.value.step === 'opened' || state.value.step === 'writing' ? state.value.file : null));
@@ -27,12 +26,13 @@ const comparison = computed(() => (state.value.step === 'opened' || state.value.
 function accountOptions(s: Readonly<OpenedStatementView>, i: number): VSelectOption[] {
   const takenElsewhere = new Set(targets.value.filter((_, j) => j !== i));
   return [
-    ...s.accounts.filter((a) => !takenElsewhere.has(a.id)).map((a) => ({ label: accountLabel(a, cardTypes), value: a.id })),
+    ...s.accounts.filter((a) => !takenElsewhere.has(a.id)).map((a) => ({ label: accountLabel(a, connection.provider), value: a.id })),
     // A token connection's file is only compared: there is no new card to write it to.
     ...(fileConnection.value ? [{ label: t('integrations.statement.newCard'), value: 'new' }] : []),
   ];
 }
-const typeOptions = computed<VSelectOption[]>(() => Object.entries(cardTypes).map(([value, key]) => ({ label: t(key), value })));
+// A bank that names no card types gives its new cards none: there is nothing to pick.
+const typeOptions = computed<VSelectOption[]>(() => cardTypesOf(connection.provider).map((value) => ({ label: cardTypeName(connection.provider, value), value })));
 </script>
 
 <template>
@@ -52,12 +52,12 @@ const typeOptions = computed<VSelectOption[]>(() => Object.entries(cardTypes).ma
 
     <template v-if="file">
       <section v-for="(s, i) in file.statements" :key="i" class="flex flex-col gap-2">
-        <p class="text-sm font-medium">{{ statementLabel(s, cardTypes) }}</p>
+        <p class="text-sm font-medium">{{ statementLabel(s, connection.provider) }}</p>
         <p class="text-sm">{{ summaryText(s) }}</p>
         <div class="flex flex-wrap gap-3">
           <VSelect :id="`${id}-account-${i}`" v-model="targets[i]" :label="$t('integrations.statement.account')" :options="accountOptions(s, i)" class="w-72" />
           <VSelect
-            v-if="targets[i] === 'new'"
+            v-if="targets[i] === 'new' && typeOptions.length > 0"
             :id="`${id}-type-${i}`"
             v-model="newTypes[i]"
             :label="$t('integrations.statement.cardType')"

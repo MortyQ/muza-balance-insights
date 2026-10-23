@@ -98,8 +98,9 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 8. Banks from the registry in the renderer (feat(desktop): banks from the registry)
 
-- [ ] 8.1 Allow `@mono/core/providers/info` in `tests/helpers/architecture.ts`, and test that its import closure is `types.ts` and `<id>/info.ts` only. Verify `tests/architecture.test.ts` passes and fails on a breaking import.
-- [ ] 8.2 `entities/bank`:
+- [x] 8.1 Allow `@mono/core/providers/info` in `tests/helpers/architecture.ts`, and test that its import closure is `types.ts` and `<id>/info.ts` only. Verify `tests/architecture.test.ts` passes and fails on a breaking import.
+  The closure also allows each bank's `constants.ts`, as core's boundary test does (Monobank's info takes its API limits from there).
+- [x] 8.2 `entities/bank`:
   - `BANKS` from the registry, without the «soon» tiles;
   - `bankOf()` returns a neutral entry for an unknown id;
   - looks by glob;
@@ -107,13 +108,13 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
   - card type names under `entities.bank.cardType.<provider>.<type>`, with a generic fallback.
 
   Verify with `tests/renderer/` (an unknown provider gets the neutral mark, Monobank names unchanged), `account-name.test.ts` and `i18n.test.ts`.
-- [ ] 8.3 `features/integrations`:
+- [x] 8.3 `features/integrations`:
   - `PROVIDER_FORMS` partial, `DEFAULT_PROVIDER` removed, `BankPicker` in «Add connection» when the registry has more than one bank;
   - the generic file flow for a bank without a form;
   - `DEFAULT_NEW_CARD_TYPE` replaced by the provider's `defaultCardType`.
 
-  `features/import-statement`: one list per token provider. `features/balances`: the bank name from the registry. Verify with `tests/renderer/integrations.test.ts`, `import-history.test.ts` and `balances.test.ts`, with a fictional file-only provider in the test registry.
-- [ ] 8.4 Update `.agents/project/desktop-renderer.md` (banks come from the registry; what a bank may add). Verify `vue-tsc -p tsconfig.web.json` and the renderer tests pass.
+  `features/import-statement`: one list per token provider (done as one list headed by the token banks' names: the import is one action for every token connection, `startImport(from)` takes no provider). `features/balances`: the bank name from the registry. Verify with `tests/renderer/integrations.test.ts`, `import-history.test.ts` and `balances.test.ts`, with a fictional file-only provider in the test registry.
+- [x] 8.4 Update `.agents/project/desktop-renderer.md` (banks come from the registry; what a bank may add). Verify `vue-tsc -p tsconfig.web.json` and the renderer tests pass.
 
 ## 9. Conformance and the «add a bank» procedure (test(core): provider conformance)
 

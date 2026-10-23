@@ -26,7 +26,7 @@ export interface UseStatementUploadReturn {
   /** One per account of the file, in the file's order. */
   targets: Ref<TargetChoice[]>;
   /** The card type of a new card, one per account of the file (the bank's types). */
-  newTypes: Ref<string[]>;
+  newTypes: Ref<Array<string | null>>;
   /** What the file would add right now: every comparison without a block, and new rows in at least one. */
   canAdd: ComputedRef<boolean>;
   open: () => Promise<void>;

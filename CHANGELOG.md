@@ -16,6 +16,7 @@ English interface.
   read on this computer and is not kept. A statement in English or a FOP statement is not supported yet.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
+- The bank list on the first screen shows only the banks the app can connect now; the rest stay under «Other banks».
 
 ### Speed
 

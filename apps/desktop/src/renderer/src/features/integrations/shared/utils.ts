@@ -1,6 +1,5 @@
 import { currencyAlpha } from '@mono/core/shared/currency';
 import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
-import type { MessageKey } from '@contract/i18n/index.ts';
 import { cardTypeName } from '@/entities/bank';
 import { t } from '@/shared/lib';
 import { IMPORT_RUNNING_ACCOUNTS_TEXT } from './constants.ts';
@@ -24,14 +23,14 @@ export function removeText(r: Readonly<RemoveConnectionResult>): string {
   return t('integrations.removeImportRunning');
 }
 
-/** An account in «Accounts»: «Black card · UAH · •• 1234», «Jar «Holiday» · UAH». `cardTypes` — keys of the bank's names. */
-export function accountLabel(a: Readonly<ConnectionAccountView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
+/** An account in «Accounts»: «Black card · UAH · •• 1234», «Jar «Holiday» · UAH». */
+export function accountLabel(a: Readonly<ConnectionAccountView>, provider: string): string {
   const currency = currencyAlpha(a.currencyCode);
   if (a.kind === 'jar') {
     const title = a.jarTitle?.trim() ?? '';
     return [title === '' ? t('entities.bank.jar') : t('integrations.accounts.jarNamed', { title }), currency].join(' · ');
   }
-  return [cardTypeName(a.type, cardTypes), currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
+  return [cardTypeName(provider, a.type), currency, a.maskedPanTail === null ? '' : `•• ${a.maskedPanTail}`].filter((s) => s !== '').join(' · ');
 }
 
 /** Why an account was not switched, or '' when it was. */

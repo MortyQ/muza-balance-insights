@@ -1,6 +1,6 @@
 import { currencyExponent } from '@mono/core/shared/currency';
 import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
-import { accountName } from '@/entities/bank';
+import { accountName, bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
@@ -208,7 +208,7 @@ export function slidesOf(
         approx: '',
         others: '',
         actual: '',
-        bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : ['Monobank', person?.label ?? ''].filter((x) => x !== '').join(' · '),
+        bottom: a.creditLimit > 0 ? t('home.balances.limit', { amount: formatMoney(a.creditLimit, a.currency) }) : [bankOf(a.name.provider).name, person?.label ?? ''].filter((x) => x !== '').join(' · '),
         net: a.ownFunds === null ? null : a.income - a.spending,
         netText: `${netText(a.income - a.spending, a.currency)} ${month}`,
         flow: { currency: a.currency, income: a.income, spending: a.spending, color: accent },

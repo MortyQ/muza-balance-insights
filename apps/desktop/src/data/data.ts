@@ -91,6 +91,13 @@ function nextMonthStart(month: string): string {
 }
 
 /** sync_state rows of imported, enabled accounts. */
+/** Accounts with their bank, for account names and jar titles. */
+const ACCOUNT_NAME_SQL = 'SELECT a.id, c.provider, a.kind, a.type, a.currency_code, a.title FROM accounts a JOIN connections c ON c.id = a.connection_id';
+
+function accountRow(r: Readonly<Record<string, unknown>>): { id: string; provider: string; kind: string; type: string | null; currency: number } {
+  return { id: String(r.id), provider: String(r.provider), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) };
+}
+
 const IMPORTED_ENABLED = `WHERE newest_synced_time IS NOT NULL AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`;
 
 export type DataServiceDeps = {
@@ -257,11 +264,13 @@ export class DataService {
     }
     const inc = await incomeSummary(db, { ...period, groupBy: 'account', ...f }, now);
     const sp = await spendingSummary(db, { ...period, groupBy: 'account', ...f }, now);
-    const types = new Map((await db.execute('SELECT id, type FROM accounts')).rows.map((r) => [String(r.id), r.type === null ? null : String(r.type)]));
-    const names = accountNames(head.balances.accounts.map((a) => ({ id: a.id, kind: a.kind, type: types.get(a.id) ?? null, currency: a.currency })));
+    const stored = new Map((await db.execute(ACCOUNT_NAME_SQL)).rows.map((r) => [String(r.id), accountRow(r)]));
+    const names = accountNames(
+      head.balances.accounts.map((a) => ({ id: a.id, provider: stored.get(a.id)?.provider ?? '', kind: a.kind, type: stored.get(a.id)?.type ?? null, currency: a.currency })),
+    );
     const accounts: OverviewAccount[] = head.balances.accounts.map((a) => ({
       id: a.id,
-      name: names.get(a.id) ?? { kind: a.kind, type: null, currency: a.currency, tag: null },
+      name: names.get(a.id) ?? { provider: '', kind: a.kind, type: null, currency: a.currency, tag: null },
       kind: a.kind,
       currency: a.currency,
       creditLimit: a.credit_limit,
@@ -459,8 +468,8 @@ export class DataService {
     const thisMonth = thisDay.slice(0, 7);
     const months = q.period.kind === 'month' ? await this.categoryMonths(db, q.period.month, thisMonth, category, filters, rates, status.dataFrom, now) : [];
 
-    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
-    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
+    const names = accountNames(accounts.map(accountRow));
     const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
     const raw = await categoryLines(db, { ...period, ...filters, category }, now);
     const lines: CategoryLineView[] = raw.lines.map((l) => {
@@ -473,7 +482,7 @@ export class DataService {
         merchant: merchantText(l.description, jarTitles),
         comment: l.comment?.trim() || null,
         participantId: l.participantId,
-        account: names.get(l.accountId) ?? { kind: 'card', type: null, currency: l.currency, tag: null },
+        account: names.get(l.accountId) ?? { provider: '', kind: 'card', type: null, currency: l.currency, tag: null },
         uah: toUah(l.amount, l.currency, rates),
         currency: l.currency,
         amount: l.amount,
@@ -559,8 +568,8 @@ export class DataService {
     const fx = rateMap(rates);
     const found = await findRecurring(db, { from: since, to: today, tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
 
-    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
-    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
+    const names = accountNames(accounts.map(accountRow));
     const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
     const day = (sec: number) => localDate(sec * 1000, tz);
     const view = (p: (typeof found)[number]): RecurringPaymentView => ({
@@ -569,7 +578,7 @@ export class DataService {
       category: p.category,
       categoryId: CATEGORY_ID.get(p.category) ?? null,
       participantId: p.participantId,
-      account: names.get(p.accountId) ?? { kind: 'card', type: null, currency: p.currency, tag: null },
+      account: names.get(p.accountId) ?? { provider: '', kind: 'card', type: null, currency: p.currency, tag: null },
       uah: toUah(p.amount, p.currency, fx),
       currency: p.currency,
       amount: p.amount,
@@ -689,8 +698,8 @@ export class DataService {
     const thisMonth = thisDay.slice(0, 7);
     const months = q.period.kind === 'month' ? await this.incomeMonths(db, q.period.month, thisMonth, filters, rates, status.dataFrom, now) : [];
 
-    const accounts = (await db.execute('SELECT id, kind, type, currency_code, title FROM accounts')).rows;
-    const names = accountNames(accounts.map((r) => ({ id: String(r.id), kind: String(r.kind), type: r.type === null ? null : String(r.type), currency: Number(r.currency_code) })));
+    const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
+    const names = accountNames(accounts.map(accountRow));
     const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
     const raw = await incomeLines(db, { ...period, ...filters }, now);
     const lines: IncomeLineView[] = raw.lines.map((l) => {
@@ -704,7 +713,7 @@ export class DataService {
         comment: l.comment?.trim() || null,
         source: l.source,
         participantId: l.participantId,
-        account: names.get(l.accountId) ?? { kind: 'card', type: null, currency: l.currency, tag: null },
+        account: names.get(l.accountId) ?? { provider: '', kind: 'card', type: null, currency: l.currency, tag: null },
         uah: toUah(l.amount, l.currency, rates),
         currency: l.currency,
         amount: l.amount,

@@ -2,6 +2,8 @@
 // an IBAN or a jar's title. The renderer words them («Black card · UAH», «Jar · UAH #ab12»).
 
 export type AccountName = {
+  /** The bank's provider id: its card type names (a provider this version does not know shows neutral). */
+  provider: string;
   kind: 'card' | 'jar';
   /** The bank's card type («black», «fop» …); null for a jar or when the bank sends none. */
   type: string | null;
@@ -11,13 +13,13 @@ export type AccountName = {
   tag: string | null;
 };
 
-type AccountRow = { id: string; kind: string; type: string | null; currency: number };
+type AccountRow = { id: string; provider: string; kind: string; type: string | null; currency: number };
 
 /** Names for a set of accounts, told apart as the core's accountLabels does (a jar by its currency only). */
 export function accountNames(accounts: ReadonlyArray<AccountRow>): Map<string, AccountName> {
   const base = accounts.map((a) => {
     const kind = a.kind === 'jar' ? 'jar' : 'card';
-    return { id: a.id, name: { kind, type: kind === 'jar' ? null : a.type, currency: a.currency } as const };
+    return { id: a.id, name: { provider: a.provider, kind, type: kind === 'jar' ? null : a.type, currency: a.currency } as const };
   });
   const same = (n: (typeof base)[number]['name']) => `${n.kind}/${n.type ?? ''}/${n.currency}`;
   const counts = new Map<string, number>();

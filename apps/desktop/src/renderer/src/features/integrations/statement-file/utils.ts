@@ -1,9 +1,9 @@
 import { currencyAlpha } from '@mono/core/shared/currency';
 import type { CommitStatementResult, OpenStatementResult, OpenedStatementView, StatementComparisonView } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
-import { cardTypeName } from '@/entities/bank';
+import { cardTypeName, cardTypesOf, defaultCardTypeOf } from '@/entities/bank';
 import { fullDate, t } from '@/shared/lib';
-import { BLOCK_TEXT, DEFAULT_NEW_CARD_TYPE, PROBLEM_TEXT } from './constants.ts';
+import { BLOCK_TEXT, PROBLEM_TEXT } from './constants.ts';
 import type { OpenedStatement, TargetChoice } from './types.ts';
 
 /** Why a file was not opened, or '' (opened or cancelled). */
@@ -12,18 +12,14 @@ export function openProblemText(r: Readonly<OpenStatementResult>): string {
   return t(PROBLEM_TEXT[r.problem], { row: r.row ?? 0 });
 }
 
-/**
- * An account of the file: «Black card · UAH · •• 1234». A type the bank's names do not know is not shown: it would be
- * the file's own word.
- */
-export function statementLabel(s: Readonly<OpenedStatementView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
-  const type = s.type !== null && Object.hasOwn(cardTypes, s.type) ? s.type : null;
-  return [cardTypeName(type, cardTypes), currencyAlpha(s.currencyCode), s.cardTail === null ? '' : `•• ${s.cardTail}`].filter((x) => x !== '').join(' · ');
+/** An account of the file: «Black card · UAH · •• 1234». A type the bank does not list reads «Card». */
+export function statementLabel(s: Readonly<OpenedStatementView>, provider: string): string {
+  return [cardTypeName(provider, s.type), currencyAlpha(s.currencyCode), s.cardTail === null ? '' : `•• ${s.cardTail}`].filter((x) => x !== '').join(' · ');
 }
 
-/** A new card's type: the file's when the bank's names know it, else the default. */
-export function newCardType(s: Readonly<OpenedStatementView>, cardTypes: Readonly<Record<string, MessageKey>>): string {
-  return s.type !== null && Object.hasOwn(cardTypes, s.type) ? s.type : DEFAULT_NEW_CARD_TYPE;
+/** A new card's type: the file's when the bank lists it, else the bank's default (null: none). */
+export function newCardType(s: Readonly<OpenedStatementView>, provider: string): string | null {
+  return s.type !== null && cardTypesOf(provider).includes(s.type) ? s.type : defaultCardTypeOf(provider);
 }
 
 /** «Operations in the file: 5 · 03.10.2026 – 07.10.2026». */

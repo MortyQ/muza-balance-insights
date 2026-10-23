@@ -27,5 +27,8 @@ export const BLOCK_TEXT: Readonly<Record<StatementBlock, MessageKey>> = {
   gap: 'integrations.statement.blockedGap',
 };
 
-/** The card type a new card from a file starts with. */
-export const DEFAULT_NEW_CARD_TYPE = 'black';
+/** How to get a statement file from a bank without its own steps. */
+export const GENERIC_FILE_STEPS = ['integrations.statement.genericStep1', 'integrations.statement.genericStep2'] as const satisfies ReadonlyArray<MessageKey>;
+
+/** The first connect screen's line for a bank connected by files only. */
+export const FILE_ACCESS_NOTE: MessageKey = 'integrations.statement.fileAccessNote';

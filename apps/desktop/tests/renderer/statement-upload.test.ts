@@ -44,7 +44,7 @@ const { canWrite, comparisonLines, commitText, defaultTarget, initialTargets, ne
 );
 const { useStatementUpload } = await import('@/features/integrations/statement-file/composables/useStatementUpload.ts');
 const { PROBLEM_TEXT } = await import('@/features/integrations/statement-file/constants.ts');
-const { CARD_TYPE_NAMES, FILE_STEPS } = await import('@/features/integrations/monobank/constants.ts');
+const { FILE_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
 
 const conn = (method: 'token' | 'file', o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -109,11 +109,14 @@ describe('texts', () => {
     expect(initialTargets(file, [comparison(), comparison(), comparison()], true)).toEqual(['a', 'new', 'b']);
   });
 
-  it('an account of the file on the screen: the known card type, the currency, the last digits; an unknown type is not shown', () => {
-    expect(statementLabel(account({ type: 'white', currencyCode: 840, cardTail: '1111' }), CARD_TYPE_NAMES)).toBe('Белая карта · USD · •• 1111');
-    expect(statementLabel(account({ type: 'Картка Вигадана' }), CARD_TYPE_NAMES)).toBe('Карта · UAH');
-    expect(newCardType(account({ type: 'white' }), CARD_TYPE_NAMES)).toBe('white');
-    expect(newCardType(account({ type: 'Картка Вигадана' }), CARD_TYPE_NAMES)).toBe('black');
+  it('an account of the file on the screen: the bank\'s card type, the currency, the last digits; a type the bank does not list reads «Card»', () => {
+    expect(statementLabel(account({ type: 'white', currencyCode: 840, cardTail: '1111' }), 'monobank')).toBe('Белая карта · USD · •• 1111');
+    expect(statementLabel(account({ type: 'Картка Вигадана' }), 'monobank')).toBe('Карта · UAH');
+    expect(newCardType(account({ type: 'white' }), 'monobank')).toBe('white');
+    expect(newCardType(account({ type: 'Картка Вигадана' }), 'monobank')).toBe('black');
+    // A bank the registry does not know names no type: the new card gets none.
+    expect(newCardType(account({ type: 'white' }), 'unknown')).toBeNull();
+    expect(statementLabel(account({ type: 'white' }), 'unknown')).toBe('Карта · UAH');
   });
 
   it('the file is written only whole: one blocked account blocks it, nothing new adds nothing', () => {
@@ -122,16 +125,15 @@ describe('texts', () => {
     expect(canWrite([comparison({ added: 0 }), comparison({ added: 0 })])).toBe(false);
   });
 
-  it('Monobank has its file steps and a type for a new card', () => {
-    expect(PROVIDER_FORMS.monobank.fileSteps).toBe(FILE_STEPS);
-    expect(Object.keys(CARD_TYPE_NAMES)).toContain('black');
+  it('Monobank has its own file steps', () => {
+    expect(PROVIDER_FORMS.monobank?.fileSteps).toBe(FILE_STEPS);
   });
 });
 
 describe('useStatementUpload', () => {
   it('a file connection: open, compare with a new black card, add; then people and the data status reload', async () => {
     api.openStatement.mockResolvedValueOnce(OPENED);
-    const u = useStatementUpload(conn('file'), CARD_TYPE_NAMES);
+    const u = useStatementUpload(conn('file'));
     await u.open();
     await flushPromises();
     // The file picks first; it matched nothing and the connection has no card: a new one, compared once.
@@ -154,7 +156,7 @@ describe('useStatementUpload', () => {
     api.openStatement.mockResolvedValueOnce({ ...OPENED, statements: [account({ accounts: [card('api-black')] })] });
     api.compareStatement.mockResolvedValueOnce({ ok: true, comparisons: [comparison({ blocked: 'token' })] });
     api.compareStatement.mockResolvedValueOnce({ ok: true, comparisons: [comparison({ match: { kind: 'account', accountId: 'api-black' }, matched: 5, added: 0, blocked: 'token' })] });
-    const u = useStatementUpload(conn('token', { accounts: 1 }), CARD_TYPE_NAMES);
+    const u = useStatementUpload(conn('token', { accounts: 1 }));
     await u.open();
     await flushPromises();
     // The file matched no card, so its card is offered and compared again.
@@ -168,7 +170,7 @@ describe('useStatementUpload', () => {
   it('two accounts: each its own target and comparison; one «Add» writes both; a blocked one blocks it', async () => {
     api.openStatement.mockResolvedValueOnce({ ...OPENED, statements: [account(), account({ currencyCode: 840, type: 'white', cardTail: '1111', accounts: [card('usd', { currencyCode: 840 })] })] });
     api.compareStatement.mockResolvedValueOnce({ ok: true, comparisons: [comparison(), comparison({ match: { kind: 'account', accountId: 'usd' }, added: 2 })] });
-    const u = useStatementUpload(conn('file'), CARD_TYPE_NAMES);
+    const u = useStatementUpload(conn('file'));
     await u.open();
     await flushPromises();
     expect(u.targets.value).toEqual(['new', 'usd']);
@@ -191,7 +193,7 @@ describe('useStatementUpload', () => {
   });
 
   it('a cancelled dialog goes back to the start; a refused file shows why', async () => {
-    const u = useStatementUpload(conn('file'), CARD_TYPE_NAMES);
+    const u = useStatementUpload(conn('file'));
     await u.open();
     expect(u.state.value).toEqual({ step: 'idle' });
     api.openStatement.mockResolvedValueOnce({ opened: false, reason: 'problem', problem: 'too-large', row: null });
@@ -203,7 +205,7 @@ describe('useStatementUpload', () => {
   it('an expired statement asks for the file again', async () => {
     api.openStatement.mockResolvedValueOnce(OPENED);
     api.compareStatement.mockResolvedValueOnce({ ok: false, reason: 'expired' });
-    const u = useStatementUpload(conn('file'), CARD_TYPE_NAMES);
+    const u = useStatementUpload(conn('file'));
     await u.open();
     await flushPromises();
     expect(u.state.value).toEqual({ step: 'problem', message: 'Выбери файл ещё раз.' });
@@ -219,7 +221,7 @@ describe('on the screen', () => {
   it('«Upload statement»: the steps, the file, «Add» after the comparison; a token connection gets no «Add»', async () => {
     const { default: StatementUploadFeature } = await import('@/features/integrations/statement-file/StatementUploadFeature.vue');
     api.openStatement.mockResolvedValue(OPENED);
-    const w = await mountIt(StatementUploadFeature, { connection: conn('file'), cardTypes: CARD_TYPE_NAMES, steps: FILE_STEPS });
+    const w = await mountIt(StatementUploadFeature, { connection: conn('file'), steps: FILE_STEPS });
     expect(w.text()).toContain('В приложении Monobank сформируй выписку карты в формате CSV на украинском языке.');
     await w.find('button').trigger('click');
     await flushPromises();
@@ -230,7 +232,7 @@ describe('on the screen', () => {
     w.unmount();
 
     api.openStatement.mockResolvedValueOnce({ ...OPENED, statements: [account(), account({ currencyCode: 840, type: 'white', cardTail: '1111', rows: 2 })] });
-    const two = await mountIt(StatementUploadFeature, { connection: conn('file'), cardTypes: CARD_TYPE_NAMES, steps: FILE_STEPS });
+    const two = await mountIt(StatementUploadFeature, { connection: conn('file'), steps: FILE_STEPS });
     await two.find('button').trigger('click');
     await flushPromises();
     expect(two.findAll('section')).toHaveLength(2);
@@ -238,7 +240,7 @@ describe('on the screen', () => {
     expect(two.findAll('button').filter((b) => b.text() === 'Добавить')).toHaveLength(1);
     two.unmount();
 
-    const t = await mountIt(StatementUploadFeature, { connection: conn('token', { accounts: 1 }), cardTypes: CARD_TYPE_NAMES, steps: FILE_STEPS });
+    const t = await mountIt(StatementUploadFeature, { connection: conn('token', { accounts: 1 }), steps: FILE_STEPS });
     await t.find('button').trigger('click');
     await flushPromises();
     expect(t.findAll('button').some((b) => b.text() === 'Добавить')).toBe(false);
