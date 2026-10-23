@@ -204,9 +204,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   `'none'` (regular payments, planning) no period at all.
 - **Layouts** — `app/layouts` (as in so-platform's insights-client): `App.vue` = `AppHeader` + `MasterLayout`, which
   picks the shell by the route's `meta.layout` (`layoutOf`, absent → `default`; `LayoutName`, `RouteMeta` augmented in
-  `app/layouts/types.ts`). `DefaultLayout` — the data screens: the app navigation sidebar at the window's left edge on
-  the window's background, then a panel (`bg-surface`, rounded, bordered, 0.75rem from the window's right and bottom
-  edges; edge to edge below 45rem): a pinned header row (the menu button below 45rem, the current entry's name as the screen's `<h1>` —
+  `app/layouts/types.ts`). `DefaultLayout` — the data screens: the app navigation sidebar at the window's left edge, then,
+  on the same window background with no panel around them (only a screen's own blocks are set off): a pinned header row
+  (`bg-background`, a hairline under it only while the content is scrolled — `useScrolled`) (the menu button below 45rem, the current entry's name as the screen's `<h1>` —
   `useNav`: `navGroups(router.getRoutes())`, current = `meta.navParent ?? route.name` — and `GlobalFilters`), then a
   scroll area whose content is `max-w-[100rem]`, centred. `EmptyLayout` — the screen alone (lock,
   recovery, connect, settings: `meta.layout: 'empty'`). The routes are `app/router/routes.ts`. The screen goes into the

@@ -4,7 +4,7 @@
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h } from 'vue';
+import { defineComponent, h, nextTick } from 'vue';
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
@@ -106,12 +106,30 @@ describe('MasterLayout', () => {
     expect(entry(w, '/second').attributes('aria-current')).toBeUndefined();
     expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.general'));
     expect(w.get('aside.sidebar .v-sidebar-footer a').attributes('href')).toBe('/settings');
-    // The header and the screen sit in one panel next to the sidebar, the filters in the panel's header row.
-    const panel = w.get('[data-test="layout-panel"]');
-    expect(panel.find('[data-test="filters"]').exists()).toBe(true);
-    expect(panel.find('[data-test="layout-scroll"]').exists()).toBe(true);
-    expect(panel.find('aside.sidebar').exists()).toBe(false);
+    // No shared panel: the header (with the filters) and the scroll area sit on the window's background next to the sidebar.
+    expect(w.find('[data-test="layout-panel"]').exists()).toBe(false);
+    const main = w.get('[data-test="layout-main"]');
+    expect(main.classes()).not.toContain('bg-surface');
+    expect(main.get('[data-test="layout-header"]').find('[data-test="filters"]').exists()).toBe(true);
+    expect(main.find('[data-test="layout-scroll"]').exists()).toBe(true);
+    expect(main.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it('the header shows its hairline only while the content is scrolled under it', async () => {
+    const { w } = await mountAt('/');
+    const header = () => w.get('[data-test="layout-header"]');
+    expect(header().classes()).toContain('border-transparent');
+    const area = w.get('[data-test="layout-scroll"]').element as HTMLElement;
+    area.scrollTop = 120;
+    area.dispatchEvent(new Event('scroll'));
+    await nextTick();
+    expect(header().classes()).toContain('border-border-subtle');
+    area.scrollTop = 0;
+    area.dispatchEvent(new Event('scroll'));
+    await nextTick();
+    expect(header().classes()).toContain('border-transparent');
     w.unmount();
   });
 

@@ -5,25 +5,30 @@ import { GlobalFilters } from '@/widgets/global-filters';
 import { useAppSidebar } from './composables/useAppSidebar.ts';
 import { useNav } from './composables/useNav.ts';
 import { useScrollTop } from './composables/useScrollTop.ts';
+import { useScrolled } from './composables/useScrolled.ts';
 
 const nav = useNav();
 const { sidebar, footerItems } = useAppSidebar();
 const title = computed(() => nav.groups.flatMap((g) => g.items).find((i) => i.id === nav.current.value)?.label ?? null);
-useScrollTop(useTemplateRef<HTMLElement>('area'));
+const area = useTemplateRef<HTMLElement>('area');
+useScrollTop(area);
+const scrolled = useScrolled(area);
 </script>
 
 <template>
-  <div class="flex h-full min-[45rem]:pr-3 min-[45rem]:pb-3">
-    <!-- The data screens: the app navigation at the window's left edge on the window's background (spec
-         desktop-app-shell), then a panel — rounded, on the surface colour — with the header (title and filters, it
-         stays put) over this layout's own scroll area (App's one never scrolls here). Switching screens swaps only the
-         screen. Below 45rem the sidebar is a drawer opened from the header and the panel fills the window. -->
+  <div class="flex h-full bg-background">
+    <!-- The data screens (spec desktop-app-shell): the app navigation at the window's left edge, then the header (title
+         and filters, it stays put) over this layout's own scroll area (App's one never scrolls here), all on the
+         window's background — only a screen's own blocks are set off. The header shows a hairline while the content is
+         scrolled under it. Switching screens swaps only the screen. Below 45rem the sidebar is a drawer opened from
+         the header. -->
     <NavigationSidebar :sidebar :footer-items class="h-full shrink-0" />
-    <div
-      class="flex min-w-0 flex-1 flex-col overflow-hidden bg-surface min-[45rem]:rounded-2xl min-[45rem]:border min-[45rem]:border-border-subtle min-[45rem]:shadow-xs"
-      data-test="layout-panel"
-    >
-      <div class="flex shrink-0 items-center gap-3 border-b border-border-subtle px-4 min-[45rem]:px-8">
+    <div class="flex min-w-0 flex-1 flex-col overflow-hidden" data-test="layout-main">
+      <div
+        class="flex shrink-0 items-center gap-3 border-b bg-background px-4 transition-colors min-[45rem]:px-8"
+        :class="scrolled ? 'border-border-subtle' : 'border-transparent'"
+        data-test="layout-header"
+      >
         <button
           type="button"
           :aria-label="$t('home.nav.openMenu')"

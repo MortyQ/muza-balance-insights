@@ -7,9 +7,9 @@
 
 ## 2. Layout — feat(desktop): data screens on the window's background
 
-- [ ] 2.1 `DefaultLayout`: drop the panel wrapper; header row on `bg-background`, hairline while the scroll area is scrolled (composable in `app/layouts/composables`)
-- [ ] 2.2 `tests/renderer/layouts.test.ts`: no panel, the header's hairline follows the scroll
-- [ ] 2.3 `CLAUDE.md` («Layouts») and `CHANGELOG.md` («Navigation»: replace the panel line)
+- [x] 2.1 `DefaultLayout`: drop the panel wrapper; header row on `bg-background`, hairline while the scroll area is scrolled (composable in `app/layouts/composables`)
+- [x] 2.2 `tests/renderer/layouts.test.ts`: no panel, the header's hairline follows the scroll
+- [x] 2.3 `CLAUDE.md` («Layouts») and `CHANGELOG.md` («Navigation»: replace the panel line)
 
 ## 3. Home grid and balances tiles — feat(desktop): home as tiles, the balances block split
 
