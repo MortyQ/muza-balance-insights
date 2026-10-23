@@ -122,6 +122,16 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - **Row ids.** They are made from the stored account id, the second, the amount and the order among equal rows, so a
   re-upload adds only new rows, also for times stated to the minute.
 
+## Conformance
+
+- Every id in `PROVIDER_IDS` passes `packages/core/tests/providers/conformance.test.ts`, which is never edited for a
+  bank: its info (`ids: 'bare'` for Monobank only, `api` only inside a token access, `defaultCardType` among
+  `cardTypes`, `access.file` exactly when it has readers), its stored ids, its rules on rows with and without an MCC or
+  a bank category (no throw, `categoryHint` within `CATEGORY_HINTS`), and its readers on its fixtures in
+  `tests/providers/<id>/fixtures/conformance/` (`<name>.document.json` + `<name>.expected.json`: read as expected,
+  twice the same, picked by the document alone, `detect` 0 on every other bank's fixture). Fictional data only.
+- The procedure for a new bank is «Add a bank» in `.agents/skills/core-architecture`.
+
 ## Shared by every client
 
 - The request slot is `src/providers/ratelimit.ts`; its interval comes from the provider.

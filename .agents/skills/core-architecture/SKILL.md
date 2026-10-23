@@ -59,7 +59,55 @@ guard is `packages/core/tests/layers.test.ts`: when it fails, fix the placement,
    right after the move that changes only those paths, and report it as its own item. Never remove or widen an
    assertion there.
 
-## 5. Before handing over
+## 5. Add a bank
+
+A new bank is a contained task: its own folders, one line in each registry, its fixtures. No domain module, import
+step or screen outside the bank's own files changes for it (`core-providers.md`; the change `provider-modules`). Use
+fictional data only; look at a real statement file only as a masked layout (digits → 9, letters → a/A).
+
+Core (`packages/core`):
+
+1. Add its id to `PROVIDER_IDS` in `src/providers/types.ts`.
+2. Create `src/providers/<id>/`:
+   - `info.ts`: `<id>Info` (`ProviderInfo`): the brand name; `access` (`token: { credential, api } | null`, `file`);
+     `ids: 'prefixed'` (only Monobank is `'bare'`); `cardTypes`, `defaultCardType`. It imports only `../types.ts` and
+     its own `constants.ts`.
+   - `rules.ts`: `<id>Rules` (`ProviderRules`), pure. Rows may have no MCC (`mcc: null`) and a bank category
+     (`bankCategory`): `categoryHint` maps it to one of `CATEGORY_HINTS`. New masking templates in `maskDescription`
+     change what reaches the analysis copy: only after the user's ok (root `CLAUDE.md`).
+   - `statement.ts` (a bank with files): `readers: StatementReader[]`, pure, one per kind of file, reading the
+     `StatementDocument` (`text`, `sheets` or `pdf`), never bytes.
+   - `client.ts` (a bank with an API): network, pages, 429, through `src/providers/ratelimit.ts`.
+3. Add one line to each registry: `PROVIDERS` in `src/providers/info.ts`, `PROVIDER_RULES` in `src/providers/rules.ts`,
+   and (with files) `STATEMENT_READERS` in `src/providers/statements.ts`.
+4. Add fixtures for the conformance suite: `tests/providers/<id>/fixtures/conformance/<name>.document.json` (the
+   document as the desktop decodes it) and `<name>.expected.json` (`{ reader, result }`). At least one per reader; add
+   the bank's refusals (another language, an unsupported kind) as fixtures too. Reader details go to
+   `tests/providers/<id>/statement.test.ts`, rule details to `tests/providers/<id>/rules.test.ts`.
+
+Desktop (`apps/desktop`):
+
+5. A bank with an API: `src/integrations/<id>/desktop.ts` (its trusted service) and `worker.ts` (its client and error
+   mapping), one line each in `src/net/providers.ts` and `src/worker/providers.ts`. A new host in `TRUSTED_SERVICES`
+   (`src/net/allowlist.ts`) is its own step with `tests/allowlist.test.ts`.
+6. Renderer, all optional except the card type names:
+   - card type names `entities.bank.cardType.<id>.<type>` in `uk.json`, `en.json` and `ru.json`, one per `cardTypes`
+     entry;
+   - its look: `src/renderer/src/entities/bank/looks/<id>.ts` (`export const look`) and/or a logo
+     `entities/bank/assets/<id>.svg|png|webp`; without them the bank gets the neutral mark;
+   - a bank with a token, or its own file steps: `features/integrations/<id>/` and an entry in `PROVIDER_FORMS`. A bank
+     with files only and no entry gets the generic file flow.
+7. A user-visible bank is a `CHANGELOG.md` entry.
+
+The checks that must pass, unedited (they run for every id in `PROVIDER_IDS`):
+
+- `packages/core/tests/providers/conformance.test.ts`: info, ids, rules on rows with and without an MCC or a bank
+  category, readers on their fixtures (twice the same, picked by the document alone, other banks' files left alone);
+- `packages/core/tests/providers-boundary.test.ts`, `purity.test.ts`, `layers.test.ts`;
+- `apps/desktop/tests/providers.test.ts`, `architecture.test.ts` (the registry's import closure), `i18n.test.ts`,
+  `renderer/integrations.test.ts` (card type names, forms of token banks), `renderer/registry-banks.test.ts`.
+
+## 6. Before handing over
 
 Run `pnpm test` and `pnpm typecheck` at the root. Where root `pnpm` cannot run (the agent's sandbox), run each
 package from its folder and ask the user to run the root commands:

@@ -118,8 +118,8 @@ Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its f
 
 ## 9. Conformance and the «add a bank» procedure (test(core): provider conformance)
 
-- [ ] 9.1 Add `packages/core/tests/providers/conformance.test.ts` over `PROVIDER_IDS` (design, decision 10), with Monobank's fixtures as JSON documents and expected results. Verify it passes for Monobank and fails for a fictional provider breaking each rule (a `'bare'` id, `api` without token, a hint outside `CATEGORY_HINTS`, a reader that claims another provider's fixture).
-- [ ] 9.2 Add the «Add a bank» section to `.agents/skills/core-architecture`: files, registries, fixtures, the renderer look and form, and the checks. Verify that every path it names exists.
+- [x] 9.1 Add `packages/core/tests/providers/conformance.test.ts` over `PROVIDER_IDS` (design, decision 10), with Monobank's fixtures as JSON documents and expected results. Verify it passes for Monobank and fails for a fictional provider breaking each rule (a `'bare'` id, `api` without token, a hint outside `CATEGORY_HINTS`, a reader that claims another provider's fixture).
+- [x] 9.2 Add the «Add a bank» section to `.agents/skills/core-architecture`: files, registries, fixtures, the renderer look and form, and the checks. Verify that every path it names exists.
 
 ## 10. Checks (docs: provider modules checks)
 
