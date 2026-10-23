@@ -67,6 +67,18 @@
 - The balances block at three widths: the pace beside the month panel (wide), under them (medium, narrow), folding
   with the open row; a past month (whole month, no «Available per day»); a person picked.
 
+## To check live: home tiles (desktop-home-tiles)
+
+- The grid's steps: one column in a narrow window, two from about 750 px of content, three from about 1180 px; no tile
+  cut or overlapping, the folded stack fits its tile at the three-column step.
+- Opening and folding the cards: «Balance» takes the whole row, the pace chart and «Month» come back at once and the
+  chart fits its tile; the free line follows the card in front while the row scrolls.
+- «Today» / «This week»: equal heights with one and with three categories, the details tile, its switch and close; an
+  empty day; «What's unusual» hidden while the details are open; a past month (no «Now» tiles).
+- «Spending by category» with 4+ categories unfolded and folded; «Who spent what» in the family view, absent for one
+  person; the regular payments tile beside it.
+- The header's hairline while scrolling; both themes (the new dark one included); the pace chart's pill near the top.
+
 ## Later: currencies
 
 - PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the

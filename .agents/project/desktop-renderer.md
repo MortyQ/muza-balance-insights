@@ -12,17 +12,19 @@
   `utils.ts` (`slidesOf`, `slidePosition`), CSS-переменные `--x`/`--y`/`--z`/`--o`, `motion-reduce:` без сдвига.
   `composables/useMonthOverview.ts` — данные месяца и человека (`useAsyncData`, тихая перезагрузка на
   `syncStatus.version`). Счёт без данных на выбранную дату — бледная карта, `own_funds: null`.
-  Layout (spec `openspec/specs/desktop-balance-cards`): the block is a `@container`; from `@[47rem]` the month panel
-  sits beside the folded stack (`left: 490px`, up to 340 px wide; `STACK_WIDTH` / `PANEL_GAP` / `PANEL_MIN` in
-  `constants.ts`), narrower it goes under the stack and folds away (`grid-template-rows` 1fr → 0fr) while the row is open.
-  The month pace (`components/PacePanel.vue`, spec `desktop-balance-cards`, «Month pace»): `composables/useMonthPace.ts`
+  Layout (specs `desktop-home-tiles`, `desktop-balance-cards`): `BalancesFeature`'s root is `<div class="contents">`, so
+  its three tiles are items of home's grid (`pages/home/HomePage.vue`): «Balance» (the stack, `FreeLine` under it —
+  `freeLineOf(slide)`: the front card's free amount, its reserve and the free share as a bar; `row.first` while open),
+  «Month pace» (`PacePanel`, the tile `min-w-0` so the chart shrinks with the grid) and «Month» (`MonthPanel`). Opening the
+  row gives «Balance» `col-span-full`; the other two get `v-show` + `inert` (kept mounted: no reload, no new chart).
+  The month pace (`components/PacePanel.vue`): `composables/useMonthPace.ts`
   asks `getAnalyticsOverview` for the block's month and person (one month: day buckets, `spending`, `usual`) and, for
   the current month only, `getAllowanceOverview` (its failure drops only «Available per day»); `paceView` /
-  `paceChartOption` in `utils.ts` (pure, `tests/renderer/month-pace.test.ts`) — the spending added up by day up to the
-  last day with data, the usual dashed, today's point while the month runs; figures: spent, usual by the same day (a
-  past month: usual in a month), per day. No pace for a month without data; no usual line or figure with fewer than 3
-  whole months, a note instead. From `@[74rem]` it sits beside the month panel (that keeps 340 px at `left: 490px`,
-  the pace at `left: 854px`; `PACE_MIN`), narrower under the stack and the panel, folding with the open row there.
+  `paceChartOption(view, money)` in `utils.ts` (pure, `tests/renderer/month-pace.test.ts`) — the spending added up by day
+  up to the last day with data as a line with a soft filled area, the usual dashed in a pale primary, today's point with
+  its amount in a pill while the month runs, amounts on a faint grid (`money` — the home's `MoneyFormat`); figures:
+  spent, usual by the same day (a past month: usual in a month), per day. No pace for a month without data; no usual
+  line or figure with fewer than 3 whole months, a note instead.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
@@ -70,6 +72,14 @@
   (`monthOf(importFloor(today))`, `src/shared/import-range.ts`), not the first data month: an older month gets the «no data
   yet» notice of `widgets/home-notices` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
+- **Home grid** (spec `openspec/specs/desktop-home-tiles`): `HomePage` owns one CSS grid (`data-test="home-grid"`,
+  `@container`: one column, two from `@[47rem]`, `32rem 1.4fr 1fr` from `@[74rem]`). The features put their tiles straight
+  into it through a `<div class="contents">` root (one root element; a comment before it would be a second root and drop
+  the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week», or the details tile),
+  spending («What's unusual», «Spending by category» two columns × two rows, «Who spent what»), the regular payments
+  teaser. Each tile says its own span. The «Now» details tile takes «What's unusual»'s place too: `NowStripFeature`
+  `v-model:details` → `SpendingFeature` `insights-hidden` through the page (features never import each other).
+  Checked by `tests/home-grid.test.ts`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
   `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
   (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,
@@ -112,7 +122,12 @@
   unknown word stay plain rows); it no longer unfolds — the per-person split is on the category screen. Category
   icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
   with the «Now» strip and the category screen.
-  «What's unusual» (`SpendingInsights`, above the body): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
+  Tiles (spec `desktop-home-tiles`): «What's unusual» (`SpendingInsights`) in its own tile in the «Now» row, hidden by
+  `insightsHidden`; the block's tile — header, notices, the summary column (ring, compare note, stats as soft tiles,
+  member card) and the category rows (`CategoryRow`: icon in a soft circle, name with share and operations, chip,
+  amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the rest in place); «Who spent what»
+  (`PeopleList`, family view only, each person with a share bar — `PersonRowView.share`).
+  «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
   (whole-month medians) — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the
   largest differences first, at most `INSIGHT_MAX` (3). A usual under `INSIGHT_BASE` (1 000 ₴) is too small a base for a
   share: only «more», said by the amount. While the month runs (`usual.running`) only categories already over a whole
@@ -223,12 +238,15 @@
   Between the balances and «Spending»; hidden unless the month filter is this month; reloads quietly on
   `syncStatus.version` and on the period store's `today`. `utils.ts` (`nowView`, `nowChip`, `weekBars`, `dayLabel`,
   `daysRange`, `categoryColor`) is pure and tested (`tests/renderer/now-strip.test.ts`).
-  Under the cells, «By category» opens a panel (`VCollapse`, unmounted while closed) with a «Today | Week» switch and
-  every spending category of that period (`todayCategories` / `week.categories`: colour, share of the period, amount,
-  operations; the week's rows carry a chip against the same days of last week — `categoryChip`: the amount only, no room for %, «same», «new»).
-  Open / closed and the period are remembered (`useNowPrefsStore`, `localStorage` `now.categories`, `parsePrefs`;
-  default: closed, the week). Categories and numbers only: the lines with the bank's text stay on the category screen,
-  which each row opens for that day or week.
+  Two tiles, «Today» and «This week» (`components/TileCategories.vue`: at most `SHOWN_CATEGORIES` (3) rows — the
+  category's icon in a soft circle of its colour, the name, a bar against the period's biggest category (`CategoryRow.bar`),
+  the amount); each tile's button («Details», or `CategoryBreakdown.more` — «N more categories · amount») opens the details
+  tile in their place (`col-span-full`): a «Today | Week» switch and every spending category of that period
+  (`CategoryList`: colour, share of the period, amount, operations; the week's rows carry a chip against the same days
+  of last week — `categoryChip`: the amount only, «same», «new»), closed with ✕. Open / closed is the
+  `details` model (not remembered, closed when the strip hides); the period is remembered (`useNowPrefsStore`,
+  `localStorage` `now.categories`, `parsePrefs`, default the week). Categories and numbers only: the lines with the
+  bank's text stay on the category screen, which each row opens for that day or week.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

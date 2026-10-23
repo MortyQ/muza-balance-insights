@@ -18,9 +18,14 @@ English interface.
 
 ### Home screen
 
+- **Home as tiles.** Home is now a grid of separate tiles: the cards, the month's pace and the month's figures in the
+  first row; «Today», «This week» and «What's unusual» in the second; spending by category with «Who spent what» and
+  regular payments beside it. Opening the cards widens them to the whole row and the two tiles next to them step
+  aside until you fold the cards. Under the cards, the free amount of the card in front and what is reserved.
+- **Today and this week at a glance.** Each shows its three biggest categories; «Details» opens every category of the
+  day or the week in one wide tile, where you can switch between them. «What's unusual» moved next to them.
 - **The month's pace.** Next to the balance, a chart shows how your spending has added up day by day this month
-  against a usual month, with what you have spent, what you usually spend by this day and «Available per day». In a
-  narrower window it sits under the cards. The usual month appears once you have three whole months of history.
+  against a usual month, with what you have spent, what you usually spend by this day and «Available per day». The usual month appears once you have three whole months of history.
 - **A new look for the total.** The card with the total of the family or of a person no longer looks like a bank card:
   it is light, marked «Total», and shows the people it adds up as coloured dots. Account cards keep their bank's look.
 - **A clearer total card.** All balance cards are a little larger. The card with the total of the family or of a person now has a header in the people's

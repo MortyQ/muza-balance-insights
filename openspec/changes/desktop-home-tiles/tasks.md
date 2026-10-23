@@ -36,7 +36,7 @@
 
 ## 6. Docs and checks — docs(desktop): home tiles rules and live checks
 
-- [ ] 6.1 `.agents/project/desktop-renderer.md`: the home grid, the `contents` roots, the open-row rule
-- [ ] 6.2 `CHANGELOG.md` «Home screen»: home as tiles, «What's unusual» moved, today/week details
-- [ ] 6.3 `docs/backlog.md`: live checks (column steps, chart refit, scroll hairline, both themes, many people)
-- [ ] 6.4 `pnpm test` and `pnpm typecheck` at the root
+- [x] 6.1 `.agents/project/desktop-renderer.md`: the home grid, the `contents` roots, the open-row rule
+- [x] 6.2 `CHANGELOG.md` «Home screen»: home as tiles, «What's unusual» moved, today/week details
+- [x] 6.3 `docs/backlog.md`: live checks (column steps, chart refit, scroll hairline, both themes, many people)
+- [x] 6.4 `pnpm test` and `pnpm typecheck` at the root
