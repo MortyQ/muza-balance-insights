@@ -74,8 +74,19 @@ export function formatMinor(minor: number): string {
 }
 
 /**
+ * The 4 characters that tell like-named accounts apart («#ab12»): taken after a provider prefix («privatbank:») and a
+ * file account's «file-», so the accounts of one prefixed bank, or of one file flow, do not all read the same.
+ */
+export function accountTag(id: string): string {
+  return id
+    .slice(id.lastIndexOf(':') + 1)
+    .replace(/^file-/, '')
+    .slice(0, 4);
+}
+
+/**
  * Log labels for accounts: type + currency ("black/UAH", "банка/UAH") — never a card number or IBAN.
- * Duplicate labels get the first 4 characters of the account id ("black/UAH #ab12").
+ * Duplicate labels get the account's tag ("black/UAH #ab12", accountTag).
  */
 export function accountLabels(
   accounts: ReadonlyArray<{ id: string; kind: string; type: string | null; currencyCode: number }>,
@@ -85,7 +96,7 @@ export function accountLabels(
   );
   const counts = new Map<string, number>();
   for (const l of base.values()) counts.set(l, (counts.get(l) ?? 0) + 1);
-  return new Map([...base].map(([id, l]) => [id, (counts.get(l) ?? 0) > 1 ? `${l} #${id.slice(0, 4)}` : l]));
+  return new Map([...base].map(([id, l]) => [id, (counts.get(l) ?? 0) > 1 ? `${l} #${accountTag(id)}` : l]));
 }
 
 /**

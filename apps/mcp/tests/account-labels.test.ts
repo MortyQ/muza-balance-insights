@@ -20,6 +20,18 @@ describe('account labels in logs', () => {
     });
   });
 
+  it('the tag skips a provider prefix and a file account\'s «file-»', () => {
+    const labels = accountLabels([
+      { id: 'fictional:aaaa1111', kind: 'card', type: null, currencyCode: 980 },
+      { id: 'fictional:bbbb2222', kind: 'card', type: null, currencyCode: 980 },
+      { id: 'file-cccc3333', kind: 'card', type: 'black', currencyCode: 980 },
+      { id: 'file-dddd4444', kind: 'card', type: 'black', currencyCode: 980 },
+      { id: 'fictional:file-eeee5555', kind: 'jar', type: null, currencyCode: 840 },
+      { id: 'fictional:file-ffff6666', kind: 'jar', type: null, currencyCode: 840 },
+    ]);
+    expect([...labels.values()]).toEqual(['карта/UAH #aaaa', 'карта/UAH #bbbb', 'black/UAH #cccc', 'black/UAH #dddd', 'банка/USD #eeee', 'банка/USD #ffff']);
+  });
+
   it('CLI entry points never read masked_pan or iban', () => {
     const dir = path.join(MCP_ROOT, 'src', 'cli');
     const offenders = fs

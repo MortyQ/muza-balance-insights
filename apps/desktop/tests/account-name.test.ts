@@ -24,6 +24,16 @@ describe('accountNames', () => {
     });
   });
 
+  it('a tag from the account\'s own id: after a provider prefix and a file account\'s «file-»', () => {
+    const names = accountNames([
+      { id: 'fictional:aaaa1', provider: 'fictional', kind: 'card', type: null, currency: 980 },
+      { id: 'fictional:bbbb2', provider: 'fictional', kind: 'card', type: null, currency: 980 },
+      { id: 'file-cccc3', provider: 'monobank', kind: 'card', type: 'black', currency: 980 },
+      { id: 'file-dddd4', provider: 'monobank', kind: 'card', type: 'black', currency: 980 },
+    ]);
+    expect([...names.values()].map((n) => n.tag)).toEqual(['aaaa', 'bbbb', 'cccc', 'dddd']);
+  });
+
   it('tags exactly the accounts the core would tell apart', () => {
     const core = accountLabels(ACCOUNTS.map((a) => ({ ...a, currencyCode: a.currency })));
     for (const [id, name] of accountNames(ACCOUNTS)) expect(name.tag !== null, id).toBe(core.get(id)!.includes('#'));

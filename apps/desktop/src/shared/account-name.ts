@@ -1,6 +1,8 @@
 // An account as the screens name it on the balance cards and in the import line: its parts only, never a card number,
 // an IBAN or a jar's title. The renderer words them («Black card · UAH», «Jar · UAH #ab12»).
 
+import { accountTag } from '@mono/core/shared/format';
+
 export type AccountName = {
   /** The bank's provider id: its card type names (a provider this version does not know shows neutral). */
   provider: string;
@@ -9,7 +11,7 @@ export type AccountName = {
   type: string | null;
   /** ISO 4217 numeric. */
   currency: number;
-  /** The first 4 characters of the account id when another account would read the same; else null. */
+  /** The account's tag (accountTag: 4 characters of its own id) when another account would read the same; else null. */
   tag: string | null;
 };
 
@@ -24,5 +26,5 @@ export function accountNames(accounts: ReadonlyArray<AccountRow>): Map<string, A
   const same = (n: (typeof base)[number]['name']) => `${n.kind}/${n.type ?? ''}/${n.currency}`;
   const counts = new Map<string, number>();
   for (const b of base) counts.set(same(b.name), (counts.get(same(b.name)) ?? 0) + 1);
-  return new Map(base.map((b) => [b.id, { ...b.name, tag: (counts.get(same(b.name)) ?? 0) > 1 ? b.id.slice(0, 4) : null }]));
+  return new Map(base.map((b) => [b.id, { ...b.name, tag: (counts.get(same(b.name)) ?? 0) > 1 ? accountTag(b.id) : null }]));
 }
