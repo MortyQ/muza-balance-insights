@@ -5,7 +5,7 @@ import { effectScope, nextTick, ref } from 'vue';
 import { describe, expect, it, vi } from 'vitest';
 import type { BalanceApi, MonthOverviewQuery } from '@contract/api.ts';
 import { METHODS } from '@contract/channels.ts';
-import { wrapBridge } from '@/shared/api/balance.ts';
+import { SUBSCRIPTIONS, wrapBridge } from '@/shared/api/balance.ts';
 import { CACHED_READS, PASS_THROUGH, WRITES } from '@/shared/api/methods.ts';
 import { ReadCache, readKey, READ_CACHE_SIZE, READ_FRESH_MS } from '@/shared/lib/readCache.ts';
 import { useAsyncData } from '@/shared/lib/useAsyncData.ts';
@@ -72,6 +72,17 @@ describe('the bridge wrapper', () => {
     ) as unknown as BalanceApi;
     return { fake, calls };
   }
+
+  it('hands every subscription of the preload over as it is', () => {
+    const off = () => undefined;
+    const subs = Object.fromEntries(SUBSCRIPTIONS.map((name) => [name, vi.fn(() => off)]));
+    const api = wrapBridge(subs as unknown as BalanceApi, new ReadCache());
+    const cb = () => undefined;
+    for (const name of SUBSCRIPTIONS) {
+      expect(api[name](cb)).toBe(off);
+      expect(subs[name]).toHaveBeenCalledWith(cb);
+    }
+  });
 
   it('a data read keeps its answer under its key; a write makes it stale; a pass-through does not', async () => {
     const cache = new ReadCache();

@@ -11,6 +11,11 @@ const PASSING: ReadonlySet<Method> = new Set(PASS_THROUGH);
 
 type AnyCall = (...args: unknown[]) => Promise<unknown>;
 
+/** The preload's subscriptions next to the methods: the wrapper hands them over as they are. */
+export const SUBSCRIPTIONS = ['onProgress', 'onUpdate', 'onOpenSettings', 'onLock', 'onDbState'] as const satisfies ReadonlyArray<
+  keyof BalanceApi
+>;
+
 export function wrapBridge(bridge: BalanceApi, cache: ReadCache): BalanceApi {
   const calls = bridge as unknown as Record<Method, AnyCall>;
   const out: Partial<Record<Method, AnyCall>> = {};
@@ -32,7 +37,10 @@ export function wrapBridge(bridge: BalanceApi, cache: ReadCache): BalanceApi {
       };
     }
   }
-  return out as BalanceApi;
+  const subscriptions = Object.fromEntries(
+    SUBSCRIPTIONS.map((name) => [name, (cb: never) => (bridge[name] as (cb: never) => () => void)(cb)]),
+  );
+  return { ...out, ...subscriptions } as BalanceApi;
 }
 
 export const balanceApi: BalanceApi = wrapBridge((window as unknown as { balance: BalanceApi }).balance, readCache);
