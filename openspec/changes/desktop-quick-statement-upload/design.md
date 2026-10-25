@@ -32,10 +32,12 @@ access, one kept file, 10 minutes, dropped on lock).
    → `unreadable`. Navigation by drop stays blocked (the window already denies `will-navigate`). Alternative — read
    the bytes in the renderer and send them: rejected, the renderer would hold the content.
 
-3. **Renderer.** A new slice `features/statement-upload` (`StatementUploadButton`, `StatementDropZone`,
-   `useQuickUpload`): it drives open → (pick or add connection) → compare → commit, reusing the comparison view of
-   `features/integrations/statement-file` (moved to `shared/ui` or exposed by that slice's public API, whichever the
-   FSD check allows — decided in task 3.1). `widgets/global-filters` hosts the button; `DefaultLayout` hosts the drop
+3. **Renderer.** A sub-feature `features/integrations/quick-upload` (`useQuickUpload`, one shared state for the
+   window; `ConnectionChoice`) and two root files of the integrations domain that compose it with `statement-file`:
+   `QuickUploadButtonFeature` and `QuickUploadFeature` (the drop zone and the dialog, which shows
+   `StatementUploadFeature` with the file main already opened — its `opened` prop). A separate slice was rejected:
+   it would have to import `statement-file`, and slices of one layer never import each other; sub-features meet only
+   in the domain's root files. `openProblemText` / `PROBLEM_TEXT` moved to `integrations/shared` for both. `widgets/global-filters` hosts the button; `DefaultLayout` hosts the drop
    zone (an overlay while a file is dragged over). Adding a connection reuses `addConnection` with `method: 'file'`.
 
 4. **Gates.** Both new methods are writes for the read cache only when they commit (they do not); they are blocked

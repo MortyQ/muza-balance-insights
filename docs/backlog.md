@@ -159,6 +159,9 @@
 - **The fee floor**: a small transfer whose fee is above 5% is not paired and counts as spending and income. Collect the
   real fees on small amounts (a fixed fee on a 100 ₴ transfer is more than 5%); decide from them whether an absolute
   floor is needed.
+- **Dropping statement files on the window** (`QuickUploadFeature`, `openDroppedStatement`): drop a real `.xlsx` and
+  `.csv` on macOS and Windows, a folder, two files, and a file from a zip opened in the system's archive viewer (it may
+  have no path: expect «unreadable»). Check the window never navigates to a dropped file.
 - **More PrivatBank statements** (reader `privatbank-card-uk`, built from one real file of one UAH card): check a file
   with two cards, a card in another currency, a period with a refund, and the English / Russian Privat24 statement
   (their headers, masked, decide between a `language` refusal and a second reader). Watch the recategorize report's

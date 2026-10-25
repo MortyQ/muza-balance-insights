@@ -869,6 +869,19 @@
         "overLimits": "The file has too many pages, sheets, rows or accounts to read.",
         "timeout": "Reading the file took too long and was stopped."
       }
+    },
+    "quick": {
+      "button": "Upload statement",
+      "title": "{bank} statement",
+      "chooseConnection": "Which connection should the statement go to?",
+      "compareOnly": "{bank} is connected by token: the statement can only be checked against that data.",
+      "noConnection": "There is no {bank} file connection yet.",
+      "addConnection": "Add connection",
+      "person": "Person",
+      "dropHint": "Drop the file to upload the statement",
+      "oneFile": "Drop one file at a time.",
+      "close": "Close",
+      "me": "Me"
     }
   },
   "main": {

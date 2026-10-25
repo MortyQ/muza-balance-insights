@@ -7,6 +7,7 @@ import { useImportProgressStore } from '@/entities/import-progress';
 import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
 import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
+import { QuickUploadButtonFeature } from '@/features/integrations';
 import { monthOf } from '@/shared/lib';
 import SyncStatus from './components/SyncStatus.vue';
 import { useParticipantLayout } from './composables/useParticipantLayout.ts';
@@ -58,8 +59,9 @@ const { mode } = useParticipantLayout({
     <div class="flex justify-center">
       <ParticipantFilter v-if="syncStatus.hasData && mode === 'buttons'" :failed />
     </div>
-    <div ref="right" class="justify-self-end whitespace-nowrap">
+    <div ref="right" class="flex items-center gap-3 justify-self-end whitespace-nowrap">
       <SyncStatus v-if="status.text" :view="status" />
+      <QuickUploadButtonFeature />
     </div>
     <div ref="center" class="invisible absolute top-0 left-0 w-max" aria-hidden="true" inert>
       <ParticipantFilter v-if="syncStatus.hasData" :failed />

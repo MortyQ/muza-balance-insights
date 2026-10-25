@@ -12,9 +12,9 @@
 
 ## 3. Renderer
 
-- [ ] 3.1 `features/statement-upload` slice: button, drop zone, `useQuickUpload` (connection pick, add a file connection, comparison, write); texts in `uk.json`, `en.json`, `ru.json`; verify `tests/renderer/statement-upload.test.ts`, `architecture.test.ts`, `i18n.test.ts`
-- [ ] 3.2 The button in `widgets/global-filters`, the drop zone in `DefaultLayout`; verify `tests/renderer/layouts.test.ts`, `app-header.test.ts`
-- [ ] 3.3 `CHANGELOG.md` entry; `docs/backlog.md`: try dropping real files on Windows and macOS
+- [x] 3.1 `features/integrations/quick-upload` sub-feature with its root files: button, drop zone, `useQuickUpload` (connection pick, add a file connection, comparison, write); texts in `uk.json`, `en.json`, `ru.json`; verify `tests/renderer/quick-upload.test.ts`, `architecture.test.ts`, `i18n.test.ts`
+- [x] 3.2 The button in `widgets/global-filters`, the drop zone in `DefaultLayout`; verify `tests/renderer/layouts.test.ts`
+- [x] 3.3 `CHANGELOG.md` entry; `docs/backlog.md`: try dropping real files on Windows and macOS
 
 ## 4. Integration
 

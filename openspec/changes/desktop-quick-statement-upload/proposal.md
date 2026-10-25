@@ -38,7 +38,7 @@ User-visible: yes (CHANGELOG entry above).
 
 - `src/main/statements.ts` (open without a connection, assign a connection), `src/preload` (a dropped file → main),
   `src/shared/api.ts` / `channels.ts` / `ipc-args.ts` (two methods), `src/main/ipc.ts` gates.
-- Renderer: `features/statement-upload` (new slice), `widgets/global-filters`, `app/layouts/DefaultLayout.vue` (the
+- Renderer: `features/integrations/quick-upload` (new sub-feature) and two root files of that domain, `widgets/global-filters`, `app/layouts/DefaultLayout.vue` (the
   drop area), dictionaries.
 - Security: a dropped file's path reaches main only from the preload; the renderer never sees it
   (`.agents/project/desktop-security.md` updated).

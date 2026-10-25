@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue';
-import type { ConnectionView, OpenedStatementView } from '@contract/api.ts';
+import { computed, onMounted, useId } from 'vue';
+import type { ConnectionView, OpenedStatementView, OpenStatementResult } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { cardTypeName, cardTypesOf } from '@/entities/bank';
 import { t } from '@/shared/lib';
@@ -9,14 +9,19 @@ import { accountLabel } from '../shared/utils.ts';
 import { useStatementUpload } from './composables/useStatementUpload.ts';
 import { comparisonLines, statementLabel, summaryText } from './utils.ts';
 
-const { connection, steps } = defineProps<{
+const { connection, steps, opened = null } = defineProps<{
   connection: Readonly<ConnectionView>;
   /** How to get the file, step by step. */
   steps: ReadonlyArray<MessageKey>;
+  /** A file main already opened for this connection (the data screens' upload): compared at once. */
+  opened?: Readonly<OpenStatementResult> | null;
 }>();
 
 const id = useId();
-const { state, targets, newTypes, canAdd, open, add } = useStatementUpload(() => connection);
+const { state, targets, newTypes, canAdd, open, adopt, add } = useStatementUpload(() => connection);
+onMounted(() => {
+  if (opened) void adopt(opened);
+});
 const fileConnection = computed(() => connection.method === 'file');
 
 const file = computed(() => (state.value.step === 'opened' || state.value.step === 'writing' ? state.value.file : null));
@@ -37,7 +42,7 @@ const typeOptions = computed<VSelectOption[]>(() => cardTypesOf(connection.provi
 
 <template>
   <div class="flex flex-col gap-3">
-    <ol class="list-decimal pl-5 text-sm text-foreground-secondary">
+    <ol v-if="steps.length > 0" class="list-decimal pl-5 text-sm text-foreground-secondary">
       <li v-for="step in steps" :key="step">{{ $t(step) }}</li>
     </ol>
     <div>

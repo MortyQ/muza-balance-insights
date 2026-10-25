@@ -39,11 +39,12 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock('@/shared/api', () => ({ balanceApi: api }));
 
-const { canWrite, comparisonLines, commitText, defaultTarget, initialTargets, newCardType, openProblemText, statementLabel, summaryText } = await import(
+const { canWrite, comparisonLines, commitText, defaultTarget, initialTargets, newCardType, statementLabel, summaryText } = await import(
   '@/features/integrations/statement-file/utils.ts'
 );
 const { useStatementUpload } = await import('@/features/integrations/statement-file/composables/useStatementUpload.ts');
-const { PROBLEM_TEXT } = await import('@/features/integrations/statement-file/constants.ts');
+const { openProblemText } = await import('@/features/integrations/shared/utils.ts');
+const { PROBLEM_TEXT } = await import('@/features/integrations/shared/constants.ts');
 const { FILE_STEPS } = await import('@/features/integrations/monobank/constants.ts');
 const { PROVIDER_FORMS } = await import('@/features/integrations/constants.ts');
 

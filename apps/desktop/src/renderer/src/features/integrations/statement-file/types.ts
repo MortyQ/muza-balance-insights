@@ -30,6 +30,8 @@ export interface UseStatementUploadReturn {
   /** What the file would add right now: every comparison without a block, and new rows in at least one. */
   canAdd: ComputedRef<boolean>;
   open: () => Promise<void>;
+  /** Takes a file main already opened for this connection. */
+  adopt: (r: Readonly<OpenStatementResult>) => Promise<void>;
   add: () => Promise<void>;
 }
 
