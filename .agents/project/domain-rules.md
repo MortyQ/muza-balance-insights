@@ -182,6 +182,11 @@
   (`getBalances`, `getSyncStatus`). Суммы в копейках валюты счёта, валюты не суммируются, без имён и описаний;
   счета — id + подпись `type/CUR`.
 - `getBalances`: поля `own_funds` (основное) = balance − credit_limit, `credit_limit`, `available` (= balance).
+- **How far the data reaches** (spec `desktop-data-freshness`): `LIVE_ACCOUNT_IDS_SQL` (`people/accounts.ts`) — the
+  enabled accounts of token connections while any of them is imported, else every enabled account. `periodInfo`
+  (`incomplete`, `dataUntil`, `coveredDays`), the status's `data_until` and the desktop's `DataService.status()` take
+  their minimum: a statement file is a snapshot and never holds live banks back; its rows count as they are. The
+  desktop header marks a connection more than a day behind (`freshnessRows`, `widgets/global-filters`).
 - `spendingSummary` и `comparePeriods`: флаг неполного периода (конец периода после последнего sync или
   в будущем) и среднее в день. «Последний sync» — наименее свежий `newest_synced_time` среди счетов;
   среднее делится на полностью покрытые дни (день sync не считается, если синк не дошёл до его конца).

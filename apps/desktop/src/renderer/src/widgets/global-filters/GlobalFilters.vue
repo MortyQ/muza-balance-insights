@@ -9,9 +9,10 @@ import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { QuickUploadButtonFeature } from '@/features/integrations';
 import { monthOf } from '@/shared/lib';
+import FreshnessList from './components/FreshnessList.vue';
 import SyncStatus from './components/SyncStatus.vue';
 import { useParticipantLayout } from './composables/useParticipantLayout.ts';
-import { failedConnections, syncStatusView } from './utils.ts';
+import { failedConnections, freshnessRows, syncStatusView } from './utils.ts';
 
 const syncStatus = useSyncStatusStore();
 const importProgress = useImportProgressStore();
@@ -24,6 +25,7 @@ const status = computed(() =>
   syncStatusView(importProgress.progress, { line: syncStatus.line, lastSyncAt: syncStatus.status?.lastSyncAt ?? null }, Date.now(), participant.labelOf),
 );
 const failed = computed(() => failedConnections(importProgress.progress));
+const freshness = computed(() => freshnessRows(participant.people, syncStatus.status?.dataUntil ?? null));
 // Analytics picks whole months (a range or one), home one month, regular payments none: the route says which.
 const route = useRoute();
 const periodFilter = computed(() => route.meta.periodFilter ?? 'month');
@@ -61,6 +63,7 @@ const { mode } = useParticipantLayout({
     </div>
     <div ref="right" class="flex items-center gap-3 justify-self-end whitespace-nowrap">
       <SyncStatus v-if="status.text" :view="status" />
+      <FreshnessList v-if="freshness.length > 1" :rows="freshness" :today="monthStore.today" />
       <QuickUploadButtonFeature />
     </div>
     <div ref="center" class="invisible absolute top-0 left-0 w-max" aria-hidden="true" inert>

@@ -1,7 +1,7 @@
 // What every summary shares: the period and its coverage, the filters (scope, account, participant) and the SQL
 // pieces that decide which rows a view counts. Periods are calendar days [from, to], inclusive, of a time zone
 // (periods.ts; Kyiv by default), matched by `time`.
-import { ENABLED_ACCOUNT_IDS_SQL } from '../people/accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '../people/accounts.ts';
 import { RESYNC_OVERLAP_SEC } from '../shared/constants.ts';
 import type { Db } from '../storage/db.ts';
 import { accountLabels, dateIn, parseLocalDate } from '../shared/format.ts';
@@ -29,7 +29,8 @@ export type PeriodInfo = Period & {
   days: number;
   /**
    * True if the period ends after the last sync (or in the future): the numbers will still grow.
-   * "Last sync" = the least recent newest_synced_time over synced accounts, so no account is ahead of it.
+   * "Last sync" = the least recent newest_synced_time over the live accounts (LIVE_ACCOUNT_IDS_SQL: token connections
+   * first; a statement file never holds them back).
    */
   incomplete: boolean;
   /** Date of that last sync in the period's zone; null if nothing was ever synced. That day is usually only partly covered. */
@@ -64,7 +65,7 @@ export function validatePeriod(p: Period): Period {
 export async function periodInfo(db: Db, period: Period, nowSec: number): Promise<PeriodInfo> {
   const { from, to } = validatePeriod(period);
   const tz = zoneOf(period);
-  const rs = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
+  const rs = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${LIVE_ACCOUNT_IDS_SQL})`);
   const newest = rs.rows[0]?.newest === null || rs.rows[0]?.newest === undefined ? null : Number(rs.rows[0].newest);
   const { endSec } = periodRange(period); // exclusive end of the period
   const dataUntil = newest === null ? null : dateIn(newest, tz);

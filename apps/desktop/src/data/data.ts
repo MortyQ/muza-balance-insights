@@ -2,7 +2,7 @@
 // mapped to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
 // and income screens). The import worker writes the same file; WAL lets both work.
-import { ENABLED_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
+import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categoryLines } from '@mono/core/read/category-lines';
 import { incomeLines } from '@mono/core/read/income-lines';
@@ -910,11 +910,16 @@ export class DataService {
     };
   }
 
-  /** Enabled accounts only (a disabled one is in no statistic): `dataUntil` agrees with `dataFrom`. */
+  /**
+   * Enabled accounts only (a disabled one is in no statistic): `dataUntil` agrees with `dataFrom`. How far the data
+   * reaches is the live accounts' (LIVE_ACCOUNT_IDS_SQL): a statement file never holds token connections back.
+   */
   async status(): Promise<DataStatus> {
     const db = await this.conn();
     const rs = await db.execute(
-      `SELECT COUNT(*) AS n, MIN(newest_synced_time) AS newest, MAX(last_sync_at) AS last FROM sync_state ${IMPORTED_ENABLED}`,
+      `SELECT COUNT(*) AS n, MAX(last_sync_at) AS last,
+         (SELECT MIN(newest_synced_time) FROM sync_state WHERE account_id IN (${LIVE_ACCOUNT_IDS_SQL})) AS newest
+       FROM sync_state ${IMPORTED_ENABLED}`,
     );
     const r = rs.rows[0];
     const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));

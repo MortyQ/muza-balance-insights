@@ -5,3 +5,4 @@ export { default as ConnectFirstFeature } from './ConnectFirstFeature.vue';
 export { default as ConnectionsFeature } from './ConnectionsFeature.vue';
 export { default as QuickUploadButtonFeature } from './QuickUploadButtonFeature.vue';
 export { default as QuickUploadFeature } from './QuickUploadFeature.vue';
+export { useQuickUpload } from './quick-upload/composables/useQuickUpload.ts';

@@ -1,6 +1,6 @@
 // Balances and sync status — the phase 5 getBalances / getSyncStatus tools. No card numbers, IBANs or jar titles:
 // accounts are identified by id and a "type/CUR" label.
-import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from '../people/accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL, accountEnabledSql } from '../people/accounts.ts';
 import type { Db } from '../storage/db.ts';
 import { accountLabels, dateIn, toKyivDate, toKyivDateTime } from '../shared/format.ts';
 import { RESYNC_OVERLAP_SEC, TIMEZONE } from '../shared/constants.ts';
@@ -233,7 +233,9 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
       last_sync_at: r.lastSyncAt === null ? null : toKyivDateTime(r.lastSyncAt),
       hours_since_sync: r.lastSyncAt === null ? null : Math.floor((nowMs / 1000 - r.lastSyncAt) / 3600),
     }));
-  const newest = rows.filter((r) => r.newest !== null).map((r) => r.newest!);
+  // How far the data reaches: the live accounts only (a statement file never holds the token connections back).
+  const live = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${LIVE_ACCOUNT_IDS_SQL})`);
+  const liveNewest = live.rows[0]?.newest === null || live.rows[0]?.newest === undefined ? null : Number(live.rows[0].newest);
   const lastSync = rows.filter((r) => r.lastSyncAt !== null).map((r) => r.lastSyncAt!);
 
   // Each connection has its own slot, with its provider's interval; calls without a connection get the longest one.
@@ -255,7 +257,7 @@ export async function getSyncStatus(db: Db, nowMs: number): Promise<SyncStatus> 
   });
   return {
     accounts,
-    data_until: newest.length > 0 ? toKyivDate(Math.min(...newest)) : null,
+    data_until: liveNewest === null ? null : toKyivDate(liveNewest),
     last_sync_at: lastSync.length > 0 ? toKyivDateTime(Math.max(...lastSync)) : null,
     next_request_at: nextMs !== null && nextMs > nowMs ? toKyivDateTime(Math.ceil(nextMs / 1000)) : null,
     diagnostics: {
