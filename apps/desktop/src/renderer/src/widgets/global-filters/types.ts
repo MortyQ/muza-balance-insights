@@ -39,3 +39,15 @@ export type SyncStatusView = {
   /** On hover; '' = none. */
   tooltip: string;
 };
+
+/** One connection in the data status's list (spec desktop-data-freshness). */
+export type FreshnessRow = {
+  connectionId: number;
+  bank: string;
+  person: string;
+  method: 'token' | 'file';
+  /** The date its data reaches; null = not imported yet. */
+  until: string | null;
+  /** More than a day behind the live data. */
+  behind: boolean;
+};

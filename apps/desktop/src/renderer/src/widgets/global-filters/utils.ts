@@ -1,7 +1,9 @@
+import type { PersonView } from '@contract/api.ts';
+import { shiftDate } from '@contract/dates.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { IMPORT_ERRORS, progressLine } from '@/features/import-statement';
-import { i18n, syncedWhen, t } from '@/shared/lib';
-import type { FilterRowWidths, SyncStatusView } from './types.ts';
+import { i18n, shortDate, syncedWhen, t } from '@/shared/lib';
+import type { FilterRowWidths, FreshnessRow, SyncStatusView } from './types.ts';
 
 /** When the data was last updated, for the tooltip of the data line: «Updated at 14:20»; '' — never. */
 function updatedLine(line: string, lastSyncAt: string | null, now: number): string {
@@ -72,4 +74,31 @@ export function failedConnections(p: Readonly<ImportProgress>): Record<number, s
  */
 export function fitsCenter(w: Readonly<FilterRowWidths>, gap: number): boolean {
   return w.row === 0 || w.center + 2 * gap + 2 * Math.max(w.left, w.right) <= w.row;
+}
+
+/**
+ * Every connection with the date its data reaches (spec desktop-data-freshness). Behind = it ends more than one day
+ * before the live data (`dataUntil`, the token connections'): a few hours since the last import is not «behind».
+ */
+export function freshnessRows(people: ReadonlyArray<PersonView>, dataUntil: string | null): FreshnessRow[] {
+  const live = dataUntil === null ? null : shiftDate(dataUntil.slice(0, 10), -1);
+  return people.flatMap((p) =>
+    p.connections.map((c) => ({
+      connectionId: c.id,
+      bank: c.bank,
+      person: p.label,
+      method: c.method,
+      until: c.coveredTo,
+      behind: live !== null && c.coveredTo !== null && c.coveredTo < live,
+    })),
+  );
+}
+
+/** The header's mark: the bank behind and its date, the number of them when several, '' when none. */
+export function behindMark(rows: ReadonlyArray<FreshnessRow>): string {
+  const behind = rows.filter((r) => r.behind);
+  const [only] = behind;
+  if (!only) return '';
+  if (behind.length > 1) return t('home.filters.freshness.behindMany', { count: behind.length });
+  return t('home.filters.freshness.behindOne', { bank: only.bank, date: shortDate(only.until ?? '') });
 }

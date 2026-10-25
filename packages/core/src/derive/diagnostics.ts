@@ -1,8 +1,9 @@
-// Diagnostics of the derivation pass: rows per transfer rule, unpaired own-transfer rows, refund pairs and rows per
-// category. Read by the recategorize report (rederive.ts) and the sync status.
+// Diagnostics of the derivation pass: rows per transfer rule, unpaired own-transfer rows, refund pairs, rows per
+// category and bank categories no table knows. Read by the recategorize report (rederive.ts) and the sync status.
 import type { Db } from '../storage/db.ts';
-import { accountProviders, providerOf } from '../people/connections.ts';
+import { accountProviders, parseProviderId, providerOf } from '../people/connections.ts';
 import { rulesFor } from '../providers/rules.ts';
+import type { ProviderId } from '../providers/types.ts';
 import { numOrNull, textOrNull } from '../shared/sql-values.ts';
 import type { TransferRule } from './transfers.ts';
 
@@ -56,4 +57,20 @@ export async function categoryCounts(db: Db): Promise<Array<{ category: string; 
      WHERE is_cancelled = 0 GROUP BY category ORDER BY n DESC, category`,
   );
   return rs.rows.map((r) => ({ category: String(r.category), n: Number(r.n) }));
+}
+
+/**
+ * Bank categories their bank's table does not know (providers/<id>/categories.ts): the bank added or renamed one, and
+ * its rows got no hint. The bank's category name and a count only.
+ */
+export async function unknownBankCategories(db: Db): Promise<Array<{ provider: ProviderId; bankCategory: string; n: number }>> {
+  const rs = await db.execute(
+    `SELECT c.provider, t.bank_category, COUNT(*) AS n
+     FROM transactions t JOIN accounts a ON a.id = t.account_id JOIN connections c ON c.id = a.connection_id
+     WHERE t.is_cancelled = 0 AND t.bank_category IS NOT NULL
+     GROUP BY c.provider, t.bank_category ORDER BY n DESC, c.provider, t.bank_category`,
+  );
+  return rs.rows
+    .map((r) => ({ provider: parseProviderId(r.provider), bankCategory: String(r.bank_category), n: Number(r.n) }))
+    .filter((r) => !rulesFor(r.provider).knowsBankCategory(r.bankCategory));
 }

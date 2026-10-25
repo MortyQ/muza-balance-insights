@@ -227,6 +227,9 @@
           "rebuilding": "eRecovery",
           "white": "White card",
           "yellow": "Children's card"
+        },
+        "privatbank": {
+          "card": "PrivatBank card"
         }
       },
       "other": "Other banks"
@@ -479,7 +482,18 @@
       "percent": "{pct}%",
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",
-      "updated": "Updated {when}"
+      "updated": "Updated {when}",
+      "freshness": {
+        "list": "Data by bank",
+        "behindOne": "{bank}: until {date}",
+        "behindMany": "Banks behind: {count}",
+        "token": "token",
+        "file": "file",
+        "until": "until {date}",
+        "none": "no data yet",
+        "upload": "Upload statement",
+        "refresh": "Refresh"
+      }
     },
     "import": {
       "about": "All connections are downloaded. Monobank gives out the statement at most once a minute per token and at most 31 days per request: about a minute for each month of history of each account; the connections of different people go in parallel. The current month of all accounts comes first, then the history. You can stop the import and continue later. New transactions also arrive on their own — see «Auto-sync» in the settings.",
@@ -639,7 +653,9 @@
         "srLess": "less than in {month}",
         "srLessPartial": "less than by this day in {month}",
         "srMore": "more than in {month}",
-        "srMorePartial": "more than by this day in {month}"
+        "srMorePartial": "more than by this day in {month}",
+        "shortMore": "{diff} more",
+        "shortLess": "{diff} less"
       },
       "compareDay": "{month} {day}",
       "compareFull": "Compared with: {period}",
@@ -866,6 +882,19 @@
         "overLimits": "The file has too many pages, sheets, rows or accounts to read.",
         "timeout": "Reading the file took too long and was stopped."
       }
+    },
+    "quick": {
+      "button": "Upload statement",
+      "title": "{bank} statement",
+      "chooseConnection": "Which connection should the statement go to?",
+      "compareOnly": "{bank} is connected by token: the statement can only be checked against that data.",
+      "noConnection": "There is no {bank} file connection yet.",
+      "addConnection": "Add connection",
+      "person": "Person",
+      "dropHint": "Drop the file to upload the statement",
+      "oneFile": "Drop one file at a time.",
+      "close": "Close",
+      "me": "Me"
     }
   },
   "main": {

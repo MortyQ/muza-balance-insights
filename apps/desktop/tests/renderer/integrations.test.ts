@@ -48,7 +48,7 @@ describe('a new connection', () => {
 describe('banks and their forms', () => {
   it('a bank’s own forms by provider; an unknown provider gets none, never another bank’s', () => {
     expect(isProviderId('monobank')).toBe(true);
-    expect(isProviderId('privatbank')).toBe(false);
+    expect(isProviderId('unknownbank')).toBe(false);
     expect(isProviderId('toString')).toBe(false);
     expect(formsOf('monobank')).toBe(PROVIDER_FORMS.monobank);
     expect(formsOf('unknown')).toBeNull();
@@ -71,10 +71,10 @@ describe('banks and their forms', () => {
   });
 
   it('a bank the registry does not know: a neutral mark and its id, no ways, no card types', () => {
-    expect(bankOf('privatbank')).toEqual({ id: 'privatbank', name: 'privatbank', ways: [], monogram: 'P', monogramClass: 'bg-surface-sunken text-foreground-muted' });
-    expect(cardTypesOf('privatbank')).toEqual([]);
-    expect(defaultCardTypeOf('privatbank')).toBeNull();
-    expect(cardTypeName('privatbank', 'black')).toBe('Карта');
+    expect(bankOf('unknownbank')).toEqual({ id: 'unknownbank', name: 'unknownbank', ways: [], monogram: 'U', monogramClass: 'bg-surface-sunken text-foreground-muted' });
+    expect(cardTypesOf('unknownbank')).toEqual([]);
+    expect(defaultCardTypeOf('unknownbank')).toBeNull();
+    expect(cardTypeName('unknownbank', 'black')).toBe('Карта');
   });
 
   it('the Monobank texts are the same as before the bank got its folder', () => {

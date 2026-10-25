@@ -160,6 +160,15 @@ export type OpenStatementResult =
   | { opened: false; reason: 'cancelled' }
   | { opened: false; reason: 'problem'; problem: StatementProblemCode; /** the file's row, for bad-row */ row: number | null };
 
+/** A file opened from the data screens: kept in main with the bank its content names; a connection is assigned next. */
+export type OpenAnyStatementResult =
+  | { opened: true; statementId: string; provider: ProviderId }
+  | { opened: false; reason: 'cancelled' }
+  | { opened: false; reason: 'problem'; problem: StatementProblemCode; row: number | null };
+
+/** assignStatement: the kept file against the chosen connection, as openStatement gives it; expired after 10 minutes. */
+export type AssignStatementResult = OpenStatementResult | { opened: false; reason: 'expired' };
+
 /** Where an account's rows go: a card of the connection, or a new card of its currency with its card type. */
 export type StatementTargetInput = { kind: 'account'; accountId: string } | { kind: 'new'; type: string | null };
 
@@ -213,6 +222,15 @@ export type BalanceApi = {
    * PDF decoded in a process of its own); neither its path nor its content comes back.
    */
   openStatement(connectionId: number): Promise<OpenStatementResult>;
+  /** The data screens' «Upload statement»: the system dialog with every bank's statement files; the file names its bank. */
+  openAnyStatement(): Promise<OpenAnyStatementResult>;
+  /**
+   * A file dropped onto a data screen. The renderer passes the dropped File; the preload turns it into its path for main
+   * (the path never reaches the renderer). A File made by script has no path and is refused.
+   */
+  openDroppedStatement(file: File): Promise<OpenAnyStatementResult>;
+  /** One of the file's bank's connections for a file opened by openAnyStatement / openDroppedStatement. */
+  assignStatement(statementId: string, connectionId: number): Promise<AssignStatementResult>;
   /** Counts only: each account of the kept file against its target, one per account; null — matched by the file. */
   compareStatement(statementId: string, targets: Array<StatementTargetInput | null>): Promise<CompareStatementResult>;
   /** Writes every account of the kept file into a file connection, one target per account; refused while an import runs. */

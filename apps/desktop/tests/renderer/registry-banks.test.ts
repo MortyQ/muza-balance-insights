@@ -49,7 +49,7 @@ async function mountIt(component: Component, props: Record<string, unknown> = {}
 
 describe('a bank with statement files only, from its registry entry alone', () => {
   it('is in the bank list with its name, the file way only and a neutral mark', () => {
-    expect(BANKS.map((b) => b.id)).toEqual(['monobank', 'fictional']);
+    expect(BANKS.map((b) => b.id)).toEqual(['monobank', 'privatbank', 'fictional']);
     expect(bankOf('fictional')).toEqual({ id: 'fictional', name: 'Вигаданий Банк', ways: ['file'], monogram: 'В', monogramClass: 'bg-surface-sunken text-foreground-muted' });
     expect(defaultCardTypeOf('fictional')).toBeNull();
     expect(cardTypeName('fictional', 'gold')).toBe('Карта');
@@ -62,14 +62,14 @@ describe('a bank with statement files only, from its registry entry alone', () =
     expect(GENERIC_FILE_STEPS.map((k) => t(k)).join(' ')).not.toMatch(/Monobank/);
   });
 
-  it('the picker offers both banks and the disabled «Other banks» tile', async () => {
+  it('the picker offers every bank and the disabled «Other banks» tile', async () => {
     const { default: BankPicker } = await import('@/features/integrations/shared/components/BankPicker.vue');
     const w = await mountIt(BankPicker);
     const tiles = w.findAll('button');
-    expect(tiles.map((b) => b.attributes('disabled') !== undefined)).toEqual([false, false, true]);
-    expect(tiles[1]?.text()).toContain('Вигаданий Банк');
-    expect(tiles[1]?.text()).toContain('Файлы выписок из банка');
-    await tiles[1]?.trigger('click');
+    expect(tiles.map((b) => b.attributes('disabled') !== undefined)).toEqual([false, false, false, true]);
+    expect(tiles[2]?.text()).toContain('Вигаданий Банк');
+    expect(tiles[2]?.text()).toContain('Файлы выписок из банка');
+    await tiles[2]?.trigger('click');
     expect(w.emitted('select')?.[0]?.[0]).toMatchObject({ id: 'fictional' });
     w.unmount();
   });

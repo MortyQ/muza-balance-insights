@@ -1,9 +1,10 @@
 // The domain's way into statement file readers. A bank that can be connected by a file = one entry here (and its
 // providers/<id>/statement.ts exporting `readers`); an empty list — that bank has no file format yet.
 import { readers as monobankReaders } from './monobank/statement.ts';
+import { readers as privatbankReaders } from './privatbank/statement.ts';
 import type { ProviderId, StatementDocument, StatementReader } from './types.ts';
 
-export const STATEMENT_READERS: Readonly<Record<ProviderId, readonly StatementReader[]>> = { monobank: monobankReaders };
+export const STATEMENT_READERS: Readonly<Record<ProviderId, readonly StatementReader[]>> = { monobank: monobankReaders, privatbank: privatbankReaders };
 
 const ALL_READERS: readonly StatementReader[] = Object.values(STATEMENT_READERS).flat();
 

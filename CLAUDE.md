@@ -136,7 +136,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
   filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
   outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
-  so it never scrolls and the scroll bar starts under it. Month and currency on the left, the sync status on the right; the person switch is buttons centred
+  so it never scrolls and the scroll bar starts under it. Month and currency on the left, the sync status and «Upload statement» (`QuickUploadButtonFeature`; the default layout holds `QuickUploadFeature`, the drop zone and its dialog) on the right; the person switch is buttons centred
   in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
   `ResizeObserver` on the row, the month with the currency, the sync status and a hidden copy of the buttons; `fitsCenter`), otherwise a
   `VSelect` before the month (`ParticipantFilter` `mode`).

@@ -1,6 +1,7 @@
 // Monobank's rules: how its operations look (MCC conventions, bank texts, account types). Thresholds and texts come
 // from real data (phase 3 reports): own transfers are always MCC 4829 on both sides, 6012 is a financial institution.
 import { JAR_PLACEHOLDER, OTHER_PLACEHOLDER, type DescClass, type ProviderRules, type RuleTx } from '../types.ts';
+import { BANK_CATEGORIES } from './categories.ts';
 import {
   AUTO_TOPUP_DESCRIPTIONS,
   INSTALLMENT_DESCRIPTION,
@@ -48,6 +49,8 @@ export const monobankRules: ProviderRules = {
   isTreasury: isTreasuryDescription,
 
   isBusinessAccount: (account) => account.type === 'fop',
+
+  knowsBankCategory: (name) => BANK_CATEGORIES.has(name),
 
   categoryHint(tx) {
     if (tx.description.trim() === INSTALLMENT_DESCRIPTION) return 'installments';

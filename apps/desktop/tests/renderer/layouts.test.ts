@@ -8,6 +8,7 @@ import { defineComponent, h, nextTick } from 'vue';
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
+vi.mock('@/features/integrations', () => ({ QuickUploadFeature: defineComponent(() => () => h('div', { 'data-test': 'quick-upload' })) }));
 
 const { default: MasterLayout } = await import('@/app/layouts/MasterLayout.vue');
 const { layoutOf, navGroups, navItems } = await import('@/app/layouts/utils.ts');

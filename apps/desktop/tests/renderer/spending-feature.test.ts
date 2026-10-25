@@ -101,7 +101,7 @@ describe('spending block: a pick with no spending', () => {
     const ring = w.findComponent(CategoryRing).text();
     expect(ring).toContain('Оля');
     expect(ring).toContain(formatMoney(0, 980));
-    expect(ring).toContain(`на ${formatMoney(5_000, 980)} (100%) меньше, чем в августе`);
+    expect(ring).toContain(`на ${formatMoney(5_000, 980)} (100%) меньше`);
     expect(category(w)).toHaveLength(0);
     expect(w.text()).not.toContain('Трат за этот месяц нет');
 

@@ -69,6 +69,25 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - The client takes its origin and name from `info.ts`.
 - Its ids are `'bare'`: they are stored as the bank sends them (see «Ids»).
 
+## PrivatBank
+
+- Files only (`access.token: null`): `providers/privatbank/{info,rules,descriptions,categories,statement}.ts`, ids
+  `'prefixed'`, one card type `card` (the statement does not name the product).
+- Its reader `privatbank-card-uk` (`xlsx`) takes the Privat24 card statement in Ukrainian: the title row
+  «Історія операцій за період …» (score 2; the ten headers alone score 1), rows newest first, empty rows skipped, one
+  statement per masked card. No MCC: the bank's category per row. A debit costing more than its operation in the same
+  currency stores the difference as its commission; a credit never does (a withheld fee on a transfer from the user's
+  other bank is the cross-bank pair's `transfer_fee`, counted once).
+- Transfers by its bank category (`TRANSFER_CATEGORIES`), own transfers by its service texts (`descriptions.ts`).
+
+## Bank categories
+
+- **One table per bank**: `providers/<id>/categories.ts` exports `BANK_CATEGORIES` (bank category → a common hint of
+  `CATEGORY_HINTS`, or `null` = known, decided by the rules). The bank's `categoryHint` reads it; `knowsBankCategory`
+  answers whether a name is in it. A bank never adds a category of its own.
+- **Unknown ones are reported**: the re-derivation report (recategorize) lists every bank category its table does not
+  know, with the bank and the row count (`unknownBankCategories`, `derive/diagnostics.ts`).
+
 ## Accounts and connections
 
 - **The provider of an account** is `connections.provider` of its connection (`accountProviders` / `providerOf` in
@@ -97,6 +116,8 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - **Monobank's reader** (`monobank-card-uk`, `csv`) takes the card statement in Ukrainian, because its service texts are the
   API's. It also recognises the English one (refused as `language`: translated texts) and the FOP one by its title line
   (score 1, refused as `unsupported-kind`). The card statement states no IBAN and no card number.
+- **Shared reader helpers**: `providers/statement-kit.ts` (`gridOf`, `columnsByHeader`, `normHeader`, `wallTime`,
+  `isEmptyRow`). A new reader is mostly its column list on top of them.
 - **Reading values.**
   - Money is read as text into minor units: `toMinor` in `src/shared/money.ts`.
   - A date cell is an Excel serial: `excelSerialToUnix` in `src/shared/excel-date.ts`, in the statement's zone.

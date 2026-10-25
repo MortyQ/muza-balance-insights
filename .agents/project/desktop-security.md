@@ -28,6 +28,14 @@
   the currency, the card type and the last 4 card digits, plus codes — never the path, the name, the content or an
   IBAN; the log gets `[statement] <code>` or counts. The read statements are kept in main for compare and commit — one
   file at a time, 10 minutes — and dropped on the lock and on «Delete all data». No network.
+
+  From the data screens a file opens without a connection (`openAnyStatement`: the dialog with every bank's
+  extensions; `openDroppedStatement`: a file dropped on the window). The bank comes from the reader the content picks;
+  the kept file has no connection until `assignStatement` gives one of that bank's (another bank's → `other-bank`), and
+  compare / write refuse it before then. A dropped file's path is read **in the preload only**
+  (`webUtils.getPathForFile`): the renderer's API takes the `File`, never a path; a `File` made by script has no path
+  (`''`, refused by the arguments' schema). Main reads a dropped path only if it is a regular file itself (`lstat`: no
+  directory, device or symbolic link), through the same size limit, decoder and readers.
 - **The statement decoder** (`src/decoder/process.ts`, a `utilityProcess` forked per file by `main/decoder-client.ts`,
   `serviceName: 'balance-decoder'`, `env: {}`, nothing on the command line). A spreadsheet (`PK\3\4`) or a PDF
   (`%PDF-`) — main tells them by the leading bytes (`sniffFormat`); text stays in main — is decoded there, so a flaw

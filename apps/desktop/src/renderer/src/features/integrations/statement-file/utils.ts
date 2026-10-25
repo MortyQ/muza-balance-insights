@@ -1,16 +1,10 @@
 import { currencyAlpha } from '@mono/core/shared/currency';
-import type { CommitStatementResult, OpenStatementResult, OpenedStatementView, StatementComparisonView } from '@contract/api.ts';
+import type { CommitStatementResult, OpenedStatementView, StatementComparisonView } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { cardTypeName, cardTypesOf, defaultCardTypeOf } from '@/entities/bank';
 import { fullDate, t } from '@/shared/lib';
-import { BLOCK_TEXT, PROBLEM_TEXT } from './constants.ts';
+import { BLOCK_TEXT } from './constants.ts';
 import type { OpenedStatement, TargetChoice } from './types.ts';
-
-/** Why a file was not opened, or '' (opened or cancelled). */
-export function openProblemText(r: Readonly<OpenStatementResult>): string {
-  if (r.opened || r.reason === 'cancelled') return '';
-  return t(PROBLEM_TEXT[r.problem], { row: r.row ?? 0 });
-}
 
 /** An account of the file: «Black card · UAH · •• 1234». A type the bank does not list reads «Card». */
 export function statementLabel(s: Readonly<OpenedStatementView>, provider: string): string {

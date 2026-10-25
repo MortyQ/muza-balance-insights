@@ -102,6 +102,7 @@ function rulesProblems(id: string, rules: Rules, info: Info, rows: ReadonlyArray
     ask('isRefundCredit', tx, () => rules.isRefundCredit(tx), bool);
     ask('isPersonTransfer', tx, () => rules.isPersonTransfer(tx, CTX), bool);
     ask('isTreasury', tx, () => rules.isTreasury(tx.description), bool);
+    if (tx.bankCategory !== null) ask('knowsBankCategory', tx, () => rules.knowsBankCategory(tx.bankCategory!), bool);
     ask('categoryHint', tx, () => rules.categoryHint(tx), (v) => v === null || (CATEGORY_HINTS as ReadonlyArray<unknown>).includes(v));
     ask('incomeSource', tx, () => rules.incomeSource(tx), (v) => INCOME_SOURCES.includes(String(v)));
     ask('namedSender', tx, () => rules.namedSender(tx.description), (v) => v === null || (typeof v === 'object' && typeof (v as { label?: unknown }).label === 'string' && typeof (v as { name?: unknown }).name === 'string'));

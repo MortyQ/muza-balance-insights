@@ -2,9 +2,10 @@
 // renderer learn which banks exist and how each is connected from here. Pure data: importing it loads no rules,
 // reader or client. Adding a bank = one entry here (and its folder under providers/).
 import { monobankInfo } from './monobank/info.ts';
+import { privatbankInfo } from './privatbank/info.ts';
 import type { ProviderApiInfo, ProviderId, ProviderInfo } from './types.ts';
 
-export const PROVIDERS = { monobank: monobankInfo } as const satisfies Readonly<Record<ProviderId, ProviderInfo>>;
+export const PROVIDERS = { monobank: monobankInfo, privatbank: privatbankInfo } as const satisfies Readonly<Record<ProviderId, ProviderInfo>>;
 
 /** Providers that have an API with a credential (the import, tokens, the worker). */
 export type TokenProviderId = { [P in ProviderId]: (typeof PROVIDERS)[P]['access']['token'] extends null ? never : P }[ProviderId];

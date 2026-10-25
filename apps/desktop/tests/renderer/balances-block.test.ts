@@ -79,9 +79,18 @@ describe('balance tiles', () => {
     expect(root.classList.contains('contents')).toBe(true);
     const tiles = [...root.children].map((c) => c.getAttribute('data-test'));
     expect(tiles).toEqual(['balance-tile', 'pace', 'panel']);
-    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(expect.arrayContaining(['@[47rem]:col-span-2', '@[79rem]:col-span-5']));
-    expect(b.get('[data-test="pace"]').classes()).toContain('@[79rem]:col-span-4');
-    expect(b.get('[data-test="panel"]').classes()).toContain('@[79rem]:col-span-3');
+    // Under 65rem a row each; 65–79rem «Balance» | «Month» over «Month pace»; from 79rem one row of 5·4·3.
+    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(
+      expect.arrayContaining(['@[47rem]:col-span-2', '@[65rem]:col-span-1', '@[65rem]:row-start-1', '@[79rem]:col-span-5', '@[79rem]:row-start-auto']),
+    );
+    expect(b.get('[data-test="pace"]').classes()).toEqual(
+      expect.arrayContaining(['@[47rem]:col-span-2', '@[65rem]:row-start-2', '@[79rem]:col-span-4', '@[79rem]:row-start-auto']),
+    );
+    // Alone in its row the tile takes no height from a neighbour: the chart keeps its own minimum.
+    expect(b.get('[data-test="pace"] [role="img"]').classes()).toContain('min-h-44');
+    expect(b.get('[data-test="panel"]').classes()).toEqual(
+      expect.arrayContaining(['@[47rem]:col-span-2', '@[65rem]:col-span-1', '@[65rem]:row-start-1', '@[79rem]:col-span-3', '@[79rem]:row-start-auto']),
+    );
     // The chart's tile may shrink with the grid (a grid item keeps its content's width otherwise).
     expect(b.get('[data-test="pace"]').classes()).toContain('min-w-0');
   });

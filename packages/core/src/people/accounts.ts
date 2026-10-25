@@ -18,6 +18,16 @@ export function accountEnabledSql(a: string): string {
 /** SQL: ids of the enabled accounts, for `… account_id IN (…)`. */
 export const ENABLED_ACCOUNT_IDS_SQL = `SELECT ea.id FROM accounts ea WHERE ${accountEnabledSql('ea')}`;
 
+/**
+ * The enabled accounts that decide how far the data reaches (spec desktop-data-freshness): those of token connections
+ * while any of them has imported data — a statement file is a snapshot and never holds the others back — else every
+ * enabled account.
+ */
+export const LIVE_ACCOUNT_IDS_SQL = `SELECT va.id FROM accounts va JOIN connections vc ON vc.id = va.connection_id
+  WHERE ${accountEnabledSql('va')} AND (vc.method = 'token' OR NOT EXISTS (
+    SELECT 1 FROM accounts ta JOIN connections tc ON tc.id = ta.connection_id JOIN sync_state ts ON ts.account_id = ta.id
+    WHERE tc.method = 'token' AND ts.newest_synced_time IS NOT NULL AND ${accountEnabledSql('ta')}))`;
+
 export type ConnectionAccount = {
   id: string;
   kind: 'card' | 'jar';

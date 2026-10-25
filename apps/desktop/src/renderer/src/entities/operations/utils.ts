@@ -69,7 +69,10 @@ export function changeChip(
   if (c.kind === 'same') return { text: t(words.same, { month }), tone: 'neutral', arrow: null, sr: '' };
   const up = c.kind === 'up';
   const key = up ? (compare.partial ? words.morePartial : words.more) : (compare.partial ? words.lessPartial : words.less);
-  return { text: t(key, { diff: changeText(c, fmt.money), month }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '' };
+  const diff = changeText(c, fmt.money);
+  // Short on the chip; the whole comparison («…than up to this day last week») in its tooltip.
+  const short = up ? 'home.spending.change.shortMore' : 'home.spending.change.shortLess';
+  return { text: t(short, { diff }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '', title: t(key, { diff, month }) };
 }
 
 /**

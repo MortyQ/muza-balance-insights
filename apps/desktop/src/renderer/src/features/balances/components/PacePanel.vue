@@ -17,7 +17,8 @@ const option = computed(() => paceChartOption(view, (n) => fmt.money(n)));
       <h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3>
       <span class="text-xs text-foreground-muted">{{ $t('home.balances.pace.subtitle') }}</span>
     </div>
-    <div class="h-44 min-h-0 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">
+    <!-- min-h-44: alone in its row (65–79rem) the tile has no neighbour to take a height from; flex-1 grows it beside one. -->
+    <div class="min-h-44 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">
       <VChart :option class="size-full" />
     </div>
     <div class="flex flex-wrap gap-x-8 gap-y-2">

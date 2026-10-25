@@ -74,6 +74,10 @@ export const ARG_SCHEMAS = {
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
   openStatement: z.tuple([id]),
+  openAnyStatement: z.tuple([]),
+  // The path of a file dropped on the window, from the preload (webUtils.getPathForFile): the renderer's API takes a File.
+  openDroppedStatement: z.tuple([z.string().min(1).max(4096)]),
+  assignStatement: z.tuple([statementId, id]),
   compareStatement: z.tuple([statementId, z.array(statementTarget.nullable()).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   commitStatement: z.tuple([statementId, z.array(statementTarget).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).

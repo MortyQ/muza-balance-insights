@@ -17,6 +17,18 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 - The bank list on the first screen shows only the banks the app can connect now; the rest stay under «Other banks».
+- **Upload a statement from anywhere.** «Upload statement» next to the data status on the main screens, or drop a
+  statement file onto the window: the app tells the bank from the file, takes your connection of that bank (asks which
+  one if you have several, or offers to add one), and shows how many operations are new before anything is added.
+- **Each bank's data at a glance.** The data status next to the filters now follows your live banks: a bank you update
+  by statement file no longer pulls «Data until» back or cuts the month's figures (and «What's unusual» no longer
+  disappears because of it). When a bank is more than a day behind, the status names it; press the arrow to see every
+  connection, how far its data reaches, and «Refresh» or «Upload statement» for it.
+- **PrivatBank.** Connect a PrivatBank card by its statement file: in Privat24 download the card's operation history
+  as Excel (.xlsx) in Ukrainian and upload it as with Monobank. Several cards in one file become separate cards in the
+  app. Purchases are sorted into the same categories as Monobank's, by PrivatBank's own categories; transfers between
+  your PrivatBank and Monobank cards are recognised as your own, and the bank's fee on them is counted once. A
+  statement in English or Russian, PDF statements and business accounts are not supported yet.
 
 ### Speed
 
@@ -73,6 +85,7 @@ English interface.
 
 ### Fixes
 
+- The change chips on home («…less than up to this day in August») are shorter and no longer run over their neighbours; the whole comparison is in the chip's tooltip.
 - **The window title on macOS.** «Balance Insights» in the title bar is centred on the window, in line with the
   filters under it.
 - **Balance cards in a narrow window.** The cards no longer cover «In» and «Out»: when the window is too narrow for

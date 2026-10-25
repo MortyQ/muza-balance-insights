@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
+import { QuickUploadFeature } from '@/features/integrations';
 import { NavigationSidebar, VIcon } from '@/shared/ui';
 import { GlobalFilters } from '@/widgets/global-filters';
 import { useAppSidebar } from './composables/useAppSidebar.ts';
@@ -48,5 +49,7 @@ const scrolled = useScrolled(area);
         </div>
       </div>
     </div>
+    <!-- The statement upload of the data screens: a file dropped anywhere on them, or the header's button. -->
+    <QuickUploadFeature />
   </div>
 </template>

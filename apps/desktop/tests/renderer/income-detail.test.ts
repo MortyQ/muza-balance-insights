@@ -56,7 +56,7 @@ describe('income screen helpers', () => {
   it('summary: the month\'s income, the change against last month, the figures, how much of it went', () => {
     const s = summaryView(VIEW, 'Вся семья', FMT);
     expect(s).toMatchObject({ name: 'Поступления', icon: 'lucide:wallet', color: 'var(--success)', subtitle: 'Сентябрь 2026 · Вся семья', amount: uah(360_000), note: '' });
-    expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `на ${uah(60_000)} (20%) больше, чем в августе` });
+    expect(s.chip).toMatchObject({ tone: 'up', arrow: 'up', text: `на ${uah(60_000)} (20%) больше`, title: `на ${uah(60_000)} (20%) больше, чем в августе` });
     expect(s.prev).toBe(`в августе было ${uah(300_000)}`);
     expect(s.stats.map((x) => [x.label, x.value, x.note])).toEqual([
       ['Поступлений', '4', 'в августе — 2'],
@@ -135,7 +135,7 @@ describe('income screen of a week or a day', () => {
   it('a week: its dates, the change against last week, «per day», no 12 months, no days of the month', () => {
     const s = summaryView(WEEK, '', FMT);
     expect(s.subtitle).toBe('Неделя 21 сен – 27 сен');
-    expect(s.chip?.text).toBe(`на ${uah(285_000)} (1900%) больше, чем на прошлой неделе`);
+    expect(s.chip?.title).toBe(`на ${uah(285_000)} (1900%) больше, чем на прошлой неделе`);
     expect(s.prev).toBe(`на прошлой неделе было ${uah(15_000)}`);
     expect(s.stats.map((x) => [x.label, x.note])).toEqual([
       ['Поступлений', 'на прошлой неделе — 1'],

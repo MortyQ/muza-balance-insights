@@ -7,7 +7,7 @@
 // a client (providers/<id>/client.ts — network, pages, limits; only the import uses it). Re-deriving never loads a
 // client.
 
-export const PROVIDER_IDS = ['monobank'] as const;
+export const PROVIDER_IDS = ['monobank', 'privatbank'] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 /** A stored row as the rules see it (columns of `transactions`). */
@@ -111,6 +111,8 @@ export interface ProviderRules {
   isTreasury(description: string): boolean;
   /** Accounts of the owner's business (FOP): business scope. `type` as stored in accounts.type. */
   isBusinessAccount(account: { type: string | null }): boolean;
+  /** Whether the bank's category table (providers/<id>/categories.ts) knows this bank category; unknown ones are reported. */
+  knowsBankCategory(name: string): boolean;
   /** Category from the shape of the operation or the bank's category, before the MCC table; null = no opinion. */
   categoryHint(tx: RuleTx): CategoryHint | null;
   incomeSource(tx: RuleTx): ProviderIncomeSource;

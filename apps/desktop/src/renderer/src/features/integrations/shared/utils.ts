@@ -1,8 +1,17 @@
 import { currencyAlpha } from '@mono/core/shared/currency';
-import type { ColorKey, ConnectionAccountView, ConnectionView, ParticipantChoice, RemoveConnectionResult, SetAccountEnabledResult } from '@contract/api.ts';
+import type {
+  ColorKey,
+  ConnectionAccountView,
+  ConnectionView,
+  OpenAnyStatementResult,
+  OpenStatementResult,
+  ParticipantChoice,
+  RemoveConnectionResult,
+  SetAccountEnabledResult,
+} from '@contract/api.ts';
 import { cardTypeName } from '@/entities/bank';
 import { t } from '@/shared/lib';
-import { IMPORT_RUNNING_ACCOUNTS_TEXT } from './constants.ts';
+import { IMPORT_RUNNING_ACCOUNTS_TEXT, PROBLEM_TEXT } from './constants.ts';
 import type { PersonChoice } from './types.ts';
 
 /**
@@ -65,4 +74,10 @@ export function accountSwitchChange(
       if (!changed) input.checked = enabled;
     },
   };
+}
+
+/** Why a file was not opened, or '' (opened or cancelled). */
+export function openProblemText(r: Readonly<OpenStatementResult | OpenAnyStatementResult>): string {
+  if (r.opened || r.reason === 'cancelled') return '';
+  return t(PROBLEM_TEXT[r.problem], { row: r.row ?? 0 });
 }

@@ -343,11 +343,11 @@ describe('balances utils', () => {
     const unknown = slidesOf(
       {
         ...one,
-        accounts: [{ id: 'x', name: { provider: 'privatbank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 100, income: 0, spending: 0 }],
+        accounts: [{ id: 'x', name: { provider: 'unknownbank', kind: 'card', type: 'black', currency: 980, tag: null }, kind: 'card', currency: 980, creditLimit: 0, ownFunds: 100, income: 0, spending: 0 }],
       },
       { people, selectedId: 1, currentYear: 2026, fmt: UAH_FMT },
     );
-    expect(accountOf(unknown[1])).toMatchObject({ bank: 'privatbank', title: 'Карта · UAH', bottom: 'privatbank · Сергей' });
+    expect(accountOf(unknown[1])).toMatchObject({ bank: 'unknownbank', title: 'Карта · UAH', bottom: 'unknownbank · Сергей' });
     expect(accountOf(p[1]).bank).toBe('monobank');
   });
   it('slidesOf: euro main — total cards converted, account cards keep their own currency', () => {

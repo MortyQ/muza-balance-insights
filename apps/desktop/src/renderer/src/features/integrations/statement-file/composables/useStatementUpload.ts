@@ -1,11 +1,12 @@
 import { computed, ref, toValue, watch, type MaybeRefOrGetter } from 'vue';
-import type { ConnectionView, StatementComparisonView, StatementTargetInput } from '@contract/api.ts';
+import type { ConnectionView, OpenStatementResult, StatementComparisonView, StatementTargetInput } from '@contract/api.ts';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { failedText, t } from '@/shared/lib';
 import { useConnectionsRequest } from '../../shared/api/useConnectionsRequest.ts';
 import type { OpenedStatement, TargetChoice, UploadState, UseStatementUploadReturn } from '../types.ts';
-import { canWrite, commitText, initialTargets, newCardType, openProblemText } from '../utils.ts';
+import { openProblemText } from '../../shared/utils.ts';
+import { canWrite, commitText, initialTargets, newCardType } from '../utils.ts';
 
 /**
  * A statement file for one connection: main opens and reads it (the renderer never sees the file); the first comparison
@@ -67,20 +68,24 @@ export function useStatementUpload(connection: MaybeRefOrGetter<Readonly<Connect
   async function open(): Promise<void> {
     state.value = { step: 'opening' };
     try {
-      const r = await request.openStatement(toValue(connection).id);
-      if (!r.opened) {
-        state.value = r.reason === 'cancelled' ? { step: 'idle' } : { step: 'problem', message: openProblemText(r) };
-        return;
-      }
-      filling = true;
-      targets.value = r.statements.map(() => 'new');
-      newTypes.value = r.statements.map((s) => newCardType(s, toValue(connection).provider));
-      filling = false;
-      state.value = { step: 'opened', file: r, comparison: { status: 'loading' } };
-      await compare(true);
+      await adopt(await request.openStatement(toValue(connection).id));
     } catch {
       state.value = { step: 'problem', message: failedText() };
     }
+  }
+
+  /** A file main has opened for this connection (here, or from the data screens): its first comparison. */
+  async function adopt(r: Readonly<OpenStatementResult>): Promise<void> {
+    if (!r.opened) {
+      state.value = r.reason === 'cancelled' ? { step: 'idle' } : { step: 'problem', message: openProblemText(r) };
+      return;
+    }
+    filling = true;
+    targets.value = r.statements.map(() => 'new');
+    newTypes.value = r.statements.map((s) => newCardType(s, toValue(connection).provider));
+    filling = false;
+    state.value = { step: 'opened', file: r, comparison: { status: 'loading' } };
+    await compare(true);
   }
 
   async function add(): Promise<void> {
@@ -105,5 +110,5 @@ export function useStatementUpload(connection: MaybeRefOrGetter<Readonly<Connect
     if (!filling) void compare();
   }, { flush: 'sync', deep: true });
 
-  return { state, targets, newTypes, canAdd, open, add };
+  return { state, targets, newTypes, canAdd, open, adopt, add };
 }
