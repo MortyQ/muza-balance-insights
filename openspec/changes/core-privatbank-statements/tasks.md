@@ -24,8 +24,8 @@
 
 ## 5. Desktop
 
-- [ ] 5.1 `entities/bank/looks/privatbank.ts` and `entities.bank.cardType.privatbank.card` in `uk.json`, `en.json`, `ru.json`; verify `providers.test.ts`, `architecture.test.ts`, `i18n.test.ts`, `renderer/integrations.test.ts`, `renderer/registry-banks.test.ts`
-- [ ] 5.2 `CHANGELOG.md` entry under the next unreleased version; `docs/backlog.md`: keep «Real PrivatBank `.xlsx`» open for more files
+- [x] 5.1 `entities/bank/looks/privatbank.ts` and `entities.bank.cardType.privatbank.card` in `uk.json`, `en.json`, `ru.json`; verify `providers.test.ts`, `architecture.test.ts`, `i18n.test.ts`, `renderer/integrations.test.ts`, `renderer/registry-banks.test.ts`
+- [x] 5.2 `CHANGELOG.md` entry under the next unreleased version; `docs/backlog.md`: keep «Real PrivatBank `.xlsx`» open for more files
 
 ## 6. Integration
 

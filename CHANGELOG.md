@@ -17,6 +17,11 @@ English interface.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
 - The bank list on the first screen shows only the banks the app can connect now; the rest stay under «Other banks».
+- **PrivatBank.** Connect a PrivatBank card by its statement file: in Privat24 download the card's operation history
+  as Excel (.xlsx) in Ukrainian and upload it as with Monobank. Several cards in one file become separate cards in the
+  app. Purchases are sorted into the same categories as Monobank's, by PrivatBank's own categories; transfers between
+  your PrivatBank and Monobank cards are recognised as your own, and the bank's fee on them is counted once. A
+  statement in English or Russian, PDF statements and business accounts are not supported yet.
 
 ### Speed
 

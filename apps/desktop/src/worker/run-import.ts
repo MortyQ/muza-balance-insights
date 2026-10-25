@@ -10,7 +10,7 @@ import { RateLimitError } from '@mono/core/shared/errors';
 import { accountNames, type AccountName } from '../shared/account-name.ts';
 import { localDate } from '../shared/dates.ts';
 import type { Clock, FetchLike } from '@mono/core/shared/platform';
-import { apiOf, type TokenProviderId } from '@mono/core/providers/info';
+import { apiOf, isTokenProvider, type TokenProviderId } from '@mono/core/providers/info';
 import type { ProviderId } from '@mono/core/providers/types';
 import { accountInputs, accountInputsChanged } from '@mono/core/derive/derived';
 import { rederiveCore, rederiveSpans } from '@mono/core/derive/rederive';
@@ -132,6 +132,8 @@ export async function runImport(d: RunImportDeps): Promise<void> {
   };
 
   for (const input of d.connections) {
+    // A connection without an API never reaches the import (StartConnection refuses it).
+    if (!isTokenProvider(input.provider)) throw new Error(`${input.provider} has no API`);
     const api = workerProviderOf(input.provider).create({
       connectionId: input.connectionId,
       token: input.token,

@@ -227,6 +227,9 @@
           "rebuilding": "eRecovery",
           "white": "White card",
           "yellow": "Children's card"
+        },
+        "privatbank": {
+          "card": "PrivatBank card"
         }
       },
       "other": "Other banks"
