@@ -36,7 +36,7 @@ function deps(o: { ready?: boolean; confirm?: boolean; tokens?: Record<number, s
       clearAll: async () => void calls.push('clearAll'),
     },
     importer: { stop: async () => void calls.push('stop') },
-    data: { close: async () => void calls.push('close') },
+    data: { stop: async () => void calls.push('stop-data') },
     integrations: {
       addConnection: async (input) => (calls.push('add'), added.push(input), { added: true }),
     },
@@ -65,7 +65,7 @@ describe('startOver', () => {
     fs.writeFileSync(path.join(dir, JOB_FILE), '{}');
     const { d, calls, added, logs } = deps({ tokens: { 1: TOKEN_A, 2: null, 3: 'not a token', 4: new Error('keychain'), 5: TOKEN_B, 6: TOKEN_A } });
     expect(await startOver(d)).toEqual({ done: true, restoredConnections: 2 });
-    expect(calls).toEqual(['confirm', 'stop', 'close', 'get:1', 'get:2', 'get:3', 'get:4', 'get:5', 'get:6', 'clearAll', 'reset', 'add', 'add']);
+    expect(calls).toEqual(['confirm', 'stop', 'stop-data', 'get:1', 'get:2', 'get:3', 'get:4', 'get:5', 'get:6', 'clearAll', 'reset', 'add', 'add']);
     expect(added).toEqual([
       { participant: { fromBank: true }, provider: 'monobank', token: TOKEN_A, remember: true },
       { participant: { fromBank: true }, provider: 'monobank', token: TOKEN_B, remember: true },

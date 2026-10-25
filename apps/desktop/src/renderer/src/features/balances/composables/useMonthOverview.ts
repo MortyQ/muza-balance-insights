@@ -14,20 +14,31 @@ import { monthName as monthNameOf, slidesOf } from '../utils.ts';
  * it was asked for, so the previous answer kept during a reload never appears under the new person's labels.
  */
 export function useMonthOverview(): UseMonthOverviewReturn {
-  const { fetchOverview } = useBalancesRequest();
+  const { fetchOverview, peekOverview } = useBalancesRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
   const monthStore = useMonthStore();
   const currentYear = computed(() => Number(monthStore.thisMonth.slice(0, 4)));
 
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participant.selectedId;
+    return { id, q: { month: monthStore.month, ...(id !== null ? { participantId: id } : {}) } };
+  };
   const { state } = useAsyncData(
     async (): Promise<TaggedOverview> => {
-      const id = participant.selectedId;
-      const overview = await fetchOverview({ month: monthStore.month, ...(id !== null ? { participantId: id } : {}) });
-      return { participantId: id, overview };
+      const { id, q } = query();
+      return { participantId: id, overview: await fetchOverview(q) };
     },
     [() => monthStore.month, () => participant.selectedId],
-    { quiet: [() => syncStatus.version] },
+    {
+      quiet: [() => syncStatus.version],
+      cached: () => {
+        const { id, q } = query();
+        const kept = peekOverview(q);
+        return kept && { data: { participantId: id, overview: kept.data }, fresh: kept.fresh };
+      },
+    },
   );
   const view = computed(() => state.value.data?.overview ?? null);
   const fmt = useMoneyFormat(() => state.value.data?.overview.rates);

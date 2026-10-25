@@ -1,6 +1,6 @@
 // The spending block's «usual» in main (usual.ts): which months, the medians.
 import { describe, expect, it } from 'vitest';
-import { usualMonths, usualOf } from '../src/main/usual.ts';
+import { usualMonths, usualOf } from '../src/data/usual.ts';
 
 describe('usual', () => {
   it('the covered months before, newest first, at most 6; none without data', () => {

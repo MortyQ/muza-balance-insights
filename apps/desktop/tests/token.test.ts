@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PROVIDER_IDS } from '@mono/core/providers/types';
+import { TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
 import { registerIpc, type IpcEventLike } from '../src/main/ipc.ts';
 import { LEGACY_TOKEN_FILE, TOKENS_DIR, TokenError, TokenVault, type SafeStorageLike } from '../src/main/token.ts';
 
@@ -14,6 +14,22 @@ const stripComments = (code: string) => code.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/g
 /** Globals and modules the bank tables must never reach: network, logging, the process, Electron, Node, the database. */
 // `fetch` as anything but a property name in a type (`fetch: FetchLike` in types.ts is the worker's injected one).
 const BANK_TABLE_BANNED = /(?<![.\w])fetch\b(?!\s*:)|\bglobalThis\b|\bnet\.|\bconsole\.|\bprocess\.|electron|node:|@mono\/db|db-libsql/;
+
+/** Core modules `src/<entry>` loads, over relative imports of any kind (paths relative to packages/core/src). */
+function coreClosure(entry: string): string[] {
+  const seen = new Set<string>();
+  const stack = [entry];
+  while (stack.length > 0) {
+    const f = stack.pop()!;
+    if (seen.has(f)) continue;
+    seen.add(f);
+    const code = fs.readFileSync(new URL(`../../../packages/core/src/${f}`, import.meta.url), 'utf8');
+    for (const [, spec] of parseImports(code)) {
+      if (spec.startsWith('.')) stack.push(path.posix.normalize(path.posix.join(path.posix.dirname(f), spec)));
+    }
+  }
+  return [...seen];
+}
 
 /**
  * Every import of a module, in source order, as [type | value, specifier]: `import … from`, `import 'x'`,
@@ -256,27 +272,36 @@ describe('the token never leaves main', () => {
 
   it('token.ts writes nowhere but its own file: no database, no logging', () => {
     const code = fs.readFileSync(new URL('../src/main/token.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
-    expect(code).not.toMatch(/@mono\/|db-libsql|console\.|process\.std(out|err)/);
+    expect(code).not.toMatch(/db-libsql|console\.|process\.std(out|err)/);
     const imports = [...code.matchAll(/from '([^']+)'/g)].map((m) => m[1]);
-    expect(imports).toEqual(['node:fs', 'node:path', '../shared/api.ts', '../net/providers.ts', './secure-store.ts']);
+    expect(imports).toEqual(['node:fs', 'node:path', '../shared/api.ts', '@mono/core/providers/info', '@mono/core/providers/types', './secure-store.ts']);
     expect(code).toMatch(/import type \{ TokenStatus \} from '\.\.\/shared\/api\.ts'/); // types only
+    expect(code).toMatch(/import type \{ ProviderId \} from '@mono\/core\/providers\/types'/); // types only
+    // The provider registry (names, credential shapes): pure data, its whole closure — the contract, the registry, each
+    // bank's info and constants. Nothing it loads can write, log or reach the network.
+    const closure = coreClosure('providers/info.ts');
+    expect(closure).toContain('providers/monobank/info.ts');
+    for (const f of closure) {
+      expect(f).toMatch(/^providers\/(types|info)\.ts$|^providers\/[^/]+\/(info|constants)\.ts$/);
+      expect(stripComments(fs.readFileSync(new URL(`../../../packages/core/src/${f}`, import.meta.url), 'utf8')), f).not.toMatch(BANK_TABLE_BANNED);
+    }
     // The safeStorage wrapper: no imports at all — nothing it could write to or log with.
     const store = fs.readFileSync(new URL('../src/main/secure-store.ts', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     expect([...store.matchAll(/from '([^']+)'/g)]).toEqual([]);
     expect(store).not.toMatch(/console\.|process\.std(out|err)/);
-    // The providers table: credential shapes only — no network, database or logging either.
+    // The providers table (the worker's): service ids only — no network, database or logging either.
     const bySpecifier = (xs: [string, string][]) => [...xs].sort((a, b) => a[1].localeCompare(b[1]));
     expect(bySpecifier(importsOf('../src/net/providers.ts'))).toEqual(
       bySpecifier([
-        ['type', '@mono/core/providers/types'],
+        ['type', '@mono/core/providers/info'],
         ['type', '../integrations/types.ts'],
-        ...PROVIDER_IDS.map((id): [string, string] => ['value', `../integrations/${id}/desktop.ts`]),
+        ...TOKEN_PROVIDER_IDS.map((id): [string, string] => ['value', `../integrations/${id}/desktop.ts`]),
       ]),
     );
     // Each bank's desktop entry and the types file: types only.
-    for (const id of PROVIDER_IDS) expect(importsOf(`../src/integrations/${id}/desktop.ts`), id).toEqual([['type', '../types.ts']]);
-    expect(importsOf('../src/integrations/types.ts').map(([kind]) => kind)).toEqual(['type', 'type', 'type', 'type']);
-    for (const f of ['../src/net/providers.ts', '../src/integrations/types.ts', ...PROVIDER_IDS.map((id) => `../src/integrations/${id}/desktop.ts`)]) {
+    for (const id of TOKEN_PROVIDER_IDS) expect(importsOf(`../src/integrations/${id}/desktop.ts`), id).toEqual([['type', '../types.ts']]);
+    expect(importsOf('../src/integrations/types.ts').map(([kind]) => kind)).toEqual(['type', 'type', 'type', 'type', 'type']);
+    for (const f of ['../src/net/providers.ts', '../src/integrations/types.ts', ...TOKEN_PROVIDER_IDS.map((id) => `../src/integrations/${id}/desktop.ts`)]) {
       expect(stripComments(fs.readFileSync(new URL(f, import.meta.url), 'utf8')), f).not.toMatch(BANK_TABLE_BANNED);
     }
   });

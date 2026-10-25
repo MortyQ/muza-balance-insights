@@ -9,12 +9,25 @@ English interface.
 
 - **Connect Monobank by a statement file.** When you add a connection, choose «Token» or «Statement file». With a
   file there is no token: download a card statement as CSV in Ukrainian from the Monobank app, then press «Upload
-  statement» next to the connection and pick the file. Before anything is added you see how many operations the file
+  statement» next to the connection and pick the file. The app recognises a statement by its content, so a renamed
+  file works too. Before anything is added you see how many operations the file
   has, how many are already in the app and how many are new; uploading the same or an overlapping file again adds only
   what is new. The data does not update by itself — upload a new statement when you want fresh numbers. The file is
   read on this computer and is not kept. A statement in English or a FOP statement is not supported yet.
 - **Check against a statement.** A connection with a token can be checked against a statement file: the app shows how
   many operations match, without adding anything.
+- The bank list on the first screen shows only the banks the app can connect now; the rest stay under «Other banks».
+
+### Speed
+
+- **Faster screens.** The balance cards, the «Now» strip, the spending block and analytics open noticeably faster,
+  and they no longer slow down as you add people, accounts or months of history. An update of your data finishes
+  sooner once it is downloaded. The first start after this update can take a few seconds longer: the app reorganizes
+  the data it keeps on this computer once.
+- **No more freezes while the app recalculates.** Turning an account on or off, removing a connection and uploading a
+  statement no longer freeze the window: you can move it and use the menu while the numbers update.
+- **Screens you go back to open at once.** Switching back to a month, a person or a category you just looked at shows
+  its numbers immediately; after new data comes in, they are refreshed in the background.
 
 ### Home screen
 

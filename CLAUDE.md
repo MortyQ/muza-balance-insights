@@ -10,10 +10,12 @@ A local stdio MCP server: Monobank transactions → SQLite → ready-made spendi
   Node: `.nvmrc` (22).
 - `packages/core` (`@mono/core`): the platform-independent core — bank providers (Monobank for now), sync, categories,
   transfers, refunds, scope, aggregates, migrations and the `Db` interface. No Node, browser or globals: `fetch`, the
-  clock, the logger and ids are passed in (`packages/core/src/platform.ts`). Checked by `packages/core/tests/purity.test.ts`
-  and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime dependencies: only `zod` and
-  `@date-fns/tz`. Exports are TS sources per module: `@mono/core/<module>` → `src/<module>.ts`, no build step.
-  Domain tests live in `packages/core/tests` and run on the Node adapter (a devDependency).
+  clock, the logger and ids are passed in (`packages/core/src/shared/platform.ts`). Checked by
+  `packages/core/tests/purity.test.ts` and the core's `tsconfig.json` (`lib: ES2023 + WebWorker`, `types: []`). Runtime
+  dependencies: only `zod` and `@date-fns/tz`. `src/` is layered folders (`shared` → `storage` → `providers` → `people`
+  → `derive` → `read` → `ingest` | `commands`; `.agents/project/core-layout.md`). Exports are TS sources
+  per module: `@mono/core/<folder>/<module>` → `src/<folder>/<module>.ts`, no build step. Domain tests live in
+  `packages/core/tests`, in the same folders, and run on the Node adapter (a devDependency).
 - `packages/db-libsql` (`@mono/db-libsql`): the Node libsql adapter → `Db` (PRAGMA, WAL). It does not depend on core
   (the types are repeated; a mismatch fails the core's typecheck), so there is no dependency cycle. Used by apps/mcp and
   the Electron main process.
@@ -53,7 +55,7 @@ Rules:
 - `pnpm --filter @mono/mcp recategorize` is run by the agent itself when needed (exactly this command, no arguments, as a
   separate call: it is outside the OS sandbox via `sandbox.excludedCommands`, everything else is sandboxed). Rules:
   - the recategorize code and everything it imports (`apps/mcp/src/cli/recategorize.ts` → `apps/mcp/src/rederive.ts` →
-    `packages/core/src/rederive.ts` → …) does not read `.env`, does not import `config.ts` and does not call `getToken`;
+    `packages/core/src/derive/rederive.ts` → …) does not read `.env`, does not import `config.ts` and does not call `getToken`;
     the DB path comes from `apps/mcp/src/paths.ts`, `MONO_DB_PATH` from the environment only;
   - output is aggregates and diagnostics only: no `description`, `counter_name`, `comment`, `iban`, `masked_pan`;
   - both rules are checked by `apps/mcp/tests/recategorize-safety.test.ts` (the import graph through workspace packages by
@@ -68,7 +70,7 @@ Rules:
   `analysis/analysis.sqlite` (read-only, one SELECT/WITH, at most 500 rows). The user rebuilds the copy
   (`pnpm --filter @mono/mcp export:analysis`); it is also rebuilt automatically after sync and recategorize.
 - What the copy holds: only the columns in the whitelist `apps/mcp/src/analysis/schema.ts`. `description` is masked
-  (`packages/core/src/masking.ts` → the provider's `maskDescription`): service templates as is, a jar's name → `[jar]`,
+  (`packages/core/src/read/masking.ts` → the provider's `maskDescription`): service templates as is, a jar's name → `[jar]`,
   everything else → `[other]`, plus `desc_class` by the shape of the line. Instead of `counter_name` — the `has_counter`
   flag. An account has `participant_id` (a number; the participant's label does not go into the copy).
   A new column or template goes into the whitelist / masking only after the user's ok.
@@ -104,6 +106,7 @@ been opened yet, read the relevant file yourself before editing.
 
 | File | Read when | Pulled in by |
 |---|---|---|
+| `.agents/project/core-layout.md` | **before adding, moving or splitting a module in `packages/core`**: layers, where new code goes, tests | `packages/core/CLAUDE.md` |
 | `.agents/project/core-providers.md` | bank providers, the domain boundary | `packages/core/CLAUDE.md` |
 | `.agents/project/core-people.md` | participants, connections, `runPlans`, the order of import windows | `packages/core/CLAUDE.md` |
 | `.agents/project/domain-rules.md` | categories, transfers, refunds, fees, scope, aggregates, `search`, `findRecurring` | `packages/core/CLAUDE.md`, `apps/mcp/CLAUDE.md` |
@@ -170,7 +173,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
   - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
     `tokenBadge`, adding; then «History download» — `ImportFeature` from `features/import-statement`, composed in the
-    widget: a list per bank (Monobank only for now), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
+    widget: one list for every token connection, headed by the token banks' names (`BANKS`), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
     `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
     back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
     `Importer` throws on a date out of range. No arbitrary end date: coverage is one span per account (`sync_state`));

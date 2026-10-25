@@ -12,7 +12,6 @@ import {
   isTreasuryDescription,
   jarTemplateTitle,
 } from './descriptions.ts';
-import { MAX_STATEMENT_WINDOW_SEC, RATE_LIMIT_MS } from './constants.ts';
 
 const TRANSFER_MCC = 4829;
 /** Financial institutions: observed as credit-limit charges (debits, 1st of the month) and incoming
@@ -23,7 +22,6 @@ const isTransfer = (tx: RuleTx) => tx.mcc === TRANSFER_MCC;
 
 export const monobankRules: ProviderRules = {
   id: 'monobank',
-  api: { bank: 'Monobank', requestIntervalMs: RATE_LIMIT_MS, maxWindowSec: MAX_STATEMENT_WINDOW_SEC },
 
   isTransferLike: isTransfer,
 

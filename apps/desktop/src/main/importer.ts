@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import { startOfDayIn } from '@mono/core/format';
+import { startOfDayIn } from '@mono/core/shared/format';
 import type { ProviderId } from '@mono/core/providers/types';
 import { FromWorker, StartMessage, type ToWorker } from '../shared/import-protocol.ts';
 import { localDate, systemTimeZone } from '../shared/dates.ts';
@@ -40,7 +40,7 @@ export type ImporterDeps = {
   };
   powerSaveBlocker: { start(type: 'prevent-app-suspension'): number; stop(id: number): void };
   userDataDir: string;
-  /** The database for the worker (DbAccess.forWorker): its path and key; null while the database is unavailable. */
+  /** The database for the worker (DbAccess.forProcess): its path and key; null while the database is unavailable. */
   db: () => { dbPath: string; dbKey: string | null } | null;
   nowSec: () => number;
   /** To the renderer (PROGRESS_CHANNEL). */

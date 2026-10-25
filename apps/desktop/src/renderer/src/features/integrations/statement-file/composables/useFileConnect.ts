@@ -1,5 +1,5 @@
 import { ref, toValue, type MaybeRefOrGetter } from 'vue';
-import type { ParticipantChoice, ProviderKey } from '@contract/api.ts';
+import type { ParticipantChoice, ProviderId } from '@contract/api.ts';
 import { useParticipantStore } from '@/entities/participant';
 import { failedText } from '@/shared/lib';
 import { useConnectionsRequest } from '../../shared/api/useConnectionsRequest.ts';
@@ -7,7 +7,7 @@ import type { SubmitState } from '../../shared/types.ts';
 import type { UseFileConnectReturn } from '../types.ts';
 
 /** A new connection filled by statement files: no token, nothing to check before it is added. */
-export function useFileConnect(provider: MaybeRefOrGetter<ProviderKey>, owner: MaybeRefOrGetter<ParticipantChoice | null>): UseFileConnectReturn {
+export function useFileConnect(provider: MaybeRefOrGetter<ProviderId>, owner: MaybeRefOrGetter<ParticipantChoice | null>): UseFileConnectReturn {
   const { addConnection } = useConnectionsRequest();
   const participant = useParticipantStore();
   const submit = ref<SubmitState>({ status: 'idle' });

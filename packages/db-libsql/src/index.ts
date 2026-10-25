@@ -1,4 +1,4 @@
-// Node adapter: libsql → the Db contract of @mono/core (packages/core/src/db.ts).
+// Node adapter: libsql → the Db contract of @mono/core (packages/core/src/storage/db.ts).
 // The types are repeated here on purpose, so this package does not depend on core (no workspace cycle:
 // core uses this adapter as a devDependency for its tests). Core's typecheck assigns openLibsql() to its Db,
 // so any drift between the two fails there.

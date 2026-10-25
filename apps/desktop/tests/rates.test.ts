@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FetchLike, ResponseLike } from '@mono/core/platform';
+import type { FetchLike, ResponseLike } from '@mono/core/shared/platform';
 import { FIRST_WAIT_MS, FRESH_WAIT_MS, MAX_BYTES, MIN_GAP_MS, RATES_FILE, RATES_URL, REFRESH_EVERY_MS, RatesService, parseBankRates } from '../src/main/rates.ts';
 
 const ANSWER = [

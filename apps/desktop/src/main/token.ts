@@ -5,7 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { TokenStatus } from '../shared/api.ts';
-import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { credentialFits, infoOf, TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
+import type { ProviderId } from '@mono/core/providers/types';
 import { SecureStore, type SafeStorageLike } from './secure-store.ts';
 
 export type { SafeStorageLike, TokenStatus };
@@ -15,10 +16,8 @@ export const TOKENS_DIR = 'tokens';
 /** The single token before several connections; moved into TOKENS_DIR on launch (migrateLegacy). */
 export const LEGACY_TOKEN_FILE = 'token.bin';
 
-type Provider = keyof typeof DESKTOP_PROVIDERS;
-
 /** A decrypted file must look like some provider's credential. */
-const ANY_CREDENTIAL = (s: string) => Object.values(DESKTOP_PROVIDERS).some((p) => p.credential.test(s));
+const ANY_CREDENTIAL = (s: string) => TOKEN_PROVIDER_IDS.some((p) => credentialFits(p, s));
 
 export class TokenError extends Error {
   override name = 'TokenError';
@@ -59,9 +58,8 @@ export class TokenVault {
   }
 
   /** Keeps the token for this session; persists it encrypted only if asked and the store is secure. */
-  async set(connectionId: number, provider: Provider, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
-    const { bank, credential } = DESKTOP_PROVIDERS[provider];
-    if (!credential.test(token)) throw new TokenError(`Not a ${bank} token`);
+  async set(connectionId: number, provider: ProviderId, token: string, remember: boolean): Promise<{ stored: 'secure' | 'memory' }> {
+    if (!credentialFits(provider, token)) throw new TokenError(`Not a ${infoOf(provider).name} token`);
     const file = this.file(connectionId);
     this.memory.set(connectionId, token);
     this.needsReentry.delete(connectionId);

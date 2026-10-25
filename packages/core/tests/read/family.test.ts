@@ -1,0 +1,130 @@
+// Transfers between participants (transfer_rule family): not internal; «семье» for the sender, income (source
+// family) for the receiver when one person is viewed; excluded when the whole family is viewed. Fictional data only.
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Db } from '../../src/storage/db.ts';
+import { categoryLines } from '../../src/read/category-lines.ts';
+import { incomeLines } from '../../src/read/income-lines.ts';
+import { rederiveCore } from '../../src/derive/rederive.ts';
+import { incomeSummary } from '../../src/read/income.ts';
+import { spendingSummary } from '../../src/read/spending.ts';
+import { detectTransfers, type TransferAccount, type TransferTx } from '../../src/derive/transfers.ts';
+import { insertAccountRow, memoryDb, testConnection } from '../helpers.ts';
+
+describe('detectTransfers: family (pure)', () => {
+  const accounts: TransferAccount[] = [
+    { id: 'my-black', kind: 'card', currencyCode: 980, iban: 'UA00ME1', title: null, provider: 'monobank', participantId: 1 },
+    { id: 'my-white', kind: 'card', currencyCode: 980, iban: 'UA00ME2', title: null, provider: 'monobank', participantId: 1 },
+    { id: 'her-black', kind: 'card', currencyCode: 980, iban: 'UA00HER', title: null, provider: 'monobank', participantId: 2 },
+  ];
+  const tx = (id: string, accountId: string, time: number, amount: number, counterIban: string | null = null): TransferTx => ({
+    id, accountId, time, amount, operationAmount: null, commissionRate: 0, mcc: 4829, description: 'Вигаданий переказ', bankCategory: null, counterIban,
+  });
+
+  it('a mirror pair between two participants is family; between one participant\'s cards it stays pair', () => {
+    const m = detectTransfers(
+      [tx('out', 'my-black', 100, -1000), tx('in', 'her-black', 102, 1000), tx('o2', 'my-black', 500, -700), tx('i2', 'my-white', 501, 700)],
+      accounts,
+    );
+    expect(m.get('out')).toEqual({ rule: 'family', pairId: 'in' });
+    expect(m.get('in')).toEqual({ rule: 'family', pairId: 'out' });
+    expect(m.get('o2')).toEqual({ rule: 'pair', pairId: 'i2' });
+  });
+
+  it("a single row to another participant's IBAN is family; to one's own IBAN it stays iban", () => {
+    const m = detectTransfers([tx('to-her', 'my-black', 100, -500, 'UA00HER'), tx('to-me', 'my-black', 900, -300, 'UA00ME2')], accounts);
+    expect(m.get('to-her')).toEqual({ rule: 'family', pairId: null });
+    expect(m.get('to-me')).toEqual({ rule: 'iban', pairId: null });
+  });
+});
+
+describe('family in the database and the aggregates', () => {
+  let db: Db;
+  let me: number;
+  let her: number;
+  const q = { from: '2026-02-01', to: '2026-02-28' };
+  const NOW = Date.UTC(2026, 2, 15) / 1000;
+
+  const insertTx = (id: string, accountId: string, time: number, amount: number, mcc: number, description: string) =>
+    db.execute({
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, currency_code, synced_at)
+            VALUES (?, ?, ?, '2026-02-10', ?, ?, 0, ?, 980, 0)`,
+      args: [id, accountId, time, description, mcc, amount],
+    });
+  const row = async (id: string) =>
+    (await db.execute({ sql: 'SELECT category, is_internal_transfer, transfer_rule, refund_pair_id FROM transactions WHERE id = ?', args: [id] })).rows[0];
+  const net = (s: Awaited<ReturnType<typeof spendingSummary>>) => Object.fromEntries(s.groups.map((g) => [g.key, g.net]));
+
+  beforeEach(async () => {
+    db = await memoryDb();
+    const meConn = await testConnection(db);
+    me = Number((await db.execute({ sql: 'SELECT participant_id FROM connections WHERE id = ?', args: [meConn] })).rows[0]?.participant_id);
+    her = Number((await db.execute(`INSERT INTO participants (label, created_at) VALUES ('Вигадана особа', 0) RETURNING id`)).rows[0]?.id);
+    const herConn = Number(
+      (await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id,
+    );
+    await insertAccountRow(db, { id: 'my-black', connection_id: meConn, kind: 'card', type: 'black', currency_code: 980, iban: 'UA00ME1', balance: 0, updated_at: 0 });
+    await insertAccountRow(db, { id: 'her-black', connection_id: herConn, kind: 'card', type: 'black', currency_code: 980, iban: 'UA00HER', balance: 0, updated_at: 0 });
+    const T = Date.UTC(2026, 1, 10, 12) / 1000;
+    await insertTx('out', 'my-black', T, -100_000, 4829, 'Вигадана Особа');
+    await insertTx('in', 'her-black', T + 3, 100_000, 4829, 'Від: Вигаданий Я');
+    await insertTx('my-food', 'my-black', T + 600, -50_000, 5411, 'Вигаданий Магазин');
+    await insertTx('her-food', 'her-black', T + 700, -30_000, 5411, 'Вигаданий Магазин');
+    await rederiveCore(db);
+  });
+  afterEach(() => db.close());
+
+  it('the pair is family, not internal: «семье» for the sender, «поступления» for the receiver, never a refund', async () => {
+    expect(await row('out')).toEqual({ category: 'семье', is_internal_transfer: 0, transfer_rule: 'family', refund_pair_id: null });
+    expect(await row('in')).toEqual({ category: 'поступления', is_internal_transfer: 0, transfer_rule: 'family', refund_pair_id: null });
+  });
+
+  it('the whole family: the transfer is neither spending nor income; one person: it is', async () => {
+    expect(net(await spendingSummary(db, q, NOW))).toEqual({ продукты: 80_000 });
+    expect(net(await spendingSummary(db, { ...q, participantId: me }, NOW))).toEqual({ семье: 100_000, продукты: 50_000 });
+    expect(net(await spendingSummary(db, { ...q, participantId: her }, NOW))).toEqual({ продукты: 30_000 });
+
+    expect((await incomeSummary(db, q, NOW)).groups).toEqual([]);
+    expect((await incomeSummary(db, { ...q, participantId: her }, NOW)).groups.map((g) => [g.key, g.total])).toEqual([['family', 100_000]]);
+    expect((await incomeSummary(db, { ...q, participantId: me }, NOW)).groups).toEqual([]);
+  });
+
+  it('grouped by participant: each group is that participant\'s own view (family transfers count), commissions too', async () => {
+    await db.execute({
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, commission_rate, currency_code, synced_at)
+            VALUES ('her-cash', 'her-black', ?, '2026-02-11', 'Вигаданий банкомат', 6011, 0, -20500, 500, 980, 0)`,
+      args: [Date.UTC(2026, 1, 11, 9) / 1000],
+    });
+    await rederiveCore(db);
+    const byKey = <G extends { currency: number; key: string }>(gs: G[], v: (g: G) => number) =>
+      Object.fromEntries(gs.map((g) => [`${g.currency}:${g.key}`, v(g)]));
+    const each = async <G extends { currency: number; key: string }>(one: (p: number) => Promise<Array<{ currency: number } & Record<string, unknown>>>, grouped: G[], v: (g: G) => number, total: string) => {
+      for (const p of [me, her]) {
+        const solo = Object.fromEntries((await one(p)).map((t) => [`${t.currency}:${p}`, t[total]]));
+        expect(Object.fromEntries(Object.entries(byKey(grouped, v)).filter(([k]) => k.endsWith(`:${p}`)))).toEqual(solo);
+      }
+    };
+    const sp = await spendingSummary(db, { ...q, groupBy: 'participant' }, NOW);
+    expect(byKey(sp.groups, (g) => g.net)).toEqual({ [`980:${me}`]: 150_000, [`980:${her}`]: 50_500 });
+    await each(async (p) => (await spendingSummary(db, { ...q, participantId: p }, NOW)).totals, sp.groups, (g) => g.net, 'net');
+    await each(async (p) => (await spendingSummary(db, { ...q, participantId: p }, NOW)).totals, sp.groups, (g) => g.purchases, 'purchases');
+
+    const inc = await incomeSummary(db, { ...q, groupBy: 'participant' }, NOW);
+    expect(byKey(inc.groups, (g) => g.total)).toEqual({ [`980:${her}`]: 100_000 });
+    await each(async (p) => (await incomeSummary(db, { ...q, participantId: p }, NOW)).totals, inc.groups, (g) => g.total, 'total');
+
+    // The family's total is not the people's sum: the family view leaves the family transfer out.
+    expect((await spendingSummary(db, q, NOW)).totals[0]?.net).toBe(100_500);
+  });
+
+  it('incomeLines: the family transfer is the receiver\'s line (source family) in their view, none for the whole family', async () => {
+    expect((await incomeLines(db, q, NOW)).lines).toEqual([]);
+    expect((await incomeLines(db, { ...q, participantId: her }, NOW)).lines.map((l) => [l.id, l.amount, l.source, l.participantId])).toEqual([['in', 100_000, 'family', her]]);
+    expect((await incomeLines(db, { ...q, participantId: me }, NOW)).lines).toEqual([]);
+  });
+
+  it('categoryLines: «семье» is the sender\'s line in their view, none for the whole family; each line names its person', async () => {
+    expect((await categoryLines(db, { ...q, category: 'семье' }, NOW)).lines).toEqual([]);
+    expect((await categoryLines(db, { ...q, category: 'семье', participantId: me }, NOW)).lines.map((l) => [l.id, l.amount, l.participantId])).toEqual([['out', -100_000, me]]);
+    expect((await categoryLines(db, { ...q, category: 'продукты' }, NOW)).lines.map((l) => [l.id, l.participantId])).toEqual([['her-food', her], ['my-food', me]]);
+  });
+});

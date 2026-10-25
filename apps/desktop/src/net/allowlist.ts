@@ -2,7 +2,7 @@
 // Everything that makes a request from main or the import worker is scoped to the services it needs (the import only to
 // Monobank, so its X-Token header can never reach another host); the renderer has no network at all (CSP + session).
 // A new service is one entry here, reviewed like a trust anchor: only reliable, well-known endpoints.
-import type { FetchLike, ResponseLike } from '@mono/core/platform';
+import type { FetchLike, ResponseLike } from '@mono/core/shared/platform';
 
 export interface TrustedService {
   id: string;

@@ -1,4 +1,5 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
+import type { ProviderId } from '@mono/core/providers/types';
 import type { ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
@@ -25,8 +26,8 @@ export type TokenStatus = {
 // A participant's label is the one name that reaches the renderer (typed by the user, or the holder's name from the
 // bank): the screen shows it. Nothing else of a connection — no holder id, no token.
 
-/** Must equal the core's ProviderId (checked in src/main/integrations.ts). */
-export type ProviderKey = 'monobank';
+/** A bank: the core's provider id (the registry, @mono/core/providers/info). */
+export type { ProviderId };
 
 export type { ColorKey };
 
@@ -35,7 +36,7 @@ export type ConnectionMethod = 'token' | 'file';
 
 export type ConnectionView = {
   id: number;
-  provider: ProviderKey;
+  provider: ProviderId;
   method: ConnectionMethod;
   /** «Monobank». */
   bank: string;
@@ -75,8 +76,8 @@ export type PeopleView = {
 export type ParticipantChoice = { id: number } | { label: string; color?: ColorKey } | { fromBank: true; color?: ColorKey };
 
 export type AddConnectionInput =
-  | { participant: ParticipantChoice; provider: ProviderKey; method?: 'token'; token: string; remember: boolean }
-  | { participant: ParticipantChoice; provider: ProviderKey; method: 'file' };
+  | { participant: ParticipantChoice; provider: ProviderId; method?: 'token'; token: string; remember: boolean }
+  | { participant: ParticipantChoice; provider: ProviderId; method: 'file' };
 
 /** taken: another person has this colour. */
 export type ColorChangeResult = { changed: true } | { changed: false; reason: 'taken' };
@@ -114,32 +115,60 @@ export type ConnectionAccountView = {
 
 // ---------- statement files ----------
 
-/** Why a statement file was not taken (core StatementProblem), plus main's own: too big, a bank without a file format. */
-export type StatementProblemCode = 'unknown-format' | 'english' | 'unsupported-kind' | 'empty' | 'bad-row' | 'too-large' | 'no-format';
+/**
+ * Why a statement file was not taken (core StatementProblem), plus main's own: too big, a bank without a file format, and
+ * the decoder's (a damaged file, a password, past the decoder's limits or more accounts than one upload takes, too slow).
+ */
+export type StatementProblemCode =
+  | 'unknown-format'
+  | 'ambiguous'
+  | 'other-bank'
+  | 'language'
+  | 'unsupported-kind'
+  | 'empty'
+  | 'bad-row'
+  | 'too-large'
+  | 'no-format'
+  | 'unreadable'
+  | 'encrypted'
+  | 'over-limits'
+  | 'timeout';
+
+/** One account of an opened file: no IBAN, no full card number, no text from the file. */
+export type OpenedStatementView = {
+  currencyCode: number;
+  rows: number;
+  /** Dates of the oldest and the newest row (system time zone). */
+  from: string;
+  to: string;
+  /** The card type the file states (the bank's card type code), or null. */
+  type: string | null;
+  /** Last 4 digits of the file's card number for this account; null when it states none. */
+  cardTail: string | null;
+  /** The connection's cards in this account's currency: the accounts to compare with or write to. */
+  accounts: ConnectionAccountView[];
+};
 
 export type OpenStatementResult =
   | {
       opened: true;
       /** The file kept in main for the next steps (10 minutes, one at a time). */
       statementId: string;
-      currencyCode: number;
-      rows: number;
-      /** Dates of the oldest and the newest row (system time zone). */
-      from: string;
-      to: string;
-      /** The connection's cards in the file's currency: the account to compare with or write to. */
-      accounts: ConnectionAccountView[];
+      /** One per account of the file, in the file's order. */
+      statements: OpenedStatementView[];
     }
   | { opened: false; reason: 'cancelled' }
   | { opened: false; reason: 'problem'; problem: StatementProblemCode; /** the file's row, for bad-row */ row: number | null };
 
-/** Where the rows go: a card of the connection, or a new card of the file's currency with its card type. */
+/** Where an account's rows go: a card of the connection, or a new card of its currency with its card type. */
 export type StatementTargetInput = { kind: 'account'; accountId: string } | { kind: 'new'; type: string | null };
 
 /** What blocks writing: a token connection (compare only), another currency, a hole in the account's coverage. */
 export type StatementBlock = 'token' | 'currency' | 'gap';
 
 export type StatementComparisonView = {
+  /** The account it was compared with: the one asked for, else the one its IBAN or card number matched, else a new one. */
+  match: { kind: 'account'; accountId: string } | { kind: 'new' };
   rows: number;
   matched: number;
   amountDiffers: number;
@@ -150,8 +179,10 @@ export type StatementComparisonView = {
   blocked: StatementBlock | null;
 };
 
-export type CompareStatementResult = { ok: true; comparison: StatementComparisonView } | { ok: false; reason: 'expired' };
+/** One comparison per account of the file, in the file's order. */
+export type CompareStatementResult = { ok: true; comparisons: StatementComparisonView[] } | { ok: false; reason: 'expired' };
 
+/** The whole file or nothing: one blocked account blocks the write. */
 export type CommitStatementResult =
   | { written: true; added: number }
   | { written: false; reason: 'expired' | 'import-running' | StatementBlock };
@@ -177,12 +208,15 @@ export type BalanceApi = {
    * and counts again once enabled. Refused while an import runs. The caller refreshes what it shows (data status).
    */
   setAccountEnabled(accountId: string, enabled: boolean): Promise<SetAccountEnabledResult>;
-  /** The system open dialog (CSV only), then the file is read and parsed in main; neither its path nor its text comes back. */
+  /**
+   * The system open dialog (the bank's statement files, or any file), then the file is read in main (a spreadsheet or a
+   * PDF decoded in a process of its own); neither its path nor its content comes back.
+   */
   openStatement(connectionId: number): Promise<OpenStatementResult>;
-  /** Counts only: the kept file against an account. */
-  compareStatement(statementId: string, target: StatementTargetInput): Promise<CompareStatementResult>;
-  /** Writes the kept file into a file connection's card; refused while an import runs. */
-  commitStatement(statementId: string, target: StatementTargetInput): Promise<CommitStatementResult>;
+  /** Counts only: each account of the kept file against its target, one per account; null — matched by the file. */
+  compareStatement(statementId: string, targets: Array<StatementTargetInput | null>): Promise<CompareStatementResult>;
+  /** Writes every account of the kept file into a file connection, one target per account; refused while an import runs. */
+  commitStatement(statementId: string, targets: StatementTargetInput[]): Promise<CommitStatementResult>;
   /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;
@@ -326,7 +360,7 @@ export type SpendingOverview = {
   leftOut: Array<{ currency: number; net: number }>;
   /** With participantId and more than one participant: the family's net for the same month and scope; else null. */
   familyTotal: number | null;
-  /** «Usual»: the same span of the months before (main/usual.ts); null — fewer than 3 covered months. */
+  /** «Usual»: the same span of the months before (data/usual.ts); null — fewer than 3 covered months. */
   usual: SpendingUsual | null;
 };
 
@@ -355,9 +389,12 @@ export type DetailPeriod = { kind: 'day'; date: string } | { kind: 'week'; from:
 
 export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number };
 
-/** One spending line of the category screen: a transaction's body, or its commission as a «Bank fees» line. */
+/**
+ * One spending line of the category screen: a transaction's body, its commission as a «Bank fees» line, or a transfer
+ * between banks' implicit fee as a «Transfer fees» line.
+ */
 export type CategoryLineView = {
-  /** Unique per line: the transaction's id, «:fee» for its commission line. */
+  /** Unique per line: the transaction's id, «:fee» for its commission line, «:transfer-fee» for its transfer fee line. */
   key: string;
   /** System time zone: YYYY-MM-DD, HH:mm, ISO weekday (Monday = 1). */
   date: string;
@@ -378,6 +415,7 @@ export type CategoryLineView = {
   amount: number;
   /** The operation's own currency and amount when it differs from the account's. */
   operation: { currency: number; amount: number } | null;
+  /** A fee line: a commission or a transfer fee. */
   commission: boolean;
   hold: boolean;
   /** A hold of the last 3 days: it may still change. */

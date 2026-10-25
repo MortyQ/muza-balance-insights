@@ -16,7 +16,7 @@ import {
   overrideCandidates,
   removeOverride,
   type MatchType,
-} from '@mono/core/overrides';
+} from '@mono/core/derive/overrides';
 
 const USAGE = [
   'pnpm --filter @mono/mcp overrides:candidates [<limit>]',

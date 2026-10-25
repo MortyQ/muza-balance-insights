@@ -7,7 +7,7 @@ import path from 'node:path';
 import type { Db } from '../src/db.ts';
 import { MCP_ROOT, REPO_ROOT } from '../src/paths.ts';
 import { rederiveAll } from '../src/rederive.ts';
-import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
+import { insertAccountRow, insertTransactionRow, memoryDb } from '@mono/core/test-helpers';
 
 const ENTRY = path.join(MCP_ROOT, 'src', 'cli', 'recategorize.ts');
 
@@ -32,8 +32,8 @@ function workspacePackages(): Map<string, { dir: string; exports: Record<string,
 const WORKSPACE = workspacePackages();
 
 /**
- * Resolves a workspace import (`@mono/core/sync`, `@mono/db-libsql`) through the package's `exports`, like Node does
- * (exact key first, then `./*` patterns). Fails loudly on a workspace specifier it can't resolve —
+ * Resolves a workspace import (`@mono/core/ingest/sync`, `@mono/db-libsql`) through the package's `exports`, like Node
+ * does (exact key first, then `./*` patterns). Fails loudly on a workspace specifier it can't resolve —
  * an unresolved import would make the graph silently smaller and this test blind.
  */
 function resolveWorkspaceImport(spec: string): string {
@@ -84,9 +84,9 @@ describe('recategorize: no .env, no token', () => {
       expect.arrayContaining([
         'apps/mcp/src/rederive.ts',
         'apps/mcp/src/analysis/export.ts',
-        'packages/core/src/rederive.ts',
-        'packages/core/src/transfers.ts',
-        'packages/core/src/db.ts',
+        'packages/core/src/derive/rederive.ts',
+        'packages/core/src/derive/transfers.ts',
+        'packages/core/src/storage/db.ts',
         'packages/db-libsql/src/index.ts',
       ]),
     );
@@ -98,7 +98,7 @@ describe('recategorize: no .env, no token', () => {
   });
 
   it('the resolver follows package exports and refuses what it cannot resolve', () => {
-    expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/sync'))).toBe('packages/core/src/sync.ts');
+    expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/ingest/sync'))).toBe('packages/core/src/ingest/sync.ts');
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/core/test-helpers'))).toBe('packages/core/tests/helpers.ts');
     expect(path.relative(REPO_ROOT, resolveWorkspaceImport('@mono/db-libsql'))).toBe('packages/db-libsql/src/index.ts');
     expect(() => resolveWorkspaceImport('@mono/unknown/x')).toThrow();
@@ -136,7 +136,7 @@ describe('recategorize: no .env, no token', () => {
 
 describe('recategorize: output is aggregates and diagnostics only', () => {
   it('recategorize.ts and both rederive.ts never mention sensitive columns', () => {
-    for (const f of ['apps/mcp/src/cli/recategorize.ts', 'apps/mcp/src/rederive.ts', 'packages/core/src/rederive.ts']) {
+    for (const f of ['apps/mcp/src/cli/recategorize.ts', 'apps/mcp/src/rederive.ts', 'packages/core/src/derive/rederive.ts']) {
       const code = stripComments(fs.readFileSync(path.join(REPO_ROOT, f), 'utf8'));
       expect(code.match(/\b(description|counter_name|counterName|comment|iban|counter_iban|masked_pan|maskedPan|title)\b/g), f).toBeNull();
     }
@@ -166,11 +166,10 @@ describe('recategorize: output is aggregates and diagnostics only', () => {
     });
     await insertAccountRow(db, { id: 'jar1', kind: 'jar', currency_code: 980, title: CANARY.jarTitle, balance: 100, updated_at: 1 });
     const tx = (id: string, time: number, amount: number, mcc: number, description: string, extra: { counterName?: string; counterIban?: string; comment?: string } = {}) =>
-      db.execute({
-        sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-                currency_code, balance, comment, counter_name, counter_iban, raw_json, synced_at)
-              VALUES (?, 'card1', ?, '2026-08-05', ?, ?, 0, ?, ?, 980, 0, ?, ?, ?, '{}', 1)`,
-        args: [id, time, description, mcc, amount, amount, extra.comment ?? null, extra.counterName ?? null, extra.counterIban ?? null],
+      insertTransactionRow(db, {
+        id, account_id: 'card1', time, local_date: '2026-08-05', description, mcc, hold: 0, amount, operation_amount: amount,
+        currency_code: 980, balance: 0, comment: extra.comment ?? null, counter_name: extra.counterName ?? null,
+        counter_iban: extra.counterIban ?? null, synced_at: 1,
       });
     await tx('t1', 100, -10_000, 4829, CANARY.counterName, { counterName: CANARY.counterName, counterIban: CANARY.counterIban, comment: CANARY.comment });
     await tx('t2', 200, -5_000, 5411, CANARY.description);

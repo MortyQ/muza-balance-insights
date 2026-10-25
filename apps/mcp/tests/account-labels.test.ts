@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { MCP_ROOT } from '../src/paths.ts';
-import { accountLabels } from '@mono/core/format';
+import { accountLabels } from '@mono/core/shared/format';
 
 describe('account labels in logs', () => {
   it('type + currency, never a card number; duplicates get an id prefix', () => {
@@ -18,6 +18,18 @@ describe('account labels in logs', () => {
       cccc3333: 'банка/UAH #cccc',
       dddd4444: 'банка/UAH #dddd',
     });
+  });
+
+  it('the tag skips a provider prefix and a file account\'s «file-»', () => {
+    const labels = accountLabels([
+      { id: 'fictional:aaaa1111', kind: 'card', type: null, currencyCode: 980 },
+      { id: 'fictional:bbbb2222', kind: 'card', type: null, currencyCode: 980 },
+      { id: 'file-cccc3333', kind: 'card', type: 'black', currencyCode: 980 },
+      { id: 'file-dddd4444', kind: 'card', type: 'black', currencyCode: 980 },
+      { id: 'fictional:file-eeee5555', kind: 'jar', type: null, currencyCode: 840 },
+      { id: 'fictional:file-ffff6666', kind: 'jar', type: null, currencyCode: 840 },
+    ]);
+    expect([...labels.values()]).toEqual(['карта/UAH #aaaa', 'карта/UAH #bbbb', 'black/UAH #cccc', 'black/UAH #dddd', 'банка/USD #eeee', 'банка/USD #ffff']);
   });
 
   it('CLI entry points never read masked_pan or iban', () => {

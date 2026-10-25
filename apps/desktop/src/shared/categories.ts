@@ -4,7 +4,7 @@
 export const CATEGORY_IDS = [
   'groceries', 'cafes', 'transport', 'health', 'beauty', 'clothing', 'home', 'telecom', 'entertainment', 'travel',
   'sport', 'pets', 'insurance', 'taxes', 'cash', 'delivery', 'education', 'gifts', 'utilities', 'marketplaces',
-  'charity', 'fees', 'p2p', 'family', 'installments', 'ownTransfers', 'income', 'other',
+  'charity', 'fees', 'transferFees', 'p2p', 'family', 'installments', 'ownTransfers', 'income', 'other',
 ] as const;
 
 export type CategoryId = (typeof CATEGORY_IDS)[number];

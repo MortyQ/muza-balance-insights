@@ -1,6 +1,6 @@
 // Pure helpers of the analytics screen in main. Fictional numbers only.
 import { describe, expect, it } from 'vitest';
-import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from '../src/main/analytics.ts';
+import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from '../src/data/analytics.ts';
 import { addMonths, monthSpan } from '../src/shared/analytics.ts';
 
 const RATES = new Map([[840, { rate: 40, nearest: false }]]);

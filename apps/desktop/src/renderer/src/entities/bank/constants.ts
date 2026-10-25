@@ -1,45 +1,14 @@
-// Banks on the connect screen. Only Monobank works today; the rest are shown as «Soon». How a bank is connected (token
-// steps, forms) lives in its folder in features/integrations.
+// The look of a bank without its own (looks/<id>.ts) and the «Other banks» tile of the bank picker. Which banks exist
+// comes from the registry (utils.ts), never from a list here.
 import type { MessageKey } from '@contract/i18n/index.ts';
-import type { Bank } from './types.ts';
+import type { BankLook } from './types.ts';
 
-export const BANKS = [
-  {
-    id: 'monobank',
-    name: 'entities.bank.monobank',
-    status: 'available',
-    ways: ['token', 'file'],
-    monogram: 'm',
-    monogramClass: 'bg-black text-white',
-  },
-  {
-    id: 'privatbank',
-    name: 'entities.bank.privatbank',
-    status: 'soon',
-    // The bank's own letter mark, not a text: the same in every language.
-    monogram: 'П',
-    monogramClass: 'bg-surface-sunken text-foreground-muted',
-  },
-  {
-    id: 'other',
-    name: 'entities.bank.other',
-    status: 'soon',
-    monogram: '+',
-    monogramClass: 'bg-surface-sunken text-foreground-muted',
-  },
-] as const satisfies ReadonlyArray<Bank>;
+export const NEUTRAL_MONOGRAM_CLASS = 'bg-surface-sunken text-foreground-muted';
 
-export const MONOBANK: Bank = BANKS[0];
-
-/** Monobank's card types → names (balance cards, the import line, «Accounts»); a type not listed shows as the bank sent it. */
-export const MONOBANK_CARD_TYPES: Readonly<Record<string, MessageKey>> = {
-  black: 'entities.bank.monobankCard.black',
-  white: 'entities.bank.monobankCard.white',
-  platinum: 'entities.bank.monobankCard.platinum',
-  iron: 'entities.bank.monobankCard.iron',
-  fop: 'entities.bank.monobankCard.fop',
-  yellow: 'entities.bank.monobankCard.yellow',
-  eAid: 'entities.bank.monobankCard.eAid',
-  madeInUkraine: 'entities.bank.monobankCard.madeInUkraine',
-  rebuilding: 'entities.bank.monobankCard.rebuilding',
-};
+/** Not a bank: the picker's disabled tile for banks the app cannot connect yet. */
+export const OTHER_BANKS = {
+  id: 'other',
+  name: 'entities.bank.other',
+  monogram: '+',
+  monogramClass: NEUTRAL_MONOGRAM_CLASS,
+} as const satisfies BankLook & { id: string; name: MessageKey };

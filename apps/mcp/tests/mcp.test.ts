@@ -7,7 +7,7 @@ import { StdioClientTransport, getDefaultEnvironment } from '@modelcontextprotoc
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { Db } from '../src/db.ts';
 import { openDb } from '../src/db.ts';
-import { displayCounterName, kyivStartOfDay } from '@mono/core/format';
+import { displayCounterName, kyivStartOfDay } from '@mono/core/shared/format';
 import { createServer } from '../src/mcp/tools.ts';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { MCP_ROOT } from '../src/paths.ts';
@@ -41,8 +41,8 @@ async function seed(db: Db): Promise<void> {
   const tx = (account: string, date: string, amount: number, category: string, o: { mcc?: number; scope?: string; description?: string; counterName?: string } = {}) =>
     db.execute({
       sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-              comment, counter_name, category, scope, raw_json, synced_at)
-            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, (SELECT currency_code FROM accounts WHERE id = ?), ?, ?, ?, ?, '{}', 0)`,
+              comment, counter_name, category, scope, synced_at)
+            VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, (SELECT currency_code FROM accounts WHERE id = ?), ?, ?, ?, ?, 0)`,
       args: [`t${++n}`, account, kyivStartOfDay(date) + 3600, date, o.description ?? CANARY.description, o.mcc ?? 5411, amount, amount,
         account, CANARY.comment, o.counterName ?? CANARY.counterName, category, o.scope ?? 'personal'],
     });
@@ -180,8 +180,8 @@ describe('a trip (Albania): operation currency and search', () => {
   async function tripTx(id: string, date: string, amount: number, o: { opAmount?: number; opCurrency?: number; mcc?: number; description: string; counterName?: string; category?: string }) {
     await db.execute({
       sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code,
-              counter_name, category, raw_json, synced_at)
-            VALUES (?, 'black', ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, '{}', 0)`,
+              counter_name, category, synced_at)
+            VALUES (?, 'black', ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, 0)`,
       args: [id, kyivStartOfDay(date) + 12 * 3600, date, o.description, o.mcc ?? 5812, amount, o.opAmount ?? amount, o.opCurrency ?? 980,
         o.counterName ?? null, o.category ?? 'кафе и рестораны'],
     });
