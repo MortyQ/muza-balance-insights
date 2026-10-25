@@ -642,7 +642,9 @@
         "srLess": "less than in {month}",
         "srLessPartial": "less than by this day in {month}",
         "srMore": "more than in {month}",
-        "srMorePartial": "more than by this day in {month}"
+        "srMorePartial": "more than by this day in {month}",
+        "shortMore": "{diff} more",
+        "shortLess": "{diff} less"
       },
       "compareDay": "{month} {day}",
       "compareFull": "Compared with: {period}",

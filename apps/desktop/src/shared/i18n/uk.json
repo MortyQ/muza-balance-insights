@@ -642,7 +642,9 @@
         "srLess": "менше, ніж у {month}",
         "srLessPartial": "менше, ніж до цього дня у {month}",
         "srMore": "більше, ніж у {month}",
-        "srMorePartial": "більше, ніж до цього дня у {month}"
+        "srMorePartial": "більше, ніж до цього дня у {month}",
+        "shortMore": "на {diff} більше",
+        "shortLess": "на {diff} менше"
       },
       "compareDay": "{day} {month}",
       "compareFull": "Порівняння з: {period}",

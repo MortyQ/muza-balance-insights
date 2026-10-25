@@ -59,8 +59,8 @@ const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: fal
 
 describe('change', () => {
   it('the chip under the ring: more / less with the amount and the percent (by this day while partial), new, same', () => {
-    expect(centerChip(114, 100, '2026-09', UAH_FMT, false)).toMatchObject({ text: `на ${uah(14)} (14%) больше, чем в августе`, tone: 'up', arrow: 'up' });
-    expect(centerChip(86, 100, '2026-09', UAH_FMT, true)).toMatchObject({ text: `на ${uah(14)} (14%) меньше, чем к этому дню в августе`, tone: 'down', arrow: 'down' });
+    expect(centerChip(114, 100, '2026-09', UAH_FMT, false)).toMatchObject({ text: `на ${uah(14)} (14%) больше`, title: `на ${uah(14)} (14%) больше, чем в августе`, tone: 'up', arrow: 'up' });
+    expect(centerChip(86, 100, '2026-09', UAH_FMT, true)).toMatchObject({ text: `на ${uah(14)} (14%) меньше`, title: `на ${uah(14)} (14%) меньше, чем к этому дню в августе`, tone: 'down', arrow: 'down' });
     expect(centerChip(101, 100, '2026-09', UAH_FMT, false)).toMatchObject({ text: 'как в августе', tone: 'neutral', arrow: null });
     expect(centerChip(50, 0, '2026-09', UAH_FMT, false)).toMatchObject({ text: 'новое', tone: 'neutral', arrow: null });
     expect(centerChip(50, null, '2026-09', UAH_FMT, false)).toBeNull();
