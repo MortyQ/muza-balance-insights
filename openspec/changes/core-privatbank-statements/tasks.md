@@ -6,8 +6,8 @@
 
 ## 2. Category tables and unknown categories (core)
 
-- [ ] 2.1 `knowsBankCategory` in `ProviderRules`, `providers/monobank/categories.ts` (empty table); verify conformance and `providers-boundary` tests
-- [ ] 2.2 «Unknown bank categories» lines in the derivation report (design 8); verify a derivation test with fictional rows and that `apps/mcp/tests/recategorize-safety.test.ts` stays green
+- [x] 2.1 `knowsBankCategory` in `ProviderRules`, `providers/monobank/categories.ts` (empty table); verify conformance and `providers-boundary` tests
+- [x] 2.2 «Unknown bank categories» lines in the derivation report (design 8); verify a derivation test with fictional rows and that `apps/mcp/tests/recategorize-safety.test.ts` stays green
 
 ## 3. PrivatBank provider and reader (core)
 

@@ -5,7 +5,7 @@
 import { recategorize } from './categories.ts';
 import type { Db } from '../storage/db.ts';
 import { refreshCrossing, rederiveCrossing } from './derived.ts';
-import { categoryCounts, transferDiagnostics } from './diagnostics.ts';
+import { categoryCounts, transferDiagnostics, unknownBankCategories } from './diagnostics.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope, scopeCounts } from './scope.ts';
 import { markInternalTransfers, type TimeRange } from './transfers.ts';
@@ -28,6 +28,11 @@ export async function rederiveCore(db: Db): Promise<string[]> {
     'Категории (строк):',
   ];
   for (const c of await categoryCounts(db)) report.push(`  ${String(c.n).padStart(6)}  ${c.category}`);
+  const unknown = await unknownBankCategories(db);
+  if (unknown.length > 0) {
+    report.push('Неизвестные категории банка (строк):');
+    for (const u of unknown) report.push(`  ${String(u.n).padStart(6)}  ${u.provider} «${u.bankCategory}»`);
+  }
   return report;
 }
 
