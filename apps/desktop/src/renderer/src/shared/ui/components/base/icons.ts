@@ -50,11 +50,14 @@ import LucideList from "~icons/lucide/list";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucideLock from "~icons/lucide/lock";
 import LucideMaximize2 from "~icons/lucide/maximize-2";
+import LucideMenu from "~icons/lucide/menu";
 import LucideMinus from "~icons/lucide/minus";
 import LucideMonitor from "~icons/lucide/monitor";
 import LucideMoon from "~icons/lucide/moon";
 import LucidePackage from "~icons/lucide/package";
 import LucidePalette from "~icons/lucide/palette";
+import LucidePanelLeftClose from "~icons/lucide/panel-left-close";
+import LucidePanelLeftOpen from "~icons/lucide/panel-left-open";
 import LucidePawPrint from "~icons/lucide/paw-print";
 import LucidePenLine from "~icons/lucide/pen-line";
 import LucidePercent from "~icons/lucide/percent";
@@ -144,11 +147,14 @@ export const ICONS: Record<string, Component> = {
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:lock": LucideLock,
   "lucide:maximize-2": LucideMaximize2,
+  "lucide:menu": LucideMenu,
   "lucide:minus": LucideMinus,
   "lucide:monitor": LucideMonitor,
   "lucide:moon": LucideMoon,
   "lucide:package": LucidePackage,
   "lucide:palette": LucidePalette,
+  "lucide:panel-left-close": LucidePanelLeftClose,
+  "lucide:panel-left-open": LucidePanelLeftOpen,
   "lucide:paw-print": LucidePawPrint,
   "lucide:pen-line": LucidePenLine,
   "lucide:percent": LucidePercent,

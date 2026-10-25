@@ -3,3 +3,6 @@ export const MIN_BAR = 6;
 
 /** localStorage key of the category panel's choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'now.categories';
+
+/** How many categories the «Today» and «This week» tiles list; the rest are in the details. */
+export const SHOWN_CATEGORIES = 3;

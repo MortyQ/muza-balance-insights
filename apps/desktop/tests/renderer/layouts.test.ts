@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
-// The layouts (app/layouts): the shell comes from the route's meta.layout, the side menu of the default one from the
-// routes' meta.nav, and a change inside one layout keeps the shell. The filters widget is a stub (it reads main's data).
+// The layouts (app/layouts): the shell comes from the route's meta.layout, the app navigation sidebar of the default
+// one from the routes' meta.nav, and a change inside one layout keeps the shell. The filters widget is a stub (it reads main's data).
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import { defineComponent, h } from 'vue';
+import { defineComponent, h, nextTick } from 'vue';
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
 
 const { default: MasterLayout } = await import('@/app/layouts/MasterLayout.vue');
-const { layoutOf, navGroups } = await import('@/app/layouts/utils.ts');
+const { layoutOf, navGroups, navItems } = await import('@/app/layouts/utils.ts');
 const { routes } = await import('@/app/router/routes.ts');
 const { i18n } = await import('@/shared/lib');
 
@@ -69,6 +69,17 @@ describe('navGroups', () => {
   });
 });
 
+describe('navItems', () => {
+  it('the side menu as sidebar entries: translated, opening their route, standing for the screens that name them as parent', () => {
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    const items = navItems(router.getRoutes(), (key) => `t:${key}`);
+    expect(items.map((i) => i.id)).toEqual(['home', 'analytics', 'recurring', 'planning']);
+    expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
+    expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income']));
+    expect(items[1]?.activeFor).toEqual([]);
+  });
+});
+
 describe('MasterLayout', () => {
   async function mountAt(path: string) {
     const test: RouteRecordRaw[] = [
@@ -84,31 +95,60 @@ describe('MasterLayout', () => {
     return { w, router };
   }
 
-  it('the default layout: filters, the menu from the routes with the open one current, the screen', async () => {
+  const entries = (w: Awaited<ReturnType<typeof mountAt>>['w']) => w.findAll('aside.sidebar .sidebar-nav .sidebar-item');
+  const entry = (w: Awaited<ReturnType<typeof mountAt>>['w'], href: string) => w.get(`aside.sidebar .sidebar-nav a[href="${href}"]`);
+
+  it('the default layout: the sidebar from the routes with the open one current, the title, the filters, the screen', async () => {
     const { w } = await mountAt('/');
     expect(w.find('[data-test="filters"]').exists()).toBe(true);
-    const items = w.findAll('nav button');
-    expect(items.map((b) => b.attributes('data-item'))).toEqual(['home', 'second']);
-    expect(items[0]?.attributes('aria-current')).toBe('page');
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second']);
+    expect(entry(w, '/').attributes('aria-current')).toBe('page');
+    expect(entry(w, '/second').attributes('aria-current')).toBeUndefined();
+    expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.general'));
+    expect(w.get('aside.sidebar .v-sidebar-footer a').attributes('href')).toBe('/settings');
+    // No shared panel: the header (with the filters) and the scroll area sit on the window's background next to the sidebar.
+    expect(w.find('[data-test="layout-panel"]').exists()).toBe(false);
+    const main = w.get('[data-test="layout-main"]');
+    expect(main.classes()).not.toContain('bg-surface');
+    expect(main.get('[data-test="layout-header"]').find('[data-test="filters"]').exists()).toBe(true);
+    expect(main.find('[data-test="layout-scroll"]').exists()).toBe(true);
+    expect(main.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
     w.unmount();
   });
 
-  it('a screen without its own item keeps its parent current (the category screen → «General»)', async () => {
+  it('the header shows its hairline only while the content is scrolled under it', async () => {
+    const { w } = await mountAt('/');
+    const header = () => w.get('[data-test="layout-header"]');
+    expect(header().classes()).toContain('border-transparent');
+    const area = w.get('[data-test="layout-scroll"]').element as HTMLElement;
+    area.scrollTop = 120;
+    area.dispatchEvent(new Event('scroll'));
+    await nextTick();
+    expect(header().classes()).toContain('border-border-subtle');
+    area.scrollTop = 0;
+    area.dispatchEvent(new Event('scroll'));
+    await nextTick();
+    expect(header().classes()).toContain('border-transparent');
+    w.unmount();
+  });
+
+  it('a screen without its own item keeps its parent current and titled (the category screen → «General»)', async () => {
     const { w } = await mountAt('/sub');
     expect(w.find('[data-page="sub"]').exists()).toBe(true);
-    expect(w.find('nav button[data-item="home"]').attributes('aria-current')).toBe('page');
+    expect(entry(w, '/').attributes('aria-current')).toBe('page');
+    expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.general'));
     w.unmount();
   });
 
   it('a menu pick opens its route inside the same shell', async () => {
     const { w, router } = await mountAt('/');
     const filters = w.find('[data-test="filters"]').element;
-    await w.find('nav button[data-item="second"]').trigger('click');
+    await entry(w, '/second').trigger('click');
     await flushPromises();
     expect(router.currentRoute.value.name).toBe('second');
     expect(w.find('[data-test="filters"]').element).toBe(filters);
-    expect(w.find('nav button[data-item="second"]').attributes('aria-current')).toBe('page');
+    expect(entry(w, '/second').attributes('aria-current')).toBe('page');
     w.unmount();
   });
 
@@ -148,9 +188,27 @@ describe('MasterLayout', () => {
     expect((HomePage as { __name?: string }).__name).toBe('HomePage');
   });
 
+  it('a medium window shows icons only without changing the stored choice; the choice is kept under app.sidebar', async () => {
+    const listeners: Array<(e: { matches: boolean }) => void> = [];
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('63.99rem'),
+      addEventListener: (_: string, fn: (e: { matches: boolean }) => void) => listeners.push(fn),
+      removeEventListener: () => {},
+    }));
+    const { w } = await mountAt('/');
+    expect(w.get('aside.sidebar').classes()).toContain('sidebar--collapsed');
+    expect(localStorage.getItem('app.sidebar:collapsed')).toBe('false');
+    listeners.forEach((fn) => fn({ matches: false }));
+    await flushPromises();
+    expect(w.get('aside.sidebar').classes()).not.toContain('sidebar--collapsed');
+    w.unmount();
+    vi.unstubAllGlobals();
+  });
+
   it('the empty layout: the screen alone', async () => {
     const { w } = await mountAt('/settings');
     expect(w.find('[data-test="filters"]').exists()).toBe(false);
+    expect(w.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('nav').exists()).toBe(false);
     expect(w.find('[data-page="settings"]').exists()).toBe(true);
     w.unmount();

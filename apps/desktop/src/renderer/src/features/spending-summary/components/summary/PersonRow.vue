@@ -23,6 +23,9 @@ const emit = defineEmits<{ pick: [participantId: number | null] }>();
     <span class="flex min-w-0 grow flex-col">
       <span class="truncate font-semibold" :title="row.name">{{ row.name }}</span>
       <span class="truncate text-xs text-foreground-muted">{{ row.caption }}</span>
+      <span v-if="row.share !== null" class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
+        <span class="block h-full w-(--w) rounded-full bg-(--c)" :style="{ '--w': `${row.share}%` }" />
+      </span>
     </span>
     <span class="flex shrink-0 flex-col items-end gap-0.5">
       <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>

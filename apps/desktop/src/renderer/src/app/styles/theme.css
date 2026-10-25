@@ -326,42 +326,42 @@
 
 /* ─── Dark theme ─────────────────────────────────────────── */
 :root[data-theme="dark"] {
-    --primary:            oklch(65% 0.25 280);
-    --primary-hover:      oklch(70% 0.25 280);
-    --primary-active:     oklch(75% 0.25 280);
-    --primary-foreground: oklch(100% 0 0);
-    --primary-subtle:     oklch(28% 0.10 280);
-    --primary-muted:      oklch(33% 0.13 280);
+    --primary:            oklch(72% 0.123 264);
+    --primary-hover:      oklch(77% 0.12 264);
+    --primary-active:     oklch(82% 0.11 264);
+    --primary-foreground: oklch(18% 0.02 264);
+    --primary-subtle:     oklch(31% 0.056 264);
+    --primary-muted:      oklch(39% 0.08 264);
 
-    --background:          oklch(16% 0.025 270);
-    --surface-sunken:      oklch(13% 0.022 270);
-    --surface:             oklch(20% 0.025 270);
-    --surface-raised:      oklch(24% 0.025 270);
-    --surface-overlay:     oklch(27% 0.028 270);
-    --surface-hover:       oklch(24% 0.025 270);
-    --surface-active:      oklch(27% 0.025 270);
-    --surface-tinted:      oklch(24% 0.040 275);
-    --surface-tinted-deep: oklch(21% 0.038 275);
+    --background:          oklch(18% 0.007 258);
+    --surface-sunken:      oklch(15% 0.007 258);
+    --surface:             oklch(24% 0.015 262);
+    --surface-raised:      oklch(27% 0.016 262);
+    --surface-overlay:     oklch(29% 0.017 262);
+    --surface-hover:       oklch(28% 0.018 262);
+    --surface-active:      oklch(31% 0.018 262);
+    --surface-tinted:      oklch(28% 0.018 262);
+    --surface-tinted-deep: oklch(25% 0.016 262);
 
-    --nav:        oklch(13% 0.022 270);
-    --nav-hover:  oklch(17% 0.022 270);
-    --nav-active: oklch(20% 0.025 270);
-    --nav-border: oklch(22% 0.020 270);
+    --nav:        oklch(18% 0.007 258);
+    --nav-hover:  oklch(22% 0.012 262);
+    --nav-active: oklch(24% 0.015 262);
+    --nav-border: oklch(26% 0.015 262);
 
     /* ─── Balance card (entities/account): always-dark card, same values in both themes ─── */
     --card-up:   oklch(76% 0.2 145);
     --card-down: oklch(72% 0.19 25);
 
-    --foreground:           oklch(93% 0.006 280);
-    --foreground-secondary: oklch(73% 0.010 280);
-    --foreground-muted:     oklch(52% 0.007 280);
-    --foreground-subtle:    oklch(40% 0.005 280);
-    --foreground-disabled:  oklch(35% 0.004 280);
-    --foreground-inverted:  oklch(16% 0.025 270);
+    --foreground:           oklch(94% 0.006 265);
+    --foreground-secondary: oklch(80% 0.012 263);
+    --foreground-muted:     oklch(68% 0.021 263);
+    --foreground-subtle:    oklch(52% 0.015 263);
+    --foreground-disabled:  oklch(42% 0.010 263);
+    --foreground-inverted:  oklch(18% 0.007 258);
 
-    --border-subtle: oklch(24% 0.020 270);
-    --border:        oklch(30% 0.022 270);
-    --border-strong: oklch(40% 0.018 270);
+    --border-subtle: oklch(30% 0.018 262);
+    --border:        oklch(35% 0.020 262);
+    --border-strong: oklch(45% 0.020 262);
 
     /* ─── Series: people (src/shared/colors.ts; dataviz categorical, CVD-checked for this theme) ─── */
     --series-blue:     #3987e5;
@@ -386,18 +386,18 @@
     --heat-cold: oklch(66% 0.12 240);
     --card-band-tint: 24%;
     --card-band-fade: 8%;
-    --negative-soft:    oklch(74% 0.12 25);
-    --negative-soft-bg: oklch(24% 0.06 25);
-    --border-focus:  oklch(65% 0.25 280);
+    --negative-soft:    oklch(74% 0.126 30);
+    --negative-soft-bg: oklch(29% 0.041 27);
+    --border-focus:  oklch(72% 0.123 264);
 
     --overlay: oklch(0% 0 0 / 0.65);
     --scrim:   oklch(0% 0 0 / 0.35);
 
-    --success:            oklch(63% 0.17 145);
-    --success-hover:      oklch(68% 0.17 145);
-    --success-foreground: oklch(100% 0 0);
-    --success-subtle:     oklch(24% 0.07 145);
-    --success-muted:      oklch(29% 0.09 145);
+    --success:            oklch(76% 0.137 156);
+    --success-hover:      oklch(80% 0.13 156);
+    --success-foreground: oklch(18% 0.02 156);
+    --success-subtle:     oklch(31% 0.046 163);
+    --success-muted:      oklch(36% 0.06 160);
 
     --warning:            oklch(74% 0.17 75);
     --warning-hover:      oklch(79% 0.17 75);
@@ -417,24 +417,24 @@
     --info-subtle:     oklch(24% 0.07 240);
     --info-muted:      oklch(29% 0.09 240);
 
-    --input-bg:           oklch(18% 0.022 270);
-    --input-border:       oklch(30% 0.022 270);
-    --input-placeholder:  oklch(48% 0.007 280);
-    --badge-neutral-bg:   oklch(26% 0.020 270);
-    --badge-neutral-text: oklch(74% 0.009 280);
+    --input-bg:           oklch(21% 0.011 261);
+    --input-border:       oklch(35% 0.020 262);
+    --input-placeholder:  oklch(55% 0.015 263);
+    --badge-neutral-bg:   oklch(30% 0.018 262);
+    --badge-neutral-text: oklch(80% 0.012 263);
 
     /* ─── Elevation ───────────────────────────────────────────
        A black shadow on a dark surface is invisible, so dark mode carries the
-       brand violet instead: the elevation reads as a glow rather than a drop
+       accent blue instead: the elevation reads as a glow rather than a drop
        shadow, and stays visible against every surface in the ramp. */
-    --elevation-xs:    0 1px 2px 0 oklch(45% 0.20 280 / 0.16);
-    --elevation-sm:    0 1px 3px 0 oklch(45% 0.20 280 / 0.24),
+    --elevation-xs:    0 1px 2px 0 oklch(45% 0.20 264 / 0.16);
+    --elevation-sm:    0 1px 3px 0 oklch(45% 0.20 264 / 0.24),
                     0 1px 2px -1px oklch(0% 0 0 / 0.40);
-    --elevation-md:    0 4px 8px -2px oklch(48% 0.22 280 / 0.30),
+    --elevation-md:    0 4px 8px -2px oklch(48% 0.22 264 / 0.30),
                     0 2px 4px -2px oklch(0% 0 0 / 0.45);
-    --elevation-lg:    0 12px 20px -6px oklch(52% 0.24 280 / 0.38),
+    --elevation-lg:    0 12px 20px -6px oklch(52% 0.24 264 / 0.38),
                     0 4px 8px -4px oklch(0% 0 0 / 0.50);
-    --elevation-xl:    0 24px 40px -10px oklch(55% 0.26 280 / 0.45),
+    --elevation-xl:    0 24px 40px -10px oklch(55% 0.26 264 / 0.45),
                     0 8px 16px -8px oklch(0% 0 0 / 0.55);
     --elevation-inner: inset 0 2px 4px 0 oklch(0% 0 0 / 0.35);
 }

@@ -55,6 +55,30 @@
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
 
+## To check live: app shell (desktop-app-shell)
+
+- The sidebar under the title bar: macOS traffic lights and the Windows / Linux overlay buttons do not cover it.
+- A narrow window (< 45rem): the menu button opens the drawer; a pick, Escape and a click outside close it.
+- A medium window (45–64rem): icons only, tooltips on hover; widening restores the stored choice.
+- Fold, relaunch: the menu opens folded.
+
+## To check live: month pace (desktop-month-pace)
+
+- The balances block at three widths: the pace beside the month panel (wide), under them (medium, narrow), folding
+  with the open row; a past month (whole month, no «Available per day»); a person picked.
+
+## To check live: home tiles (desktop-home-tiles)
+
+- The grid's steps: one column in a narrow window, two from about 750 px of content, twelve columns (5·4·3, 4·4·4,
+  9·3) from about 1260 px; no tile cut or overlapping, the folded stack fits its 5 columns.
+- Opening and folding the cards: «Balance» takes the whole row, the pace chart and «Month» come back at once and the
+  chart fits its tile; the free line follows the card in front while the row scrolls.
+- «Today» / «This week»: equal heights with one and with three categories, the details tile, its switch and close; an
+  empty day; «What's unusual» hidden while the details are open; a past month (no «Now» tiles).
+- «Spending by category» with 4+ categories unfolded and folded; «Who spent what» in the family view, absent for one
+  person; the regular payments tile beside it.
+- The header's hairline while scrolling; both themes (the new dark one included); the pace chart's pill near the top.
+
 ## Later: currencies
 
 - PLN (or other currencies) as a main / «≈» currency: one entry in `CURRENCIES` (`entities/currency-display`) and the

@@ -7,8 +7,9 @@ const { list, empty } = defineProps<{ list: CategoryBreakdown; empty: string }>(
 </script>
 
 <template>
-  <ul v-if="list.rows.length > 0" class="flex flex-col">
-    <li v-for="r in list.rows" :key="r.key" class="border-t border-border-subtle first:border-t-0">
+  <!-- Two columns once the details tile is wide enough; each row sizes its own layout by its own width (`@container`). -->
+  <ul v-if="list.rows.length > 0" class="grid grid-cols-1 gap-x-8 @3xl:grid-cols-2">
+    <li v-for="r in list.rows" :key="r.key" class="@container border-t border-border-subtle">
       <!-- A known category opens its screen for this day or week; an unknown one is plain text. -->
       <component
         :is="r.to ? RouterLink : 'div'"

@@ -359,9 +359,7 @@
     }
   },
   "header": {
-    "settings": "Settings",
-    "settingsMac": "Settings (⌘,)",
-    "settingsOther": "Settings (Ctrl+,)"
+    "settings": "Settings"
   },
   "home": {
     "allowance": {
@@ -459,7 +457,23 @@
       "toCard": "Card {n} of {total}: {title}",
       "total": "Total",
       "wholeMonth": "whole month",
-      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts"
+      "withoutAccounts": "without {n} account | without {n} accounts | without {n} accounts",
+      "pace": {
+        "title": "Month pace",
+        "subtitle": "spending so far against a usual month",
+        "chart": "The month’s spending so far against a usual month",
+        "spent": "Spent",
+        "usualByNow": "Usually by this day",
+        "usualMonth": "Usually in a month",
+        "perDay": "Available per day",
+        "noUsual": "A usual month shows once there are three whole months of history"
+      },
+      "freeLine": {
+        "free": "Free",
+        "reservedAmount": "reserved {amount}"
+      },
+      "monthTile": "Month",
+      "monthResult": "Month's result"
     },
     "filters": {
       "percent": "{pct}%",
@@ -525,7 +539,11 @@
       "general": "General",
       "label": "Home sections",
       "planning": "Planning",
-      "recurring": "Regular payments"
+      "recurring": "Regular payments",
+      "collapse": "Collapse menu",
+      "expand": "Expand menu",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
@@ -555,7 +573,10 @@
         "today": "Today",
         "toggle": "By category",
         "vsWeek": "Compared with the same days last week, {days}",
-        "week": "Week"
+        "week": "Week",
+        "more": "{n} more category · {amount} | {n} more categories · {amount} | {n} more categories · {amount}",
+        "details": "Details",
+        "close": "Close"
       },
       "date": "{weekday}, {month} {day}",
       "label": "Now",
@@ -571,8 +592,6 @@
       "srMoreUsual": "more than on a usual day",
       "srMoreWeek": "more than last week",
       "today": "Today · {date}",
-      "top": "Most this week",
-      "topShare": "{pct}% of the week · {ops}",
       "until": "Data until {date}",
       "vsUsual": "vs a usual day ≈ {amount}",
       "vsWeek": "vs last week, {days}",
@@ -676,7 +695,10 @@
       },
       "title": "Spending",
       "together": "together · {ops}",
-      "whole": "Whole family"
+      "whole": "Whole family",
+      "showMore": "Show {n} more | Show {n} more | Show {n} more",
+      "showLess": "Show less",
+      "whoSpent": "Who spent what"
     }
   },
   "income": {

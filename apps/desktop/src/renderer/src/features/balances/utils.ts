@@ -1,12 +1,13 @@
 import { currencyAlpha, currencyExponent } from '@mono/core/shared/currency';
-import type { CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
+import type { AnalyticsOverview, CardTotal, FxPart, MonthOverview, PersonView } from '@contract/api.ts';
 import type { SummaryCardProps } from '@/entities/account';
 import { accountName, bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
-import type { Flow, RowView, Slide } from './types.ts';
+import type { ChartOption } from '@/shared/ui';
+import type { Flow, FreeLineView, PaceView, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
@@ -241,6 +242,7 @@ export function slidesOf(
         ...(total.saved ? { saved: { amount: fmt.convert(total.saved.amount), approx: total.saved.approx } } : {}),
         ...(reserved !== null ? { reserved: fmt.convert(reserved) } : {}),
       },
+      ...(reserved !== null ? { split: { own: total.ownFunds, reserved } } : {}),
     };
   };
   if (ctx.selectedId === null) {
@@ -290,4 +292,109 @@ export function slidesOf(
       }),
     ),
   ];
+}
+
+/**
+ * The month pace from one month of the analytics answer: the spending added up by day up to the last day with data,
+ * the usual month's running spending, and the figures under the chart. null — not one day of the month has data.
+ */
+export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null): PaceView | null {
+  if (a.unit !== 'day') return null;
+  const last = a.buckets.findLastIndex((b) => b.state !== 'none');
+  if (last < 0) return null;
+  let sum = 0;
+  const spent = a.buckets.map((b, i) => {
+    sum += a.spending[i] ?? 0;
+    return i <= last && b.state !== 'none' ? sum : null;
+  });
+  const running = a.buckets.some((b) => b.state === 'running');
+  return {
+    days: a.buckets.map((b) => String(Number(b.key.slice(8, 10)))),
+    spent,
+    usual: a.usual,
+    last,
+    running,
+    spentTotal: spent[last] ?? 0,
+    usualByNow: a.usual?.[last] ?? null,
+    perDay: running ? perDay : null,
+  };
+}
+
+/** The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them). */
+export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) => string = String): ChartOption {
+  // Today's point carries its amount in a pill above it, as the home mockup draws it.
+  const point = v.running
+    ? [
+        {
+          coord: [v.last, v.spentTotal],
+          label: {
+            show: true,
+            position: 'top',
+            distance: 10,
+            formatter: money(v.spentTotal),
+            fontSize: 11,
+            fontWeight: 700,
+            color: 'var(--foreground)',
+            backgroundColor: 'var(--surface)',
+            borderColor: 'var(--border)',
+            borderWidth: 1,
+            borderRadius: 7,
+            padding: [4, 8],
+          },
+        },
+      ]
+    : [];
+  return {
+    grid: { left: 4, right: 12, top: 30, bottom: 22, containLabel: true },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: v.days,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { fontSize: 10, color: 'var(--foreground-muted)', interval: (i: number) => i % 7 === 0 },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      splitNumber: 3,
+      axisLabel: { fontSize: 10, color: 'var(--foreground-muted)', formatter: (n: number) => (n === 0 ? '0' : money(n)) },
+      splitLine: { lineStyle: { color: 'var(--border-subtle)' } },
+    },
+    series: [
+      ...(v.usual === null
+        ? []
+        : [
+            {
+              type: 'line',
+              data: v.usual,
+              symbol: 'none',
+              silent: true,
+              lineStyle: { type: 'dashed', width: 2, color: 'color-mix(in oklch, var(--primary) 35%, var(--surface))' },
+            },
+          ]),
+      {
+        type: 'line',
+        data: v.spent,
+        symbol: 'none',
+        lineStyle: { width: 2.5, color: 'var(--primary)' },
+        areaStyle: { color: 'var(--primary)', opacity: 0.12 },
+        markPoint: { silent: true, symbol: 'circle', symbolSize: 9, itemStyle: { color: 'var(--primary)' }, label: { show: false }, data: point },
+      },
+    ],
+  };
+}
+
+/** What the line under the stack shows for a card: a total's free amount with its reserve, an account's own funds. */
+export function freeLineOf(slide: Readonly<Slide> | null): FreeLineView | null {
+  if (!slide || slide.card.dim) return null;
+  if (slide.kind === 'account') return { free: slide.card.amount, negative: false, reserved: null, share: null, short: false };
+  const c = slide.card;
+  const split = slide.split;
+  if (!split || c.reserved === null) return { free: c.amount, negative: c.negative, reserved: null, share: null, short: false };
+  const short = split.own < split.reserved;
+  const share = short
+    ? split.reserved > 0 ? Math.max(0, Math.min(100, Math.round((split.own / split.reserved) * 100))) : 0
+    : Math.min(100, Math.max(0, Math.round(((split.own - split.reserved) / split.own) * 100)));
+  return { free: c.amount, negative: c.negative, reserved: c.reserved, share, short };
 }

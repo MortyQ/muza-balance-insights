@@ -1,6 +1,7 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { MonthOverview } from '@contract/api.ts';
 import type { AccountCardProps, SummaryCardProps } from '@/entities/account';
+import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable } from '@/shared/lib';
 
 /** One part of a bar: a person's income and spending, in the bar's currency. */
@@ -34,6 +35,8 @@ export interface Flow {
 export type Slide = ({ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }) & {
   key: string;
   flow: Flow;
+  /** A total with reserves set against it: own funds and the reserves, in hryvnia minor units (the free line's bar). */
+  split?: { own: number; reserved: number };
 };
 
 export interface LegendItem {
@@ -94,4 +97,40 @@ export interface UseCardStackReturn {
   toggle: () => void;
   close: () => void;
   showStub: () => void;
+}
+
+/** The month pace (spec desktop-balance-cards, «Month pace»): hryvnia kopecks, one point per day of the month. */
+export interface PaceView {
+  /** Day of the month, as the axis shows it. */
+  days: string[];
+  /** Spending added up day by day; null — a day not reached yet (not drawn). */
+  spent: Array<number | null>;
+  /** The usual month's running spending by day; null — fewer than 3 whole months before. */
+  usual: number[] | null;
+  /** The last day with data: today while the month runs, the month's last day for a past month. */
+  last: number;
+  running: boolean;
+  spentTotal: number;
+  /** The usual spending by `last`; null without a usual month. */
+  usualByNow: number | null;
+  /** «Available per day»: the current month only. */
+  perDay: number | null;
+}
+
+export interface UseMonthPaceReturn {
+  view: ComputedRef<PaceView | null>;
+  fmt: ComputedRef<MoneyFormat>;
+}
+
+/**
+ * The line under the stack: the free amount of the card in front and its reserve. `share` — the bar, 0–100 (null — no
+ * reserve, no bar): the free part of the money, or, when the reserves are more than the money (`short`), the part of
+ * the reserves the money covers.
+ */
+export interface FreeLineView {
+  free: string;
+  negative: boolean;
+  reserved: string | null;
+  share: number | null;
+  short: boolean;
 }

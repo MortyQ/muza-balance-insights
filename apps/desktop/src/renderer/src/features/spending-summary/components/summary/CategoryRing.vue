@@ -14,11 +14,13 @@ const { stops, label, amount, perDay, chip, conv } = defineProps<{
 
 <template>
   <div class="flex flex-col items-center gap-3">
-    <div class="relative size-52.5">
-      <div class="absolute inset-0 rounded-full bg-(image:--ring)" :style="{ '--ring': stops }" aria-hidden="true" />
-      <div class="absolute inset-6.75 flex flex-col items-center justify-center gap-0.5 rounded-full bg-surface px-2 text-center">
+    <!-- A thin ring on a track, as on the home mockup: the categories' arcs, the total inside. -->
+    <div class="relative size-46">
+      <div class="absolute inset-0 rounded-full bg-surface-sunken" aria-hidden="true" />
+      <div class="absolute inset-0 rounded-full bg-(image:--ring) [mask:radial-gradient(farthest-side,transparent_calc(100%-14px),#000_calc(100%-13px))]" :style="{ '--ring': stops }" aria-hidden="true" />
+      <div class="absolute inset-3.5 flex flex-col items-center justify-center gap-0.5 rounded-full bg-surface px-2 text-center">
         <span class="max-w-full truncate text-xs text-foreground-muted">{{ label }}</span>
-        <span class="whitespace-nowrap text-2xl font-bold tabular-nums">{{ amount }}</span>
+        <span class="whitespace-nowrap text-xl font-bold tabular-nums">{{ amount }}</span>
         <span v-if="perDay" class="whitespace-nowrap text-xs text-foreground-muted">{{ perDay }}</span>
         <span v-for="c in conv" :key="c" class="whitespace-nowrap text-xs text-foreground-secondary tabular-nums">{{ c }}</span>
       </div>

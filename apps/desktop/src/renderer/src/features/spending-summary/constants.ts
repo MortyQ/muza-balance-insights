@@ -35,3 +35,6 @@ export const OPS_TONE = {
   down: 'text-[color-mix(in_oklch,var(--series-blue)_72%,var(--foreground))]',
   neutral: 'text-foreground-muted',
 } as const;
+
+/** Category rows the spending tile lists before «Show N more». */
+export const SHOWN_ROWS = 4;

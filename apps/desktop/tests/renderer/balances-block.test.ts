@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// The balance block mounted (features/balances, BalancesFeature): layout of the stack and the month panel. The data
+// The balance block mounted (features/balances, BalancesFeature): layout of the stack, the month panel and the month pace. The data
 // composable is replaced by fixed slides; the participant store is a fake, the month store is the real one.
 // Fictional fixtures only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -38,6 +38,20 @@ vi.mock('@/features/balances/composables/useMonthOverview.ts', () => ({
   }),
 }));
 
+vi.mock('@/features/balances/composables/useMonthPace.ts', async () => {
+  const { moneyFormat } = await import('@/entities/currency-display');
+  return {
+    useMonthPace: () => ({
+      view: computed(() => ({ days: ['1', '2'], spent: [10_00, 30_00], usual: [8_00, 16_00], last: 1, running: false, spentTotal: 30_00, usualByNow: 16_00, perDay: null })),
+      fmt: computed(() => moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } })),
+    }),
+  };
+});
+vi.mock('@/shared/ui/components/charts/VChart.vue', async () => {
+  const { defineComponent, h } = await import('vue');
+  return { default: defineComponent({ props: { option: Object }, setup: () => () => h('div') }) };
+});
+
 let w: VueWrapper | null = null;
 beforeEach(() => setActivePinia(createPinia()));
 afterEach(() => {
@@ -58,25 +72,74 @@ async function mountBlock(): Promise<VueWrapper> {
   return w;
 }
 
-describe('balance block layout', () => {
-  it('the month panel sits beside the stack from 47rem of block width and under it below, never at a fixed width over the stack', async () => {
+describe('balance tiles', () => {
+  it('three tiles straight into the page grid: «Balance», «Month pace», «Month»; «Balance» spans two columns of two; 5 · 4 · 3 of twelve', async () => {
     const b = await mountBlock();
-    const panel = b.get('[data-test="panel"]');
-    expect(panel.element.parentElement?.classList.contains('@container')).toBe(true);
-    expect(panel.classes()).toEqual(expect.arrayContaining(['@[47rem]:absolute', '@[47rem]:left-[490px]', '@[47rem]:right-0']));
-    expect(panel.classes()).not.toContain('absolute');
-    expect(b.html()).not.toContain('w-[340px] [transition');
-    expect(b.html()).toContain('@[47rem]:max-w-[340px]');
+    const root = b.element as HTMLElement;
+    expect(root.classList.contains('contents')).toBe(true);
+    const tiles = [...root.children].map((c) => c.getAttribute('data-test'));
+    expect(tiles).toEqual(['balance-tile', 'pace', 'panel']);
+    expect(b.get('[data-test="balance-tile"]').classes()).toEqual(expect.arrayContaining(['@[47rem]:col-span-2', '@[79rem]:col-span-5']));
+    expect(b.get('[data-test="pace"]').classes()).toContain('@[79rem]:col-span-4');
+    expect(b.get('[data-test="panel"]').classes()).toContain('@[79rem]:col-span-3');
+    // The chart's tile may shrink with the grid (a grid item keeps its content's width otherwise).
+    expect(b.get('[data-test="pace"]').classes()).toContain('min-w-0');
   });
 
-  it('opening the row folds the panel away (no empty space under the row) and makes it inert', async () => {
+  it('opening the row widens «Balance» to the whole row and hides the other two, kept mounted and inert', async () => {
     const b = await mountBlock();
+    const pace = b.get('[data-test="pace"]');
     const panel = b.get('[data-test="panel"]');
-    expect(panel.classes()).toContain('grid-rows-[1fr]');
+    expect(pace.isVisible()).toBe(true);
     expect(panel.attributes('inert')).toBeUndefined();
     await b.get('button[aria-expanded]').trigger('click');
-    expect(panel.classes()).toContain('grid-rows-[0fr]');
-    expect(panel.attributes('inert')).toBeDefined();
+    expect(b.get('[data-test="balance-tile"]').classes()).toContain('col-span-full');
+    for (const tile of [pace, panel]) {
+      expect(tile.element.isConnected).toBe(true);
+      expect(tile.isVisible()).toBe(false);
+      expect(tile.attributes('inert')).toBeDefined();
+    }
+  });
+
+  it('«Month»: the title, then the month\'s result under the bars, in green above zero', async () => {
+    const b = await mountBlock();
+    const panel = b.get('[data-test="panel"]');
+    expect(panel.find('h3').text()).toBe('Месяц');
+    const result = panel.get('[data-test="month-result"]');
+    expect(result.text()).toContain('Итог месяца');
+    expect(result.text()).toContain('+50 ₴');
+    expect(result.find('.text-success').exists()).toBe(true);
+  });
+
+  it('under the stack: the front card\'s free amount', async () => {
+    const b = await mountBlock();
+    expect(b.get('[data-test="free-line"]').text()).toContain('100 ₴');
+  });
+});
+
+describe('free line', () => {
+  it('money above the reserves: the free part as the bar — the family card too', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    expect(freeLineOf({ ...total, card: { ...total.card, reserved: '40 ₴' }, split: { own: 100_00, reserved: 40_00 } })).toEqual({
+      free: '100 ₴', negative: false, reserved: '40 ₴', share: 60, short: false,
+    });
+  });
+
+  it('reserves above the money: short, the bar is the part the money covers; money below zero covers nothing', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    const short = { ...total, card: { ...total.card, amount: '−20 ₴', negative: true, reserved: '80 ₴' } };
+    expect(freeLineOf({ ...short, split: { own: 60_00, reserved: 80_00 } })).toEqual({ free: '−20 ₴', negative: true, reserved: '80 ₴', share: 75, short: true });
+    expect(freeLineOf({ ...short, split: { own: -10_00, reserved: 80_00 } })?.share).toBe(0);
+  });
+
+  it('no reserve: no bar; an account: its own funds; a dim card: nothing', async () => {
+    const { freeLineOf } = await import('@/features/balances/utils.ts');
+    const total = slide('family', 'Семья');
+    expect(freeLineOf(total)).toEqual({ free: '100 ₴', negative: false, reserved: null, share: null, short: false });
+    expect(freeLineOf({ ...total, card: { ...total.card, dim: true } })).toBeNull();
+    expect(freeLineOf(null)).toBeNull();
   });
 });
 

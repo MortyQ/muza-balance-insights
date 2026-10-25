@@ -1,0 +1,20 @@
+// copied from muzakit/libs/ui/src (2026-10-22); changes: ui/README.md
+// ── Sidebar Context ────────────────────────────────────────────────────────
+// The #subtitle-block slot: a workspace or account switcher between the brand
+// and the menu. Same side padding as the nav, so the slot lines up with the
+// rows under it in both widths.
+
+.sidebar-context {
+  flex-shrink: 0;
+  padding: 0 var(--ui-space-lg) var(--ui-space-sm);
+}
+
+.sidebar--collapsed .sidebar-context {
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar-mobile-context {
+  flex-shrink: 0;
+  padding: var(--ui-space-md) var(--ui-space-lg) 0;
+}
