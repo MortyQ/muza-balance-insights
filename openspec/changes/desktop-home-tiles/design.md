@@ -35,6 +35,12 @@ cross-slice state for no gain; nested grids per feature — cannot interleave ti
 
 ### 2. Breakpoints by the grid's own width
 
+Revised after a live check (2026-10-25): in the two-column range «Balance» spanned the whole row and its 466 px stack
+stood alone in it. Now, by the grid's width: under 65rem «Balance», «Month pace» and «Month» take a row each; 65–79rem
+«Balance» and «Month» share the first row and «Month pace» takes the second (the chart gains from the width); from
+79rem the three share one row as before. 65rem = two columns that each hold the stack and the tile's padding. The
+other tiles keep their two-column steps from 47rem. The text below is the first version, kept for the record.
+
 Container query on the grid: ≥ 74rem — three columns as above; 47–74rem — two columns (`bal bal` / `pace month` /
 `today week` / `unusual unusual` / `spend spend` / `people recurring`); below — one column in the same order. The
 existing `PACE_MIN` / `PANEL_MIN` constants of `features/balances` give way to these steps; the absolute positioning in

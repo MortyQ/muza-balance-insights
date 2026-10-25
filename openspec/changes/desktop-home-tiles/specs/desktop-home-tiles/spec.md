@@ -10,6 +10,15 @@ teaser beside it. Tiles SHALL NOT sit inside another tile. Tiles of one row SHAL
 - **WHEN** home is open on a window wide enough for three tiles in a row
 - **THEN** the first row shows «Balance», «Month pace» and «Month» side by side, and the card stack is the first tile
 
+#### Scenario: Medium window
+- **WHEN** the window is too narrow for three tiles in a row but wide enough for the card stack and «Month» side by side
+- **THEN** the first row shows «Balance» and «Month», and «Month pace» takes the whole next row
+
+#### Scenario: Balance never stands alone in a wide row
+- **WHEN** «Balance» is folded
+- **THEN** it never takes a whole row while another tile could sit beside it; below the width where the stack and
+  «Month» fit side by side, «Balance», «Month pace» and «Month» each take a whole row
+
 #### Scenario: Narrow window
 - **WHEN** the window is narrowed until three tiles no longer fit
 - **THEN** the tiles reflow into fewer columns in the same order, and no tile is cut or overlaps another
