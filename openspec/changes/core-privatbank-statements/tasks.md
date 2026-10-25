@@ -11,16 +11,16 @@
 
 ## 3. PrivatBank provider and reader (core)
 
-- [ ] 3.1 Add `privatbank` to `PROVIDER_IDS`, `providers/privatbank/info.ts` and its line in `PROVIDERS`; verify conformance info checks
-- [ ] 3.2 `providers/privatbank/statement.ts` (design 2–4), line in `STATEMENT_READERS`; verify with `tests/providers/privatbank/statement.test.ts` (fictional rows: two cards, foreign currency, fee rows, bad date, Excel serial date, trailing empty rows, title-less file)
-- [ ] 3.3 Conformance fixtures `tests/providers/privatbank/fixtures/conformance/*.document.json` + `*.expected.json`; verify the conformance suite and `purity`, `layers` tests
+- [x] 3.1 Add `privatbank` to `PROVIDER_IDS`, `providers/privatbank/info.ts` and its line in `PROVIDERS`; verify conformance info checks
+- [x] 3.2 `providers/privatbank/statement.ts` (design 2–4), line in `STATEMENT_READERS`; verify with `tests/providers/privatbank/statement.test.ts` (fictional rows: two cards, foreign currency, fee rows, bad date, Excel serial date, trailing empty rows, title-less file)
+- [x] 3.3 Conformance fixtures `tests/providers/privatbank/fixtures/conformance/*.document.json` + `*.expected.json`; verify the conformance suite and `purity`, `layers` tests
 
 ## 4. PrivatBank rules (core)
 
-- [ ] 4.1 `providers/privatbank/categories.ts`, `descriptions.ts`, `rules.ts` (design 5, 8), line in `PROVIDER_RULES`; verify `tests/providers/privatbank/rules.test.ts`
-- [ ] 4.2 Masking templates (design 6); verify masking cases in `rules.test.ts`
-- [ ] 4.3 A derivation test: a fictional Monobank debit and PrivatBank credit with a withheld fee pair as a cross-bank transfer, the fee under transfer fees
-- [ ] 4.4 PrivatBank and the category tables in `.agents/project/core-providers.md` and the «Add a bank» procedure of `.agents/skills/core-architecture`
+- [x] 4.1 `providers/privatbank/categories.ts`, `descriptions.ts`, `rules.ts` (design 5, 8), line in `PROVIDER_RULES`; verify `tests/providers/privatbank/rules.test.ts`
+- [x] 4.2 Masking templates (design 6); verify masking cases in `rules.test.ts`
+- [x] 4.3 A derivation test: a fictional Monobank debit and PrivatBank credit with a withheld fee pair as a cross-bank transfer, the fee under transfer fees
+- [x] 4.4 PrivatBank and the category tables in `.agents/project/core-providers.md` and the «Add a bank» procedure of `.agents/skills/core-architecture`
 
 ## 5. Desktop
 

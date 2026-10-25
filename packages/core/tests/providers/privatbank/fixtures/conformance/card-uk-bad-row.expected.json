@@ -1,0 +1,8 @@
+{
+  "reader": "privatbank-card-uk",
+  "result": {
+    "ok": false,
+    "problem": "bad-row",
+    "row": 4
+  }
+}

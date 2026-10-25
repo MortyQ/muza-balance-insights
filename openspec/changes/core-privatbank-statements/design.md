@@ -47,8 +47,9 @@ transfers, fees and categories come out right; nothing domain-side changes.
 3. **Rows.** Time: `dd.MM.yyyy HH:mm:ss` string in Kyiv time (as Monobank's `parseTime`); a number cell is read as an
    Excel serial in Kyiv time too, since the backlog notes that the decoder keeps serials. Amount = E in minor units of
    F; `currencyCode` = H; `operationAmount` = G with E's sign; `balance` = I (in J's currency, which must equal F);
-   `bankCategory` = B; `description` = D; no `mcc`. `commissionRate` = |E| − G when F = H and they differ, in F's
-   minor units. `raw` = the row as an object keyed by header, as Monobank does. A row with all cells empty is skipped;
+   `bankCategory` = B; `description` = D; no `mcc`. `commissionRate` = |E| − G for a debit when F = H and |E| > G, in F's minor
+   units; a credit gets none (a withheld fee on a transfer from another bank of the user is the cross-bank pairing's
+   `transfer_fee`; a commission on the credit too would count it twice). `raw` = the row as an object keyed by header, as Monobank does. A row with all cells empty is skipped;
    any other unreadable row → `bad-row` with its sheet row number.
 
 4. **Grouping.** Rows grouped by C; each group is one `ParsedStatement` (`account: { iban: null, cards: [C], type:

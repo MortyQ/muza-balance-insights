@@ -58,12 +58,17 @@ file with its row number.
 - **THEN** the file is refused with the bad-row code and that row's number
 
 ### Requirement: The bank's transfer fee is kept
-When a row's card-currency amount and operation amount are in one currency and differ, the difference SHALL be kept as
-the row's commission, and the card-currency amount SHALL stay the amount that counts.
+When a debit's card-currency amount is larger than its operation amount in the same currency, the difference SHALL be
+kept as the row's commission. A credit SHALL keep the amount it brought, with no commission: a fee withheld from a
+transfer between the user's banks is counted once, by the transfer pairing.
+
+#### Scenario: An outgoing transfer with a fee on top
+- **WHEN** a debit's card amount is larger than its operation amount in the same currency
+- **THEN** the row's commission is the difference, counted under bank fees
 
 #### Scenario: An incoming transfer with a fee withheld
-- **WHEN** an incoming transfer's card amount is smaller than its operation amount in the same currency
-- **THEN** the row's amount is the card amount and its commission is the difference
+- **WHEN** a credit's card amount is smaller than its operation amount in the same currency
+- **THEN** the row's amount is the card amount and it has no commission
 
 ### Requirement: Transfers and own transfers are recognised
 Rows of the bank's transfer categories SHALL be transfer-like. Rows whose service text names a transfer to or from the

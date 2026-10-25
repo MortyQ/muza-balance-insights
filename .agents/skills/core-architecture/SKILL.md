@@ -72,11 +72,13 @@ Core (`packages/core`):
    - `info.ts`: `<id>Info` (`ProviderInfo`): the brand name; `access` (`token: { credential, api } | null`, `file`);
      `ids: 'prefixed'` (only Monobank is `'bare'`); `cardTypes`, `defaultCardType`. It imports only `../types.ts` and
      its own `constants.ts`.
+   - `categories.ts`: `BANK_CATEGORIES`, the bank's own categories → common hints (`null` = known, decided by the
+     rules); empty for a bank that states none. `knowsBankCategory` in the rules reads it.
    - `rules.ts`: `<id>Rules` (`ProviderRules`), pure. Rows may have no MCC (`mcc: null`) and a bank category
      (`bankCategory`): `categoryHint` maps it to one of `CATEGORY_HINTS`. New masking templates in `maskDescription`
      change what reaches the analysis copy: only after the user's ok (root `CLAUDE.md`).
    - `statement.ts` (a bank with files): `readers: StatementReader[]`, pure, one per kind of file, reading the
-     `StatementDocument` (`text`, `sheets` or `pdf`), never bytes.
+     `StatementDocument` (`text`, `sheets` or `pdf`), never bytes, on the helpers of `providers/statement-kit.ts`.
    - `client.ts` (a bank with an API): network, pages, 429, through `src/providers/ratelimit.ts`.
 3. Add one line to each registry: `PROVIDERS` in `src/providers/info.ts`, `PROVIDER_RULES` in `src/providers/rules.ts`,
    and (with files) `STATEMENT_READERS` in `src/providers/statements.ts`.
