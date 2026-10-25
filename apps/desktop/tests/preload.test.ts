@@ -7,7 +7,11 @@ const exposed: Array<[string, any]> = [];
 const invoked: unknown[][] = [];
 const listeners = new Map<string, Function>();
 
+const dropped = new Map<unknown, string>();
+
 vi.mock('electron', () => ({
+  // A File the user dropped has its path; one made by script has none.
+  webUtils: { getPathForFile: (file: unknown) => dropped.get(file) ?? '' },
   contextBridge: { exposeInMainWorld: (key: string, api: unknown) => exposed.push([key, api]) },
   ipcRenderer: {
     invoke: async (...a: unknown[]) => (invoked.push(a), 'ok'),
@@ -41,6 +45,18 @@ describe('preload API', () => {
     expect(invoked).toEqual([
       ['balance:startImport', '2026-01-01'],
       ['balance:setConnectionToken', 1, 't'.repeat(30), true],
+    ]);
+  });
+
+  it('openDroppedStatement takes a File and sends main its path; a File made by script sends an empty one', async () => {
+    const api = exposed[0]![1];
+    const file = { name: 'Вигадана.xlsx' };
+    dropped.set(file, '/Users/someone/Вигадана.xlsx');
+    await api.openDroppedStatement(file);
+    await api.openDroppedStatement({ name: 'made-by-script.csv' });
+    expect(invoked).toEqual([
+      ['balance:openDroppedStatement', '/Users/someone/Вигадана.xlsx'],
+      ['balance:openDroppedStatement', ''],
     ]);
   });
 

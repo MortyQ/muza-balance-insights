@@ -303,3 +303,55 @@ describe('StatementsService', () => {
     expect(await svc.commit(opened.statementId, [{ kind: 'new', type: null }])).toEqual({ written: true, added: 5 });
   });
 });
+
+describe('StatementsService: a file from the data screens', () => {
+  it('openAny names the bank, keeps the file unassigned; assign gives the connection view; then compare and write', async () => {
+    const conn = await fileConnection();
+    const { svc, picked } = harness();
+    const opened = await svc.openAny();
+    expect(opened).toEqual({ opened: true, statementId: expect.any(String), provider: 'monobank' });
+    // Every bank's statement extensions, once each.
+    expect(picked[0]).toEqual(['csv', 'xlsx']);
+    expect(new Set(picked[0]).size).toBe(picked[0]!.length);
+    if (!opened.opened) throw new Error('not opened');
+    await expect(svc.compare(opened.statementId, [null])).rejects.toThrow(/No connection assigned/);
+    await expect(svc.commit(opened.statementId, [{ kind: 'new', type: 'black' }])).rejects.toThrow(/No connection assigned/);
+
+    expect(await svc.assign(opened.statementId, conn)).toEqual({
+      opened: true,
+      statementId: opened.statementId,
+      statements: [{ currencyCode: 980, rows: 5, from: '2026-10-03', to: '2026-10-07', type: null, cardTail: null, accounts: [] }],
+    });
+    expect(await svc.commit(opened.statementId, [{ kind: 'new', type: 'black' }])).toEqual({ written: true, added: 5 });
+  });
+
+  it("another bank's connection is refused; an unknown statement or a late one is expired", async () => {
+    const conn = await fileConnection();
+    const h = harness();
+    const opened = await h.svc.openAny();
+    if (!opened.opened) throw new Error('not opened');
+    expect(await h.svc.assign('00000000-0000-4000-8000-999999999999', conn)).toEqual({ opened: false, reason: 'expired' });
+    const { integrations } = services(db, dir);
+    const other = await integrations.addConnection({ participant: { label: 'Вигадана Особа' }, provider: 'privatbank', method: 'file' });
+    if (!other.added) throw new Error('not added');
+    expect(await h.svc.assign(opened.statementId, other.connectionId)).toMatchObject({ opened: false, reason: 'problem', problem: 'other-bank' });
+    h.advance(STATEMENT_KEEP_MS + 1);
+    expect(await h.svc.assign(opened.statementId, conn)).toEqual({ opened: false, reason: 'expired' });
+  });
+
+  it('a dropped path: read without a dialog; a directory or a symbolic link is refused unread', async () => {
+    const { svc, picked } = harness();
+    expect(await svc.openAny(path.join(FIXTURES, 'statement-card-uk.csv'))).toMatchObject({ opened: true, provider: 'monobank' });
+    expect(picked).toEqual([]);
+    expect(await svc.openAny(dir)).toMatchObject({ opened: false, problem: 'unreadable' });
+    const link = path.join(dir, 'link.csv');
+    fs.symlinkSync(path.join(FIXTURES, 'statement-card-uk.csv'), link);
+    expect(await svc.openAny(link)).toMatchObject({ opened: false, problem: 'unreadable' });
+    expect(await svc.openAny(path.join(dir, 'missing.csv'))).toMatchObject({ opened: false, problem: 'unreadable' });
+  });
+
+  it('a cancelled dialog keeps nothing', async () => {
+    const { svc } = harness({ file: null });
+    expect(await svc.openAny()).toEqual({ opened: false, reason: 'cancelled' });
+  });
+});

@@ -2,13 +2,13 @@
 
 ## 1. Main and the contract
 
-- [ ] 1.1 `openAnyStatement(source)` and `assignStatement` in `StatementsService` with `connectionId: number | null` kept; compare/commit refuse an unassigned statement; verify `tests/statements.test.ts` cases (one / several / no connection, token-only bank, another bank's file, expired)
-- [ ] 1.2 IPC methods in `channels.ts`, `api.ts`, `ipc-args.ts`, gates in main; read-cache placement in `shared/api/methods.ts`; verify `tests/ipc*.test.ts`, `renderer/read-cache.test.ts`
+- [x] 1.1 `openAnyStatement(source)` and `assignStatement` in `StatementsService` with `connectionId: number | null` kept; compare/commit refuse an unassigned statement; verify `tests/statements.test.ts` cases (one / several / no connection, token-only bank, another bank's file, expired)
+- [x] 1.2 IPC methods in `channels.ts`, `api.ts`, `ipc-args.ts`, gates in main; read-cache placement in `shared/api/methods.ts`; verify `tests/ipc*.test.ts`, `renderer/read-cache.test.ts`
 
 ## 2. The drop
 
-- [ ] 2.1 Preload `dropStatement(file)` through `webUtils.getPathForFile`; main accepts a path only for `source: 'drop'`, regular files only; verify a preload test and a main test with a directory and a symlink
-- [ ] 2.2 `.agents/project/desktop-security.md`: the dropped file's way to main
+- [x] 2.1 Preload `dropStatement(file)` through `webUtils.getPathForFile`; main accepts a path only for `source: 'drop'`, regular files only; verify a preload test and a main test with a directory and a symlink
+- [x] 2.2 `.agents/project/desktop-security.md`: the dropped file's way to main
 
 ## 3. Renderer
 
