@@ -3,18 +3,13 @@
 // API's. The English statement translates those texts (`From: …`): recognised and refused as `language`, the rules
 // would miss them. The FOP statement (a title line with the holder and the IBAN above the columns) is recognised and
 // not supported yet. The card statement states neither the IBAN nor the card number.
-import { TZDate } from '@date-fns/tz';
-import { TIMEZONE } from '../../shared/constants.ts';
-import { parseCsv } from '../../shared/csv.ts';
 import { currencyNumeric } from '../../shared/currency.ts';
 import { toMinor } from '../../shared/money.ts';
+import { columnsByHeader, gridOf, normHeader as norm, wallTime } from '../statement-kit.ts';
 import type { NormalizedTx, StatementDocument, StatementReadResult, StatementReader } from '../types.ts';
 
 /** A cell the statement leaves empty: an em dash, or nothing. */
 const ABSENT = new Set(['—', '']);
-
-/** Column names compared in one shape: lower case, one space, the Latin «i» the bank may type as the word «і». */
-const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim().replace(/(?<= )i(?= )/g, 'і');
 
 type Field = 'time' | 'description' | 'mcc' | 'amount' | 'operationAmount' | 'operationCurrency' | 'rate' | 'commission' | 'cashback' | 'balance';
 
@@ -35,32 +30,18 @@ const CARD_UK: ReadonlyArray<{ field: Field; re: RegExp }> = [
 /** The English card statement starts with this column. */
 const CARD_EN_FIRST = norm('Date and time');
 
-const TIME_RE = /^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$/;
-
-/** `dd.MM.yyyy HH:mm:ss` in Kyiv time → unix seconds; null if not a real moment. */
-function parseTime(s: string): number | null {
-  const m = TIME_RE.exec(s.trim());
-  if (!m) return null;
-  const [d, mo, y, h, mi, se] = m.slice(1).map(Number) as [number, number, number, number, number, number];
-  const t = new TZDate(y, mo - 1, d, h, mi, se, TIMEZONE);
-  if (t.getFullYear() !== y || t.getMonth() !== mo - 1 || t.getDate() !== d || t.getMinutes() !== mi || t.getSeconds() !== se) return null;
-  return Math.floor(t.getTime() / 1000);
-}
+/** `dd.MM.yyyy HH:mm:ss` in Kyiv time → unix seconds; null if not a real moment (the seconds are always stated). */
+const parseTime = (s: string) => (/^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}:\d{2}$/.test(s.trim()) ? wallTime(s) : null);
 
 type Columns = Record<Field, number> & { currencyCode: number };
 
 function cardColumns(header: readonly string[]): Columns | null {
-  const names = header.map(norm);
-  const out: Partial<Record<Field, number>> = {};
-  let currencyCode: number | null = null;
-  for (const { field, re } of CARD_UK) {
-    const i = names.findIndex((n) => re.test(n));
-    if (i < 0) return null;
-    out[field] = i;
-    if (field === 'amount') currencyCode = currencyNumeric(re.exec(names[i] ?? '')?.[1] ?? '');
-  }
+  const found = columnsByHeader(header, CARD_UK);
+  if (!found) return null;
+  const currencyCode = currencyNumeric(found.amount.match[1] ?? '');
   if (currencyCode === null) return null;
-  return { ...(out as Record<Field, number>), currencyCode };
+  const out = Object.fromEntries(Object.entries(found).map(([f, c]) => [f, (c as { index: number }).index])) as Record<Field, number>;
+  return { ...out, currencyCode };
 }
 
 function readRow(cells: readonly string[], header: readonly string[], c: Columns): Omit<NormalizedTx, 'id'> | null {
@@ -98,14 +79,7 @@ function readRow(cells: readonly string[], header: readonly string[], c: Columns
 }
 
 /** The document's CSV table, or null when it is not text or not CSV. */
-function tableOf(doc: StatementDocument): string[][] | null {
-  if (doc.format !== 'text') return null;
-  try {
-    return parseCsv(doc.text);
-  } catch {
-    return null;
-  }
-}
+const tableOf = (doc: StatementDocument) => (doc.format === 'text' ? gridOf(doc) : null);
 
 /** The FOP statement's title line names the account's IBAN. */
 const FOP_TITLE_RE = /\bUA\d{27}\b/;
