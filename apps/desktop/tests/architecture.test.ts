@@ -4,14 +4,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { importsOf, violations } from './helpers/architecture.ts';
+import { coreInfoViolations, importsOf, violations } from './helpers/architecture.ts';
 
 const root = fileURLToPath(new URL('../src/renderer/src', import.meta.url));
+const coreRoot = fileURLToPath(new URL('../../../packages/core/src', import.meta.url));
 
-function tree(): Map<string, string> {
+function tree(dir = root): Map<string, string> {
   const files = new Map<string, string>();
-  for (const f of fs.readdirSync(root, { recursive: true, encoding: 'utf8' })) {
-    const abs = path.join(root, f);
+  for (const f of fs.readdirSync(dir, { recursive: true, encoding: 'utf8' })) {
+    const abs = path.join(dir, f);
     if (fs.statSync(abs).isFile() && /\.(ts|vue)$/.test(f)) files.set(f.split(path.sep).join('/'), fs.readFileSync(abs, 'utf8'));
   }
   return files;
@@ -113,5 +114,36 @@ describe('renderer architecture', () => {
       '// copied from muzakit (a comment, not an import)',
     ].join('\n');
     expect(importsOf(text).sort()).toEqual(['x1', 'x2', 'x3', 'x4', 'x5']);
+  });
+
+  describe('the bank registry the renderer imports (@mono/core/providers/info)', () => {
+    it('loads only the contract, the registry and each bank\'s info and constants', () => {
+      expect(violations(ok({ 'entities/bank/u.ts': "import { PROVIDERS } from '@mono/core/providers/info';\n" }))).toEqual([]);
+      expect(coreInfoViolations(tree(coreRoot))).toEqual([]);
+    });
+
+    const core = (extra: Record<string, string>) =>
+      new Map(
+        Object.entries({
+          'providers/types.ts': 'export const PROVIDER_IDS = [];\n',
+          'providers/info.ts': "import { xInfo } from './x/info.ts';\nimport type { ProviderId } from './types.ts';\n",
+          'providers/x/info.ts': "import type { ProviderInfo } from '../types.ts';\nimport { LIMIT } from './constants.ts';\n",
+          'providers/x/constants.ts': 'export const LIMIT = 1;\n',
+          ...extra,
+        }),
+      );
+
+    it('the checker passes a correct registry', () => {
+      expect(coreInfoViolations(core({}))).toEqual([]);
+    });
+
+    it.each([
+      ["a bank's info imports its rules", { 'providers/x/info.ts': "import { r } from './rules.ts';\n", 'providers/x/rules.ts': '' }, 'providers/x/rules.ts: reached from'],
+      ['the registry imports a reader', { 'providers/info.ts': "import { s } from './statements.ts';\n", 'providers/statements.ts': '' }, 'providers/statements.ts: reached from'],
+      ['constants import the shared layer', { 'providers/x/constants.ts': "import { m } from '../../shared/money.ts';\n", 'shared/money.ts': '' }, 'shared/money.ts: reached from'],
+      ['a package', { 'providers/x/constants.ts': "import { z } from 'zod';\n" }, 'imports a package'],
+    ])('fails when %s', (_name, extra, message) => {
+      expect(coreInfoViolations(core(extra)).join('\n')).toContain(message);
+    });
   });
 });

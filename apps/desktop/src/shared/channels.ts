@@ -1,5 +1,5 @@
 // The whole renderer ↔ main surface. No dependencies: the sandboxed preload bundles this file as is.
-// Adding a method = one line here + a zod schema in src/main/ipc.ts (typecheck enforces both) + a handler.
+// Adding a method = one line here + a zod schema in src/shared/ipc-args.ts (typecheck enforces both) + a handler.
 
 export const METHODS = [
   'listPeople',

@@ -6,8 +6,8 @@ import { cliArgs } from '../src/args.ts';
 import { refreshAnalysisCopy } from '../src/analysis/refresh.ts';
 import { loadConfig } from '../src/config.ts';
 import { openDb } from '../src/db.ts';
-import { rescope } from '@mono/core/scope';
-import { SETTING_DEFAULTS, SETTING_KEYS, SettingsError, getSettings, setSetting } from '@mono/core/settings';
+import { rescope } from '@mono/core/derive/scope';
+import { SETTING_DEFAULTS, SETTING_KEYS, SettingsError, getSettings, setSetting } from '@mono/core/people/settings';
 
 const USAGE = ['pnpm --filter @mono/mcp settings:list', `pnpm --filter @mono/mcp settings:set <${SETTING_KEYS.join('|')}> on|off`].join('\n');
 

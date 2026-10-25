@@ -59,12 +59,10 @@ export interface SummaryCardProps {
   dim: boolean;
 }
 
-/** Banks with their own account card; a new bank needs a skin in BANK_CARDS. */
-export type CardBank = 'monobank';
-
 /** What a bank's skin takes. */
 export type BankCardProps = CardFigures;
 
 export interface AccountCardProps extends CardFigures {
-  bank: CardBank;
+  /** The account's provider id: its skin in BANK_CARDS, else the neutral card. */
+  bank: string;
 }

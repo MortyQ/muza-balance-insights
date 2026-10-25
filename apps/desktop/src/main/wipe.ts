@@ -36,7 +36,8 @@ export type WipeDeps = {
   confirm: () => Promise<boolean>;
   tokens: { clearAll(): Promise<void> };
   importer: { stop(): Promise<void> };
-  data: { close(): Promise<void> };
+  /** The data process: closed, and its exit waited for, before the database files go. */
+  data: { stop(): Promise<void> };
   userDataDir: string;
   log: (msg: string) => void;
 };
@@ -46,7 +47,7 @@ export async function deleteAllData(d: WipeDeps): Promise<{ deleted: boolean }> 
   await d.tokens.clearAll();
   for (const f of KEY_FILES) await fs.promises.rm(path.join(d.userDataDir, f), { force: true });
   await d.importer.stop();
-  await d.data.close();
+  await d.data.stop();
   for (const f of OTHER_FILES) await fs.promises.rm(path.join(d.userDataDir, f), { force: true });
   for (const f of APP_DIRS) await fs.promises.rm(path.join(d.userDataDir, f), { recursive: true, force: true });
   for (const f of LOCK_FILES) await fs.promises.rm(path.join(d.userDataDir, f), { force: true });

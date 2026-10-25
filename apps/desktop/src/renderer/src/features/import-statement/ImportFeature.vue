@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, useTemplateRef, watch } from 'vue';
 import { IMPORT_PRESETS, importFloor, isImportFrom, monthsBefore } from '@contract/import-range.ts';
-import { MONOBANK } from '@/entities/bank';
+import { BANKS } from '@/entities/bank';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useParticipantStore } from '@/entities/participant';
 import { useMonthStore } from '@/entities/period';
@@ -29,6 +29,10 @@ const userRunning = computed(() => importProgress.running && !importProgress.aut
 const line = computed(() => (importProgress.auto ? autoLine : progressLine)(importProgress.progress, Date.now()));
 const percent = computed(() => (importProgress.auto ? null : windowsPercent(importProgress.progress)));
 const failures = computed(() => failureLines(importProgress.progress, participant.labelOf));
+// One import for every token connection: the list is headed by the banks it reads.
+const tokenBanks = BANKS.filter((b) => b.ways.includes('token'))
+  .map((b) => b.name)
+  .join(' · ');
 
 const presetOptions = computed<SegmentOption<number>[]>(() => IMPORT_PRESETS.map((n) => ({ label: t('home.import.depthMonths', { n }), value: n })));
 // 0 = a date picked in the calendar: no quick pick is highlighted.
@@ -66,8 +70,7 @@ onMounted(() => {
   <div ref="root" tabindex="-1" class="scroll-mt-6 outline-none">
     <!-- Focusable so a link from home lands here (focus). -->
     <SettingsSection :title="$t('home.import.title')" :description="$t('home.import.description')" :note="$t('home.import.about')">
-      <!-- The import is Monobank's for now: one list per bank once there are more. -->
-      <SettingsList :heading="$t(MONOBANK.name)">
+      <SettingsList :heading="tokenBanks">
         <div class="flex flex-col gap-3 px-4 py-3">
           <span class="font-semibold">{{ $t('home.import.period') }}</span>
           <VSegmentedControl v-model="preset" :options="presetOptions" :disabled="userRunning" full-width />

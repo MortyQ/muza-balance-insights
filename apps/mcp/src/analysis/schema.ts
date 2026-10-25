@@ -26,7 +26,7 @@ export const ANALYSIS_SCHEMA = {
     { name: 'account_id', type: 'TEXT' },
     { name: 'time', type: 'INTEGER' },
     { name: 'local_date', type: 'TEXT' },
-    { name: 'description', type: 'TEXT' }, // masked, see src/masking.ts
+    { name: 'description', type: 'TEXT' }, // masked, see packages/core/src/read/masking.ts
     { name: 'desc_class', type: 'TEXT' }, // derived from the raw description's shape
     { name: 'mcc', type: 'INTEGER' },
     { name: 'original_mcc', type: 'INTEGER' },
@@ -39,7 +39,7 @@ export const ANALYSIS_SCHEMA = {
     { name: 'balance', type: 'INTEGER' },
     { name: 'has_counter', type: 'INTEGER' }, // counter_name IS NOT NULL; the name itself is never read
     { name: 'category', type: 'TEXT' },
-    { name: 'scope', type: 'TEXT' }, // personal | business (src/scope.ts)
+    { name: 'scope', type: 'TEXT' }, // personal | business (packages/core/src/derive/scope.ts)
     { name: 'is_internal_transfer', type: 'INTEGER' },
     { name: 'transfer_rule', type: 'TEXT' }, // pair / pair_fx / pair_fee / jar_reversal / iban / text / family
     { name: 'transfer_pair_id', type: 'TEXT' }, // id of the other half (a transaction id, not a counterparty)

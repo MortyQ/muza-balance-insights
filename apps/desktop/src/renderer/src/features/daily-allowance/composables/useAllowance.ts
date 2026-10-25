@@ -21,13 +21,15 @@ export function useAllowance(): UseAllowanceReturn {
   const { today } = storeToRefs(useMonthStore());
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return id !== null ? { participantId: id } : {};
+  };
   const { state, reload } = useAsyncData(
-    () => {
-      const id = participantId();
-      return api.fetchAllowance(id !== null ? { participantId: id } : {});
-    },
+    () => api.fetchAllowance(query()),
     [participantId],
-    { quiet: [() => syncStatus.version, today] },
+    { quiet: [() => syncStatus.version, today], cached: () => api.peekAllowance(query()) },
   );
 
   const fmt = useMoneyFormat(() => state.value.data?.rates);

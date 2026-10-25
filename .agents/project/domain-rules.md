@@ -5,20 +5,30 @@
 ## Принятые решения
 
 - Холды: soft-delete через `is_cancelled`, строки не удаляются.
-- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`,
-  `crossingCategories`) are calendar days [from, to] of a time zone (`tz`, `packages/core/src/periods.ts`; absent → Kyiv,
+- Periods (`spendingSummary`, `comparePeriods`, `incomeSummary`, `periodInfo`, `searchTransactions`, `exchangeRates`)
+  are calendar days [from, to] of a time zone (`tz`, `packages/core/src/shared/periods.ts`; absent → Kyiv,
   which the MCP server keeps) and match rows by `time` in [start of `from`, start of the day after `to`). Grouping by
   `day` / `month` reads the zone's own day starts (`periodBuckets` → CTE `buckets`), right across DST. The desktop passes
   the system time zone. `local_date` stays the Kyiv date (the anonymised copy, diagnostics), not used by periods.
 - Банки учитываются, если `balance > 0` ИЛИ для банки есть запись в `sync_state` (авто-правило; выбор пользователя
   `accounts.sync_choice` сильнее — см. ниже).
-- **Выключенный счёт** (`packages/core/src/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
+- **Выключенный счёт** (`packages/core/src/people/accounts.ts`, вариант A) считается чужим: его строк нет ни в тратах, ни в
   доходах, ни в балансах (`getBalances`, `balancesAt`), ни в курсе обменов, ни в поиске, ни в статусе и покрытии
   (`periodInfo`, `getSyncStatus`, `firstDataDate`, покрытие в `listConnections`); строки остаются в базе и возвращаются,
   как только счёт включён. Перевод включённого счёта с выключенным (пара `transfer_pair_id` на выключенном счёте или
-  одиночное совпадение `iban` с ним — `crossesDisabledSql`) — обычная операция: не internal и не `family`, категория —
-  как без пометки перевода (`crossingCategories`: `categorize` в момент запроса, в SQL — CTE `crossing AS MATERIALIZED`
-  из `json_each`), источник дохода — по форме. Разметка и колонки не меняются, rederive не нужен. Перевод без пары,
+  одиночное совпадение `iban` с ним) — обычная операция: не internal и не `family`, категория —
+  как без пометки перевода, источник дохода — по форме. Stored, not computed per query (migration v16,
+  `transactions.crossing_category`, `packages/core/src/derive/derived.ts`): NULL = the row does not cross, otherwise its
+  ordinary category (`categorize` without the transfer mark). Statistics read `COALESCE(t.crossing_category,
+  t.category)` and `t.crossing_category IS NULL`; the transfer marks themselves are not changed. Who keeps it right:
+  `refreshCrossing(db, span?)` compares a fingerprint of the accounts (id, connection, kind, type, currency, title,
+  IBAN, effective enabled flag; `derived_state`) — changed → full derivation, unchanged → only the span given (a
+  committed window), else nothing. Every writer of `accounts` / `sync_state` calls it (`setAccountEnabled`,
+  `syncAccounts`, `commitRows` — the API import and statement uploads; `deleteConnection` through `rederiveCore`),
+  and every opener right after `migrate()` (desktop main, the worker, `apps/mcp` `openDb`); readers never write.
+  `rederiveCore` ends with a full derivation (`rederiveCrossing`, prints nothing). A category override reaches crossing
+  rows with the next recategorize, like every other row. `derived.test.ts` checks that every function writing
+  `accounts` / `sync_state` refreshes. Перевод без пары,
   сделанный уже после выключения (`text`), — тоже обычная операция, если правило провайдера
   (`ownTransferCounterpart`: шаблон банки или её название, «На білу картку» / «З Чорної картки» — тип карты,
   тексты ФОП — тип и валюта) указывает только на выключенные счета того же подключения; текст, который подходит и
@@ -28,13 +38,31 @@
 - P2P-переводы → категория «переводы людям»; оверрайды категории по `counter_name`.
 - Текстовые эвристики распознавания переводов строятся только на основе реальных данных,
   а не на догадках о формате `description`.
-- Внутренние переводы (`packages/core/src/transfers.ts`) размечаются проходом после записи окна, окно расширяется
+- Внутренние переводы (`packages/core/src/derive/transfers.ts`) размечаются проходом после записи окна, окно расширяется
   на N = 20 с в обе стороны. Правила по приоритету: `pair` (одна валюта, точное зеркало, оба MCC 4829),
   `pair_fx` (разные валюты, оба равенства `operation_amount` ↔ `amount`), `jar_reversal` (откат
   автопополнения в той же банке, плюс раньше минуса), `iban`, `text` (служебные шаблоны без пары,
   кроме «Переказ на картку»). После `pair_fx` идёт `pair_fee`: одна валюта,
   `out.amount + out.commission_rate = −in.amount`, комиссия > 0. Пары строго один-к-одному: минимальный Δt,
   при равенстве — id.
+- **Transfers between banks** (`derive/transfers.ts`, the cross-bank pass right after `pair_fee`, only on rows the
+  same-bank rules left free, and only when accounts of two providers exist): a debit and a credit of accounts of
+  different providers, one currency, both transfer-like by their own provider's rules, the credit 0–180 s after the
+  debit (`CROSS_BANK_WINDOW_SEC`; banks take longer than Monobank's 0–14 s), the debit larger by `d ≥ 0` with
+  `100·d ≤ 5·credit` (`CROSS_BANK_FEE_PERCENT`, integers only). Greedy, one-to-one: nearest, then the smallest
+  difference, then ids. `d = 0` → `pair`, else `pair_fee`; between two participants `family`, as any pair. The debit
+  stores `transfer_fee = d − commission_rate` when positive (migration v17): the fee the banks took without stating it;
+  a row that loses the pair loses the fee. With two providers `markInternalTransfers` looks 180 s around a span
+  instead of 20 s (its returned span, and so `deriveSpan`'s, widens with it); with Monobank alone nothing changes.
+  - In the figures (`spendingLinesSql`): the implicit fee is its own line, `kind` `transfer_fee`, in the category
+    «комиссии за переводы» (`CATEGORY.transferFees`, derived-only, never on a row, no override), in every view — the
+    whole family's too; the body is `amount + commission + transfer_fee` and is excluded for internal and (whole family)
+    family rows as before; a stated commission stays «комиссии банка». A pair with a disabled account counts whole:
+    no fee line. Grouped by MCC or operation currency the fee line is under `COMMISSION_KEY`.
+  - No absolute floor: a small transfer whose fee is above 5% is not paired and counts as spending and income, the safe
+    failure. Real fee data decides whether a floor is needed (`docs/backlog.md`).
+  - Tests: `tests/derive/cross-bank-transfers.test.ts`, `tests/read/cross-bank-aggregates.test.ts`, the two-bank case
+    of `tests/derive/derived-equivalence.test.ts` (a fictional second bank added by mocks).
 - Шаблоны описаний Monobank — один источник в `packages/core/src/providers/monobank/descriptions.ts`, их используют и
   маскировка, и разметка (через правила провайдера).
 - «Щомісячний платіж» → «рассрочки и кредиты», не internal. Двойного счёта с исходной покупкой нет
@@ -49,7 +77,7 @@
   возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
-  в `packages/core/src/summaries.ts` (`spendingByCategory` в `packages/core/src/queries.ts` — обёртка).
+  в `packages/core/src/read/spending.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).
 - `purchases` (spendingSummary, per group and per currency total): spending lines with `amount < 0`; a refund is not an
   operation, a commission is its own line («Bank fees»). `lines` counts every line, refunds included.
 - `spendingSummary` also groups by `day` (a day of the period's zone) — internal: not in `SPENDING_GROUP_BY`, so the MCP tools
@@ -60,13 +88,33 @@
 - `spendingGrid` (category × day or month of the period's zone, one query over `spendingLinesSql` + `SPENDING_LINE_SQL`,
   so per currency its cells add up to `spendingSummary`'s groups) and `incomeSummary` `groupBy: 'day'` — internal, for the
   desktop's analytics screen only (not in `SPENDING_GROUP_BY` / `INCOME_GROUP_BY`, the MCP tools do not offer them).
+- `groupBy: 'participant'` of `spendingSummary` / `incomeSummary` — internal too, for the desktop's per-person cards:
+  one group per participant (key = the id), each with the participant view's rules (family transfers count; every row
+  belongs to its account owner), so each group equals that participant's own call. The family total is not their sum.
+- Derivation after a write (`packages/core/src/derive/rederive.ts`): `deriveSpan(db, span)` — transfers and refunds look
+  around the span for partners, then categories, scope and crossing run over everything they touched. `commitRows`
+  runs it per window and reports `span` and `derivationFailed`; a statement upload runs `rederiveCore` only when it
+  failed. `rederiveSpans` (the end of a desktop import) merges the spans and runs `deriveSpan` on each. The stored
+  values must equal a full `rederiveCore`: `tests/derived-equivalence.test.ts`.
 - The desktop converts account currencies at today's Monobank sell rate (main `rates.ts`); core `exchangeRates` (own
   exchanges) now serves only the MCP server.
 - MCC без маппинга (в «другом»): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791 — размытые.
   6012 делится по знаку: зачисления → «поступления», списания → «рассрочки и кредиты».
   8398 → «благотворительность» (донаты в чужие банки через 4829 — позже оверрайдами).
+- **Operations without an MCC** (migration v16 made `transactions.mcc` nullable; `NormalizedTx.mcc` is optional,
+  `RuleTx.mcc` is `number | null`): a missing code is unknown, never 0 or another code. Domain reads go through
+  `numOrNull` / `textOrNull` (`src/shared/sql-values.ts`). The MCC table maps numbers only, so such a row gets the
+  provider's hint, else «другое». `spendingSummary` grouped by `mcc` puts them under `NO_MCC_KEY` (`'none'`), apart
+  from the commission lines (`COMMISSION_KEY`). Monobank's rules never call a row without an MCC a transfer.
+- **The bank's own category** (migration v17, `transactions.bank_category`, `NormalizedTx.bankCategory`,
+  `RuleTx.bankCategory`): stored as the bank states it, and mapped by the provider in `categoryHint`. Hints are the
+  domain categories of `CATEGORY_HINTS` (`providers/types.ts`): every category but «комиссии банка», «свои переводы»
+  and «семье», which only the derivation sets (a compile-time check in `derive/categories.ts`). The order stays
+  internal → family → override → hint → MCC → default, so an override wins over the bank's category, and a corrected
+  mapping applies to stored rows at the next re-derivation. Bank text: the main database only, never the analysis copy
+  (`apps/mcp/tests/analysis.test.ts` carries a canary).
 - Фикстуры тестов — только вымышленные имена и суммы; ничего из реальных данных и отчётов.
-- Остаток на конец месяца (`balancesAt` в `packages/core/src/status.ts`): остаток банка после последней
+- Остаток на конец месяца (`balancesAt` в `packages/core/src/read/status.ts`): остаток банка после последней
   неотменённой операции до конца месяца (`endSec`, исключая саму секунду); если он не сохранён или в последнюю
   секунду покрытия несколько операций — обратный расчёт: текущий остаток минус сумма операций от конца месяца и
   позже. `accounts.balance` — остаток на момент `updated_at` (взят из client-info до выписок), поэтому обратный
@@ -74,7 +122,9 @@
   (ещё не отражённые в этом остатке) в сумму не входят. Покрытие счёта начинается позже конца месяца, или счёта
   нет в `sync_state` вовсе — «нет данных» (`null`). Кредитный лимит истории не имеет — для прошлых месяцев берётся
   текущий.
-- Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/fx.ts`): копейки гривны за минимальную единицу
+  All accounts answer in one statement (per account an index seek for the last operation; the backward sum runs only
+  for an account that needs it); `balancesOf` gives the totals of a part of the answer (one person's accounts).
+- Курс своих обменов (`exchangeRates`, `toUah` в `packages/core/src/read/fx.ts`): копейки гривны за минимальную единицу
   валюты из строк `pair_fx` на гривневых счетах. Продажи валюты; покупки — только если валюту ни разу не продавали.
   В месяце — средний, взвешенный по сумме; иначе ближайший обмен по времени (секунды до границ месяца в его поясе,
   равенство → более ранний), `nearest: true`. Общий для семьи, холды входят, отменённые — нет; обменов нет → курса
@@ -82,7 +132,7 @@
   карт, `CardTotal.fx`); MCP-тулы не меняются.
 
 - Старое название банки в описаниях до августа принимается как есть (пары покрывают такие строки).
-- Возврат с другим MCC (`packages/core/src/refunds.ts`, колонка `refund_pair_id`, не перевод): тот же счёт, зачисление
+- Возврат с другим MCC (`packages/core/src/derive/refunds.ts`, колонка `refund_pair_id`, не перевод): тот же счёт, зачисление
   MCC 4829 не «Від: …», сумма = |покупка|, покупка не 4829, зачисление через 0–15 мин, один-к-одному.
   Возврат получает категорию покупки. Возврат без покупки в периоде считается возвратом как есть.
 - Оверрайды категорий — через `overrides:*` (только пользователь); категория валидируется по списку,
@@ -92,7 +142,7 @@
 
 ## План фазы 4 (пункты 1–2 готовы, 3–4 после фазы 5)
 
-- ✅ Реализовано (миграция v7, `packages/core/src/scope.ts`, `packages/core/src/settings.ts`): `scope = personal | business`, вычисляется
+- ✅ Реализовано (миграция v7, `packages/core/src/derive/scope.ts`, `packages/core/src/people/settings.ts`): `scope = personal | business`, вычисляется
   после категорий (`rescope` в проходах sync и recategorize), в whitelist копии. Возврат берёт scope покупки. Приоритет:
   1. `scope_overrides` — исключения; шаблон сопоставляется с `counter_name`, а если его нет — с исходным
      `description` (у казначейства и 9311/9399 контрагента нет). Заводит пользователь (`scope-overrides:*`);
@@ -114,7 +164,7 @@
   во входе и матчит локально, в ответе маска. Раскрытие — только настройка в `settings`, не параметр тула.
 - `findRecurring`: период 25–35 дней, сумма ±10%, минимум 3 повторения; если валюта операции ≠ валюте счёта —
   сравнивается `operation_amount`.
-- `findRecurring` is implemented (`packages/core/src/recurring.ts`, for the desktop's regular payments screen; carries
+- `findRecurring` is implemented (`packages/core/src/read/recurring.ts`, for the desktop's regular payments screen; carries
   the bank's text like `categoryLines`, never for an MCP tool or the copy). Rows: the spending lines (`spendingLinesSql`,
   bodies with `amount < 0`, holds included). Payee = `counter_iban`, else `counter_edrpou`, else the description
   lower-cased without punctuation and with runs of 3+ digits as `#`; plus the operation currency. A payee's payments
@@ -128,7 +178,7 @@
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
   null)` finds the payee by a payment of the series. The key holds bank text: the table is in this database only (not
   whitelisted for the copy); «Start over» and «Delete all data» lose it like the overrides.
-- ✅ Пункт 2 реализован: `packages/core/src/summaries.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`) и `packages/core/src/status.ts`
+- ✅ Пункт 2 реализован: `packages/core/src/read/{spending,compare,income}.ts` (`spendingSummary`, `comparePeriods`, `incomeSummary`; shared periods and filters in `read/filters.ts`) и `packages/core/src/read/status.ts`
   (`getBalances`, `getSyncStatus`). Суммы в копейках валюты счёта, валюты не суммируются, без имён и описаний;
   счета — id + подпись `type/CUR`.
 - `getBalances`: поля `own_funds` (основное) = balance − credit_limit, `credit_limit`, `available` (= balance).
@@ -138,8 +188,8 @@
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
-- `incomeLines` (`packages/core/src/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
+- `incomeLines` (`packages/core/src/read/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`
   from the same query (`incomeRowsSql`), with source and the «Від: …» sender's name; carries the bank's text, never for
   an MCP tool or the anonymised copy.
-- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/constants.ts`
+- Модули, которые импортирует recategorize, не импортируют `config.ts`: константы — `packages/core/src/shared/constants.ts`
   (лимиты банка — `providers/<id>/constants.ts`), пути — `apps/mcp/src/paths.ts`.

@@ -18,8 +18,8 @@ export function useConnectionsRequest(): {
   listAccounts: (connectionId: number) => Promise<ConnectionAccountView[]>;
   setAccountEnabled: (accountId: string, enabled: boolean) => Promise<SetAccountEnabledResult>;
   openStatement: (connectionId: number) => Promise<OpenStatementResult>;
-  compareStatement: (statementId: string, target: StatementTargetInput) => Promise<CompareStatementResult>;
-  commitStatement: (statementId: string, target: StatementTargetInput) => Promise<CommitStatementResult>;
+  compareStatement: (statementId: string, targets: Array<StatementTargetInput | null>) => Promise<CompareStatementResult>;
+  commitStatement: (statementId: string, targets: StatementTargetInput[]) => Promise<CommitStatementResult>;
 } {
   return {
     addConnection: (input) => balanceApi.addConnection(input),
@@ -28,7 +28,7 @@ export function useConnectionsRequest(): {
     listAccounts: (connectionId) => balanceApi.listConnectionAccounts(connectionId),
     setAccountEnabled: (accountId, enabled) => balanceApi.setAccountEnabled(accountId, enabled),
     openStatement: (connectionId) => balanceApi.openStatement(connectionId),
-    compareStatement: (statementId, target) => balanceApi.compareStatement(statementId, target),
-    commitStatement: (statementId, target) => balanceApi.commitStatement(statementId, target),
+    compareStatement: (statementId, targets) => balanceApi.compareStatement(statementId, targets),
+    commitStatement: (statementId, targets) => balanceApi.commitStatement(statementId, targets),
   };
 }

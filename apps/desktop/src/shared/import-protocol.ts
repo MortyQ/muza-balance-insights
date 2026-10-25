@@ -4,20 +4,18 @@
 // hold them: progress is typed data, errors are codes (log lines: names, statuses and counts); connections appear by
 // their numeric id only, never by a participant's name.
 import { z } from 'zod';
-import { PROVIDER_IDS } from '@mono/core/providers/types';
-import { DESKTOP_PROVIDERS } from '../net/providers.ts';
+import { credentialFits, TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
+import { DB_KEY_RE } from './db-open.ts';
 import { WORKER_ERRORS } from './progress.ts';
 
 export const MAX_CONNECTIONS = 10;
 
-/** The database key as main keeps it (src/main/db/key-vault.ts): 32 random bytes in lowercase hex. */
-export const DB_KEY_RE = /^[0-9a-f]{64}$/;
 
 const connectionId = z.number().int().positive();
 
 export const StartConnection = z
-  .strictObject({ connectionId, provider: z.enum(PROVIDER_IDS), token: z.string() })
-  .refine((c) => DESKTOP_PROVIDERS[c.provider].credential.test(c.token), { message: 'not a credential' });
+  .strictObject({ connectionId, provider: z.enum(TOKEN_PROVIDER_IDS), token: z.string() })
+  .refine((c) => credentialFits(c.provider, c.token), { message: 'not a credential' });
 
 export const StartMessage = z.strictObject({
   type: z.literal('start'),
@@ -45,6 +43,7 @@ export const WorkerProgress = z.discriminatedUnion('phase', [
     phase: z.literal('windows'),
     account: z
       .strictObject({
+        provider: z.string().max(40),
         kind: z.enum(['card', 'jar']),
         type: z.string().max(40).nullable(),
         currency: z.number().int().min(0).max(999),

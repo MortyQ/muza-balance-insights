@@ -11,7 +11,7 @@ import { autoLine, failureLines, progressLine } from '@/features/import-statemen
 
 const NOW = Date.UTC(2026, 8, 27, 9, 0);
 const windows: ImportProgress = {
-  phase: 'windows', account: { kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-08-27', to: '2026-09-27', round: 1, index: 1, total: 1,
+  phase: 'windows', account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, from: '2026-08-27', to: '2026-09-27', round: 1, index: 1, total: 1,
   windowsDone: 0, windowsTotal: 3, transactions: 0, etaSec: 180, waitingSec: null, auto: true,
 };
 
@@ -81,7 +81,7 @@ describe('withChange: what goes to setAutoSync', () => {
 describe('the import line names the account', () => {
   it('by its parts, in the app language; before the accounts are known — a plain word', () => {
     expect(progressLine(windows, NOW)).toMatch(/^Чёрная карта · UAH: окно /);
-    expect(progressLine({ ...windows, account: { kind: 'jar', type: null, currency: 978, tag: 'ab12' } }, NOW)).toMatch(/^Банка · EUR #ab12: /);
+    expect(progressLine({ ...windows, account: { provider: 'monobank', kind: 'jar', type: null, currency: 978, tag: 'ab12' } }, NOW)).toMatch(/^Банка · EUR #ab12: /);
     expect(progressLine({ ...windows, account: null }, NOW)).toMatch(/^счёт: /);
   });
 });

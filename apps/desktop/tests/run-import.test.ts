@@ -1,10 +1,11 @@
 // The worker's import on a mock Monobank: order, progress, cancel, errors — and the token never in a message or the DB.
 // Several connections: one job, windows taking turns, a rejected token stops only its connection.
 import { describe, expect, it } from 'vitest';
-import type { Db } from '@mono/core/db';
-import { SyncCancelledError } from '@mono/core/cancel';
-import { ConnectionDuplicateError, ConnectionMismatchError, WINDOW_SEC, getSyncState } from '@mono/core/sync';
-import { addConnection, addParticipant } from '@mono/core/participants';
+import type { Db } from '@mono/core/storage/db';
+import { SyncCancelledError } from '@mono/core/shared/cancel';
+import { ConnectionDuplicateError, ConnectionMismatchError } from '@mono/core/ingest/sync';
+import { WINDOW_SEC, getSyncState } from '@mono/core/ingest/plan';
+import { addConnection, addParticipant } from '@mono/core/people/participants';
 import { TEST_TOKEN, allTextInDb, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
 import { FromWorker } from '../src/shared/import-protocol.ts';
 import { RETRY_BUDGET_MS, RETRY_EVERY_MS, RETRY_FIRST_MS, SLEEP_TOLERANCE_MS, sleptDuringPause } from '../src/shared/retry.ts';

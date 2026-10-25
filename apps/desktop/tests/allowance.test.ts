@@ -1,7 +1,7 @@
 // «Available per day» in main (allowance.ts): which income the money has to last until, which mandatory payments
 // count, the sum per day. Fictional figures only.
 import { describe, expect, it } from 'vitest';
-import { allowance, daysBetween, nextMonthStart, type AllowanceSeries } from '../src/main/allowance.ts';
+import { allowance, daysBetween, nextMonthStart, type AllowanceSeries } from '../src/data/allowance.ts';
 
 const s = (o: Partial<AllowanceSeries>): AllowanceSeries => ({ key: 'k', name: 'Client', participantId: 1, uah: 100_000, next: '2026-10-20', ...o });
 

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { ProviderId } from '@mono/core/providers/types';
 import type { StartOverResult } from '../../shared/db-state.ts';
-import { DESKTOP_PROVIDERS } from '../../net/providers.ts';
+import { credentialFits, TOKEN_PROVIDER_IDS } from '@mono/core/providers/info';
 import { JOB_FILE } from '../importer.ts';
 import type { DbState } from './access.ts';
 
@@ -18,7 +18,8 @@ export type StartOverDeps = {
   confirm: () => Promise<boolean>;
   tokens: { saved(): Promise<number[]>; get(connectionId: number): Promise<string | null>; clearAll(): Promise<void> };
   importer: { stop(): Promise<void> };
-  data: { close(): Promise<void> };
+  /** The data process: closed, and its exit waited for, before the database files go. */
+  data: { stop(): Promise<void> };
   integrations: {
     addConnection(input: { participant: { fromBank: true }; provider: ProviderId; token: string; remember: boolean }): Promise<{ added: boolean }>;
   };
@@ -29,7 +30,7 @@ export type StartOverDeps = {
 
 /** The one provider whose credential shape the token has; none or several → the token is not kept. */
 function providerOf(token: string): ProviderId | null {
-  const ids = (Object.keys(DESKTOP_PROVIDERS) as ProviderId[]).filter((p) => DESKTOP_PROVIDERS[p].credential.test(token));
+  const ids = TOKEN_PROVIDER_IDS.filter((p) => credentialFits(p, token));
   return ids.length === 1 ? ids[0]! : null;
 }
 
@@ -37,7 +38,7 @@ export async function startOver(d: StartOverDeps): Promise<StartOverResult> {
   if (d.access.isReady()) return { done: false, reason: 'not-needed' };
   if (!(await d.confirm())) return { done: false, reason: 'cancelled' };
   await d.importer.stop();
-  await d.data.close();
+  await d.data.stop();
 
   const kept: Array<{ provider: ProviderId; token: string }> = [];
   for (const id of await d.tokens.saved()) {

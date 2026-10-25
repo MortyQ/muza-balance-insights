@@ -22,10 +22,8 @@ export interface ProviderForms {
   tokenField: Component<TokenFieldProps>;
   /** Under the bank's name on the first connect screen: what the access gives and where it is kept (a dictionary key). */
   accessNote: MessageKey;
-  /** The bank's card types → dictionary keys of their names in «Accounts» (an unknown type shows as it is). */
-  cardTypes: Readonly<Record<string, MessageKey>>;
-  /** How to get a statement file, step by step; null — the bank has no file format yet. */
-  fileSteps: ReadonlyArray<MessageKey> | null;
+  /** How to get the bank's statement file, step by step; absent — the generic steps. */
+  fileSteps?: ReadonlyArray<MessageKey>;
 }
 
 export type SubmitState = { status: 'idle' } | { status: 'saving' } | { status: 'error'; message: string };

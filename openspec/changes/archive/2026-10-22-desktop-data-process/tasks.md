@@ -1,0 +1,68 @@
+# Tasks
+
+Agent's sandbox: root `pnpm` cannot run, so each package's checks run from its folder (`.agents/skills/core-architecture`,
+«Before handing over»). The user runs the root commands.
+
+## 1. Move DataService and its helpers to src/data (refactor(desktop): data service folder)
+
+- [x] 1.1 `git mv` `src/main/data.ts`, `spending.ts`, `usual.ts`, `category.ts`, `analytics.ts`, `now.ts`, `period.ts` and `allowance.ts` to `src/data/`, and rewrite only the imports: the moved files' own imports, `src/main/index.ts` and `people.ts`, and the tests that import them (`data*.test.ts`, `spending-main`, `usual`, `category`, `analytics-main`, `now-main`, `allowance` and `period` users). Verify that a line diff of each moved file shows only import lines changed.
+- [x] 1.2 Update the doc paths that name these files (`.agents/project/desktop-*.md`, `apps/desktop` comments that cite a path). Verify `apps/desktop`'s tsc for node and web and its vitest pass.
+
+## 2. The data host: the database halves out of main's services (feat(desktop): data host)
+
+- [x] 2.1 Add `src/shared/data-protocol.ts`: the `DataMethods` map (method → args and result), the zod schemas of the messages and of each method's arguments (`DATA_ARG_SCHEMAS`), and move `ARG_SCHEMAS`' shared pieces from `src/main/ipc.ts` to `src/shared/` so both use one copy. Verify with `tests/data-protocol.test.ts`: every method has a schema, an extra argument and an unknown method are refused, and `dbKey` follows the import protocol's rule.
+- [x] 2.2 Add `src/data/people.ts`, `connections.ts` and `statements.ts` with the database halves of the table in design §2. Move the mapping of `ColorTakenError` and `StatementImportError` into them, so refusals are values. Verify that `tests/people.test.ts`, `integrations.test.ts` and `statements.test.ts` pass unchanged in what they assert: they now run main's services over these halves through the data API (`tests/helpers/people.ts` `localData`), end to end on a real database.
+- [x] 2.3 Add `src/data/host.ts`: the handler table over an open `Db`, with `open` (migrate, `refreshCrossing`), the kept rates, and errors as `{ code, name }`, the name only. Verify with `tests/data-host.test.ts` on in-memory libsql: each method answers as the service did, `ConnectionError` → `connection`, another error → `failed` with its name and no message text, and calls run one at a time in order.
+- [x] 2.4 Make main's `people.ts`, `integrations.ts` and `statements.ts` depend on a narrow data interface (`DataApi` in `src/main/data-api.ts`) instead of `db`. Wire them, and every data handler of `index.ts`, to the host in this process for now, so the app behaves as before. Verify with the same service tests (token status merge, duplicate check, rollback order, `import-running` refusals, the kept statement and its expiry) and `tests/data-host.test.ts` (`dataApi`: a failure becomes a `DataCallError`).
+
+## 3. The data process and the client (feat(desktop): data process)
+
+- [x] 3.1 Add `src/data/process.ts`: the `utilityProcess` entry over the host, which validates incoming messages and parses outgoing ones, sends `ready` / `open-failed`, and exits on `close` after closing the connection. Verify with `tests/data-entry.test.ts`, checked as source like `worker-entry.test.ts`: `safeParse` in, `parse` out, no `net`, one `process.exit`.
+- [x] 3.2 Add `src/main/data-client.ts` (`DataClient`): fork, `open`, rates, calls queued until `ready`, replies matched to pending ids, `exit` → pending calls fail and the next call forks again, `stop()` (`close`, kill after 5 s, resolve on `exit`), and `open-failed: unreadable` → `DbAccess.markUnreadable()`. Verify with `tests/data-client.test.ts` using a fake child, as `importer.test.ts` does: order, crash mid-call, restart on demand, stop with a hanging child, a reply with an unknown id ignored, and errors rethrown as `ConnectionError` or `DataCallError`.
+- [x] 3.3 Add `DbAccess.markUnreadable()` and rename `forWorker()` to `forProcess()` (importer and client). Today's rates go ahead of a rated call from `RatesService.current()` (design §4), so `RatesService` is unchanged. Verify with `tests/db-access.test.ts`, which covers the state, the push and the log, and no file touched, and with `tests/data-client.test.ts` (rates sent only when changed).
+- [x] 3.4 Wire `src/main/index.ts`:
+  - fork with `?modulePath`, `serviceName: 'balance-data'` and `env: {}`;
+  - start once at launch after the dev smoke; any call forks it again when none runs (after «Delete all data» and «Start over» too);
+  - IPC handlers, importer, auto-sync and the legacy token go through the client;
+  - `before-quit` kills the process;
+  - `wipe.ts` and `db/start-over.ts` call `stop()` instead of `data.close()`.
+
+  Verify that `tests/wipe.test.ts` and `db-start-over.test.ts` assert the stop comes before any file is removed (stop() resolves on the exit: `data-client.test.ts`), that `tests/data-entry.test.ts` checks the fork, and that `tests/ipc.test.ts` still passes.
+- [x] 3.5 Update `.agents/project/desktop-import.md` with a new section «The data process», plus who runs the people, connections and data channels. Update `desktop-security.md`: the key in `open`, no network, Windows release by process exit, and `releaseClosedFiles` kept for launch only. Verify `apps/desktop`'s tsc for node and web and its vitest pass.
+
+## 4. Main imports no query code (test(desktop): main import graph)
+
+- [x] 4.1 Add `tests/main-imports.test.ts` (rules in `tests/helpers/main-imports.ts`) with the rules of design §5:
+  - the run-time import graph from `src/main/index.ts` reaches only the allowed core folders and their stated exceptions, and never `src/data/`;
+  - `@mono/db-libsql` is imported only where allowed;
+  - the graph of `src/data/process.ts` imports no `electron` and never reaches `src/net/`, `src/worker/` or `src/main/`.
+
+  Add a legal decoy tree and one breaking example per rule. Verify the test passes on the real tree and fails on each example, and on a temporary bad import in the real tree.
+
+## 5. The read cache in the renderer (feat(desktop): read cache)
+
+- [x] 5.1 Add `shared/lib/readCache.ts` (`ReadCache`, one `readCache`, `readKey`, `invalidateReads`: generation, LRU of 50, 60 s freshness) and the method lists `shared/api/methods.ts`. Wrap the bridge in `shared/api/balance.ts` (`wrapBridge`): the eight data reads are kept under the generation from the start of their request, `PASS_THROUGH` passes through, any other method bumps the generation on success. Verify with `tests/renderer/read-cache.test.ts`:
+  - fresh, stale by generation and stale by age;
+  - LRU drop;
+  - a failure is not kept;
+  - an answer that raced a write lands stale;
+  - every method in `METHODS` is placed exactly once.
+- [x] 5.2 Add the `cached` option to `useAsyncData`: fresh → no load; stale → shown, then a quiet load; `reload()` always asks; an older answer never replaces a newer one. Verify with `tests/renderer/read-cache.test.ts`, which covers each case; today's behaviour without the option stays covered by `tests/renderer/lib.test.ts`.
+- [x] 5.3 Add a `peek<X>` to the data features' `api/` segments (balances, spending, now strip, category detail, income detail, recurring screen and teaser, allowance, analytics) and pass it from their composables through one `query()`. In `useSyncStatusStore.refresh()`, call `invalidateReads()` before bumping `version`. Verify in `tests/renderer/read-cache.test.ts` that a month switched back sends no new request and that an added reserve makes the month load again, in `sync-status.test.ts` that a refresh makes the kept answers stale, and that `tests/architecture.test.ts` still passes.
+- [x] 5.4 Update `.agents/project/desktop-renderer.md` (`useAsyncData` and the read cache: what is kept, what invalidates it, in memory only). Verify that `vue-tsc -p tsconfig.web.json` and the renderer tests pass.
+
+## 6. Release notes and checks (docs(desktop): data process notes)
+
+- [x] 6.1 Add the user-visible entry to `CHANGELOG.md` under `## 0.1.10 — unreleased`, in plain words with no internal terms: the window stays responsive while the app recalculates, and screens you go back to open at once. Verify that `tests/release-notes.test.ts` passes.
+- [x] 6.2 Add the live checks of design «Migration Plan» to `docs/backlog.md`:
+  - responsiveness while an account is turned off on real data;
+  - Windows «Delete all data» and «Start over»;
+  - the process's memory;
+  - a killed data process and the next screen load.
+
+  Verify that the entries are present.
+- [x] 6.3 Run `pnpm test` and `pnpm typecheck` at the root. The user runs them where the agent's sandbox cannot; the agent runs each package's checks from its folder. Verify that all pass.
+
+## Workflow follow-up
+
+- Sync the specs (`openspec-sync-specs`) and archive the change once every group is committed.

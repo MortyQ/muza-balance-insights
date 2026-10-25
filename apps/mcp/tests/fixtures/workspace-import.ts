@@ -1,6 +1,6 @@
 // Loaded with `node --import tsx` by tests/cli-args.test.ts: tsx must load .ts from workspace packages via their exports.
-import { currencyAlpha } from '@mono/core/currency';
-import { SCHEMA_VERSION } from '@mono/core/db';
+import { currencyAlpha } from '@mono/core/shared/currency';
+import { SCHEMA_VERSION } from '@mono/core/storage/migrations';
 import { openLibsql } from '@mono/db-libsql';
 
 const db = await openLibsql(':memory:');

@@ -15,7 +15,7 @@ import { teaserView } from '../utils.ts';
  * changed on the regular payments screen.
  */
 export function useRecurringTeaser(): UseRecurringTeaserReturn {
-  const { fetchRecurringOverview } = useRecurringRequest();
+  const { fetchRecurringOverview, peekRecurringOverview } = useRecurringRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
   const { month, thisMonth } = storeToRefs(useMonthStore());
@@ -28,13 +28,15 @@ export function useRecurringTeaser(): UseRecurringTeaserReturn {
   });
 
   const participantId = () => participant.selectedId;
+  // The same query for the request and for the kept answer.
+  const query = () => {
+    const id = participantId();
+    return id !== null ? { participantId: id } : {};
+  };
   const { state } = useAsyncData(
-    () => {
-      const id = participantId();
-      return fetchRecurringOverview(id !== null ? { participantId: id } : {});
-    },
+    () => fetchRecurringOverview(query()),
     [participantId],
-    { quiet: [() => syncStatus.version, shown] },
+    { quiet: [() => syncStatus.version, shown], cached: () => peekRecurringOverview(query()) },
   );
   const fmt = useMoneyFormat(() => state.value.data?.rates);
   return {

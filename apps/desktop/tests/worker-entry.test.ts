@@ -1,7 +1,6 @@
 // The utilityProcess entry and its wiring in main, checked as source (it only runs inside Electron).
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DESKTOP_PROVIDERS } from '../src/net/providers.ts';
 import { StartMessage } from '../src/shared/import-protocol.ts';
 import { abortableClock } from '../src/worker/clock.ts';
 
@@ -11,11 +10,12 @@ describe('worker entry', () => {
   const code = read('../src/worker/import.ts');
 
   it("network only through the allowlist, scoped to each provider's services; the abortable clock; the shared importer", () => {
-    // A provider's client reaches only its own services: a bank token can never reach another trusted service.
-    expect(code).toMatch(/monobank: allowlistedFetch\(net\.fetch, \['monobank'\]\),/);
-    expect(code).toMatch(/fetchFor: \(provider\) => FETCH\[provider\]/);
-    // One scoped fetch per provider, nothing else.
-    expect(code.match(/allowlistedFetch\(/g)).toHaveLength(Object.keys(DESKTOP_PROVIDERS).length);
+    // A provider's client reaches only its own service, the one its desktop entry names: a bank token can never
+    // reach another trusted service.
+    expect(code).toMatch(/fetchFor: \(provider\) => allowlistedFetch\(net\.fetch, \[serviceOf\(provider\)\]\),/);
+    expect(code).toMatch(/const serviceOf = \(provider: TokenProviderId\) => DESKTOP_PROVIDERS\[provider\]\.service;/);
+    // The scoped fetch is the only one.
+    expect(code.match(/allowlistedFetch\(/g)).toHaveLength(1);
     expect(code).toMatch(/clock: abortableClock/);
     expect(code).toMatch(/await runImport\(/);
   });
@@ -33,8 +33,8 @@ describe('worker entry', () => {
     const main = read('../src/main/index.ts');
     expect(main).toMatch(/utilityProcess\.fork\(workerPath, \[\], \{ serviceName: 'balance-import', env: \{\}/);
     expect(main).not.toMatch(/fork\([^)]*token/i);
-    expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker)/i);
-    expect(main).toMatch(/db: \(\) => access\.forWorker\(\)/);
+    expect(main).not.toMatch(/fork\([^)]*(dbKey|forWorker|forProcess)/i);
+    expect(main).toMatch(/db: \(\) => access\.forProcess\(\)/);
   });
 
   it('the database key comes only in the start message and opens the file; its error is a fixed text', () => {

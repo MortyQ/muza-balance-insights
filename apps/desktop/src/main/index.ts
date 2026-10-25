@@ -3,6 +3,8 @@ import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, powerMonitor, p
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import workerPath from '../worker/import.ts?modulePath';
+import dataPath from '../data/process.ts?modulePath';
+import decoderPath from '../decoder/process.ts?modulePath';
 import { DB_STATE_CHANNEL, LOCK_CHANNEL, OPEN_SETTINGS_CHANNEL, PROGRESS_CHANNEL, UPDATE_CHANNEL } from '../shared/channels.ts';
 import { systemTimeZone } from '../shared/dates.ts';
 import { resolveLocale } from '../shared/locale.ts';
@@ -11,7 +13,8 @@ import { AutoSync, watchAutoSync } from './auto-sync.ts';
 import { APP_ENTRY, APP_SCHEME, APP_SCHEME_PRIVILEGES, createAppProtocolHandler } from './app-protocol.ts';
 import { PROD_CSP, devCsp, localDevOrigin } from './csp.ts';
 import { canReleaseClosedFiles, openLibsql, releaseClosedFiles } from '@mono/db-libsql';
-import { DataService } from './data.ts';
+import { DataClient } from './data-client.ts';
+import { DecoderClient } from './decoder-client.ts';
 import { denyAllPermissions, guardWebContents, restrictRendererSession } from './hardening.ts';
 import { configureIdentity, restrictUserData } from './identity.ts';
 import { Importer } from './importer.ts';
@@ -160,7 +163,17 @@ app.whenReady().then(async () => {
     },
   });
   app.on('will-quit', () => rates.stop());
-  const data = new DataService({ open: () => access.open(), release: releaseClosedFiles, nowSec: () => Math.floor(Date.now() / 1000), rates: () => rates.current() });
+  // Every query of the screens runs in the data process, so main never waits on one. Long-lived; empty env: it inherits
+  // nothing from ours. stdout/stderr visible only in dev. A call forks it; it is also started before the window, below.
+  const dataProcess = new DataClient({
+    fork: () => utilityProcess.fork(dataPath, [], { serviceName: 'balance-data', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
+    db: () => access.forProcess(),
+    rates: () => rates.current(),
+    unreadable: () => access.markUnreadable(),
+    log: (msg) => process.stderr.write(`[data] ${msg}\n`),
+  });
+  app.on('before-quit', () => dataProcess.kill());
+  const data = dataProcess.api;
   // The token of the app before several connections → the token of its Monobank connection (file moved, not decrypted).
   if (access.isReady() && vault.hasLegacy()) {
     try {
@@ -172,11 +185,11 @@ app.whenReady().then(async () => {
   const importer = new Importer({
     // A fresh worker per job; empty env: it inherits nothing from ours. stdout/stderr visible only in dev.
     fork: () => utilityProcess.fork(workerPath, [], { serviceName: 'balance-import', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
-    connections: () => data.connections(),
+    connections: () => data.tokenConnections(),
     tokens: vault,
     powerSaveBlocker,
     userDataDir: userData,
-    db: () => access.forWorker(),
+    db: () => access.forProcess(),
     nowSec: () => Math.floor(Date.now() / 1000),
     // Locked: no progress, only the lock view (its importRunning flag) for the lock screen.
     send: (p) => void (push(PROGRESS_CHANNEL, p) || (lock && push(LOCK_CHANNEL, lock.view()))),
@@ -208,13 +221,23 @@ app.whenReady().then(async () => {
     send: (v) => void push(UPDATE_CHANNEL, v),
     log: (msg) => process.stderr.write(`[update] ${msg}\n`),
   });
+  // A statement spreadsheet or PDF is decoded in a process of its own, forked per file: empty env, no key, no token, no
+  // database, no network. stdout/stderr visible only in dev.
+  const decoder = new DecoderClient({
+    fork: () => utilityProcess.fork(decoderPath, [], { serviceName: 'balance-decoder', env: {}, stdio: app.isPackaged ? 'ignore' : 'inherit' }),
+    log: (msg) => process.stderr.write(`[statement] ${msg}\n`),
+  });
+  app.on('before-quit', () => decoder.kill());
   const statements = new StatementsService({
-    db: () => data.database(),
-    pickFile: async () => {
-      const opts = { properties: ['openFile' as const], filters: [{ name: 'CSV', extensions: ['csv'] }] };
+    data,
+    pickFile: async (extensions) => {
+      const t = translator(locale());
+      const filters = [{ name: t('main.dialog.statementFiles'), extensions: [...extensions] }, { name: t('main.dialog.allFiles'), extensions: ['*'] }];
+      const opts = { properties: ['openFile' as const], filters };
       const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
       return r.canceled ? null : (r.filePaths[0] ?? null);
     },
+    decode: (format, bytes) => decoder.decode(format, bytes),
     importRunning: () => importer.running,
     randomId: () => randomUUID(),
     nowMs: () => Date.now(),
@@ -260,13 +283,12 @@ app.whenReady().then(async () => {
     const r = win ? await dialog.showMessageBox(win, opts) : await dialog.showMessageBox(opts);
     return r.response === 0;
   };
-  const people = new PeopleService({ db: () => data.database(), tokens: vault });
+  const people = new PeopleService({ data, tokens: vault });
   const integrations = new IntegrationsService({
-    db: () => data.database(),
+    data,
     tokens: vault,
     importRunning: () => importer.running,
     confirmRemove: () => confirm('removeConnection'),
-    nowSec: () => Math.floor(Date.now() / 1000),
   });
   // None of these handlers ever returns the token, a statement file's path or its text; data handlers return categories, amounts and «black/UAH» labels only.
   registerIpc(ipcMain, {
@@ -280,8 +302,8 @@ app.whenReady().then(async () => {
     listConnectionAccounts: (id) => integrations.listConnectionAccounts(id),
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
     openStatement: (connectionId) => statements.open(connectionId),
-    compareStatement: (statementId, target) => statements.compare(statementId, target),
-    commitStatement: (statementId, target) => statements.commit(statementId, target),
+    compareStatement: (statementId, targets) => statements.compare(statementId, targets),
+    commitStatement: (statementId, targets) => statements.commit(statementId, targets),
     startImport: (from) => importer.start(from),
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),
@@ -298,7 +320,7 @@ app.whenReady().then(async () => {
     getAnalyticsOverview: (q) => data.analyticsOverview(q),
     getSyncStatus: () => data.status(),
     deleteAllData: async () => {
-      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
+      const r = await deleteAllData({ confirm: () => confirm('deleteAll'), tokens: vault, importer, data: dataProcess, userDataDir: userData, log: (m) => process.stderr.write(`[data] ${m}\n`) });
       if (r.deleted) {
         statements.forget();
         await appLock.reset().catch(() => process.stderr.write('[lock] reset after wipe failed\n'));
@@ -351,7 +373,7 @@ app.whenReady().then(async () => {
           confirm: () => confirm('startOver'),
           tokens: vault,
           importer,
-          data,
+          data: dataProcess,
           integrations,
           userDataDir: userData,
           log: (m) => process.stderr.write(`[db] ${m}\n`),
@@ -376,6 +398,8 @@ app.whenReady().then(async () => {
       : ({ ok: false, error: st.kind } as const);
     process.stdout.write(`[smoke] ${JSON.stringify({ app: identity.name, ok: smoke.ok, encrypted: smoke.ok && smoke.encrypted, forcedGc, devOrigin })}\n`);
   }
+  // After the dev smoke (it migrates too): the migration runs before the first screen asks.
+  if (access.isReady()) dataProcess.start();
 
   // The saved theme before the window exists: its frame colours and the first paint already follow it.
   nativeTheme.themeSource = readPrefs(userData).theme;

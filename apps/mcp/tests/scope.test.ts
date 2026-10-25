@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { exportAnalysis } from '../src/analysis/export.ts';
-import { recategorize } from '@mono/core/categories';
+import { recategorize } from '@mono/core/derive/categories';
 import type { Db } from '../src/db.ts';
 import { createMonoClient, type StatementItem } from '@mono/core/providers/monobank/client';
 import { rederiveAll } from '../src/rederive.ts';
@@ -16,9 +16,9 @@ import {
   removeScopeOverride,
   rescope,
   scopeOverrideCandidates,
-} from '@mono/core/scope';
-import { SettingsError, getSettings, setSetting } from '@mono/core/settings';
-import { commitWindow, type SyncContext } from '@mono/core/sync';
+} from '@mono/core/derive/scope';
+import { SettingsError, getSettings, setSetting } from '@mono/core/people/settings';
+import { commitWindow, type SyncContext } from '@mono/core/ingest/sync';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
 
 let db: Db;
@@ -30,8 +30,8 @@ async function account(id: string, type: string | null, currency = 980) {
 async function tx(id: string, accountId: string, time: number, amount: number, opts: { mcc?: number; description?: string; counterName?: string } = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount,
-            currency_code, counter_name, raw_json, synced_at)
-          VALUES (?, ?, ?, '2026-06-10', ?, ?, 0, ?, ?, 980, ?, '{}', 0)`,
+            currency_code, counter_name, synced_at)
+          VALUES (?, ?, ?, '2026-06-10', ?, ?, 0, ?, ?, 980, ?, 0)`,
     args: [id, accountId, time, opts.description ?? '', opts.mcc ?? 5411, amount, amount, opts.counterName ?? null],
   });
 }

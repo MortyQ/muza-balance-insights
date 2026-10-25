@@ -96,6 +96,14 @@ export function expectAsarContents(b: Built) {
   expect(files.some((f) => f.startsWith('node_modules/@libsql/client/'))).toBe(true);
   expect(files.some((f) => f.startsWith('node_modules/zod/'))).toBe(true);
   expect(files.some((f) => f.startsWith('node_modules/electron-updater/'))).toBe(true);
+  // The statement decoder's libraries; of pdfjs-dist only the legacy build's two modules the decoder loads.
+  for (const f of ['node_modules/pdfjs-dist/legacy/build/pdf.mjs', 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs']) expect(files).toContain(f);
+  expect(files.some((f) => f.startsWith('node_modules/fflate/'))).toBe(true);
+  expect(files.some((f) => f.startsWith('node_modules/fast-xml-parser/'))).toBe(true);
+  expect(files.filter((f) => /^node_modules\/pdfjs-dist\/.+\.m?js$/.test(f)).sort()).toEqual([
+    'node_modules/pdfjs-dist/legacy/build/pdf.mjs',
+    'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+  ]);
   const bad = files.filter(
     (f) =>
       /^(src|tests|scripts|build)\//.test(f) ||

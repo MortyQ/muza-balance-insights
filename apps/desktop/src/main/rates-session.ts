@@ -1,7 +1,7 @@
 // The network of the rates request: its own Electron session (the default one is the renderer's and refuses
 // everything), guarded for every request and redirect hop by the monobank-rates service only. No cookies or cache
 // shared with anything else; nothing but the public /bank/currency ever goes through it.
-import type { FetchLike } from '@mono/core/platform';
+import type { FetchLike } from '@mono/core/shared/platform';
 import { allowlistedFetch, isAllowedUrl, type InnerFetch } from '../net/allowlist.ts';
 
 export const RATES_PARTITION = 'monobank-rates';
