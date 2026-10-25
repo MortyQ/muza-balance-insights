@@ -86,6 +86,8 @@ describe('balance tiles', () => {
     expect(b.get('[data-test="pace"]').classes()).toEqual(
       expect.arrayContaining(['@[47rem]:col-span-2', '@[65rem]:row-start-2', '@[79rem]:col-span-4', '@[79rem]:row-start-auto']),
     );
+    // Alone in its row the tile takes no height from a neighbour: the chart keeps its own minimum.
+    expect(b.get('[data-test="pace"] [role="img"]').classes()).toContain('min-h-44');
     expect(b.get('[data-test="panel"]').classes()).toEqual(
       expect.arrayContaining(['@[47rem]:col-span-2', '@[65rem]:col-span-1', '@[65rem]:row-start-1', '@[79rem]:col-span-3', '@[79rem]:row-start-auto']),
     );
