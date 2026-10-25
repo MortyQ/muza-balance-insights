@@ -43,5 +43,5 @@
 
 ## 7. Medium width — fix(desktop): balance and month side by side
 
-- [ ] 7.1 Grid steps for the first row (design 2, revised): under 65rem one tile per row, 65–79rem «Balance» | «Month» with «Month pace» under them, from 79rem as before; the open row still spans the whole width; verify `tests/renderer/layouts.test.ts` / home grid tests and the tile classes
-- [ ] 7.2 `.agents/project/desktop-renderer.md` and the grid comment in `HomePage.vue`; `docs/backlog.md`: check the three widths live
+- [x] 7.1 Grid steps for the first row (design 2, revised): under 65rem one tile per row, 65–79rem «Balance» | «Month» with «Month pace» under them, from 79rem as before; the open row still spans the whole width; verify `tests/renderer/layouts.test.ts` / home grid tests and the tile classes
+- [x] 7.2 `.agents/project/desktop-renderer.md` and the grid comment in `HomePage.vue`; `docs/backlog.md`: check the three widths live

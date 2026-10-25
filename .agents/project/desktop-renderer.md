@@ -75,7 +75,8 @@
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
 - **Home grid** (spec `openspec/specs/desktop-home-tiles`): `HomePage` owns one CSS grid (`data-test="home-grid"`,
   `@container`: one column, two from `@[47rem]`, twelve from `@[79rem]` — where the folded stack fits 5 of them; rows
-  5 · 4 · 3 (balance, pace, month), 4 · 4 · 4 («Now» and «What's unusual»), 9 · 3 (spending, people / regular payments)). The features put their tiles straight
+  5 · 4 · 3 (balance, pace, month; under 65rem a row each, 65–79rem balance | month over pace — the stack never
+  stands alone in a wide row), 4 · 4 · 4 («Now» and «What's unusual»), 9 · 3 (spending, people / regular payments)). The features put their tiles straight
   into it through a `<div class="contents">` root (one root element; a comment before it would be a second root and drop
   the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week», or the details tile),
   spending («What's unusual», «Spending by category» two columns × two rows, «Who spent what»), the regular payments

@@ -159,6 +159,8 @@
 - **The fee floor**: a small transfer whose fee is above 5% is not paired and counts as spending and income. Collect the
   real fees on small amounts (a fixed fee on a 100 ₴ transfer is more than 5%); decide from them whether an absolute
   floor is needed.
+- **Home's first row at three widths** (change `desktop-home-tiles`, group 7): under 65rem a tile per row, 65–79rem
+  «Balance» | «Month» over «Month pace», from 79rem one row; open and fold the card row at each, both themes.
 - **Dropping statement files on the window** (`QuickUploadFeature`, `openDroppedStatement`): drop a real `.xlsx` and
   `.csv` on macOS and Windows, a folder, two files, and a file from a zip opened in the system's archive viewer (it may
   have no path: expect «unreadable»). Check the window never navigates to a dropped file.

@@ -21,7 +21,8 @@ const nowDetails = ref(false);
     <AppLockHintFeature />
     <UpdateBannerFeature />
     <!-- The tile grid (spec desktop-home-tiles): one column, two from 47rem, twelve from 79rem of its own width (the folded
-         stack, 466 px, fits 5 of them from there; rows 5·4·3, 4·4·4, 9·3). Features
+         stack, 466 px, fits 5 of them from there; rows 5·4·3, 4·4·4, 9·3). The first row's three tiles take a row each
+         under 65rem and «Balance» | «Month» over «Month pace» from 65rem to 79rem (BalancesFeature). Features
          render their tiles straight into it (`contents` roots), in this order; each tile says its own span. -->
     <div v-if="syncStatus.hasData" class="@container">
       <div class="grid grid-cols-1 gap-4 @[47rem]:grid-cols-2 @[79rem]:grid-cols-12" data-test="home-grid">
