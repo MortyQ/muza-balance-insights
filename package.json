@@ -27,8 +27,5 @@
     "@fission-ai/openspec": "1.14.1",
     "tsx": "^4.23.15"
   },
-  "packageManager": "pnpm@12.6.0",
-  "dependencies": {
-    "pnpm": "^12.6.0"
-  }
+  "packageManager": "pnpm@12.6.0"
 }
