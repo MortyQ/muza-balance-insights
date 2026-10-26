@@ -25,10 +25,10 @@ English interface.
   disappears because of it). When a bank is more than a day behind, the status names it; press the arrow to see every
   connection, how far its data reaches, and «Refresh» or «Upload statement» for it.
 - **PrivatBank.** Connect a PrivatBank card by its statement file: in Privat24 download the card's operation history
-  as Excel (.xlsx) in Ukrainian and upload it as with Monobank. Several cards in one file become separate cards in the
-  app. Purchases are sorted into the same categories as Monobank's, by PrivatBank's own categories; transfers between
-  your PrivatBank and Monobank cards are recognised as your own, and the bank's fee on them is counted once. A
-  statement in English or Russian, PDF statements and business accounts are not supported yet.
+  as Excel (.xlsx), in Ukrainian or English, and upload it as with Monobank. Several cards in one file become separate
+  cards in the app. Purchases are sorted into the same categories as Monobank's, by PrivatBank's own categories;
+  transfers between your PrivatBank and Monobank cards are recognised as your own, and the bank's fee on them is
+  counted once. PDF statements and business accounts are not supported yet.
 
 ### Speed
 

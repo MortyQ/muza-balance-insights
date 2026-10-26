@@ -13,9 +13,9 @@
 
 ## 3. Docs
 
-- [ ] 3.1 `.agents/project/core-providers.md`, PrivatBank section: both readers and languages
-- [ ] 3.2 `CHANGELOG.md` 0.1.10: the PrivatBank entry says Ukrainian or English, drops Russian
-- [ ] 3.3 `docs/backlog.md`: English names of unseen PrivatBank categories; whether English treasury payees are transliterated
+- [x] 3.1 `.agents/project/core-providers.md`, PrivatBank section: both readers and languages
+- [x] 3.2 `CHANGELOG.md` 0.1.10: the PrivatBank entry says Ukrainian or English, drops Russian
+- [x] 3.3 `docs/backlog.md`: English names of unseen PrivatBank categories; whether English treasury payees are transliterated
 
 ## 4. Integration
 
