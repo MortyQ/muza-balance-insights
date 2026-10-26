@@ -3,6 +3,12 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.12 — unreleased
+
+### Fixes
+
+- «Import» in the statement upload panel no longer fails with «Something went wrong».
+
 ## 0.1.11 — 2026-10-26
 
 ### Statements

@@ -53,7 +53,8 @@ export function useQuickUpload(): {
     if (s.step !== 'review' || s.busy) return;
     state.value = { ...s, busy: true, error: '' };
     try {
-      const r = await request.commitUpload(s.uploadId, s.choices);
+      // IPC clones its arguments; the reactive arrays cannot be cloned, plain copies can.
+      const r = await request.commitUpload(s.uploadId, s.choices.map((c) => [...c]));
       if (!r.written) {
         if (r.reason === 'expired') state.value = { step: 'problem', request: s.request, message: t('integrations.statement.expired') };
         else state.value = { ...s, busy: false, error: t('integrations.statement.importRunning') };
