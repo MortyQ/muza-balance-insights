@@ -17,8 +17,8 @@
 
 ## 3. Upload sheet
 
-- [ ] 3.1 `useQuickUpload` batch state machine and `UploadCard` / `UnknownFileCard` (D6). Person select prefilled or «Whose account?». Summary line. «Import». New keys in uk/en/ru. Verify with `tests/renderer/quick-upload.test.ts`: multiple files, an unknown file, a waiting card skipped on import, a token-only card read-only, the bound «from» date
-- [ ] 3.2 Drop zone and button open the sheet. The old dialog and `ConnectionChoice` are removed. Verify the drop and button tests and `tests/i18n.test.ts`
+- [x] 3.1 `useQuickUpload` batch state machine and `UploadCard` / `UnknownFileCard` (D6). Person select prefilled or «Whose account?». Summary line. «Import». New keys in uk/en/ru. Verify with `tests/renderer/quick-upload.test.ts`: multiple files, an unknown file, a waiting card skipped on import, a token-only card read-only, the bound «from» date
+- [x] 3.2 Drop zone and button open the sheet. The old dialog and `ConnectionChoice` are removed. Verify the drop and button tests and `tests/i18n.test.ts`
 
 ## 4. «Data by bank» panel
 

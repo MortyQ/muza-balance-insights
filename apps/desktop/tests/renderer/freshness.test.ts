@@ -8,7 +8,7 @@ import type { ConnectionView, PersonView } from '@contract/api.ts';
 
 const api = vi.hoisted(() => ({
   startImport: vi.fn(async (_from: string) => ({ started: true as const })),
-  openAnyStatement: vi.fn(async () => ({ opened: false as const, reason: 'cancelled' as const })),
+  openUpload: vi.fn(async () => ({ opened: false as const, reason: 'cancelled' as const })),
 }));
 vi.mock('@/shared/api', () => ({ balanceApi: api }));
 
@@ -59,7 +59,7 @@ describe('FreshnessList', () => {
     buttons.find((b) => b.textContent?.includes('Загрузить выписку'))!.click();
     await flushPromises();
     expect(api.startImport).toHaveBeenCalledWith('2026-10-20');
-    expect(api.openAnyStatement).toHaveBeenCalled();
+    expect(api.openUpload).toHaveBeenCalled();
     w.unmount();
   });
 });

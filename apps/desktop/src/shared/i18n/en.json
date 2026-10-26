@@ -232,7 +232,11 @@
           "card": "PrivatBank card"
         }
       },
-      "other": "Other banks"
+      "other": "Other banks",
+      "statementHint": {
+        "monobank": "In the monobank app: the card → Statement → pick the period → CSV or Excel.",
+        "privatbank": "In Privat24: the card → Statement → pick the period → Excel."
+      }
     },
     "color": {
       "aqua": "Aqua",
@@ -881,16 +885,23 @@
     },
     "quick": {
       "button": "Upload statement",
-      "title": "{bank} statement",
-      "chooseConnection": "Which connection should the statement go to?",
-      "compareOnly": "{bank} is connected by token: the statement can only be checked against that data.",
-      "noConnection": "There is no {bank} file connection yet.",
-      "addConnection": "Add connection",
-      "person": "Person",
-      "dropHint": "Drop the file to upload the statement",
-      "oneFile": "Drop one file at a time.",
+      "title": "Upload statements",
+      "dropHint": "Drop the files to upload statements",
+      "reading": "Reading the files…",
+      "tooMany": "At most {max} files at a time.",
+      "from": "Download a statement from {date}.",
+      "whose": "Whose account?",
+      "choosePerson": "Choose a person",
+      "checkOnly": "Connected by token: the statement is only checked, not written.",
+      "gap": "There is a gap between this file and the data: upload the statement for the earlier days first.",
+      "fileSkipped": "File {n} skipped",
+      "summary": "Ready: {ready} · new operations: {added}",
+      "waiting": "waiting for a person: {count}",
+      "import": "Import",
+      "cancel": "Cancel",
       "close": "Close",
-      "me": "Me"
+      "added": "Operations added: {count}.",
+      "leftOut": "Files not written: {count}."
     },
     "people": {
       "add": "Add person",

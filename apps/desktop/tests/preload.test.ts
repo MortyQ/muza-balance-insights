@@ -48,18 +48,6 @@ describe('preload API', () => {
     ]);
   });
 
-  it('openDroppedStatement takes a File and sends main its path; a File made by script sends an empty one', async () => {
-    const api = exposed[0]![1];
-    const file = { name: 'Вигадана.xlsx' };
-    dropped.set(file, '/Users/someone/Вигадана.xlsx');
-    await api.openDroppedStatement(file);
-    await api.openDroppedStatement({ name: 'made-by-script.csv' });
-    expect(invoked).toEqual([
-      ['balance:openDroppedStatement', '/Users/someone/Вигадана.xlsx'],
-      ['balance:openDroppedStatement', ''],
-    ]);
-  });
-
   it('openDroppedUpload takes Files and sends main their paths only', async () => {
     const api = exposed[0]![1];
     const a = { name: 'Вигадана-1.xlsx' };

@@ -40,7 +40,7 @@ function refresh(row: Readonly<FreshnessRow>): void {
             variant="neutral"
             icon="lucide:file-up"
             :text="$t('home.filters.freshness.upload')"
-            @click="upload.pick"
+            @click="upload.pick()"
           />
           <VButton v-else-if="row.behind" size="sm" variant="neutral" icon="lucide:refresh-cw" :text="$t('home.filters.freshness.refresh')" @click="refresh(row)" />
         </li>

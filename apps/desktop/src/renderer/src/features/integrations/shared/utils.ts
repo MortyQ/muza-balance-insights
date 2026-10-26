@@ -3,7 +3,6 @@ import type {
   ColorKey,
   ConnectionAccountView,
   ConnectionView,
-  OpenAnyStatementResult,
   OpenStatementResult,
   ParticipantChoice,
   RemoveConnectionResult,
@@ -77,7 +76,7 @@ export function accountSwitchChange(
 }
 
 /** Why a file was not opened, or '' (opened or cancelled). */
-export function openProblemText(r: Readonly<OpenStatementResult | OpenAnyStatementResult>): string {
+export function openProblemText(r: Readonly<OpenStatementResult>): string {
   if (r.opened || r.reason === 'cancelled') return '';
   return t(PROBLEM_TEXT[r.problem], { row: r.row ?? 0 });
 }

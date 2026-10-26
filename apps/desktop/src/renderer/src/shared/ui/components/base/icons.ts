@@ -32,6 +32,7 @@ import LucideEllipsis from "~icons/lucide/ellipsis";
 import LucideEye from "~icons/lucide/eye";
 import LucideEyeOff from "~icons/lucide/eye-off";
 import LucideFileUp from "~icons/lucide/file-up";
+import LucideFileX from "~icons/lucide/file-x";
 import LucideFingerprintPattern from "~icons/lucide/fingerprint-pattern";
 import LucideGift from "~icons/lucide/gift";
 import LucideGlobe from "~icons/lucide/globe";
@@ -129,6 +130,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:eye": LucideEye,
   "lucide:eye-off": LucideEyeOff,
   "lucide:file-up": LucideFileUp,
+  "lucide:file-x": LucideFileX,
   "lucide:fingerprint-pattern": LucideFingerprintPattern,
   "lucide:gift": LucideGift,
   "lucide:globe": LucideGlobe,

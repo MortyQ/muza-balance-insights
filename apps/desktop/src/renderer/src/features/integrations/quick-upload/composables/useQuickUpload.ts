@@ -1,84 +1,79 @@
-import { ref } from 'vue';
-import type { OpenAnyStatementResult, ProviderId } from '@contract/api.ts';
+import { ref, type Ref } from 'vue';
+import type { OpenUploadResult } from '@contract/api.ts';
+import { UPLOAD_FILES_MAX } from '@contract/upload.ts';
 import { useParticipantStore } from '@/entities/participant';
+import { useSyncStatusStore } from '@/entities/sync-status';
 import { failedText, t } from '@/shared/lib';
 import { useConnectionsRequest } from '../../shared/api/useConnectionsRequest.ts';
-import { openProblemText } from '../../shared/utils.ts';
-import type { ConnectionOption, QuickUploadState } from '../types.ts';
-import { connectionsFor } from '../utils.ts';
+import type { QuickUploadState, UploadRequest } from '../types.ts';
+import { doneText, initialChoices } from '../utils.ts';
 
-// One upload at a time for the whole window: the header's button and the layout's drop zone share it.
+// One upload at a time for the whole window: the header's button, the data status list and the drop zone share it.
 const state = ref<QuickUploadState>({ step: 'idle' });
 
-export function useQuickUpload() {
+export function useQuickUpload(): {
+  state: Ref<QuickUploadState>;
+  pick: (request?: UploadRequest) => Promise<void>;
+  drop: (files: ReadonlyArray<File>) => Promise<void>;
+  choose: (file: number, account: number, participantId: number) => void;
+  commit: () => Promise<void>;
+  close: () => void;
+} {
   const request = useConnectionsRequest();
   const participant = useParticipantStore();
+  const syncStatus = useSyncStatusStore();
 
-  async function begin(open: () => Promise<OpenAnyStatementResult>): Promise<void> {
-    state.value = { step: 'opening' };
+  async function begin(req: UploadRequest, open: () => Promise<OpenUploadResult>): Promise<void> {
+    state.value = { step: 'opening', request: req };
     try {
       const r = await open();
       if (!r.opened) {
-        state.value = r.reason === 'cancelled' ? { step: 'idle' } : { step: 'problem', message: openProblemText(r) };
+        state.value =
+          r.reason === 'cancelled' ? { step: 'idle' } : { step: 'problem', request: req, message: t('integrations.quick.tooMany', { max: UPLOAD_FILES_MAX }) };
         return;
       }
       await participant.refresh().catch(() => undefined);
-      const { files, tokens } = connectionsFor(participant.view?.people ?? [], r.provider);
-      if (files.length === 1) await assign(r.statementId, files[0]!);
-      else state.value = { step: 'choose', statementId: r.statementId, provider: r.provider, files, tokens, busy: false };
+      const people = participant.people;
+      const only = people.length === 1 ? people[0]!.id : null;
+      state.value = { step: 'review', request: req, uploadId: r.uploadId, files: r.files, choices: initialChoices(r.files, only), busy: false, error: '' };
     } catch {
-      state.value = { step: 'problem', message: failedText() };
+      state.value = { step: 'problem', request: req, message: failedText() };
     }
   }
 
-  async function assign(statementId: string, option: ConnectionOption): Promise<void> {
-    const r = await request.assignStatement(statementId, option.connection.id);
-    if (!r.opened && r.reason === 'expired') state.value = { step: 'problem', message: t('integrations.statement.expired') };
-    else if (!r.opened) state.value = { step: 'problem', message: openProblemText(r) };
-    else state.value = { step: 'ready', connection: option.connection, opened: r };
+  function choose(file: number, account: number, participantId: number): void {
+    const s = state.value;
+    if (s.step !== 'review') return;
+    const choices = s.choices.map((c, i) => (i === file ? c.map((p, j) => (j === account ? participantId : p)) : c));
+    state.value = { ...s, choices };
   }
 
-  /** The picked connection of the file's bank. */
-  async function choose(option: ConnectionOption): Promise<void> {
+  async function commit(): Promise<void> {
     const s = state.value;
-    if (s.step !== 'choose') return;
-    state.value = { ...s, busy: true };
+    if (s.step !== 'review' || s.busy) return;
+    state.value = { ...s, busy: true, error: '' };
     try {
-      await assign(s.statementId, option);
+      const r = await request.commitUpload(s.uploadId, s.choices);
+      if (!r.written) {
+        if (r.reason === 'expired') state.value = { step: 'problem', request: s.request, message: t('integrations.statement.expired') };
+        else state.value = { ...s, busy: false, error: t('integrations.statement.importRunning') };
+        return;
+      }
+      state.value = { step: 'done', request: s.request, message: doneText(r) };
+      // No push from main: home and the rows reload on the new data status. The rows are written even if this fails.
+      await participant.refresh().catch(() => undefined);
+      await syncStatus.refresh().catch(() => undefined);
     } catch {
-      state.value = { step: 'problem', message: failedText() };
-    }
-  }
-
-  /** No file connection of the file's bank: one is added for the person picked, then the file goes to it. */
-  async function addConnection(participantId: number | null): Promise<void> {
-    const s = state.value;
-    if (s.step !== 'choose') return;
-    state.value = { ...s, busy: true };
-    try {
-      const provider: ProviderId = s.provider;
-      const r = await request.addConnection({
-        participant: participantId === null ? { label: t('integrations.quick.me') } : { id: participantId },
-        provider,
-        method: 'file',
-      });
-      if (!r.added) throw new Error('not added');
-      await participant.refresh();
-      const added = connectionsFor(participant.view?.people ?? [], provider).files.find((o) => o.connection.id === r.connectionId);
-      if (!added) throw new Error('not listed');
-      await assign(s.statementId, added);
-    } catch {
-      state.value = { step: 'problem', message: failedText() };
+      state.value = { ...s, busy: false, error: failedText() };
     }
   }
 
   return {
     state,
-    pick: () => begin(() => request.openAnyStatement()),
-    drop: (files: ReadonlyArray<File>) =>
-      files.length === 1 ? begin(() => request.openDroppedStatement(files[0]!)) : void (state.value = { step: 'problem', message: t('integrations.quick.oneFile') }),
+    pick: (req = {}) => begin(req, () => request.openUpload(req.connectionId)),
+    drop: (files) => begin({}, () => request.openDroppedUpload([...files])),
     choose,
-    addConnection,
+    commit,
     close: () => void (state.value = { step: 'idle' }),
   };
 }

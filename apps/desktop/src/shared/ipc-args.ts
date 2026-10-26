@@ -10,6 +10,7 @@ import { LOCALES } from './locale.ts';
 import { PIN_RE } from './lock.ts';
 import { ANALYTICS_MAX_MONTHS, monthSpan } from './analytics.ts';
 import { isIsoDate } from './import-range.ts';
+import { UPLOAD_FILES_MAX } from './upload.ts';
 import { THEME_PREFS } from './theme.ts';
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const id = z.number().int().positive();
@@ -51,8 +52,6 @@ const statementTarget = z.discriminatedUnion('kind', [
 ]);
 /** Accounts one statement file may hold; main refuses a file with more (`over-limits`). */
 export const STATEMENT_ACCOUNTS_MAX = 50;
-/** At most this many files in one upload of the upload sheet. */
-export const UPLOAD_FILES_MAX = 12;
 const autoSync = z.strictObject({
   enabled: z.boolean(),
   triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
@@ -76,10 +75,6 @@ export const ARG_SCHEMAS = {
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
   openStatement: z.tuple([id]),
-  openAnyStatement: z.tuple([]),
-  // The path of a file dropped on the window, from the preload (webUtils.getPathForFile): the renderer's API takes a File.
-  openDroppedStatement: z.tuple([z.string().min(1).max(4096)]),
-  assignStatement: z.tuple([statementId, id]),
   compareStatement: z.tuple([statementId, z.array(statementTarget.nullable()).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   commitStatement: z.tuple([statementId, z.array(statementTarget).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   openUpload: z.union([z.tuple([]), z.tuple([id])]),

@@ -3,10 +3,8 @@
 // document picks reads it (core providers/statements.ts; another bank's reader is refused). Main keeps every account of
 // the file for the next two steps — compare, write — and forgets them after them, after 10 minutes, on a new file and
 // on the app lock. The renderer never gets the path, the name or the content; the log gets a code or a count only.
-// A file may also come without a connection (the data screens' «Upload statement», or a file dropped on the window: its
-// path comes from the preload only): the file names its bank, and the renderer then assigns one of that bank's
-// connections before anything is compared.
-// The upload sheet takes several files at once (an upload): each account of each file goes to the connection of its
+// The upload sheet (the data screens' «Upload statement», or files dropped on the window: their paths come from the
+// preload only) takes several files at once (an upload): each account of each file goes to the connection of its
 // bank that already has it, found by the data process's own match (IBAN or card number), so the renderer gets the
 // connection and its person and never the number; an account no connection has waits for the user's choice of person,
 // whose file connection of that bank takes it — made at the write, so a cancelled sheet leaves none behind.
@@ -16,7 +14,8 @@ import { STATEMENT_READERS, pickReader } from '@mono/core/providers/statements';
 import type { ParsedStatement, ProviderId, StatementDocument } from '@mono/core/providers/types';
 import type { StatementTarget } from '@mono/core/ingest/statement-import';
 import { DataCallError } from '../shared/data-protocol.ts';
-import { STATEMENT_ACCOUNTS_MAX, UPLOAD_FILES_MAX } from '../shared/ipc-args.ts';
+import { STATEMENT_ACCOUNTS_MAX } from '../shared/ipc-args.ts';
+import { UPLOAD_FILES_MAX } from '../shared/upload.ts';
 import type { DecodeFormat } from '../shared/decoder-protocol.ts';
 import type {
   CommitStatementResult,
@@ -27,7 +26,6 @@ import type {
   UploadFileOutcome,
   UploadFileView,
   CompareStatementResult,
-  OpenAnyStatementResult,
   OpenStatementResult,
   StatementProblemCode,
   StatementTargetInput,
@@ -54,8 +52,7 @@ export type StatementsDeps = {
   log: (msg: string) => void;
 };
 
-/** connectionId null: opened from the data screens, no connection assigned yet (compare and write refuse it). */
-type Kept = { id: string; connectionId: number | null; provider: ProviderId; statements: ParsedStatement[]; until: number };
+type Kept = { id: string; connectionId: number; provider: ProviderId; statements: ParsedStatement[]; until: number };
 
 /** One file of an upload: its accounts and where each one already is (null: none has it). */
 type UploadFile =
@@ -295,38 +292,12 @@ export class StatementsService {
     return this.view(id, connectionId, read.statements);
   }
 
-  /** The data screens: the system dialog with every bank's statement files, or a dropped file's path (from the preload). */
-  async openAny(dropped: string | null = null): Promise<OpenAnyStatementResult> {
-    this.kept = null;
-    let file = dropped;
-    if (file === null) {
-      file = await this.d.pickFile([...new Set(Object.values(STATEMENT_READERS).flatMap((rs) => rs.flatMap((r) => r.extensions)))]);
-      if (file === null) return { opened: false, reason: 'cancelled' };
-    } else if (!(await isPlainFile(file))) {
-      return this.problem('unreadable');
-    }
-    const read = await this.read(file);
-    if (!read.ok) return this.problem(read.problem, read.row);
-    return { opened: true, statementId: this.keep(read.provider, read.statements, null), provider: read.provider };
-  }
-
-  /** A connection of the file's bank for a statement opened by openAny; then compare and write go as after open. */
-  async assign(statementId: string, connectionId: number): Promise<OpenStatementResult | { opened: false; reason: 'expired' }> {
-    const kept = this.take(statementId);
-    if (!kept) return { opened: false, reason: 'expired' };
-    const connection = (await this.d.data.connections()).find((c) => c.id === connectionId);
-    if (!connection) throw new DataCallError('connection', 'ConnectionError', 'No such connection');
-    if (connection.provider !== kept.provider) return this.problem('other-bank');
-    kept.connectionId = connectionId;
-    return this.view(kept.id, connectionId, kept.statements);
-  }
-
   async compare(statementId: string, targets: ReadonlyArray<StatementTargetInput | null>): Promise<CompareStatementResult> {
     const kept = this.take(statementId);
     if (!kept) return { ok: false, reason: 'expired' };
     this.fits(kept, targets);
     const all = await this.d.data.compareStatement(
-      this.connectionOf(kept),
+      kept.connectionId,
       kept.statements,
       targets.map((t) => (t === null ? null : this.target(t))),
     );
@@ -350,7 +321,7 @@ export class StatementsService {
     if (!kept) return { written: false, reason: 'expired' };
     this.fits(kept, targets);
     if (this.d.importRunning()) return { written: false, reason: 'import-running' };
-    const r = await this.d.data.commitStatement(this.connectionOf(kept), kept.statements, targets.map((t) => this.target(t)));
+    const r = await this.d.data.commitStatement(kept.connectionId, kept.statements, targets.map((t) => this.target(t)));
     if (!r.written) return r;
     this.kept = null;
     this.d.log(`[statement] added ${r.added}`);
@@ -376,7 +347,7 @@ export class StatementsService {
     return { ok: true, provider: picked.reader.provider, statements: read.statements };
   }
 
-  private keep(provider: ProviderId, statements: ParsedStatement[], connectionId: number | null): string {
+  private keep(provider: ProviderId, statements: ParsedStatement[], connectionId: number): string {
     const id = this.d.randomId();
     this.kept = { id, connectionId, provider, statements, until: this.d.nowMs() + STATEMENT_KEEP_MS };
     this.d.log(`[statement] opened ${statements.length} accounts, ${statements.reduce((n, s) => n + s.rows.length, 0)} rows`);
@@ -401,12 +372,6 @@ export class StatementsService {
         };
       }),
     };
-  }
-
-  /** Compare and write need a connection: a statement opened from the data screens gets one by assign first. */
-  private connectionOf(kept: Kept): number {
-    if (kept.connectionId === null) throw new Error('No connection assigned to the statement');
-    return kept.connectionId;
   }
 
   private problem(problem: StatementProblemCode, row: number | null = null): { opened: false; reason: 'problem'; problem: StatementProblemCode; row: number | null } {
