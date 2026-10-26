@@ -7,9 +7,9 @@
 
 ## 2. English categories and service texts (core)
 
-- [ ] 2.1 `categories.ts`: the English names of design's table in `BANK_CATEGORIES` and the five English transfer categories in `TRANSFER_CATEGORIES` (design 2); verify `rules.test.ts` cases for an English purchase, an English transfer and an unknown English category
-- [ ] 2.2 `descriptions.ts` and `rules.ts`: the English own-card, jar, cash and «from» texts; `namedSender` returns the text's own label (design 3); verify `rules.test.ts` cases for each, own transfer and income source included
-- [ ] 2.3 Masking: the four English templates kept, «from …» masked to `[other]` with `from_prefix` (design 4); verify masking cases in `rules.test.ts` and that `apps/mcp/tests/analysis.test.ts` stays green
+- [x] 2.1 `categories.ts`: the English names of design's table in `BANK_CATEGORIES` and the five English transfer categories in `TRANSFER_CATEGORIES` (design 2); verify `rules.test.ts` cases for an English purchase, an English transfer and an unknown English category
+- [x] 2.2 `descriptions.ts` and `rules.ts`: the English own-card, jar, cash and «from» texts; `namedSender` returns the text's own label (design 3); verify `rules.test.ts` cases for each, own transfer and income source included
+- [x] 2.3 Masking: the four English templates kept, «from …» masked to `[other]` with `from_prefix` (design 4); verify masking cases in `rules.test.ts` and that `apps/mcp/tests/analysis.test.ts` stays green
 
 ## 3. Docs
 

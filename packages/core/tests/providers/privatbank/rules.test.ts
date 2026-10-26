@@ -77,3 +77,41 @@ describe('masking', () => {
     expect(rules.maskDescription('+380000000000', ctx)).toEqual({ description: '[other]', descClass: 'other' });
   });
 });
+
+describe('the English statement', () => {
+  it('categories and transfers by the English bank categories', () => {
+    expect(rules.categoryHint(tx('Supermarkets and groceries', 'Made-up Supermarket'))).toBe('groceries');
+    expect(rules.categoryHint(tx('Cinema', 'Made-up Cinema'))).toBe('entertainment');
+    expect(rules.categoryHint(tx('Transfers', 'Made-up Person'))).toBe('p2p');
+    expect(rules.categoryHint(tx('Transfer crediting', 'Made-up Person', 100))).toBe('income');
+    expect(rules.categoryHint(tx('Made-up New Category', 'Something'))).toBeNull();
+    expect(rules.knowsBankCategory('Made-up New Category')).toBe(false);
+    expect(rules.knowsBankCategory('Services')).toBe(true);
+  });
+
+  it('own transfers: to and from the own card, the jar', () => {
+    const to = tx('Transfer to my card', 'To my card *1234');
+    const from = tx('Transfer from my card', 'From my card *5678', 100);
+    const jar = tx('Savings', 'Moneybox');
+    for (const t of [to, from, jar]) {
+      expect(rules.isOwnTransferText(t, ctx)).toBe(true);
+      expect(rules.isPersonTransfer(t, ctx)).toBe(false);
+    }
+    expect(rules.ownTransferCounterpart(from, ctx)).toEqual({ kind: 'card', type: 'card', currencyCode: null });
+    expect(rules.ownTransferCounterpart(jar, ctx)).toBeNull();
+  });
+
+  it('named senders with the text\'s own label', () => {
+    expect(rules.namedSender('from Made-up Sender')).toEqual({ label: 'from', name: 'Made-up Sender' });
+    expect(rules.incomeSource(tx('Transfer crediting', 'from Made-up Sender', 100))).toBe('named_sender');
+  });
+
+  it('masking keeps the English service texts and masks the rest', () => {
+    expect(rules.maskDescription('Moneybox', ctx)).toEqual({ description: 'Moneybox', descClass: 'service' });
+    expect(rules.maskDescription('ATM cash withdrawal', ctx)).toEqual({ description: 'ATM cash withdrawal', descClass: 'service' });
+    expect(rules.maskDescription('To my card *1234', ctx)).toEqual({ description: 'To my card *9999', descClass: 'service' });
+    expect(rules.maskDescription('From my card *5678', ctx)).toEqual({ description: 'From my card *9999', descClass: 'service' });
+    expect(rules.maskDescription('from Made-up Sender', ctx)).toEqual({ description: '[other]', descClass: 'from_prefix' });
+    expect(rules.maskDescription('ATM Made-up 12345-678, Made-up City', ctx)).toEqual({ description: '[other]', descClass: 'other' });
+  });
+});
