@@ -1,5 +1,6 @@
-// PrivatBank's Privat24 card statement (.xlsx, «Історія операцій за період»), as the first sheet of a workbook: a title
-// row with the period, then ten Ukrainian column headers, then one row per operation, newest first, and often many
+// PrivatBank's Privat24 card statement (.xlsx), in Ukrainian («Історія операцій за період») or English («Transaction
+// history for the period»), as the first sheet of a workbook: a title row with the period, then ten column headers in
+// the file's language (the same columns in the same order), then one row per operation, newest first, and often many
 // empty formatted rows after them. Rows of several cards may share one file: one statement per card (a card is its own
 // account; the file states no IBAN). No MCC: the bank's own category per row. The card amount is signed; the
 // operation amount is not. A debit that cost more than the operation carries the bank's fee on top.
@@ -20,41 +21,60 @@ type Field =
   | 'balance'
   | 'balanceCurrency';
 
-const COLUMNS: ReadonlyArray<{ field: Field; re: RegExp }> = [
-  { field: 'time', re: /^дата$/ },
-  { field: 'category', re: /^категорія$/ },
-  { field: 'card', re: /^картка$/ },
-  { field: 'description', re: /^опис операції$/ },
-  { field: 'amount', re: /^сума в валюті картки$/ },
-  { field: 'currency', re: /^валюта картки$/ },
-  { field: 'operationAmount', re: /^сума в валюті транзакції$/ },
-  { field: 'operationCurrency', re: /^валюта транзакції$/ },
-  { field: 'balance', re: /^залишок на кінець періоду$/ },
-  { field: 'balanceCurrency', re: /^валюта залишку$/ },
-];
+type Language = { columns: ReadonlyArray<{ field: Field; re: RegExp }>; title: RegExp };
 
-const TITLE_RE = /^історія операцій за період \d{2}\.\d{2}\.\d{4} - \d{2}\.\d{2}\.\d{4}$/;
+const UK: Language = {
+  columns: [
+    { field: 'time', re: /^дата$/ },
+    { field: 'category', re: /^категорія$/ },
+    { field: 'card', re: /^картка$/ },
+    { field: 'description', re: /^опис операції$/ },
+    { field: 'amount', re: /^сума в валюті картки$/ },
+    { field: 'currency', re: /^валюта картки$/ },
+    { field: 'operationAmount', re: /^сума в валюті транзакції$/ },
+    { field: 'operationCurrency', re: /^валюта транзакції$/ },
+    { field: 'balance', re: /^залишок на кінець періоду$/ },
+    { field: 'balanceCurrency', re: /^валюта залишку$/ },
+  ],
+  title: /^історія операцій за період \d{2}\.\d{2}\.\d{4} - \d{2}\.\d{2}\.\d{4}$/,
+};
+
+const EN: Language = {
+  columns: [
+    { field: 'time', re: /^date$/ },
+    { field: 'category', re: /^category$/ },
+    { field: 'card', re: /^card$/ },
+    { field: 'description', re: /^description$/ },
+    { field: 'amount', re: /^amount in card currency$/ },
+    { field: 'currency', re: /^card currency$/ },
+    { field: 'operationAmount', re: /^amount in transaction currency$/ },
+    { field: 'operationCurrency', re: /^transaction currency$/ },
+    { field: 'balance', re: /^rest at the end of the period$/ },
+    { field: 'balanceCurrency', re: /^rest currency$/ },
+  ],
+  title: /^transaction history for the period \d{2}\.\d{2}\.\d{4} - \d{2}\.\d{2}\.\d{4}$/,
+};
 
 type Columns = Record<Field, number>;
 
-function columnsOf(header: readonly string[] | undefined): Columns | null {
-  const found = header ? columnsByHeader(header, COLUMNS) : null;
+function columnsOf(header: readonly string[] | undefined, lang: Language): Columns | null {
+  const found = header ? columnsByHeader(header, lang.columns) : null;
   return found ? (Object.fromEntries(Object.entries(found).map(([f, c]) => [f, (c as { index: number }).index])) as Columns) : null;
 }
 
 /** The sheet's table, where its header row is (0, or 1 under the title), and its columns; null when it is not ours. */
-function layoutOf(doc: StatementDocument): { grid: string[][]; headerRow: number; columns: Columns; titled: boolean } | null {
+function layoutOf(doc: StatementDocument, lang: Language): { grid: string[][]; headerRow: number; columns: Columns; titled: boolean } | null {
   if (doc.format !== 'sheets') return null;
   const grid = gridOf(doc);
   if (!grid) return null;
-  const titled = TITLE_RE.test(normHeader(grid[0]?.find((c) => c.trim() !== '') ?? ''));
+  const titled = lang.title.test(normHeader(grid[0]?.find((c) => c.trim() !== '') ?? ''));
   const headerRow = titled ? 1 : 0;
-  const columns = columnsOf(grid[headerRow]);
+  const columns = columnsOf(grid[headerRow], lang);
   return columns ? { grid, headerRow, columns, titled } : null;
 }
 
-function detect(doc: StatementDocument): 0 | 1 | 2 {
-  const layout = layoutOf(doc);
+function detect(doc: StatementDocument, lang: Language): 0 | 1 | 2 {
+  const layout = layoutOf(doc, lang);
   if (!layout) return 0;
   return layout.titled ? 2 : 1;
 }
@@ -95,8 +115,8 @@ function readRow(cells: readonly string[], header: readonly string[], c: Columns
   return { card, currencyCode, tx };
 }
 
-function read(doc: StatementDocument): StatementReadResult {
-  const layout = layoutOf(doc);
+function read(doc: StatementDocument, lang: Language): StatementReadResult {
+  const layout = layoutOf(doc, lang);
   if (!layout) return { ok: false, problem: 'unknown-format' };
   const { grid, headerRow, columns } = layout;
   const header = grid[headerRow] ?? [];
@@ -122,6 +142,15 @@ function read(doc: StatementDocument): StatementReadResult {
   return { ok: true, statements };
 }
 
-export const privatbankCardReader: StatementReader = { provider: 'privatbank', id: 'privatbank-card-uk', extensions: ['xlsx'], detect, read };
+const readerOf = (id: string, lang: Language): StatementReader => ({
+  provider: 'privatbank',
+  id,
+  extensions: ['xlsx'],
+  detect: (doc) => detect(doc, lang),
+  read: (doc) => read(doc, lang),
+});
 
-export const readers: readonly StatementReader[] = [privatbankCardReader];
+export const privatbankCardReader = readerOf('privatbank-card-uk', UK);
+export const privatbankCardEnReader = readerOf('privatbank-card-en', EN);
+
+export const readers: readonly StatementReader[] = [privatbankCardReader, privatbankCardEnReader];
