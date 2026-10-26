@@ -6,7 +6,6 @@ export const NAV_GROUPS = [
     label: 'settings.nav.groupUsers',
     items: [
       { label: 'settings.nav.people', icon: 'lucide:users', id: 'people' },
-      { label: 'settings.nav.connections', icon: 'lucide:landmark', id: 'connections' },
     ],
   },
   {

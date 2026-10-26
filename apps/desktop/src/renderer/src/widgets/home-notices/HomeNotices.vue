@@ -18,7 +18,7 @@ const importProgress = useImportProgressStore();
 const monthStore = useMonthStore();
 
 function openConnections() {
-  void router.push({ name: ROUTE.settings, query: { section: 'connections' } });
+  void router.push({ name: ROUTE.settings, query: { section: 'people' } });
 }
 function openImport(from?: string) {
   void router.push(importLink(from));
