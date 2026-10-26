@@ -1,6 +1,6 @@
-import type { ProviderId } from '@contract/api.ts';
+import type { ConnectionView, ProviderId } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
-import { bankOf, isProviderId } from '@/entities/bank';
+import { BANKS, type Bank, bankOf, isProviderId } from '@/entities/bank';
 import { t } from '@/shared/lib';
 import { PROVIDER_FORMS } from './constants.ts';
 import type { ProviderForms } from './shared/types.ts';
@@ -25,4 +25,19 @@ export function accessNoteOf(provider: ProviderId): MessageKey {
 /** The title of the «Add connection» panel. */
 export function newConnectionTitle(bankName: string): string {
   return t('integrations.connections.newTitle', { bank: bankName });
+}
+
+/** A person's connections by bank: banks in the registry's order (unknown ones last), connections in their order. */
+export function connectionsByBank<C extends Pick<ConnectionView, 'provider'>>(
+  connections: ReadonlyArray<C>,
+): Array<{ bank: Bank; connections: C[] }> {
+  const rank = (provider: string) => {
+    const i = BANKS.findIndex((b) => b.id === provider);
+    return i === -1 ? BANKS.length : i;
+  };
+  const groups = new Map<string, C[]>();
+  for (const c of connections) groups.set(c.provider, [...(groups.get(c.provider) ?? []), c]);
+  return [...groups.entries()]
+    .sort(([a], [b]) => rank(a) - rank(b))
+    .map(([provider, list]) => ({ bank: bankOf(provider), connections: list }));
 }

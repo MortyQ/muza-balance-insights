@@ -7,6 +7,7 @@ import { t } from '@/shared/lib';
 import { VCheckbox, VInput, VSegmentedControl, VSelect, type SegmentOption, type VSelectOption } from '@/shared/ui';
 import { WAY_TEXT, type ConnectWay } from './constants.ts';
 import { useConnectionOwner } from './shared/composables/useConnectionOwner.ts';
+import type { PersonChoice } from './shared/types.ts';
 import FileConnectForm from './statement-file/components/FileConnectForm.vue';
 import { formsOf } from './utils.ts';
 
@@ -15,16 +16,19 @@ const {
   defaultLabel = '',
   submitText = undefined,
   autofocus = false,
+  forPerson = null,
 } = defineProps<{
   provider: ProviderId;
   defaultLabel?: string;
   submitText?: string;
   autofocus?: boolean;
+  /** Whose the connection is, fixed: «Whose» is not asked. null — the user picks. */
+  forPerson?: PersonChoice | null;
 }>();
 const emit = defineEmits<{ added: [] }>();
 
 const participant = useParticipantStore();
-const { person, newLabel, fromBank, personColor, takenPersonColors, owner, reset } = useConnectionOwner(() => defaultLabel);
+const { person, newLabel, fromBank, personColor, takenPersonColors, owner, reset } = useConnectionOwner(() => defaultLabel, forPerson ?? 'new');
 const personId = useId();
 
 const submitLabel = computed(() => submitText ?? t('integrations.add.submit'));
@@ -70,8 +74,15 @@ function onAdded() {
       :autofocus
       @added="onAdded"
     >
-      <div class="flex flex-col gap-2">
-        <VSelect :id="personId" v-model="person" :label="$t('integrations.add.whose')" :options="personOptions" class="w-full max-w-[420px]" />
+      <div v-if="forPerson === null || person === 'new'" class="flex flex-col gap-2">
+        <VSelect
+          v-if="forPerson === null"
+          :id="personId"
+          v-model="person"
+          :label="$t('integrations.add.whose')"
+          :options="personOptions"
+          class="w-full max-w-[420px]"
+        />
         <template v-if="person === 'new'">
           <VInput
             v-model="newLabel"

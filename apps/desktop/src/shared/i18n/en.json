@@ -790,11 +790,7 @@
       "added": "Connection added. Press «Download» on the home screen to download every connection.",
       "addedDuringImport": "Connection added. It will be downloaded with the next import.",
       "cancel": "Cancel",
-      "description": "The bank and the token the app reads your statement with. The token is read-only: it cannot move money. In «Accounts» you can switch an account off: it is not downloaded and is left out of the statistics.",
-      "newTitle": "New {bank} connection",
-      "none": "No connections yet.",
-      "note": "Connect someone else's account only with the token owner's consent. «Remove» erases the connection, its token and the downloaded transactions in this app; nothing changes at the bank.",
-      "title": "Connections"
+      "newTitle": "New {bank} connection"
     },
     "first": {
       "defaultLabel": "Me",
@@ -895,6 +891,13 @@
       "oneFile": "Drop one file at a time.",
       "close": "Close",
       "me": "Me"
+    },
+    "people": {
+      "add": "Add person",
+      "description": "Whose accounts are downloaded into the app and through which banks. A person’s name is kept on this computer only and is never sent anywhere.",
+      "empty": "No people yet.",
+      "note": "A person is added together with a first connection — «Add person». When a person has no connections left, they are removed automatically. Connect someone else’s account only with the token owner’s consent. «Remove» erases the connection, its token and the downloaded transactions in this app; nothing changes at the bank.",
+      "title": "People and banks"
     }
   },
   "main": {
@@ -1072,7 +1075,6 @@
       "about": "About",
       "appearance": "Appearance",
       "autoSync": "Auto-sync",
-      "connections": "Connections",
       "data": "Data",
       "groupApp": "App",
       "groupSecurity": "Security",
@@ -1081,7 +1083,7 @@
       "language": "Language and time",
       "lock": "Lock",
       "network": "Network",
-      "people": "People",
+      "people": "People and banks",
       "storage": "Storage and tokens",
       "updates": "Updates"
     },
@@ -1095,17 +1097,13 @@
       "changeColor": "Change colour",
       "colorLabel": "Person's colour",
       "connections": "{n} connection | {n} connections | {n} connections",
-      "description": "Whose accounts are downloaded into the app. A person's name is kept on this computer only and is never sent anywhere.",
       "done": "Done",
-      "empty": "No people yet.",
       "nameFromBank": "Name from the bank, updated on import",
       "nameManual": "Name entered by hand",
       "newName": "New name",
-      "note": "A person is added together with a connection — in «Connections». When a person has no connections left, they are removed automatically.",
       "rename": "Rename",
       "renameError": "Name not saved: 1 to 80 characters.",
       "save": "Save",
-      "title": "People",
       "useBankName": "Use the name from the bank (updated on every import)"
     },
     "securityInfo": {

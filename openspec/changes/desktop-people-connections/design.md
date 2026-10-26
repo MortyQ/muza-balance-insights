@@ -38,10 +38,9 @@ another feature per person and own the add panel's state, i.e. feature logic in 
 features and import one into the other: features must not import sibling features. Verdict: one feature.
 
 ### D3. Person block layout
-`PersonBlock` keeps its header (avatar, name, «Rename», «Change colour», expanding panels) and gets a default slot under
-it. `PeopleConnectionsFeature` fills it: for each bank of the person (order of `BANKS`), a `SettingsList` with the bank's
-name as `heading` and that bank's `ConnectionRow`s; then an «Add connection» link button. Each person is one bordered
-block (`SettingsList` of one `PersonBlock`, as now), with the banks' lists nested inside it. Grouping is a pure helper
+Each person is one bordered `SettingsList`: `PersonBlock` as is (avatar, name, «Rename», «Change colour»), then for each
+bank of the person (order of `BANKS`) a small heading row with the bank's name and that bank's `ConnectionRow`s, then a
+row with «Add connection» and its panel. No nested lists: the list's own dividers separate the rows. Grouping is a pure helper
 `connectionsByBank(person)` in `features/integrations/utils.ts`.
 
 ### D4. Add flow for a given person
@@ -60,7 +59,7 @@ No people → the section's empty text and «Add person». The first-connect scr
 - Long section for many people with many banks → each person's block is compact; the history download stays last.
   Accepted.
 - Removing a person's last connection removes the person (core rule): the block disappears after refresh. The remove
-  confirmation text says so when it is the last connection (new key).
+  dialog is main's and stays as it is; the section's note says it.
 
 ## Migration Plan
 

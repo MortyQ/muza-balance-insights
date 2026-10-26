@@ -74,11 +74,11 @@ describe('a bank with statement files only, from its registry entry alone', () =
     w.unmount();
   });
 
-  it('«Add connection» asks for the bank, then adds it by file without a token or a choice of way', async () => {
-    const { default: ConnectionsFeature } = await import('@/features/integrations/ConnectionsFeature.vue');
-    const w = await mountIt(ConnectionsFeature);
+  it('«Add person» asks for the bank, then adds it by file without a token or a choice of way', async () => {
+    const { default: PeopleConnectionsFeature } = await import('@/features/integrations/PeopleConnectionsFeature.vue');
+    const w = await mountIt(PeopleConnectionsFeature);
     await flushPromises();
-    await w.findAll('button').find((b) => b.text() === 'Добавить подключение')?.trigger('click');
+    await w.findAll('button').find((b) => b.text() === 'Добавить человека')?.trigger('click');
     await flushPromises();
     await w.findAll('button').find((b) => b.text().includes('Вигаданий Банк'))?.trigger('click');
     await flushPromises();
@@ -90,6 +90,44 @@ describe('a bank with statement files only, from its registry entry alone', () =
     await w.find('form').trigger('submit');
     await flushPromises();
     expect(api.addConnection).toHaveBeenCalledWith({ participant: { label: 'Вигадана', color: expect.any(String) }, provider: 'fictional', method: 'file' });
+    w.unmount();
+  });
+});
+
+describe('«People and banks»', () => {
+  const conn = (id: number, provider: ProviderId, method: 'token' | 'file') => ({
+    id, provider, method, bank: bankOf(provider).name, accounts: 1, enabledAccounts: 1, coveredFrom: null, coveredTo: null, lastSyncAt: null,
+    token: method === 'token' ? { present: true, stored: 'secure', secureStorage: true, needsReentry: false } : null,
+  });
+  const people = {
+    people: [
+      { id: 1, label: 'Вигадана', labelFromBank: false, labelPending: false, color: null, connections: [conn(3, FICTIONAL, 'file'), conn(1, 'monobank', 'token'), conn(2, FICTIONAL, 'file')] },
+      { id: 2, label: 'Інша', labelFromBank: false, labelPending: false, color: null, connections: [conn(4, 'monobank', 'token')] },
+    ],
+    secureStorage: true,
+  };
+
+  it('connectionsByBank: banks in the registry order, one group per bank', async () => {
+    const { connectionsByBank } = await import('@/features/integrations/utils.ts');
+    const groups = connectionsByBank(people.people[0]!.connections);
+    expect(groups.map((g) => [g.bank.id, g.connections.map((c) => c.id)])).toEqual([['monobank', [1]], ['fictional', [3, 2]]]);
+  });
+
+  it('a person shows their connections under bank headings; «Add connection» adds to that person without asking whose', async () => {
+    api.listPeople.mockResolvedValue(people as never);
+    const { default: PeopleConnectionsFeature } = await import('@/features/integrations/PeopleConnectionsFeature.vue');
+    const w = await mountIt(PeopleConnectionsFeature);
+    await flushPromises();
+    expect(w.findAll('h4').map((h) => h.text())).toEqual(['Monobank', 'Вигаданий Банк', 'Monobank']);
+    await w.findAll('button').filter((b) => b.text() === 'Добавить подключение')[1]?.trigger('click');
+    await flushPromises();
+    await w.findAll('button').find((b) => b.text().includes('Вигаданий Банк'))?.trigger('click');
+    await flushPromises();
+    expect(w.text()).not.toContain('Чьи это счета');
+    expect(w.find('input[type="text"]').exists()).toBe(false);
+    await w.find('form').trigger('submit');
+    await flushPromises();
+    expect(api.addConnection).toHaveBeenCalledWith({ participant: { id: 2 }, provider: 'fictional', method: 'file' });
     w.unmount();
   });
 });

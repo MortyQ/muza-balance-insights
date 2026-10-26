@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Component } from 'vue';
 import { ImportFeature } from '@/features/import-statement';
-import { ConnectionsFeature } from '@/features/integrations';
+import { PeopleConnectionsFeature } from '@/features/integrations';
 import {
   AppLockSettingsFeature,
   AutoSyncSettingsFeature,
@@ -9,7 +9,6 @@ import {
   DeleteDataFeature,
   LanguageSelectFeature,
   NetworkInfoFeature,
-  PeopleFeature,
   StorageInfoFeature,
   ThemeSwitchFeature,
   UpdateSettingsFeature,
@@ -53,8 +52,7 @@ const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'people'>, Component
         <DbEncryptionFeature />
       </StorageInfoFeature>
       <div v-else-if="section === 'people'" key="people" class="flex flex-col gap-12">
-        <PeopleFeature />
-        <ConnectionsFeature />
+        <PeopleConnectionsFeature />
         <ImportFeature :requested-from="importFrom" :focus="focusImport" />
       </div>
       <component :is="SECTIONS[section]" v-else :key="section" @deleted="emit('deleted')" />

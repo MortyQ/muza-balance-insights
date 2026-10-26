@@ -43,7 +43,7 @@ export interface UseConnectionOwnerReturn {
   takenPersonColors: ComputedRef<Map<ColorKey, string>>;
   /** Who the connection is for, with the new person's colour; null while a new person has no name. */
   owner: ComputedRef<ParticipantChoice | null>;
-  /** Back to a new person with no name and the first free colours, after a connection is added. */
+  /** Back to the initial choice, no name and the first free colours, after a connection is added. */
   reset: () => void;
 }
 

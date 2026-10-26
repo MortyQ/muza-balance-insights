@@ -22,7 +22,7 @@ const { FAMILY, allAccountsOff, colorHolders, colorVar, coverageLine, filterOpti
 const { startRoute } = await import('@/app/router/startRoute.ts');
 const { noTokenText } = await import('@/widgets/home-notices/utils.ts');
 const { failureLines, progressLine } = await import('@/features/import-statement/utils.ts');
-const { connectionsCount } = await import('@/features/settings/people/utils.ts');
+const { connectionsCount } = await import('@/features/integrations/people/utils.ts');
 
 const token = (o: Partial<TokenStatus> = {}): TokenStatus => ({ present: true, stored: 'secure', secureStorage: true, needsReentry: false, ...o });
 const conn = (id: number, o: Partial<ConnectionView> = {}): ConnectionView => ({
