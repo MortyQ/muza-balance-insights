@@ -27,8 +27,8 @@
 
 ## 5. Docs
 
-- [ ] 5.1 `.agents/project/desktop-import.md` (statement IPC), `.agents/project/desktop-security.md` (several dropped paths), root `CLAUDE.md` (home filters paragraph), `CHANGELOG.md` 0.1.11 (the two entries of the proposal), `docs/backlog.md` (a card in two connections; 12 large files on a live machine)
+- [x] 5.1 `.agents/project/desktop-import.md` (statement IPC), `.agents/project/desktop-security.md` (several dropped paths), root `CLAUDE.md` (home filters paragraph), `CHANGELOG.md` 0.1.11 (the two entries of the proposal), `docs/backlog.md` (a card in two connections; 12 large files on a live machine)
 
 ## 6. Integration
 
-- [ ] 6.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)
+- [x] 6.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)

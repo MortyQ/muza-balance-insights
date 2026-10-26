@@ -29,12 +29,13 @@
   IBAN; the log gets `[statement] <code>` or counts. The read statements are kept in main for compare and commit — one
   file at a time, 10 minutes — and dropped on the lock and on «Delete all data». No network.
 
-  From the data screens a file opens without a connection (`openAnyStatement`: the dialog with every bank's
-  extensions; `openDroppedStatement`: a file dropped on the window). The bank comes from the reader the content picks;
-  the kept file has no connection until `assignStatement` gives one of that bank's (another bank's → `other-bank`), and
-  compare / write refuse it before then. A dropped file's path is read **in the preload only**
-  (`webUtils.getPathForFile`): the renderer's API takes the `File`, never a path; a `File` made by script has no path
-  (`''`, refused by the arguments' schema). Main reads a dropped path only if it is a regular file itself (`lstat`: no
+  From the data screens files open as an upload (`openUpload`: the dialog with several files — every bank's extensions,
+  or one connection's bank's only; `openDroppedUpload`: files dropped on the window), at most `UPLOAD_FILES_MAX` (12,
+  `src/shared/upload.ts`), kept like a statement (10 minutes, dropped on the lock). Each file's bank comes from the
+  reader its content picks; each account is matched to a connection by the data process (IBAN or card number), so the
+  renderer gets a connection id and a participant id, never the number. A dropped file's path is read **in the preload
+  only** (`webUtils.getPathForFile`): the renderer's API takes the `File`s, never a path; a `File` made by script has
+  no path (`''`, refused by the arguments' schema). Main reads a dropped path only if it is a regular file itself (`lstat`: no
   directory, device or symbolic link), through the same size limit, decoder and readers.
 - **The statement decoder** (`src/decoder/process.ts`, a `utilityProcess` forked per file by `main/decoder-client.ts`,
   `serviceName: 'balance-decoder'`, `env: {}`, nothing on the command line). A spreadsheet (`PK\3\4`) or a PDF

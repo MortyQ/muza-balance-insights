@@ -71,6 +71,17 @@
   gets the statements and targets (`DATA_ARG_SCHEMAS`: same length, at most 50) and runs core `compareStatement` /
   `writeStatement` (`data/statements.ts`). Tests: `tests/statements.test.ts` (a renamed file, a zip under any name,
   two accounts, another bank, each decoder refusal), `data-protocol.test.ts`, `ipc.test.ts`.
+- **The upload sheet** (IPC `openUpload(connectionId?)`, `openDroppedUpload(files)`, `commitUpload(uploadId, choices)`;
+  main `StatementsService.openUpload` / `commitUpload`): up to `UPLOAD_FILES_MAX` (12) files, read one at a time; a file
+  that fails is its own `{ ok: false, problem }` and never fails the upload. Each account of a file is compared (no
+  target) with every connection of its bank, file ones first; the first whose data process matches it (IBAN, then card
+  number) gives `match: { connectionId, participantId, method }` and its counts; none → `match: null`, every row new.
+  `commitUpload` takes per file, per account a participant id for an unmatched account (null for a matched one or none
+  yet): that person's first file connection of the bank takes it, or one is created for them at the write
+  (`createConnection`, once per person and bank in the upload) — so a cancelled sheet creates nothing. A file with an
+  account still waiting is `waiting`, one blocked by core is that block, and every other file is written, grouped by
+  connection (one core `commitStatement` per connection). `import-running` refuses the whole upload. Tests: the «upload
+  sheet» block of `tests/statements.test.ts`.
 - Импорт нескольких подключений — одна задача, один worker, один `import-job.json`: `start` несёт
   `connections: [{ connectionId, provider, token }]` (1–10), окна идут по кругу (`runPlans`). Всё, что worker знает о
   банке (клиент, разбор ошибок), — `apps/desktop/src/worker/providers.ts` (`WORKER_PROVIDERS`, из папок банков,

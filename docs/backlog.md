@@ -161,9 +161,17 @@
   floor is needed.
 - **Home's first row at three widths** (change `desktop-home-tiles`, group 7): under 65rem a tile per row, 65–79rem
   «Balance» | «Month» over «Month pace», from 79rem one row; open and fold the card row at each, both themes.
-- **Dropping statement files on the window** (`QuickUploadFeature`, `openDroppedStatement`): drop a real `.xlsx` and
-  `.csv` on macOS and Windows, a folder, two files, and a file from a zip opened in the system's archive viewer (it may
-  have no path: expect «unreadable»). Check the window never navigates to a dropped file.
+- **Dropping statement files on the window** (`QuickUploadFeature`, `openDroppedUpload`): drop a real `.xlsx` and
+  `.csv` on macOS and Windows, a folder, several files at once, and a file from a zip opened in the system's archive
+  viewer (it may have no path: expect «unreadable»). Check the window never navigates to a dropped file.
+- **The upload sheet on a live system** (change `desktop-upload-sheet`): 12 large XLSX files at once (reading time, one
+  decoder at a time); the side panel and the bottom sheet below 45rem; «Upload from» opening the right bank's files;
+  the «where to download» hints (`entities.bank.statementHint.*`) checked against the real Monobank and Privat24 apps.
+- **One card in two connections of a bank**: the upload takes the first connection that has the account (file ones
+  first). See whether two connections ever share a card; if they do, the sheet should ask instead.
+- **A file whose cards go to two connections** (`commitUpload`): each connection's part is written in its own
+  transaction, so a block on the second part leaves the first written. Rare (one file, two people's cards of one bank);
+  move to one transaction if it shows up.
 - **More PrivatBank statements** (readers `privatbank-card-uk` and `privatbank-card-en`, each built from one real file
   of one UAH card; Privat24 exports only these two languages): check a file with two cards, a card in another currency
   and a period with a refund. Watch the recategorize report's «Неизвестные категории банка» for PrivatBank categories
