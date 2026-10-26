@@ -300,7 +300,7 @@
     перезагружаются данные), `import-progress`; реакции между сущностями — в `app/listeners.ts` (люди обновляются на
     `needs-token`, в начале окон импорта и в его конце);
   - **домен `features/settings`** — один слайс со всем, что пользователь делает с приложением и своими данными на этом
-    компьютере: подфичи `app-lock`, `app-update`, `people`, `auto-sync`, `db-encryption`, `db-recovery`, `delete-data`,
+    компьютере: подфичи `app-lock`, `app-update`, `auto-sync`, `db-encryption`, `db-recovery`, `delete-data`,
     `security-info`, `theme-switch`, `language-select`
     (у каждой свои сегменты) и `shared/` для общего между ними (`isChecked`, `restoreSwitch` для `VSwitch`;
     `api/useDeleteAllDataRequest.ts` — «Удалить все данные» из настроек и с экрана «База недоступна»). Раскладка раздела
@@ -317,8 +317,9 @@
     `shared/` для общего между банками (`components/ConnectionRow.vue`, `components/BankPicker.vue` — выбор банка на первом
     экране; `composables/useConnectionActions.ts` — удалить, «Ввести токен заново», «Счета»;
     `composables/useConnectionOwner.ts` — чьё подключение и цвет нового человека; `api/useConnectionsRequest.ts`; `TOKEN_ERROR_TEXT`;
-    `participantChoice`, `removeText`, `accountLabel`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). Корень домена: `ConnectionsFeature.vue` (раздел
-    «Подключения»), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвет нового человека — в слот
+    `participantChoice`, `removeText`, `accountLabel`; контракты форм банка `ConnectFormProps` / `TokenFieldProps` в `types.ts`). `people/` — имя и цвет человека (`PersonBlock`, `usePeopleActions`). Корень домена: `PeopleConnectionsFeature.vue` (раздел
+    «People and banks»: люди, под каждым — его подключения по банкам, `connectionsByBank`; «Add connection» у человека
+    передаёт `forPerson` в `AddConnectionFeature`, «Add person» — `'new'`), `ConnectFirstFeature.vue` (первый экран), `AddConnectionFeature.vue` (чьё подключение и цвет нового человека — в слот
     формы банка; `provider` обязателен) и `constants.ts` — `PROVIDER_FORMS`, a `Partial` map of the banks that need their
     own forms (`provider → { connect, tokenField, accessNote, fileSteps? }`; `Component<ConnectFormProps>` /
     `Component<TokenFieldProps>`: vue-tsc checks that the bank's component takes those props; props at `<component :is>`
@@ -330,7 +331,7 @@
     back); with one bank it opens that bank's form. The add form offers «Token» only when the bank has its own forms.
     Only the root imports the bank folders; a connection row gets its bank's token field as a prop. The root files carry
     no bank's texts: the name comes from `entities/bank` (`bankOf`), the first screen's line from `accessNoteOf`. Наружу —
-    `ConnectionsFeature` (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у
+    `PeopleConnectionsFeature` (виджет `settings`) и `ConnectFirstFeature` (`pages/connect`). Те же правила домена, что у
     `settings`. A new bank needs nothing here unless it has a token or its own steps: then its folder and a
     `PROVIDER_FORMS` entry;
   - **«Счета» подключения** (`ConnectionRow`): кнопка «Счета · N» («Счета · X из N», если часть выключена;
@@ -345,7 +346,7 @@
     подключения (`coverageLine`): «Счетов: X из N», все выключены — «Все счета выключены». После — `participant.refresh()` и
     `syncStatus.refresh()` (push из main нет): главная перезагружается тихо. Все счета выключены (`accountsOff` в
     `participant` по `ConnectionView.enabledAccounts`) → `hasData` ложно, но подключения есть: главная (не экран
-    подключения) с плашкой «Все счета выключены…» и кнопкой в «Подключения» (`widgets/home-notices`);
+    подключения) с плашкой «Все счета выключены…» и кнопкой в «People and banks» (`widgets/home-notices`);
   - данные из main — `useAsyncData` (`shared/lib`): `Loadable<T>`, прошлое значение остаётся на время загрузки и после ошибки.
   - **The read cache** (`shared/lib/readCache.ts`, `ReadCache`, the one `readCache`): the answers of the eight data reads
     (`CACHED_READS` in `shared/api/methods.ts`: the month, spending, now, category, income, recurring, allowance and
@@ -401,16 +402,15 @@
   account (`canWrite`: none blocked, something new) and refreshes people and the data status. Problem texts name no
   file format. Home with file connections only points to «Upload
   statement» instead of the import.
-- Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «Люди» — `features/settings/people`
-  (имя и «Переименовать», «Взять имя из банка», цвет человека); раздел «Подключения» — `features/integrations`
-  (подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий
+- Экран настроек — меню и разделы, см. блок settings-ui в корневом `CLAUDE.md`. Раздел «People and banks» —
+  `features/integrations` (имя и «Переименовать», «Взять имя из банка», цвет человека; подключения со статусом токена, «Ввести токен заново», «Удалить», «Добавить подключение» — существующий
   человек или новый с именем / «Взять имя из банка», текст о согласии владельца токена); первый экран —
   `ConnectFirstFeature` той же формой с человеком «Я»; на главном — фильтр людей `ParticipantFilter` из `entities/participant` («Вся семья / имена», только если людей больше одного;
   у имени точка цвета человека, у «Вся семья» — точки всех: `filterOptions`, `SegmentOption.colors` в `VSegmentedControl`),
   траты и балансы берут `participantId`; импорт показывает, какие подключения не загрузились.
   Цвета людей (у подключений цвета нет): оттенки `--series-<key>` в `theme.css` (обе темы), выбор — `ColorSwatches` из
   `entities/participant` (radiogroup, занятые видны, но недоступны; своего компонента в muzakit нет), в форме добавления
-  по умолчанию — первый свободный; «Изменить цвет» в «Люди» применяется сразу; «Взять имя из банка»
+  по умолчанию — первый свободный; «Изменить цвет» в «People and banks» применяется сразу; «Взять имя из банка»
   в «Переименовать».
   Логотип — необязательный локальный файл `entities/bank/assets/<id>.svg|png|webp`, иначе монограмма (`looks/<id>.ts`, else neutral).
   «Настройки…» `CmdOrCtrl+,` в меню → `balance:open-settings` (main → renderer, без данных) → `onOpenSettings` в preload.

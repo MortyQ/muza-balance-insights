@@ -3,6 +3,14 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.11 — unreleased
+
+### Settings
+
+- **People and their banks in one place.** «People» and «Connections» are now one section, «People and banks»: each
+  person is listed with their connections grouped by bank. To add a bank to someone who is already in the app, press
+  «Add connection» on their card; «Add person» adds a new person together with their first connection.
+
 ## 0.1.10 — 2026-10-26
 
 ### Connections

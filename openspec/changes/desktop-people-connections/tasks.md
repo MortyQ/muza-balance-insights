@@ -16,7 +16,7 @@
 
 ## 3. Docs and release notes
 
-- [ ] 3.1 Root `CLAUDE.md` «Settings screen» notes: one section instead of «Люди» and «Подключения»; `.agents/project/desktop-import.md` if it names the connections section
-- [ ] 3.2 `CHANGELOG.md`: create `## 0.1.11 — unreleased` with the entry from the proposal
-- [ ] 3.3 `docs/backlog.md`: check the merged section on a live system with several people and banks
-- [ ] 3.4 Run `pnpm test` and `pnpm typecheck` at the root
+- [x] 3.1 Root `CLAUDE.md` «Settings screen» notes: one section instead of «Люди» and «Подключения»; `.agents/project/desktop-import.md` if it names the connections section
+- [x] 3.2 `CHANGELOG.md`: create `## 0.1.11 — unreleased` with the entry from the proposal
+- [x] 3.3 `docs/backlog.md`: check the merged section on a live system with several people and banks
+- [x] 3.4 Run `pnpm test` and `pnpm typecheck` at the root

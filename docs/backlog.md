@@ -178,3 +178,6 @@
 - **The decoder's memory on a large PDF**: upload a long PDF statement (hundreds of pages, near `STATEMENT_MAX_BYTES`,
   10 MiB) and watch the `balance-decoder` process: its peak resident size, the time against `DECODE_TIMEOUT_MS` (30 s),
   and that it is gone after the reply. Lower the page or item limits if the peak is too high for a weak machine.
+- **«People and banks» on a live system**: with two people and several banks each (a token and a file connection),
+  check the bank headings, «Add connection» on a person (the connection lands on them, no new person), «Add person»,
+  removing a person's last connection (the person goes), and «Download history» from home scrolling to the download.

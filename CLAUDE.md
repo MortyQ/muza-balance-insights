@@ -171,8 +171,10 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   the `settings` route (`SETTINGS_SECTIONS` / `settingsSection` in `shared/config`, unknown → `people`; the menu order
   equals `SETTINGS_SECTIONS`, checked in `tests/renderer/settings.test.ts`). `widgets/settings` holds the menu and the
   section map; «О программе» is its component (`components/AboutApp.vue`); the page is a thin shell. Sections:
-  - Пользователи: «Люди» (`PeopleFeature`), «Подключения» (`ConnectionsFeature` from `features/integrations`, badge
-    `tokenBadge`, adding; then «History download» — `ImportFeature` from `features/import-statement`, composed in the
+  - Пользователи: «People and banks» (section `people`; `PeopleConnectionsFeature` from `features/integrations`: each
+    person — name, rename, colour — with their connections under bank headings, badge `tokenBadge`, «Add connection» on
+    the person (owner fixed, «Whose» not asked) and «Add person» under the list; the former `connections` section id
+    opens it; then «History download» — `ImportFeature` from `features/import-statement`, composed in the
     widget: one list for every token connection, headed by the token banks' names (`BANKS`), quick picks `IMPORT_PRESETS` + «From date» (`VDatepicker` with
     `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
     back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
@@ -182,15 +184,15 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;
   - Приложение: «Автосинхронизация» (`AutoSyncSettingsFeature`), «Обновления», «Оформление» (`ThemeSwitchFeature`),
     «Language and time» (`LanguageSelectFeature`), «О программе».
-  Links from home open their section: «Ввести токен» → `connections`, the lock hint → `lock`. The history download is
-  reached by `importLink(from?)` (`shared/config`: `section=connections`, `focus=import`, optional `from`); the page
+  Links from home open their section: «Ввести токен» → `people`, the lock hint → `lock`. The history download is
+  reached by `importLink(from?)` (`shared/config`: `section=people`, `focus=import`, optional `from`); the page
   reads it back with `importRequest` and the section scrolls to itself, focuses and takes the date. Home has no import
   block: `widgets/home-notices` shows «No data yet» → «Download history» while nothing is imported (a line instead while
   the user's import runs), and, for a month picked before `dataFrom`, «{month}: no data yet» → «Download» from that
   month (`emptyMonth`). For that the month filter's lower bound is the import's floor month, not the first data month.
 - **Section layout** — `shared/layout` (`@/shared/layout`): `SettingsSection` (title, description, closing note),
   `SettingsList` (the bordered list, optional heading), `SettingsRow` (title + hint, control on the right; `labelFor` makes
-  the text the control's label). Every section uses them — the settings domain, `features/integrations` («Подключения»)
+  the text the control's label). Every section uses them — the settings domain, `features/integrations` («People and banks»)
   and the settings widget («О программе»).
 - **Side menu** — `SideNav` in `shared/layout`: a dumb component over a config (`SideNavGroup` / `SideNavItem`: optional
   group title, item `id`, dictionary key, icon; `id: null` → disabled with «Soon»), `current`, `select`; arrows walk the
