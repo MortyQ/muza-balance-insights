@@ -2,7 +2,7 @@
 // The balance block mounted (features/balances, BalancesFeature): layout of the stack, the month panel and the month pace. The data
 // composable is replaced by fixed slides; the participant store is a fake, the month store is the real one.
 // Fictional fixtures only.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { computed, nextTick, ref } from 'vue';
@@ -58,6 +58,12 @@ afterEach(() => {
   w?.unmount();
   w = null;
 });
+
+// The first import of the feature graph is cold: under a full parallel run it alone can outlast a test's 5 s.
+beforeAll(async () => {
+  await import('@/shared/lib/i18n.ts');
+  await import('@/features/balances');
+}, 30_000);
 
 async function mountBlock(): Promise<VueWrapper> {
   const { i18n } = await import('@/shared/lib/i18n.ts');
