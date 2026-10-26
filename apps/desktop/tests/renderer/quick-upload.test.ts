@@ -24,7 +24,7 @@ const api = vi.hoisted(() => ({
   getSyncStatus: vi.fn(async () => ({ hasData: true, dataUntil: null, dataFrom: null, lastSyncAt: null })),
   openUpload: vi.fn(async (_connectionId?: number): Promise<OpenUploadResult> => ({ opened: false, reason: 'cancelled' })),
   openDroppedUpload: vi.fn(async (_files: File[]): Promise<OpenUploadResult> => ({ opened: false, reason: 'cancelled' })),
-  commitUpload: vi.fn(async (_id: string, _c: UploadChoices): Promise<CommitUploadResult> => ({ written: true, added: 4, files: [{ written: true, added: 4 }, { written: false, reason: 'unread' }] })),
+  commitUpload: vi.fn(async (_id: string, c: UploadChoices): Promise<CommitUploadResult> => (structuredClone(c), { written: true, added: 4, files: [{ written: true, added: 4 }, { written: false, reason: 'unread' }] })),
 }));
 vi.mock('@/shared/api', () => ({ balanceApi: api }));
 
