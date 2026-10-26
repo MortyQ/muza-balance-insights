@@ -6,10 +6,10 @@
 
 ## 1. Main: batch, resolve, commit per file
 
-- [ ] 1.1 `src/main/statements.ts`: the batch of up to 12 files (D1). `openAny` reads dropped paths or a multi-select dialog, or a bound connection's extensions only (D5). It returns a result per file: problem code or accounts. Verify with cases in `tests/statements.test.ts`: 3 files with one unknown, 13 files refused, a bound upload refusing another bank
-- [ ] 1.2 `resolve` (D2): each account → a matched connection and person, or `unassigned`. Verify with tests: a known card, a new card, cards of two people in one file, the same card in two connections → `unassigned`
-- [ ] 1.3 `commit` per file, with the `new-connection` target (D3, D4). Verify with tests: two ready files and one waiting, a connection created only on commit, an unknown participant refused, `import-running` refusing the batch, nothing created when cancelled
-- [ ] 1.4 IPC: `api.ts`, `channels.ts`, `ipc-args.ts`, the `ipc.ts` gates, and the preload passing several dropped paths (D7). Verify with the IPC args tests and the preload test (paths never reach the renderer)
+- [x] 1.1 `src/main/statements.ts`: the batch of up to 12 files (D1). `openAny` reads dropped paths or a multi-select dialog, or a bound connection's extensions only (D5). It returns a result per file: problem code or accounts. Verify with cases in `tests/statements.test.ts`: 3 files with one unknown, 13 files refused, a bound upload refusing another bank
+- [x] 1.2 `resolve` (D2): each account → a matched connection and person, or `unassigned`. Verify with tests: a known card, a new card, cards of two people in one file, the same card in two connections → `unassigned`
+- [x] 1.3 `commit` per file, with the `new-connection` target (D3, D4). Verify with tests: two ready files and one waiting, a connection created only on commit, an unknown participant refused, `import-running` refusing the batch, nothing created when cancelled
+- [x] 1.4 IPC: `api.ts`, `channels.ts`, `ipc-args.ts`, the `ipc.ts` gates, and the preload passing several dropped paths (D7). Verify with the IPC args tests and the preload test (paths never reach the renderer)
 
 ## 2. Sheet overlay
 

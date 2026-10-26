@@ -196,6 +196,46 @@ export type CommitStatementResult =
   | { written: true; added: number }
   | { written: false; reason: 'expired' | 'import-running' | StatementBlock };
 
+// ---------- the upload sheet: several files at once ----------
+
+/** One account of a file in the upload sheet: no IBAN, no full card number, no text from the file. */
+export type UploadAccountView = {
+  currencyCode: number;
+  rows: number;
+  from: string;
+  to: string;
+  type: string | null;
+  cardTail: string | null;
+  /** The connection that already has this account (by IBAN or card number); null: the sheet asks whose it is. */
+  match: { connectionId: number; participantId: number; method: ConnectionMethod } | null;
+  /** Rows the match does not have yet; every row for an account no connection has. */
+  added: number;
+  /** Rows the match already has. */
+  matched: number;
+  /** Why it cannot be written to its match (a token connection only checks); null when it can. */
+  blocked: StatementBlock | null;
+};
+
+export type UploadFileView =
+  | { ok: true; provider: ProviderId; accounts: UploadAccountView[] }
+  | { ok: false; problem: StatementProblemCode; row: number | null };
+
+export type OpenUploadResult =
+  | { opened: true; uploadId: string; files: UploadFileView[] }
+  | { opened: false; reason: 'cancelled' | 'too-many' };
+
+/**
+ * Per file, per account: the participant who takes an account no connection has (their file connection of that bank, or
+ * a new one), null for a matched account or to leave it. A file with an account left waiting is not written.
+ */
+export type UploadChoices = Array<Array<number | null>>;
+
+export type UploadFileOutcome = { written: true; added: number } | { written: false; reason: 'unread' | 'waiting' | StatementBlock };
+
+export type CommitUploadResult =
+  | { written: true; added: number; files: UploadFileOutcome[] }
+  | { written: false; reason: 'expired' | 'import-running' };
+
 export type SetAccountEnabledResult = { changed: true } | { changed: false; reason: 'import-running' };
 
 export type BalanceApi = {
@@ -235,6 +275,15 @@ export type BalanceApi = {
   compareStatement(statementId: string, targets: Array<StatementTargetInput | null>): Promise<CompareStatementResult>;
   /** Writes every account of the kept file into a file connection, one target per account; refused while an import runs. */
   commitStatement(statementId: string, targets: StatementTargetInput[]): Promise<CommitStatementResult>;
+  /**
+   * The upload sheet: the system dialog with several files — every bank's, or only `connectionId`'s bank's (another
+   * bank's file is then refused) — each read in main, each account matched to the connection that has it.
+   */
+  openUpload(connectionId?: number): Promise<OpenUploadResult>;
+  /** Files dropped onto a data screen: the preload turns each File into its path for main (never back to the renderer). */
+  openDroppedUpload(files: File[]): Promise<OpenUploadResult>;
+  /** Writes every file whose accounts all have a place; refused as a whole while an import runs. */
+  commitUpload(uploadId: string, choices: UploadChoices): Promise<CommitUploadResult>;
   /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;

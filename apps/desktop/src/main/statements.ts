@@ -6,16 +6,26 @@
 // A file may also come without a connection (the data screens' «Upload statement», or a file dropped on the window: its
 // path comes from the preload only): the file names its bank, and the renderer then assigns one of that bank's
 // connections before anything is compared.
+// The upload sheet takes several files at once (an upload): each account of each file goes to the connection of its
+// bank that already has it, found by the data process's own match (IBAN or card number), so the renderer gets the
+// connection and its person and never the number; an account no connection has waits for the user's choice of person,
+// whose file connection of that bank takes it — made at the write, so a cancelled sheet leaves none behind.
 import fs from 'node:fs/promises';
 import { dateIn } from '@mono/core/shared/format';
 import { STATEMENT_READERS, pickReader } from '@mono/core/providers/statements';
 import type { ParsedStatement, ProviderId, StatementDocument } from '@mono/core/providers/types';
 import type { StatementTarget } from '@mono/core/ingest/statement-import';
 import { DataCallError } from '../shared/data-protocol.ts';
-import { STATEMENT_ACCOUNTS_MAX } from '../shared/ipc-args.ts';
+import { STATEMENT_ACCOUNTS_MAX, UPLOAD_FILES_MAX } from '../shared/ipc-args.ts';
 import type { DecodeFormat } from '../shared/decoder-protocol.ts';
 import type {
   CommitStatementResult,
+  CommitUploadResult,
+  OpenUploadResult,
+  UploadAccountView,
+  UploadChoices,
+  UploadFileOutcome,
+  UploadFileView,
   CompareStatementResult,
   OpenAnyStatementResult,
   OpenStatementResult,
@@ -30,9 +40,11 @@ export const STATEMENT_MAX_BYTES = 10 * 1024 * 1024;
 export const STATEMENT_KEEP_MS = 10 * 60 * 1000;
 
 export type StatementsDeps = {
-  data: Pick<DataApi, 'connections' | 'connectionAccounts' | 'compareStatement' | 'commitStatement'>;
+  data: Pick<DataApi, 'connections' | 'connectionAccounts' | 'compareStatement' | 'commitStatement' | 'people' | 'createConnection'>;
   /** The system open dialog: the readers' extensions, then any file; null = cancelled. */
   pickFile: (extensions: readonly string[]) => Promise<string | null>;
+  /** The same dialog with several files; [] = cancelled. */
+  pickFiles: (extensions: readonly string[]) => Promise<string[]>;
   /** A spreadsheet or a PDF through the decoder process (DecoderClient.decode). */
   decode: (format: DecodeFormat, bytes: Uint8Array) => Promise<DecodeOutcome>;
   importRunning: () => boolean;
@@ -44,6 +56,13 @@ export type StatementsDeps = {
 
 /** connectionId null: opened from the data screens, no connection assigned yet (compare and write refuse it). */
 type Kept = { id: string; connectionId: number | null; provider: ProviderId; statements: ParsedStatement[]; until: number };
+
+/** One file of an upload: its accounts and where each one already is (null: none has it). */
+type UploadFile =
+  | { ok: true; provider: ProviderId; statements: ParsedStatement[]; matches: Array<{ connectionId: number; accountId: string } | null> }
+  | { ok: false };
+
+type Upload = { id: string; files: UploadFile[]; until: number };
 
 type Read = { ok: true; provider: ProviderId; statements: ParsedStatement[] } | { ok: false; problem: StatementProblemCode; row: number | null };
 
@@ -88,12 +107,177 @@ async function readLimited(file: string): Promise<Uint8Array | null> {
 
 export class StatementsService {
   private kept: Kept | null = null;
+  private upload: Upload | null = null;
 
   constructor(private readonly d: StatementsDeps) {}
 
   /** Drops the kept statement (the app lock, «Delete all data»). */
   forget(): void {
     this.kept = null;
+    this.upload = null;
+  }
+
+  /**
+   * The upload sheet's files: the dialog's (every bank's extensions, or `connectionId`'s bank's only — another bank's
+   * file is then refused), or dropped paths from the preload. Files are read one at a time; one bad file is its own
+   * problem, never the upload's.
+   */
+  async openUpload(source: { connectionId?: number; dropped?: readonly string[] } = {}): Promise<OpenUploadResult> {
+    this.kept = null;
+    this.upload = null;
+    let expected: ProviderId | null = null;
+    if (source.connectionId !== undefined) {
+      const connection = (await this.d.data.connections()).find((c) => c.id === source.connectionId);
+      if (!connection) throw new DataCallError('connection', 'ConnectionError', 'No such connection');
+      expected = connection.provider;
+    }
+    let paths = source.dropped ?? null;
+    if (paths === null) {
+      const readers = expected === null ? Object.values(STATEMENT_READERS).flat() : STATEMENT_READERS[expected];
+      paths = await this.d.pickFiles([...new Set(readers.flatMap((r) => r.extensions))]);
+      if (paths.length === 0) return { opened: false, reason: 'cancelled' };
+    }
+    if (paths.length > UPLOAD_FILES_MAX) return { opened: false, reason: 'too-many' };
+
+    const files: UploadFile[] = [];
+    const views: UploadFileView[] = [];
+    for (const file of paths) {
+      const read = source.dropped && !(await isPlainFile(file)) ? ({ ok: false, problem: 'unreadable', row: null } as const) : await this.read(file, expected);
+      if (!read.ok) {
+        this.d.log(`[statement] ${read.problem}`);
+        files.push({ ok: false });
+        views.push({ ok: false, problem: read.problem, row: read.row });
+        continue;
+      }
+      const { matches, accounts } = await this.resolve(read.provider, read.statements);
+      files.push({ ok: true, provider: read.provider, statements: read.statements, matches });
+      views.push({ ok: true, provider: read.provider, accounts });
+    }
+    const id = this.d.randomId();
+    this.upload = { id, files, until: this.d.nowMs() + STATEMENT_KEEP_MS };
+    this.d.log(`[statement] upload of ${files.length} files`);
+    return { opened: true, uploadId: id, files: views };
+  }
+
+  /**
+   * Every file whose accounts all have a place and none is blocked; the others stay unwritten with their reason. A
+   * person's file connection of the bank takes the accounts no connection has (the first one; made when there is none).
+   */
+  async commitUpload(uploadId: string, choices: UploadChoices): Promise<CommitUploadResult> {
+    const upload = this.upload;
+    if (!upload || upload.id !== uploadId || this.d.nowMs() > upload.until) {
+      if (upload && upload.id === uploadId) this.upload = null;
+      return { written: false, reason: 'expired' };
+    }
+    if (choices.length !== upload.files.length) throw new Error('One choice list per file of the upload');
+    if (this.d.importRunning()) return { written: false, reason: 'import-running' };
+
+    const people = await this.d.data.people();
+    const created = new Map<string, number>();
+    const outcomes: UploadFileOutcome[] = [];
+    let added = 0;
+    for (const [i, file] of upload.files.entries()) {
+      if (!file.ok) {
+        outcomes.push({ written: false, reason: 'unread' });
+        continue;
+      }
+      const chosen = choices[i]!;
+      if (chosen.length !== file.statements.length) throw new Error('One choice per account of the file');
+      if (file.matches.some((m, j) => m === null && chosen[j] === null)) {
+        outcomes.push({ written: false, reason: 'waiting' });
+        continue;
+      }
+      // Where each account goes: its match, or the chosen person's file connection of the bank (made once per person).
+      const groups = new Map<number, { statements: ParsedStatement[]; targets: StatementTarget[] }>();
+      for (const [j, statement] of file.statements.entries()) {
+        const match = file.matches[j];
+        let connectionId: number;
+        let target: StatementTarget;
+        if (match) {
+          connectionId = match.connectionId;
+          target = { kind: 'account', accountId: match.accountId };
+        } else {
+          const participantId = chosen[j]!;
+          const person = people.find((p) => p.id === participantId);
+          if (!person) throw new DataCallError('connection', 'ConnectionError', 'No such participant');
+          const key = `${participantId}:${file.provider}`;
+          const existing = person.connections.find((c) => c.provider === file.provider && c.method === 'file')?.id ?? created.get(key);
+          if (existing === undefined) {
+            const made = await this.d.data.createConnection({ id: participantId }, file.provider, 'file');
+            created.set(key, made.connectionId);
+            connectionId = made.connectionId;
+          } else connectionId = existing;
+          target = this.target({ kind: 'new', type: statement.account.type });
+        }
+        const group = groups.get(connectionId) ?? { statements: [], targets: [] };
+        group.statements.push(statement);
+        group.targets.push(target);
+        groups.set(connectionId, group);
+      }
+      let fileAdded = 0;
+      let blocked: UploadFileOutcome | null = null;
+      for (const [connectionId, group] of groups) {
+        const r = await this.d.data.commitStatement(connectionId, group.statements, group.targets);
+        if (!r.written) {
+          blocked = { written: false, reason: r.reason };
+          break;
+        }
+        fileAdded += r.added;
+      }
+      added += fileAdded;
+      outcomes.push(blocked ?? { written: true, added: fileAdded });
+    }
+    this.upload = null;
+    this.d.log(`[statement] upload added ${added}`);
+    return { written: true, added, files: outcomes };
+  }
+
+  /**
+   * Each account of a file against every connection of its bank, file ones first: the first that already has it (the
+   * data process's match) takes it, with its comparison; none — every row is new and the sheet asks whose it is.
+   */
+  private async resolve(provider: ProviderId, statements: ParsedStatement[]) {
+    const people = await this.d.data.people();
+    const owner = new Map(people.flatMap((p) => p.connections.map((c) => [c.id, { participantId: p.id, method: c.method }] as const)));
+    const candidates = (await this.d.data.connections())
+      .filter((c) => c.provider === provider)
+      .sort((a, b) => (a.method === b.method ? a.id - b.id : a.method === 'file' ? -1 : 1));
+    const matches: Array<{ connectionId: number; accountId: string } | null> = statements.map(() => null);
+    const accounts: UploadAccountView[] = statements.map((s) => {
+      const times = s.rows.map((r) => r.time);
+      return {
+        currencyCode: s.currencyCode,
+        rows: s.rows.length,
+        from: this.date(Math.min(...times)),
+        to: this.date(Math.max(...times)),
+        type: s.account.type,
+        cardTail: cardTail(s.account.cards[0]),
+        match: null,
+        added: s.rows.length,
+        matched: 0,
+        blocked: null,
+      };
+    });
+    for (const c of candidates) {
+      const open = statements.flatMap((s, j) => (matches[j] === null ? [j] : []));
+      if (open.length === 0) break;
+      const found = await this.d.data.compareStatement(c.id, open.map((j) => statements[j]!), open.map(() => null));
+      for (const [k, comparison] of found.entries()) {
+        if (comparison.match.kind !== 'account') continue;
+        const j = open[k]!;
+        const who = owner.get(c.id);
+        if (!who) continue;
+        matches[j] = { connectionId: c.id, accountId: comparison.match.accountId };
+        accounts[j] = {
+          ...accounts[j]!,
+          match: { connectionId: c.id, participantId: who.participantId, method: who.method },
+          added: comparison.added,
+          matched: comparison.matched,
+          blocked: comparison.blocked,
+        };
+      }
+    }
+    return { matches, accounts };
   }
 
   async open(connectionId: number): Promise<OpenStatementResult> {

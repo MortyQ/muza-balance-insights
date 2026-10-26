@@ -60,6 +60,20 @@ describe('preload API', () => {
     ]);
   });
 
+  it('openDroppedUpload takes Files and sends main their paths only', async () => {
+    const api = exposed[0]![1];
+    const a = { name: 'Вигадана-1.xlsx' };
+    const b = { name: 'Вигадана-2.csv' };
+    dropped.set(a, '/Users/someone/Вигадана-1.xlsx');
+    dropped.set(b, '/Users/someone/Вигадана-2.csv');
+    await api.openDroppedUpload([a, b]);
+    await api.openDroppedUpload('not a list');
+    expect(invoked).toEqual([
+      ['balance:openDroppedUpload', ['/Users/someone/Вигадана-1.xlsx', '/Users/someone/Вигадана-2.csv']],
+      ['balance:openDroppedUpload', []],
+    ]);
+  });
+
   it('onProgress gives the callback the payload only (never the IPC event with `sender`), and unsubscribes', () => {
     const api = exposed[0]![1];
     const got: unknown[][] = [];

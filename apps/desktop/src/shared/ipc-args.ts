@@ -51,6 +51,8 @@ const statementTarget = z.discriminatedUnion('kind', [
 ]);
 /** Accounts one statement file may hold; main refuses a file with more (`over-limits`). */
 export const STATEMENT_ACCOUNTS_MAX = 50;
+/** At most this many files in one upload of the upload sheet. */
+export const UPLOAD_FILES_MAX = 12;
 const autoSync = z.strictObject({
   enabled: z.boolean(),
   triggers: z.strictObject({ launch: z.boolean(), wake: z.boolean(), interval: z.boolean() }),
@@ -80,6 +82,10 @@ export const ARG_SCHEMAS = {
   assignStatement: z.tuple([statementId, id]),
   compareStatement: z.tuple([statementId, z.array(statementTarget.nullable()).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   commitStatement: z.tuple([statementId, z.array(statementTarget).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
+  openUpload: z.union([z.tuple([]), z.tuple([id])]),
+  // The dropped files' paths, from the preload; past UPLOAD_FILES_MAX the service says too-many.
+  openDroppedUpload: z.tuple([z.array(z.string().min(1).max(4096)).min(1).max(64)]),
+  commitUpload: z.tuple([statementId, z.array(z.array(id.nullable()).max(STATEMENT_ACCOUNTS_MAX)).min(1).max(UPLOAD_FILES_MAX)]),
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),
