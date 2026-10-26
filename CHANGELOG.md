@@ -3,7 +3,7 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
-## 0.1.10 — unreleased
+## 0.1.10 — 2026-10-26
 
 ### Connections
 
