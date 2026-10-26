@@ -11,6 +11,11 @@ English interface.
   person is listed with their connections grouped by bank. To add a bank to someone who is already in the app, press
   «Add connection» on their card; «Add person» adds a new person together with their first connection.
 
+### Fixes
+
+- Charts no longer turn grey after the computer wakes from sleep: they redraw in their colours when you come back to
+  the app.
+
 ## 0.1.10 — 2026-10-26
 
 ### Connections

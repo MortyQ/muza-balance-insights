@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// VChart (shared/ui): one ECharts chart; CSS colours resolved for the canvas, redrawn on a theme change, disposed on
-// unmount. ECharts itself is the recorder of setup-charts.ts.
+// VChart (shared/ui): one ECharts chart; CSS colours resolved for the canvas, redrawn on a theme change and when the window
+// comes back, disposed on unmount. ECharts itself is the recorder of setup-charts.ts.
 import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
@@ -46,6 +46,29 @@ describe('VChart', () => {
     const before = chartCalls.length;
     const w = mount(VChart, { props: { option: { series: [{ type: 'bar', itemStyle: { color: 'var(--cat)' }, data: [1] }] } } });
     expect(chartCalls[before]!.options[0]).toMatchObject({ series: [{ itemStyle: { color: 'rgba(10, 20, 30, 0.502)' } }] });
+    w.unmount();
+    spy.mockRestore();
+  });
+
+  it('redraws when the window comes back, not after unmount', () => {
+    const before = chartCalls.length;
+    const w = mount(VChart, { props: { option: { series: [{ type: 'bar', data: [1] }] } } });
+    const chart = chartCalls[before]!;
+    window.dispatchEvent(new Event('focus'));
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(chart.options).toHaveLength(3);
+    w.unmount();
+    window.dispatchEvent(new Event('focus'));
+    expect(chart.options).toHaveLength(3);
+  });
+
+  it('a lost colour context is made anew instead of reading every colour as transparent', () => {
+    const lost = { isContextLost: () => true, clearRect: () => undefined, fillRect: () => undefined, fillStyle: '', getImageData: () => ({ data: [0, 0, 0, 0] }) };
+    const fresh = { isContextLost: () => false, clearRect: () => undefined, fillRect: () => undefined, fillStyle: '', getImageData: () => ({ data: [10, 20, 30, 255] }) };
+    const spy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValueOnce(lost as unknown as CanvasRenderingContext2D).mockReturnValue(fresh as unknown as CanvasRenderingContext2D);
+    const before = chartCalls.length;
+    const w = mount(VChart, { props: { option: { series: [{ type: 'line', lineStyle: { color: 'var(--primary)' }, data: [1] }] } } });
+    expect(chartCalls[before]!.options[0]).toMatchObject({ series: [{ lineStyle: { color: 'rgba(10, 20, 30, 1)' } }] });
     w.unmount();
     spy.mockRestore();
   });
