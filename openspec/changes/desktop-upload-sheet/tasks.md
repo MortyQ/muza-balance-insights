@@ -13,7 +13,7 @@
 
 ## 2. Sheet overlay
 
-- [ ] 2.1 `shared/ui` `VSheet` (D6): from muzakit if it has a drawer, else ours, noted in `shared/ui/README.md`. Verify with a renderer test: opens modal, Esc closes, focus returns to the trigger, bottom sheet below 45rem
+- [x] 2.1 `shared/ui` `VSheet` (D6): from muzakit if it has a drawer, else ours, noted in `shared/ui/README.md`. Verify with a renderer test: opens modal, Esc closes, focus returns to the trigger, bottom sheet below 45rem
 
 ## 3. Upload sheet
 

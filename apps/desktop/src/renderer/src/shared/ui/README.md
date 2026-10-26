@@ -38,6 +38,9 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VDatepicker` keeps a single-date v-model and adds a named `range` v-model (`{ start, end }`), both as ISO
   `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
   holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
+- `VSheet` (2026-10-26; muzakit has no drawer): reka-ui's `Dialog` — a modal panel at the right edge, a bottom sheet
+  below 45rem; `title`, optional `description`, the default slot and a `footer` slot; v-model `open`. Focus trap, Esc,
+  the scrim and the return of focus are reka-ui's. Tested in `apps/desktop/tests/renderer/sheet.test.ts`.
   Locale is fixed to `uk-UA`, week starts Monday. `min` / `max` (ISO) bound the selectable days (reka-ui's
   `minValue` / `maxValue`). Used by the import's «From date».
 - `VMonthPicker` — a month/year picker on reka-ui's `MonthPicker` in a `Popover` (muzakit has no month picker at all).
