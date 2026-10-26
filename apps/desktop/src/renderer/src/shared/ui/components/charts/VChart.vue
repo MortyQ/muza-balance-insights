@@ -16,8 +16,10 @@ let resize: ResizeObserver | null = null;
 let theme: MutationObserver | null = null;
 
 // One pixel to turn any CSS colour into rgba: ECharts parses only hex, rgb and hsl — an oklch() fill loses its colour
-// when the hover lightens it. No 2D context only under a test DOM; there the computed colour is kept.
-const pixel = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+// when the hover lightens it. No 2D context only under a test DOM; there the computed colour is kept. A context can be
+// lost (the GPU reset after sleep): it then reads every colour as transparent, so a lost one is made anew.
+const newPixel = () => document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+let pixel = newPixel();
 
 /** A CSS colour as the browser computes it here (the probe inherits this element's custom properties), as rgba. */
 function cssColor(value: string): string {
@@ -25,12 +27,18 @@ function cssColor(value: string): string {
   if (!el) return value;
   el.style.color = value;
   const computed = getComputedStyle(el).color || value;
+  if (pixel?.isContextLost?.()) pixel = newPixel();
   if (!pixel) return computed;
   pixel.clearRect(0, 0, 1, 1);
   pixel.fillStyle = computed;
   pixel.fillRect(0, 0, 1, 1);
   const [r = 0, g = 0, b = 0, a = 0] = pixel.getImageData(0, 0, 1, 1).data;
   return `rgba(${r}, ${g}, ${b}, ${Math.round((a / 255) * 1000) / 1000})`;
+}
+
+/** Back from sleep, the lock or a hidden window: the last frame may have been drawn with a lost context. */
+function redrawOnReturn(): void {
+  if (document.visibilityState === "visible") draw();
 }
 
 function draw(): void {
@@ -51,6 +59,8 @@ onMounted(() => {
   resize.observe(root.value);
   theme = new MutationObserver(draw);
   theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  document.addEventListener("visibilitychange", redrawOnReturn);
+  window.addEventListener("focus", redrawOnReturn);
 });
 
 watch(() => option, draw, { deep: true });
@@ -58,6 +68,8 @@ watch(() => option, draw, { deep: true });
 onBeforeUnmount(() => {
   resize?.disconnect();
   theme?.disconnect();
+  document.removeEventListener("visibilitychange", redrawOnReturn);
+  window.removeEventListener("focus", redrawOnReturn);
   chart?.dispose();
   chart = null;
 });
