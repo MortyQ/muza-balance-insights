@@ -1,8 +1,8 @@
 // The Privat24 card statement reader (src/providers/privatbank/statement.ts). Fictional data only (./sheet.ts).
 import { describe, expect, it } from 'vitest';
-import { privatbankCardReader as reader } from '../../../src/providers/privatbank/statement.ts';
+import { privatbankCardEnReader as en, privatbankCardReader as reader } from '../../../src/providers/privatbank/statement.ts';
 import type { Cell, StatementDocument } from '../../../src/providers/types.ts';
-import { CARD_A, CARD_B, HEADER, OPS, op, sheet, type Op } from './sheet.ts';
+import { CARD_A, CARD_B, HEADER, OPS, OPS_EN, op, sheet, type Op } from './sheet.ts';
 
 const ok = (doc: StatementDocument) => {
   const r = reader.read(doc);
@@ -85,5 +85,31 @@ describe('read', () => {
 
   it('a file without the title reads the same', () => {
     expect(ok(sheet(OPS.map(op), { title: false }))).toEqual(ok(sheet(OPS.map(op))));
+  });
+});
+
+describe('the English statement', () => {
+  const doc = (opts: { title?: boolean; trailingEmpty?: number } = {}) => sheet(OPS_EN.map(op), { ...opts, en: true });
+
+  it('each reader claims only its own language', () => {
+    expect(en.detect(doc())).toBe(2);
+    expect(en.detect(doc({ title: false }))).toBe(1);
+    expect(reader.detect(doc())).toBe(0);
+    expect(en.detect(sheet(OPS.map(op)))).toBe(0);
+  });
+
+  it('reads as the Ukrainian file does: the same cards, times, amounts, fees and balances', () => {
+    const r = en.read(doc({ trailingEmpty: 20 }));
+    if (!r.ok) throw new Error(`not read: ${r.problem}`);
+    const strip = (rows: Array<Record<string, unknown>>) => rows.map(({ raw: _r, description: _d, bankCategory: _c, ...rest }) => rest);
+    const uk = ok(sheet(OPS.map(op)));
+    expect(r.statements.map((st) => st.account)).toEqual(uk.map((st) => st.account));
+    expect(r.statements.map((st) => st.closingBalance)).toEqual(uk.map((st) => st.closingBalance));
+    expect(r.statements.map((st) => strip(st.rows))).toEqual(uk.map((st) => strip(st.rows)));
+    expect(r.statements[0]?.rows.find((x) => x.description === 'Made-up Shop')?.bankCategory).toBe('Online stores');
+  });
+
+  it('a file without the title reads the same', () => {
+    expect(en.read(doc({ title: false }))).toEqual(en.read(doc()));
   });
 });

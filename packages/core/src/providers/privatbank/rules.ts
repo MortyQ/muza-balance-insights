@@ -2,11 +2,11 @@
 // service texts, and categories by its category table (categories.ts).
 import { OTHER_PLACEHOLDER, type DescClass, type ProviderRules, type RuleTx } from '../types.ts';
 import { BANK_CATEGORIES, TRANSFER_CATEGORIES } from './categories.ts';
-import { CASH_TEXT, FROM_PREFIX_RE, JAR_TEXT, OWN_CARD_FROM_RE, OWN_CARD_TO_RE, isOwnCardText, isTreasuryDescription } from './descriptions.ts';
+import { CASH_TEXTS, FROM_PREFIX_RE, JAR_TEXTS, isOwnCardText, isTreasuryDescription } from './descriptions.ts';
 
 const isTransfer = (tx: RuleTx) => tx.bankCategory !== null && TRANSFER_CATEGORIES.has(tx.bankCategory);
 
-const isOwnText = (text: string) => isOwnCardText(text) || text === JAR_TEXT;
+const isOwnText = (text: string) => isOwnCardText(text) || JAR_TEXTS.has(text);
 
 export const privatbankRules: ProviderRules = {
   id: 'privatbank',
@@ -49,15 +49,15 @@ export const privatbankRules: ProviderRules = {
 
   namedSender(description) {
     const m = FROM_PREFIX_RE.exec(description.trim());
-    return m ? { label: 'від', name: m[1]! } : null;
+    return m ? { label: m[1]!, name: m[2]! } : null;
   },
 
   isPersonTransfer: (tx) => isTransfer(tx) && !isOwnText(tx.description.trim()) && !isTreasuryDescription(tx.description),
 
   maskDescription(raw) {
     const text = raw.trim();
-    if (text === JAR_TEXT || text === CASH_TEXT) return { description: text, descClass: 'service' };
-    if (OWN_CARD_TO_RE.test(text) || OWN_CARD_FROM_RE.test(text)) return { description: text.replace(/\d{4}$/, '9999'), descClass: 'service' };
+    if (JAR_TEXTS.has(text) || CASH_TEXTS.has(text)) return { description: text, descClass: 'service' };
+    if (isOwnCardText(text)) return { description: text.replace(/\d{4}$/, '9999'), descClass: 'service' };
     // Shape-only classes: the text itself is never kept.
     return { description: OTHER_PLACEHOLDER, descClass: classifyShape(text) };
   },

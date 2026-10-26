@@ -1,0 +1,125 @@
+{
+  "reader": "privatbank-card-en",
+  "result": {
+    "ok": true,
+    "statements": [
+      {
+        "kind": "card",
+        "currencyCode": 980,
+        "account": {
+          "iban": null,
+          "cards": [
+            "5168 **** **** 1111"
+          ],
+          "type": null
+        },
+        "rows": [
+          {
+            "time": 1767617110,
+            "amount": -30000,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -30000,
+            "raw": "{\"Date\":\"05.01.2026 14:45:10\",\"Category\":\"Supermarkets and groceries\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"Made-up Supermarket\",\"Amount in card currency\":\"-300.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"300.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"1200.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Supermarkets and groceries",
+            "description": "Made-up Supermarket",
+            "balance": 120000
+          },
+          {
+            "time": 1768024800,
+            "amount": -950,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -950,
+            "raw": "{\"Date\":\"10.01.2026 08:00:00\",\"Category\":\"Savings\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"Moneybox\",\"Amount in card currency\":\"-9.50\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"9.50\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"1190.50\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Savings",
+            "description": "Moneybox",
+            "balance": 119050
+          },
+          {
+            "time": 1768204800,
+            "amount": -20000,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -20000,
+            "raw": "{\"Date\":\"12.01.2026 10:00:00\",\"Category\":\"Transfer to my card\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"To my card *2222\",\"Amount in card currency\":\"-200.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"200.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"990.50\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Transfer to my card",
+            "description": "To my card *2222",
+            "balance": 99050
+          },
+          {
+            "time": 1768461300,
+            "amount": -43050,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -1000,
+            "raw": "{\"Date\":\"15.01.2026 09:15:00\",\"Category\":\"Online stores\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"Made-up Shop\",\"Amount in card currency\":\"-430.50\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"10.00\",\"Transaction currency\":\"EUR\",\"Rest at the end of the period\":\"560.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Online stores",
+            "description": "Made-up Shop",
+            "balance": 56000
+          },
+          {
+            "time": 1768730405,
+            "amount": 99500,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": 100000,
+            "raw": "{\"Date\":\"18.01.2026 12:00:05\",\"Category\":\"Transfer crediting\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"from Made-up Sender\",\"Amount in card currency\":\"995.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"1000.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"1555.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Transfer crediting",
+            "description": "from Made-up Sender",
+            "balance": 155500
+          },
+          {
+            "time": 1768926600,
+            "amount": -10500,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -10000,
+            "raw": "{\"Date\":\"20.01.2026 18:30:00\",\"Category\":\"Transfers\",\"Card\":\"5168 **** **** 1111\",\"Description\":\"Made-up Person\",\"Amount in card currency\":\"-105.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"100.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"1450.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Transfers",
+            "description": "Made-up Person",
+            "commissionRate": 500,
+            "balance": 145000
+          }
+        ],
+        "closingBalance": 145000
+      },
+      {
+        "kind": "card",
+        "currencyCode": 980,
+        "account": {
+          "iban": null,
+          "cards": [
+            "4149 **** **** 2222"
+          ],
+          "type": null
+        },
+        "rows": [
+          {
+            "time": 1767430800,
+            "amount": -5000,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -5000,
+            "raw": "{\"Date\":\"03.01.2026 11:00:00\",\"Category\":\"Supermarkets and groceries\",\"Card\":\"4149 **** **** 2222\",\"Description\":\"Made-up Supermarket\",\"Amount in card currency\":\"-50.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"50.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"100.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Supermarkets and groceries",
+            "description": "Made-up Supermarket",
+            "balance": 10000
+          },
+          {
+            "time": 1768204800,
+            "amount": 20000,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": 20000,
+            "raw": "{\"Date\":\"12.01.2026 10:00:00\",\"Category\":\"Transfer from my card\",\"Card\":\"4149 **** **** 2222\",\"Description\":\"From my card *1111\",\"Amount in card currency\":\"200.00\",\"Card currency\":\"UAH\",\"Amount in transaction currency\":\"200.00\",\"Transaction currency\":\"UAH\",\"Rest at the end of the period\":\"300.00\",\"Rest currency\":\"UAH\"}",
+            "bankCategory": "Transfer from my card",
+            "description": "From my card *1111",
+            "balance": 30000
+          }
+        ],
+        "closingBalance": 30000
+      }
+    ]
+  }
+}

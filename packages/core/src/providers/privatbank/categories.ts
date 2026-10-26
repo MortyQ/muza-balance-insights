@@ -1,4 +1,4 @@
-// PrivatBank's own categories (as Privat24 states them per row) → the common ones. null = a category the bank uses
+// PrivatBank's own categories (as Privat24 states them per row, in the statement's language) → the common ones. null = a category the bank uses
 // whose rows the rules decide by shape: transfers (income or p2p by sign, own transfers by the derivation).
 // A bank category not here gets no hint and is reported by the re-derivation as unknown.
 import type { CategoryHint } from '../types.ts';
@@ -10,6 +10,11 @@ export const TRANSFER_CATEGORIES: ReadonlySet<string> = new Set([
   'Зарахування зі своєї картки',
   'Заощадження',
   'Платежі за реквізитами',
+  'Transfers',
+  'Transfer crediting',
+  'Transfer to my card',
+  'Transfer from my card',
+  'Savings',
 ]);
 
 export const BANK_CATEGORIES: ReadonlyMap<string, CategoryHint | null> = new Map<string, CategoryHint | null>([
@@ -36,4 +41,26 @@ export const BANK_CATEGORIES: ReadonlyMap<string, CategoryHint | null> = new Map
   ['Зарахування', 'income'],
   ['Послуги', null],
   ['Інше', null],
+  ['Supermarkets and groceries', 'groceries'],
+  ['Restaurants, cafes, bars', 'cafes'],
+  ['Transport', 'transport'],
+  ['Taxi', 'transport'],
+  ['Pharmacies', 'health'],
+  ['Beauty', 'beauty'],
+  ['Clothes and shoes', 'clothing'],
+  ['Home and repair', 'home'],
+  ['Household appliances', 'home'],
+  ['Mobile top-up', 'telecom'],
+  ['Utilities and Internet', 'utilities'],
+  ['Entertainment', 'entertainment'],
+  ['Digital goods', 'entertainment'],
+  ['Cinema', 'entertainment'],
+  ['Online stores', 'marketplaces'],
+  ['Cash withdrawal', 'cash'],
+  ['Education', 'education'],
+  ['Flowers', 'gifts'],
+  ['Foundations and organizations', 'charity'],
+  ['Enrollment', 'income'],
+  ['Services', null],
+  ['Other', null],
 ]);

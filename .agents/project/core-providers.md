@@ -73,12 +73,14 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 
 - Files only (`access.token: null`): `providers/privatbank/{info,rules,descriptions,categories,statement}.ts`, ids
   `'prefixed'`, one card type `card` (the statement does not name the product).
-- Its reader `privatbank-card-uk` (`xlsx`) takes the Privat24 card statement in Ukrainian: the title row
-  «Історія операцій за період …» (score 2; the ten headers alone score 1), rows newest first, empty rows skipped, one
-  statement per masked card. No MCC: the bank's category per row. A debit costing more than its operation in the same
-  currency stores the difference as its commission; a credit never does (a withheld fee on a transfer from the user's
-  other bank is the cross-bank pair's `transfer_fee`, counted once).
-- Transfers by its bank category (`TRANSFER_CATEGORIES`), own transfers by its service texts (`descriptions.ts`).
+- Its readers `privatbank-card-uk` and `privatbank-card-en` (`xlsx`) take the Privat24 card statement in its two
+  languages, from one layout code with a table per language: the title row «Історія операцій за період …» / «Transaction
+  history for the period …» (score 2; the ten headers alone score 1; each reader scores 0 on the other language), rows
+  newest first, empty rows skipped, one statement per masked card. No MCC: the bank's category per row. A debit costing
+  more than its operation in the same currency stores the difference as its commission; a credit never does (a
+  withheld fee on a transfer from the user's other bank is the cross-bank pair's `transfer_fee`, counted once).
+- Transfers by its bank category (`TRANSFER_CATEGORIES`), own transfers by its service texts (`descriptions.ts`). The
+  category table and the service texts hold both languages; a bank category is stored as the file states it.
 
 ## Bank categories
 
