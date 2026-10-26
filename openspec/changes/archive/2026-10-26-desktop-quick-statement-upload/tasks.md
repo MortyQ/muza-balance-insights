@@ -18,4 +18,4 @@
 
 ## 4. Integration
 
-- [ ] 4.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)
+- [x] 4.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)
