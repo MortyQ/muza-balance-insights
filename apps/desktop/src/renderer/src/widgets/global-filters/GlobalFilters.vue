@@ -63,7 +63,7 @@ const { mode } = useParticipantLayout({
     </div>
     <div ref="right" class="flex items-center gap-3 justify-self-end whitespace-nowrap">
       <SyncStatus v-if="status.text" :view="status" />
-      <FreshnessList v-if="freshness.length > 1" :rows="freshness" :today="monthStore.today" />
+      <FreshnessList v-if="freshness.length > 0" :rows="freshness" :today="monthStore.today" />
       <QuickUploadButtonFeature />
     </div>
     <div ref="center" class="invisible absolute top-0 left-0 w-max" aria-hidden="true" inert>

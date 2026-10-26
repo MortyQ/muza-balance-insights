@@ -22,8 +22,8 @@
 
 ## 4. «Data by bank» panel
 
-- [ ] 4.1 `FreshnessList` grouped by person, compact «Refresh» / «Upload from <date>» opening the bound sheet; `behindMark` «N banks behind». Verify with `tests/renderer/freshness.test.ts`
-- [ ] 4.2 «Add bank» list from the registry with each bank's way and `statementHint` (PrivatBank's hint written); a file bank opens the sheet for its files. New keys in uk/en/ru. Verify with a renderer test and `tests/i18n.test.ts`
+- [x] 4.1 `FreshnessList` grouped by person, compact «Refresh» / «Upload from <date>» opening the bound sheet; `behindMark` «N banks behind». Verify with `tests/renderer/freshness.test.ts`
+- [x] 4.2 «Add bank» list from the registry with each bank's way and `statementHint` (PrivatBank's hint written); a file bank opens the sheet for its files. New keys in uk/en/ru. Verify with a renderer test and `tests/i18n.test.ts`
 
 ## 5. Docs
 

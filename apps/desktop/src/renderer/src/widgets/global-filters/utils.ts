@@ -3,7 +3,7 @@ import { shiftDate } from '@contract/dates.ts';
 import type { ImportProgress } from '@contract/progress.ts';
 import { IMPORT_ERRORS, progressLine } from '@/features/import-statement';
 import { i18n, shortDate, syncedWhen, t } from '@/shared/lib';
-import type { FilterRowWidths, FreshnessRow, SyncStatusView } from './types.ts';
+import type { FilterRowWidths, FreshnessGroup, FreshnessRow, SyncStatusView } from './types.ts';
 
 /** When the data was last updated, for the tooltip of the data line: «Updated at 14:20»; '' — never. */
 function updatedLine(line: string, lastSyncAt: string | null, now: number): string {
@@ -85,7 +85,9 @@ export function freshnessRows(people: ReadonlyArray<PersonView>, dataUntil: stri
   return people.flatMap((p) =>
     p.connections.map((c) => ({
       connectionId: c.id,
+      provider: c.provider,
       bank: c.bank,
+      participantId: p.id,
       person: p.label,
       method: c.method,
       until: c.coveredTo,
@@ -102,3 +104,17 @@ export function behindMark(rows: ReadonlyArray<FreshnessRow>): string {
   if (behind.length > 1) return t('home.filters.freshness.behindMany', { count: behind.length });
   return t('home.filters.freshness.behindOne', { bank: only.bank, date: shortDate(only.until ?? '') });
 }
+
+/** The list's rows by person, in the people's order. */
+export function freshnessGroups(rows: ReadonlyArray<FreshnessRow>): FreshnessGroup[] {
+  const groups: FreshnessGroup[] = [];
+  for (const r of rows) {
+    const g = groups.find((x) => x.participantId === r.participantId);
+    if (g) g.rows.push(r);
+    else groups.push({ participantId: r.participantId, person: r.person, rows: [r] });
+  }
+  return groups;
+}
+
+/** The day a file connection's next statement should start: the day after its data ends; null — none yet. */
+export const uploadFrom = (r: Readonly<FreshnessRow>): string | null => (r.until === null ? null : shiftDate(r.until, 1));

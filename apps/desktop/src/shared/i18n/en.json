@@ -496,7 +496,9 @@
         "until": "until {date}",
         "none": "no data yet",
         "upload": "Upload statement",
-        "refresh": "Refresh"
+        "refresh": "Refresh",
+        "uploadFrom": "Upload from {date}",
+        "addBank": "Add bank"
       }
     },
     "import": {

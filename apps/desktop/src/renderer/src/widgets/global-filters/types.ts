@@ -1,5 +1,9 @@
 import type { ComputedRef, ShallowRef } from 'vue';
+import type { ProviderId } from '@contract/api.ts';
 import type { ParticipantFilterMode } from '@/entities/participant';
+
+/** A person's connections in the data status's list. */
+export type FreshnessGroup = { participantId: number; person: string; rows: FreshnessRow[] };
 
 /** The parts of the filter row whose widths decide whether the person buttons fit in its middle. */
 export interface FilterRowParts {
@@ -43,7 +47,9 @@ export type SyncStatusView = {
 /** One connection in the data status's list (spec desktop-data-freshness). */
 export type FreshnessRow = {
   connectionId: number;
+  provider: ProviderId;
   bank: string;
+  participantId: number;
   person: string;
   method: 'token' | 'file';
   /** The date its data reaches; null = not imported yet. */
