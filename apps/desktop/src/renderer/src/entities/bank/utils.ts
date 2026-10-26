@@ -4,7 +4,7 @@ import type { AccountName } from '@contract/account-name.ts';
 import type { ProviderId } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { t } from '@/shared/lib';
-import { NEUTRAL_MONOGRAM_CLASS } from './constants.ts';
+import { NEUTRAL_MONOGRAM_CLASS, STATEMENT_HINTS } from './constants.ts';
 import type { Bank, BankAuth, BankLook } from './types.ts';
 
 /**
@@ -64,4 +64,10 @@ export function cardTypeName(provider: string, type: string | null): string {
 export function accountName(n: Readonly<AccountName>): string {
   const kind = n.kind === 'jar' ? t('entities.bank.jar') : cardTypeName(n.provider, n.type);
   return `${kind} · ${currencyAlpha(n.currency)}${n.tag === null ? '' : ` #${n.tag}`}`;
+}
+
+/** Where to download a bank's statement file; a bank without its own hint → the general step. */
+export function statementHint(provider: string): string {
+  const key = isProviderId(provider) ? STATEMENT_HINTS[provider] : undefined;
+  return t(key ?? 'integrations.statement.genericStep1');
 }

@@ -1,0 +1,100 @@
+/* Ours, not copied — VSheet is built on reka-ui (see VSheet.vue header). */
+
+.v-sheet__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--ui-scrim);
+  animation: v-sheet-fade 160ms ease-out;
+}
+
+.v-sheet {
+  position: fixed;
+  z-index: 51;
+  top: var(--ui-space-sm);
+  right: var(--ui-space-sm);
+  bottom: var(--ui-space-sm);
+  display: flex;
+  flex-direction: column;
+  width: min(30rem, calc(100vw - 2 * var(--ui-space-sm)));
+  border: 1px solid var(--ui-border-subtle);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-surface);
+  color: var(--ui-foreground);
+  box-shadow: var(--ui-shadow-xl);
+  animation: v-sheet-in-side 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  @media (max-width: 45rem) {
+    top: auto;
+    left: var(--ui-space-sm);
+    width: auto;
+    max-height: 85vh;
+    animation-name: v-sheet-in-bottom;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.v-sheet__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2xs);
+  padding: var(--ui-space-lg) var(--ui-space-lg) var(--ui-space-sm);
+}
+
+.v-sheet__title {
+  margin: 0;
+  font-size: var(--ui-text-lg);
+  line-height: var(--ui-leading-lg);
+  font-weight: 600;
+}
+
+.v-sheet__description {
+  margin: 0;
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-sm);
+  color: var(--ui-foreground-muted);
+}
+
+.v-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ui-space-sm) var(--ui-space-lg);
+}
+
+.v-sheet__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ui-space-sm);
+  padding: var(--ui-space-sm) var(--ui-space-lg) var(--ui-space-lg);
+  border-top: 1px solid var(--ui-border-subtle);
+}
+
+@keyframes v-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes v-sheet-in-side {
+  from {
+    opacity: 0;
+    transform: translateX(1.5rem);
+  }
+}
+
+@keyframes v-sheet-in-bottom {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}

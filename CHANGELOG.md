@@ -5,6 +5,17 @@ English interface.
 
 ## 0.1.11 — unreleased
 
+### Statements
+
+- **Upload several statements at once.** «Upload statement» and files dropped on the window open a panel at the side
+  of the screen with a card for every card in the files: its bank, the last digits, the period and how many operations
+  are new. The app finds each card's bank and owner by itself. For a card it has not seen, choose «Whose account?» —
+  if that person has no connection of this bank yet, it is added when you press «Import». A file the app does not
+  recognise is skipped; the others are still imported.
+- **"Data by bank" shows what to upload.** The list groups banks by person. A bank updated by file offers «Upload
+  from» the day after its data ends, and the panel tells you where to download that statement. «Add bank» lists the
+  banks the app knows and how each one connects.
+
 ### Settings
 
 - **People and their banks in one place.** «People» and «Connections» are now one section, «People and banks»: each

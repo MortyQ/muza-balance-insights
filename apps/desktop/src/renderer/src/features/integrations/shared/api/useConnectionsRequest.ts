@@ -1,11 +1,12 @@
 import type {
   AddConnectionInput,
   AddConnectionResult,
-  AssignStatementResult,
   CommitStatementResult,
+  CommitUploadResult,
+  OpenUploadResult,
+  UploadChoices,
   CompareStatementResult,
   ConnectionAccountView,
-  OpenAnyStatementResult,
   OpenStatementResult,
   RemoveConnectionResult,
   SetAccountEnabledResult,
@@ -20,9 +21,9 @@ export function useConnectionsRequest(): {
   listAccounts: (connectionId: number) => Promise<ConnectionAccountView[]>;
   setAccountEnabled: (accountId: string, enabled: boolean) => Promise<SetAccountEnabledResult>;
   openStatement: (connectionId: number) => Promise<OpenStatementResult>;
-  openAnyStatement: () => Promise<OpenAnyStatementResult>;
-  openDroppedStatement: (file: File) => Promise<OpenAnyStatementResult>;
-  assignStatement: (statementId: string, connectionId: number) => Promise<AssignStatementResult>;
+  openUpload: (connectionId?: number) => Promise<OpenUploadResult>;
+  openDroppedUpload: (files: File[]) => Promise<OpenUploadResult>;
+  commitUpload: (uploadId: string, choices: UploadChoices) => Promise<CommitUploadResult>;
   compareStatement: (statementId: string, targets: Array<StatementTargetInput | null>) => Promise<CompareStatementResult>;
   commitStatement: (statementId: string, targets: StatementTargetInput[]) => Promise<CommitStatementResult>;
 } {
@@ -33,9 +34,9 @@ export function useConnectionsRequest(): {
     listAccounts: (connectionId) => balanceApi.listConnectionAccounts(connectionId),
     setAccountEnabled: (accountId, enabled) => balanceApi.setAccountEnabled(accountId, enabled),
     openStatement: (connectionId) => balanceApi.openStatement(connectionId),
-    openAnyStatement: () => balanceApi.openAnyStatement(),
-    openDroppedStatement: (file) => balanceApi.openDroppedStatement(file),
-    assignStatement: (statementId, connectionId) => balanceApi.assignStatement(statementId, connectionId),
+    openUpload: (connectionId) => (connectionId === undefined ? balanceApi.openUpload() : balanceApi.openUpload(connectionId)),
+    openDroppedUpload: (files) => balanceApi.openDroppedUpload(files),
+    commitUpload: (uploadId, choices) => balanceApi.commitUpload(uploadId, choices),
     compareStatement: (statementId, targets) => balanceApi.compareStatement(statementId, targets),
     commitStatement: (statementId, targets) => balanceApi.commitStatement(statementId, targets),
   };

@@ -66,7 +66,7 @@ afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-function harness(opts: { file?: string | null; running?: boolean; decoded?: DecodeOutcome } = {}) {
+function harness(opts: { file?: string | null; files?: string[]; running?: boolean; decoded?: DecodeOutcome } = {}) {
   const logs: string[] = [];
   const picked: Array<readonly string[]> = [];
   const decoded: Array<[DecodeFormat, number]> = [];
@@ -77,6 +77,10 @@ function harness(opts: { file?: string | null; running?: boolean; decoded?: Deco
     pickFile: async (extensions) => {
       picked.push(extensions);
       return opts.file === undefined ? path.join(FIXTURES, 'statement-card-uk.csv') : opts.file;
+    },
+    pickFiles: async (extensions) => {
+      picked.push(extensions);
+      return opts.files ?? (opts.file === null ? [] : [opts.file ?? path.join(FIXTURES, 'statement-card-uk.csv')]);
     },
     decode: async (format, bytes) => {
       decoded.push([format, bytes.byteLength]);
@@ -289,6 +293,7 @@ describe('StatementsService', () => {
     const svc = new StatementsService({
       data: localData(db, 0),
       pickFile: async () => path.join(FIXTURES, 'statement-card-uk.csv'),
+      pickFiles: async () => [],
       decode: async () => ({ ok: false, code: 'unreadable' }),
       importRunning: () => running.value,
       randomId: () => '00000000-0000-4000-8000-000000000001',
@@ -304,54 +309,117 @@ describe('StatementsService', () => {
   });
 });
 
-describe('StatementsService: a file from the data screens', () => {
-  it('openAny names the bank, keeps the file unassigned; assign gives the connection view; then compare and write', async () => {
-    const conn = await fileConnection();
-    const { svc, picked } = harness();
-    const opened = await svc.openAny();
-    expect(opened).toEqual({ opened: true, statementId: expect.any(String), provider: 'monobank' });
-    // Every bank's statement extensions, once each.
-    expect(picked[0]).toEqual(['csv', 'xlsx']);
-    expect(new Set(picked[0]).size).toBe(picked[0]!.length);
-    if (!opened.opened) throw new Error('not opened');
-    await expect(svc.compare(opened.statementId, [null])).rejects.toThrow(/No connection assigned/);
-    await expect(svc.commit(opened.statementId, [{ kind: 'new', type: 'black' }])).rejects.toThrow(/No connection assigned/);
+describe('StatementsService: the upload sheet', () => {
+  async function person(provider: 'monobank' | 'privatbank' = 'privatbank') {
+    const r = await services(db, dir).integrations.addConnection({ participant: { label: 'Вигадана Особа' }, provider, method: 'file' });
+    if (!r.added) throw new Error('not added');
+    return r;
+  }
+  function sheetFile(name = 'two.xlsx'): string {
+    const file = path.join(dir, name);
+    fs.writeFileSync(file, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+    return file;
+  }
 
-    expect(await svc.assign(opened.statementId, conn)).toEqual({
+  it('several files: one view per file, an unknown file its own problem; no IBAN, no path; past 12 files nothing is read', async () => {
+    const other = path.join(dir, 'other.csv');
+    fs.writeFileSync(other, 'OTHERBANK\n');
+    const { svc, picked } = harness({ files: [sheetFile(), other] });
+    const opened = await svc.openUpload();
+    expect(opened).toEqual({
       opened: true,
-      statementId: opened.statementId,
-      statements: [{ currencyCode: 980, rows: 5, from: '2026-10-03', to: '2026-10-07', type: null, cardTail: null, accounts: [] }],
+      uploadId: expect.any(String),
+      files: [
+        {
+          ok: true,
+          provider: 'monobank',
+          accounts: [
+            { currencyCode: 980, rows: 5, from: '2026-10-03', to: '2026-10-07', type: null, cardTail: null, match: null, added: 5, matched: 0, blocked: null },
+            { currencyCode: 840, rows: 2, from: expect.any(String), to: expect.any(String), type: 'white', cardTail: '1111', match: null, added: 2, matched: 0, blocked: null },
+          ],
+        },
+        { ok: false, problem: 'empty', row: null },
+      ],
     });
-    expect(await svc.commit(opened.statementId, [{ kind: 'new', type: 'black' }])).toEqual({ written: true, added: 5 });
+    // Every bank's extensions, once each.
+    expect(new Set(picked[0]).size).toBe(picked[0]!.length);
+    expect(JSON.stringify(opened)).not.toContain(IBAN);
+    expect(JSON.stringify(opened)).not.toContain(dir);
+
+    const many = harness({ files: Array.from({ length: 13 }, () => sheetFile()) });
+    expect(await many.svc.openUpload()).toEqual({ opened: false, reason: 'too-many' });
+    expect(many.decoded).toEqual([]);
+    expect(await harness({ file: null }).svc.openUpload()).toEqual({ opened: false, reason: 'cancelled' });
   });
 
-  it("another bank's connection is refused; an unknown statement or a late one is expired", async () => {
-    const conn = await fileConnection();
-    const h = harness();
-    const opened = await h.svc.openAny();
+  it("an account no connection has takes the chosen person's new file connection; a re-upload finds the card and its person", async () => {
+    const owner = await person();
+    const { svc } = harness({ files: [sheetFile()] });
+    const opened = await svc.openUpload();
     if (!opened.opened) throw new Error('not opened');
-    expect(await h.svc.assign('00000000-0000-4000-8000-999999999999', conn)).toEqual({ opened: false, reason: 'expired' });
-    const { integrations } = services(db, dir);
-    const other = await integrations.addConnection({ participant: { label: 'Вигадана Особа' }, provider: 'privatbank', method: 'file' });
-    if (!other.added) throw new Error('not added');
-    expect(await h.svc.assign(opened.statementId, other.connectionId)).toMatchObject({ opened: false, reason: 'problem', problem: 'other-bank' });
-    h.advance(STATEMENT_KEEP_MS + 1);
-    expect(await h.svc.assign(opened.statementId, conn)).toEqual({ opened: false, reason: 'expired' });
+    // A choice is needed for every account no connection has: none given → the file waits, nothing is made.
+    const waiting = await svc.commitUpload(opened.uploadId, [[owner.participantId, null]]);
+    expect(waiting).toEqual({ written: true, added: 0, files: [{ written: false, reason: 'waiting' }] });
+    expect((await services(db, dir).people.list()).people[0]!.connections.map((c) => c.provider)).toEqual(['privatbank']);
+
+    const again = await svc.openUpload();
+    if (!again.opened) throw new Error('not opened');
+    expect(await svc.commitUpload(again.uploadId, [[owner.participantId, owner.participantId]])).toEqual({
+      written: true,
+      added: 7,
+      files: [{ written: true, added: 7 }],
+    });
+    const [p] = (await services(db, dir).people.list()).people;
+    const mono = p!.connections.find((c) => c.provider === 'monobank');
+    expect(mono?.method).toBe('file');
+
+    const third = await svc.openUpload();
+    if (!third.opened || !third.files[0]!.ok) throw new Error('not opened');
+    // The card is found by its number in that connection; the first account states nothing to match by.
+    expect(third.files[0]!.accounts.map((a) => [a.match, a.added, a.matched])).toEqual([
+      [null, 5, 0],
+      [{ connectionId: mono!.id, participantId: owner.participantId, method: 'file' }, 0, 2],
+    ]);
   });
 
-  it('a dropped path: read without a dialog; a directory or a symbolic link is refused unread', async () => {
+  it('a person who has a file connection of the bank: it takes the account, no second one is made', async () => {
+    const owner = await person('monobank');
+    const { svc } = harness();
+    const opened = await svc.openUpload();
+    if (!opened.opened) throw new Error('not opened');
+    expect(await svc.commitUpload(opened.uploadId, [[owner.participantId]])).toMatchObject({ written: true, added: 5 });
+    const [p] = (await services(db, dir).people.list()).people;
+    expect(p!.connections.map((c) => c.id)).toEqual([owner.connectionId]);
+  });
+
+  it('bound to a connection: its bank only, another bank refused; an unknown person, a late upload, an import running', async () => {
+    const priv = await person();
+    const h = harness();
+    const bound = await h.svc.openUpload({ connectionId: priv.connectionId });
+    expect(h.picked[0]).toEqual(['xlsx']);
+    expect(bound).toMatchObject({ opened: true, files: [{ ok: false, problem: 'other-bank' }] });
+    await expect(h.svc.openUpload({ connectionId: 999 })).rejects.toThrow(/No such connection/);
+
+    const opened = await h.svc.openUpload();
+    if (!opened.opened) throw new Error('not opened');
+    await expect(h.svc.commitUpload(opened.uploadId, [[999]])).rejects.toThrow(/No such participant/);
+    await expect(h.svc.commitUpload(opened.uploadId, [])).rejects.toThrow(/One choice list per file/);
+    h.advance(STATEMENT_KEEP_MS + 1);
+    expect(await h.svc.commitUpload(opened.uploadId, [[priv.participantId]])).toEqual({ written: false, reason: 'expired' });
+
+    const busy = harness({ running: true });
+    const b = await busy.svc.openUpload();
+    if (!b.opened) throw new Error('not opened');
+    expect(await busy.svc.commitUpload(b.uploadId, [[priv.participantId]])).toEqual({ written: false, reason: 'import-running' });
+  });
+
+  it('dropped paths: read without a dialog; a directory, a symbolic link or a missing file is refused unread', async () => {
     const { svc, picked } = harness();
-    expect(await svc.openAny(path.join(FIXTURES, 'statement-card-uk.csv'))).toMatchObject({ opened: true, provider: 'monobank' });
-    expect(picked).toEqual([]);
-    expect(await svc.openAny(dir)).toMatchObject({ opened: false, problem: 'unreadable' });
     const link = path.join(dir, 'link.csv');
     fs.symlinkSync(path.join(FIXTURES, 'statement-card-uk.csv'), link);
-    expect(await svc.openAny(link)).toMatchObject({ opened: false, problem: 'unreadable' });
-    expect(await svc.openAny(path.join(dir, 'missing.csv'))).toMatchObject({ opened: false, problem: 'unreadable' });
-  });
-
-  it('a cancelled dialog keeps nothing', async () => {
-    const { svc } = harness({ file: null });
-    expect(await svc.openAny()).toEqual({ opened: false, reason: 'cancelled' });
+    const r = await svc.openUpload({ dropped: [path.join(FIXTURES, 'statement-card-uk.csv'), dir, link, path.join(dir, 'missing.csv')] });
+    expect(picked).toEqual([]);
+    const unreadable = { ok: false, problem: 'unreadable', row: null };
+    expect(r).toMatchObject({ opened: true, files: [{ ok: true, provider: 'monobank' }, unreadable, unreadable, unreadable] });
   });
 });

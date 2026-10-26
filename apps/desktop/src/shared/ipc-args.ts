@@ -10,6 +10,7 @@ import { LOCALES } from './locale.ts';
 import { PIN_RE } from './lock.ts';
 import { ANALYTICS_MAX_MONTHS, monthSpan } from './analytics.ts';
 import { isIsoDate } from './import-range.ts';
+import { UPLOAD_FILES_MAX } from './upload.ts';
 import { THEME_PREFS } from './theme.ts';
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const id = z.number().int().positive();
@@ -74,12 +75,12 @@ export const ARG_SCHEMAS = {
   listConnectionAccounts: z.tuple([id]),
   setAccountEnabled: z.tuple([accountId, z.boolean()]),
   openStatement: z.tuple([id]),
-  openAnyStatement: z.tuple([]),
-  // The path of a file dropped on the window, from the preload (webUtils.getPathForFile): the renderer's API takes a File.
-  openDroppedStatement: z.tuple([z.string().min(1).max(4096)]),
-  assignStatement: z.tuple([statementId, id]),
   compareStatement: z.tuple([statementId, z.array(statementTarget.nullable()).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
   commitStatement: z.tuple([statementId, z.array(statementTarget).min(1).max(STATEMENT_ACCOUNTS_MAX)]),
+  openUpload: z.union([z.tuple([]), z.tuple([id])]),
+  // The dropped files' paths, from the preload; past UPLOAD_FILES_MAX the service says too-many.
+  openDroppedUpload: z.tuple([z.array(z.string().min(1).max(4096)).min(1).max(64)]),
+  commitUpload: z.tuple([statementId, z.array(z.array(id.nullable()).max(STATEMENT_ACCOUNTS_MAX)).min(1).max(UPLOAD_FILES_MAX)]),
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),

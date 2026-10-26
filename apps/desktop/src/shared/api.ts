@@ -160,15 +160,6 @@ export type OpenStatementResult =
   | { opened: false; reason: 'cancelled' }
   | { opened: false; reason: 'problem'; problem: StatementProblemCode; /** the file's row, for bad-row */ row: number | null };
 
-/** A file opened from the data screens: kept in main with the bank its content names; a connection is assigned next. */
-export type OpenAnyStatementResult =
-  | { opened: true; statementId: string; provider: ProviderId }
-  | { opened: false; reason: 'cancelled' }
-  | { opened: false; reason: 'problem'; problem: StatementProblemCode; row: number | null };
-
-/** assignStatement: the kept file against the chosen connection, as openStatement gives it; expired after 10 minutes. */
-export type AssignStatementResult = OpenStatementResult | { opened: false; reason: 'expired' };
-
 /** Where an account's rows go: a card of the connection, or a new card of its currency with its card type. */
 export type StatementTargetInput = { kind: 'account'; accountId: string } | { kind: 'new'; type: string | null };
 
@@ -196,6 +187,46 @@ export type CommitStatementResult =
   | { written: true; added: number }
   | { written: false; reason: 'expired' | 'import-running' | StatementBlock };
 
+// ---------- the upload sheet: several files at once ----------
+
+/** One account of a file in the upload sheet: no IBAN, no full card number, no text from the file. */
+export type UploadAccountView = {
+  currencyCode: number;
+  rows: number;
+  from: string;
+  to: string;
+  type: string | null;
+  cardTail: string | null;
+  /** The connection that already has this account (by IBAN or card number); null: the sheet asks whose it is. */
+  match: { connectionId: number; participantId: number; method: ConnectionMethod } | null;
+  /** Rows the match does not have yet; every row for an account no connection has. */
+  added: number;
+  /** Rows the match already has. */
+  matched: number;
+  /** Why it cannot be written to its match (a token connection only checks); null when it can. */
+  blocked: StatementBlock | null;
+};
+
+export type UploadFileView =
+  | { ok: true; provider: ProviderId; accounts: UploadAccountView[] }
+  | { ok: false; problem: StatementProblemCode; row: number | null };
+
+export type OpenUploadResult =
+  | { opened: true; uploadId: string; files: UploadFileView[] }
+  | { opened: false; reason: 'cancelled' | 'too-many' };
+
+/**
+ * Per file, per account: the participant who takes an account no connection has (their file connection of that bank, or
+ * a new one), null for a matched account or to leave it. A file with an account left waiting is not written.
+ */
+export type UploadChoices = Array<Array<number | null>>;
+
+export type UploadFileOutcome = { written: true; added: number } | { written: false; reason: 'unread' | 'waiting' | StatementBlock };
+
+export type CommitUploadResult =
+  | { written: true; added: number; files: UploadFileOutcome[] }
+  | { written: false; reason: 'expired' | 'import-running' };
+
 export type SetAccountEnabledResult = { changed: true } | { changed: false; reason: 'import-running' };
 
 export type BalanceApi = {
@@ -222,19 +253,19 @@ export type BalanceApi = {
    * PDF decoded in a process of its own); neither its path nor its content comes back.
    */
   openStatement(connectionId: number): Promise<OpenStatementResult>;
-  /** The data screens' «Upload statement»: the system dialog with every bank's statement files; the file names its bank. */
-  openAnyStatement(): Promise<OpenAnyStatementResult>;
-  /**
-   * A file dropped onto a data screen. The renderer passes the dropped File; the preload turns it into its path for main
-   * (the path never reaches the renderer). A File made by script has no path and is refused.
-   */
-  openDroppedStatement(file: File): Promise<OpenAnyStatementResult>;
-  /** One of the file's bank's connections for a file opened by openAnyStatement / openDroppedStatement. */
-  assignStatement(statementId: string, connectionId: number): Promise<AssignStatementResult>;
   /** Counts only: each account of the kept file against its target, one per account; null — matched by the file. */
   compareStatement(statementId: string, targets: Array<StatementTargetInput | null>): Promise<CompareStatementResult>;
   /** Writes every account of the kept file into a file connection, one target per account; refused while an import runs. */
   commitStatement(statementId: string, targets: StatementTargetInput[]): Promise<CommitStatementResult>;
+  /**
+   * The upload sheet: the system dialog with several files — every bank's, or only `connectionId`'s bank's (another
+   * bank's file is then refused) — each read in main, each account matched to the connection that has it.
+   */
+  openUpload(connectionId?: number): Promise<OpenUploadResult>;
+  /** Files dropped onto a data screen: the preload turns each File into its path for main (never back to the renderer). */
+  openDroppedUpload(files: File[]): Promise<OpenUploadResult>;
+  /** Writes every file whose accounts all have a place; refused as a whole while an import runs. */
+  commitUpload(uploadId: string, choices: UploadChoices): Promise<CommitUploadResult>;
   /** From the start of the day `from` (YYYY-MM-DD in the system time zone, within isImportFrom) up to now. */
   startImport(from: string): Promise<StartImportResult>;
   cancelImport(): Promise<void>;

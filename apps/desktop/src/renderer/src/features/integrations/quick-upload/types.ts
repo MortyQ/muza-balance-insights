@@ -1,15 +1,28 @@
-import type { ConnectionView, OpenStatementResult, ProviderId } from '@contract/api.ts';
+import type { ProviderId, UploadFileView } from '@contract/api.ts';
 
-/** A connection the file may go to, with what the list shows. */
-export type ConnectionOption = { connection: Readonly<ConnectionView>; label: string };
+/** Where the sheet was opened from: a connection's «Upload from <date>» names its bank and the date the file should start. */
+export type UploadRequest = { connectionId?: number; provider?: ProviderId; from?: string };
 
 /**
- * The data screens' upload: main opens the file (dialog or drop) and names its bank; then a connection of that bank is
- * taken (the only file one), picked (several, or a token one to check against), or added (none); then the comparison.
+ * The upload sheet: main opens the files (dialog or drop) and matches each account to the connection that has it; the
+ * user picks a person for each account no connection has; one «Import» writes every file whose accounts all have one.
  */
 export type QuickUploadState =
   | { step: 'idle' }
-  | { step: 'opening' }
-  | { step: 'problem'; message: string }
-  | { step: 'choose'; statementId: string; provider: ProviderId; files: ConnectionOption[]; tokens: ConnectionOption[]; busy: boolean }
-  | { step: 'ready'; connection: Readonly<ConnectionView>; opened: Readonly<OpenStatementResult> };
+  | { step: 'opening'; request: UploadRequest }
+  | { step: 'problem'; message: string; request: UploadRequest }
+  | {
+      step: 'review';
+      request: UploadRequest;
+      uploadId: string;
+      files: UploadFileView[];
+      /** Per file, per account: the person picked for an account no connection has; null for a matched one or none yet. */
+      choices: Array<Array<number | null>>;
+      busy: boolean;
+      /** Why the last «Import» was refused, or ''. */
+      error: string;
+    }
+  | { step: 'done'; message: string; request: UploadRequest };
+
+/** The sheet's summary: accounts ready to write, waiting for a person, only checked, and the rows to add. */
+export type UploadSummary = { ready: number; waiting: number; added: number };

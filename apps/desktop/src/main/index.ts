@@ -237,6 +237,13 @@ app.whenReady().then(async () => {
       const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
       return r.canceled ? null : (r.filePaths[0] ?? null);
     },
+    pickFiles: async (extensions) => {
+      const t = translator(locale());
+      const filters = [{ name: t('main.dialog.statementFiles'), extensions: [...extensions] }, { name: t('main.dialog.allFiles'), extensions: ['*'] }];
+      const opts = { properties: ['openFile' as const, 'multiSelections' as const], filters };
+      const r = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+      return r.canceled ? [] : r.filePaths;
+    },
     decode: (format, bytes) => decoder.decode(format, bytes),
     importRunning: () => importer.running,
     randomId: () => randomUUID(),
@@ -302,11 +309,11 @@ app.whenReady().then(async () => {
     listConnectionAccounts: (id) => integrations.listConnectionAccounts(id),
     setAccountEnabled: (accountId, enabled) => integrations.setAccountEnabled(accountId, enabled),
     openStatement: (connectionId) => statements.open(connectionId),
-    openAnyStatement: () => statements.openAny(),
-    openDroppedStatement: (file) => statements.openAny(file),
-    assignStatement: (statementId, connectionId) => statements.assign(statementId, connectionId),
     compareStatement: (statementId, targets) => statements.compare(statementId, targets),
     commitStatement: (statementId, targets) => statements.commit(statementId, targets),
+    openUpload: (...args) => statements.openUpload(args[0] === undefined ? {} : { connectionId: args[0] }),
+    openDroppedUpload: (files) => statements.openUpload({ dropped: files }),
+    commitUpload: (uploadId, choices) => statements.commitUpload(uploadId, choices),
     startImport: (from) => importer.start(from),
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),
