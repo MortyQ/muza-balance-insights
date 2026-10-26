@@ -50,7 +50,7 @@ function addBank(id: string): void {
     :text="mark"
     :label="mark ? `${mark}. ${t('home.filters.freshness.list')}` : t('home.filters.freshness.list')"
   >
-    <div class="flex w-84 flex-col gap-3 p-1" data-test="freshness-list">
+    <div class="flex min-w-0 flex-col gap-3 p-1" data-test="freshness-list">
       <p class="text-sm font-medium">{{ $t('home.filters.freshness.list') }}</p>
       <section v-for="g in groups" :key="g.participantId" class="flex flex-col gap-2" :data-test="`freshness-person-${g.participantId}`">
         <p class="text-xs text-foreground-muted">{{ g.person }}</p>
@@ -66,6 +66,7 @@ function addBank(id: string): void {
             </div>
             <VButton
               v-if="row.method === 'file'"
+              class="shrink-0"
               size="sm"
               variant="neutral"
               :text="uploadFrom(row) ? $t('home.filters.freshness.uploadFrom', { date: shortDate(uploadFrom(row) ?? '') }) : $t('home.filters.freshness.upload')"
@@ -73,6 +74,7 @@ function addBank(id: string): void {
             />
             <VButton
               v-else-if="row.until !== null"
+              class="shrink-0"
               size="sm"
               variant="neutral"
               :text="$t('home.filters.freshness.refresh')"
