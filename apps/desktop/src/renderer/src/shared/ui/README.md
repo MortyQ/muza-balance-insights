@@ -60,7 +60,7 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   `aria-hidden`: the value is always beside it as text. Every progress-like bar of the data screens (categories, people,
   sources, parts of the day).
 - `VChart` — one ECharts chart on canvas (`option`: plain ECharts option, `ChartOption`). ECharts is set up only in
-  `components/charts/echarts.ts` (bars, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
+  `components/charts/echarts.ts` (bars, lines, pie, custom, grid, tooltip, mark line, canvas renderer — from its tree-shaken entry points;
   `tests/echarts-bundle.test.ts` keeps `new Function`, `eval` and style attributes out). CSS colours in the option
   (`var(--x)`, `color-mix(…)`) are resolved against the chart's element (`resolveCssColors`) to rgba through a
   one-pixel canvas (ECharts parses only hex / rgb / hsl: an oklch fill lost its colour on hover), and again when

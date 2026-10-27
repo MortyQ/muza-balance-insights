@@ -161,6 +161,9 @@
   floor is needed.
 - **Home's first row at three widths** (change `desktop-home-tiles`, group 7): under 65rem a tile per row, 65–79rem
   «Balance» | «Month» over «Month pace», from 79rem one row; open and fold the card row at each, both themes.
+- **The «Spending» ring** (change `desktop-spending-ring`): both themes; a month with many small categories (no
+  segment vanishes, the gaps stay even); the hover widening never reaching the total inside; the tooltip beside the
+  pointer near the ring's edges.
 - **Dropping statement files on the window** (`QuickUploadFeature`, `openDroppedUpload`): drop a real `.xlsx` and
   `.csv` on macOS and Windows, a folder, several files at once, and a file from a zip opened in the system's archive
   viewer (it may have no path: expect «unreadable»). Check the window never navigates to a dropped file.

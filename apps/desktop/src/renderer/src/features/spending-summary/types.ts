@@ -24,6 +24,16 @@ export interface OpsView {
 /** A coloured part of a row's bar (`VShareBar`). */
 export type BarSegment = ShareBarSegment;
 
+/** A segment of the spending ring: the row's net, colour and the list's texts for the tooltip. */
+export interface RingPart {
+  key: string;
+  name: string;
+  value: number;
+  color: string;
+  amount: string;
+  share: string;
+}
+
 export interface RowView {
   key: string;
   /** The category the row opens (its screen); null — «N more categories» or a word the core no longer has. */
@@ -118,8 +128,8 @@ export interface MemberCardView {
 /** The left column under the header: everything but the people list. */
 export interface SummaryView {
   ring: {
-    /** conic-gradient stops (`ringOf`). */
-    stops: string;
+    /** The ring's segments (`ringOf`). */
+    parts: RingPart[];
     /** `who`, or `home.spending.title` for the only person. */
     label: string;
     amount: string;

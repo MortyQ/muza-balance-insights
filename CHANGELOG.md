@@ -5,6 +5,11 @@ English interface.
 
 ## 0.1.12 — unreleased
 
+### Home
+
+- **A clearer «Spending» ring.** Its segments have rounded ends and a gap between them; point at one to see the
+  category, its amount and its share.
+
 ### Fixes
 
 - «Import» in the statement upload panel no longer fails with «Something went wrong».
