@@ -50,6 +50,18 @@ describe('VChart', () => {
     spy.mockRestore();
   });
 
+  it('reports the item under the pointer, null when it leaves', () => {
+    const before = chartCalls.length;
+    const w = mount(VChart, { props: { option: { series: [{ type: 'pie', data: [1, 2] }] } } });
+    const chart = chartCalls[before]!;
+    chart.fire('mouseover', { seriesIndex: 1, dataIndex: 2 });
+    chart.fire('mouseout');
+    chart.fire('mouseover', { seriesIndex: 0, dataIndex: 0 });
+    chart.fire('globalout');
+    expect(w.emitted('hover')).toEqual([[{ seriesIndex: 1, dataIndex: 2 }], [null], [{ seriesIndex: 0, dataIndex: 0 }], [null]]);
+    w.unmount();
+  });
+
   it('redraws when the window comes back, not after unmount', () => {
     const before = chartCalls.length;
     const w = mount(VChart, { props: { option: { series: [{ type: 'bar', data: [1] }] } } });

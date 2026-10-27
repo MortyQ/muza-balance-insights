@@ -240,7 +240,7 @@ describe('totalFor / shareOf / ring / centerConv', () => {
   type RingOpt = { tooltip?: { trigger: string; formatter: (p: { dataIndex: number }) => string }; series: Pie[] };
   const part = (name: string, value: number) => ({ key: name, name, value, color: 'var(--category-1)', amount: `${value} ₴`, share: '50%' });
 
-  it('ringOption: rounded segments with a gap over a silent track; the tooltip names the part', () => {
+  it('ringOption: rounded segments with a gap over a silent track; no tooltip (the centre names the part)', () => {
     const o = ringOption([part('Продукты', 10), part('Кафе', 10)]) as RingOpt;
     const [track, ring] = o.series;
     expect(track?.silent).toBe(true);
@@ -248,15 +248,16 @@ describe('totalFor / shareOf / ring / centerConv', () => {
     expect(ring?.itemStyle?.borderRadius).toBeGreaterThan(0);
     expect(ring?.minAngle).toBeGreaterThan(0);
     expect(ring?.emphasis?.scaleSize).toBeGreaterThan(0);
-    expect(o.tooltip?.trigger).toBe('item');
-    expect(o.tooltip?.formatter({ dataIndex: 1 })).toBe('Кафе\n10 ₴ · 50%');
+    expect(o.tooltip).toBeUndefined();
+    expect(ring?.data.map((d) => d.value)).toEqual([10, 10]);
   });
-  it('ringOption: one part is a whole ring; nothing spent is the track alone, with no tooltip', () => {
+  it('ringOption: one part is a whole ring; nothing spent is the track alone', () => {
     expect((ringOption([part('Продукты', 10)]) as RingOpt).series[1]?.padAngle).toBe(0);
-    const empty = ringOption([]) as RingOpt;
-    expect(empty.series).toHaveLength(1);
-    expect(empty.tooltip).toBeUndefined();
-    expect((ringOption([part('Продукты', 0)]) as RingOpt).series).toHaveLength(1);
+    expect((ringOption([]) as RingOpt).series).toHaveLength(1);
+  });
+  it('ringOf: a part without spending is left out (the chart\'s data index is the part\'s)', () => {
+    const view: SpendingOverview = { ...VIEW, categories: VIEW.categories.map((c, i) => (i === 1 ? { ...c, net: 0, people: c.people.map((p) => ({ ...p, net: 0 })) } : c)) };
+    expect(ringOf(rowsFor(view, null, P, PREFS, UAH_FMT), view, null).every((p) => p.value > 0)).toBe(true);
   });
   it('currency lines under the ring: the «≈» lines of the picked currencies, no chip (one rate for both months)', () => {
     expect(centerConv(41_000, moneyFormat(VIEW.rates, { main: 980, also: { uah: false, usd: true, eur: true } }))).toEqual([

@@ -7,8 +7,8 @@ English interface.
 
 ### Home
 
-- **A clearer «Spending» ring.** Its segments have rounded ends and a gap between them; point at one to see the
-  category, its amount and its share.
+- **A clearer «Spending» ring.** Its segments have rounded ends and a gap between them; point at one and the middle
+  of the ring shows that category, its amount and its share.
 
 ### Fixes
 
