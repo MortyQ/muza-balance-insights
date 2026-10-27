@@ -16,7 +16,7 @@ import {
   parsePrefs,
   peopleRows,
   ringOf,
-  ringStops,
+  ringOption,
   rowsFor,
   shareOf,
   totalFor,
@@ -212,7 +212,7 @@ describe('rowsFor', () => {
   });
 });
 
-describe('totalFor / shareOf / ringStops / centerConv', () => {
+describe('totalFor / shareOf / ring / centerConv', () => {
   it('the family or a person', () => {
     expect(totalFor(VIEW, null)).toEqual({ net: 100_000, purchases: 20, prev: { net: 80_000, purchases: 18 } });
     expect(totalFor(VIEW, 2)).toEqual({ net: 40_000, purchases: 8, prev: { net: 30_000, purchases: 8 } });
@@ -221,21 +221,43 @@ describe('totalFor / shareOf / ringStops / centerConv', () => {
     expect(shareOf(1, 3)).toBe('33%');
     expect(shareOf(1, 0)).toBe('0%');
   });
-  it('ring stops: each part with a gap', () => {
-    expect(ringStops([{ value: 1, color: 'a' }, { value: 1, color: 'b' }])).toBe(
-      'conic-gradient(a 0.00deg 178.60deg, var(--surface) 178.60deg 180.00deg, b 180.00deg 358.60deg, var(--surface) 358.60deg 360.00deg)',
-    );
-    expect(ringStops([])).toBe('conic-gradient(var(--surface-sunken) 0deg 360deg)');
-  });
-  it('ringOf: the rows own nets in their colours', () => {
-    expect(ringOf(rowsFor(VIEW, null, P, PREFS, UAH_FMT), VIEW, null)).toBe(
-      ringStops([{ value: 50_000, color: 'var(--category-1)' }, { value: 30_000, color: 'var(--category-2)' }, { value: 20_000, color: 'var(--category-3)' }]),
-    );
+  it('ringOf: the rows own nets in their colours, with the list\'s name, amount and share', () => {
+    const rows = rowsFor(VIEW, null, P, PREFS, UAH_FMT);
+    const parts = ringOf(rows, VIEW, null);
+    expect(parts.map((p) => [p.value, p.color])).toEqual([[50_000, 'var(--category-1)'], [30_000, 'var(--category-2)'], [20_000, 'var(--category-3)']]);
+    expect(parts.map((p) => [p.name, p.amount, p.share])).toEqual(rows.map((r) => [r.name, r.amount, r.share]));
   });
   it('ringOf: «Other» takes the rest of the total (a refund-only category counts in the total, not in the rows)', () => {
     const many: SpendingOverview = { ...VIEW, total: { ...VIEW.total, net: 44_000 }, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null)) };
-    const named = Array.from({ length: 7 }, (_, i) => ({ value: 1_000 * (9 - i), color: `var(--category-${i + 1})` }));
-    expect(ringOf(rowsFor(many, null, P, PREFS, UAH_FMT), many, null)).toBe(ringStops([...named, { value: 44_000 - 42_000, color: 'var(--border-strong)' }]));
+    const named = Array.from({ length: 7 }, (_, i) => [1_000 * (9 - i), `var(--category-${i + 1})`]);
+    expect(ringOf(rowsFor(many, null, P, PREFS, UAH_FMT), many, null).map((p) => [p.value, p.color])).toEqual([...named, [44_000 - 42_000, 'var(--border-strong)']]);
+  });
+  it('ringOf: a picked person\'s nets', () => {
+    expect(ringOf(rowsFor(VIEW, 2, P, PREFS, UAH_FMT), VIEW, 2).reduce((s, p) => s + p.value, 0)).toBe(totalFor(VIEW, 2).net);
+  });
+
+  type Pie = { silent?: boolean; padAngle?: number; minAngle?: number; itemStyle?: { borderRadius?: number }; emphasis?: { scaleSize?: number }; data: Array<{ value: number }> };
+  type RingOpt = { tooltip?: { trigger: string; formatter: (p: { dataIndex: number }) => string }; series: Pie[] };
+  const part = (name: string, value: number) => ({ key: name, name, value, color: 'var(--category-1)', amount: `${value} ₴`, share: '50%' });
+
+  it('ringOption: rounded segments with a gap over a silent track; no tooltip (the centre names the part)', () => {
+    const o = ringOption([part('Продукты', 10), part('Кафе', 10)]) as RingOpt;
+    const [track, ring] = o.series;
+    expect(track?.silent).toBe(true);
+    expect(ring?.padAngle).toBeGreaterThan(0);
+    expect(ring?.itemStyle?.borderRadius).toBeGreaterThan(0);
+    expect(ring?.minAngle).toBeGreaterThan(0);
+    expect(ring?.emphasis?.scaleSize).toBeGreaterThan(0);
+    expect(o.tooltip).toBeUndefined();
+    expect(ring?.data.map((d) => d.value)).toEqual([10, 10]);
+  });
+  it('ringOption: one part is a whole ring; nothing spent is the track alone', () => {
+    expect((ringOption([part('Продукты', 10)]) as RingOpt).series[1]?.padAngle).toBe(0);
+    expect((ringOption([]) as RingOpt).series).toHaveLength(1);
+  });
+  it('ringOf: a part without spending is left out (the chart\'s data index is the part\'s)', () => {
+    const view: SpendingOverview = { ...VIEW, categories: VIEW.categories.map((c, i) => (i === 1 ? { ...c, net: 0, people: c.people.map((p) => ({ ...p, net: 0 })) } : c)) };
+    expect(ringOf(rowsFor(view, null, P, PREFS, UAH_FMT), view, null).every((p) => p.value > 0)).toBe(true);
   });
   it('currency lines under the ring: the «≈» lines of the picked currencies, no chip (one rate for both months)', () => {
     expect(centerConv(41_000, moneyFormat(VIEW.rates, { main: 980, also: { uah: false, usd: true, eur: true } }))).toEqual([

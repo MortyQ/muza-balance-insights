@@ -22,7 +22,7 @@ export function useSummaryView(
     const s = selected.value;
     return {
       ring: {
-        stops: ringOf(rows.value, v, blockPick.value),
+        parts: ringOf(rows.value, v, blockPick.value),
         label: who.value || t('home.spending.title'),
         amount: fmt.value.money(total.net),
         perDay: v.period.coveredDays > 0 ? t('home.spending.perDayShort', { amount: fmt.value.money(Math.round(total.net / v.period.coveredDays)) }) : null,

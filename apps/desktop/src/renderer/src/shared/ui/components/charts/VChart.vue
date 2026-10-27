@@ -8,6 +8,8 @@ import { init, type EChartsCoreOption, type EChartsType } from "./echarts.ts";
 import { resolveCssColors } from "./resolveCssColors.ts";
 
 const { option } = defineProps<{ option: Readonly<EChartsCoreOption> }>();
+/** The item under the pointer (a bar, a pie slice), null once it leaves; a silent series sends nothing. */
+const emit = defineEmits<{ hover: [item: { seriesIndex: number; dataIndex: number } | null] }>();
 
 const root = useTemplateRef<HTMLDivElement>("root");
 const probe = useTemplateRef<HTMLSpanElement>("probe");
@@ -55,6 +57,9 @@ onMounted(() => {
   if (!root.value) return;
   chart = init(root.value, null, { renderer: "canvas" });
   draw();
+  chart.on("mouseover", (p) => emit("hover", { seriesIndex: p.seriesIndex ?? 0, dataIndex: p.dataIndex }));
+  chart.on("mouseout", () => emit("hover", null));
+  chart.on("globalout", () => emit("hover", null));
   resize = new ResizeObserver(() => chart?.resize());
   resize.observe(root.value);
   theme = new MutationObserver(draw);
