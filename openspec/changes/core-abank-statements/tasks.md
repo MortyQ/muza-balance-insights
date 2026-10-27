@@ -9,7 +9,7 @@
 
 ## 2. Statement kit: amounts and PDF tables (core)
 
-- [ ] 2.1 `localAmount`, `pdfLines` and `pdfTable` in `providers/statement-kit.ts` (design 6). Verify with
+- [x] 2.1 `localAmount`, `pdfLines` and `pdfTable` in `providers/statement-kit.ts` (design 6). Verify with
   `tests/providers/statement-kit.test.ts`, using fictional items:
   - a three-line row;
   - a wrapped description;
