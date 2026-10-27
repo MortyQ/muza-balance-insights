@@ -4,7 +4,8 @@ import type { SummaryCardProps } from '@/entities/account';
 import { accountName, bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
-import { currencySymbol, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
+import { CHART_TOOLTIP } from '@/entities/operations';
+import { currencySymbol, dayMonthName, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { ChartOption } from '@/shared/ui';
 import type { Flow, FreeLineView, PaceView, RowView, Slide } from './types.ts';
@@ -310,6 +311,7 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
   const running = a.buckets.some((b) => b.state === 'running');
   return {
     days: a.buckets.map((b) => String(Number(b.key.slice(8, 10)))),
+    dates: a.buckets.map((b) => b.key),
     spent,
     usual: a.usual,
     last,
@@ -318,6 +320,20 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
     usualByNow: a.usual?.[last] ?? null,
     perDay: running ? perDay : null,
   };
+}
+
+/** The pace chart's tooltip for day `i`: the date, spent and the usual by that day (each when known), the difference. */
+export function paceTooltip(v: Readonly<PaceView>, i: number, money: (minor: number) => string = String): string {
+  const date = v.dates[i] ?? '';
+  const spent = v.spent[i] ?? null;
+  const usual = v.usual?.[i] ?? null;
+  const lines = [dayMonthName(date, Number(date.slice(0, 4)))];
+  if (spent !== null) lines.push(`${t('home.balances.pace.spent')}: ${money(spent)}`);
+  if (usual !== null) lines.push(`${t('home.balances.pace.tip.usual')}: ${money(usual)}`);
+  if (spent !== null && usual !== null && spent !== usual) {
+    lines.push(t(spent > usual ? 'home.balances.pace.tip.more' : 'home.balances.pace.tip.less', { amount: money(Math.abs(spent - usual)) }));
+  }
+  return lines.join('\n');
 }
 
 /** The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them). */
@@ -346,6 +362,12 @@ export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) =>
     : [];
   return {
     grid: { left: 4, right: 12, top: 30, bottom: 22, containLabel: true },
+    tooltip: {
+      ...CHART_TOOLTIP,
+      trigger: 'axis',
+      axisPointer: { type: 'line', lineStyle: { color: 'var(--border)' } },
+      formatter: (ps: Array<{ dataIndex: number }>) => paceTooltip(v, ps[0]?.dataIndex ?? 0, money),
+    },
     xAxis: {
       type: 'category',
       boundaryGap: false,

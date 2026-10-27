@@ -5,6 +5,11 @@ English interface.
 
 ## 0.1.12 — unreleased
 
+### Home
+
+- **«Month pace» shows any day.** Point at the chart to see the date, how much was spent by that day, the usual by that
+  day and how far the month is from usual.
+
 ### Fixes
 
 - «Import» in the statement upload panel no longer fails with «Something went wrong».
