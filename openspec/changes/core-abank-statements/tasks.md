@@ -40,15 +40,15 @@
 
 ## 4. A-Bank rules (core)
 
-- [ ] 4.1 `providers/abank/categories.ts` (empty), `descriptions.ts` and `rules.ts` (design 8), and the line in
+- [x] 4.1 `providers/abank/categories.ts` (empty), `descriptions.ts` and `rules.ts` (design 8), and the line in
   `PROVIDER_RULES`. Verify `tests/providers/abank/rules.test.ts`: transfer, cashback, the 6012 credit, «Скасування.»,
   the prefix-less refund, `MONO*` and a purchase.
-- [ ] 4.2 Masking templates (design 9, after the user's ok in review). Verify the masking cases in `rules.test.ts`.
-- [ ] 4.3 Derivation tests on fictional rows:
+- [x] 4.2 Masking templates (design 9, after the user's ok in review). Verify the masking cases in `rules.test.ts`.
+- [x] 4.3 Derivation tests on fictional rows:
   - a Monobank debit and an A-Bank `MONO*` credit pair as a cross-bank transfer;
   - a cancelled purchase is a refund;
   - the cashback credit is income and stays unpaired.
-- [ ] 4.4 Update `.agents/project/core-providers.md` (A-Bank, a statement's credit limit) and the «Add a bank»
+- [x] 4.4 Update `.agents/project/core-providers.md` (A-Bank, a statement's credit limit) and the «Add a bank»
   procedure of `.agents/skills/core-architecture` (the PDF helpers).
 
 ## 5. Desktop

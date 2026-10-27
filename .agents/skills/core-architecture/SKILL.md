@@ -78,7 +78,8 @@ Core (`packages/core`):
      (`bankCategory`): `categoryHint` maps it to one of `CATEGORY_HINTS`. New masking templates in `maskDescription`
      change what reaches the analysis copy: only after the user's ok (root `CLAUDE.md`).
    - `statement.ts` (a bank with files): `readers: StatementReader[]`, pure, one per kind of file, reading the
-     `StatementDocument` (`text`, `sheets` or `pdf`), never bytes, on the helpers of `providers/statement-kit.ts`.
+     `StatementDocument` (`text`, `sheets` or `pdf`), never bytes, on the helpers of `providers/statement-kit.ts`
+     (a PDF table: `pdfTable`, its header found by column names, its rows across lines; local amounts: `localAmount`).
    - `client.ts` (a bank with an API): network, pages, 429, through `src/providers/ratelimit.ts`.
 3. Add one line to each registry: `PROVIDERS` in `src/providers/info.ts`, `PROVIDER_RULES` in `src/providers/rules.ts`,
    and (with files) `STATEMENT_READERS` in `src/providers/statements.ts`.

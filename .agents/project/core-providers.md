@@ -82,6 +82,20 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - Transfers by its bank category (`TRANSFER_CATEGORIES`), own transfers by its service texts (`descriptions.ts`). The
   category table and the service texts hold both languages; a bank category is stored as the file states it.
 
+## A-Bank
+
+- Files only (`access.token: null`): `providers/abank/{info,rules,descriptions,categories,statement}.ts`, ids
+  `'prefixed'`, one card type `card`.
+- Its readers `abank-card-xlsx` (`xlsx`) and `abank-card-pdf` (`pdf`) take the card statement in Ukrainian («Виписка по
+  картці») from one column list: eleven headers, both spellings («в валюті картки» / «у валюті карти», a Latin or a
+  Cyrillic «MCC»). Heading lines above the table: the IBAN (`Рахунок:`) and the credit limit. Score 2 with the
+  workbook's account or card line, or the PDF's bank name or title; 1 with the headers alone. A PDF row is read across
+  its lines by `pdfTable` (the date above, the time below). One file is one account: its IBAN and every card its rows
+  name (`-` = none). Times to the minute; the card amount includes the fee (kept as the commission); cashback per row.
+- The MCC decides, as for Monobank: 4829 a transfer, 6012 a financial institution; the cashback credit («Зарахування
+  кешбеку на картку», 4829) is income, never a transfer; `MONO*<name>` a named sender; a credit with a merchant code or
+  without one (not a transfer, not 6012) a refund. `categories.ts` is empty: the bank states no category.
+
 ## Bank categories
 
 - **One table per bank**: `providers/<id>/categories.ts` exports `BANK_CATEGORIES` (bank category → a common hint of
@@ -118,8 +132,12 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - **Monobank's reader** (`monobank-card-uk`, `csv`) takes the card statement in Ukrainian, because its service texts are the
   API's. It also recognises the English one (refused as `language`: translated texts) and the FOP one by its title line
   (score 1, refused as `unsupported-kind`). The card statement states no IBAN and no card number.
-- **Shared reader helpers**: `providers/statement-kit.ts` (`gridOf`, `columnsByHeader`, `normHeader`, `wallTime`,
-  `isEmptyRow`). A new reader is mostly its column list on top of them.
+- **Shared reader helpers**: `providers/statement-kit.ts` (`gridOf`, `columnsByHeader`, `normHeader` — composed
+  letters, lower case, one space —, `wallTime`, `isEmptyRow`, `localAmount` for `1 234,56`; for a PDF `pdfLines`,
+  `lineSegments` and `pdfTable`: a header over several lines found by its column names on each page, a row's cells across
+  its lines). A new reader is mostly its column list on top of them.
+- **The credit limit.** A statement may state it (`ParsedStatement.creditLimit`); the import stores it with a new
+  account and, like the balance, only from a newer statement. The balance then includes it, as Monobank's API does.
 - **Reading values.**
   - Money is read as text into minor units: `toMinor` in `src/shared/money.ts`.
   - A date cell is an Excel serial: `excelSerialToUnix` in `src/shared/excel-date.ts`, in the statement's zone.
