@@ -12,11 +12,12 @@ has to find it in the list beside the ring.
   - rounded segment ends;
   - a clear gap between segments (a single segment is a whole ring, with no gap);
   - the same track, thickness, colours and order as today, and the total inside, unchanged.
-- Pointing at a segment widens it a little and shows a tooltip in the shared chart style: the category's name, its
-  amount and its share of the spending, as the list writes them.
-- No spending: a plain track ring, as now, with no tooltip.
+- Pointing at a segment widens it a little, and the ring's centre shows that category instead of the total: its name,
+  its amount and its share of the spending, as the list writes them. Leaving the ring brings the total back. (A
+  floating tooltip was tried first: on a ring this small it was clipped by the chart and hidden under the centre.)
+- No spending: a plain track ring, as now, with nothing on pointing.
 - `CHANGELOG.md`, next unreleased version (0.1.12): «The «Spending» ring has rounded, spaced segments; point at one to
-  see the category, its amount and share».
+  see the category, its amount and share in the middle».
 
 Out of scope:
 - the list of categories, the bars and every figure of the block;
@@ -36,7 +37,7 @@ User-visible: yes (the CHANGELOG entry above).
 
 ## Impact
 
-- `shared/ui/components/charts/echarts.ts`: registers the pie chart.
+- `shared/ui`: `echarts.ts` registers the pie chart; `VChart` reports the item under the pointer (`hover` event).
 - `features/spending-summary`: `utils/ring.ts` returns ring parts instead of gradient stops, plus the chart option;
-  `components/summary/CategoryRing.vue` draws `VChart` under the centre text; `types.ts`.
+  `components/summary/CategoryRing.vue` draws `VChart` under the centre and swaps the centre on hover; `types.ts`.
 - Tests: the ring's option, the parts (including «Other» taking the rest), the ECharts bundle test.

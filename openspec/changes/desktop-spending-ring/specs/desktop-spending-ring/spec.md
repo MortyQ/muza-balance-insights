@@ -23,19 +23,25 @@ The period's total SHALL stay inside the ring. With no spending the ring SHALL b
 #### Scenario: No spending
 
 - **WHEN** the period has no spending
-- **THEN** the ring is a plain track and pointing at it shows nothing
+- **THEN** the ring is a plain track and pointing at it changes nothing
 
-### Requirement: Category ring tooltip
+### Requirement: Category ring hover
 
-Pointing at a segment SHALL widen it slightly and show a tooltip in the style of the app's other charts with the
-category's name, its amount and its share, as the category list writes them.
+Pointing at a segment SHALL widen it slightly, within the ring's own space, and the ring's centre SHALL show that
+category instead of the total: its name, its amount and its share, as the category list writes them. Leaving the
+segment SHALL bring the total back.
 
 #### Scenario: Pointing at a segment
 
 - **WHEN** the user points at a category's segment
-- **THEN** the segment widens and the tooltip shows that category's name, amount and share
+- **THEN** the segment widens without being cut off, and the centre shows that category's name, amount and share
+
+#### Scenario: Leaving the ring
+
+- **WHEN** the pointer leaves the segment
+- **THEN** the centre shows the total again
 
 #### Scenario: Person picked
 
 - **WHEN** a person is picked in the global filters and the user points at a segment
-- **THEN** the segment and the tooltip show that person's spending in the category
+- **THEN** the centre shows that person's spending in the category
