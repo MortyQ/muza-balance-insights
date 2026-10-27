@@ -33,6 +33,7 @@ const { BANKS, bankOf, cardTypeName, defaultCardTypeOf } = await import('@/entit
 const { accessNoteOf, fileStepsOf, formsOf } = await import('@/features/integrations/utils.ts');
 const { FILE_ACCESS_NOTE, GENERIC_FILE_STEPS } = await import('@/features/integrations/statement-file/constants.ts');
 const { t } = await import('@/shared/lib');
+const { PROVIDER_IDS: REAL_IDS } = await import('@mono/core/providers/types');
 
 // The test registry's extra id: ProviderId is the real registry's union, so it is cast once here.
 const FICTIONAL = 'fictional' as ProviderId;
@@ -49,7 +50,8 @@ async function mountIt(component: Component, props: Record<string, unknown> = {}
 
 describe('a bank with statement files only, from its registry entry alone', () => {
   it('is in the bank list with its name, the file way only and a neutral mark', () => {
-    expect(BANKS.map((b) => b.id)).toEqual(['monobank', 'privatbank', 'fictional']);
+    // The real banks in the registry's order, then the test's own.
+    expect(BANKS.map((b) => b.id)).toEqual([...REAL_IDS, 'fictional']);
     expect(bankOf('fictional')).toEqual({ id: 'fictional', name: 'Вигаданий Банк', ways: ['file'], monogram: 'В', monogramClass: 'bg-surface-sunken text-foreground-muted' });
     expect(defaultCardTypeOf('fictional')).toBeNull();
     expect(cardTypeName('fictional', 'gold')).toBe('Карта');
@@ -66,10 +68,11 @@ describe('a bank with statement files only, from its registry entry alone', () =
     const { default: BankPicker } = await import('@/features/integrations/shared/components/BankPicker.vue');
     const w = await mountIt(BankPicker);
     const tiles = w.findAll('button');
-    expect(tiles.map((b) => b.attributes('disabled') !== undefined)).toEqual([false, false, false, true]);
-    expect(tiles[2]?.text()).toContain('Вигаданий Банк');
-    expect(tiles[2]?.text()).toContain('Файлы выписок из банка');
-    await tiles[2]?.trigger('click');
+    expect(tiles.map((b) => b.attributes('disabled') !== undefined)).toEqual([...BANKS.map(() => false), true]);
+    const tile = tiles[BANKS.length - 1];
+    expect(tile?.text()).toContain('Вигаданий Банк');
+    expect(tile?.text()).toContain('Файлы выписок из банка');
+    await tile?.trigger('click');
     expect(w.emitted('select')?.[0]?.[0]).toMatchObject({ id: 'fictional' });
     w.unmount();
   });

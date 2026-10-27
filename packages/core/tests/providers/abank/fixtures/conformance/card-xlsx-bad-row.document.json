@@ -1,0 +1,1036 @@
+{
+  "format": "sheets",
+  "sheets": [
+    {
+      "name": "Рух коштів по картці",
+      "rows": [
+        [
+          {
+            "t": "s",
+            "v": "Клієнт: ВИГАДАНА ОСОБА"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Інформація по картці: 40000*****001111"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Рахунок: UA990000000000000000000000001"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Період: 01.01.2026 – 20.01.2026"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Кредитний ліміт (станом на 20.01.2026): 10 000,00 UAH"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          {
+            "t": "s",
+            "v": "Баланс на початок періоду: 10 000,00 UAH"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Заборгованість (станом на 20.01.2026): 0,00 UAH"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          {
+            "t": "s",
+            "v": "Баланс на кінець періоду: 12 800,70 UAH"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "Дата i час операції"
+          },
+          {
+            "t": "s",
+            "v": "Номер картки"
+          },
+          {
+            "t": "s",
+            "v": "Деталі операції"
+          },
+          {
+            "t": "s",
+            "v": "MCC"
+          },
+          {
+            "t": "s",
+            "v": "Сума в валюті картки (UAH)"
+          },
+          {
+            "t": "s",
+            "v": "Сума в валюті операції"
+          },
+          {
+            "t": "s",
+            "v": "Валюта"
+          },
+          {
+            "t": "s",
+            "v": "Курс"
+          },
+          {
+            "t": "s",
+            "v": "Сума комісій (UAH)"
+          },
+          {
+            "t": "s",
+            "v": "Сума кешбеку (UAH)"
+          },
+          {
+            "t": "s",
+            "v": "Залишок після операції"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "20.01.2026 21:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Вигадана Особа"
+          },
+          {
+            "t": "s",
+            "v": "4829"
+          },
+          {
+            "t": "s",
+            "v": "-1 000,00"
+          },
+          {
+            "t": "s",
+            "v": "-1 000,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "12 800,70"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "18.01.2026 20:00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "Вигадана аптека, місто"
+          },
+          null,
+          {
+            "t": "s",
+            "v": "84,20"
+          },
+          {
+            "t": "s",
+            "v": "84,20"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-0,84"
+          },
+          {
+            "t": "s",
+            "v": "13 800,70"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "15.01.2026 11:01"
+          },
+          {
+            "t": "s",
+            "v": "4000****2222"
+          },
+          {
+            "t": "s",
+            "v": "Зарахування кешбеку на картку"
+          },
+          {
+            "t": "s",
+            "v": "4829"
+          },
+          {
+            "t": "s",
+            "v": "abc"
+          },
+          {
+            "t": "s",
+            "v": "10,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "13 716,50"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "15.01.2026 11:01"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Зарахування кешбеку на картку"
+          },
+          {
+            "t": "s",
+            "v": "4829"
+          },
+          {
+            "t": "s",
+            "v": "32,50"
+          },
+          {
+            "t": "s",
+            "v": "32,50"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "13 706,50"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "12.01.2026 08:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Вигаданий банк"
+          },
+          {
+            "t": "s",
+            "v": "6012"
+          },
+          {
+            "t": "s",
+            "v": "500,00"
+          },
+          {
+            "t": "s",
+            "v": "500,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "13 674,00"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "10.01.2026 19:40"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Зняття готівки"
+          },
+          {
+            "t": "s",
+            "v": "6010"
+          },
+          {
+            "t": "s",
+            "v": "-530,00"
+          },
+          {
+            "t": "s",
+            "v": "-500,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "30,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "13 174,00"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "08.01.2026 10:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Вигаданий сервіс"
+          },
+          {
+            "t": "s",
+            "v": "5399"
+          },
+          {
+            "t": "s",
+            "v": "-45,60"
+          },
+          {
+            "t": "s",
+            "v": "-1,00"
+          },
+          {
+            "t": "s",
+            "v": "USD"
+          },
+          {
+            "t": "s",
+            "v": "45.60"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "0,46"
+          },
+          {
+            "t": "s",
+            "v": "13 704,00"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "06.01.2026 22:10"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "Скасування. Вигаданий магазин"
+          },
+          {
+            "t": "s",
+            "v": "5399"
+          },
+          {
+            "t": "s",
+            "v": "2 000,00"
+          },
+          {
+            "t": "s",
+            "v": "2 000,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-20,00"
+          },
+          {
+            "t": "s",
+            "v": "13 749,60"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "06.01.2026 13:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****2222"
+          },
+          {
+            "t": "s",
+            "v": "Вигаданий магазин"
+          },
+          {
+            "t": "s",
+            "v": "5399"
+          },
+          {
+            "t": "s",
+            "v": "-2 000,00"
+          },
+          {
+            "t": "s",
+            "v": "-2 000,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "20,00"
+          },
+          {
+            "t": "s",
+            "v": "11 749,60"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "05.01.2026 12:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "Вигаданий супермаркет"
+          },
+          {
+            "t": "s",
+            "v": "5411"
+          },
+          {
+            "t": "s",
+            "v": "-1 250,40"
+          },
+          {
+            "t": "s",
+            "v": "-1 250,40"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "12,50"
+          },
+          {
+            "t": "s",
+            "v": "13 749,60"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          {
+            "t": "s",
+            "v": "03.01.2026 09:00"
+          },
+          {
+            "t": "s",
+            "v": "4000****1111"
+          },
+          {
+            "t": "s",
+            "v": "MONO*VYHADANYI VIDPRAVNYK"
+          },
+          {
+            "t": "s",
+            "v": "4829"
+          },
+          {
+            "t": "s",
+            "v": "5 000,00"
+          },
+          {
+            "t": "s",
+            "v": "5 000,00"
+          },
+          {
+            "t": "s",
+            "v": "UAH"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "0,00"
+          },
+          {
+            "t": "s",
+            "v": "-"
+          },
+          {
+            "t": "s",
+            "v": "15 000,00"
+          },
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    }
+  ]
+}

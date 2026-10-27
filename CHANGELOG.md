@@ -5,6 +5,12 @@ English interface.
 
 ## 0.1.12 — unreleased
 
+### Banks
+
+- **A-Bank.** Add an A-Bank card from its statement, as an Excel file (.xlsx) or a PDF. All the cards of one account
+  come in as that account; transfers from your Monobank card are recognised as your own, cashback counts as income
+  and cancelled purchases as refunds. A credit card's limit is taken from the statement, so its own funds show right.
+
 ### Home
 
 - **«Month pace» shows any day.** Point at the chart to see the date, how much was spent by that day, the usual by that

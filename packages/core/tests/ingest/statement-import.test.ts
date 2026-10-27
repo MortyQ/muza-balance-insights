@@ -97,6 +97,27 @@ describe('a file connection', () => {
     expect(await rows('SELECT balance FROM accounts')).toEqual([{ balance: 961770 }]);
   });
 
+  it('a stated credit limit: kept on a new account, moved by a newer file only, kept when a file states none', async () => {
+    const conn = await fileConnection();
+    const limit = rows.bind(null, 'SELECT credit_limit, balance FROM accounts');
+    await commitStatement(db, conn, [{ ...card(), creditLimit: 5000000 }], [{ kind: 'new', id: 'c', type: null }], 1);
+    expect(await limit()).toEqual([{ credit_limit: 5000000, balance: 961770 }]);
+
+    const target = { kind: 'account', accountId: 'c' } as const;
+    const older = { ...card(), rows: card().rows.slice(0, 2), closingBalance: 1190500, creditLimit: 3000000 };
+    await commitStatement(db, conn, [older], [target], 2);
+    expect(await limit()).toEqual([{ credit_limit: 5000000, balance: 961770 }]);
+
+    const later = card();
+    later.rows = [...later.rows, { time: kyiv('2026-10-08T08:00:00'), amount: -10000, currencyCode: 980, hold: false, mcc: 5411, balance: 951770, raw: '{}' }];
+    await commitStatement(db, conn, [{ ...later, closingBalance: 951770 }], [target], 3);
+    expect(await limit()).toEqual([{ credit_limit: 5000000, balance: 951770 }]);
+
+    later.rows.push({ time: kyiv('2026-10-09T08:00:00'), amount: -10000, currencyCode: 980, hold: false, mcc: 5411, balance: 941770, raw: '{}' });
+    await commitStatement(db, conn, [{ ...later, closingBalance: 941770, creditLimit: 6000000 }], [target], 4);
+    expect(await limit()).toEqual([{ credit_limit: 6000000, balance: 941770 }]);
+  });
+
   it('a hole between the coverage and the file, or another currency: compared, not written', async () => {
     const conn = await fileConnection();
     await commitStatement(db, conn, [card()], [{ kind: 'new', id: 'c', type: null }], 1);

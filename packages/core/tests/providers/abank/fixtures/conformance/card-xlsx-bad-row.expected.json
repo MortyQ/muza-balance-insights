@@ -1,0 +1,8 @@
+{
+  "reader": "abank-card-xlsx",
+  "result": {
+    "ok": false,
+    "problem": "bad-row",
+    "row": 11
+  }
+}

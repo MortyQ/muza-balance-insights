@@ -7,7 +7,7 @@
 // a client (providers/<id>/client.ts — network, pages, limits; only the import uses it). Re-deriving never loads a
 // client.
 
-export const PROVIDER_IDS = ['monobank', 'privatbank'] as const;
+export const PROVIDER_IDS = ['monobank', 'privatbank', 'abank'] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 /** A stored row as the rules see it (columns of `transactions`). */
@@ -227,6 +227,8 @@ export interface ParsedStatement {
   rows: Array<Omit<NormalizedTx, 'id'>>;
   /** The balance after the newest row, when the file states it. */
   closingBalance: number | null;
+  /** The account's credit limit, when the file states it (the balance then includes it); absent or null = not stated. */
+  creditLimit?: number | null;
 }
 
 /**
