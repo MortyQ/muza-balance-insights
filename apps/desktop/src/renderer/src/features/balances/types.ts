@@ -103,6 +103,8 @@ export interface UseCardStackReturn {
 export interface PaceView {
   /** Day of the month, as the axis shows it. */
   days: string[];
+  /** Each day's date, YYYY-MM-DD (the tooltip's head). */
+  dates: string[];
   /** Spending added up day by day; null — a day not reached yet (not drawn). */
   spent: Array<number | null>;
   /** The usual month's running spending by day; null — fewer than 3 whole months before. */

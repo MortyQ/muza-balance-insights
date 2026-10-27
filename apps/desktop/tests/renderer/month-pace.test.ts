@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { AnalyticsOverview } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { paceChartOption, paceView } from '@/features/balances/utils.ts';
+import { paceChartOption, paceTooltip, paceView } from '@/features/balances/utils.ts';
 
 vi.mock('@/shared/ui/components/charts/VChart.vue', async () => {
   const { defineComponent, h } = await import('vue');
@@ -34,7 +34,7 @@ function month(states: Array<'full' | 'running' | 'none'>, spending: number[], u
 describe('paceView', () => {
   it('a running month: added up to today, nothing after it; usual by the same day; per day kept', () => {
     const v = paceView(month(['full', 'full', 'running', 'none'], [100, 200, 50, 0], [80, 160, 240, 320]), 1234);
-    expect(v).toMatchObject({ days: ['1', '2', '3', '4'], spent: [100, 300, 350, null], last: 2, running: true, spentTotal: 350, usualByNow: 240, perDay: 1234 });
+    expect(v).toMatchObject({ days: ['1', '2', '3', '4'], dates: ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'], spent: [100, 300, 350, null], last: 2, running: true, spentTotal: 350, usualByNow: 240, perDay: 1234 });
   });
 
   it('a past month: the whole month, no per day', () => {
@@ -74,6 +74,31 @@ describe('paceChartOption', () => {
     const past = paceChartOption(paceView(month(['full', 'full'], [10, 20], null), null)!) as { series: Array<{ markPoint?: { data: unknown[] } }> };
     expect(past.series).toHaveLength(1);
     expect(past.series[0]?.markPoint?.data).toEqual([]);
+  });
+});
+
+describe('paceTooltip', () => {
+  const money = (n: number) => `${n} ₴`;
+  const running = () => paceView(month(['full', 'running', 'none'], [100, 50, 0], [80, 200, 300]), null)!;
+
+  it('a day with data and a usual month: the date, spent, usual by that day, the difference', () => {
+    expect(paceTooltip(running(), 0, money)).toBe('1 октября\nПотрачено: 100 ₴\nОбычно к этому дню: 80 ₴\nНа 20 ₴ больше обычного');
+    expect(paceTooltip(running(), 1, money)).toBe('2 октября\nПотрачено: 150 ₴\nОбычно к этому дню: 200 ₴\nНа 50 ₴ меньше обычного');
+  });
+
+  it('a day after today: the usual only', () => {
+    expect(paceTooltip(running(), 2, money)).toBe('3 октября\nОбычно к этому дню: 300 ₴');
+  });
+
+  it('no usual month: spent only', () => {
+    expect(paceTooltip(paceView(month(['full', 'full'], [10, 20], null), null)!, 1, money)).toBe('2 октября\nПотрачено: 30 ₴');
+  });
+
+  it('the chart shows it for the day under the pointer', () => {
+    const v = running();
+    const o = paceChartOption(v, money) as { tooltip: { trigger: string; formatter: (ps: Array<{ dataIndex: number }>) => string } };
+    expect(o.tooltip.trigger).toBe('axis');
+    expect(o.tooltip.formatter([{ dataIndex: 1 }])).toBe(paceTooltip(v, 1, money));
   });
 });
 

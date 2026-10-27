@@ -7,6 +7,8 @@ English interface.
 
 ### Home
 
+- **«Month pace» shows any day.** Point at the chart to see the date, how much was spent by that day, the usual by that
+  day and how far the month is from usual.
 - **A clearer «Spending» ring.** Its segments have rounded ends and a gap between them; point at one and the middle
   of the ring shows that category, its amount and its share.
 

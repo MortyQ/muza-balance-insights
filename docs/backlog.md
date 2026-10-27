@@ -161,6 +161,8 @@
   floor is needed.
 - **Home's first row at three widths** (change `desktop-home-tiles`, group 7): under 65rem a tile per row, 65–79rem
   «Balance» | «Month» over «Month pace», from 79rem one row; open and fold the card row at each, both themes.
+- **The «Month pace» tooltip** (change `desktop-pace-tooltip`): hover along a running month, both themes; the tooltip
+  beside today's amount pill near the right edge (it should flip left, not cover the pill), and on a past month.
 - **The «Spending» ring** (change `desktop-spending-ring`): both themes; a month with many small categories (no
   segment vanishes, the gaps stay even); the widened segment whole at the ring's edges; the centre switching to the
   hovered category and back without flicker when the pointer crosses a gap.
