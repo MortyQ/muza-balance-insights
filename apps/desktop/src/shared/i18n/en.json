@@ -473,7 +473,12 @@
         "usualByNow": "Usually by this day",
         "usualMonth": "Usually in a month",
         "perDay": "Available per day",
-        "noUsual": "A usual month shows once there are three whole months of history"
+        "noUsual": "A usual month shows once there are three whole months of history",
+        "tip": {
+          "usual": "Usual by this day",
+          "more": "{amount} more than usual",
+          "less": "{amount} less than usual"
+        }
       },
       "freeLine": {
         "free": "Free",
