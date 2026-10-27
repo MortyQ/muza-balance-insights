@@ -1,5 +1,6 @@
 // The messages between main and the data process (src/shared/data-protocol.ts): a closed list of methods, each with
 // its own argument tuple; the key only in `open`; errors as a code and a name. Fictional data only.
+import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ARG_SCHEMAS, STATEMENT_ACCOUNTS_MAX } from '../src/shared/ipc-args.ts';
 import { CallMessage, DATA_ARG_SCHEMAS, DATA_METHODS, FromData, ToData } from '../src/shared/data-protocol.ts';
@@ -75,6 +76,24 @@ describe('data protocol', () => {
     expect(compare(2, [null])).toBe(false);
     expect(compare(STATEMENT_ACCOUNTS_MAX, Array.from({ length: STATEMENT_ACCOUNTS_MAX }, () => null))).toBe(true);
     expect(compare(STATEMENT_ACCOUNTS_MAX + 1, Array.from({ length: STATEMENT_ACCOUNTS_MAX + 1 }, () => null))).toBe(false);
+  });
+
+  it('every statement a core reader returns for its conformance fixtures passes, a stated credit limit included', () => {
+    const root = new URL('../../../packages/core/tests/providers/', import.meta.url);
+    const read = fs
+      .readdirSync(root, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && fs.existsSync(new URL(`${d.name}/fixtures/conformance/`, root)))
+      .flatMap((d) => {
+        const dir = new URL(`${d.name}/fixtures/conformance/`, root);
+        return fs.readdirSync(dir).filter((f) => f.endsWith('.expected.json')).map((f) => JSON.parse(fs.readFileSync(new URL(f, dir), 'utf8')).result);
+      })
+      .filter((r: { ok: boolean }) => r.ok);
+    expect(read.some((r: { statements: Array<{ creditLimit?: number | null }> }) => r.statements.some((st) => typeof st.creditLimit === 'number'))).toBe(true);
+    for (const r of read) {
+      const targets = r.statements.map(() => null);
+      expect(DATA_ARG_SCHEMAS.compareStatement.safeParse([1, r.statements, targets]).success).toBe(true);
+    }
+    expect(DATA_ARG_SCHEMAS.compareStatement.safeParse([1, [{ ...statement, creditLimit: -1 }], [null]]).success).toBe(false);
   });
 
   it('the key: 64 lowercase hex characters or null, only in `open`', () => {

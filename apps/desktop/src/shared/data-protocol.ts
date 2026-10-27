@@ -115,6 +115,7 @@ const parsedStatement = z.strictObject({
   }),
   rows: z.array(statementRow).min(1),
   closingBalance: z.number().int().nullable(),
+  creditLimit: z.number().int().nonnegative().nullable().optional(),
 }) satisfies z.ZodType<ParsedStatement>;
 // Every account of one file, in the file's order.
 const statements = z.array(parsedStatement).min(1).max(STATEMENT_ACCOUNTS_MAX);
