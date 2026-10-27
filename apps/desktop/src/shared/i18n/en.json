@@ -230,6 +230,9 @@
         },
         "privatbank": {
           "card": "PrivatBank card"
+        },
+        "abank": {
+          "card": "A-Bank card"
         }
       },
       "other": "Other banks",

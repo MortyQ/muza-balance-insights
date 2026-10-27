@@ -183,11 +183,19 @@
   the table lacks, among them the English names of «Платежі за реквізитами» and «Платежі до бюджету» and the Ukrainian
   pair of «Cinema». Check whether the English statement writes treasury payees in Cyrillic (`TREASURY_RE`) or
   transliterates them.
-- **Real PrivatBank `.xlsx` and A-Bank `.pdf` files**: before their readers ship, the team adding them checks that the
-  decoder (`apps/desktop/src/decoder/`) turns real files into the document their readers expect: sheets with values kept
-  as stored (dates as Excel serials, no floats), PDF text items with positions that put a row's cells on one line. A
-  file the decoder refuses (`unreadable`, `encrypted`, a passed limit of `DECODE_LIMITS` in
-  `src/shared/decoder-protocol.ts`) shows which assumption broke. Only masked layouts in fixtures.
+- **Real PrivatBank `.xlsx` files**: before their reader ships, the team adding it checks that the
+  decoder (`apps/desktop/src/decoder/`) turns real files into the document the reader expects: sheets with values kept
+  as stored (dates as Excel serials, no floats). A file the decoder refuses (`unreadable`, `encrypted`, a passed limit
+  of `DECODE_LIMITS` in `src/shared/decoder-protocol.ts`) shows which assumption broke. Only masked layouts in fixtures.
+- **Real A-Bank files** (change `core-abank-statements`): the readers were checked, outside the repository, on a
+  workbook re-saved by Apple Numbers and a PDF re-saved by macOS with its client block blanked. Upload, through the
+  app's own decoder, an original `.xlsx` and an original multi-page PDF straight from the bank, and check:
+  - the workbook's cell types (text, as seen, or numbers and Excel serial dates) — both read;
+  - the PDF's heading: whether it states the IBAN and the credit limit (else a PDF account is matched by its cards);
+  - pdf.js's text items against the PDF reader's band reading (`pdfTable`): a row's date over its time, a wrapped long
+    description, the header repeated on every page;
+  - a top-up from another bank with MCC 6012: whether it should pair with that bank's debit (today it counts as income
+    here and as spending there).
 - **The decoder's memory on a large PDF**: upload a long PDF statement (hundreds of pages, near `STATEMENT_MAX_BYTES`,
   10 MiB) and watch the `balance-decoder` process: its peak resident size, the time against `DECODE_TIMEOUT_MS` (30 s),
   and that it is gone after the reply. Lower the page or item limits if the peak is too high for a weak machine.

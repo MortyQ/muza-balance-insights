@@ -53,11 +53,11 @@
 
 ## 5. Desktop
 
-- [ ] 5.1 `entities/bank/looks/abank.ts` (design 10) and `entities.bank.cardType.abank.card` in `uk.json`, `en.json`
+- [x] 5.1 `entities/bank/looks/abank.ts` (design 10) and `entities.bank.cardType.abank.card` in `uk.json`, `en.json`
   and `ru.json`. Verify `providers.test.ts`, `architecture.test.ts`, `i18n.test.ts`, `renderer/integrations.test.ts`
   and `renderer/registry-banks.test.ts`.
-- [ ] 5.2 `CHANGELOG.md`, 0.1.12 — unreleased: «A-Bank: add an A-Bank card from its statement (.xlsx or .pdf)».
-- [ ] 5.3 `docs/backlog.md`: a «Real A-Bank files» item replacing the A-Bank half of the existing one. It covers an
+- [x] 5.2 `CHANGELOG.md`, 0.1.12 — unreleased: «A-Bank: add an A-Bank card from its statement (.xlsx or .pdf)».
+- [x] 5.3 `docs/backlog.md`: a «Real A-Bank files» item replacing the A-Bank half of the existing one. It covers an
   original `.xlsx` and an original multi-page PDF, checking:
   - cell types;
   - the IBAN and the credit limit in the PDF heading;
