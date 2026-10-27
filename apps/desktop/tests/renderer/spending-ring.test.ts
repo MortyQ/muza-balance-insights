@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import CategoryRing from '@/features/spending-summary/components/summary/CategoryRing.vue';
+import { CANVAS_MARGIN, HOVER_GROW } from '@/features/spending-summary/utils/ring.ts';
 import { chartCalls } from './setup-charts.ts';
 
 const part = (name: string, value: number, share: string) => ({ key: name, name, value, color: 'var(--category-1)', amount: `${value} ₴`, share });
@@ -38,6 +39,18 @@ describe('CategoryRing', () => {
     chartCalls[before]!.fire('mouseover', { seriesIndex: 0, dataIndex: 0 });
     await nextTick();
     expect(w.find('[data-test="ring-hovered"]').exists()).toBe(false);
+    w.unmount();
+  });
+});
+
+describe('CategoryRing canvas', () => {
+  it('the chart sits in a box larger than the ring, with room for the widened segment', () => {
+    const before = chartCalls.length;
+    const w = mount(CategoryRing, { props: { parts: [part('Продукты', 300, '100%')], label: 'Вся семья', amount: '300 ₴', perDay: null, chip: null, conv: [] } });
+    const box = chartCalls[before]!.el.closest('.v-chart')!.parentElement!;
+    // VChart's own styles fill its parent: the margin must be on the parent, never on VChart itself.
+    expect(box.className).toContain('-inset-2');
+    expect(CANVAS_MARGIN).toBeGreaterThanOrEqual(2 * HOVER_GROW);
     w.unmount();
   });
 });

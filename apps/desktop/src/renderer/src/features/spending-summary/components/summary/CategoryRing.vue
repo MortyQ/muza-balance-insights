@@ -25,10 +25,11 @@ function hover(item: { seriesIndex: number; dataIndex: number } | null): void {
 <template>
   <div class="flex flex-col items-center gap-3">
     <!-- A thin ring on a track: the categories' rounded arcs (spec desktop-spending-ring), the total inside — or the
-         category under the pointer. The canvas is 4px (HOVER_GROW) wider on every side: a widened segment stays whole.
+         category under the pointer. The canvas is 8px (CANVAS_MARGIN) wider on every side, twice the hover growth: a widened segment stays whole.
          The list beside it says every name, amount and share to screen readers; the centre's swap is pointer-only. -->
     <div class="relative size-46">
-      <VChart :option class="absolute -inset-1" @hover="hover" />
+      <!-- VChart fills its parent (its own styles), so the larger box is this wrapper's. -->
+      <div class="absolute -inset-2"><VChart :option @hover="hover" /></div>
       <div v-if="hovered" class="pointer-events-none absolute inset-3.5 flex flex-col items-center justify-center gap-0.5 rounded-full bg-surface px-3 text-center" aria-hidden="true" data-test="ring-hovered">
         <span class="max-w-full truncate text-xs text-foreground-muted">{{ hovered.name }}</span>
         <span class="whitespace-nowrap text-xl font-bold tabular-nums">{{ hovered.amount }}</span>

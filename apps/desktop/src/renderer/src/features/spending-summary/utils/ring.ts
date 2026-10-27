@@ -3,8 +3,10 @@ import type { ChartOption } from '@/shared/ui';
 import type { RingPart, RowView } from '../types.ts';
 import { totalFor } from './totals.ts';
 
-// The ring: 184px across with a 14px band (CategoryRing's size-46). The canvas is HOVER_GROW px wider on every side so a
-// widened segment stays inside it (the canvas clips what it does not hold).
+// The ring: 184px across with a 14px band (CategoryRing's size-46). The canvas is CANVAS_MARGIN px wider on every side
+// (CategoryRing's -inset-2), twice HOVER_GROW: a widened segment, its rounded ends and their antialiasing stay inside
+// it (the canvas clips what it does not hold).
+export const CANVAS_MARGIN = 8;
 export const HOVER_GROW = 4;
 const RADIUS = [92 - 14, 92];
 
