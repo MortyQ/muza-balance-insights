@@ -2,7 +2,7 @@
 
 ## 1. Credit limit of a statement (core)
 
-- [ ] 1.1 `creditLimit?: number | null` on `ParsedStatement`; `ingest/statement-import.ts` stores it on a new account
+- [x] 1.1 `creditLimit?: number | null` on `ParsedStatement`; `ingest/statement-import.ts` stores it on a new account
   and with the newer balance (design 7). Verify with a statement-import test using fictional rows: a new account, a
   newer statement, an older one, and one without a limit. Verify that the existing readers' tests and the conformance
   suite pass unchanged.

@@ -227,6 +227,8 @@ export interface ParsedStatement {
   rows: Array<Omit<NormalizedTx, 'id'>>;
   /** The balance after the newest row, when the file states it. */
   closingBalance: number | null;
+  /** The account's credit limit, when the file states it (the balance then includes it); absent or null = not stated. */
+  creditLimit?: number | null;
 }
 
 /**

@@ -259,17 +259,24 @@ export async function commitStatement(
     if (target.kind === 'new') {
       // The balance is the bank's after the newest row: updated_at is that row's time, as the month-end balance reads it.
       before.push({
-        sql: `INSERT INTO accounts (id, connection_id, kind, type, currency_code, iban, masked_pan, balance, updated_at)
-              VALUES (?, ?, 'card', ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT INTO accounts (id, connection_id, kind, type, currency_code, iban, masked_pan, balance, credit_limit, updated_at)
+              VALUES (?, ?, 'card', ?, ?, ?, ?, ?, ?, ?)`,
         args: [
           accountId, connectionId, target.type ?? statement.account.type, statement.currencyCode, iban,
-          statement.account.cards.length > 0 ? JSON.stringify(statement.account.cards) : null, statement.closingBalance ?? 0, span.to,
+          statement.account.cards.length > 0 ? JSON.stringify(statement.account.cards) : null, statement.closingBalance ?? 0,
+          statement.creditLimit ?? null, span.to,
         ],
       });
       if ((iban !== null && !knownIbans.has(normIban(iban) ?? '')) || statement.account.cards.some((c) => !knownCards.has(normCard(c)))) brought = true;
     } else if (account) {
-      if (statement.closingBalance !== null && span.to > account.updatedAt) {
-        before.push({ sql: 'UPDATE accounts SET balance = ?, updated_at = ? WHERE id = ?', args: [statement.closingBalance, span.to, accountId] });
+      // The credit limit follows the balance: only a newer statement than the account's state moves either.
+      if (span.to > account.updatedAt) {
+        if (statement.creditLimit != null) {
+          before.push({ sql: 'UPDATE accounts SET credit_limit = ? WHERE id = ?', args: [statement.creditLimit, accountId] });
+        }
+        if (statement.closingBalance !== null) {
+          before.push({ sql: 'UPDATE accounts SET balance = ?, updated_at = ? WHERE id = ?', args: [statement.closingBalance, span.to, accountId] });
+        }
       }
       if (iban !== null && account.iban === null) {
         before.push({ sql: 'UPDATE accounts SET iban = ? WHERE id = ? AND iban IS NULL', args: [iban, accountId] });
