@@ -20,9 +20,9 @@
 
 ## 3. A-Bank provider and readers (core)
 
-- [ ] 3.1 Add `abank` to `PROVIDER_IDS`, `providers/abank/info.ts` and its line in `PROVIDERS` (design 1). Verify the
+- [x] 3.1 Add `abank` to `PROVIDER_IDS`, `providers/abank/info.ts` and its line in `PROVIDERS` (design 1). Verify the
   conformance info checks.
-- [ ] 3.2 `providers/abank/statement.ts`: the column spec, the spreadsheet reader and the PDF reader (design 2–5), and
+- [x] 3.2 `providers/abank/statement.ts`: the column spec, the spreadsheet reader and the PDF reader (design 2–5), and
   the line in `STATEMENT_READERS`. Verify with `tests/providers/abank/statement.test.ts`, using fictional rows:
   - two cards on one IBAN;
   - a row with `-` as its card;
@@ -34,7 +34,7 @@
   - a header-only file (detect 1);
   - a credit limit in another currency (bad-row);
   - a PDF over two pages, and a PDF without an IBAN.
-- [ ] 3.3 Conformance fixtures `tests/providers/abank/fixtures/conformance/*.document.json` + `*.expected.json`: an
+- [x] 3.3 Conformance fixtures `tests/providers/abank/fixtures/conformance/*.document.json` + `*.expected.json`: an
   xlsx, a pdf and a bad-row case. The layout follows the masked analysis and every value is fictional. Verify the
   conformance suite and the `purity`, `layers` and `providers-boundary` tests.
 

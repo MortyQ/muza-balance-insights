@@ -26,8 +26,11 @@ export function gridOf(doc: StatementDocument): string[][] | null {
   return null;
 }
 
-/** Column names compared in one shape: lower case, one space, the Latin «i» a bank may type as the word «і». */
-export const normHeader = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim().replace(/(?<= )i(?= )/g, 'і');
+/**
+ * Column names compared in one shape: composed letters (a «ї» may come as «і» + a combining diaeresis), lower case,
+ * one space, the Latin «i» a bank may type as the word «і».
+ */
+export const normHeader = (s: string) => s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim().replace(/(?<= )i(?= )/g, 'і');
 
 /**
  * Where each field's column is: every field's pattern must match exactly one header (normalised), else null. Patterns
@@ -141,7 +144,7 @@ function findHeader<F extends string>(lines: readonly PdfLine[], spec: ReadonlyA
       const cols = headerColumns(band);
       if (cols.length !== spec.length) continue;
       const found = columnsByHeader(cols.map((c) => c.text), spec);
-      if (found) return { first: i, last: i + k - 1, spans: cols.map((c) => c.span), found };
+      if (found) return { first: i, last: i + k - 1, spans: cols.map((c) => c.span), names: cols.map((c) => c.text), found };
     }
   }
   return null;
@@ -164,6 +167,8 @@ function columnOf(item: PdfItem, spans: readonly Span[]): number {
 export type PdfTable<F extends string> = {
   /** Each field's header text match (its captures). */
   header: Record<F, RegExpExecArray>;
+  /** Each field's header as the file writes it, its lines joined. */
+  names: Record<F, string>;
   /** Page 1's text above the first table header, as `lineSegments`, top down. */
   heading: string[];
   /** The operations, in the file's order: each field's text, a cell's lines joined top down. */
@@ -226,5 +231,11 @@ export function pdfTable<F extends string>(
       rows.push(Object.fromEntries(fields.map((f, c) => [f, cells[c]!.map((i) => i.text.trim()).join(' ')])) as Record<F, string>);
     }
   }
-  return { header: Object.fromEntries(fields.map((f) => [f, header.found[f].match])) as Record<F, RegExpExecArray>, heading, rows };
+  const h = header;
+  return {
+    header: Object.fromEntries(fields.map((f) => [f, h.found[f].match])) as Record<F, RegExpExecArray>,
+    names: Object.fromEntries(fields.map((f) => [f, h.names[h.found[f].index]!])) as Record<F, string>,
+    heading,
+    rows,
+  };
 }

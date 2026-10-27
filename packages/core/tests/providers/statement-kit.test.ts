@@ -33,6 +33,10 @@ describe('columnsByHeader', () => {
   it('the Latin «i» typed as the word «і»', () => {
     expect(normHeader('Дата i час')).toBe('дата і час');
   });
+
+  it('a decomposed «ї» reads as the composed one', () => {
+    expect(normHeader('Деталі операці\u0456\u0308')).toBe('деталі операції');
+  });
 });
 
 describe('wallTime', () => {
@@ -113,6 +117,7 @@ describe('pdfTable', () => {
     };
     const t = pdfTable(doc, spec, 'amount', AMOUNT_RE);
     expect(t?.header.amount[1]).toBe('uah');
+    expect(t?.names).toEqual({ time: 'Дата і час', details: 'Деталі', amount: 'Сума (UAH)' });
     expect(t?.heading).toEqual(['Вигаданий банк', 'Ліміт: 1 000,00 UAH']);
     expect(t?.rows).toEqual([
       { time: '02.01.2026 10:00', details: 'Кав’ярня', amount: '-50,00' },
