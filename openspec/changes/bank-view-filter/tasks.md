@@ -48,22 +48,23 @@
 
 ## 4. Renderer: the bank filter in the header — `feat(desktop): bank filter in the header`
 
-- [ ] 4.1 `entities/participant`:
+- [x] 4.1 `entities/participant`:
       - `utils.ts`: `offeredBanks(connections)` (enabled, imported, in `PROVIDER_IDS` order) and
-        `nextBanks(chosen, offered, id)`;
+        `shownBanks(chosen, offered)`;
       - the store: `banks`, `chosenBanks`, `selectedProviders` (`undefined` when every offered bank is on),
         `toggleBank`, remembered in `localStorage` `balance.banks` (`BANKS_KEY`, `try`/`catch`; stale ids dropped;
         nothing left → all).
 
       Verify with `tests/renderer` cases for every scenario of «All banks by default, never none» and «The choice is
       remembered on this computer».
-- [ ] 4.2 `entities/participant/components/BankFilter.vue`: `VToggleGroup` with `BankMark` and the bank's name, shown
-      only with two or more offered banks; exported from the slice. New keys in `uk.json`, `en.json` and `ru.json`:
+- [x] 4.2 `widgets/global-filters/components/BankFilter.vue` (not in `entities/participant`: it shows `entities/bank`'s
+      marks, and one entity does not import another): `VToggleGroup` with `BankMark` (a new `xs` size) and the bank's
+      name, shown only with two or more offered banks. New keys in `uk.json`, `en.json` and `ru.json`:
       the group's label and the locked hint. Verify with a renderer test and `tests/i18n.test.ts`.
-- [ ] 4.3 `widgets/global-filters/GlobalFilters.vue`: `BankFilter` in the left group after `CurrencyToggle`. Verify in
-      `tests/renderer/app-header.test.ts`: shown with two banks, hidden with one; the person switch still falls back
-      to the select in a narrow row.
-- [ ] 4.4 Add the bank filter to the root `CLAUDE.md` «settings-ui» notes, next to `GlobalFilters`.
+- [x] 4.3 `widgets/global-filters/GlobalFilters.vue`: `BankFilter` in the left group after `CurrencyToggle`, so
+      `useParticipantLayout` measures it with the left group (the person switch still falls back to the select in a
+      narrow row). Verify in `tests/renderer/bank-filter.test.ts`: shown with two banks, hidden with one.
+- [x] 4.4 Add the bank filter to the root `CLAUDE.md` «settings-ui» notes, next to `GlobalFilters`.
 
 ## 5. Renderer: every data screen follows the banks — `feat(desktop): data screens follow the bank filter`
 

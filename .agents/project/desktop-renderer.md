@@ -69,7 +69,7 @@
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
   Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the default layout's scroll area, `app/layouts/DefaultLayout.vue`; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
-  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = the import's floor month
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display` and the widget's `BankFilter` (the bank choice lives in the participant store: `banks`, `shown`, `selectedProviders` — undefined while every bank is on —, `selectBanks`; every data feature passes `selectedProviders` as `providers` next to `participantId`), `min` = the import's floor month
   (`monthOf(importFloor(today))`, `src/shared/import-range.ts`), not the first data month: an older month gets the «no data
   yet» notice of `widgets/home-notices` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.

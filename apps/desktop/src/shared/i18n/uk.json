@@ -491,6 +491,8 @@
       "monthResult": "Результат місяця"
     },
     "filters": {
+      "banks": "Банки",
+      "banksLocked": "Хоча б один банк лишається ввімкненим",
       "percent": "{pct}%",
       "retryAt": "Повтор о {at}",
       "syncing": "Синхронізація…",

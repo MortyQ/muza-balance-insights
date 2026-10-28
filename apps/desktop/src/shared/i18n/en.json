@@ -491,6 +491,8 @@
       "monthResult": "Month's result"
     },
     "filters": {
+      "banks": "Banks",
+      "banksLocked": "At least one bank stays on",
       "percent": "{pct}%",
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",

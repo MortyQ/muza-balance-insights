@@ -102,11 +102,10 @@ FSD placement:
   - `store/useParticipantStore.ts`: `banks` (the providers offered), `chosenBanks`, `selectedProviders` (`undefined`
     when every offered bank is on), `toggleBank`;
   - `constants.ts`: `BANKS_KEY`;
-  - `utils.ts`: `offeredBanks(connections)`, `nextBanks(chosen, offered, id)`, both pure and tested;
-  - `components/BankFilter.vue`;
-  - `index.ts` exports `BankFilter`.
+  - `utils.ts`: `offeredBanks(connections)`, `shownBanks(chosen, offered)`, both pure and tested.
 - **shared/ui**: `components/inputs/VToggleGroup.vue`.
-- **widgets/global-filters**: places `BankFilter`.
+- **widgets/global-filters**: `components/BankFilter.vue`, placed in `GlobalFilters`. It shows `entities/bank`'s marks,
+  and one entity does not import another, so the component lives in the widget while the choice stays in the store.
 - **features/***: each composable that passes `participantId` also passes `providers`.
 
 The participant store already is «the family / person view», and it is the only store that holds the connections the
