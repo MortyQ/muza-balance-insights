@@ -202,3 +202,15 @@
 - **«People and banks» on a live system**: with two people and several banks each (a token and a file connection),
   check the bank headings, «Add connection» on a person (the connection lands on them, no new person), «Add person»,
   removing a person's last connection (the person goes), and «Download history» from home scrolling to the download.
+
+## Check on a live system: the bank filter (`openspec/changes/bank-view-filter`)
+
+- **Bank views add up**: with real Monobank, PrivatBank and A-Bank data, the three single-bank views add up to the
+  all-banks view on home («Spending», «Balance», the month grid) and in «Analytics», for the family and for one person.
+- **A statement-only bank reads complete up to its last day**: choose only a bank with uploaded statements; the month's
+  completeness and the per-day figures stop at that bank's last statement day, while the header's «Data until» stays
+  global.
+- **An own transfer between two banks**: it is spending in neither bank's view, and its fee shows under «Transfer
+  fees» only in the view of the bank it was sent from.
+- **The control by eye**: the toggles at three widths (names hidden below 45rem), both themes, the person buttons still
+  falling back to the select when the row gets narrow; the last bank on cannot be turned off and says why.

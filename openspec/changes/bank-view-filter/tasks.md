@@ -88,12 +88,12 @@
 
 ## 6. Checks
 
-- [ ] 6.1 Add live checks to `docs/backlog.md`, section «Not checked on a live system»:
+- [x] 6.1 Add live checks to `docs/backlog.md`, section «Not checked on a live system»:
       - with real Monobank, PrivatBank and A-Bank data, the three single-bank views add up to the all-banks view on
         home and in analytics;
       - a statement-only bank's view reads complete up to its last day;
       - an own transfer between two banks is not spending in either bank's view.
-- [ ] 6.2 Ask the user to run `pnpm test` and `pnpm typecheck` at the root and the desktop build; before that, run each
+- [x] 6.2 Ask the user to run `pnpm test` and `pnpm typecheck` at the root and the desktop build; before that, run each
       package's checks from its folder (core, mcp, desktop) and report the counts.
 
 ## Workflow follow-up
