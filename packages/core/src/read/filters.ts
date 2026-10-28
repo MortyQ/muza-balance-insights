@@ -1,7 +1,8 @@
-// What every summary shares: the period and its coverage, the filters (scope, account, participant) and the SQL
+// What every summary shares: the period and its coverage, the filters (scope, account, participant, banks) and the SQL
 // pieces that decide which rows a view counts. Periods are calendar days [from, to], inclusive, of a time zone
 // (periods.ts; Kyiv by default), matched by `time`.
-import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '../people/accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL, liveAccountIdsSql, providerAccountIdsSql } from '../people/accounts.ts';
+import { PROVIDER_IDS, type ProviderId } from '../providers/types.ts';
 import { RESYNC_OVERLAP_SEC } from '../shared/constants.ts';
 import type { Db } from '../storage/db.ts';
 import { accountLabels, dateIn, parseLocalDate } from '../shared/format.ts';
@@ -62,21 +63,24 @@ export function validatePeriod(p: Period): Period {
   return p;
 }
 
-export async function periodInfo(db: Db, period: Period, nowSec: number): Promise<PeriodInfo> {
+/** With `providers` (a bank view) the coverage and the holds are those of the chosen banks' accounts (spec core-bank-view). */
+export async function periodInfo(db: Db, period: Period & Pick<Filters, 'providers'>, nowSec: number): Promise<PeriodInfo> {
   const { from, to } = validatePeriod(period);
   const tz = zoneOf(period);
-  const rs = await db.execute(`SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${LIVE_ACCOUNT_IDS_SQL})`);
+  const live = liveAccountIdsSql(period.providers);
+  const rs = await db.execute({ sql: `SELECT MIN(newest_synced_time) AS newest FROM sync_state WHERE account_id IN (${live.sql})`, args: live.args });
   const newest = rs.rows[0]?.newest === null || rs.rows[0]?.newest === undefined ? null : Number(rs.rows[0].newest);
   const { endSec } = periodRange(period); // exclusive end of the period
   const dataUntil = newest === null ? null : dateIn(newest, tz);
   // A day is complete once its last second is synced: newest + 1 s falls on the next day.
   const lastFullDay = newest === null ? null : addDays(dateIn(newest + 1, tz), -1);
   const lastCovered = lastFullDay === null ? null : lastFullDay < to ? lastFullDay : to;
+  const banks = period.providers === undefined ? null : providerAccountIdsSql(period.providers);
   const holds = await db.execute({
     sql: `SELECT COUNT(*) AS n FROM transactions
           WHERE is_cancelled = 0 AND hold = 1 AND ${periodSql('transactions')} AND time >= ?
-            AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
-    args: [...periodArgs(period), nowSec - RESYNC_OVERLAP_SEC],
+            AND account_id IN (${ENABLED_ACCOUNT_IDS_SQL})${banks === null ? '' : ` AND account_id IN (${banks.sql})`}`,
+    args: [...periodArgs(period), nowSec - RESYNC_OVERLAP_SEC, ...(banks?.args ?? [])],
   });
   return {
     from,
@@ -97,15 +101,24 @@ export function perDay(amount: number, info: PeriodInfo): number | null {
 /**
  * participantId: the view of one participant — only their accounts, and a family transfer counts (spending of the
  * sender, income of the receiver). Absent: the whole family — family transfers are excluded like internal ones.
+ * providers: a bank view (spec core-bank-view) — only those banks' accounts, every other rule unchanged, so an own
+ * transfer to a bank outside the view stays a transfer and the views of disjoint banks add up to the whole. Absent:
+ * every bank.
  */
-export type Filters = { scope?: Scope; accountId?: string; participantId?: number };
+export type Filters = { scope?: Scope; accountId?: string; participantId?: number; providers?: readonly ProviderId[] };
 
-/** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant if one is asked for. */
+/** WHERE parts for the accounts in view (rows of t): enabled ones only (accounts.ts), of the participant and the banks if asked for. */
 export function accountWhere(f: Filters, where: string[], args: Array<string | number>): void {
   where.push(`t.account_id IN (${ENABLED_ACCOUNT_IDS_SQL})`);
-  if (f.participantId === undefined) return;
-  where.push('t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE pc.participant_id = ?)');
-  args.push(f.participantId);
+  if (f.participantId !== undefined) {
+    where.push('t.account_id IN (SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE pc.participant_id = ?)');
+    args.push(f.participantId);
+  }
+  if (f.providers !== undefined) {
+    const banks = providerAccountIdsSql(f.providers);
+    where.push(`t.account_id IN (${banks.sql})`);
+    args.push(...banks.args);
+  }
 }
 
 /**
@@ -128,9 +141,15 @@ export const CATEGORY_SQL = 'COALESCE(t.crossing_category, t.category)';
 /** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
 export type SpendingFilters = Filters & { operationCurrency?: number };
 
+/** A bank view's list: non-empty, known provider ids, each once. */
+export function isProviderList(v: readonly unknown[]): v is readonly ProviderId[] {
+  return v.length > 0 && new Set(v).size === v.length && v.every((p) => (PROVIDER_IDS as readonly unknown[]).includes(p));
+}
+
 export function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
   if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
+  if (f.providers !== undefined && !isProviderList(f.providers)) throw new SummaryError('providers: a non-empty list of known banks, each once');
 }
 
 export async function labelsById(db: Db): Promise<Map<string, string>> {

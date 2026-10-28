@@ -18,15 +18,35 @@ export function accountEnabledSql(a: string): string {
 /** SQL: ids of the enabled accounts, for `… account_id IN (…)`. */
 export const ENABLED_ACCOUNT_IDS_SQL = `SELECT ea.id FROM accounts ea WHERE ${accountEnabledSql('ea')}`;
 
+/** SQL: `AND <c>.provider IN (?, …)` for `n` providers bound by the caller; '' for none. */
+const providerInSql = (c: string, n: number) => (n === 0 ? '' : ` AND ${c}.provider IN (${Array.from({ length: n }, () => '?').join(', ')})`);
+
+/** SQL: ids of the accounts of the given providers' connections, for `… account_id IN (…)`; args = the providers. */
+export function providerAccountIdsSql(providers: readonly string[]): { sql: string; args: string[] } {
+  return {
+    sql: `SELECT pa.id FROM accounts pa JOIN connections pc ON pc.id = pa.connection_id WHERE 1${providerInSql('pc', providers.length)}`,
+    args: [...providers],
+  };
+}
+
 /**
  * The enabled accounts that decide how far the data reaches (spec desktop-data-freshness): those of token connections
  * while any of them has imported data — a statement file is a snapshot and never holds the others back — else every
- * enabled account.
+ * enabled account. With providers (a bank view, spec core-bank-view) the same rule among those banks' accounts only.
  */
-export const LIVE_ACCOUNT_IDS_SQL = `SELECT va.id FROM accounts va JOIN connections vc ON vc.id = va.connection_id
-  WHERE ${accountEnabledSql('va')} AND (vc.method = 'token' OR NOT EXISTS (
+export function liveAccountIdsSql(providers: readonly string[] = []): { sql: string; args: string[] } {
+  const n = providers.length;
+  return {
+    sql: `SELECT va.id FROM accounts va JOIN connections vc ON vc.id = va.connection_id
+  WHERE ${accountEnabledSql('va')}${providerInSql('vc', n)} AND (vc.method = 'token' OR NOT EXISTS (
     SELECT 1 FROM accounts ta JOIN connections tc ON tc.id = ta.connection_id JOIN sync_state ts ON ts.account_id = ta.id
-    WHERE tc.method = 'token' AND ts.newest_synced_time IS NOT NULL AND ${accountEnabledSql('ta')}))`;
+    WHERE tc.method = 'token' AND ts.newest_synced_time IS NOT NULL AND ${accountEnabledSql('ta')}${providerInSql('tc', n)}))`,
+    args: [...providers, ...providers],
+  };
+}
+
+/** liveAccountIdsSql over every bank: binds nothing. */
+export const LIVE_ACCOUNT_IDS_SQL = liveAccountIdsSql().sql;
 
 export type ConnectionAccount = {
   id: string;

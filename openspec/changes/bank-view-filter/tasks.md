@@ -2,22 +2,22 @@
 
 ## 1. Core: the bank view in the reads — `feat(core): bank view in the statistics`
 
-- [ ] 1.1 `read/filters.ts`: `Filters.providers?: readonly ProviderId[]`; `validateFilters` refuses an empty list, an
+- [x] 1.1 `read/filters.ts`: `Filters.providers?: readonly ProviderId[]`; `validateFilters` refuses an empty list, an
       unknown id and duplicates; `accountWhere` restricts to the chosen providers' accounts. Verify with
       `tests/read/bank-view.test.ts`: one bank of three, no list equals today's figures, bank and person together, an
       invalid list throws.
-- [ ] 1.2 In the same test file, on the fictional second and third bank of the cross-bank tests: an own transfer stays
+- [x] 1.2 In the same test file, on the fictional second and third bank of the cross-bank tests: an own transfer stays
       out of spending and income when the other bank is hidden; a family transfer follows the person; the implicit fee
       appears only with the debit's bank; the single-bank views add up, per category and currency, to the all-banks
       view (spending and income).
-- [ ] 1.3 `people/accounts.ts`: `liveAccountIdsSql(providers?)`, with `LIVE_ACCOUNT_IDS_SQL` as its call without
+- [x] 1.3 `people/accounts.ts`: `liveAccountIdsSql(providers?)`, with `LIVE_ACCOUNT_IDS_SQL` as its call without
       providers. `periodInfo` reads `q.providers` for completeness, covered days and pending holds. Verify the two
       completeness scenarios of `core-bank-view` and that a call without providers is unchanged.
-- [ ] 1.4 `read/status.ts`: `loadAccounts` takes `{ participantId?, providers? }`; `getBalances` and `balancesAt`
+- [x] 1.4 `read/status.ts`: `loadAccounts` takes `{ participantId?, providers? }`; `getBalances` and `balancesAt`
       take `providers`. Verify with tests: one bank's balances, labels unchanged, bank and person together.
-- [ ] 1.5 Check that `categoryLines`, `incomeLines` and `findRecurring` follow the filter through the shared builders.
+- [x] 1.5 Check that `categoryLines`, `incomeLines` and `findRecurring` follow the filter through the shared builders.
       Verify with one test each.
-- [ ] 1.6 Add a «bank view» bullet to `.agents/project/domain-rules.md`. Run the core checks (`tsc` both configs,
+- [x] 1.6 Add a «bank view» bullet to `.agents/project/domain-rules.md`. Run the core checks (`tsc` both configs,
       `vitest`) and the bench (`node --import tsx bench/run.ts`) against `bench/budgets.ts`.
 
 ## 2. Desktop: the data process takes the banks — `feat(desktop): bank view in the data process`
