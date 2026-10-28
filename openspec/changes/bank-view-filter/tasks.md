@@ -37,14 +37,14 @@
 
 ## 3. Renderer: a toggle group in shared/ui — `feat(desktop): VToggleGroup`
 
-- [ ] 3.1 `shared/ui/components/inputs/VToggleGroup.vue`, exported from `@/shared/ui`. It has:
+- [x] 3.1 `shared/ui/components/inputs/VToggleGroup.vue`, exported from `@/shared/ui`. It has:
       - an array `v-model` and `options` with a label slot;
       - buttons with `aria-pressed` inside `role="group"` with a required `aria-label`;
       - `required` keeps the last value on and shows `lockedHint` as its tooltip.
 
       Verify with a renderer test: toggling, keyboard (Tab, Space, Enter), the last value staying on, the pressed
       state.
-- [ ] 3.2 List `VToggleGroup` as our own component in `shared/ui/README.md`. Run `vue-tsc -p tsconfig.web.json`.
+- [x] 3.2 List `VToggleGroup` as our own component in `shared/ui/README.md`. Run `vue-tsc -p tsconfig.web.json`.
 
 ## 4. Renderer: the bank filter in the header — `feat(desktop): bank filter in the header`
 

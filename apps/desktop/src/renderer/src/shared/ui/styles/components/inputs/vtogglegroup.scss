@@ -1,0 +1,78 @@
+/* ours, not copied from muzakit (2026-10-28); see ui/README.md */
+/* The same track as VSegmentedControl, so the two stand level in a toolbar row. A cell that is on gets the surface
+   the segmented control's pill has; with several on there is nothing to slide. */
+.v-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  height: var(--ui-control-h);
+  padding: var(--ui-space-2xs);
+  gap: var(--ui-space-2xs);
+  border-radius: var(--ui-radius-lg);
+  background: var(--ui-surface-sunken);
+  border: 1px solid var(--ui-border);
+  box-shadow: var(--ui-shadow-sm);
+
+  .v-tooltip {
+    display: inline-flex;
+    height: 100%;
+  }
+}
+
+.v-tg__item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 var(--ui-control-px);
+  gap: var(--ui-control-gap);
+  font-size: var(--ui-text-base);
+  border-radius: calc(var(--ui-radius-lg) - 2px);
+  font-weight: 500;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--ui-foreground-muted);
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: color 150ms ease-in-out,
+  background-color 150ms ease-in-out,
+  box-shadow 150ms ease-in-out;
+
+  &:hover:not(.v-tg__item--on) {
+    color: var(--ui-foreground);
+    background: var(--ui-surface-hover);
+  }
+
+  &--on {
+    color: var(--ui-foreground);
+    background: var(--ui-surface);
+    box-shadow: var(--ui-shadow-sm);
+  }
+
+  /* Still focusable and hoverable (its tooltip says why), it only does not turn off. */
+  &--locked {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ui-ring);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.v-tg__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
