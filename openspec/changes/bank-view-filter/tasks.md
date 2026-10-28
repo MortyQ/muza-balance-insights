@@ -22,17 +22,17 @@
 
 ## 2. Desktop: the data process takes the banks — `feat(desktop): bank view in the data process`
 
-- [ ] 2.1 `src/shared/api.ts`: `providers?: ProviderId[]` on every overview query that has `participantId`.
+- [x] 2.1 `src/shared/api.ts`: `providers?: ProviderId[]` on every overview query that has `participantId`.
       `ipc-args.ts`: the zod schema applies core's rule (non-empty, known, unique). Verify with
       `tests/data-protocol.test.ts` and `tests/ipc.test.ts`: a valid list passes; an empty, unknown or duplicated one is
       refused.
-- [ ] 2.2 `src/data/data.ts`: every overview passes `providers` into its core filters — month (with the family's
+- [x] 2.2 `src/data/data.ts`: every overview passes `providers` into its core filters — month (with the family's
       per-person groups), spending with the usual medians, «Now», category, income, analytics, regular payments, and
       the allowance's balances and regular flows (reserves by person only). Verify with `tests/data.test.ts`:
       - each overview narrows to one bank;
       - every overview without `providers` is unchanged;
       - `tests/data-queries.test.ts` statement counts are unchanged.
-- [ ] 2.3 Note in `.agents/project/desktop-import.md` that the overview queries take `providers`. Run the desktop
+- [x] 2.3 Note in `.agents/project/desktop-import.md` that the overview queries take `providers`. Run the desktop
       checks (`tsc -p tsconfig.node.json`, `vitest`).
 
 ## 3. Renderer: a toggle group in shared/ui — `feat(desktop): VToggleGroup`

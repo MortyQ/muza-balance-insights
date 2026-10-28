@@ -345,10 +345,11 @@ export type BalanceApi = {
 // and income screens), and RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
 // description (nothing else).
 // participantId: one participant's view; absent — the whole family.
+// providers: a bank view, those banks' accounts only (non-empty, each once; spec core-bank-view); absent — every bank.
 
 export type Scope = 'personal' | 'business';
 
-export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number };
+export type SpendingOverviewQuery = { month: string; scope: Scope; participantId?: number; providers?: ProviderId[] };
 
 /** Hryvnia kopecks (account currencies folded by today's rates) and spending lines. */
 export type SpendingAmounts = { net: number; purchases: number };
@@ -436,7 +437,7 @@ export type SpendingUsual = {
  */
 export type DetailPeriod = { kind: 'day'; date: string } | { kind: 'week'; from: string } | { kind: 'month'; month: string };
 
-export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number };
+export type CategoryOverviewQuery = { period: DetailPeriod; category: CategoryId; scope: Scope; participantId?: number; providers?: ProviderId[] };
 
 /**
  * One spending line of the category screen: a transaction's body, its commission as a «Bank fees» line, or a transfer
@@ -524,7 +525,7 @@ export type CategoryOverview = {
   leftOut: Array<{ currency: number; net: number }>;
 };
 
-export type RecurringOverviewQuery = { participantId?: number };
+export type RecurringOverviewQuery = { participantId?: number; providers?: ProviderId[] };
 
 /** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
 export type RecurringMark = 'mandatory' | 'hidden';
@@ -575,7 +576,7 @@ export type RecurringOverview = {
   rates: RatesView | null;
 };
 
-export type AllowanceQuery = { participantId?: number };
+export type AllowanceQuery = { participantId?: number; providers?: ProviderId[] };
 
 /** The regular income the money has to last until. */
 export type AllowanceIncome = {
@@ -624,7 +625,7 @@ export type AllowanceOverview = {
   rates: RatesView | null;
 };
 
-export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number };
+export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number; providers?: ProviderId[] };
 
 /** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
 export type IncomeSourceId = 'other_bank' | 'named_sender' | 'transfer' | 'family' | 'other';
@@ -702,7 +703,7 @@ export type IncomeOverview = {
 };
 
 /** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */
-export type AnalyticsQuery = { from: string; to: string; participantId?: number };
+export type AnalyticsQuery = { from: string; to: string; participantId?: number; providers?: ProviderId[] };
 
 /** full — data for the whole bucket; running — the current month / today; none — before the first data or after today (values 0, not drawn). */
 export type AnalyticsBucketState = 'full' | 'running' | 'none';
@@ -742,7 +743,7 @@ export type AnalyticsOverview = {
   leftOut: number[];
 };
 
-export type NowOverviewQuery = { participantId?: number };
+export type NowOverviewQuery = { participantId?: number; providers?: ProviderId[] };
 
 /** A spending category of the «Now» strip; `rank` — its place in this month's categories (the spending block's colour), null — not among them. */
 export type NowCategory = SpendingAmounts & { category: string; categoryId: CategoryId | null; rank: number | null };
@@ -791,7 +792,7 @@ export type NowOverview = {
   rates: RatesView | null;
 };
 
-export type MonthOverviewQuery = { month: string; participantId?: number };
+export type MonthOverviewQuery = { month: string; participantId?: number; providers?: ProviderId[] };
 
 /** Minor units: income and spending of the month (the core aggregates, all scopes). */
 export type FlowView = { income: number; spending: number };

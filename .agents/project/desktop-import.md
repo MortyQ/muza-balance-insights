@@ -105,7 +105,13 @@
   'import-running' }` (во время импорта — отказ, как у `removeConnection`; неизвестный счёт — ошибка). Push нет: после
   ответа renderer сам обновляет людей и `syncStatus.refresh()` (`version` → экраны пересчитываются), как после удаления.
   Под замком и при не-ready базе оба канала закрыты.
-  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. `MonthOverview.reserved` — the active
+  `getSpendingOverview` / `getMonthOverview` принимают `participantId`. Every overview query that takes
+  `participantId` also takes `providers` (a bank view, spec `core-bank-view`: a non-empty list of known banks, each once —
+  zod `providers` in `ipc-args.ts`, core `isProviderList` again); the data process passes both through `viewOf` /
+  `banksOf` (`data/data.ts`) into every core call of the overview, the family's per-person groups and «Now»'s
+  `periodInfo` included; reserves follow the person only. Absent — every bank, the same queries as before. A bank
+  view's month coverage ends where its own banks' data does (core `periodInfo`), not at the status's date.
+  `MonthOverview.reserved` — the active
   reserves («Available per day») of the view in hryvnia at today's rate, the current month only (null — none or another
   month), set against `total`; each of `people` has its own `reserved`; the balance itself stays as the bank has it. The family's `people` cost no query per person: their balances are the
   family's `balancesAt` split by owner (core `balancesOf`), their income and spending one `incomeSummary` /

@@ -153,6 +153,18 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getMonthOverview', [{ month: '2026-9' }]],
     ['getMonthOverview', [{ month: '2026-09', participantId: 1.5 }]],
     ['getMonthOverview', [{ month: '2026-09', extra: 1 }]],
+    // A bank view: a non-empty list of known banks, each once.
+    ['getMonthOverview', [{ month: '2026-09', providers: [] }]],
+    ['getMonthOverview', [{ month: '2026-09', providers: ['otherbank'] }]],
+    ['getMonthOverview', [{ month: '2026-09', providers: ['monobank', 'monobank'] }]],
+    ['getMonthOverview', [{ month: '2026-09', providers: 'monobank' }]],
+    ['getSpendingOverview', [{ month: '2026-09', scope: 'personal', providers: [] }]],
+    ['getNowOverview', [{ providers: ['otherbank'] }]],
+    ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', providers: [] }]],
+    ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, providers: ['abank', 'abank'] }]],
+    ['getRecurringOverview', [{ providers: [] }]],
+    ['getAllowanceOverview', [{ providers: ['otherbank'] }]],
+    ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', providers: [] }]],
     ['listPeople', [1]],
     ['addConnection', []],
     ['addConnection', [{ participant: { id: 1 }, provider: 'monobank', token: 'short', remember: true }]],
@@ -323,6 +335,10 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'getMonthOverview',
       a: [{ month: '2026-09', participantId: 2 }],
     });
+    const banks = { month: '2026-09', participantId: 2, providers: ['abank', 'monobank'] };
+    await expect(ipc.handlers.get('balance:getMonthOverview')!(good, banks)).resolves.toEqual({ m: 'getMonthOverview', a: [banks] });
+    const banksNow = { providers: ['privatbank'] };
+    await expect(ipc.handlers.get('balance:getNowOverview')!(good, banksNow)).resolves.toEqual({ m: 'getNowOverview', a: [banksNow] });
     for (const participant of [{ id: 3 }, { label: 'Вигадана' }, { fromBank: true }, { label: 'Вигадана', color: 'aqua' }, { fromBank: true, color: 'red' }]) {
       const input = { participant, provider: 'monobank', token: 'x'.repeat(40), remember: false };
       await expect(ipc.handlers.get('balance:addConnection')!(good, input)).resolves.toEqual({ m: 'addConnection', a: [input] });
