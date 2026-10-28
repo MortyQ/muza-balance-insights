@@ -97,6 +97,16 @@ Rules:
   (`## 0.1.4 — 2026-10-01`); the release refuses a tag whose section is missing or still `unreleased`. Plain English, no
   internal terms (files, IPC, libraries, tests); screen and button names as in the English UI (`en.json`), in «»; security only in
   terms of what it protects. Internal-only changes (tests, refactors, docs for agents) do not go there.
+- **Work log in Notion** (the work log page under the project page:
+  https://app.notion.com/p/407cb6e356e881fcbeebed55fa700340; its database's data source is
+  `collection://712c30bd-33f8-42af-9845-a5c2cdd2e656`). The agent keeps it through the Notion MCP:
+  - one row per finished block (an OpenSpec task group, a fix or a release), never per commit; added once the block is
+    pushed, then the same row is updated when its PR is merged and when its release tag is pushed (the status column);
+  - the short summary column says in one or two sentences what the app can do now, for the user; the row's body follows
+    the template on the page (done, checks — including what was not checked —, what is left);
+  - fetch the data source first and use its property and option names exactly; the log is written in Ukrainian, like
+    the rest of that Notion workspace (this file stays English);
+  - no real data: no amounts, names, card numbers, IBANs or operation descriptions.
 
 ## Where the other rules are
 
