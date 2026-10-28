@@ -273,6 +273,9 @@
     },
     "operations": {
       "avg": "avg {amount}",
+      "banks": {
+        "title": "By bank"
+      },
       "change": {
         "week": {
           "less": "{diff} less than last week",

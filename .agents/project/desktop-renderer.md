@@ -165,11 +165,12 @@
   colour itself.
 - **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
   `DetailSummary` (`SummaryHeader` + `SummaryFigure` + `StatGrid` of `StatCell`; `SummaryView`), `MonthsChart`,
-  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PeopleBars` (`PersonBar`), `ShareList` (`ShareItem`:
+  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PartBars` (`PartBar`: a split card's rows, the mark is
+  the `mark` slot — the screens put `BankMark` there for «By bank»), `PeopleBars` (`PartBars` with `VAvatar`), `ShareList` (`ShareItem`:
   merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and order, rows —
   `OperationRow`, columns `OPERATION_COLS`; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
   block only shows what it is given and emits what was picked; loading stays in the feature's `api/`; pure helpers in `utils.ts` (`monthsView`,
-  `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
+  `whenView` / `whenTotals` over a `value` accessor, `partBars`, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
   each other).
   Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the

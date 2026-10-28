@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import type { UseIncomeDetailReturn, UseIncomeViewReturn } from '../types.ts';
-import { lineRows, listTotal, monthsView, moreSendersText, noneText, peopleView, receivedLabel, senderKey, sendersView, sourcesView, summaryView, whenView } from '../utils.ts';
+import { banksView, lineRows, listTotal, monthsView, moreSendersText, noneText, peopleView, receivedLabel, senderKey, sendersView, sourcesView, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
 export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn {
@@ -23,6 +23,7 @@ export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn 
   const none = computed(() => (view.value ? noneText(view.value) : ''));
   const months = computed(() => (view.value ? monthsView(view.value, fmt.value) : null));
   const whoReceived = computed(() => (view.value && family.value ? peopleView(view.value, people.value, fmt.value) : []));
+  const banks = computed(() => (view.value ? banksView(view.value, fmt.value) : []));
   const sources = computed(() => (view.value ? sourcesView(view.value, fmt.value) : []));
   const senders = computed(() => (view.value ? sendersView(view.value, sender.value, fmt.value) : []));
   const moreSenders = computed(() => (view.value ? moreSendersText(view.value) : ''));
@@ -46,6 +47,6 @@ export function useIncomeView(base: UseIncomeDetailReturn): UseIncomeViewReturn 
   }
 
   return {
-    summary, label, none, months, people: whoReceived, sources, senders, moreSenders, when, rows: computed(() => list.value.rows), total, sender, senderName, query, sort, pickSender,
+    summary, label, none, months, people: whoReceived, banks, sources, senders, moreSenders, when, rows: computed(() => list.value.rows), total, sender, senderName, query, sort, pickSender,
   };
 }

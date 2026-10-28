@@ -273,6 +273,9 @@
     },
     "operations": {
       "avg": "сер. {amount}",
+      "banks": {
+        "title": "За банками"
+      },
       "change": {
         "week": {
           "less": "на {diff} менше, ніж минулого тижня",

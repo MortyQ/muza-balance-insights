@@ -13,16 +13,16 @@
 
 ## 2. Renderer: the «By bank» card — `feat(desktop): «By bank» card on the category and income screens`
 
-- [ ] 2.1 `entities/operations`: `PartBars`, `PartBar`, `PartView` and `partBars` (design, decision 2); `PeopleBars`
+- [x] 2.1 `entities/operations`: `PartBars`, `PartBar`, `PartView` and `partBars` (design, decision 2); `PeopleBars`
       and `peopleBars` built on them with unchanged props and results. Verify that the existing «Who spent» / «Who
       received» tests in `tests/renderer/category-detail.test.ts` and `income-detail.test.ts` pass unchanged, and add a
       test for `partBars` (positive parts only, scale, order, caption).
-- [ ] 2.2 `features/category-detail` and `features/income-detail`: `banksView` in `utils.ts`, `banks` from the view
+- [x] 2.2 `features/category-detail` and `features/income-detail`: `banksView` in `utils.ts`, `banks` from the view
       composables, the card after «Who spent» / «Who received» with `BankMark` in the slot, and the last-card height
       rule (design, decision 3). Key `entities.operations.banks.title` in `uk.json`, `en.json`, `ru.json`. Verify in
       both screen tests: two banks → the card with two bars, the larger first; one bank, or one bank with a positive
       part → no card; the bank's name and mark shown.
-- [ ] 2.3 `CHANGELOG.md`, 0.1.13: an entry after the bank filter's, «See which bank you pay with» — the category and
+- [x] 2.3 `CHANGELOG.md`, 0.1.13: an entry after the bank filter's, «See which bank you pay with» — the category and
       income screens split the amount by bank. Flag it to the user for review (it becomes the release text). Run the
       desktop checks.
 

@@ -12,6 +12,9 @@ English interface.
   spending, income, analytics, regular payments and planning all follow. At least one bank stays on, and the app
   remembers your choice. A transfer between your own cards in two banks never counts as spending, so the banks shown
   one by one add up to all of them together.
+- **See which bank you pay with.** A category's screen and the income screen now split the amount by bank, the way
+  they already split it by person: a bar per bank with its amount, the number of operations and their average. It
+  shows the banks you have on in the filters, and only when there are at least two.
 
 ## 0.1.12 — 2026-10-27
 

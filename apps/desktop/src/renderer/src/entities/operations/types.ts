@@ -21,6 +21,16 @@ export interface MonthsView {
   caption: string;
 }
 
+/** A row of a split card (people, banks): what it shows beside its mark, the card's `mark` slot. */
+export interface PartView {
+  key: string | number;
+  name: string;
+  color: string;
+  amount: string;
+  caption: string;
+  width: number;
+}
+
 export interface PersonView {
   participantId: number;
   name: string;

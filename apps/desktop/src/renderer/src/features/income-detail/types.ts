@@ -1,7 +1,7 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { IncomeOverview, IncomeSourceId } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
-import type { LineRowView, MonthsView, PersonView, ShareItemView, SortKey, SummaryView, WhenView } from '@/entities/operations';
+import type { LineRowView, MonthsView, PartView, PersonView, ShareItemView, SortKey, SummaryView, WhenView } from '@/entities/operations';
 import type { Loadable } from '@/shared/lib';
 
 /** A row of «Where from»: a source, its amount and share, on the largest one's scale. */
@@ -32,6 +32,8 @@ export interface UseIncomeViewReturn {
   /** A month only; null — another period. */
   months: ComputedRef<MonthsView | null>;
   people: ComputedRef<PersonView[]>;
+  /** «By bank»: the banks with a positive part. */
+  banks: ComputedRef<PartView[]>;
   sources: ComputedRef<SourceView[]>;
   senders: ComputedRef<ShareItemView[]>;
   moreSenders: ComputedRef<string>;

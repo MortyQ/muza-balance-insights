@@ -273,6 +273,9 @@
     },
     "operations": {
       "avg": "ср. {amount}",
+      "banks": {
+        "title": "По банкам"
+      },
       "change": {
         "week": {
           "less": "на {diff} меньше, чем на прошлой неделе",

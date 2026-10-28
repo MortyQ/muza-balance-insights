@@ -8,8 +8,8 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, DetailPeriod, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { besidePointer, daysChartOption, monthsChartOption, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
-import { lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
+import { besidePointer, daysChartOption, monthsChartOption, partBars, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
+import { banksView, lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
 
@@ -115,6 +115,30 @@ describe('category screen helpers', () => {
     expect(m.bars.slice(-3).map((b) => b.strong)).toEqual([false, true, false]);
     expect(m.caption).toBe(`в среднем ${uah(90_000)} в месяц · Август: на ${uah(10_000)} больше среднего`);
     expect(m.bars.at(-2)!.title).toBe(`Август 2026 — ${uah(100_000)}`);
+  });
+
+  it('split bars: positive parts only, on the largest one\'s scale, largest first, with the count and the average', () => {
+    const bars = partBars(
+      [
+        { key: 'a', name: 'A', color: 'red', value: 10_000, count: 2 },
+        { key: 'b', name: 'B', color: 'blue', value: 40_000, count: 1 },
+        { key: 'c', name: 'C', color: 'green', value: -500, count: 0 },
+        { key: 'd', name: 'D', color: 'grey', value: 0, count: 0 },
+      ],
+      FMT,
+    );
+    expect(bars).toEqual([
+      { key: 'b', name: 'B', color: 'blue', amount: uah(40_000), caption: `1 оп. · ср. ${uah(40_000)}`, width: 100 },
+      { key: 'a', name: 'A', color: 'red', amount: uah(10_000), caption: `2 оп. · ср. ${uah(5_000)}`, width: 25 },
+    ]);
+  });
+
+  it('by bank: each bank with spending, the larger first, named by the registry, in the screen\'s colour', () => {
+    const v: CategoryOverview = { ...VIEW, banks: [{ provider: 'monobank', net: 41_000, purchases: 1 }, { provider: 'privatbank', net: 100_000, purchases: 3 }] };
+    expect(banksView(v, FMT).map((b) => [b.key, b.name, b.width, b.color])).toEqual([
+      ['privatbank', 'PrivatBank', 100, 'var(--cat)'],
+      ['monobank', 'Monobank', 41, 'var(--cat)'],
+    ]);
   });
 
   it('who, where, when', () => {
@@ -346,6 +370,20 @@ describe('category screen mounted', () => {
     await flushPromises();
     expect(getCategoryOverview.mock.calls.at(-1)?.[0]).toMatchObject({ participantId: 2 });
     expect(w.text()).not.toContain('Кто тратил');
+  });
+
+  it('«By bank» with two banks, the larger first; none with one bank, or one bank with a positive part', async () => {
+    let w = await mountScreen();
+    expect(w.text()).not.toContain('По банкам');
+    current = { ...VIEW, banks: [{ provider: 'monobank', net: 100_000, purchases: 3 }, { provider: 'privatbank', net: 41_000, purchases: 1 }] };
+    w = await mountScreen();
+    const text = w.text();
+    expect(text).toContain('По банкам');
+    expect(text.indexOf('Monobank')).toBeGreaterThan(text.indexOf('По банкам'));
+    expect(text.indexOf('PrivatBank')).toBeGreaterThan(text.indexOf('Monobank'));
+    current = { ...VIEW, banks: [{ provider: 'monobank', net: 141_500, purchases: 4 }, { provider: 'privatbank', net: -500, purchases: 0 }] };
+    w = await mountScreen();
+    expect(w.text()).not.toContain('По банкам');
   });
 
   it('a week: asks for it, «Spent that week», no 12 months', async () => {
