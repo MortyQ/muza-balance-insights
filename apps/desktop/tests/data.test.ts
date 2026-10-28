@@ -1397,6 +1397,27 @@ describe('DataService: a bank view', () => {
     expect((await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, ...PRIVAT })).summary.total).toBe(2_000);
   });
 
+  it('category and income screens: each bank\'s part adds up to the figure; a bank view and a person list their own banks', async () => {
+    const month = { kind: 'month' as const, month: '2026-03' };
+    const cat = await svc.categoryOverview({ period: month, category: 'groceries', scope: 'personal' });
+    expect(cat.banks).toEqual([
+      { provider: 'monobank', net: 1_000, purchases: 1 },
+      { provider: 'privatbank', net: 400, purchases: 1 },
+    ]);
+    expect(cat.banks.reduce((n, b) => n + b.net, 0)).toBe(cat.summary.net);
+    expect((await svc.categoryOverview({ period: month, category: 'groceries', scope: 'personal', ...PRIVAT })).banks.map((b) => b.provider)).toEqual(['privatbank']);
+    const inc = await svc.incomeOverview({ period: month });
+    expect(inc.banks).toEqual([{ provider: 'privatbank', total: 2_000, lines: 1 }]);
+    expect(inc.banks.reduce((n, b) => n + b.total, 0)).toBe(inc.summary.total);
+
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    await db.execute({ sql: `UPDATE connections SET participant_id = ? WHERE provider = 'privatbank'`, args: [her] });
+    const of = async (participantId: number) =>
+      (await svc.categoryOverview({ period: month, category: 'groceries', scope: 'personal', participantId })).banks.map((b) => b.provider);
+    expect(await of(me)).toEqual(['monobank']);
+    expect(await of(her)).toEqual(['privatbank']);
+  });
+
   it('analytics: the chosen bank\'s totals', async () => {
     const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03', ...MONO });
     expect(v.totals).toMatchObject({ income: 0, spending: 1_000 });

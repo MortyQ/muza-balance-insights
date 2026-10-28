@@ -50,6 +50,7 @@ const VIEW: CategoryOverview = {
   ],
   thisMonth: '2026-09',
   people: [{ participantId: 1, net: 81_200, purchases: 3 }, { participantId: 2, net: 59_800, purchases: 1 }],
+  banks: [{ provider: 'monobank', net: 141_000, purchases: 4 }],
   merchants: [{ name: 'Vigadane Taxi', net: 64_000, purchases: 2 }, { name: 'IMAGINARY  bus', net: 77_000, purchases: 2 }],
   lines: LINES,
   rates: RATES,

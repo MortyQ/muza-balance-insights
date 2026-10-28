@@ -1,5 +1,6 @@
 // Pure helpers of the category and income screens in main (DataService.categoryOverview / incomeOverview): the bank's
 // text made fit for the screen, and what the screen counts from the lines (where, who; «When» the screen counts itself).
+import { PROVIDER_IDS } from '@mono/core/providers/types';
 import type { CategoryLineView, CategoryOverview, IncomeAmounts, IncomeLineView, IncomeOverview, IncomeSourceId, SpendingAmounts } from '../shared/api.ts';
 
 /** A masked card number (6 digits, stars, 4 digits) anywhere in the text. */
@@ -30,16 +31,28 @@ function middle(values: readonly number[]): number | null {
   return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2);
 }
 
-export type LineStats = Pick<CategoryOverview, 'merchants' | 'people'> &
+/** Banks in the registry's order, then the ids it does not know (spec desktop-bank-breakdown). */
+function byRegistry<T>(parts: Map<string, T>): Array<T & { provider: string }> {
+  const rank = (id: string) => {
+    const i = (PROVIDER_IDS as readonly string[]).indexOf(id);
+    return i < 0 ? PROVIDER_IDS.length : i;
+  };
+  return [...parts]
+    .sort(([a], [b]) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0))
+    .map(([provider, part]) => ({ provider, ...part }));
+}
+
+export type LineStats = Pick<CategoryOverview, 'merchants' | 'people' | 'banks'> &
   Pick<CategoryOverview['summary'], 'median' | 'activeDays' | 'largest' | 'cashback' | 'cashbackLines'>;
 
 /**
  * What the screen counts from the lines, in hryvnia kopecks (a line without a rate counts nowhere): net = spending −
  * refunds, purchases = spending lines. `people` only when asked (the family view with more than one person), in the
- * given order.
+ * given order; `banks` always, each bank with a counted line.
  */
 export function lineStats(lines: readonly CategoryLineView[], people: readonly number[] | null): LineStats {
   const byPerson = new Map<number, SpendingAmounts>((people ?? []).map((id) => [id, { net: 0, purchases: 0 }]));
+  const byBank = new Map<string, SpendingAmounts>();
   const merchants = new Map<string, SpendingAmounts & { spellings: Map<string, number> }>();
   const spent: number[] = [];
   const active = new Set<string>();
@@ -53,6 +66,10 @@ export function lineStats(lines: readonly CategoryLineView[], people: readonly n
     const spend = isSpending(l);
     const p = byPerson.get(l.participantId);
     if (p) (p.net += net), (p.purchases += spend ? 1 : 0);
+    const b = byBank.get(l.account.provider) ?? { net: 0, purchases: 0 };
+    b.net += net;
+    b.purchases += spend ? 1 : 0;
+    byBank.set(l.account.provider, b);
     const key = merchantKey(l.merchant);
     const m = merchants.get(key) ?? { net: 0, purchases: 0, spellings: new Map<string, number>() };
     m.net += net;
@@ -75,6 +92,7 @@ export function lineStats(lines: readonly CategoryLineView[], people: readonly n
       .map((m) => ({ name: name(m.spellings), net: m.net, purchases: m.purchases }))
       .sort((a, b) => b.net - a.net || (a.name < b.name ? -1 : 1)),
     people: people ? people.map((participantId) => ({ participantId, ...byPerson.get(participantId)! })) : [],
+    banks: byRegistry(byBank),
     median: middle(spent),
     activeDays: active.size,
     largest: largest?.key ?? null,
@@ -101,15 +119,16 @@ export function last12Months(month: string): string[] {
   });
 }
 
-export type IncomeStats = Pick<IncomeOverview, 'people' | 'sources' | 'senders'> &
+export type IncomeStats = Pick<IncomeOverview, 'people' | 'banks' | 'sources' | 'senders'> &
   Pick<IncomeOverview['summary'], 'median' | 'activeDays' | 'largest'>;
 
 /**
  * What the income screen counts from its lines, in hryvnia kopecks (a line without a rate counts nowhere). Senders
- * are told apart as merchants are; `people` only when asked (the family view), in the given order.
+ * are told apart as merchants are; `people` only when asked (the family view), in the given order; `banks` always.
  */
 export function incomeStats(lines: readonly IncomeLineView[], people: readonly number[] | null): IncomeStats {
   const byPerson = new Map<number, IncomeAmounts>((people ?? []).map((id) => [id, { total: 0, lines: 0 }]));
+  const byBank = new Map<string, IncomeAmounts>();
   const bySource = new Map<IncomeSourceId, IncomeAmounts>();
   const senders = new Map<string, IncomeAmounts & { spellings: Map<string, number> }>();
   const values: number[] = [];
@@ -121,6 +140,9 @@ export function incomeStats(lines: readonly IncomeLineView[], people: readonly n
     if (l.uah === null) continue;
     const p = byPerson.get(l.participantId);
     if (p) add(p, l.uah);
+    const b = byBank.get(l.account.provider) ?? { total: 0, lines: 0 };
+    add(b, l.uah);
+    byBank.set(l.account.provider, b);
     const s = bySource.get(l.source) ?? { total: 0, lines: 0 };
     add(s, l.uah);
     bySource.set(l.source, s);
@@ -137,6 +159,7 @@ export function incomeStats(lines: readonly IncomeLineView[], people: readonly n
   const name = (spellings: Map<string, number>) => [...spellings].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
   return {
     people: people ? people.map((participantId) => ({ participantId, ...byPerson.get(participantId)! })) : [],
+    banks: byRegistry(byBank),
     sources: [...bySource].map(([source, a]) => ({ source, ...a })).sort((a, b) => b.total - a.total || (a.source < b.source ? -1 : 1)),
     senders: [...senders.values()]
       .map((m) => ({ name: name(m.spellings), total: m.total, lines: m.lines }))

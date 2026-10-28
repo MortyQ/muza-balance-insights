@@ -2,11 +2,11 @@
 
 ## 1. Data process: the bank parts — `feat(desktop): per-bank parts of the category and income answers`
 
-- [ ] 1.1 `src/shared/api.ts`: `CategoryOverview.banks` and `IncomeOverview.banks` (design, decision 1), with a doc
+- [x] 1.1 `src/shared/api.ts`: `CategoryOverview.banks` and `IncomeOverview.banks` (design, decision 1), with a doc
       comment each. `src/data/category.ts`: `lineStats` and `incomeStats` count `banks` in their loop, registry order
       then unknown ids. Verify in `tests/category.test.ts`: two banks with spending and a refund give each bank its net
       and purchases; a line without a rate counts nowhere; income gives total and lines per bank; no lines → `[]`.
-- [ ] 1.2 `src/data/data.ts`: both overviews return `banks`. Verify in `tests/data.test.ts` («a bank view» block,
+- [x] 1.2 `src/data/data.ts`: both overviews return `banks`. Verify in `tests/data.test.ts` («a bank view» block,
       fictional mono card and `privatbank:card` file connection): the parts add up to the category's net and to the
       period's income; with `providers` of one bank only that bank is listed; a person's view lists that person's
       banks. Run the desktop checks (`tsc -p tsconfig.node.json`, `vue-tsc -p tsconfig.web.json`, `vitest run`).

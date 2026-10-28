@@ -516,6 +516,11 @@ export type CategoryOverview = {
   thisMonth: string;
   /** The family view with more than one person only: each person's part. */
   people: Array<SpendingAmounts & { participantId: number }>;
+  /**
+   * Each bank with a counted line in the view (spec desktop-bank-breakdown), in the registry's order: its part of the
+   * net; the parts add up to the summary's net. `provider` — the bank's id, as in AccountName.
+   */
+  banks: Array<SpendingAmounts & { provider: string }>;
   /** By the bank's description (case-insensitive), net desc. */
   merchants: Array<SpendingAmounts & { name: string }>;
   /** Newest first; the screen counts «When» from them (weekday, time, date), so a merchant filter narrows it too. */
@@ -691,6 +696,8 @@ export type IncomeOverview = {
   thisMonth: string;
   /** The family view with more than one person only: each person's part. */
   people: Array<IncomeAmounts & { participantId: number }>;
+  /** Each bank with a counted line in the view, in the registry's order, as CategoryOverview's banks. */
+  banks: Array<IncomeAmounts & { provider: string }>;
   /** By source, total desc. */
   sources: Array<IncomeAmounts & { source: IncomeSourceId }>;
   /** By sender (case-insensitive), total desc. */

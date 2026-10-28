@@ -36,7 +36,26 @@ describe('lineStats', () => {
     expect(s).toMatchObject({ median: 2_000, activeDays: 2, largest: 'a', cashback: 30, cashbackLines: 1 });
   });
   it('no people asked → none; no spending → no median or largest', () => {
-    expect(lineStats([], null)).toMatchObject({ people: [], median: null, largest: null, activeDays: 0 });
+    expect(lineStats([], null)).toMatchObject({ people: [], banks: [], median: null, largest: null, activeDays: 0 });
+  });
+  it('each bank its net and purchases, in the registry order, unknown ids last; a line without a rate counts nowhere', () => {
+    const on = (provider: string) => ({ provider, kind: 'card' as const, type: null, currency: 980, tag: null });
+    const s = lineStats(
+      [
+        line({ key: 'a', uah: -4_000, account: on('abank') }),
+        line({ key: 'b', uah: -3_000 }),
+        line({ key: 'c', uah: 1_000, amount: 1_000, refund: true }),
+        line({ key: 'd', uah: null, currency: 985, amount: -100, account: on('privatbank') }),
+        line({ key: 'e', uah: -500, account: on('futurebank') }),
+      ],
+      null,
+    );
+    expect(s.banks).toEqual([
+      { provider: 'monobank', net: 2_000, purchases: 1 },
+      { provider: 'abank', net: 4_000, purchases: 1 },
+      { provider: 'futurebank', net: 500, purchases: 1 },
+    ]);
+    expect(s.people).toEqual([]);
   });
 });
 
@@ -62,7 +81,23 @@ describe('incomeStats', () => {
     expect(s).toMatchObject({ median: 6_000, activeDays: 2, largest: 'a' });
   });
   it('no people asked → none; no lines → no median or largest', () => {
-    expect(incomeStats([], null)).toEqual({ people: [], sources: [], senders: [], median: null, activeDays: 0, largest: null });
+    expect(incomeStats([], null)).toEqual({ people: [], banks: [], sources: [], senders: [], median: null, activeDays: 0, largest: null });
+  });
+  it('each bank its total and lines, in the registry order; a line without a rate counts nowhere', () => {
+    const on = (provider: string) => ({ provider, kind: 'card' as const, type: null, currency: 980, tag: null });
+    const s = incomeStats(
+      [
+        income({ key: 'a', uah: 5_000, account: on('privatbank') }),
+        income({ key: 'b', uah: 2_000 }),
+        income({ key: 'c', uah: 3_000, account: on('privatbank') }),
+        income({ key: 'd', uah: null, currency: 985, amount: 100, account: on('abank') }),
+      ],
+      null,
+    );
+    expect(s.banks).toEqual([
+      { provider: 'monobank', total: 2_000, lines: 1 },
+      { provider: 'privatbank', total: 8_000, lines: 2 },
+    ]);
   });
 });
 

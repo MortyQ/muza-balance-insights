@@ -43,6 +43,7 @@ const VIEW: IncomeOverview = {
   ],
   thisMonth: '2026-10',
   people: [{ participantId: 1, total: 345_000, lines: 3 }, { participantId: 2, total: 15_000, lines: 1 }],
+  banks: [{ provider: 'monobank', total: 360_000, lines: 4 }],
   sources: [{ source: 'other_bank', total: 300_000, lines: 1 }, { source: 'transfer', total: 40_000, lines: 1 }, { source: 'named_sender', total: 20_000, lines: 2 }],
   senders: [{ name: 'Vigadana Firma', total: 300_000, lines: 1 }, { name: 'Imaginary Client', total: 40_000, lines: 1 }, { name: 'Vigadana Osoba', total: 20_000, lines: 2 }],
   lines: LINES,
