@@ -203,7 +203,7 @@
   check the bank headings, «Add connection» on a person (the connection lands on them, no new person), «Add person»,
   removing a person's last connection (the person goes), and «Download history» from home scrolling to the download.
 
-## Check on a live system: the bank filter (`openspec/changes/bank-view-filter`)
+## Check on a live system: the bank filter (`openspec/changes/archive/2026-10-28-bank-view-filter`)
 
 - **Bank views add up**: with real Monobank, PrivatBank and A-Bank data, the three single-bank views add up to the
   all-banks view on home («Spending», «Balance», the month grid) and in «Analytics», for the family and for one person.
