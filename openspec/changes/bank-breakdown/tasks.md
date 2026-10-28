@@ -28,10 +28,10 @@
 
 ## 3. Checks
 
-- [ ] 3.1 Add to `docs/backlog.md`, section «Check on a live system: the bank filter», a «By bank» item: with real
+- [x] 3.1 Add to `docs/backlog.md`, section «Check on a live system: the bank filter», a «By bank» item: with real
       data from two or three banks, the bars add up to the category's and the income's total, and the card at three
       widths and in both themes.
-- [ ] 3.2 Run each package's checks (core, mcp, desktop) and report the counts; ask the user to run `pnpm test` and
+- [x] 3.2 Run each package's checks (core, mcp, desktop) and report the counts; ask the user to run `pnpm test` and
       `pnpm typecheck` at the root and the desktop build.
 
 ## Workflow follow-up

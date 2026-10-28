@@ -214,3 +214,6 @@
   fees» only in the view of the bank it was sent from.
 - **The control by eye**: the toggles at three widths (names hidden below 45rem), both themes, the person buttons still
   falling back to the select when the row gets narrow; the last bank on cannot be turned off and says why.
+- **«By bank»** (change `bank-breakdown`): with real data from two or three banks, the bars on a category's screen and
+  on the income screen add up to the screen's total, follow the bank filter and the person, and a transfer fee shows
+  under the bank it was sent from. The card at three widths (the right column's last card stretching), both themes.
