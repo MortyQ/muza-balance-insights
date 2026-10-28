@@ -17,11 +17,11 @@ export function useRecurring(): UseRecurringReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return id !== null ? { participantId: id } : {};
+    return { ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state, reload } = useAsyncData(
     () => fetchRecurringOverview(query()),
-    [participantId],
+    [participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekRecurringOverview(query()) },
   );
   // Also publishes the answer's rates to the currency button of the global filters.

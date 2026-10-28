@@ -89,6 +89,15 @@ export const useParticipantStore = defineStore('participant', () => {
    */
   const selectedProviders = computed<ProviderId[] | undefined>(() => (shown.value.length < banks.value.length ? shown.value : undefined));
 
+  /** Changes exactly when the shown banks do: what the screens watch (the array is rebuilt on every people refresh). */
+  const banksKey = computed(() => selectedProviders.value?.join(',') ?? '');
+
+  /** The banks part of a data read: a plain copy (a store proxy does not cross IPC), nothing while every bank is on. */
+  function banksQuery(): { providers?: ProviderId[] } {
+    const p = selectedProviders.value;
+    return p ? { providers: [...p] } : {};
+  }
+
   function selectBanks(next: ReadonlyArray<ProviderId>): void {
     const kept = banks.value.filter((p) => next.includes(p));
     if (kept.length === 0) return;
@@ -126,6 +135,8 @@ export const useParticipantStore = defineStore('participant', () => {
     banks,
     shown,
     selectedProviders,
+    banksKey,
+    banksQuery,
     selectBanks,
     labelOf,
     refresh,

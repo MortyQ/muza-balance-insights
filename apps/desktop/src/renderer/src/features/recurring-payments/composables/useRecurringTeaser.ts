@@ -31,11 +31,11 @@ export function useRecurringTeaser(): UseRecurringTeaserReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return id !== null ? { participantId: id } : {};
+    return { ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchRecurringOverview(query()),
-    [participantId],
+    [participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version, shown], cached: () => peekRecurringOverview(query()) },
   );
   const fmt = useMoneyFormat(() => state.value.data?.rates);

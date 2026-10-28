@@ -14,7 +14,7 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const query = ref('');
   const sort = ref<SortKey>('date');
   // Another period, person or category is another list: the filter and the search start over.
-  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId], () => {
+  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId, participant.banksKey], () => {
     merchant.value = null;
     query.value = '';
   });

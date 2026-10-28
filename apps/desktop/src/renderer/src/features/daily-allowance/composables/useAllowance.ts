@@ -24,11 +24,11 @@ export function useAllowance(): UseAllowanceReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return id !== null ? { participantId: id } : {};
+    return { ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state, reload } = useAsyncData(
     () => api.fetchAllowance(query()),
-    [participantId],
+    [participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version, today], cached: () => api.peekAllowance(query()) },
   );
 

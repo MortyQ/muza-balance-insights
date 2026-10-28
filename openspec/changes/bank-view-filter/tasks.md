@@ -68,7 +68,7 @@
 
 ## 5. Renderer: every data screen follows the banks — `feat(desktop): data screens follow the bank filter`
 
-- [ ] 5.1 Each feature composable that passes `participantId` also passes `participant.selectedProviders` and reloads
+- [x] 5.1 Each feature composable that passes `participantId` also passes `participant.selectedProviders` and reloads
       on its change:
       - balances (`useMonthOverview`, `useMonthPace`, `useCardStack`);
       - `useNowStrip`;
@@ -83,7 +83,7 @@
       - a subset sends `providers`;
       - every bank on sends none;
       - toggling a bank reloads.
-- [ ] 5.2 Add `## 0.1.13 — unreleased` to `CHANGELOG.md` with the bank filter: «show one, two or all of your banks on
+- [x] 5.2 Add `## 0.1.13 — unreleased` to `CHANGELOG.md` with the bank filter: «show one, two or all of your banks on
       every screen; all banks by default». Verify with `tests/release-notes.test.ts`.
 
 ## 6. Checks

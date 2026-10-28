@@ -26,7 +26,7 @@ export function useCardStack({ onReset }: { onReset?: () => void } = {}): UseCar
     stubShown.value = true;
   }
 
-  watch([() => monthStore.month, () => participant.selectedId], () => {
+  watch([() => monthStore.month, () => participant.selectedId, () => participant.banksKey], () => {
     paging.value = true;
     onReset?.();
   });

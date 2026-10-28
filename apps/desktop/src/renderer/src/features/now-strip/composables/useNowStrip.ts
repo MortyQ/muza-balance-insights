@@ -23,11 +23,11 @@ export function useNowStrip(): UseNowStripReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return id !== null ? { participantId: id } : {};
+    return { ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchNowOverview(query()),
-    [participantId],
+    [participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version, today], cached: () => peekNowOverview(query()) },
   );
 

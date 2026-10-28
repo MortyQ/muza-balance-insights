@@ -23,14 +23,14 @@ export function useMonthOverview(): UseMonthOverviewReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participant.selectedId;
-    return { id, q: { month: monthStore.month, ...(id !== null ? { participantId: id } : {}) } };
+    return { id, q: { month: monthStore.month, ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() } };
   };
   const { state } = useAsyncData(
     async (): Promise<TaggedOverview> => {
       const { id, q } = query();
       return { participantId: id, overview: await fetchOverview(q) };
     },
-    [() => monthStore.month, () => participant.selectedId],
+    [() => monthStore.month, () => participant.selectedId, () => participant.banksKey],
     {
       quiet: [() => syncStatus.version],
       cached: () => {

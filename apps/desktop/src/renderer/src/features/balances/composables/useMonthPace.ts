@@ -22,14 +22,14 @@ export function useMonthPace(): UseMonthPaceReturn {
     async () => {
       const id = participant.selectedId;
       const month = monthStore.month;
-      const who = id !== null ? { participantId: id } : {};
+      const who = { ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
       const [analytics, perDay] = await Promise.all([
         fetchAnalytics({ from: month, to: month, ...who }),
         month === monthStore.thisMonth ? fetchAllowance(who).then((a) => a.perDay, () => null) : Promise.resolve(null),
       ]);
       return { analytics, perDay };
     },
-    [() => monthStore.month, () => participant.selectedId],
+    [() => monthStore.month, () => participant.selectedId, () => participant.banksKey],
     { quiet: [() => syncStatus.version] },
   );
   const view = computed(() => (state.value.data ? paceView(state.value.data.analytics, state.value.data.perDay) : null));

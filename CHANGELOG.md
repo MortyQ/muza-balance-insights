@@ -3,6 +3,16 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.13 — unreleased
+
+### Home
+
+- **Look at one bank, or a few.** With cards in more than one bank, the filters at the top get a button per bank: all
+  are on at first, so every screen shows your banks together; turn some off to see only the others — balances,
+  spending, income, analytics, regular payments and planning all follow. At least one bank stays on, and the app
+  remembers your choice. A transfer between your own cards in two banks never counts as spending, so the banks shown
+  one by one add up to all of them together.
+
 ## 0.1.12 — 2026-10-27
 
 ### Banks

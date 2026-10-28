@@ -25,12 +25,12 @@ export function useCategoryDetail(
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return { period: toValue(period), category: toValue(categoryId), scope: toValue(scope), ...(id !== null ? { participantId: id } : {}) };
+    return { period: toValue(period), category: toValue(categoryId), scope: toValue(scope), ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchCategoryOverview(query()),
     // The period by value: a page that rebuilds the same period does not reload.
-    [() => JSON.stringify(toValue(period)), participantId, () => toValue(categoryId), () => toValue(scope)],
+    [() => JSON.stringify(toValue(period)), participantId, () => participant.banksKey, () => toValue(categoryId), () => toValue(scope)],
     { quiet: [() => syncStatus.version], cached: () => peekCategoryOverview(query()) },
   );
 

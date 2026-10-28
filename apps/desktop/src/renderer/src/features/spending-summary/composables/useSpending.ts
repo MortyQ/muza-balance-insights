@@ -28,14 +28,14 @@ export function useSpending(): UseSpendingReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return { month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}) };
+    return { month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchSpendingOverview(query()),
-    [month, scope, participantId],
+    [month, scope, participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekSpendingOverview(query()) },
   );
-  watch([month, scope, participantId], () => {
+  watch([month, scope, participantId, () => participant.banksKey], () => {
     pick.value = null;
   });
 
