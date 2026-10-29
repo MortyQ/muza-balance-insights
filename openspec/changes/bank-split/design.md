@@ -60,7 +60,8 @@ The family's per-person groups are unchanged. `tests/data-queries.test.ts` gets 
 ### 3. Bank colours in `entities/bank`
 
 `BankLook` gains `color` (a CSS value): Monobank `var(--foreground)`, PrivatBank `var(--series-green)`, A-Bank
-`var(--series-blue)`, a bank the registry does not know `var(--border-strong)`. Theme tokens, so both themes read. The
+`var(--series-blue)`, Slovenská sporiteľňa (merged from main during this change) `var(--series-red)`, a bank the
+registry does not know `var(--border-strong)`. Theme tokens, so both themes read. The
 «By bank» cards of `bank-breakdown` use it instead of `var(--cat)`.
 
 ### 4. «Spending»: one split choice

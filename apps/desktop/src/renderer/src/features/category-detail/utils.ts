@@ -93,9 +93,14 @@ export function peopleView(v: Readonly<CategoryOverview>, people: ReadonlyArray<
   return peopleBars(v.people.map((p) => ({ participantId: p.participantId, value: p.net, count: p.purchases })), people, fmt);
 }
 
-/** «By bank»: each bank with spending in the view, on the largest one's scale, in the screen's colour (spec desktop-bank-breakdown). */
+/** «By bank»: each bank with spending in the view, on the largest one's scale, in the bank's colour (spec desktop-bank-breakdown). */
+const bankLook = (provider: string) => {
+  const bank = bankOf(provider);
+  return { name: bank.name, color: bank.color };
+};
+
 export function banksView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): PartView[] {
-  return partBars(v.banks.map((b) => ({ key: b.provider, name: bankOf(b.provider).name, color: 'var(--cat)', value: b.net, count: b.purchases })), fmt);
+  return partBars(v.banks.map((b) => ({ key: b.provider, ...bankLook(b.provider), value: b.net, count: b.purchases })), fmt);
 }
 
 /** «Where»: the top merchants on the largest one's scale; `picked` — the list's filter. */

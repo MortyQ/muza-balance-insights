@@ -10,7 +10,8 @@ each split is offered, and which colour each bank is drawn in.
 ### Requirement: Each bank has its own colour
 
 Every bank SHALL be drawn in one colour of its own wherever spending is split by bank: Monobank in the theme's
-foreground colour, PrivatBank in green, A-Bank in blue. A bank the app does not know SHALL be drawn in a neutral grey.
+foreground colour, PrivatBank in green, A-Bank in blue, Slovenská sporiteľňa in red; every bank's colour SHALL differ
+from the others'. A bank the app does not know SHALL be drawn in a neutral grey.
 The colours SHALL stay readable in both themes.
 
 #### Scenario: Dark theme

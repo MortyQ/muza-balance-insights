@@ -29,6 +29,9 @@ export const INSIGHT_BASE = 100_000;
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';
 
+/** The ways a category's bar is split, in the menu's order. */
+export const SPLITS = ['together', 'people', 'banks'] as const;
+
 /** The tone of an operations difference: more — orange, fewer — blue (as the change chips). */
 export const OPS_TONE = {
   up: 'text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',

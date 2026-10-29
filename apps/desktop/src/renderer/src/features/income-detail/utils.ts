@@ -90,9 +90,14 @@ export function peopleView(v: Readonly<IncomeOverview>, people: ReadonlyArray<Pe
   return peopleBars(v.people.map((p) => ({ participantId: p.participantId, value: p.total, count: p.lines })), people, fmt);
 }
 
-/** «By bank»: each bank with income in the view, on the largest one's scale, in the screen's colour (spec desktop-bank-breakdown). */
+/** «By bank»: each bank with income in the view, on the largest one's scale, in the bank's colour (spec desktop-bank-breakdown). */
+const bankLook = (provider: string) => {
+  const bank = bankOf(provider);
+  return { name: bank.name, color: bank.color };
+};
+
 export function banksView(v: Readonly<IncomeOverview>, fmt: MoneyFormat): PartView[] {
-  return partBars(v.banks.map((b) => ({ key: b.provider, name: bankOf(b.provider).name, color: 'var(--cat)', value: b.total, count: b.lines })), fmt);
+  return partBars(v.banks.map((b) => ({ key: b.provider, ...bankLook(b.provider), value: b.total, count: b.lines })), fmt);
 }
 
 /** «Where from»: each source with income, its share of the period. */

@@ -20,10 +20,10 @@
 
 ## 3. Renderer: «Spending» bars by bank — `feat(desktop): spending bars split by bank`
 
-- [ ] 3.1 `entities/bank`: `BankLook.color` (design, decision 3); the «By bank» cards of the category and income
+- [x] 3.1 `entities/bank`: `BankLook.color` (design, decision 3); the «By bank» cards of the category and income
       screens use it. Verify in `tests/renderer/registry-banks.test.ts` (every bank has a colour, an unknown one grey)
       and the screens' tests.
-- [ ] 3.2 `features/spending-summary`: `SpendingPrefs.split` as a choice with the old switch carried over, the
+- [x] 3.2 `features/spending-summary`: `SpendingPrefs.split` as a choice with the old switch carried over, the
       «Split the bars» control in the bars menu, `rows.ts` segments by bank (design, decision 4). Keys in `uk.json`,
       `en.json`, `ru.json`. Verify in `tests/renderer/spending*.test.ts`: by banks — a segment per bank in its colour with
       its amount on hover; together — one segment; «By banks» hidden and the bars together with one bank on, back with

@@ -133,11 +133,11 @@ describe('category screen helpers', () => {
     ]);
   });
 
-  it('by bank: each bank with spending, the larger first, named by the registry, in the screen\'s colour', () => {
+  it('by bank: each bank with spending, the larger first, named by the registry, in the bank\'s colour', () => {
     const v: CategoryOverview = { ...VIEW, banks: [{ provider: 'monobank', net: 41_000, purchases: 1 }, { provider: 'privatbank', net: 100_000, purchases: 3 }] };
     expect(banksView(v, FMT).map((b) => [b.key, b.name, b.width, b.color])).toEqual([
-      ['privatbank', 'PrivatBank', 100, 'var(--cat)'],
-      ['monobank', 'Monobank', 41, 'var(--cat)'],
+      ['privatbank', 'PrivatBank', 100, 'var(--series-green)'],
+      ['monobank', 'Monobank', 41, 'var(--foreground)'],
     ]);
   });
 

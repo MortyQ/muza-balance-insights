@@ -728,8 +728,11 @@
         "button": "Block settings",
         "mark": "Last month's mark",
         "markHint": "A tick at last month's amount",
-        "split": "Who spent how much",
-        "splitHint": "The bar is split by people's colours"
+        "split": "Split the bars",
+        "splitBanks": "By banks",
+        "splitHint": "By people's or banks' colours",
+        "splitPeople": "By people",
+        "splitTogether": "Together"
       },
       "title": "Spending",
       "together": "together · {ops}",

@@ -63,7 +63,7 @@ describe('banks and their forms', () => {
   });
 
   it('the bank entity is display only: the registry’s name, its ways, its look; Monobank’s token texts live in its folder', () => {
-    expect(bankOf('monobank')).toEqual({ id: 'monobank', name: 'Monobank', ways: ['token', 'file'], monogram: 'm', monogramClass: 'bg-black text-white' });
+    expect(bankOf('monobank')).toEqual({ id: 'monobank', name: 'Monobank', ways: ['token', 'file'], monogram: 'm', monogramClass: 'bg-black text-white', color: 'var(--foreground)' });
     for (const b of BANKS) expect(Object.keys(b).filter((k) => k.startsWith('token'))).toEqual([]);
     expect(t(TOKEN_STEPS[0])).toMatch(/api\.monobank\.ua/);
     expect(t(TOKEN_PLACEHOLDER)).toBe('Токен с api.monobank.ua');
@@ -71,7 +71,7 @@ describe('banks and their forms', () => {
   });
 
   it('a bank the registry does not know: a neutral mark and its id, no ways, no card types', () => {
-    expect(bankOf('unknownbank')).toEqual({ id: 'unknownbank', name: 'unknownbank', ways: [], monogram: 'U', monogramClass: 'bg-surface-sunken text-foreground-muted' });
+    expect(bankOf('unknownbank')).toEqual({ id: 'unknownbank', name: 'unknownbank', ways: [], monogram: 'U', monogramClass: 'bg-surface-sunken text-foreground-muted', color: 'var(--border-strong)' });
     expect(cardTypesOf('unknownbank')).toEqual([]);
     expect(defaultCardTypeOf('unknownbank')).toBeNull();
     expect(cardTypeName('unknownbank', 'black')).toBe('Карта');

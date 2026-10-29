@@ -199,7 +199,7 @@ describe('spending block: the settings menu', () => {
     await flushPromises();
 
     expect(document.body.textContent).toContain('Метка прошлого месяца');
-    expect(document.body.textContent).toContain('Кто сколько потратил');
+    expect(document.body.textContent).toContain('Делить полоску');
 
     const markRow = Array.from(document.body.querySelectorAll('div')).find(
       (d) => d.textContent?.includes('Метка прошлого месяца') && d.querySelectorAll('input[type="checkbox"]').length === 1,
@@ -215,6 +215,36 @@ describe('spending block: the settings menu', () => {
     const stored = JSON.parse(localStorage.getItem('spending.view') ?? '{}') as { mark?: boolean };
     expect(stored.mark).toBe(false);
 
+    w.unmount();
+  });
+});
+
+describe('spending block: the split by banks', () => {
+  it('offers «By banks» with two banks on, stores it, draws the bars in the banks\' colours; one bank on hides it', async () => {
+    const conn = (id: number, provider: 'monobank' | 'privatbank') => ({
+      id, provider, method: 'file' as const, bank: provider, accounts: 1, enabledAccounts: 1, coveredFrom: '2026-01-01', coveredTo: '2026-09-30', lastSyncAt: null, token: null,
+    });
+    current = { ...VIEW, categories: VIEW.categories.map((c) => ({ ...c, banks: [{ provider: 'monobank', net: c.net - 10_000, purchases: 1 }, { provider: 'privatbank', net: 10_000, purchases: 1 }] })) };
+    const w = await mountBlock(document.body);
+    const { useParticipantStore } = await import('@/entities/participant');
+    const participant = useParticipantStore();
+    participant.view = { ...PEOPLE, people: [{ ...PEOPLE.people[0]!, connections: [conn(1, 'monobank')] }, { ...PEOPLE.people[1]!, connections: [conn(2, 'privatbank')] }, PEOPLE.people[2]!] };
+    await flushPromises();
+
+    document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
+    await flushPromises();
+    const byBanks = Array.from(document.body.querySelectorAll<HTMLElement>('button')).find((b) => b.textContent?.trim() === 'По банкам');
+    expect(byBanks).toBeTruthy();
+    byBanks!.click();
+    await flushPromises();
+    expect(JSON.parse(localStorage.getItem('spending.view') ?? '{}')).toMatchObject({ split: 'banks' });
+    const colours = () => w.findAll('.v-share-bar__part').map((seg) => seg.attributes('style'));
+    expect(colours().some((st) => st?.includes('var(--series-green)'))).toBe(true);
+
+    participant.selectBanks(['monobank']);
+    await flushPromises();
+    expect(colours().some((st) => st?.includes('var(--series-green)'))).toBe(false);
+    expect(document.body.textContent).not.toContain('По банкам');
     w.unmount();
   });
 });
@@ -250,7 +280,7 @@ describe('spending block: the only person in the app', () => {
 
     document.body.querySelector<HTMLElement>('[aria-label="Настройки блока"]')!.click();
     await flushPromises();
-    expect(document.body.textContent).not.toContain('Кто сколько потратил');
+    expect(document.body.textContent).not.toContain('Делить полоску');
     w.unmount();
   });
 });
