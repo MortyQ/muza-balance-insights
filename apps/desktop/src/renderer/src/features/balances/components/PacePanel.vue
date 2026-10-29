@@ -3,7 +3,8 @@ import { computed } from 'vue';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { VChart } from '@/shared/ui';
 import type { PaceBank, PaceSplit, PaceView } from '../types.ts';
-import { paceChartOption } from '../utils.ts';
+import { paceChartOption, paceLegend } from '../utils.ts';
+import PaceLegend from './PaceLegend.vue';
 import PaceSettings from './PaceSettings.vue';
 
 /** `offered` — two or more banks on: the menu is shown; `banks` — the banks to draw by, null — together. */
@@ -17,6 +18,7 @@ const { view, fmt, offered, split, banks } = defineProps<{
 defineEmits<{ split: [value: PaceSplit] }>();
 
 const option = computed(() => paceChartOption(view, (n) => fmt.money(n), banks));
+const legend = computed(() => paceLegend(view, banks));
 </script>
 
 <template>
@@ -33,6 +35,7 @@ const option = computed(() => paceChartOption(view, (n) => fmt.money(n), banks))
     <div class="min-h-44 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">
       <VChart :option class="size-full" />
     </div>
+    <PaceLegend v-if="legend.length > 0" :items="legend" :fmt />
     <div class="flex flex-wrap gap-x-8 gap-y-2">
       <div data-test="pace-figure">
         <div class="text-xs text-foreground-muted">{{ $t('home.balances.pace.spent') }}</div>

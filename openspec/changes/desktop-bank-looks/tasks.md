@@ -25,6 +25,9 @@
   bank, choice remembered, one bank on draws together
 - [x] 2.3 Update the month pace paragraph of `.agents/project/desktop-renderer.md` and add the «Month pace» by banks
   entry to `CHANGELOG.md`; verify by reading the diff
+- [x] 2.4 Add the legend under the pace chart by banks (`paceLegend(view, banks)` in `utils.ts`: name, colour, amount by
+  the last day; `PaceLegend.vue` in the panel, none together); verify `tests/renderer/month-pace.test.ts`: amounts add
+  up to «Spent», legend shown by banks only
 
 ## 3. Bank card looks — `feat(desktop): account cards in their bank's look`
 

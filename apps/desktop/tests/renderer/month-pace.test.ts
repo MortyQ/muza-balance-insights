@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { AnalyticsOverview } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { paceBanks, paceChartOption, paceTooltip, paceView } from '@/features/balances/utils.ts';
+import { paceBanks, paceChartOption, paceLegend, paceTooltip, paceView } from '@/features/balances/utils.ts';
 import { usePaceSplit } from '@/features/balances/composables/usePaceSplit.ts';
 
 vi.mock('@/shared/ui/components/charts/VChart.vue', async () => {
@@ -181,6 +181,27 @@ describe('the pace by banks', () => {
     );
     const o = paceChartOption(v, (n) => `${n} ₴`, banks) as { tooltip: { formatter: (ps: Array<{ dataIndex: number }>) => string } };
     expect(o.tooltip.formatter([{ dataIndex: 1 }])).toBe(paceTooltip(v, 1, (n) => `${n} ₴`, banks));
+  });
+
+  it('the legend: each bank drawn with its colour and its amount by the last day, adding up to «Spent»; none together', () => {
+    const v = paceView(byBanks(), null)!;
+    const items = paceLegend(v, paceBanks(v, true, 'banks'));
+    expect(items).toEqual([
+      { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)', amount: 60 },
+      { provider: 'privatbank', name: 'PrivatBank', color: expect.any(String), amount: 70 },
+    ]);
+    expect(items.reduce((sum, i) => sum + i.amount, 0)).toBe(v.spentTotal);
+    expect(paceLegend(v, null)).toEqual([]);
+  });
+
+  it('the panel shows the legend by banks only', () => {
+    const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+    const view = paceView(byBanks(), null)!;
+    const panel = (banks: ReturnType<typeof paceBanks>) =>
+      mount(PacePanel, { props: { view, fmt, offered: true, split: banks ? ('banks' as const) : ('together' as const), banks }, global: { plugins: [i18n] } });
+    expect(panel(null).find('[data-test="pace-legend"]').exists()).toBe(false);
+    const legend = panel(paceBanks(view, true, 'banks')).get('[data-test="pace-legend"]');
+    expect(legend.findAll('li').map((li) => li.text())).toEqual([`Monobank${fmt.money(60)}`, `PrivatBank${fmt.money(70)}`]);
   });
 
   it('the menu is there only while two or more banks are on, and says the choice', async () => {

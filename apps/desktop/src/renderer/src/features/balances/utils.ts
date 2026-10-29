@@ -8,7 +8,7 @@ import { CHART_TOOLTIP } from '@/entities/operations';
 import { currencySymbol, dayMonthName, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
 import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { ChartOption } from '@/shared/ui';
-import type { Flow, FreeLineView, PaceBank, PaceSplit, PaceView, RowView, Slide } from './types.ts';
+import type { Flow, FreeLineView, PaceBank, PaceLegendItem, PaceSplit, PaceView, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
@@ -337,6 +337,11 @@ export function paceBanks(v: Readonly<PaceView> | null, offered: boolean, split:
     const bank = bankOf(b.provider);
     return { provider: b.provider, name: bank.name, color: bank.color };
   });
+}
+
+/** The legend under the pace chart by banks: each bank drawn, in the chart's order, with its spending by `last`. */
+export function paceLegend(v: Readonly<PaceView>, banks: ReadonlyArray<PaceBank> | null): PaceLegendItem[] {
+  return (banks ?? []).map((b) => ({ ...b, amount: v.banks.find((x) => x.provider === b.provider)?.spent[v.last] ?? 0 }));
 }
 
 /**

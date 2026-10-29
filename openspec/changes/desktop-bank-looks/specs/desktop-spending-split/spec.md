@@ -28,6 +28,20 @@ banks' order, in the home's currency choice.
 - **WHEN** «By banks» is chosen and the user points at a day with spending on two banks
 - **THEN** the tooltip shows the date, the spending up to that day, each bank's part of it and the usual
 
+### Requirement: The «Month pace» legend names the banks
+By banks, a legend under the chart SHALL list each bank drawn, in the chart's order: a swatch in the bank's colour, the
+bank's name and its spending up to the last day with data, in the home's currency choice. «Together» SHALL show no
+legend.
+
+#### Scenario: Legend by banks
+- **WHEN** «By banks» is chosen and the month's spending is on Monobank and PrivatBank
+- **THEN** under the chart a Monobank and a PrivatBank item each show the bank's colour, name and amount so far, and
+  the amounts add up to «Spent»
+
+#### Scenario: Together
+- **WHEN** «Together» is chosen
+- **THEN** no legend is shown under the chart
+
 ### Requirement: The «Month pace» choice is remembered
 The «Month pace» choice SHALL be remembered on this computer, apart from the «Spending» and «Analytics» choices.
 

@@ -131,6 +131,11 @@ export interface PaceBank {
   color: string;
 }
 
+/** One item of the pace legend by banks: the bank and its spending by the last day with data. */
+export interface PaceLegendItem extends PaceBank {
+  amount: number;
+}
+
 export interface UsePaceSplitReturn {
   split: Readonly<Ref<PaceSplit>>;
   setSplit: (s: PaceSplit) => void;

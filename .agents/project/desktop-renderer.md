@@ -31,7 +31,8 @@
   `home.pace.split`, default together). `paceView` adds each bank's running sum from `spendingByBank` (`PaceView.banks`),
   `paceBanks(view, offered, split)` gives the banks to draw (name and colour from `entities/bank`) or null, and
   `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own);
-  `paceTooltip` adds each bank's part after «Spent». No new request.
+  `paceTooltip` adds each bank's part after «Spent»; `PaceLegend` under the chart lists the banks drawn (`paceLegend`:
+  colour, name, amount by the last day). No new request.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; an account slide carries its bank (`name.provider`) and card type (`variant`, `name.type`).
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
