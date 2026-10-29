@@ -233,6 +233,9 @@
         },
         "abank": {
           "card": "Картка А-Банку"
+        },
+        "slsp": {
+          "card": "Рахунок Slovenská sporiteľňa"
         }
       },
       "other": "Інші банки",

@@ -196,6 +196,15 @@
     description, the header repeated on every page;
   - a top-up from another bank with MCC 6012: whether it should pair with that bank's debit (today it counts as income
     here and as spending there).
+- **Real SLSP files** (change `core-slsp-statements`): the reader was checked, outside the repository, through the
+  app's own decoder on three real monthly statements (all rows read, every file adds up). Still to check live:
+  - the zone of a card operation's time abroad: Bratislava time is assumed; compare a hryvnia purchase with the
+    Monobank side of the same day near midnight, if one exists;
+  - `BOLT.EU/O/…` and `BOLT.EU/P/…`: which is ride-hailing and which something else (food, scooters); both map to
+    transport;
+  - the first upload in the app: a new account, then the next month into it (only new rows), and the keyword
+    categories on «Spending»; how many card payments stay in «Other» (about 40% in the samples);
+  - a transfer to the user's own account in another bank: an own transfer only when that account's IBAN is in the app.
 - **The decoder's memory on a large PDF**: upload a long PDF statement (hundreds of pages, near `STATEMENT_MAX_BYTES`,
   10 MiB) and watch the `balance-decoder` process: its peak resident size, the time against `DECODE_TIMEOUT_MS` (30 s),
   and that it is gone after the reply. Lower the page or item limits if the peak is too high for a weak machine.

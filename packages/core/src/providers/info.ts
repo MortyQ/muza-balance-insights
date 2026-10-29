@@ -4,9 +4,10 @@
 import { abankInfo } from './abank/info.ts';
 import { monobankInfo } from './monobank/info.ts';
 import { privatbankInfo } from './privatbank/info.ts';
+import { slspInfo } from './slsp/info.ts';
 import type { ProviderApiInfo, ProviderId, ProviderInfo } from './types.ts';
 
-export const PROVIDERS = { monobank: monobankInfo, privatbank: privatbankInfo, abank: abankInfo } as const satisfies Readonly<Record<ProviderId, ProviderInfo>>;
+export const PROVIDERS = { monobank: monobankInfo, privatbank: privatbankInfo, abank: abankInfo, slsp: slspInfo } as const satisfies Readonly<Record<ProviderId, ProviderInfo>>;
 
 /** Providers that have an API with a credential (the import, tokens, the worker). */
 export type TokenProviderId = { [P in ProviderId]: (typeof PROVIDERS)[P]['access']['token'] extends null ? never : P }[ProviderId];

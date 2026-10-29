@@ -5,6 +5,14 @@ English interface.
 
 ## 0.1.13 — unreleased
 
+### Banks
+
+- **Slovenská sporiteľňa.** Add a Slovenská sporiteľňa account from its monthly PDF statement (in Slovak). The app
+  checks that the statement adds up before taking it, and leaves out operations the bank did not carry out. Incoming
+  and outgoing payments count as income and payments to people, transfers to your own accounts are recognised by
+  their IBAN, and card payments at well-known chains (supermarkets, transport, pharmacies and others) get their
+  category from the merchant's name, since the bank does not state one.
+
 ### Home
 
 - **Look at one bank, or a few.** With cards in more than one bank, the filters at the top get a button per bank: all
