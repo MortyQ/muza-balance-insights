@@ -47,10 +47,10 @@
 
 ## 3. Desktop: the bank's look and names (desktop)
 
-- [ ] 3.1 Create `entities/bank/looks/slsp.ts` (monogram `S`) and add `entities.bank.cardType.slsp.card` to `uk.json`,
+- [x] 3.1 Create `entities/bank/looks/slsp.ts` (monogram `S`) and add `entities.bank.cardType.slsp.card` to `uk.json`,
   `en.json` and `ru.json` (design 9). Verify `apps/desktop` `providers.test.ts`, `i18n.test.ts`,
   `renderer/integrations.test.ts` and `renderer/registry-banks.test.ts`.
-- [ ] 3.2 Create the `CHANGELOG.md` section `## 0.1.13 — unreleased` with a «Banks» entry for Slovenská sporiteľňa,
+- [x] 3.2 Create the `CHANGELOG.md` section `## 0.1.13 — unreleased` with a «Banks» entry for Slovenská sporiteľňa,
   with no internal terms.
 
 ## 4. Docs (docs)
