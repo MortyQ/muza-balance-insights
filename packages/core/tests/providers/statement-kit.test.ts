@@ -136,6 +136,59 @@ describe('pdfTable', () => {
     ]);
   });
 
+  it('cell lines run parallel to the rows, one entry per line', () => {
+    const wrapped = [item(40, 85, '03.01.2026', 40), item(40, 95, '08:00', 20), item(140, 85, 'Довгий опис'), item(150, 95, 'магазину'), item(316, 90, '-3,00', 20)];
+    const t = pdfTable({ format: 'pdf', pages: [page([...header(60), ...wrapped])] }, spec, 'amount', AMOUNT_RE);
+    expect(t?.lines).toEqual([{ time: ['03.01.2026', '08:00'], details: ['Довгий опис', 'магазину'], amount: ['-3,00'] }]);
+  });
+
+  describe('rows below their anchor, and where the table ends', () => {
+    const DATE_RE = /^\d{2}\.\d{2}\.\d{4}$/;
+    // A row's first line holds the date and the amount; its details follow on the lines under it.
+    const below = (y: number, date: string, amount: string, ...details: string[]) => [
+      item(40, y, date, 40),
+      item(340 - amount.length * 4, y, amount),
+      ...details.map((d, i) => item(140, y + 11 * (i + 1), d)),
+    ];
+    const options = { rowBand: 'below', pageEndRe: /^[A-Z]\d_[A-Z]\d_\d+$|^Вигаданий банк, контакти/, tableEndRe: /^Не виконані:$/ } as const;
+    const footer = (y: number) => [item(10, y, 'A1_B2_0001', 40), item(140, y + 5, 'Вигаданий банк, контакти')];
+
+    it('each row takes the lines under it down to the next anchor; the footer stays out', () => {
+      const doc: StatementDocument = {
+        format: 'pdf',
+        pages: [
+          page([...header(60), ...below(90, '01.01.2026', '-1,00', 'Картка', 'Кав’ярня', 'Гаманець'), ...below(134, '02.01.2026', '-2,00', 'Картка', 'Магазин'), ...footer(370)]),
+          page([...header(60), ...below(90, '03.01.2026', '5,00', 'Від банку'), ...footer(370)]),
+        ],
+      };
+      const t = pdfTable(doc, spec, 'time', DATE_RE, options);
+      expect(t?.rows.map((r) => [r.time, r.amount])).toEqual([
+        ['01.01.2026', '-1,00'],
+        ['02.01.2026', '-2,00'],
+        ['03.01.2026', '5,00'],
+      ]);
+      expect(t?.lines.map((l) => l.details)).toEqual([['Картка', 'Кав’ярня', 'Гаманець'], ['Картка', 'Магазин'], ['Від банку']]);
+    });
+
+    it('a section after the operations ends the table, with its own dated rows and later pages', () => {
+      const doc: StatementDocument = {
+        format: 'pdf',
+        pages: [
+          page([...header(60), ...below(90, '01.01.2026', '-1,00', 'Картка', 'Магазин'), item(40, 140, 'Не виконані:', 60), ...below(152, '02.01.2026', '-9,00', 'Переказ')]),
+          page([...header(60), ...below(90, '03.01.2026', '-3,00', 'Ще одна')]),
+        ],
+      };
+      const t = pdfTable(doc, spec, 'time', DATE_RE, options);
+      expect(t?.rows.map((r) => r.time)).toEqual(['01.01.2026']);
+      expect(t?.lines[0]?.details).toEqual(['Картка', 'Магазин']);
+    });
+
+    it('without the options a row still takes the lines around its anchor', () => {
+      const doc: StatementDocument = { format: 'pdf', pages: [page([...header(60), ...below(90, '01.01.2026', '-1,00', 'Картка'), ...below(134, '02.01.2026', '-2,00', 'Магазин')])] };
+      expect(pdfTable(doc, spec, 'time', DATE_RE)?.lines.map((l) => l.details)).toEqual([['Картка'], ['Магазин']]);
+    });
+  });
+
   it('no header on any page, or not a PDF → null', () => {
     expect(pdfTable({ format: 'pdf', pages: [page(row(90, '01.01.2026', '06:00', 'Таксі', '-2,00'))] }, spec, 'amount', AMOUNT_RE)).toBeNull();
     expect(pdfTable({ format: 'text', text: '' }, spec, 'amount', AMOUNT_RE)).toBeNull();
