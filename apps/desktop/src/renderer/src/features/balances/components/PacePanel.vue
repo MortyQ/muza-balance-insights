@@ -2,20 +2,32 @@
 import { computed } from 'vue';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { VChart } from '@/shared/ui';
-import type { PaceView } from '../types.ts';
+import type { PaceBank, PaceSplit, PaceView } from '../types.ts';
 import { paceChartOption } from '../utils.ts';
+import PaceSettings from './PaceSettings.vue';
 
-const { view, fmt } = defineProps<{ view: Readonly<PaceView>; fmt: Readonly<MoneyFormat> }>();
+/** `offered` — two or more banks on: the menu is shown; `banks` — the banks to draw by, null — together. */
+const { view, fmt, offered, split, banks } = defineProps<{
+  view: Readonly<PaceView>;
+  fmt: Readonly<MoneyFormat>;
+  offered: boolean;
+  split: PaceSplit;
+  banks: ReadonlyArray<PaceBank> | null;
+}>();
+defineEmits<{ split: [value: PaceSplit] }>();
 
-const option = computed(() => paceChartOption(view, (n) => fmt.money(n)));
+const option = computed(() => paceChartOption(view, (n) => fmt.money(n), banks));
 </script>
 
 <template>
   <!-- The month pace (spec desktop-balance-cards): the month's spending added up by day against a usual month. -->
   <div class="flex min-w-0 flex-col gap-3">
-    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-      <h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3>
-      <span class="text-xs text-foreground-muted">{{ $t('home.balances.pace.subtitle') }}</span>
+    <div class="flex items-start gap-2">
+      <div class="flex grow flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3>
+        <span class="text-xs text-foreground-muted">{{ $t('home.balances.pace.subtitle') }}</span>
+      </div>
+      <PaceSettings v-if="offered" class="-my-1 shrink-0" :split @split="$emit('split', $event)" />
     </div>
     <!-- min-h-44: alone in its row (65–79rem) the tile has no neighbour to take a height from; flex-1 grows it beside one. -->
     <div class="min-h-44 flex-1" role="img" :aria-label="$t('home.balances.pace.chart')">

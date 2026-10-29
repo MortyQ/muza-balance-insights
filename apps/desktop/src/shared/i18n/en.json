@@ -491,6 +491,13 @@
           "usual": "Usual by this day",
           "more": "{amount} more than usual",
           "less": "{amount} less than usual"
+        },
+        "settings": {
+          "button": "Pace settings",
+          "split": "Split the chart",
+          "splitHint": "Each bank's spending in its colour",
+          "together": "Together",
+          "banks": "By banks"
         }
       },
       "freeLine": {

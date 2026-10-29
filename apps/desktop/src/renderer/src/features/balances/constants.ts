@@ -18,3 +18,5 @@ export const OPEN_STAGGER = 45;
 export const CLOSE_STAGGER = 20;
 /** The most people the family card names in its shares line; the rest go into «+N». */
 export const SHARES_NAMED = 3;
+/** Where «Month pace»'s «Together / By banks» choice is remembered on this computer. */
+export const PACE_SPLIT_KEY = 'home.pace.split';

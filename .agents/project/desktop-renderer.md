@@ -26,6 +26,12 @@
   its amount in a pill while the month runs, amounts on a faint grid (`money` — the home's `MoneyFormat`); figures:
   spent, usual by the same day (a past month: usual in a month), per day. No pace for a month without data; no usual
   line or figure with fewer than 3 whole months, a note instead.
+  Split by banks (spec `desktop-spending-split`): `PaceSettings` (`VPopover` `lucide:settings`, «Together / By banks»)
+  in the panel's header while two or more banks are on; the choice is `composables/usePaceSplit.ts` (`localStorage`
+  `home.pace.split`, default together). `paceView` adds each bank's running sum from `spendingByBank` (`PaceView.banks`),
+  `paceBanks(view, offered, split)` gives the banks to draw (name and colour from `entities/bank`) or null, and
+  `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own);
+  `paceTooltip` adds each bank's part after «Spent». No new request.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
   and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at

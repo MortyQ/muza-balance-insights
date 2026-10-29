@@ -86,7 +86,15 @@ const note = computed(() => (view.value ? coverageNote(view.value.month, view.va
     </VCard>
     <VCard v-if="pace.view.value" v-show="!open" :inert="open" padding="md" class="min-w-0 @[47rem]:col-span-2 @[65rem]:row-start-2 @[79rem]:col-span-4 @[79rem]:row-start-auto" data-test="pace">
       <!-- min-w-0: a grid item never shrinks below its content, so the chart's canvas would keep its old width. -->
-      <PacePanel class="h-full min-w-0" :view="pace.view.value" :fmt="pace.fmt.value" />
+      <PacePanel
+        class="h-full min-w-0"
+        :view="pace.view.value"
+        :fmt="pace.fmt.value"
+        :offered="pace.offered.value"
+        :split="pace.split.value"
+        :banks="pace.banks.value"
+        @split="pace.setSplit"
+      />
     </VCard>
     <VCard v-if="head" v-show="!open" :inert="open" padding="md" class="@[47rem]:col-span-2 @[65rem]:col-span-1 @[65rem]:row-start-1 @[79rem]:col-span-3 @[79rem]:row-start-auto" data-test="panel">
       <MonthPanel class="h-full" :title="monthName" :note :flow="head.flow" :legend :stub-shown @stub="stack.showStub" />

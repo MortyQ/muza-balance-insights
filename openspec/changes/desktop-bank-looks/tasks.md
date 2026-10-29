@@ -15,15 +15,15 @@
 
 ## 2. «Month pace» by banks — `feat(desktop): month pace split by bank`
 
-- [ ] 2.1 Extend `paceView` with each bank's running sum from `spendingByBank` (same days and last day as `spent`) and
+- [x] 2.1 Extend `paceView` with each bank's running sum from `spendingByBank` (same days and last day as `spent`) and
   `paceChartOption` / `paceTooltip` with an optional bank list (stacked areas in the banks' colours, total line and
   usual kept, a tooltip line per bank); verify `tests/renderer/month-pace.test.ts`: parts add up to the total each day,
   `null` draws exactly today's option, tooltip lines per bank
-- [ ] 2.2 Add `composables/usePaceSplit.ts` (`localStorage` `home.pace.split`, default together, storage errors kept in
+- [x] 2.2 Add `composables/usePaceSplit.ts` (`localStorage` `home.pace.split`, default together, storage errors kept in
   memory) and `components/PaceSettings.vue` (`VPopover` with «Together / By banks»), shown in `PacePanel`'s header
   only while two or more banks are on; new keys in the three dictionaries; verify a renderer test: menu hidden with one
   bank, choice remembered, one bank on draws together
-- [ ] 2.3 Update the month pace paragraph of `.agents/project/desktop-renderer.md` and add the «Month pace» by banks
+- [x] 2.3 Update the month pace paragraph of `.agents/project/desktop-renderer.md` and add the «Month pace» by banks
   entry to `CHANGELOG.md`; verify by reading the diff
 
 ## 3. Bank card looks — `feat(desktop): account cards in their bank's look`
