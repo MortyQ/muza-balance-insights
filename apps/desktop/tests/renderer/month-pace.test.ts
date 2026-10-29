@@ -22,6 +22,7 @@ function month(states: Array<'full' | 'running' | 'none'>, spending: number[], u
     buckets: states.map((state, i) => ({ key: `2026-10-${String(i + 1).padStart(2, '0')}`, state })),
     income: states.map(() => 0),
     spending,
+    spendingByBank: [],
     totals: { income: 0, spending: spending.reduce((a, b) => a + b, 0), prev: null },
     compare: null,
     usual,

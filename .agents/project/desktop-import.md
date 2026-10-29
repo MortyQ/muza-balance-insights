@@ -168,6 +168,10 @@
   rates, a currency without a rate in `leftOut`); the period before (`comparePeriod` for a month, the same number of
   months before a range; null before the data); for one month the usual month's running spending (mean of up to 3
   covered months before). Categories, numbers and dates only — no bank text (canary test in `tests/data.test.ts`).
+  The split by bank (spec `desktop-spending-split`): `AnalyticsOverview.spendingByBank` — its grid is asked with
+  `byProvider` and every other figure folds the cells merged back (`mergeCells`, so nothing changes), each bank's series
+  is `bankSeries`; `SpendingCategoryView.banks` — one more `spendingGrid` over the shown month with `byProvider`, folded
+  per category and bank (`bankParts` in `data/spending.ts`). Banks in the registry's order (`byRegistry`).
   `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/read/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`

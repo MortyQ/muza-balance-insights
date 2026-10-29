@@ -367,6 +367,11 @@ export type SpendingCategoryView = SpendingAmounts & {
   prev: SpendingAmounts | null;
   /** The family view only (no participantId, more than one participant): each participant's part, in listParticipants order; else []. */
   people: SpendingPersonPart[];
+  /**
+   * The shown month only: each bank's part of the category in the view, in the registry's order (spec
+   * desktop-spending-split); the parts add up to `net`, give or take a kopeck of rounding per currency.
+   */
+  banks: Array<SpendingAmounts & { provider: string }>;
 };
 
 /**
@@ -738,6 +743,11 @@ export type AnalyticsOverview = {
   income: number[];
   /** The sum of the listed categories per bucket. */
   spending: number[];
+  /**
+   * Each bank's spending per bucket, every category, in the registry's order (spec desktop-spending-split); the banks
+   * add up to `spending`, give or take a kopeck of rounding per currency.
+   */
+  spendingByBank: Array<{ provider: string; values: number[] }>;
   totals: { income: number; spending: number; prev: { income: number; spending: number } | null };
   /** Dates; one month — last month (cut to the same day while this one runs); a range — the same number of months before. */
   compare: { from: string; to: string; partial: boolean } | null;

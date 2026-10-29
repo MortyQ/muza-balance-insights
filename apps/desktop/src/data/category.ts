@@ -1,7 +1,7 @@
 // Pure helpers of the category and income screens in main (DataService.categoryOverview / incomeOverview): the bank's
 // text made fit for the screen, and what the screen counts from the lines (where, who; «When» the screen counts itself).
-import { PROVIDER_IDS } from '@mono/core/providers/types';
 import type { CategoryLineView, CategoryOverview, IncomeAmounts, IncomeLineView, IncomeOverview, IncomeSourceId, SpendingAmounts } from '../shared/api.ts';
+import { byRegistry } from './spending.ts';
 
 /** A masked card number (6 digits, stars, 4 digits) anywhere in the text. */
 const CARD_PAN = /\d{6}\*+(\d{4})/g;
@@ -29,17 +29,6 @@ function middle(values: readonly number[]): number | null {
   const s = [...values].sort((a, b) => a - b);
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2);
-}
-
-/** Banks in the registry's order, then the ids it does not know (spec desktop-bank-breakdown). */
-function byRegistry<T>(parts: Map<string, T>): Array<T & { provider: string }> {
-  const rank = (id: string) => {
-    const i = (PROVIDER_IDS as readonly string[]).indexOf(id);
-    return i < 0 ? PROVIDER_IDS.length : i;
-  };
-  return [...parts]
-    .sort(([a], [b]) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0))
-    .map(([provider, part]) => ({ provider, ...part }));
 }
 
 export type LineStats = Pick<CategoryOverview, 'merchants' | 'people' | 'banks'> &

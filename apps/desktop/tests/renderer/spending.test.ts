@@ -34,7 +34,7 @@ const P = [
 ];
 const part = (participantId: number, net: number, purchases: number, prev: { net: number; purchases: number } | null) => ({ participantId, net, purchases, prev });
 const cat = (category: string, categoryId: CategoryId | null, net: number, purchases: number, prevNet: number | null, people: ReturnType<typeof part>[] = []): SpendingOverview['categories'][number] =>
-  ({ category, categoryId, net, purchases, prev: prevNet === null ? null : { net: prevNet, purchases: purchases - 1 }, people });
+  ({ category, categoryId, net, purchases, prev: prevNet === null ? null : { net: prevNet, purchases: purchases - 1 }, people, banks: [] });
 
 const VIEW: SpendingOverview = {
   month: '2026-09',

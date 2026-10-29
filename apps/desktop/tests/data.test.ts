@@ -1418,6 +1418,27 @@ describe('DataService: a bank view', () => {
     expect(await of(her)).toEqual(['privatbank']);
   });
 
+  it('spending bars and the analytics chart: each bank\'s part adds up; one bank on lists only it', async () => {
+    const q = { month: '2026-03', scope: 'personal' as const };
+    const v = await svc.spendingOverview(q);
+    const groceries = v.categories.find((c) => c.categoryId === 'groceries')!;
+    expect(groceries.banks).toEqual([
+      { provider: 'monobank', net: 1_000, purchases: 1 },
+      { provider: 'privatbank', net: 400, purchases: 1 },
+    ]);
+    for (const c of v.categories) expect(c.banks.reduce((n, b) => n + b.net, 0)).toBe(c.net);
+    const privat = await svc.spendingOverview({ ...q, ...PRIVAT });
+    expect(privat.categories.flatMap((c) => c.banks.map((b) => b.provider))).toEqual(['privatbank', 'privatbank']);
+
+    const a = await svc.analyticsOverview({ from: '2026-03', to: '2026-03' });
+    expect(a.spendingByBank.map((b) => b.provider)).toEqual(['monobank', 'privatbank']);
+    a.spending.forEach((n, i) => expect(a.spendingByBank.reduce((s, b) => s + b.values[i]!, 0)).toBe(n));
+    expect(a.totals.spending).toBe(2_100);
+    expect((await svc.analyticsOverview({ from: '2026-03', to: '2026-03', ...MONO })).spendingByBank.map((b) => b.provider)).toEqual(['monobank']);
+    const range = await svc.analyticsOverview({ from: '2026-01', to: '2026-03' });
+    expect(range.spendingByBank.find((b) => b.provider === 'privatbank')!.values).toEqual([700, 700, 1_100]);
+  });
+
   it('analytics: the chosen bank\'s totals', async () => {
     const v = await svc.analyticsOverview({ from: '2026-03', to: '2026-03', ...MONO });
     expect(v.totals).toMatchObject({ income: 0, spending: 1_000 });

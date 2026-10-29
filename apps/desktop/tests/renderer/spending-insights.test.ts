@@ -10,7 +10,7 @@ import { formatMoney } from '@/shared/lib';
 const uah = (k: number) => formatMoney(k, 980);
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
 const cat = (category: string, categoryId: SpendingOverview['categories'][number]['categoryId'], net: number) => ({
-  category, categoryId, net, purchases: 1, prev: null, people: [],
+  category, categoryId, net, purchases: 1, prev: null, people: [], banks: [],
 });
 const USUAL: SpendingUsual = {
   months: 5,

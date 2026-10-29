@@ -30,6 +30,7 @@ const VIEW: SpendingOverview = {
     {
       category: 'продукты', categoryId: 'groceries', net: 50_000, purchases: 10, prev: { net: 45_000, purchases: 9 },
       people: [part(1, 30_000, 6, { net: 25_000, purchases: 5 }), part(2, 20_000, 4, { net: 15_000, purchases: 3 }), part(3, 0, 0, { net: 5_000, purchases: 1 })],
+      banks: [],
     },
   ],
   rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
@@ -350,6 +351,7 @@ describe('spending tiles', () => {
   const cat = (category: string, categoryId: 'groceries' | 'cafes' | 'transport' | 'delivery' | 'health' | 'clothing', net: number) => ({
     category, categoryId, net, purchases: 1, prev: null,
     people: [part(1, net, 1, null), part(2, 0, 0, null), part(3, 0, 0, null)],
+    banks: [],
   });
   const MANY: SpendingOverview = {
     ...VIEW,

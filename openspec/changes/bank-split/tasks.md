@@ -11,12 +11,12 @@
 
 ## 2. Data process: bank parts — `feat(desktop): bank parts of spending and analytics`
 
-- [ ] 2.1 `src/shared/api.ts`: `SpendingCategoryView.banks`, `AnalyticsOverview.spendingByBank`. `src/data/data.ts`,
+- [x] 2.1 `src/shared/api.ts`: `SpendingCategoryView.banks`, `AnalyticsOverview.spendingByBank`. `src/data/data.ts`,
       `src/data/analytics.ts` (`mergeCells`), `src/data/spending.ts` as in design, decision 2. Verify in
       `tests/data.test.ts` («a bank view» block): each category's bank parts add up to its net; `spendingByBank` adds up
       to `spending` per bucket; with one bank on only that bank is listed; every existing analytics figure is the same
       as before the split. Update `tests/data-queries.test.ts` for the spending block's new count.
-- [ ] 2.2 Note the two fields and the split grid in `.agents/project/desktop-import.md`. Run the desktop checks.
+- [x] 2.2 Note the two fields and the split grid in `.agents/project/desktop-import.md`. Run the desktop checks.
 
 ## 3. Renderer: «Spending» bars by bank — `feat(desktop): spending bars split by bank`
 

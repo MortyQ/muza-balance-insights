@@ -24,6 +24,7 @@ const RANGE: AnalyticsOverview = {
   buckets: MONTHS.map((key) => ({ key, state: 'full' as const })),
   income: [82, 84, 118, 80, 82, 85, 86, 88, 90, 92, 90, 95].map(k),
   spending: [64, 70, 104, 61, 64, 70, 69, 75, 93, 89, 75, 71].map(k),
+  spendingByBank: [],
   totals: { income: k(1072), spending: k(905), prev: { income: k(980), spending: k(823) } },
   compare: { from: '2024-10-01', to: '2025-09-30', partial: false },
   usual: null,
