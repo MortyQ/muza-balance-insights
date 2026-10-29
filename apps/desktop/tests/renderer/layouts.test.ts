@@ -17,7 +17,6 @@ const { i18n } = await import('@/shared/lib');
 
 const page = (name: string) => defineComponent(() => () => h('main', { 'data-page': name }, name));
 let homeSetups = 0;
-// Named as the real home page, so MasterLayout's KEPT_ALIVE matches it.
 const homePage = defineComponent({
   name: 'HomePage',
   setup: () => {
@@ -153,7 +152,7 @@ describe('MasterLayout', () => {
     w.unmount();
   });
 
-  it('home stays alive while another screen of its layout is open: back from it, nothing is set up anew', async () => {
+  it('no screen is kept alive: back from another screen, home is set up anew', async () => {
     const { w, router } = await mountAt('/');
     const before = homeSetups;
     await router.push('/sub');
@@ -162,7 +161,7 @@ describe('MasterLayout', () => {
     await router.push('/');
     await flushPromises();
     expect(w.find('[data-page="home"]').exists()).toBe(true);
-    expect(homeSetups).toBe(before);
+    expect(homeSetups).toBe(before + 1);
     w.unmount();
   });
 
@@ -182,11 +181,6 @@ describe('MasterLayout', () => {
     await flushPromises();
     expect(scrollTo).not.toHaveBeenCalled();
     w.unmount();
-  });
-
-  it('the real home page carries the name KEPT_ALIVE lists', async () => {
-    const { HomePage } = await import('@/pages/home');
-    expect((HomePage as { __name?: string }).__name).toBe('HomePage');
   });
 
   it('a medium window shows icons only without changing the stored choice; the choice is kept under app.sidebar', async () => {

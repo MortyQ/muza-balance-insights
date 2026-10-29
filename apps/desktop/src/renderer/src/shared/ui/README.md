@@ -44,13 +44,20 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
   Locale is fixed to `uk-UA`, week starts Monday. `min` / `max` (ISO) bound the selectable days (reka-ui's
   `minValue` / `maxValue`). Used by the import's «From date».
 - `VMonthPicker` — a month/year picker on reka-ui's `MonthPicker` in a `Popover` (muzakit has no month picker at all).
+- `VToggleGroup` (2026-10-28; muzakit has no multi-value toggle: `VSegmentedControl` picks one, `VButtonGroup` holds
+  actions) — several values on at once in `VSegmentedControl`'s track, no sliding pill: each cell a `button` with
+  `aria-pressed` in a `role="group"` named by the required `groupLabel`; `defineModel` of an array, kept in the options'
+  order; `ToggleOption` (`label`, `value`, `tooltip`) and a `label` slot (`{ option, on }`); `required` keeps the last value
+  on (`aria-disabled`, still focusable), its `lockedHint` as the tooltip and as sr-only text. The bank filter of the
+  global filters. Tested in `apps/desktop/tests/renderer/toggle-group.test.ts`.
 - `VMonthRangePicker` — one month or a range of months on reka-ui's `MonthPicker` / `MonthRangePicker` in a `Popover`:
   a «One month | Range» switch, the caller's quick picks, a draft applied on «Show», a `note` slot under the pick.
   `v-model` is a `"YYYY-MM"` string, `min` / `max` (also `"YYYY-MM"`) bound the selectable range; month names are our
   own (Russian UI), not the locale's. `components/inputs/calendarMonth.ts` holds the pure `"YYYY-MM"` ⇄ `CalendarDate`
   conversions (tested in `apps/desktop/tests/renderer/calendarMonth.test.ts`). Consumer: the balances block.
 - `VPopover` — an icon-only trigger and a panel on reka-ui's `Popover` (muzakit has no popover or dropdown menu); the
-  spending block's settings menu; an optional visible `text` before the icon (the currency switch of the global filters).
+  spending block's settings menu; an optional visible `text` before the icon (the currency switch of the global filters)
+  and an optional `trigger` slot before the text, hidden from screen readers (the bank filter's marks).
 - `VChangeChip` — a change against a base (`ChangeChipModel`: text, tone `up | down | neutral`, arrow, screen-reader
   text, title; `sm | md`): orange for more, blue for less (`--ui-series-orange` / `--ui-series-blue`). The spending
   block's chips and the now strip's.

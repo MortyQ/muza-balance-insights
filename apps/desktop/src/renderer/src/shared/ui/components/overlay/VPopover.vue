@@ -1,6 +1,7 @@
 <!-- built on reka-ui (2026-10-02): Popover. Ours, not copied: muzakit has no popover or dropdown menu.
-     An icon trigger (label → aria-label), optionally with visible text before the icon (the label must contain it),
-     and a panel for any content; Esc and a click outside close it. -->
+     An icon trigger (label → aria-label), optionally with visible text before the icon (the label must contain it) and
+     a `trigger` slot before the text (decoration: the bank filter's marks), and a panel for any content; Esc and a click
+     outside close it. -->
 <script setup lang="ts">
 import { PopoverContent, PopoverPortal, PopoverRoot, PopoverTrigger } from "reka-ui";
 import VIcon from "../base/VIcon.vue";
@@ -19,6 +20,7 @@ const open = defineModel<boolean>("open", { default: false });
 <template>
   <PopoverRoot v-model:open="open">
     <PopoverTrigger class="v-popover__trigger" :class="{ 'v-popover__trigger--text': text }" :aria-label="label">
+      <span v-if="$slots.trigger" class="v-popover__lead" aria-hidden="true"><slot name="trigger" /></span>
       <span v-if="text" class="v-popover__text">{{ text }}</span>
       <VIcon :icon class="v-popover__icon" />
     </PopoverTrigger>

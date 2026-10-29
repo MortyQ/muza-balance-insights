@@ -13,6 +13,7 @@ import {
   noCompareText,
   opsView,
   opsVs,
+  effectiveSplit,
   parsePrefs,
   peopleRows,
   ringOf,
@@ -34,7 +35,7 @@ const P = [
 ];
 const part = (participantId: number, net: number, purchases: number, prev: { net: number; purchases: number } | null) => ({ participantId, net, purchases, prev });
 const cat = (category: string, categoryId: CategoryId | null, net: number, purchases: number, prevNet: number | null, people: ReturnType<typeof part>[] = []): SpendingOverview['categories'][number] =>
-  ({ category, categoryId, net, purchases, prev: prevNet === null ? null : { net: prevNet, purchases: purchases - 1 }, people });
+  ({ category, categoryId, net, purchases, prev: prevNet === null ? null : { net: prevNet, purchases: purchases - 1 }, people, banks: [] });
 
 const VIEW: SpendingOverview = {
   month: '2026-09',
@@ -52,7 +53,7 @@ const VIEW: SpendingOverview = {
   familyTotal: null,
   usual: null,
 };
-const PREFS = { split: true, mark: false };
+const PREFS = { split: 'people' as const, mark: false };
 const NONE = { uah: false, usd: false, eur: false };
 const UAH_FMT = moneyFormat(VIEW.rates, { main: 980, also: NONE });
 const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: false, eur: false } });
@@ -145,8 +146,35 @@ describe('rowsFor', () => {
     expect(rows[1]!.color).toBe('var(--category-3)');
   });
 
+  it('by banks: a segment per bank in its colour with its amount; together with one bank on or a person picked', () => {
+    const top = VIEW.categories[0]!;
+    const v: SpendingOverview = {
+      ...VIEW,
+      categories: VIEW.categories.map((c) =>
+        c === top ? { ...c, banks: [{ provider: 'monobank', net: top.net - 1_000, purchases: 1 }, { provider: 'privatbank', net: 1_000, purchases: 1 }] } : c,
+      ),
+    };
+    const byBanks = { ...PREFS, split: 'banks' as const };
+    const [row] = rowsFor(v, null, P, byBanks, UAH_FMT, true);
+    expect(row!.key).toBe(top.category);
+    expect(row!.segments).toEqual([
+      { value: top.net - 1_000, color: 'var(--foreground)', title: `Monobank — ${UAH_FMT.money(top.net - 1_000)}` },
+      { value: 1_000, color: 'var(--series-green)', title: `PrivatBank — ${UAH_FMT.money(1_000)}` },
+    ]);
+    expect(rowsFor(v, null, P, byBanks, UAH_FMT, false)[0]!.segments).toEqual([{ value: 1, color: 'var(--category-1)', title: '' }]);
+    expect(rowsFor(v, 1, P, byBanks, UAH_FMT, true)[0]!.segments).toHaveLength(1);
+  });
+
+  it('effective split: people need two people, banks two banks on and no pick', () => {
+    expect(effectiveSplit('people', { people: 1, banksOn: true, pick: null })).toBe('together');
+    expect(effectiveSplit('people', { people: 2, banksOn: false, pick: 1 })).toBe('people');
+    expect(effectiveSplit('banks', { people: 2, banksOn: true, pick: null })).toBe('banks');
+    expect(effectiveSplit('banks', { people: 2, banksOn: false, pick: null })).toBe('together');
+    expect(effectiveSplit('banks', { people: 2, banksOn: true, pick: 1 })).toBe('together');
+  });
+
   it('split off → one segment in the category colour; mark on → last month position', () => {
-    const rows = rowsFor(VIEW, null, P, { ...PREFS, split: false, mark: true }, UAH_FMT);
+    const rows = rowsFor(VIEW, null, P, { ...PREFS, split: 'together' as const, mark: true }, UAH_FMT);
     expect(rows[0]!.segments).toEqual([{ value: 1, color: 'var(--category-1)', title: '' }]);
     expect(rows.map((r) => r.width)).toEqual([100, 60, 40]);
     expect(rows[0]!.mark).toBe(80);
@@ -155,7 +183,7 @@ describe('rowsFor', () => {
   });
 
   it('split off with a person picked: the category colour, the person\'s own amount on the family\'s scale', () => {
-    const rows = rowsFor(VIEW, 2, P, { ...PREFS, split: false, mark: true }, UAH_FMT);
+    const rows = rowsFor(VIEW, 2, P, { ...PREFS, split: 'together' as const, mark: true }, UAH_FMT);
     expect(rows.map((r) => r.segments)).toEqual([
       [{ value: 1, color: 'var(--category-1)', title: '' }],
       [{ value: 1, color: 'var(--category-3)', title: '' }],
@@ -188,7 +216,7 @@ describe('rowsFor', () => {
   it('a picked person: a named category below the family\'s top 7 gets its own muted colour, not the rest-grey', () => {
     const people = (i: number) => (i === 8 ? [part(1, 0, 0, null), part(2, 500, 1, null)] : [part(1, 1_000 * (9 - i), 1, null), part(2, 0, 0, null)]);
     const many: SpendingOverview = { ...VIEW, categories: Array.from({ length: 9 }, (_, i) => cat(`c${i}`, null, 1_000 * (9 - i), 1, null, people(i))) };
-    const [row] = rowsFor(many, 2, P, { ...PREFS, split: false }, UAH_FMT);
+    const [row] = rowsFor(many, 2, P, { ...PREFS, split: 'together' as const }, UAH_FMT);
     expect(row).toMatchObject({ key: 'c8', color: 'var(--category-other)' });
     expect(row!.color).not.toBe('var(--border-strong)');
   });
@@ -318,10 +346,15 @@ describe('texts under the ring', () => {
 
 describe('parsePrefs', () => {
   it('defaults for nothing or garbage; each field on its own; currencies are no longer the block\'s', () => {
-    expect(parsePrefs(null)).toEqual({ split: true, mark: true });
-    expect(parsePrefs('{oops')).toEqual({ split: true, mark: true });
-    expect(parsePrefs('[true]')).toEqual({ split: true, mark: true });
-    expect(parsePrefs('{"mark":false,"usd":true,"split":false}')).toEqual({ split: false, mark: false });
+    expect(parsePrefs(null)).toEqual({ split: 'people', mark: true });
+    expect(parsePrefs('{oops')).toEqual({ split: 'people', mark: true });
+    expect(parsePrefs('[true]')).toEqual({ split: 'people', mark: true });
+    expect(parsePrefs('{"mark":false,"usd":true,"split":"banks"}')).toEqual({ split: 'banks', mark: false });
+    expect(parsePrefs('{"split":"sideways"}')).toEqual({ split: 'people', mark: true });
+  });
+  it('the former «who spent how much» switch carries over: on → by people, off → together', () => {
+    expect(parsePrefs('{"split":true,"mark":false}')).toEqual({ split: 'people', mark: false });
+    expect(parsePrefs('{"split":false,"mark":true}')).toEqual({ split: 'together', mark: true });
   });
 });
 
@@ -333,14 +366,14 @@ describe('useSpendingPrefsStore', () => {
     setActivePinia(createPinia());
     const { useSpendingPrefsStore } = await import('@/features/spending-summary/store/useSpendingPrefsStore.ts');
     const s = useSpendingPrefsStore();
-    expect(s.prefs).toEqual({ split: true, mark: true });
-    s.set('split', false);
-    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: false, mark: true });
+    expect(s.prefs).toEqual({ split: 'people', mark: true });
+    s.set('split', 'banks');
+    expect(JSON.parse(mem.get('spending.view')!)).toEqual({ split: 'banks', mark: true });
 
     vi.stubGlobal('localStorage', { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); } });
     setActivePinia(createPinia());
     const s2 = useSpendingPrefsStore();
-    expect(s2.prefs.split).toBe(true);
+    expect(s2.prefs.split).toBe('people');
     expect(() => s2.set('mark', false)).not.toThrow();
     expect(s2.prefs.mark).toBe(false);
     vi.unstubAllGlobals();

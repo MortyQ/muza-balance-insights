@@ -36,3 +36,13 @@ export interface UseAnalyticsReturn {
   top: () => void;
   all: () => void;
 }
+
+/** How «Income and spending» draws spending (spec desktop-spending-split). */
+export type FlowSplit = 'together' | 'banks';
+
+/** A bank as the chart draws it. */
+export interface FlowBank {
+  provider: string;
+  name: string;
+  color: string;
+}

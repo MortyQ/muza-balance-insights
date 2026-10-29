@@ -13,6 +13,32 @@ English interface.
   their IBAN, and card payments at well-known chains (supermarkets, transport, pharmacies and others) get their
   category from the merchant's name, since the bank does not state one.
 
+### Home
+
+- **Look at one bank, or a few.** With cards in more than one bank, the filters at the top get a «Banks» button showing
+  your banks' marks; it opens a list with a switch per bank. All are on at first, so every screen shows your banks
+  together; turn some off to see only the others — balances, spending, income, analytics, regular payments and planning
+  all follow. At least one bank stays on, and the app remembers your choice. A transfer between your own cards in two
+  banks never counts as spending, so the banks shown one by one add up to all of them together.
+- **See which bank you pay with.** A category's screen and the income screen now split the amount by bank, the way
+  they already split it by person: a bar per bank with its amount, the number of operations and their average. It
+  shows the banks you have on in the filters, and only when there are at least two.
+- **Spending in your banks' colours.** Each bank now has a colour of its own. In «Spending» the bars menu has «Split
+  the bars»: «Together», «By people» or «By banks» — by banks, each category's bar shows how much went through each
+  bank. The «Income and spending» chart in «Analytics» gets a «Together / By banks» switch that stacks spending by bank.
+  Both need at least two banks on in the filters, and the app remembers your choice.
+- **«Month pace» by banks.** With two or more banks on in the filters, the gear on «Month pace» offers «Together» or «By
+  banks»: by banks, the month's spending so far is drawn in each bank's colour, stacked up to the total, with a legend
+  of the banks and their amounts under the chart; pointing at a day shows each bank's part. «Together» is the default,
+  and the app remembers your choice.
+- **Account cards look like your real cards.** In the open balance row each account is drawn as its bank's card:
+  Monobank's black, white, iron, platinum or children's card, PrivatBank's blue card, A-Bank's green card and
+  Slovenská sporiteľňa's blue card, each with a chip and a contactless mark.
+
+### Fixes
+
+- «Month pace» no longer turns grey with an empty tooltip after you come back to «General» from another screen.
+
 ## 0.1.12 — 2026-10-27
 
 ### Banks

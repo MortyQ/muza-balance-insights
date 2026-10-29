@@ -144,9 +144,13 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   screen under it scrolls, so pages use `min-h-full`, not `min-h-screen`): an empty drag strip — the logo and name are in
   the app navigation sidebar's header (`app/assets/logo.svg`), settings in its footer and on CmdOrCtrl+,. The menu object
   stays (shortcuts) and is not shown on Windows/Linux. Home: `widgets/global-filters` (`GlobalFilters`) — the
-  filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`) and the sync status. It sits
+  filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`, `BankFilter`) and the sync status. It sits
   outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
-  so it never scrolls and the scroll bar starts under it. Month and currency on the left, the sync status and «Upload statement» (`QuickUploadButtonFeature`; the default layout holds `QuickUploadFeature`, the drop zone and the upload sheet — `VSheet`, one card per account of up to 12 files, spec `desktop-statement-upload`) on the right; the person switch is buttons centred
+  so it never scrolls and the scroll bar starts under it. Month, currency and banks on the left (`BankFilter`, the
+  widget's own component — it shows `entities/bank`'s marks — a `VPopover` like the currency's: the marks of the banks on
+  (at most `BANK_MARKS_MAX`) and `bankFilterText` («All banks» / «2 of 4») in its `trigger` slot and text, a `VSwitch` row
+  per bank with imported, enabled accounts, the last one on disabled with `home.filters.banksLocked`; only with two or more; the choice is the participant store's `selectBanks` / `selectedProviders`,
+  `localStorage` `balance.banks`; spec `desktop-bank-filter`), the sync status and «Upload statement» (`QuickUploadButtonFeature`; the default layout holds `QuickUploadFeature`, the drop zone and the upload sheet — `VSheet`, one card per account of up to 12 files, spec `desktop-statement-upload`) on the right; the person switch is buttons centred
   in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
   `ResizeObserver` on the row, the month with the currency, the sync status and a hidden copy of the buttons; `fitsCenter`), otherwise a
   `VSelect` before the month (`ParticipantFilter` `mode`).
@@ -228,7 +232,7 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   layout's slot (MasterLayout's `RouterView` slot), not a `RouterView` inside the layout: a leaving layout keeps its old
   screen for the fade. A layout change fades the shell; a screen change inside one layout fades only the screen (each
   layout's `<Transition name="swap" mode="out-in">`), so filters and menu stay. Another path in the default layout glides its scroll area to the top (`useScrollTop`; no motion under `prefers-reduced-motion`). A default-layout screen without its own
-  menu item names the item to keep current with `meta.navParent` (the category and income screens → `home`). `MasterLayout` keeps the screens in `KEPT_ALIVE` (`HomePage`) alive while another screen of their layout is open (back from a category, home is there at once, reloading quietly). Pages and layouts have one root element
+  menu item names the item to keep current with `meta.navParent` (the category and income screens → `home`). No screen is kept alive (no `KeepAlive`: a chart redrawn in a detached screen lost its colours); coming back, a screen shows the read cache's answers at once. Pages and layouts have one root element
   (`tests/pages.test.ts`); layouts and the menu — `tests/renderer/layouts.test.ts`. A new data screen = a page + a route
   with `meta.nav`; the guard opens every default-layout route once home is the start (`startGuard`).
 - The renderer settings tests: `tests/renderer/settings.test.ts`, the header layout — `tests/renderer/app-header.test.ts`.

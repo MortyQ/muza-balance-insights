@@ -42,8 +42,12 @@ vi.mock('@/features/balances/composables/useMonthPace.ts', async () => {
   const { moneyFormat } = await import('@/entities/currency-display');
   return {
     useMonthPace: () => ({
-      view: computed(() => ({ days: ['1', '2'], spent: [10_00, 30_00], usual: [8_00, 16_00], last: 1, running: false, spentTotal: 30_00, usualByNow: 16_00, perDay: null })),
+      view: computed(() => ({ days: ['1', '2'], spent: [10_00, 30_00], usual: [8_00, 16_00], last: 1, running: false, spentTotal: 30_00, usualByNow: 16_00, perDay: null, banks: [] })),
       fmt: computed(() => moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } })),
+      offered: computed(() => false),
+      split: ref('together'),
+      setSplit: () => undefined,
+      banks: computed(() => null),
     }),
   };
 });

@@ -117,11 +117,41 @@ export interface PaceView {
   usualByNow: number | null;
   /** «Available per day»: the current month only. */
   perDay: number | null;
+  /** Each bank's spending added up by day, the analytics answer's order; null on the same days as `spent`. */
+  banks: Array<{ provider: string; spent: Array<number | null> }>;
+}
+
+/** «Month pace» split (spec desktop-spending-split): one line, or a stacked area per bank. */
+export type PaceSplit = 'together' | 'banks';
+
+/** A bank the pace is drawn by: its name and colour from `entities/bank`. */
+export interface PaceBank {
+  provider: string;
+  name: string;
+  color: string;
+}
+
+/** One item of the pace legend by banks: the bank and its spending by the last day with data. */
+export interface PaceLegendItem extends PaceBank {
+  /** The swatch's CSS colour: the bank's colour as strong as its area. */
+  swatch: string;
+  amount: number;
+}
+
+export interface UsePaceSplitReturn {
+  split: Readonly<Ref<PaceSplit>>;
+  setSplit: (s: PaceSplit) => void;
 }
 
 export interface UseMonthPaceReturn {
   view: ComputedRef<PaceView | null>;
   fmt: ComputedRef<MoneyFormat>;
+  /** Two or more banks on: the menu offers «By banks». */
+  offered: ComputedRef<boolean>;
+  split: Readonly<Ref<PaceSplit>>;
+  setSplit: (s: PaceSplit) => void;
+  /** The banks to draw by; null — together (not chosen or not offered). */
+  banks: ComputedRef<PaceBank[] | null>;
 }
 
 /**

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia';
+import { computed } from 'vue';
+import { useParticipantStore } from '@/entities/participant';
 import { VCard } from '@/shared/ui';
 import SpendingBody from './components/SpendingBody.vue';
 import SpendingHeader from './components/SpendingHeader.vue';
@@ -17,6 +19,8 @@ const base = useSpending();
 const { scope, state, view, periodNote, importing, family } = base;
 const prefsStore = useSpendingPrefsStore();
 const { prefs } = storeToRefs(prefsStore);
+const participant = useParticipantStore();
+const banks = computed(() => participant.shown.length > 1);
 const { subtitle, hasData, empty, leftOut, summary, categories, people, insights, onPick } = useSpendingView(base, prefs);
 </script>
 
@@ -30,7 +34,7 @@ const { subtitle, hasData, empty, leftOut, summary, categories, people, insights
     </VCard>
     <VCard padding="md" class="col-span-full @[79rem]:col-span-9 @[79rem]:row-span-2" data-test="spending-tile">
       <div class="@container flex flex-col gap-4">
-        <SpendingHeader v-model:scope="scope" :subtitle :prefs :family @set="prefsStore.set" />
+        <SpendingHeader v-model:scope="scope" :subtitle :prefs :family :banks @set="prefsStore.set" />
         <SpendingNotices
           :failed="state.status === 'error'"
           :note="periodNote"

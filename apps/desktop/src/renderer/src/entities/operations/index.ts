@@ -1,11 +1,12 @@
 export { MIN_BAR, PERIOD_BLOCKS, SORTS } from './constants.ts';
-export { besidePointer, CHART_TOOLTIP, changeChip, dayMonth, daysChartOption, dayPart, monthIn, monthNo, monthOf, monthsChartOption, monthsView, nameKey, periodTitle, SOFT_BAR, pct, peopleBars, searchText, shareItems, weekdayShort, weekdaysChartOption, whenTotals, whenView } from './utils.ts';
+export { besidePointer, CHART_TOOLTIP, changeChip, dayMonth, daysChartOption, dayPart, monthIn, monthNo, monthOf, monthsChartOption, monthsView, nameKey, partBars, periodTitle, SOFT_BAR, pct, peopleBars, searchText, shareItems, weekdayShort, weekdaysChartOption, whenTotals, whenView } from './utils.ts';
 export type { WhenParts } from './utils.ts';
-export type { BarView, DayPartView, LineRowView, MarkView, Money, MonthsView, PersonRef, PersonView, ShareItemView, SortKey, StatView, SummaryView, WhenLine, WhenView } from './types.ts';
+export type { BarView, DayPartView, LineRowView, MarkView, Money, MonthsView, PartView, PersonRef, PersonView, ShareItemView, SortKey, StatView, SummaryView, WhenLine, WhenView } from './types.ts';
 export { default as DetailSkeleton } from './components/DetailSkeleton.vue';
 export { default as DetailSummary } from './components/DetailSummary.vue';
 export { default as MonthsChart } from './components/MonthsChart.vue';
 export { default as OperationList } from './components/OperationList.vue';
+export { default as PartBars } from './components/PartBars.vue';
 export { default as PeopleBars } from './components/PeopleBars.vue';
 export { default as ShareList } from './components/ShareList.vue';
 export { default as WhenCharts } from './components/WhenCharts.vue';

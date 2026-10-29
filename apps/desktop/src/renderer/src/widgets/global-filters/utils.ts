@@ -118,3 +118,8 @@ export function freshnessGroups(rows: ReadonlyArray<FreshnessRow>): FreshnessGro
 
 /** The day a file connection's next statement should start: the day after its data ends; null — none yet. */
 export const uploadFrom = (r: Readonly<FreshnessRow>): string | null => (r.until === null ? null : shiftDate(r.until, 1));
+
+/** The bank filter's text (spec desktop-bank-filter): «All banks» while every offered bank is on, else «2 of 4». */
+export function bankFilterText(shown: number, offered: number): string {
+  return shown >= offered ? t('home.filters.banksAll') : t('home.filters.banksSome', { on: shown, all: offered });
+}

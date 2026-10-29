@@ -75,6 +75,16 @@
   без `participantId` — вся семья, `family` исключается как internal (комиссия остаётся тратой); с `participantId` —
   только счета участника, `family` — трата «семье» / доход с источником `family`. С одним участником `family` не
   возникает и цифры прежние. В отчёте recategorize `family` появляется, только если такие строки есть.
+- **A bank view** (spec `core-bank-view`, `Filters.providers` in `read/filters.ts`; `BalanceFilters` in
+  `read/status.ts`): a non-empty list of providers, each once (`isProviderList`), narrows every statistic to those
+  banks' enabled accounts, next to `participantId`; absent — every bank, unchanged (the MCP tools pass none). Only the
+  accounts change, never a rule: an internal pair stays out even when its other half is in a hidden bank, a family pair
+  follows the participant view, the `transfer_fee` line rides on its debit row (so it shows with the debit's bank) —
+  hence the views of disjoint banks add up to the whole. `periodInfo` applies the live rule among the chosen banks
+  (`liveAccountIdsSql(providers)` in `people/accounts.ts`; completeness, covered days, pending holds); `getSyncStatus`
+  takes no filter. `spendingGrid(…, byProvider)` splits each cell by the account's bank (`SpendingCell.provider`, the
+  fee line in the sending bank); the split cells add up to the unsplit one. Tests: `tests/read/bank-view.test.ts`, the
+  bank-view block of `tests/read/data-freshness.test.ts`.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
   в `packages/core/src/read/spending.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).

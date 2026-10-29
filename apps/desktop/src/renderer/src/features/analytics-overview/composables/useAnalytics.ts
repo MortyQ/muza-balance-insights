@@ -21,11 +21,11 @@ export function useAnalytics(): UseAnalyticsReturn {
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return { from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}) };
+    return { from: range.value.from, to: range.value.to, ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchAnalyticsOverview(query()),
-    [range, participantId],
+    [range, participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekAnalyticsOverview(query()) },
   );
 

@@ -18,3 +18,10 @@ export const OPEN_STAGGER = 45;
 export const CLOSE_STAGGER = 20;
 /** The most people the family card names in its shares line; the rest go into «+N». */
 export const SHARES_NAMED = 3;
+/** Where «Month pace»'s «Together / By banks» choice is remembered on this computer. */
+export const PACE_SPLIT_KEY = 'home.pace.split';
+/**
+ * How strong a bank's area of «Month pace» by banks is (0–1); its legend swatch is the bank's colour at the same strength,
+ * so the swatch looks like the area.
+ */
+export const PACE_BANK_FILL = 0.5;

@@ -1,9 +1,9 @@
 import type { DetailPeriod, IncomeLineView, IncomeOverview } from '@contract/api.ts';
-import { accountName } from '@/entities/bank';
+import { accountName, bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import {
-  changeChip, dayMonth, monthIn, monthOf, monthsView as monthBars, nameKey, PERIOD_BLOCKS, periodTitle, pct, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
-  type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView,
+  changeChip, dayMonth, monthIn, monthOf, monthsView as monthBars, nameKey, partBars, PERIOD_BLOCKS, periodTitle, pct, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
+  type LineRowView, type MarkView, type MonthsView, type PartView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView,
   type WhenView,
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
@@ -88,6 +88,16 @@ export function monthsView(v: Readonly<IncomeOverview>, fmt: MoneyFormat): Month
 /** «Who received» (the family view): each person with income, on the largest one's scale. */
 export function peopleView(v: Readonly<IncomeOverview>, people: ReadonlyArray<PersonRef>, fmt: MoneyFormat): PersonView[] {
   return peopleBars(v.people.map((p) => ({ participantId: p.participantId, value: p.total, count: p.lines })), people, fmt);
+}
+
+/** «By bank»: each bank with income in the view, on the largest one's scale, in the bank's colour (spec desktop-bank-breakdown). */
+const bankLook = (provider: string) => {
+  const bank = bankOf(provider);
+  return { name: bank.name, color: bank.color };
+};
+
+export function banksView(v: Readonly<IncomeOverview>, fmt: MoneyFormat): PartView[] {
+  return partBars(v.banks.map((b) => ({ key: b.provider, ...bankLook(b.provider), value: b.total, count: b.lines })), fmt);
 }
 
 /** «Where from»: each source with income, its share of the period. */

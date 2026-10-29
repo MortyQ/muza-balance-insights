@@ -1,3 +1,3 @@
 import type { BankLook } from '../types.ts';
 
-export const look: BankLook = { monogram: 'P', monogramClass: 'bg-success text-success-foreground' };
+export const look: BankLook = { monogram: 'P', monogramClass: 'bg-success text-success-foreground', color: 'var(--series-green)' };

@@ -10,6 +10,9 @@ export const MAX_PARTICIPANT_BUTTONS = 4;
 /** Remembered switch position: a convenience of this computer only, never data. */
 export const SELECTED_KEY = 'balance.participant';
 
+/** Remembered bank filter (a JSON array of provider ids): a convenience of this computer only, never data. */
+export const BANKS_KEY = 'balance.banks';
+
 /** Dictionary keys of the palette's colour names: the swatch's accessible name. */
 export const COLOR_NAMES = {
   blue: 'entities.color.blue',

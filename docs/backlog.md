@@ -211,3 +211,35 @@
 - **«People and banks» on a live system**: with two people and several banks each (a token and a file connection),
   check the bank headings, «Add connection» on a person (the connection lands on them, no new person), «Add person»,
   removing a person's last connection (the person goes), and «Download history» from home scrolling to the download.
+
+## Check on a live system: the bank filter (`openspec/changes/archive/2026-10-28-bank-view-filter`)
+
+- **Bank views add up**: with real Monobank, PrivatBank and A-Bank data, the three single-bank views add up to the
+  all-banks view on home («Spending», «Balance», the month grid) and in «Analytics», for the family and for one person.
+- **A statement-only bank reads complete up to its last day**: choose only a bank with uploaded statements; the month's
+  completeness and the per-day figures stop at that bank's last statement day, while the header's «Data until» stays
+  global.
+- **An own transfer between two banks**: it is spending in neither bank's view, and its fee shows under «Transfer
+  fees» only in the view of the bank it was sent from.
+- **The control by eye** (redone as one popover in `desktop-bank-looks`): the «Banks» button with the marks at three
+  widths and both themes, the person buttons still falling back to the select when the row gets narrow; the panel's
+  switches; the last bank on cannot be turned off and says why.
+- **«By bank»** (change `bank-breakdown`): with real data from two or three banks, the bars on a category's screen and
+  on the income screen add up to the screen's total, follow the bank filter and the person, and a transfer fee shows
+  under the bank it was sent from. The card at three widths (the right column's last card stretching), both themes.
+- **Split by banks** (change `openspec/changes/archive/2026-10-29-bank-split`): with real data from two or three banks, «Spending» «By banks» — each bar's
+  bank segments add up to the category, the hover names the bank and the amount; the «Income and spending» chart «By
+  banks» — the stacked areas' top equals the «Together» spending line, for a month (running) and a range. The bank
+  colours in both themes (Monobank's foreground colour on the dark theme), PrivatBank's green beside the income line,
+  and an earlier «Who spent how much» choice carried over after the update.
+
+## Check on a live system: bank looks (`openspec/changes/desktop-bank-looks`)
+
+- **Card looks by eye**: each bank's card and each Monobank type (black, white, iron, platinum, children's yellow, a jar)
+  in the open row, in both themes: brand colours close to the real cards, text readable on every card (the light ones
+  especially), the people dots, a dimmed card without data, hover and press motion. The colours were picked from public
+  photos, not brand guides.
+- **«Month pace» by banks**: with real data from two or three banks, the stacked areas' top meets the month's line every
+  day, the tooltip's bank parts add up to «Spent», the gear hides with one bank on and the choice survives a restart.
+- **No grey charts**: leave «General» for another screen while auto-sync runs, come back — «Month pace» keeps its
+  colours and its tooltip has text.

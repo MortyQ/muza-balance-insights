@@ -1,6 +1,8 @@
 // Balances and sync status — the phase 5 getBalances / getSyncStatus tools. No card numbers, IBANs or jar titles:
 // accounts are identified by id and a "type/CUR" label.
-import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL, accountEnabledSql } from '../people/accounts.ts';
+import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL, accountEnabledSql, providerAccountIdsSql } from '../people/accounts.ts';
+import type { ProviderId } from '../providers/types.ts';
+import { SummaryError, isProviderList } from './filters.ts';
 import type { Db } from '../storage/db.ts';
 import { accountLabels, dateIn, toKyivDate, toKyivDateTime } from '../shared/format.ts';
 import { RESYNC_OVERLAP_SEC, TIMEZONE } from '../shared/constants.ts';
@@ -23,19 +25,34 @@ type AccountRow = {
   lastSyncAt: number | null;
 };
 
+/** Whose and which banks' accounts a balance read covers: absent — the whole family, every bank. */
+export type BalanceFilters = { participantId?: number; providers?: readonly ProviderId[] };
+
 /**
- * The enabled accounts (accounts.ts), or only those of one participant. Labels are made over all of them, enabled or
- * not, so a label does not change when another account is toggled.
+ * The enabled accounts (accounts.ts), or only those of one participant and / or some banks. Labels are made over all
+ * of them, enabled or not, so a label does not change when another account is toggled.
  */
-async function loadAccounts(db: Db, participantId?: number): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
+async function loadAccounts(db: Db, f: BalanceFilters = {}): Promise<{ rows: AccountRow[]; labels: Map<string, string> }> {
+  if (f.providers !== undefined && !isProviderList(f.providers)) throw new SummaryError('providers: a non-empty list of known banks, each once');
+  const where: string[] = [];
+  const args: Array<string | number> = [];
+  if (f.participantId !== undefined) {
+    where.push('a.connection_id IN (SELECT id FROM connections WHERE participant_id = ?)');
+    args.push(f.participantId);
+  }
+  if (f.providers !== undefined) {
+    const banks = providerAccountIdsSql(f.providers);
+    where.push(`a.id IN (${banks.sql})`);
+    args.push(...banks.args);
+  }
   const rs = await db.execute({
     sql: `SELECT a.id, a.kind, a.type, a.currency_code, a.balance, a.credit_limit, a.updated_at,
             s.account_id IS NOT NULL AS synced, s.oldest_synced_time, s.newest_synced_time, s.last_sync_at,
             ${accountEnabledSql('a')} AS enabled
      FROM accounts a LEFT JOIN sync_state s ON s.account_id = a.id
-     ${participantId === undefined ? '' : 'WHERE a.connection_id IN (SELECT id FROM connections WHERE participant_id = ?)'}
+     ${where.length === 0 ? '' : `WHERE ${where.join(' AND ')}`}
      ORDER BY a.kind = 'jar', a.currency_code, a.id`,
-    args: participantId === undefined ? [] : [participantId],
+    args,
   });
   const num = (v: unknown) => (v === null || v === undefined ? null : Number(v));
   const rows = rs.rows.map((r) => ({
@@ -81,10 +98,10 @@ export type Balances = {
 /**
  * The enabled accounts (same rule as the sync selection: the user's choice, else cards plus jars with a positive
  * balance or a sync history). Minor units.
- * With `participantId`: that participant's accounts only; without — the whole family.
+ * With `participantId`: that participant's accounts only; without — the whole family. With `providers`: those banks' only.
  */
-export async function getBalances(db: Db, opts: { participantId?: number } = {}): Promise<Balances> {
-  const { rows, labels } = await loadAccounts(db, opts.participantId);
+export async function getBalances(db: Db, opts: BalanceFilters = {}): Promise<Balances> {
+  const { rows, labels } = await loadAccounts(db, opts);
   const accounts = rows
     .map((r) => ({
       id: r.id,
@@ -124,8 +141,8 @@ export type BalancesAt = {
  * balance after the last operation before the end; when it is missing or ambiguous (two operations in that second) —
  * today's balance minus every operation from the end on. From the moment of the last fetch on — today's balance.
  */
-export async function balancesAt(db: Db, opts: { endSec: number; participantId?: number }): Promise<BalancesAt> {
-  const { rows, labels } = await loadAccounts(db, opts.participantId);
+export async function balancesAt(db: Db, opts: { endSec: number } & BalanceFilters): Promise<BalancesAt> {
+  const { rows, labels } = await loadAccounts(db, opts);
   const found = await balancesFromRows(db, rows, opts.endSec);
   const accounts: AccountBalanceAt[] = rows.map((r) => {
     const balance = opts.endSec > r.updatedAt ? r.balance : r.oldest === null || r.oldest > opts.endSec ? null : found.get(r.id)!;

@@ -20,12 +20,12 @@ export function useIncomeDetail(period: MaybeRefOrGetter<DetailPeriod>): UseInco
   // The same query for the request and for the kept answer.
   const query = () => {
     const id = participantId();
-    return { period: toValue(period), ...(id !== null ? { participantId: id } : {}) };
+    return { period: toValue(period), ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
   const { state } = useAsyncData(
     () => fetchIncomeOverview(query()),
     // The period by value: a page that rebuilds the same period does not reload.
-    [() => JSON.stringify(toValue(period)), participantId],
+    [() => JSON.stringify(toValue(period)), participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekIncomeOverview(query()) },
   );
 

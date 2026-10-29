@@ -8,7 +8,7 @@ import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
 import type { DetailPeriod, IncomeLineView, IncomeOverview, IncomeOverviewQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { lineRows, listTotal, monthsView, noneText, peopleView, sendersView, sourcesView, summaryView, whenView } from '@/features/income-detail/utils.ts';
+import { banksView, lineRows, listTotal, monthsView, noneText, peopleView, sendersView, sourcesView, summaryView, whenView } from '@/features/income-detail/utils.ts';
 import { incomeLink, periodRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
 
@@ -43,6 +43,7 @@ const VIEW: IncomeOverview = {
   ],
   thisMonth: '2026-10',
   people: [{ participantId: 1, total: 345_000, lines: 3 }, { participantId: 2, total: 15_000, lines: 1 }],
+  banks: [{ provider: 'monobank', total: 360_000, lines: 4 }],
   sources: [{ source: 'other_bank', total: 300_000, lines: 1 }, { source: 'transfer', total: 40_000, lines: 1 }, { source: 'named_sender', total: 20_000, lines: 2 }],
   senders: [{ name: 'Vigadana Firma', total: 300_000, lines: 1 }, { name: 'Imaginary Client', total: 40_000, lines: 1 }, { name: 'Vigadana Osoba', total: 20_000, lines: 2 }],
   lines: LINES,
@@ -71,6 +72,14 @@ describe('income screen helpers', () => {
     const m = monthsView(VIEW, FMT)!;
     expect(m.bars.slice(-3).map((b) => [b.height, b.strong])).toEqual([[77.8, false], [83.3, false], [100, true]]);
     expect(m.caption).toBe(`в среднем ${uah(313_333)} в месяц · Сентябрь: на ${uah(46_667)} больше среднего`);
+  });
+
+  it('by bank: each bank with income, the larger first, its lines and average', () => {
+    const v: IncomeOverview = { ...VIEW, banks: [{ provider: 'monobank', total: 300_000, lines: 2 }, { provider: 'abank', total: 60_000, lines: 2 }] };
+    expect(banksView(v, FMT).map((b) => [b.name, b.width, b.caption])).toEqual([
+      ['Monobank', 100, `2 оп. · ср. ${uah(150_000)}`],
+      ['A-Bank', 20, `2 оп. · ср. ${uah(30_000)}`],
+    ]);
   });
 
   it('who, where from, from whom, when', () => {
@@ -234,6 +243,15 @@ describe('income screen mounted', () => {
     await flushPromises();
     expect(getIncomeOverview.mock.calls.at(-1)?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' }, participantId: 2 });
     expect(w.text()).not.toContain('Кто получал');
+  });
+
+  it('«By bank» with two banks; none with one', async () => {
+    let w = await mountScreen();
+    expect(w.text()).not.toContain('По банкам');
+    current = { ...VIEW, banks: [{ provider: 'monobank', total: 300_000, lines: 2 }, { provider: 'abank', total: 60_000, lines: 2 }] };
+    w = await mountScreen();
+    expect(w.text()).toContain('По банкам');
+    expect(w.text()).toContain('A-Bank');
   });
 
   it('the month panel\'s «Income» row opens the income screen; «Spent» stays a plain row', async () => {

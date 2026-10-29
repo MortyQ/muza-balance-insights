@@ -1,4 +1,5 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
+import { useParticipantStore } from '@/entities/participant';
 import { categoryLink } from '@/shared/config';
 import { t } from '@/shared/lib';
 import type { SpendingPrefs, UseCategoryRowsReturn, UseSpendingReturn } from '../types.ts';
@@ -13,7 +14,10 @@ export function useCategoryRows(
   prefs: Readonly<Ref<SpendingPrefs>>,
 ): UseCategoryRowsReturn {
   const { view, people, scope, fmt } = base;
-  const rows = computed(() => (view.value ? rowsFor(view.value, blockPick.value, people.value, prefs.value, fmt.value) : []));
+  const participant = useParticipantStore();
+  const rows = computed(() =>
+    view.value ? rowsFor(view.value, blockPick.value, people.value, prefs.value, fmt.value, participant.shown.length > 1) : [],
+  );
   const categories = computed(() => ({
     rows: rows.value.map((r) => ({ ...r, to: r.categoryId ? categoryLink(r.categoryId, scope.value) : null })),
     none: hasData.value && rows.value.length === 0 ? t('home.spending.noneBy', { name: who.value }) : '',

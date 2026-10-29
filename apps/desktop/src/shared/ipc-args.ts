@@ -14,6 +14,12 @@ import { UPLOAD_FILES_MAX } from './upload.ts';
 import { THEME_PREFS } from './theme.ts';
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const id = z.number().int().positive();
+// A bank view: core (read/filters.ts, isProviderList) checks the same again.
+export const providers = z
+  .array(z.enum(PROVIDER_IDS))
+  .min(1)
+  .max(PROVIDER_IDS.length)
+  .refine((v) => new Set(v).size === v.length);
 // A reserve of «Available per day»: core (reserves.ts) checks the same again.
 const reserve = z.strictObject({
   name: z.string().refine((v) => v.trim().length > 0 && [...v.trim()].length <= RESERVE_NAME_MAX),
@@ -84,15 +90,15 @@ export const ARG_SCHEMAS = {
   // A real YYYY-MM-DD date; the importer also checks it is within the range the screen offers (isImportFrom).
   startImport: z.tuple([z.string().refine(isIsoDate)]),
   cancelImport: z.tuple([]),
-  getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
-  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional() })]),
-  getNowOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), providers: providers.optional() })]),
+  getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
+  getNowOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getCategoryOverview: z.tuple([
-    z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional() }),
+    z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() }),
   ]),
-  getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional() })]),
-  getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
-  getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional() })]),
+  getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional(), providers: providers.optional() })]),
+  getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
+  getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   addReserve: z.tuple([reserve]),
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),
@@ -100,7 +106,7 @@ export const ARG_SCHEMAS = {
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z
-      .strictObject({ from: month, to: month, participantId: id.optional() })
+      .strictObject({ from: month, to: month, participantId: id.optional(), providers: providers.optional() })
       .refine((q) => q.from <= q.to && monthSpan(q.from, q.to) <= ANALYTICS_MAX_MONTHS),
   ]),
   getSyncStatus: z.tuple([]),

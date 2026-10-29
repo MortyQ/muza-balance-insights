@@ -1,4 +1,5 @@
-import type { ConnectionView, PersonView, TokenStatus } from '@contract/api.ts';
+import { PROVIDERS } from '@mono/core/providers/info';
+import type { ConnectionView, PersonView, ProviderId, TokenStatus } from '@contract/api.ts';
 import { COLOR_KEYS, type ColorKey } from '@contract/colors.ts';
 import { syncedWhen, t } from '@/shared/lib';
 import type { SegmentOption } from '@/shared/ui';
@@ -102,4 +103,19 @@ export function filterOptions(people: ReadonlyArray<Readonly<PersonView>>, sync?
     { label: t('entities.participant.family'), value: FAMILY, colors: people.map((p) => colorVar(p.color)) },
     ...people.map((p) => ({ label: p.label, value: p.id, colors: [colorVar(p.color)], ...(sync ? syncHints(p, sync) : {}) })),
   ];
+}
+
+/**
+ * The banks the bank filter offers (spec desktop-bank-filter): those with at least one imported, enabled account, in the
+ * registry's order.
+ */
+export function offeredBanks(connections: ReadonlyArray<Readonly<ConnectionView>>): ProviderId[] {
+  const live = new Set(connections.filter((c) => c.enabledAccounts > 0 && c.coveredFrom !== null).map((c) => c.provider));
+  return (Object.keys(PROVIDERS) as ProviderId[]).filter((p) => live.has(p));
+}
+
+/** The banks the screens show: the remembered choice still offered, else (none, or never chosen) every offered bank. */
+export function shownBanks(chosen: ReadonlyArray<string> | null, offered: ReadonlyArray<ProviderId>): ProviderId[] {
+  const kept = offered.filter((p) => chosen?.includes(p));
+  return kept.length > 0 ? kept : [...offered];
 }

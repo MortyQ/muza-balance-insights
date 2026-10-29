@@ -230,9 +230,12 @@
     --nav-active: oklch(30% 0.030 275);
     --nav-border: oklch(28% 0.025 275);
 
-    /* ─── Balance card (entities/account): always-dark card, same values in both themes ─── */
+    /* ─── Balance card (entities/account): the card's own colours, same values in both themes ─── */
     --card-up:   oklch(76% 0.2 145);
     --card-down: oklch(72% 0.19 25);
+    /* On a light bank card (Monobank white, platinum, children's). */
+    --card-up-ink:   oklch(50% 0.16 145);
+    --card-down-ink: oklch(53% 0.2 25);
 
     --foreground:           oklch(16% 0.015 280);
     --foreground-secondary: oklch(38% 0.012 280);
@@ -348,9 +351,12 @@
     --nav-active: oklch(24% 0.015 262);
     --nav-border: oklch(26% 0.015 262);
 
-    /* ─── Balance card (entities/account): always-dark card, same values in both themes ─── */
+    /* ─── Balance card (entities/account): the card's own colours, same values in both themes ─── */
     --card-up:   oklch(76% 0.2 145);
     --card-down: oklch(72% 0.19 25);
+    /* On a light bank card (Monobank white, platinum, children's). */
+    --card-up-ink:   oklch(50% 0.16 145);
+    --card-down-ink: oklch(53% 0.2 25);
 
     --foreground:           oklch(94% 0.006 265);
     --foreground-secondary: oklch(80% 0.012 263);

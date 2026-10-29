@@ -4,7 +4,7 @@ import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
 import type { UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
-import { lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, spentLabel, summaryView, whenView } from '../utils.ts';
+import { banksView, lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, spentLabel, summaryView, whenView } from '../utils.ts';
 
 /** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
 export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<Ref<Scope>>): UseCategoryViewReturn {
@@ -14,7 +14,7 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const query = ref('');
   const sort = ref<SortKey>('date');
   // Another period, person or category is another list: the filter and the search start over.
-  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId], () => {
+  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId, participant.banksKey], () => {
     merchant.value = null;
     query.value = '';
   });
@@ -25,6 +25,7 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const none = computed(() => (view.value ? noneText(view.value) : ''));
   const months = computed(() => (view.value ? monthsView(view.value, fmt.value) : null));
   const whoSpent = computed(() => (view.value && family.value ? peopleView(view.value, people.value, fmt.value) : []));
+  const banks = computed(() => (view.value ? banksView(view.value, fmt.value) : []));
   const merchants = computed(() => (view.value ? merchantsView(view.value, merchant.value, fmt.value) : []));
   const moreMerchants = computed(() => (view.value ? moreMerchantsText(view.value) : ''));
   const list = computed(() =>
@@ -47,6 +48,6 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   }
 
   return {
-    summary, label, none, months, people: whoSpent, merchants, moreMerchants, when, rows: computed(() => list.value.rows), total, merchant, merchantName, query, sort, pickMerchant,
+    summary, label, none, months, people: whoSpent, banks, merchants, moreMerchants, when, rows: computed(() => list.value.rows), total, merchant, merchantName, query, sort, pickMerchant,
   };
 }

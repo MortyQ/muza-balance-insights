@@ -68,9 +68,12 @@ export interface PersonRowView {
   share: number | null;
 }
 
+/** How a category's bar is split (spec desktop-spending-split). */
+export type SpendingSplit = 'together' | 'people' | 'banks';
+
 /** The block's own menu choices (its gear). */
 export interface SpendingPrefs {
-  split: boolean;
+  split: SpendingSplit;
   mark: boolean;
 }
 

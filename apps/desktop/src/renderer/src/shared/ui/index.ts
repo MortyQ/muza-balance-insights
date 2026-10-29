@@ -15,6 +15,7 @@ export { default as VInput } from "./components/inputs/VInput.vue";
 export { default as VSegmentedControl, type SegmentOption } from "./components/inputs/VSegmentedControl.vue";
 export { default as VSelect, type VSelectOption } from "./components/inputs/VSelect.vue";
 export { default as VSwitch } from "./components/inputs/VSwitch.vue";
+export { default as VToggleGroup, type ToggleOption } from "./components/inputs/VToggleGroup.vue";
 export { default as VDatepicker } from "./components/inputs/VDatepicker.vue";
 export type { IsoDateRange } from "./components/inputs/calendarDate.ts";
 export { default as VMonthPicker } from "./components/inputs/VMonthPicker.vue";

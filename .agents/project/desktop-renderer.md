@@ -26,8 +26,16 @@
   its amount in a pill while the month runs, amounts on a faint grid (`money` — the home's `MoneyFormat`); figures:
   spent, usual by the same day (a past month: usual in a month), per day. No pace for a month without data; no usual
   line or figure with fewer than 3 whole months, a note instead.
+  Split by banks (spec `desktop-spending-split`): `PaceSettings` (`VPopover` `lucide:settings`, «Together / By banks»)
+  in the panel's header while two or more banks are on; the choice is `composables/usePaceSplit.ts` (`localStorage`
+  `home.pace.split`, default together). `paceView` adds each bank's running sum from `spendingByBank` (`PaceView.banks`),
+  `paceBanks(view, offered, split)` gives the banks to draw (name and colour from `entities/bank`) or null, and
+  `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own; the
+  areas have no edges and `PACE_BANK_FILL` strength, which the legend's swatches repeat);
+  `paceTooltip` adds each bank's part after «Spent»; `PaceLegend` under the chart lists the banks drawn (`paceLegend`:
+  colour, name, amount by the last day). No new request.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
-  and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
+  and `flow`; an account slide carries its bank (`name.provider`) and card type (`variant`, `name.type`).
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
   `i × CARD_STEP` with `snap-start`, `[scrollbar-width:none]` on every OS, the edge with more cards fades
   (`mask-image`, `--fade-l` / `--fade-r`). `composables/useRowScroll.ts` reads the scroller into `rowView(scrollLeft,
@@ -60,16 +68,21 @@
   muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
   figure apart: `count`, `fx`, `negative`, `own`, `reserved`, `people`, `freeShare`, `net { label, amount, value }`);
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
-  `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
-  dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
-  + `netText`, `accents`, `dim`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
+  `Partial<Record<ProviderId, Component>>`, else `NeutralCard` on `bg-nav`); each skin draws the bank's physical card
+  (spec `desktop-balance-cards`) over `components/bank/CardShell.vue` — the shared body: wordmark slot `brand`, shapes
+  slot `art`, the chip, `lucide:nfc`, a sheen, the people dots, the figures and `tone` (`dark | light`: text colours, the
+  net arrow in `--card-up` / `--card-down` or, on a light card, `--card-up-ink` / `--card-down-ink` of `theme.css`). Skins
+  are CSS only (gradients and shapes, fixed brand colours, no image file): `MonobankCard` by `variant` (black — also a
+  jar and any other type —, white, iron, platinum, yellow), `PrivatBankCard`, `ABankCard`, `SlspCard`. Wordmarks are
+  brand marks in the app's font, `aria-hidden`, never translated. They take `CardFigures` (`title`, `caption`, `amount`,
+  `approx`, `actual`, `bottom`, `net` + `netText`, `accents`, `dim`, `variant`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
   outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`
   (своих переключателей месяца у них нет). Выбирают его в `MonthFilter` (компонент сущности, как `ParticipantFilter`:
   `VMonthPicker` «Месяц», `max` — этот месяц, `min` — пропсом; при сдвиге `min` позже зажимает выбор заново).
   Виджет `widgets/global-filters` (`GlobalFilters`, pinned above the default layout's scroll area, `app/layouts/DefaultLayout.vue`; layout — root `CLAUDE.md`) — фильтры, которые читают все блоки:
-  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display`, `min` = the import's floor month
+  `ParticipantFilter` и `MonthFilter` (только при `syncStatus.hasData`), then `CurrencyToggle` of `entities/currency-display` and the widget's `BankFilter` (the bank choice lives in the participant store: `banks`, `shown`, `selectedProviders` — undefined while every bank is on —, `selectBanks`; every data feature passes `selectedProviders` as `providers` next to `participantId`), `min` = the import's floor month
   (`monthOf(importFloor(today))`, `src/shared/import-range.ts`), not the first data month: an older month gets the «no data
   yet» notice of `widgets/home-notices` (сущности друг друга не импортируют). `shared/ui/VMonthPicker` — свой (на reka-ui `MonthPicker` в `PopoverRoot`, muzakit такого не даёт):
   `v-model` `'YYYY-MM'`, `min`/`max`, сетка 3×4, месяцы вне диапазона `disabled`.
@@ -165,11 +178,12 @@
   colour itself.
 - **Shared parts of the detail screens** (`entities/operations`): what the category and income screens both show —
   `DetailSummary` (`SummaryHeader` + `SummaryFigure` + `StatGrid` of `StatCell`; `SummaryView`), `MonthsChart`,
-  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PeopleBars` (`PersonBar`), `ShareList` (`ShareItem`:
+  `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PartBars` (`PartBar`: a split card's rows, the mark is
+  the `mark` slot — the screens put `BankMark` there for «By bank»), `PeopleBars` (`PartBars` with `VAvatar`), `ShareList` (`ShareItem`:
   merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and order, rows —
   `OperationRow`, columns `OPERATION_COLS`; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
   block only shows what it is given and emits what was picked; loading stays in the feature's `api/`; pure helpers in `utils.ts` (`monthsView`,
-  `whenView` / `whenTotals` over a `value` accessor, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
+  `whenView` / `whenTotals` over a `value` accessor, `partBars`, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
   each other).
   Charts are ECharts through `VChart` of `shared/ui`: «Last 12 months» (`monthsChartOption`: bar heights in % of the
@@ -213,7 +227,7 @@
   ones sit folded in a `<details>` «Hidden (n)», each with «Restore». On home, under «Spending»,
   `RecurringTeaserFeature`: one card-wide link to the screen — the monthly total, the count and the mandatory part
   (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
-  IPC; quiet reloads on `syncStatus.version` and on returning to the kept-alive home, where marks may have changed).
+  IPC; quiet reloads on `syncStatus.version`; a mark is a write, so back on home its cached answer is stale and reloads quietly).
   Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the

@@ -15,7 +15,12 @@ export interface CardFigures {
   accents: ReadonlyArray<string>;
   /** No data at that date: dimmed. */
   dim: boolean;
+  /** The account's card type in its bank («black», «white» …): the skin's variant; null — a jar or none. */
+  variant: string | null;
 }
+
+/** A bank card's colours: dark (light text) or light (dark text). */
+export type CardTone = 'dark' | 'light';
 
 /**
  * The total of a view (the family, a person): each figure apart, so the card lays them out — the header band, the

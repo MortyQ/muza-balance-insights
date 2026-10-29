@@ -1,44 +1,28 @@
 <script setup lang="ts">
-import { VIcon } from '@/shared/ui';
-import type { BankCardProps } from '../../types.ts';
+import { computed } from 'vue';
+import type { BankCardProps, CardTone } from '../../types.ts';
+import CardShell from './CardShell.vue';
 
-const { title, caption, amount, approx, actual, bottom, net, netText, accents, dim } = defineProps<BankCardProps>();
+const { variant, ...figures } = defineProps<BankCardProps>();
 defineEmits<{ click: [] }>();
+
+// The bank's wordmark: a brand mark, never translated (like a logo).
+const WORDMARK = 'monobank';
+// Monobank's card by its type (spec desktop-balance-cards); a jar and any other type — the black card.
+const LOOKS: Record<string, { tone: CardTone; paint: string }> = {
+  black: { tone: 'dark', paint: 'bg-[linear-gradient(140deg,#2b2b30_0%,#0e0e10_55%,#1c1c20_100%)]' },
+  white: { tone: 'light', paint: 'bg-[linear-gradient(140deg,#ffffff_0%,#eef0f3_60%,#dfe2e8_100%)]' },
+  iron: { tone: 'dark', paint: 'bg-[linear-gradient(140deg,#62666d_0%,#3b3e43_55%,#50545a_100%)]' },
+  platinum: { tone: 'light', paint: 'bg-[linear-gradient(140deg,#eeeff1_0%,#c8cbd0_55%,#f3f4f6_100%)]' },
+  yellow: { tone: 'light', paint: 'bg-[linear-gradient(140deg,#ffe36e_0%,#f6c700_60%,#ffd84a_100%)]' },
+};
+const look = computed(() => LOOKS[variant ?? 'black'] ?? LOOKS.black!);
 </script>
 
 <template>
-  <button
-    type="button"
-    class="relative flex h-[252px] w-[400px] shrink-0 flex-col justify-between overflow-hidden rounded-[18px] bg-nav p-5 text-left text-white shadow-md
-           transition-[transform,box-shadow] duration-450 ease-[cubic-bezier(.34,1.8,.64,1)] hover:-translate-y-[3px] hover:shadow-lg
-           active:scale-[.97] active:duration-100 focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-border-focus
-           motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:active:scale-100"
-    :class="{ 'opacity-55': dim }"
-    @click="$emit('click')"
-  >
-    <span
-      v-for="(color, i) in accents"
-      :key="i"
-      class="absolute -top-7 right-[calc(-28px+var(--i)*34px)] size-24 rounded-full bg-(--accent) opacity-90"
-      :style="{ '--accent': color, '--i': i }"
-      aria-hidden="true"
-    />
-    <span class="relative flex items-center gap-2 text-base font-semibold">
-      <span class="grid size-6 place-items-center rounded-[7px] bg-[#141414] text-sm font-extrabold ring-1 ring-white/15" aria-hidden="true">m</span>
-      {{ title }}
-    </span>
-    <span class="relative flex flex-col gap-1">
-      <span class="text-sm text-white/65">{{ caption }}</span>
-      <span class="text-[30px] leading-none font-bold tracking-tight tabular-nums">{{ amount }}</span>
-      <span v-if="approx" class="text-sm text-white/65 tabular-nums">{{ approx }}</span>
-      <span v-if="actual" class="text-sm text-white/65 tabular-nums">{{ actual }}</span>
-    </span>
-    <span class="relative flex items-center justify-between text-sm text-white/70">
-      <span>{{ bottom }}</span>
-      <span v-if="net !== null" class="inline-flex items-center gap-1 tabular-nums">
-        <VIcon :icon="net < 0 ? 'lucide:arrow-down-right' : 'lucide:arrow-up-right'" :color="net < 0 ? 'var(--card-down)' : 'var(--card-up)'" />
-        <span class="font-bold text-white">{{ netText }}</span>
-      </span>
-    </span>
-  </button>
+  <CardShell v-bind="figures" :tone="look.tone" :class="look.paint" @click="$emit('click')">
+    <template #brand>
+      <span class="text-lg leading-none font-extrabold tracking-tight" data-test="card-wordmark">{{ WORDMARK }}</span>
+    </template>
+  </CardShell>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DetailPeriod } from '@contract/api.ts';
-import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { bankOf, BankMark } from '@/entities/bank';
+import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PartBars, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import SourceBars from './components/SourceBars.vue';
 import { useIncomeDetail } from './composables/useIncomeDetail.ts';
@@ -11,7 +12,7 @@ const { period } = defineProps<{ period: DetailPeriod }>();
 
 const base = useIncomeDetail(() => period);
 const { state, view } = base;
-const { summary, label, none, months, people, sources, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
+const { summary, label, none, months, people, banks, sources, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
 </script>
 
 <template>
@@ -27,16 +28,21 @@ const { summary, label, none, months, people, sources, senders, moreSenders, whe
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>
-      <!-- As on the category screen: the senders on the left, «Where from», «When» and «Who received» stacked on the right. -->
+      <!-- As on the category screen: the senders on the left, «Where from», «When», «Who received» and «By bank» stacked on the right. -->
       <div v-if="view.lines.length > 0" class="grid gap-4 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <VCard padding="md" class="min-w-0">
           <ShareList :items="senders" :more="moreSenders" :title="$t('income.from.title')" @pick="pickSender" />
         </VCard>
         <div class="flex min-w-0 flex-col gap-4">
           <VCard v-if="sources.length > 0" padding="md"><SourceBars :sources /></VCard>
-          <!-- The column's last card takes the rest of its height: «Who received», or «When» when there is no one else. -->
-          <VCard v-if="when" padding="md" :class="{ grow: people.length <= 1 }"><WhenCharts :when /></VCard>
-          <VCard v-if="people.length > 1" padding="md" class="grow"><PeopleBars :people :title="$t('income.who.title')" /></VCard>
+          <!-- The column's last card takes the rest of its height: «By bank», else «Who received», else «When». -->
+          <VCard v-if="when" padding="md" :class="{ grow: people.length <= 1 && banks.length <= 1 }"><WhenCharts :when /></VCard>
+          <VCard v-if="people.length > 1" padding="md" :class="{ grow: banks.length <= 1 }"><PeopleBars :people :title="$t('income.who.title')" /></VCard>
+          <VCard v-if="banks.length > 1" padding="md" class="grow">
+            <PartBars :parts="banks" :title="$t('entities.operations.banks.title')">
+              <template #mark="{ part }"><BankMark :bank="bankOf(String(part.key))" size="sm" /></template>
+            </PartBars>
+          </VCard>
         </div>
       </div>
       <VCard v-if="view.lines.length > 0" padding="md">

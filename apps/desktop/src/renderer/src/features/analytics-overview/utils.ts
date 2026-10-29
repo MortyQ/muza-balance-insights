@@ -4,8 +4,8 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { CHART_TOOLTIP, dayMonth } from '@/entities/operations';
 import { monthName, monthShortName, t } from '@/shared/lib';
 import type { ChartOption } from '@/shared/ui';
-import { HEAT_EVEN } from './constants.ts';
-import type { CategoryRow, ChangeRow, Column, CompareRow, GapPolygon, HeatRow, KpiView, LinesMode, MiniCard } from './types.ts';
+import { FLOW_BANK_FILL, HEAT_EVEN } from './constants.ts';
+import type { CategoryRow, ChangeRow, Column, CompareRow, FlowBank, GapPolygon, HeatRow, KpiView, LinesMode, MiniCard } from './types.ts';
 
 const sum = (xs: readonly number[]): number => xs.reduce((s, x) => s + x, 0);
 const decimal = new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -124,12 +124,19 @@ export function heatRows(rows: readonly CategoryRow[], cols: readonly Column[], 
 }
 
 /** The flow chart said in text (the canvas is aria-hidden): one line per bucket with data. */
-export function flowList(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): Array<{ key: string; text: string }> {
-  return v.buckets.flatMap((b, i) =>
-    b.state === 'none'
-      ? []
-      : [{ key: b.key, text: t('analytics.flow.row', { when: bucketTitle(b.key, v.unit), income: fmt.money(v.income[i] ?? 0), spending: fmt.money(v.spending[i] ?? 0) }) }],
-  );
+export function flowList(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat, banks: ReadonlyArray<FlowBank> | null = null): Array<{ key: string; text: string }> {
+  return v.buckets.flatMap((b, i) => {
+    if (b.state === 'none') return [];
+    const row = t('analytics.flow.row', { when: bucketTitle(b.key, v.unit), income: fmt.money(v.income[i] ?? 0), spending: fmt.money(v.spending[i] ?? 0) });
+    // By banks: each bank's part of the bucket's spending after the row (spec desktop-spending-split).
+    const parts = (banks ?? []).map((bank) => t('analytics.flow.bankPart', { bank: bank.name, amount: fmt.money(bankValues(v, bank.provider)[i] ?? 0) }));
+    return [{ key: b.key, text: [row, ...parts].join('; ') }];
+  });
+}
+
+/** A bank's spending per bucket; zeros for a bank without any. */
+function bankValues(v: Readonly<AnalyticsOverview>, provider: string): readonly number[] {
+  return v.spendingByBank.find((b) => b.provider === provider)?.values ?? v.buckets.map(() => 0);
 }
 
 /** Income, spending, what is left and the savings rate, each against the comparison period. */
@@ -303,8 +310,12 @@ function fill(id: string, polys: readonly GapPolygon[], color: string) {
 
 type AxisParam = { seriesName?: string; value: [number, number | null] };
 
-/** «Income and spending»: two lines over buckets with the area between them; one month — running totals and the usual month. */
-export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): ChartOption {
+/**
+ * «Income and spending»: two lines over buckets with the area between them; one month — running totals and the usual
+ * month. With `banks` (spec desktop-spending-split): spending is one stacked area per bank in its colour, without edges,
+ * under the spending line, and the gain / loss fill goes (it would cover the banks' areas); income stays a line.
+ */
+export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat, banks: ReadonlyArray<FlowBank> | null = null): ChartOption {
   const days = v.unit === 'day';
   const income = drawn(v, v.income, days);
   const spending = drawn(v, v.spending, days);
@@ -334,10 +345,26 @@ export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat
       },
     },
     series: [
-      fill('gain', polys.filter((p) => p.positive), 'var(--success)'),
-      fill('loss', polys.filter((p) => !p.positive), 'var(--danger)'),
-      line('income', t('analytics.flow.income'), 'var(--success)', income),
-      line('spending', t('analytics.flow.spending'), 'var(--primary)', spending),
+      ...(banks
+        ? [
+            line('income', t('analytics.flow.income'), 'var(--success)', income),
+            ...banks.map((b) => ({
+              ...line(`bank:${b.provider}`, b.name, b.color, drawn(v, bankValues(v, b.provider), days)),
+              z: 2,
+              stack: 'banks',
+              showSymbol: false,
+              // No edge of its own: a small bank's edge would sit on the bank below and read as its border.
+              lineStyle: { color: b.color, width: 0 },
+              areaStyle: { color: b.color, opacity: FLOW_BANK_FILL },
+            })),
+            line('spending', t('analytics.flow.spending'), 'var(--primary)', spending),
+          ]
+        : [
+            fill('gain', polys.filter((p) => p.positive), 'var(--success)'),
+            fill('loss', polys.filter((p) => !p.positive), 'var(--danger)'),
+            line('income', t('analytics.flow.income'), 'var(--success)', income),
+            line('spending', t('analytics.flow.spending'), 'var(--primary)', spending),
+          ]),
       ...(days && v.usual ? [line('usual', t('analytics.flow.usual'), 'var(--foreground-muted)', v.usual, true)] : []),
     ],
   };

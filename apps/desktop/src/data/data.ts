@@ -24,10 +24,10 @@ import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/rea
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
-import { cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
+import { bankParts, cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
-import { bucketState, daysOf, foldCells, foldIncome, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
+import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
@@ -115,6 +115,18 @@ export type DataServiceDeps = {
 /** A reserve counts for the family (no person) always, for a person only when it is theirs (a common one never). */
 function reserveFor(r: { participantId: number | null }, participantId: number | undefined): boolean {
   return participantId === undefined || r.participantId === participantId;
+}
+
+/** The core filters of a screen's view: whose and which banks (spec core-bank-view), each only when asked for. */
+type ViewFilters = { participantId?: number; providers?: ProviderId[] };
+
+function viewOf(q: ViewFilters): ViewFilters {
+  return { ...(q.participantId !== undefined ? { participantId: q.participantId } : {}), ...banksOf(q) };
+}
+
+/** Only the banks of a view: the family's per-person queries keep them (each person within the same banks). */
+function banksOf(q: ViewFilters): Pick<ViewFilters, 'providers'> {
+  return q.providers !== undefined ? { providers: q.providers } : {};
 }
 
 function rateMap(r: RatesView | null): Map<number, FxRate> {
@@ -220,14 +232,16 @@ export class DataService {
     };
 
     // The view's own queries; the family's people come from the same balances and from one grouped query each below.
-    const f = q.participantId === undefined ? {} : { participantId: q.participantId };
+    const f = viewOf(q);
     const balances = await balancesAt(db, { endSec, ...f });
     const atStart = new Map((await balancesAt(db, { endSec: startSec, ...f })).accounts.map((a) => [a.id, a.own_funds]));
     const income = await incomeSummary(db, { ...period, groupBy: 'scope', ...f }, now);
     const spending = await spendingSummary(db, { ...period, groupBy: 'category', ...f }, now);
     const head = { balances, total: cardTotal(balances, atStart, flowOf(income.totals, spending.totals)) };
     const coverageFrom = first !== null && first > from ? first : from;
-    const coverageTo = status.dataUntil !== null && status.dataUntil.slice(0, 10) < to ? status.dataUntil.slice(0, 10) : to;
+    // A bank view reaches as far as its own banks do (core periodInfo); every bank — the status's date, as before.
+    const until = q.providers === undefined ? status.dataUntil : spending.period.dataUntil;
+    const coverageTo = until !== null && until.slice(0, 10) < to ? until.slice(0, 10) : to;
     // The month may have no covered day at all (before any data, or the account starts later): clamp so from ≤ to.
     const coverage = { from: coverageFrom, to: coverageTo < coverageFrom ? coverageFrom : coverageTo };
     // Only today's balance has reserves set against it: the active ones with a rate of the view; null — none.
@@ -246,8 +260,8 @@ export class DataService {
           Number(r.participant_id),
         ]),
       );
-      const incomeBy = await incomeSummary(db, { ...period, groupBy: 'participant' }, now);
-      const spendingBy = await spendingSummary(db, { ...period, groupBy: 'participant' }, now);
+      const incomeBy = await incomeSummary(db, { ...period, groupBy: 'participant', ...banksOf(q) }, now);
+      const spendingBy = await spendingSummary(db, { ...period, groupBy: 'participant', ...banksOf(q) }, now);
       const people: MonthOverview['people'] = (await listParticipants(db)).map((p) => {
         const key = String(p.id);
         const own = balancesOf(balances.accounts.filter((a) => owners.get(a.id) === p.id));
@@ -292,15 +306,18 @@ export class DataService {
     const status = await this.status();
     const tz = systemTimeZone();
     const summary = (p: { from: string; to: string }, participantId?: number) =>
-      spendingSummary(db, { ...p, tz, groupBy: 'category', scope: q.scope, ...(participantId !== undefined ? { participantId } : {}) }, now);
+      spendingSummary(db, { ...p, tz, groupBy: 'category', scope: q.scope, ...banksOf(q), ...(participantId !== undefined ? { participantId } : {}) }, now);
 
     const head = await summary(period, q.participantId);
+    // The bars' split by bank: one grid over the month, split by bank (spec desktop-spending-split).
+    const byBank = await spendingGrid(db, { ...period, tz, scope: q.scope, ...viewOf(q), unit: 'month', byProvider: true }, now);
     const compare = comparePeriod(q.month, head.period, status.dataFrom);
     const today = await this.d.rates();
     const rates = rateMap(today);
     // The previous period is folded by the same rate: the change shows spending, not the exchange rate.
     const before = compare ? { period: compare, rates } : null;
     const cur = foldByCategory(head, rates);
+    const banks = bankParts(byBank.cells, rates);
     const prev = before ? foldByCategory(await summary(before.period, q.participantId), before.rates).byCategory : null;
 
     const zero: SpendingAmounts = { net: 0, purchases: 0 };
@@ -337,6 +354,7 @@ export class DataService {
         ...(p.cur.get(category) ?? zero),
         prev: p.prev ? (p.prev.get(category) ?? zero) : null,
       })),
+      banks: banks.get(category) ?? [],
     }));
 
     // A person's total is their sum over the family's categories: the people add up to the family's total.
@@ -380,7 +398,7 @@ export class DataService {
     if (period.incomplete && (period.dataUntil === null || period.dataUntil < period.from)) return null;
     const months = usualMonths(q.month, dataFrom);
     if (months.length === 0) return null;
-    const filters = { tz: systemTimeZone(), scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz: systemTimeZone(), scope: q.scope, ...viewOf(q) };
     // The usual months run up to the shown one without a gap: one grid by month for their spending, and (a month that
     // is over) one income query by month up to the shown month's end. Each month folds as its own summary would.
     const from = monthBounds(months.at(-1)!).from;
@@ -416,7 +434,7 @@ export class DataService {
     month: string,
     thisMonth: string,
     category: string,
-    filters: { tz: string; scope: CategoryOverviewQuery['scope']; participantId?: number },
+    filters: { tz: string; scope: CategoryOverviewQuery['scope'] } & ViewFilters,
     rates: Map<number, FxRate>,
     dataFrom: string | null,
     now: number,
@@ -440,7 +458,7 @@ export class DataService {
     const thisDay = localDate(now * 1000, tz);
     const period = periodBounds(q.period, thisDay);
     const status = await this.status();
-    const filters = { tz, scope: q.scope, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, scope: q.scope, ...viewOf(q) };
     const today = await this.d.rates();
     const rates = rateMap(today);
 
@@ -526,6 +544,7 @@ export class DataService {
       months,
       thisMonth,
       people: stats.people,
+      banks: stats.banks,
       merchants: stats.merchants,
       lines,
       rates: today,
@@ -538,7 +557,7 @@ export class DataService {
     db: Db,
     month: string,
     thisMonth: string,
-    filters: { tz: string; participantId?: number },
+    filters: { tz: string } & ViewFilters,
     rates: Map<number, FxRate>,
     dataFrom: string | null,
     now: number,
@@ -566,7 +585,7 @@ export class DataService {
     const since = `${addMonths(today.slice(0, 7), -12)}-01`;
     const rates = await this.d.rates();
     const fx = rateMap(rates);
-    const found = await findRecurring(db, { from: since, to: today, tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) }, now);
+    const found = await findRecurring(db, { from: since, to: today, tz, ...viewOf(q) }, now);
 
     const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
     const names = accountNames(accounts.map(accountRow));
@@ -609,7 +628,7 @@ export class DataService {
     const today = localDate(now * 1000, tz);
     const rates = await this.d.rates();
     const fx = rateMap(rates);
-    const f = q.participantId !== undefined ? { participantId: q.participantId } : {};
+    const f = viewOf(q);
 
     const balances = await balancesAt(db, { endSec: now + 1, ...f });
     let money = 0;
@@ -673,7 +692,7 @@ export class DataService {
     const thisDay = localDate(now * 1000, tz);
     const period = periodBounds(q.period, thisDay);
     const status = await this.status();
-    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, ...viewOf(q) };
     const today = await this.d.rates();
     const rates = rateMap(today);
 
@@ -744,6 +763,7 @@ export class DataService {
       months,
       thisMonth,
       people: stats.people,
+      banks: stats.banks,
       sources: stats.sources,
       senders: stats.senders,
       lines,
@@ -763,7 +783,7 @@ export class DataService {
     const today = localDate(now * 1000, tz);
     if (q.to > today.slice(0, 7)) throw new Error('analytics: the range ends after this month');
     const { dataFrom } = await this.status();
-    const filters = { tz, ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) };
+    const filters = { tz, ...viewOf(q) };
     const todayRates = await this.d.rates();
     const rates = rateMap(todayRates);
     const sum = (xs: Iterable<number>) => [...xs].reduce((s, x) => s + x, 0);
@@ -771,8 +791,10 @@ export class DataService {
     const unit = q.from === q.to ? 'day' : 'month';
     const period = { from: monthBounds(q.from).from, to: monthBounds(q.to).to };
     const keys = unit === 'day' ? daysOf(q.from) : monthsBetween(q.from, q.to);
-    const grid = await spendingGrid(db, { ...period, ...filters, unit }, now);
-    const cur = foldCells(grid.cells, keys, rates);
+    // Split by bank for spendingByBank; every other figure folds the cells merged back, as without the split.
+    const grid = await spendingGrid(db, { ...period, ...filters, unit, byProvider: true }, now);
+    const cur = foldCells(mergeCells(grid.cells), keys, rates);
+    const spendingByBank = bankSeries(grid.cells, keys, rates);
     const inc = foldIncome((await incomeSummary(db, { ...period, ...filters, groupBy: unit }, now)).groups, keys, rates);
 
     let compare: AnalyticsOverview['compare'] = null;
@@ -827,6 +849,7 @@ export class DataService {
       buckets: keys.map((key) => ({ key, state: bucketState(key, unit, { today, dataFrom }) })),
       income: inc.values,
       spending,
+      spendingByBank,
       totals: { income: sum(inc.values), spending: sum(spending), prev: prevTotals },
       compare,
       usual,
@@ -859,14 +882,14 @@ export class DataService {
     const spanFrom = [windowFrom, month.from, prevFrom].sort()[0]!;
     const grid = await spendingGrid(
       db,
-      { from: spanFrom, to: month.to, tz, unit: 'day', scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) },
+      { from: spanFrom, to: month.to, tz, unit: 'day', scope: 'personal', ...viewOf(q) },
       now,
     );
     const fold = (from: string, to: string, keyOf: (c: SpendingCell) => string) =>
       foldByCategory(cellGroups(grid.cells, (c) => c.bucket >= from && c.bucket <= to, keyOf), rates).byCategory;
     const byCategory = (c: SpendingCell) => c.category;
-    const daily = await periodInfo(db, { from: windowFrom, to: today, tz }, now);
-    const week = await periodInfo(db, { from: monday, to: today, tz }, now);
+    const daily = await periodInfo(db, { from: windowFrom, to: today, tz, ...banksOf(q) }, now);
+    const week = await periodInfo(db, { from: monday, to: today, tz, ...banksOf(q) }, now);
     // Keyed by the day of the system time zone.
     const byDay = fold(windowFrom, today, (c) => c.bucket);
     const weekByCategory = fold(monday, today, byCategory);

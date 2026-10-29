@@ -4,7 +4,7 @@ import { toUah, type FxRate } from '@mono/core/read/fx';
 import type { SpendingCell } from '@mono/core/read/spending';
 import { addMonths, monthSpan } from '../shared/analytics.ts';
 import type { AnalyticsBucketState } from '../shared/api.ts';
-import { monthBounds } from './spending.ts';
+import { byRegistry, monthBounds } from './spending.ts';
 
 /** The months from..to, both included, oldest first. */
 export function monthsBetween(from: string, to: string): string[] {
@@ -29,6 +29,48 @@ export function bucketState(key: string, unit: 'day' | 'month', at: { today: str
   const first = at.dataFrom === null ? null : unit === 'day' ? at.dataFrom : at.dataFrom.slice(0, 7);
   if (key > now || first === null || key < first) return 'none';
   return key === now ? 'running' : 'full';
+}
+
+/**
+ * The cells of a grid split by bank summed back per currency, bucket and category: exactly the unsplit grid's cells, so
+ * every figure folded from them is the same as without the split (spec desktop-spending-split).
+ */
+export function mergeCells(cells: readonly SpendingCell[]): SpendingCell[] {
+  const by = new Map<string, SpendingCell>();
+  for (const c of cells) {
+    const id = `${c.currency}\u0000${c.bucket}\u0000${c.category}`;
+    const m = by.get(id);
+    if (m) (m.purchases += c.purchases), (m.gross += c.gross), (m.refunds += c.refunds), (m.net += c.net);
+    else by.set(id, { ...c, provider: null });
+  }
+  return [...by.values()];
+}
+
+/**
+ * Each bank's spending in hryvnia kopecks per bucket in `keys` order, every category: per bank, the cells summed per
+ * currency and bucket, then folded. A currency without a rate stays out. Banks with a cell, in the registry's order.
+ */
+export function bankSeries(
+  cells: readonly SpendingCell[],
+  keys: readonly string[],
+  rates: ReadonlyMap<number, FxRate>,
+): Array<{ provider: string; values: number[] }> {
+  const at = new Map(keys.map((k, i) => [k, i]));
+  const sums = new Map<string, number>();
+  for (const c of cells) {
+    if (c.provider === null || !at.has(c.bucket)) continue;
+    const id = `${c.provider}\u0000${c.currency}\u0000${c.bucket}`;
+    sums.set(id, (sums.get(id) ?? 0) + c.net);
+  }
+  const by = new Map<string, { values: number[] }>();
+  for (const [id, net] of sums) {
+    const [provider, currency, bucket] = id.split('\u0000') as [string, string, string];
+    const s = by.get(provider) ?? { values: keys.map(() => 0) };
+    by.set(provider, s);
+    const uah = toUah(net, Number(currency), rates);
+    if (uah !== null) s.values[at.get(bucket)!]! += uah;
+  }
+  return byRegistry(by);
 }
 
 /** Per category: hryvnia kopecks per bucket in `keys` order, and purchases; a currency without a rate stays out. */

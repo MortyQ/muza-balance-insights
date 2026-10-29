@@ -3,7 +3,7 @@ import { isoWeekday, shiftDate } from '@contract/dates.ts';
 import { change, changeText, monthName, monthShortName, t } from '@/shared/lib';
 import type { ChangeChipModel, ChartOption } from '@/shared/ui';
 import { MIN_BAR } from './constants.ts';
-import type { BarView, DayPartView, Money, MonthsView, PersonRef, PersonView, ShareItemView, WhenLine, WhenView } from './types.ts';
+import type { BarView, DayPartView, Money, MonthsView, PartView, PersonRef, PersonView, ShareItemView, WhenLine, WhenView } from './types.ts';
 
 type MonthNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -115,27 +115,29 @@ function countCaption(value: number, count: number, fmt: Money): string {
     .join(' · ');
 }
 
+/** Each part with a positive value, on the largest one's scale, largest first. */
+export function partBars(
+  parts: ReadonlyArray<{ key: string | number; name: string; color: string; value: number; count: number }>,
+  fmt: Money,
+): PartView[] {
+  const max = Math.max(0, ...parts.map((p) => p.value));
+  return parts
+    .filter((p) => p.value > 0)
+    .map((p) => ({ key: p.key, name: p.name, color: p.color, amount: fmt.money(p.value), caption: countCaption(p.value, p.count, fmt), width: pct(p.value, max) }))
+    .sort((a, b) => b.width - a.width);
+}
+
 /** Each person with a value, on the largest one's scale. */
 export function peopleBars(
   parts: ReadonlyArray<{ participantId: number; value: number; count: number }>,
   people: ReadonlyArray<PersonRef>,
   fmt: Money,
 ): PersonView[] {
-  const max = Math.max(0, ...parts.map((p) => p.value));
-  return parts
-    .filter((p) => p.value > 0)
-    .map((p) => {
-      const who = people.find((x) => x.id === p.participantId) ?? { id: p.participantId, name: '?', color: 'var(--border-strong)' };
-      return {
-        participantId: p.participantId,
-        name: who.name,
-        color: who.color,
-        amount: fmt.money(p.value),
-        caption: countCaption(p.value, p.count, fmt),
-        width: pct(p.value, max),
-      };
-    })
-    .sort((a, b) => b.width - a.width);
+  const named = parts.map((p) => {
+    const who = people.find((x) => x.id === p.participantId) ?? { id: p.participantId, name: '?', color: 'var(--border-strong)' };
+    return { ...p, key: p.participantId, name: who.name, color: who.color };
+  });
+  return partBars(named, fmt).map(({ key, ...row }) => ({ participantId: Number(key), ...row }));
 }
 
 /** The top `top` names on the largest one's scale, with their share of `total`; `picked` — the list's filter. */

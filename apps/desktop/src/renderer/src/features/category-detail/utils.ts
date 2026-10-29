@@ -1,10 +1,10 @@
 import type { CategoryLineView, CategoryOverview, DetailPeriod } from '@contract/api.ts';
-import { accountName } from '@/entities/bank';
+import { accountName, bankOf } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import {
-  changeChip, dayMonth, monthIn, monthOf, monthsView as monthBars, PERIOD_BLOCKS, periodTitle, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
-  type LineRowView, type MarkView, type MonthsView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
+  changeChip, dayMonth, monthIn, monthOf, monthsView as monthBars, partBars, PERIOD_BLOCKS, periodTitle, nameKey, peopleBars, searchText, shareItems, weekdayShort, whenView as whenBars,
+  type LineRowView, type MarkView, type MonthsView, type PartView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
 import { PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
@@ -91,6 +91,16 @@ export function monthsView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): Mon
 /** «Who spent» (the family view): each person with spending, on the largest one's scale. */
 export function peopleView(v: Readonly<CategoryOverview>, people: ReadonlyArray<PersonRef>, fmt: MoneyFormat): PersonView[] {
   return peopleBars(v.people.map((p) => ({ participantId: p.participantId, value: p.net, count: p.purchases })), people, fmt);
+}
+
+/** «By bank»: each bank with spending in the view, on the largest one's scale, in the bank's colour (spec desktop-bank-breakdown). */
+const bankLook = (provider: string) => {
+  const bank = bankOf(provider);
+  return { name: bank.name, color: bank.color };
+};
+
+export function banksView(v: Readonly<CategoryOverview>, fmt: MoneyFormat): PartView[] {
+  return partBars(v.banks.map((b) => ({ key: b.provider, ...bankLook(b.provider), value: b.net, count: b.purchases })), fmt);
 }
 
 /** «Where»: the top merchants on the largest one's scale; `picked` — the list's filter. */

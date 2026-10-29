@@ -11,6 +11,10 @@
       "perDay": "{amount} a day on average"
     },
     "flow": {
+      "bankPart": "{bank} — {amount}",
+      "byBanks": "By banks",
+      "splitLabel": "How to show spending",
+      "together": "Together",
       "title": "Income and spending",
       "months": "Green — the month ended in plus, red — in minus",
       "days": "Running totals from the 1st",
@@ -276,6 +280,9 @@
     },
     "operations": {
       "avg": "avg {amount}",
+      "banks": {
+        "title": "By bank"
+      },
       "change": {
         "week": {
           "less": "{diff} less than last week",
@@ -484,6 +491,13 @@
           "usual": "Usual by this day",
           "more": "{amount} more than usual",
           "less": "{amount} less than usual"
+        },
+        "settings": {
+          "button": "Pace settings",
+          "split": "Split the chart",
+          "splitHint": "Each bank's spending in its colour",
+          "together": "Together",
+          "banks": "By banks"
         }
       },
       "freeLine": {
@@ -494,6 +508,11 @@
       "monthResult": "Month's result"
     },
     "filters": {
+      "banks": "Banks",
+      "banksLocked": "At least one bank stays on",
+      "banksAll": "All banks",
+      "banksSome": "{on} of {all}",
+      "banksButton": "Banks: {shown}",
       "percent": "{pct}%",
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",
@@ -723,8 +742,11 @@
         "button": "Block settings",
         "mark": "Last month's mark",
         "markHint": "A tick at last month's amount",
-        "split": "Who spent how much",
-        "splitHint": "The bar is split by people's colours"
+        "split": "Split the bars",
+        "splitBanks": "By banks",
+        "splitHint": "By people's or banks' colours",
+        "splitPeople": "By people",
+        "splitTogether": "Together"
       },
       "title": "Spending",
       "together": "together · {ops}",

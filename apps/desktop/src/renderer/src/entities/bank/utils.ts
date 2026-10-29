@@ -4,7 +4,7 @@ import type { AccountName } from '@contract/account-name.ts';
 import type { ProviderId } from '@contract/api.ts';
 import type { MessageKey } from '@contract/i18n/index.ts';
 import { t } from '@/shared/lib';
-import { NEUTRAL_MONOGRAM_CLASS, STATEMENT_HINTS } from './constants.ts';
+import { NEUTRAL_COLOR, NEUTRAL_MONOGRAM_CLASS, STATEMENT_HINTS } from './constants.ts';
 import type { Bank, BankAuth, BankLook } from './types.ts';
 
 /**
@@ -23,7 +23,7 @@ export function bankLogo(id: string): string | null {
   return hit?.[1] ?? null;
 }
 
-const neutralLook = (name: string): BankLook => ({ monogram: name.charAt(0).toUpperCase(), monogramClass: NEUTRAL_MONOGRAM_CLASS });
+const neutralLook = (name: string): BankLook => ({ monogram: name.charAt(0).toUpperCase(), monogramClass: NEUTRAL_MONOGRAM_CLASS, color: NEUTRAL_COLOR });
 
 function lookOf(id: string, name: string): BankLook {
   return Object.entries(LOOKS).find(([file]) => fileId(file) === id)?.[1] ?? neutralLook(name);

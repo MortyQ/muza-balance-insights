@@ -6,9 +6,9 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { CHART_TOOLTIP } from '@/entities/operations';
 import { currencySymbol, dayMonthName, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, PACE_BANK_FILL, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { ChartOption } from '@/shared/ui';
-import type { Flow, FreeLineView, PaceView, RowView, Slide } from './types.ts';
+import type { Flow, FreeLineView, PaceBank, PaceLegendItem, PaceSplit, PaceView, RowView, Slide } from './types.ts';
 
 /** Where card `i` sits: in the stack (up to STACK_DEPTH peeking behind, the rest hidden) or in the row, which scrolls. */
 export function slidePosition(i: number, open: boolean): { x: number; y: number; z: number; opacity: number } {
@@ -278,6 +278,7 @@ export function slidesOf(
         kind: 'account',
         card: {
           bank: a.name.provider,
+          variant: a.name.type,
           title: accountName(a.name),
           accents: [accent],
           dim: a.ownFunds === null,
@@ -303,11 +304,14 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
   if (a.unit !== 'day') return null;
   const last = a.buckets.findLastIndex((b) => b.state !== 'none');
   if (last < 0) return null;
-  let sum = 0;
-  const spent = a.buckets.map((b, i) => {
-    sum += a.spending[i] ?? 0;
-    return i <= last && b.state !== 'none' ? sum : null;
-  });
+  const added = (values: readonly number[]) => {
+    let sum = 0;
+    return a.buckets.map((b, i) => {
+      sum += values[i] ?? 0;
+      return i <= last && b.state !== 'none' ? sum : null;
+    });
+  };
+  const spent = added(a.spending);
   const running = a.buckets.some((b) => b.state === 'running');
   return {
     days: a.buckets.map((b) => String(Number(b.key.slice(8, 10)))),
@@ -319,16 +323,52 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
     spentTotal: spent[last] ?? 0,
     usualByNow: a.usual?.[last] ?? null,
     perDay: running ? perDay : null,
+    banks: a.spendingByBank.map((b) => ({ provider: b.provider, spent: added(b.values) })),
   };
 }
 
-/** The pace chart's tooltip for day `i`: the date, spent and the usual by that day (each when known), the difference. */
-export function paceTooltip(v: Readonly<PaceView>, i: number, money: (minor: number) => string = String): string {
+/**
+ * The banks «Month pace» is drawn by (spec desktop-spending-split): each bank of the view with its name and colour while
+ * «By banks» is chosen and offered (two or more banks on); null — together.
+ */
+export function paceBanks(v: Readonly<PaceView> | null, offered: boolean, split: PaceSplit): PaceBank[] | null {
+  if (!v || !offered || split !== 'banks') return null;
+  return v.banks.map((b) => {
+    const bank = bankOf(b.provider);
+    return { provider: b.provider, name: bank.name, color: bank.color };
+  });
+}
+
+/**
+ * The legend under the pace chart by banks: each bank drawn, in the chart's order, with its spending by `last` and a
+ * swatch of its colour at the area's strength.
+ */
+export function paceLegend(v: Readonly<PaceView>, banks: ReadonlyArray<PaceBank> | null): PaceLegendItem[] {
+  return (banks ?? []).map((b) => ({
+    ...b,
+    swatch: `color-mix(in oklch, ${b.color} ${PACE_BANK_FILL * 100}%, transparent)`,
+    amount: v.banks.find((x) => x.provider === b.provider)?.spent[v.last] ?? 0,
+  }));
+}
+
+/**
+ * The pace chart's tooltip for day `i`: the date, spent and the usual by that day (each when known), the difference.
+ * With `banks`, each bank's part follows «Spent».
+ */
+export function paceTooltip(
+  v: Readonly<PaceView>,
+  i: number,
+  money: (minor: number) => string = String,
+  banks: ReadonlyArray<PaceBank> | null = null,
+): string {
   const date = v.dates[i] ?? '';
   const spent = v.spent[i] ?? null;
   const usual = v.usual?.[i] ?? null;
   const lines = [dayMonthName(date, Number(date.slice(0, 4)))];
   if (spent !== null) lines.push(`${t('home.balances.pace.spent')}: ${money(spent)}`);
+  if (spent !== null) {
+    for (const b of banks ?? []) lines.push(`  ${b.name}: ${money(v.banks.find((x) => x.provider === b.provider)?.spent[i] ?? 0)}`);
+  }
   if (usual !== null) lines.push(`${t('home.balances.pace.tip.usual')}: ${money(usual)}`);
   if (spent !== null && usual !== null && spent !== usual) {
     lines.push(t(spent > usual ? 'home.balances.pace.tip.more' : 'home.balances.pace.tip.less', { amount: money(Math.abs(spent - usual)) }));
@@ -336,8 +376,12 @@ export function paceTooltip(v: Readonly<PaceView>, i: number, money: (minor: num
   return lines.join('\n');
 }
 
-/** The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them). */
-export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) => string = String): ChartOption {
+/**
+ * The pace chart: the month solid, the usual dashed, today's point; amounts stay off the axes (the figures say them).
+ * With `banks` (spec desktop-spending-split) the month's line loses its fill and sits on one stacked area per bank in
+ * its colour, whose top edge is the line.
+ */
+export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) => string = String, banks: ReadonlyArray<PaceBank> | null = null): ChartOption {
   // Today's point carries its amount in a pill above it, as the home mockup draws it.
   const point = v.running
     ? [
@@ -366,7 +410,7 @@ export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) =>
       ...CHART_TOOLTIP,
       trigger: 'axis',
       axisPointer: { type: 'line', lineStyle: { color: 'var(--border)' } },
-      formatter: (ps: Array<{ dataIndex: number }>) => paceTooltip(v, ps[0]?.dataIndex ?? 0, money),
+      formatter: (ps: Array<{ dataIndex: number }>) => paceTooltip(v, ps[0]?.dataIndex ?? 0, money, banks),
     },
     xAxis: {
       type: 'category',
@@ -395,12 +439,22 @@ export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) =>
               lineStyle: { type: 'dashed', width: 2, color: 'color-mix(in oklch, var(--primary) 35%, var(--surface))' },
             },
           ]),
+      ...(banks ?? []).map((b) => ({
+        type: 'line',
+        stack: 'banks',
+        data: v.banks.find((x) => x.provider === b.provider)?.spent ?? v.spent.map((s) => (s === null ? null : 0)),
+        symbol: 'none',
+        silent: true,
+        // No edge of its own: a small bank's edge would sit on the bank below and read as its border.
+        lineStyle: { width: 0, color: b.color },
+        areaStyle: { color: b.color, opacity: PACE_BANK_FILL },
+      })),
       {
         type: 'line',
         data: v.spent,
         symbol: 'none',
         lineStyle: { width: 2.5, color: 'var(--primary)' },
-        areaStyle: { color: 'var(--primary)', opacity: 0.12 },
+        ...(banks ? {} : { areaStyle: { color: 'var(--primary)', opacity: 0.12 } }),
         markPoint: { silent: true, symbol: 'circle', symbolSize: 9, itemStyle: { color: 'var(--primary)' }, label: { show: false }, data: point },
       },
     ],

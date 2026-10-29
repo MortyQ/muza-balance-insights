@@ -5,6 +5,7 @@ import type { MessageKey } from '@contract/i18n/index.ts';
 import type { BankLook } from './types.ts';
 
 export const NEUTRAL_MONOGRAM_CLASS = 'bg-surface-sunken text-foreground-muted';
+export const NEUTRAL_COLOR = 'var(--border-strong)';
 
 /** Not a bank: the picker's disabled tile for banks the app cannot connect yet. */
 export const OTHER_BANKS = {
@@ -12,6 +13,7 @@ export const OTHER_BANKS = {
   name: 'entities.bank.other',
   monogram: '+',
   monogramClass: NEUTRAL_MONOGRAM_CLASS,
+  color: NEUTRAL_COLOR,
 } as const satisfies BankLook & { id: string; name: MessageKey };
 
 /** Where each file bank's statement is downloaded: one line under the upload sheet's title. A new file bank adds its own. */

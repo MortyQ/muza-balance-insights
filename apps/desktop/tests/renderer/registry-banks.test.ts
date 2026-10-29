@@ -52,9 +52,16 @@ describe('a bank with statement files only, from its registry entry alone', () =
   it('is in the bank list with its name, the file way only and a neutral mark', () => {
     // The real banks in the registry's order, then the test's own.
     expect(BANKS.map((b) => b.id)).toEqual([...REAL_IDS, 'fictional']);
-    expect(bankOf('fictional')).toEqual({ id: 'fictional', name: 'Вигаданий Банк', ways: ['file'], monogram: 'В', monogramClass: 'bg-surface-sunken text-foreground-muted' });
+    expect(bankOf('fictional')).toEqual({ id: 'fictional', name: 'Вигаданий Банк', ways: ['file'], monogram: 'В', monogramClass: 'bg-surface-sunken text-foreground-muted', color: 'var(--border-strong)' });
     expect(defaultCardTypeOf('fictional')).toBeNull();
     expect(cardTypeName('fictional', 'gold')).toBe('Карта');
+  });
+
+  it('every real bank has a theme colour of its own; an unknown one is grey', () => {
+    const colors = REAL_IDS.map((id) => bankOf(id).color);
+    expect(colors.every((c) => c.startsWith('var(--'))).toBe(true);
+    expect(new Set(colors).size).toBe(colors.length);
+    expect(bankOf('nobank').color).toBe('var(--border-strong)');
   });
 
   it('has no forms of its own: the generic file steps and access note', () => {

@@ -9,6 +9,7 @@ import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { QuickUploadButtonFeature } from '@/features/integrations';
 import { monthOf } from '@/shared/lib';
+import BankFilter from './components/BankFilter.vue';
 import FreshnessList from './components/FreshnessList.vue';
 import SyncStatus from './components/SyncStatus.vue';
 import { useParticipantLayout } from './composables/useParticipantLayout.ts';
@@ -44,7 +45,7 @@ const { mode } = useParticipantLayout({
     class="relative grid items-center gap-3 py-2"
     :class="mode === 'buttons' ? 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]' : 'grid-cols-[minmax(0,1fr)_0_auto]'"
   >
-    <!-- The filters every home block reads (person, month, currency); the app name and the settings button live in the
+    <!-- The filters every home block reads (person, month, currency, banks); the app name and the settings button live in the
          window's title bar (widgets/app-header). Outside the home screen's scroll area: it stays put while the blocks
          scroll. The layout places it after the screen title (that is the page's h1) and draws the row's border.
          Person: buttons centred in the row, or a select before the month (useParticipantLayout). -->
@@ -55,6 +56,7 @@ const { mode } = useParticipantLayout({
           <PeriodRangeFilter v-if="periodFilter === 'range'" :min="firstMonth" :data-from="syncStatus.status?.dataFrom ?? null" />
           <MonthFilter v-else-if="periodFilter === 'month'" :min="firstMonth" />
           <CurrencyToggle />
+          <BankFilter />
         </div>
       </template>
     </div>

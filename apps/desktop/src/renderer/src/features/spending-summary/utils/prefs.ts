@@ -1,11 +1,13 @@
-import type { SpendingPrefs } from '../types.ts';
+import { SPLITS } from '../constants.ts';
+import type { SpendingPrefs, SpendingSplit } from '../types.ts';
 
 /**
  * The menu choices from storage: each field on its own, defaults for anything else (the old `usd` / `eur` fields are
- * the currency entity's now). The one `as` reads a parsed JSON object's fields after the object / array guard.
+ * the currency entity's now). The former «Who spent how much» switch carries over: on → by people, off → together. The
+ * one `as` reads a parsed JSON object's fields after the object / array guard.
  */
 export function parsePrefs(raw: string | null): SpendingPrefs {
-  const d: SpendingPrefs = { split: true, mark: true };
+  const d: SpendingPrefs = { split: 'people', mark: true };
   if (raw === null) return d;
   let v: unknown;
   try {
@@ -15,9 +17,7 @@ export function parsePrefs(raw: string | null): SpendingPrefs {
   }
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return d;
   const o = v as Record<string, unknown>;
-  const field = (k: keyof SpendingPrefs): boolean => {
-    const x = o[k];
-    return typeof x === 'boolean' ? x : d[k];
-  };
-  return { split: field('split'), mark: field('mark') };
+  const split: SpendingSplit =
+    typeof o.split === 'boolean' ? (o.split ? 'people' : 'together') : SPLITS.find((s) => s === o.split) ?? d.split;
+  return { split, mark: typeof o.mark === 'boolean' ? o.mark : d.mark };
 }

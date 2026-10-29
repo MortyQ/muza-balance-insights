@@ -1,7 +1,7 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { CategoryOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
-import type { LineRowView, MonthsView, PersonView, ShareItemView, SortKey, SummaryView, WhenView } from '@/entities/operations';
+import type { LineRowView, MonthsView, PartView, PersonView, ShareItemView, SortKey, SummaryView, WhenView } from '@/entities/operations';
 import type { Loadable } from '@/shared/lib';
 
 export interface UseCategoryDetailReturn {
@@ -23,6 +23,8 @@ export interface UseCategoryViewReturn {
   /** A month only; null — another period. */
   months: ComputedRef<MonthsView | null>;
   people: ComputedRef<PersonView[]>;
+  /** «By bank»: the banks with a positive part. */
+  banks: ComputedRef<PartView[]>;
   merchants: ComputedRef<ShareItemView[]>;
   moreMerchants: ComputedRef<string>;
   when: ComputedRef<WhenView | null>;

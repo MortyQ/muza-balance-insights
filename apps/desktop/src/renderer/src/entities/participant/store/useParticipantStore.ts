@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
-import type { ConnectionView, PeopleView, PersonView } from '@contract/api.ts';
+import type { ConnectionView, PeopleView, PersonView, ProviderId } from '@contract/api.ts';
 import { t } from '@/shared/lib';
 import { useParticipantsRequest } from '../api/useParticipantsRequest.ts';
-import { FAMILY, SELECTED_KEY } from '../constants.ts';
-import { allAccountsOff } from '../utils.ts';
+import { BANKS_KEY, FAMILY, SELECTED_KEY } from '../constants.ts';
+import { allAccountsOff, offeredBanks, shownBanks } from '../utils.ts';
 
 function readSelected(): number | null {
   try {
@@ -23,7 +23,27 @@ function writeSelected(id: number): void {
   }
 }
 
-/** People, their connections and token statuses (never a token: it does not leave main); the family / person view. */
+function readBanks(): string[] | null {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(BANKS_KEY) ?? 'null');
+    return Array.isArray(v) && v.every((x) => typeof x === 'string') ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeBanks(banks: ReadonlyArray<ProviderId>): void {
+  try {
+    localStorage.setItem(BANKS_KEY, JSON.stringify(banks));
+  } catch {
+    // Storage unavailable: the filter just starts with every bank next time.
+  }
+}
+
+/**
+ * People, their connections and token statuses (never a token: it does not leave main); the view: the family or one
+ * person, and which banks (spec desktop-bank-filter).
+ */
 export const useParticipantStore = defineStore('participant', () => {
   const { fetchPeople } = useParticipantsRequest();
   const view = ref<PeopleView | null>(null);
@@ -57,6 +77,34 @@ export const useParticipantStore = defineStore('participant', () => {
     writeSelected(id);
   }
 
+  /** The bank filter's choice as remembered; null — never chosen (every bank). */
+  const chosenBanks = ref<string[] | null>(readBanks());
+  /** The banks the filter offers; it shows only with two or more. */
+  const banks = computed<ProviderId[]>(() => offeredBanks(connections.value));
+  /** The banks the screens show. */
+  const shown = computed<ProviderId[]>(() => shownBanks(chosenBanks.value, banks.value));
+  /**
+   * For the data reads: the shown banks while some offered bank is off; undefined while every one is on — the same
+   * request (and cache key) as without the filter.
+   */
+  const selectedProviders = computed<ProviderId[] | undefined>(() => (shown.value.length < banks.value.length ? shown.value : undefined));
+
+  /** Changes exactly when the shown banks do: what the screens watch (the array is rebuilt on every people refresh). */
+  const banksKey = computed(() => selectedProviders.value?.join(',') ?? '');
+
+  /** The banks part of a data read: a plain copy (a store proxy does not cross IPC), nothing while every bank is on. */
+  function banksQuery(): { providers?: ProviderId[] } {
+    const p = selectedProviders.value;
+    return p ? { providers: [...p] } : {};
+  }
+
+  function selectBanks(next: ReadonlyArray<ProviderId>): void {
+    const kept = banks.value.filter((p) => next.includes(p));
+    if (kept.length === 0) return;
+    chosenBanks.value = kept;
+    writeBanks(kept);
+  }
+
   /** «Name · Monobank» of a connection, for messages about it. */
   function labelOf(connectionId: number): string {
     for (const p of people.value) {
@@ -70,5 +118,27 @@ export const useParticipantStore = defineStore('participant', () => {
     view.value = await fetchPeople();
   }
 
-  return { view, chosen, people, connections, hasConnections, anyToken, withoutToken, accountsOff, secureStorage, multiple, selectedId, select, labelOf, refresh };
+  return {
+    view,
+    chosen,
+    people,
+    connections,
+    hasConnections,
+    anyToken,
+    withoutToken,
+    accountsOff,
+    secureStorage,
+    multiple,
+    selectedId,
+    select,
+    chosenBanks,
+    banks,
+    shown,
+    selectedProviders,
+    banksKey,
+    banksQuery,
+    selectBanks,
+    labelOf,
+    refresh,
+  };
 });

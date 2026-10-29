@@ -6,6 +6,8 @@ export interface BankLook {
   monogram: string;
   /** Tailwind classes of the monogram square. */
   monogramClass: string;
+  /** The bank's colour where spending is split by bank (a theme token, readable in both themes; spec desktop-spending-split). */
+  color: string;
 }
 
 /**

@@ -3,4 +3,4 @@ export { default as ParticipantFilter } from './components/ParticipantFilter.vue
 export { COLOR_NAMES, FAMILY, MAX_PARTICIPANT_BUTTONS } from './constants.ts';
 export type { ParticipantFilterMode } from './types.ts';
 export { useParticipantStore } from './store/useParticipantStore.ts';
-export { allAccountsOff, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, tokenBadge, tokenLine, type TokenBadge } from './utils.ts';
+export { allAccountsOff, colorHolders, colorVar, coverageLine, filterOptions, firstFreeColor, offeredBanks, shownBanks, tokenBadge, tokenLine, type TokenBadge } from './utils.ts';

@@ -1,6 +1,7 @@
 // Pure helpers of the spending block in main (DataService.spendingOverview): the period compared with, and folding
 // account currencies into hryvnia by today's rates.
 import { toUah, type FxRate } from '@mono/core/read/fx';
+import { PROVIDER_IDS } from '@mono/core/providers/types';
 import type { PeriodInfo } from '@mono/core/read/filters';
 import type { SpendingCell, SpendingGroup } from '@mono/core/read/spending';
 import type { SpendingAmounts } from '../shared/api.ts';
@@ -56,6 +57,36 @@ export function cellGroups(cells: readonly SpendingCell[], keep: (c: SpendingCel
     by.set(id, g);
   }
   return { groups: [...by.values()] };
+}
+
+/** Banks in the registry's order, then the ids it does not know (specs desktop-bank-breakdown, desktop-spending-split). */
+export function byRegistry<T>(parts: Map<string, T>): Array<T & { provider: string }> {
+  const rank = (id: string) => {
+    const i = (PROVIDER_IDS as readonly string[]).indexOf(id);
+    return i < 0 ? PROVIDER_IDS.length : i;
+  };
+  return [...parts]
+    .sort(([a], [b]) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0))
+    .map(([provider, part]) => ({ provider, ...part }));
+}
+
+/**
+ * Per category, each bank's part in hryvnia kopecks, from the cells of a grid split by bank (spec
+ * desktop-spending-split): summed per currency, category and bank, then folded, so each part rounds on its own. A
+ * currency without a rate stays out, as in foldByCategory. Banks in the registry's order.
+ */
+export function bankParts(cells: readonly SpendingCell[], rates: ReadonlyMap<number, FxRate>): Map<string, Array<SpendingAmounts & { provider: string }>> {
+  const by = new Map<string, Map<string, SpendingAmounts>>();
+  for (const g of cellGroups(cells, (c) => c.provider !== null, (c) => `${c.category}\u0000${c.provider}`).groups) {
+    const uah = toUah(g.net, g.currency, rates);
+    if (uah === null) continue;
+    const [category, provider] = g.key.split('\u0000') as [string, string];
+    const banks = by.get(category) ?? new Map<string, SpendingAmounts>();
+    const a = banks.get(provider) ?? { net: 0, purchases: 0 };
+    banks.set(provider, { net: a.net + uah, purchases: a.purchases + g.purchases });
+    by.set(category, banks);
+  }
+  return new Map([...by].map(([category, banks]) => [category, byRegistry(banks)]));
 }
 
 /** Per category in hryvnia kopecks; a currency without a rate stays out (leftOut: its own minor units). */
