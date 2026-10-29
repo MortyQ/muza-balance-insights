@@ -214,7 +214,7 @@
   ones sit folded in a `<details>` «Hidden (n)», each with «Restore». On home, under «Spending»,
   `RecurringTeaserFeature`: one card-wide link to the screen — the monthly total, the count and the mandatory part
   (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
-  IPC; quiet reloads on `syncStatus.version` and on returning to the kept-alive home, where marks may have changed).
+  IPC; quiet reloads on `syncStatus.version`; a mark is a write, so back on home its cached answer is stale and reloads quietly).
   Tested in `tests/renderer/recurring.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the

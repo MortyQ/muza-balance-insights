@@ -28,6 +28,10 @@ English interface.
   bank. The «Income and spending» chart in «Analytics» gets a «Together / By banks» switch that stacks spending by bank.
   Both need at least two banks on in the filters, and the app remembers your choice.
 
+### Fixes
+
+- «Month pace» no longer turns grey with an empty tooltip after you come back to «General» from another screen.
+
 ## 0.1.12 — 2026-10-27
 
 ### Banks

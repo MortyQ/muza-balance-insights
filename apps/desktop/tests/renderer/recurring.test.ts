@@ -3,7 +3,7 @@
 // fixtures only. Typechecked with the renderer (tsconfig.web.json).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
-import { KeepAlive, defineComponent, h, ref } from 'vue';
+import { defineComponent, h, ref } from 'vue';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { createPinia, setActivePinia } from 'pinia';
 import type { PeopleView, RecurringMarkQuery, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
@@ -197,10 +197,9 @@ describe('regular payments line on home', () => {
       ],
     });
     await router.push('/');
-    // Home is kept alive: the line sits in a KeepAlive that can be switched away and back.
+    // Home is not kept alive: leaving it unmounts the line, coming back mounts it anew.
     const on = ref(true);
-    const other = defineComponent({ render: () => null });
-    const host = defineComponent({ render: () => h(KeepAlive, null, [on.value ? h(RecurringTeaserFeature) : h(other)]) });
+    const host = defineComponent({ render: () => (on.value ? h(RecurringTeaserFeature) : null) });
     const w = mount(host, { global: { plugins: [i18n, router] } });
     await flushPromises();
     return { w, on, router };
@@ -221,7 +220,7 @@ describe('regular payments line on home', () => {
     expect(getRecurringOverview.mock.calls.at(-1)?.[0]).toEqual({ participantId: 2 });
   });
 
-  it('back on home: reloads quietly, a new mark shows', async () => {
+  it('back on home: loads again, a new mark shows', async () => {
     const { w, on } = await mountLine();
     on.value = false;
     await flushPromises();
