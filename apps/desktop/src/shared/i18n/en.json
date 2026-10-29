@@ -11,6 +11,10 @@
       "perDay": "{amount} a day on average"
     },
     "flow": {
+      "bankPart": "{bank} — {amount}",
+      "byBanks": "By banks",
+      "splitLabel": "How to show spending",
+      "together": "Together",
       "title": "Income and spending",
       "months": "Green — the month ended in plus, red — in minus",
       "days": "Running totals from the 1st",

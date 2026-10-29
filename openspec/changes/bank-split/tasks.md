@@ -32,12 +32,12 @@
 
 ## 4. Renderer: the analytics chart by banks — `feat(desktop): analytics chart split by bank`
 
-- [ ] 4.1 `features/analytics-overview`: the «Together / By banks» switch, its stored choice, `flowChartOption` with
+- [x] 4.1 `features/analytics-overview`: the «Together / By banks» switch, its stored choice, `flowChartOption` with
       stacked bank areas (design, decision 5). Keys in `uk.json`, `en.json`, `ru.json`. Verify in
       `tests/renderer/analytics.test.ts`: by banks — one stacked area per bank in its colour, the stack's top equal to the
       spending line, income unchanged, for a month (running) and a range; the switch hidden with one bank on; the choice
       remembered.
-- [ ] 4.2 `CHANGELOG.md`, 0.1.13: one entry for both splits. Flag it to the user for review. Run the desktop checks.
+- [x] 4.2 `CHANGELOG.md`, 0.1.13: one entry for both splits. Flag it to the user for review. Run the desktop checks.
 
 ## 5. Checks
 

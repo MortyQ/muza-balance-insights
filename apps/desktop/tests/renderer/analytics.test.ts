@@ -8,7 +8,7 @@ import type { AnalyticsCategory, AnalyticsOverview, AnalyticsQuery } from '@cont
 import type { CategoryId } from '@contract/categories.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import {
-  bucketTitle, categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
+  bucketTitle, categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, flowList, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
 } from '@/features/analytics-overview/utils.ts';
 
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
@@ -163,6 +163,36 @@ describe('analytics chart options', () => {
     expect([0, 1, 4].map((x) => o.xAxis.axisLabel.formatter(x))).toEqual(['1', '', '5']);
   });
 
+  it('flow by banks: the income line and one stacked area per bank in its colour, adding up to spending; no gain / loss fill', () => {
+    const banks = [
+      { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)' },
+      { provider: 'privatbank', name: 'PrivatBank', color: 'var(--series-green)' },
+    ];
+    const split = (v: AnalyticsOverview): AnalyticsOverview => ({
+      ...v,
+      spendingByBank: [
+        { provider: 'monobank', values: v.spending.map((x) => x - Math.min(x, k(1))) },
+        { provider: 'privatbank', values: v.spending.map((x) => Math.min(x, k(1))) },
+      ],
+    });
+    type Stacked = Series & { stack?: string; areaStyle?: { color: string } };
+    for (const v of [split(RANGE), split(MONTH_VIEW)]) {
+      const o = flowChartOption(v, FMT, banks) as unknown as { series: Stacked[] };
+      expect(o.series.map((s) => s.id).filter((id) => id !== 'usual')).toEqual(['income', 'bank:monobank', 'bank:privatbank']);
+      const areas = o.series.filter((s) => s.stack === 'banks');
+      expect(areas.map((s) => s.areaStyle!.color)).toEqual(['var(--foreground)', 'var(--series-green)']);
+      const together = flowChartOption(v, FMT) as unknown as { series: Stacked[] };
+      const line = together.series.find((s) => s.id === 'spending')!.data as Array<[number, number | null]>;
+      line.forEach(([x, y]) => {
+        const parts = areas.map((a) => (a.data as Array<[number, number | null]>)[x]![1]);
+        if (y === null) expect(parts).toEqual([null, null]);
+        else expect(parts.reduce<number>((t, n) => t + (n ?? 0), 0)).toBe(y);
+      });
+    }
+    expect(flowList(split(RANGE), FMT, banks)[0]!.text).toContain('Monobank — ');
+    expect(flowList(split(RANGE), FMT)[0]!.text).not.toContain('Monobank');
+  });
+
   it('lines: one series per row that is on; hovering fades the others; the share in percent', () => {
     const rows = categoryRows(RANGE.categories);
     const o = linesOption(RANGE, rows, new Set(['groceries', 'cafes']), 'cafes', 'share', FMT) as unknown as Option;
@@ -187,6 +217,39 @@ describe('analytics chart options', () => {
 let answer: AnalyticsOverview = RANGE;
 const getAnalyticsOverview = vi.fn(async (_q: AnalyticsQuery) => answer);
 vi.mock('@/shared/api', () => ({ balanceApi: { getAnalyticsOverview: (...a: unknown[]) => getAnalyticsOverview(...(a as [AnalyticsQuery])) } }));
+
+describe('the analytics chart by banks, mounted', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    localStorage.clear();
+  });
+
+  it('offers «By banks» with two banks on and remembers it; with one bank the switch is gone and the chart is together', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { useParticipantStore } = await import('@/entities/participant');
+    const participant = useParticipantStore();
+    const conn = (id: number, provider: 'monobank' | 'privatbank') => ({
+      id, provider, method: 'file' as const, bank: provider, accounts: 1, enabledAccounts: 1, coveredFrom: '2026-01-01', coveredTo: '2026-09-30', lastSyncAt: null, token: null,
+    });
+    participant.view = { people: [{ id: 1, label: 'Fictional', labelFromBank: false, labelPending: false, color: null, connections: [conn(1, 'monobank'), conn(2, 'privatbank')] }], secureStorage: true };
+    const { default: FlowChart } = await import('@/features/analytics-overview/components/FlowChart.vue');
+    const view: AnalyticsOverview = { ...RANGE, spendingByBank: [{ provider: 'monobank', values: RANGE.spending }, { provider: 'privatbank', values: RANGE.spending.map(() => 0) }] };
+    const w = mount(FlowChart, { props: { view, fmt: FMT }, global: { plugins: [i18n] } });
+    await flushPromises();
+    const byBanks = w.findAll('.v-sc__item').find((b) => b.text().includes('По банкам'));
+    expect(byBanks).toBeTruthy();
+    await byBanks!.trigger('click');
+    await flushPromises();
+    expect(localStorage.getItem('analytics.flowSplit')).toBe('banks');
+    expect(w.text()).toContain('PrivatBank');
+
+    participant.selectBanks(['monobank']);
+    await flushPromises();
+    expect(w.findAll('.v-sc__item')).toHaveLength(0);
+    expect(w.text()).not.toContain('PrivatBank');
+    w.unmount();
+  });
+});
 
 describe('the analytics screen mounted', () => {
   beforeEach(() => {

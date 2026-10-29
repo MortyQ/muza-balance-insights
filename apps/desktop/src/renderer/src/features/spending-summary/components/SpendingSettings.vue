@@ -31,6 +31,7 @@ const shown = computed<SpendingSplit>(() => (options.value.some((o) => o.value =
           :options
           size="sm"
           full-width
+          role="group"
           :aria-labelledby="id"
           @update:model-value="emit('set', 'split', $event)"
         />

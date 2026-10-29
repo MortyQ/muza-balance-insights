@@ -23,6 +23,10 @@ English interface.
 - **See which bank you pay with.** A category's screen and the income screen now split the amount by bank, the way
   they already split it by person: a bar per bank with its amount, the number of operations and their average. It
   shows the banks you have on in the filters, and only when there are at least two.
+- **Spending in your banks' colours.** Each bank now has a colour of its own. In «Spending» the bars menu has «Split
+  the bars»: «Together», «By people» or «By banks» — by banks, each category's bar shows how much went through each
+  bank. The «Income and spending» chart in «Analytics» gets a «Together / By banks» switch that stacks spending by bank.
+  Both need at least two banks on in the filters, and the app remembers your choice.
 
 ## 0.1.12 — 2026-10-27
 

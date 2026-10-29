@@ -82,8 +82,9 @@ one bar.
 `FlowChart` gets a `VSegmentedControl` «Together / By banks» in its header, shown while `participant.shown.length > 1`;
 the choice lives in the feature (`localStorage` `analytics.flowSplit`, read and written in `try`/`catch`).
 `flowChartOption(view, fmt, banks)` with `banks` (names and colours, or null) replaces the spending line with one line
-series per bank, `stack: 'spending'` with `areaStyle`, in the bank's colour; the stack's top is the total. The legend
-lists the banks; the screen-reader list adds each bank's part to a row.
+series per bank, `stack: 'banks'` with `areaStyle`, in the bank's colour; the stack's top is the total. The gain / loss fill
+between income and spending goes in this mode: it would cover the banks' areas. The legend lists the banks; the
+screen-reader list adds each bank's part to a row.
 
 *Alternative:* one line per bank, not stacked. Rejected: it hides the total the user compares income with.
 
