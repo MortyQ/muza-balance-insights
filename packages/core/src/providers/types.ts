@@ -7,7 +7,7 @@
 // a client (providers/<id>/client.ts — network, pages, limits; only the import uses it). Re-deriving never loads a
 // client.
 
-export const PROVIDER_IDS = ['monobank', 'privatbank', 'abank'] as const;
+export const PROVIDER_IDS = ['monobank', 'privatbank', 'abank', 'slsp'] as const;
 export type ProviderId = (typeof PROVIDER_IDS)[number];
 
 /** A stored row as the rules see it (columns of `transactions`). */

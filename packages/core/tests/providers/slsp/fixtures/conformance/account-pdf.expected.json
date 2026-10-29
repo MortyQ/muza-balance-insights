@@ -1,0 +1,128 @@
+{
+  "reader": "slsp-account-pdf",
+  "result": {
+    "ok": true,
+    "statements": [
+      {
+        "kind": "card",
+        "currencyCode": 978,
+        "account": {
+          "iban": "SK9909000000000000000001",
+          "cards": [
+            "4000 00** **** 0001"
+          ],
+          "type": null
+        },
+        "rows": [
+          {
+            "time": 1767288605,
+            "amount": -1240,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -1240,
+            "bankCategory": "Platba kartou",
+            "balance": 98760,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"02.01.2026 02.01.2026\",\"description\":[\"Platba kartou\",\"Č. k. 4000 00** **** 0001\",\"BILLA 113-MESTO 01. 01. 2026 18:30:05\",\"Transakcia prostredníctvom GooglePay\"],\"amount\":\"- 12,40\",\"fee\":\"\",\"balance\":\"987,60\"}",
+            "description": "BILLA 113-MESTO"
+          },
+          {
+            "time": 1767308400,
+            "amount": 25000,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": 25000,
+            "bankCategory": "Prijatá Okamžitá platba",
+            "balance": 123760,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"02.01.202602.01.2026\",\"description\":[\"Prijatá Okamžitá platba\",\"SK99 1100 0000 0000 0000 0002: TATRSKBX\",\"Názov protiúčtu: VYMYSLENA OSOBA\"],\"amount\":\"250,00\",\"fee\":\"\",\"balance\":\"1 237,60\"}",
+            "description": "VYMYSLENA OSOBA",
+            "counterIban": "SK9911000000000000000002",
+            "counterName": "VYMYSLENA OSOBA"
+          },
+          {
+            "time": 1767518100,
+            "amount": -2500,
+            "currencyCode": 980,
+            "hold": false,
+            "operationAmount": -123450,
+            "bankCategory": "Platba kartou",
+            "balance": 121260,
+            "raw": "{\"valueDate\":\"05.01.2026\",\"bookingDate\":\"05.01.2026\",\"description\":[\"Platba kartou\",\"Č. k. 4000 00** **** 0001\",\"VYMYSLENY OBCHOD-MESTO 04. 01.\",\"2026 10:15:00\",\"Transakcia prostredníctvom Token Vymyslena\",\"Penazenka\",\"1 234,50UAH\",\"Výmenný kurz: 49,3800\"],\"amount\":\"- 25,00\",\"fee\":\"\",\"balance\":\"1 212,60\"}",
+            "description": "VYMYSLENY OBCHOD-MESTO"
+          },
+          {
+            "time": 1767686400,
+            "amount": -10200,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -10000,
+            "bankCategory": "Výber kartou",
+            "balance": 111060,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"06.01.2026 06.01.2026\",\"description\":[\"Výber kartou\",\"Č. k. 4000 00** **** 0001\",\"999 VYMYSLENA BANKA-MESTO 06. 01. 2026 09:00:00\"],\"amount\":\"- 100,00\",\"fee\":\"- 2,00\",\"balance\":\"1 110,60\"}",
+            "description": "999 VYMYSLENA BANKA-MESTO",
+            "commissionRate": 200
+          },
+          {
+            "time": 1767783600,
+            "amount": 130000,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": 130000,
+            "bankCategory": "Vklad cez ATM",
+            "balance": 241060,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"07.01.202607.01.2026\",\"description\":[\"Vklad cez ATM\",\"Č. k. 4000 00** **** 0001\",\"VYMYSLENY ATM-MESTO 07. 01. 2026\",\"12:00:00\"],\"amount\":\"1 300,00\",\"fee\":\"\",\"balance\":\"2 410,60\"}",
+            "description": "VYMYSLENY ATM-MESTO"
+          },
+          {
+            "time": 1767826800,
+            "amount": -8000,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -8000,
+            "bankCategory": "SEPA platba (elektronicky)",
+            "balance": 233060,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"08.01.2026 08.01.2026\",\"description\":[\"SEPA platba (elektronicky)\",\"SK99 0200 0000 0000 0000 0003\",\"Názov protiúčtu: VYMYSLENA FIRMA\"],\"amount\":\"- 80,00 BIC: VUBASKBX\",\"fee\":\"\",\"balance\":\"2 330,60\"}",
+            "description": "VYMYSLENA FIRMA",
+            "counterIban": "SK9902000000000000000003",
+            "counterName": "VYMYSLENA FIRMA"
+          },
+          {
+            "time": 1767826800,
+            "amount": 500,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": 500,
+            "bankCategory": "Návrat tovaru",
+            "balance": 233560,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"09.01.2026 09.01.2026\",\"description\":[\"Návrat tovaru\",\"Č. k. 4000 00** **** 0001\",\"LIDL DAKUJE 9-MESTO 08. 01. 2026 00:00:00\",\"Transakcia prostredníctvom GooglePay\"],\"amount\":\"5,00\",\"fee\":\"\",\"balance\":\"2 335,60\"}",
+            "description": "LIDL DAKUJE 9-MESTO"
+          },
+          {
+            "time": 1768027510,
+            "amount": -320,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -320,
+            "bankCategory": "Platba kartou",
+            "balance": 233240,
+            "raw": "{\"valueDate\":\"10.01.2026\",\"bookingDate\":\"10.01.2026\",\"description\":[\"Platba kartou\",\"Č. k. 4000 00** **** 0001\",\"TABAK-PRESS-BILLA VYMYSL. 10. 01. 2026 07:45:10\"],\"amount\":\"- 3,20\",\"fee\":\"\",\"balance\":\"2 332,40\"}",
+            "description": "TABAK-PRESS-BILLA VYMYSL."
+          },
+          {
+            "time": 1768086000,
+            "amount": -4000,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -4000,
+            "bankCategory": "Okamžitá platba (elektronicky)",
+            "balance": 229240,
+            "raw": "{\"valueDate\":\"\",\"bookingDate\":\"10.01.202611.01.2026\",\"description\":[\"Okamžitá platba (elektronicky)\",\"CZ99 0800 0000 0000 0000 0004\",\"BIC: GIBACZPX\",\"Názov protiúčtu: VYMYSLENA OSOBA\"],\"amount\":\"- 40,00\",\"fee\":\"\",\"balance\":\"2 292,40\"}",
+            "description": "VYMYSLENA OSOBA",
+            "counterIban": "CZ9908000000000000000004",
+            "counterName": "VYMYSLENA OSOBA"
+          }
+        ],
+        "closingBalance": 229240
+      }
+    ]
+  }
+}

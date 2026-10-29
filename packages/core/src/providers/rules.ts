@@ -2,9 +2,10 @@
 import { abankRules } from './abank/rules.ts';
 import { monobankRules } from './monobank/rules.ts';
 import { privatbankRules } from './privatbank/rules.ts';
+import { slspRules } from './slsp/rules.ts';
 import type { ProviderId, ProviderRules } from './types.ts';
 
-export const PROVIDER_RULES: Readonly<Record<ProviderId, ProviderRules>> = { monobank: monobankRules, privatbank: privatbankRules, abank: abankRules };
+export const PROVIDER_RULES: Readonly<Record<ProviderId, ProviderRules>> = { monobank: monobankRules, privatbank: privatbankRules, abank: abankRules, slsp: slspRules };
 
 export function rulesFor(provider: ProviderId): ProviderRules {
   return PROVIDER_RULES[provider];

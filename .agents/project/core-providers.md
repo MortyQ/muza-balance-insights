@@ -96,6 +96,30 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
   кешбеку на картку», 4829) is income, never a transfer; `MONO*<name>` a named sender; a credit with a merchant code or
   without one (not a transfer, not 6012) a refund. `categories.ts` is empty: the bank states no category.
 
+## Slovenská sporiteľňa
+
+- Files only (`access.token: null`): `providers/slsp/{info,rules,descriptions,categories,merchants,statement}.ts`, ids
+  `'prefixed'`, one card type `card` (the account's one card; the app's statement kind is `card`).
+- Its reader `slsp-account-pdf` (`pdf`) takes the monthly account statement in Slovak («Výpis z Účtu»). The six-column
+  header over two lines; rows oldest first, each from its first line (both dates — one item over both date columns,
+  or two —, the type, amount, fee, balance) down to the next (`rowBand: 'below'`); footers and the closing note end a
+  page's table, «Nezrealizované transakcie» (operations not carried out) ends the table. The heading gives the IBAN,
+  the currency, the opening and closing balances and the totals. Score 2 with the title and the bank's BIC, 1 with the
+  header alone. Times: a card operation's own moment from its details, to the second, else the booking date;
+  Europe/Bratislava. Amount = sum + fee, the fee kept as the commission; a stated foreign amount is the operation
+  amount. Transfers carry the counterparty's IBAN and name.
+- **The file is checked against itself**: every printed balance follows from the one before (amount and fee), and the
+  heading's totals and closing balance add up; any break refuses the file as `bad-row`.
+- No MCC and no category: the operation type is stored as the bank category (`categories.ts`): the four transfer
+  types decide transfers (income or p2p by sign), «Výber kartou» is cash, «Vklad cez ATM» income, «Návrat tovaru» a
+  refund. Own transfers come from the domain's IBAN rule only.
+- **Merchant keywords** (`merchants.ts`): card payments (and refunds) the type leaves open get a hint from the
+  merchant text. Whole words of the text without diacritics; the first entry that matches wins (specific before
+  general, a kiosk «TABAK PRESS» before «BILLA»); `first` entries only at the start; no match → no hint («other»).
+  Chains and brands only, never a small local place; a new keyword needs the user's ok, like a masking template. Only
+  for a bank that states neither an MCC nor a category: never applied to a row that has one.
+- Masking keeps no SLSP text: every description is `[other]` (a merchant or a person's name).
+
 ## Bank categories
 
 - **One table per bank**: `providers/<id>/categories.ts` exports `BANK_CATEGORIES` (bank category → a common hint of
@@ -135,7 +159,9 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - **Shared reader helpers**: `providers/statement-kit.ts` (`gridOf`, `columnsByHeader`, `normHeader` — composed
   letters, lower case, one space —, `wallTime`, `isEmptyRow`, `localAmount` for `1 234,56`; for a PDF `pdfLines`,
   `lineSegments` and `pdfTable`: a header over several lines found by its column names on each page, a row's cells across
-  its lines). A new reader is mostly its column list on top of them.
+  its lines; options `rowBand: 'below'` for details under a row's first line, `pageEndRe` / `tableEndRe` for footers and
+  a section after the operations, and `lines`, each cell's lines). A new reader is mostly its column list on top of
+  them.
 - **The credit limit.** A statement may state it (`ParsedStatement.creditLimit`); the import stores it with a new
   account and, like the balance, only from a newer statement. The balance then includes it, as Monobank's API does.
 - **Reading values.**

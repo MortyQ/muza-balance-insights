@@ -173,21 +173,40 @@ export type PdfTable<F extends string> = {
   heading: string[];
   /** The operations, in the file's order: each field's text, a cell's lines joined top down. */
   rows: Array<Record<F, string>>;
+  /** The same cells line by line (each line's items joined), parallel to `rows`; empty lines left out. */
+  lines: Array<Record<F, string[]>>;
 };
+
+export type PdfTableOptions = {
+  /**
+   * Which lines a row takes: `around` (default) — between the midpoints to the neighbouring anchors, for a date over
+   * its time; `below` — from its anchor line down to the next anchor, for details written under the first line.
+   */
+  rowBand?: 'around' | 'below';
+  /** A line whose text matches ends the table on its page (a footer, a closing note). */
+  pageEndRe?: RegExp;
+  /** A line whose text matches ends the table for the rest of the document (a section after the operations). */
+  tableEndRe?: RegExp;
+};
+
+const lineText = (line: PdfLine) => lineSegments(line).join(' ');
 
 /**
  * A table set over PDF pages: the header (repeated on each page, or once and continued) is found by its column names
- * over up to six lines. A row is anchored by a line whose `anchor` column matches `anchorRe`; its cells are every item
- * between the midpoints to the neighbouring anchors (half the usual row spacing past the first and the last), so a
- * date over its time or a wrapped description reads as one cell. Null when no page has the header.
+ * over up to six lines. A row is anchored by a line whose `anchor` column matches `anchorRe`. With `rowBand: 'around'`
+ * its cells are every item between the midpoints to the neighbouring anchors (half the usual row spacing past the
+ * first and the last), so a date over its time or a wrapped description reads as one cell; with `'below'` every item
+ * from the anchor line down to the next anchor (or the end of the page's table). Null when no page has the header.
  */
 export function pdfTable<F extends string>(
   doc: StatementDocument,
   spec: ReadonlyArray<{ field: F; re: RegExp }>,
   anchor: F,
   anchorRe: RegExp,
+  options: PdfTableOptions = {},
 ): PdfTable<F> | null {
   if (doc.format !== 'pdf') return null;
+  const { rowBand = 'around', pageEndRe, tableEndRe } = options;
   const fields = spec.map((s) => s.field);
   let header: ReturnType<typeof findHeader<F>> = null;
   let heading: string[] | null = null;
@@ -201,7 +220,13 @@ export function pdfTable<F extends string>(
     }
     const current = found ?? header;
     if (!current) continue;
-    pages.push({ lines: found ? lines.slice(found.last + 1) : lines, spans: current.spans, columns: fields.map((f) => current.found[f].index) });
+    let body = found ? lines.slice(found.last + 1) : lines;
+    const pageEnd = pageEndRe ? body.findIndex((l) => pageEndRe.test(lineText(l))) : -1;
+    if (pageEnd >= 0) body = body.slice(0, pageEnd);
+    const tableEnd = tableEndRe ? body.findIndex((l) => tableEndRe.test(lineText(l))) : -1;
+    if (tableEnd >= 0) body = body.slice(0, tableEnd);
+    pages.push({ lines: body, spans: current.spans, columns: fields.map((f) => current.found[f].index) });
+    if (tableEnd >= 0) break;
   }
   if (!header || !heading) return null;
 
@@ -215,20 +240,33 @@ export function pdfTable<F extends string>(
   const half = gaps.length > 0 ? gaps[Math.floor(gaps.length / 2)]! / 2 : lineH * 1.5;
 
   const rows: Array<Record<F, string>> = [];
+  const rowLines: Array<Record<F, string[]>> = [];
   for (const [n, p] of pages.entries()) {
     const ys = anchored[n]!;
     for (const [k, y] of ys.entries()) {
-      const top = k === 0 ? y - half : (ys[k - 1]! + y) / 2;
-      const bottom = k === ys.length - 1 ? y + half : (y + ys[k + 1]!) / 2;
+      const next = ys[k + 1];
+      const inBand =
+        rowBand === 'below'
+          ? (ly: number) => ly >= y && (next === undefined || ly < next)
+          : (ly: number) => ly > (k === 0 ? y - half : (ys[k - 1]! + y) / 2) && ly <= (next === undefined ? y + half : (y + next) / 2);
       const cells = fields.map(() => [] as PdfItem[]);
+      const cellLines = fields.map(() => [] as string[]);
       for (const line of p.lines) {
-        if (line.y <= top || line.y > bottom) continue;
+        if (!inBand(line.y)) continue;
+        const onLine = fields.map(() => [] as string[]);
         for (const item of line.items) {
           const at = p.columns.indexOf(columnOf(item, p.spans));
-          if (at >= 0) cells[at]!.push(item);
+          if (at < 0) continue;
+          cells[at]!.push(item);
+          onLine[at]!.push(item.text.trim());
         }
+        onLine.forEach((texts, c) => {
+          const text = texts.join(' ').trim();
+          if (text !== '') cellLines[c]!.push(text);
+        });
       }
       rows.push(Object.fromEntries(fields.map((f, c) => [f, cells[c]!.map((i) => i.text.trim()).join(' ')])) as Record<F, string>);
+      rowLines.push(Object.fromEntries(fields.map((f, c) => [f, cellLines[c]!])) as Record<F, string[]>);
     }
   }
   const h = header;
@@ -237,5 +275,6 @@ export function pdfTable<F extends string>(
     names: Object.fromEntries(fields.map((f) => [f, h.names[h.found[f].index]!])) as Record<F, string>,
     heading,
     rows,
+    lines: rowLines,
   };
 }
