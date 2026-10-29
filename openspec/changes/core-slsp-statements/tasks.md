@@ -62,5 +62,5 @@
 
 ## 5. Checks
 
-- [ ] 5.1 Run `pnpm test` and `pnpm typecheck` at the root. Where the sandbox blocks root `pnpm`, run each package's
+- [x] 5.1 Run `pnpm test` and `pnpm typecheck` at the root. Where the sandbox blocks root `pnpm`, run each package's
   commands from the core-architecture skill and ask the user to run the root ones.
