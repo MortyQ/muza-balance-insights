@@ -163,7 +163,7 @@ describe('analytics chart options', () => {
     expect([0, 1, 4].map((x) => o.xAxis.axisLabel.formatter(x))).toEqual(['1', '', '5']);
   });
 
-  it('flow by banks: the income line and one stacked area per bank in its colour, adding up to spending; no gain / loss fill', () => {
+  it('flow by banks: the income line, one stacked area per bank in its colour without an edge, adding up to the spending line on top; no gain / loss fill', () => {
     const banks = [
       { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)' },
       { provider: 'privatbank', name: 'PrivatBank', color: 'var(--series-green)' },
@@ -178,9 +178,11 @@ describe('analytics chart options', () => {
     type Stacked = Series & { stack?: string; areaStyle?: { color: string } };
     for (const v of [split(RANGE), split(MONTH_VIEW)]) {
       const o = flowChartOption(v, FMT, banks) as unknown as { series: Stacked[] };
-      expect(o.series.map((s) => s.id).filter((id) => id !== 'usual')).toEqual(['income', 'bank:monobank', 'bank:privatbank']);
+      expect(o.series.map((s) => s.id).filter((id) => id !== 'usual')).toEqual(['income', 'bank:monobank', 'bank:privatbank', 'spending']);
       const areas = o.series.filter((s) => s.stack === 'banks');
       expect(areas.map((s) => s.areaStyle!.color)).toEqual(['var(--foreground)', 'var(--series-green)']);
+      expect(areas.map((s) => [(s.lineStyle as { width?: number }).width, (s.areaStyle as { opacity?: number }).opacity])).toEqual([[0, 0.5], [0, 0.5]]);
+      expect(o.series.find((s) => s.id === 'spending')!.data).toEqual((flowChartOption(v, FMT) as unknown as { series: Stacked[] }).series.find((s) => s.id === 'spending')!.data);
       const together = flowChartOption(v, FMT) as unknown as { series: Stacked[] };
       const line = together.series.find((s) => s.id === 'spending')!.data as Array<[number, number | null]>;
       line.forEach(([x, y]) => {

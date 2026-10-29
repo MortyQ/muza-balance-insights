@@ -6,6 +6,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
 import { VChart, VSegmentedControl } from '@/shared/ui';
+import { FLOW_BANK_FILL } from '../constants.ts';
 import { useFlowSplit } from '../composables/useFlowSplit.ts';
 import type { FlowBank, FlowSplit } from '../types.ts';
 import { flowChartOption, flowList } from '../utils.ts';
@@ -30,6 +31,8 @@ const splits = computed(() => [
 const option = computed(() => flowChartOption(view, fmt, banks.value));
 const list = computed(() => flowList(view, fmt, banks.value));
 const days = computed(() => view.unit === 'day');
+// The legend's swatch: the bank's colour as strong as its area.
+const swatch = (color: string) => `color-mix(in oklch, ${color} ${FLOW_BANK_FILL * 100}%, transparent)`;
 </script>
 
 <template>
@@ -42,12 +45,12 @@ const days = computed(() => view.unit === 'day');
       <div class="flex flex-wrap items-center gap-4">
         <div class="flex flex-wrap gap-4 text-sm text-foreground-secondary" aria-hidden="true">
           <span class="inline-flex items-center gap-1.5"><span class="h-0.75 w-4 rounded-full bg-success" />{{ $t('analytics.flow.income') }}</span>
+          <span class="inline-flex items-center gap-1.5"><span class="h-0.75 w-4 rounded-full bg-primary" />{{ $t('analytics.flow.spending') }}</span>
           <template v-if="banks">
             <span v-for="b in banks" :key="b.provider" class="inline-flex items-center gap-1.5">
-              <span class="h-2.5 w-4 rounded-sm" :style="{ background: b.color }" />{{ b.name }}
+              <span class="h-2.5 w-4 rounded-sm bg-(--swatch)" :style="{ '--swatch': swatch(b.color) }" />{{ b.name }}
             </span>
           </template>
-          <span v-else class="inline-flex items-center gap-1.5"><span class="h-0.75 w-4 rounded-full bg-primary" />{{ $t('analytics.flow.spending') }}</span>
           <span v-if="days && view.usual" class="inline-flex items-center gap-1.5">
             <span class="w-4 border-t-2 border-dashed border-foreground-muted" />{{ $t('analytics.flow.usual') }}
           </span>

@@ -4,7 +4,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { CHART_TOOLTIP, dayMonth } from '@/entities/operations';
 import { monthName, monthShortName, t } from '@/shared/lib';
 import type { ChartOption } from '@/shared/ui';
-import { HEAT_EVEN } from './constants.ts';
+import { FLOW_BANK_FILL, HEAT_EVEN } from './constants.ts';
 import type { CategoryRow, ChangeRow, Column, CompareRow, FlowBank, GapPolygon, HeatRow, KpiView, LinesMode, MiniCard } from './types.ts';
 
 const sum = (xs: readonly number[]): number => xs.reduce((s, x) => s + x, 0);
@@ -312,8 +312,8 @@ type AxisParam = { seriesName?: string; value: [number, number | null] };
 
 /**
  * «Income and spending»: two lines over buckets with the area between them; one month — running totals and the usual
- * month. With `banks` (spec desktop-spending-split): spending is one stacked area per bank in its colour, whose top is
- * the total, and the gain / loss fill goes (it would cover the banks' areas); income stays a line.
+ * month. With `banks` (spec desktop-spending-split): spending is one stacked area per bank in its colour, without edges,
+ * under the spending line, and the gain / loss fill goes (it would cover the banks' areas); income stays a line.
  */
 export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat, banks: ReadonlyArray<FlowBank> | null = null): ChartOption {
   const days = v.unit === 'day';
@@ -353,9 +353,11 @@ export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat
               z: 2,
               stack: 'banks',
               showSymbol: false,
-              lineStyle: { color: b.color, width: 1.5 },
-              areaStyle: { color: b.color, opacity: 0.35 },
+              // No edge of its own: a small bank's edge would sit on the bank below and read as its border.
+              lineStyle: { color: b.color, width: 0 },
+              areaStyle: { color: b.color, opacity: FLOW_BANK_FILL },
             })),
+            line('spending', t('analytics.flow.spending'), 'var(--primary)', spending),
           ]
         : [
             fill('gain', polys.filter((p) => p.positive), 'var(--success)'),
