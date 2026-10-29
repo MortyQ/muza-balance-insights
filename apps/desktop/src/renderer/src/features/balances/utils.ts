@@ -6,7 +6,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { colorVar } from '@/entities/participant';
 import { CHART_TOOLTIP } from '@/entities/operations';
 import { currencySymbol, dayMonthName, formatAmount, formatMoney, monthName as calendarMonthName, monthShortName, t, UAH } from '@/shared/lib';
-import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
+import { CARD_STEP, CARD_WIDTH, CLOSE_STAGGER, OPEN_STAGGER, PACE_BANK_FILL, ROW_INSET, SHARES_NAMED, STACK_DEPTH } from './constants.ts';
 import type { ChartOption } from '@/shared/ui';
 import type { Flow, FreeLineView, PaceBank, PaceLegendItem, PaceSplit, PaceView, RowView, Slide } from './types.ts';
 
@@ -339,9 +339,16 @@ export function paceBanks(v: Readonly<PaceView> | null, offered: boolean, split:
   });
 }
 
-/** The legend under the pace chart by banks: each bank drawn, in the chart's order, with its spending by `last`. */
+/**
+ * The legend under the pace chart by banks: each bank drawn, in the chart's order, with its spending by `last` and a
+ * swatch of its colour at the area's strength.
+ */
 export function paceLegend(v: Readonly<PaceView>, banks: ReadonlyArray<PaceBank> | null): PaceLegendItem[] {
-  return (banks ?? []).map((b) => ({ ...b, amount: v.banks.find((x) => x.provider === b.provider)?.spent[v.last] ?? 0 }));
+  return (banks ?? []).map((b) => ({
+    ...b,
+    swatch: `color-mix(in oklch, ${b.color} ${PACE_BANK_FILL * 100}%, transparent)`,
+    amount: v.banks.find((x) => x.provider === b.provider)?.spent[v.last] ?? 0,
+  }));
 }
 
 /**
@@ -438,8 +445,9 @@ export function paceChartOption(v: Readonly<PaceView>, money: (minor: number) =>
         data: v.banks.find((x) => x.provider === b.provider)?.spent ?? v.spent.map((s) => (s === null ? null : 0)),
         symbol: 'none',
         silent: true,
-        lineStyle: { width: 1.5, color: b.color },
-        areaStyle: { color: b.color, opacity: 0.35 },
+        // No edge of its own: a small bank's edge would sit on the bank below and read as its border.
+        lineStyle: { width: 0, color: b.color },
+        areaStyle: { color: b.color, opacity: PACE_BANK_FILL },
       })),
       {
         type: 'line',

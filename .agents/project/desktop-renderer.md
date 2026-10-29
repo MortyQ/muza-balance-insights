@@ -30,7 +30,8 @@
   in the panel's header while two or more banks are on; the choice is `composables/usePaceSplit.ts` (`localStorage`
   `home.pace.split`, default together). `paceView` adds each bank's running sum from `spendingByBank` (`PaceView.banks`),
   `paceBanks(view, offered, split)` gives the banks to draw (name and colour from `entities/bank`) or null, and
-  `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own);
+  `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own; the
+  areas have no edges and `PACE_BANK_FILL` strength, which the legend's swatches repeat);
   `paceTooltip` adds each bank's part after «Spent»; `PaceLegend` under the chart lists the banks drawn (`paceLegend`:
   colour, name, amount by the last day). No new request.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`

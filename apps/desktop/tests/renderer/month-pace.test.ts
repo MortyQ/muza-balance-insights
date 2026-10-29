@@ -167,7 +167,7 @@ describe('the pace by banks', () => {
       series: Array<{ stack?: string; data: unknown; areaStyle?: { color: string }; lineStyle: { type?: string; color: string }; markPoint?: unknown }>;
     };
     expect(o.series.map((s) => s.stack ?? s.lineStyle.type ?? 'line')).toEqual(['dashed', 'banks', 'banks', 'line']);
-    expect(o.series[1]).toMatchObject({ data: [60, 60, null], areaStyle: { color: 'var(--foreground)' } });
+    expect(o.series[1]).toMatchObject({ data: [60, 60, null], areaStyle: { color: 'var(--foreground)', opacity: 0.5 }, lineStyle: { width: 0 } });
     expect(o.series[2]?.data).toEqual([40, 70, null]);
     expect(o.series[3]?.areaStyle).toBeUndefined();
     expect(o.series[3]?.markPoint).toBeDefined();
@@ -187,8 +187,8 @@ describe('the pace by banks', () => {
     const v = paceView(byBanks(), null)!;
     const items = paceLegend(v, paceBanks(v, true, 'banks'));
     expect(items).toEqual([
-      { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)', amount: 60 },
-      { provider: 'privatbank', name: 'PrivatBank', color: expect.any(String), amount: 70 },
+      { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)', swatch: 'color-mix(in oklch, var(--foreground) 50%, transparent)', amount: 60 },
+      { provider: 'privatbank', name: 'PrivatBank', color: expect.any(String), swatch: expect.stringMatching(/ 50%, transparent\)$/), amount: 70 },
     ]);
     expect(items.reduce((sum, i) => sum + i.amount, 0)).toBe(v.spentTotal);
     expect(paceLegend(v, null)).toEqual([]);

@@ -133,6 +133,8 @@ export interface PaceBank {
 
 /** One item of the pace legend by banks: the bank and its spending by the last day with data. */
 export interface PaceLegendItem extends PaceBank {
+  /** The swatch's CSS colour: the bank's colour as strong as its area. */
+  swatch: string;
   amount: number;
 }
 
