@@ -30,6 +30,9 @@ English interface.
 - **«Month pace» by banks.** With two or more banks on in the filters, the gear on «Month pace» offers «Together» or
   «By banks»: by banks, the month's spending so far is drawn in each bank's colour, stacked up to the total, and
   pointing at a day shows each bank's part. «Together» is the default, and the app remembers your choice.
+- **Account cards look like your real cards.** In the open balance row each account is drawn as its bank's card:
+  Monobank's black, white, iron, platinum or children's card, PrivatBank's blue card, A-Bank's green card and
+  Slovenská sporiteľňa's blue card, each with a chip and a contactless mark.
 
 ### Fixes
 

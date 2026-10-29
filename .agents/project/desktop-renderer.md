@@ -33,7 +33,7 @@
   `paceChartOption(view, money, banks)` then stacks one area per bank under the month's line (no fill of its own);
   `paceTooltip` adds each bank's part after «Spent». No new request.
   A `Slide` is `{ kind: 'summary'; card: SummaryCardProps } | { kind: 'account'; card: AccountCardProps }` plus `key`
-  and `flow`; every account slide is `bank: 'monobank'` until accounts carry their bank.
+  and `flow`; an account slide carries its bank (`name.provider`) and card type (`variant`, `name.type`).
   The open row is a native scroller (`CardStack`): `overflow-x-auto`, `snap-x snap-mandatory`, cards stay absolute at
   `i × CARD_STEP` with `snap-start`, `[scrollbar-width:none]` on every OS, the edge with more cards fades
   (`mask-image`, `--fade-l` / `--fade-r`). `composables/useRowScroll.ts` reads the scroller into `rowView(scrollLeft,
@@ -66,9 +66,14 @@
   muted `--danger` for both themes. No rate line (the month panel keeps `fxNote`). It takes `SummaryCardProps` (each
   figure apart: `count`, `fx`, `negative`, `own`, `reserved`, `people`, `freeShare`, `net { label, amount, value }`);
   `components/AccountCard.vue` picks the skin of the account's bank from `BANK_CARDS` (`constants.ts`,
-  `Record<CardBank, Component>`: a new bank does not build without a skin); `components/bank/MonobankCard.vue` — the
-  dark card with the «m» mark, taking `CardFigures` (`title`, `caption`, `amount`, `approx`, `actual`, `bottom`, `net`
-  + `netText`, `accents`, `dim`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
+  `Partial<Record<ProviderId, Component>>`, else `NeutralCard` on `bg-nav`); each skin draws the bank's physical card
+  (spec `desktop-balance-cards`) over `components/bank/CardShell.vue` — the shared body: wordmark slot `brand`, shapes
+  slot `art`, the chip, `lucide:nfc`, a sheen, the people dots, the figures and `tone` (`dark | light`: text colours, the
+  net arrow in `--card-up` / `--card-down` or, on a light card, `--card-up-ink` / `--card-down-ink` of `theme.css`). Skins
+  are CSS only (gradients and shapes, fixed brand colours, no image file): `MonobankCard` by `variant` (black — also a
+  jar and any other type —, white, iron, platinum, yellow), `PrivatBankCard`, `ABankCard`, `SlspCard`. Wordmarks are
+  brand marks in the app's font, `aria-hidden`, never translated. They take `CardFigures` (`title`, `caption`, `amount`,
+  `approx`, `actual`, `bottom`, `net` + `netText`, `accents`, `dim`, `variant`). All are 400 × 252 (a bank card's proportion; `CARD_WIDTH`), and their root is a `<button>`; `aria-expanded` comes from
   outside (no `aria-label` of their own: screen readers read the card's content, `aria-expanded` gives the state).
   `entities/period` — Pinia-store `useMonthStore` (`month`, `thisMonth`, `set(next, first)` — зажимает в
   `[firstMonth, thisMonth]`): один выбранный месяц для всей главной, его читают `balances` и `spending-summary`

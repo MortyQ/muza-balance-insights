@@ -221,8 +221,9 @@
   global.
 - **An own transfer between two banks**: it is spending in neither bank's view, and its fee shows under «Transfer
   fees» only in the view of the bank it was sent from.
-- **The control by eye**: the toggles at three widths (names hidden below 45rem), both themes, the person buttons still
-  falling back to the select when the row gets narrow; the last bank on cannot be turned off and says why.
+- **The control by eye** (redone as one popover in `desktop-bank-looks`): the «Banks» button with the marks at three
+  widths and both themes, the person buttons still falling back to the select when the row gets narrow; the panel's
+  switches; the last bank on cannot be turned off and says why.
 - **«By bank»** (change `bank-breakdown`): with real data from two or three banks, the bars on a category's screen and
   on the income screen add up to the screen's total, follow the bank filter and the person, and a transfer fee shows
   under the bank it was sent from. The card at three widths (the right column's last card stretching), both themes.
@@ -231,3 +232,14 @@
   banks» — the stacked areas' top equals the «Together» spending line, for a month (running) and a range. The bank
   colours in both themes (Monobank's foreground colour on the dark theme), PrivatBank's green beside the income line,
   and an earlier «Who spent how much» choice carried over after the update.
+
+## Check on a live system: bank looks (`openspec/changes/desktop-bank-looks`)
+
+- **Card looks by eye**: each bank's card and each Monobank type (black, white, iron, platinum, children's yellow, a jar)
+  in the open row, in both themes: brand colours close to the real cards, text readable on every card (the light ones
+  especially), the people dots, a dimmed card without data, hover and press motion. The colours were picked from public
+  photos, not brand guides.
+- **«Month pace» by banks**: with real data from two or three banks, the stacked areas' top meets the month's line every
+  day, the tooltip's bank parts add up to «Spent», the gear hides with one bank on and the choice survives a restart.
+- **No grey charts**: leave «General» for another screen while auto-sync runs, come back — «Month pace» keeps its
+  colours and its tooltip has text.

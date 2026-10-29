@@ -28,21 +28,21 @@
 
 ## 3. Bank card looks — `feat(desktop): account cards in their bank's look`
 
-- [ ] 3.1 Move the shared card body (button, motion, dim, dots, figures, chip, contactless mark, sheen, `tone`) into
+- [x] 3.1 Move the shared card body (button, motion, dim, dots, figures, chip, contactless mark, sheen, `tone`) into
   `entities/account/components/bank/CardShell.vue`; `MonobankCard` and `NeutralCard` use it; add `variant` to
   `BankCardProps` and pass `a.name.type` from `slidesOf`; verify `tests/renderer/balances.test.ts` still passes and an
   account slide carries its type
-- [ ] 3.2 Monobank variants (black default, white, iron, platinum, yellow) and the `PrivatBankCard`, `ABankCard`,
+- [x] 3.2 Monobank variants (black default, white, iron, platinum, yellow) and the `PrivatBankCard`, `ABankCard`,
   `SlspCard` skins in `BANK_CARDS`, CSS art only, no image files; verify a renderer test mounts each bank and each
   Monobank variant, checks the wordmark text, the light tone on white / platinum / yellow, and an unknown bank falls back
   to the neutral card
-- [ ] 3.3 Update the `entities/account` part of `.agents/project/desktop-renderer.md` and add the card looks entry to
+- [x] 3.3 Update the `entities/account` part of `.agents/project/desktop-renderer.md` and add the card looks entry to
   `CHANGELOG.md`; add «check the card looks and the pace by banks on live data, both themes» to `docs/backlog.md`;
   verify by reading the diff
 
 ## 4. Checks
 
-- [ ] 4.1 Run `pnpm test` and `pnpm typecheck` at the root; verify both pass
+- [x] 4.1 Run `pnpm test` and `pnpm typecheck` at the root; verify both pass
 
 ## Workflow follow-up
 

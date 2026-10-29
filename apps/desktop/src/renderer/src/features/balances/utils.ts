@@ -278,6 +278,7 @@ export function slidesOf(
         kind: 'account',
         card: {
           bank: a.name.provider,
+          variant: a.name.type,
           title: accountName(a.name),
           accents: [accent],
           dim: a.ownFunds === null,

@@ -55,6 +55,7 @@ import LucideMenu from "~icons/lucide/menu";
 import LucideMinus from "~icons/lucide/minus";
 import LucideMonitor from "~icons/lucide/monitor";
 import LucideMoon from "~icons/lucide/moon";
+import LucideNfc from "~icons/lucide/nfc";
 import LucidePackage from "~icons/lucide/package";
 import LucidePalette from "~icons/lucide/palette";
 import LucidePanelLeftClose from "~icons/lucide/panel-left-close";
@@ -153,6 +154,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:minus": LucideMinus,
   "lucide:monitor": LucideMonitor,
   "lucide:moon": LucideMoon,
+  "lucide:nfc": LucideNfc,
   "lucide:package": LucidePackage,
   "lucide:palette": LucidePalette,
   "lucide:panel-left-close": LucidePanelLeftClose,

@@ -167,7 +167,7 @@ describe('balances utils', () => {
     const [total, account] = slidesOf(mine, { people: [], selectedId: 1, currentYear: 2026, fmt: EUR_FMT });
     expect(total?.card.amount).toBe(formatMoney(EUR_FMT.convert(600_000), 978, { minorUnits: true }));
     expect(total?.flow.reserved).toBe(EUR_FMT.convert(400_000));
-    expect(account?.card).toMatchObject({ amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '' });
+    expect(account?.card).toMatchObject({ amount: formatMoney(1_000_000, 980, { minorUnits: true }), actual: '', bank: 'monobank', variant: 'black' });
 
     expect(summaryOf(slidesOf({ ...v, reserved: null }, { people: [], selectedId: null, currentYear: 2026, fmt: UAH_FMT })[0])).toMatchObject({ own: null, reserved: null });
   });
@@ -425,18 +425,53 @@ describe('balances utils', () => {
     expect(summaryOf(slidesOf(v, { people: [], selectedId: 1, currentYear: 2026, fmt: UAH_FMT })[0]).fx).toEqual([]);
   });
 
-  it('AccountCard: the bank\'s skin (Monobank: the «m» mark), the «≈» line under the amount, none when empty', () => {
-    const props = { bank: 'monobank' as const, title: 'T', caption: 'C', amount: '100 ₴', actual: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
-    const w = mount(AccountCard, { props: { ...props, approx: '≈ 2,50 $ · 2,00 €' } });
-    expect(w.get('button').find('[aria-hidden="true"]').exists()).toBe(true);
-    expect(w.text()).toContain('m');
-    const spans = w.findAll('span').map((x) => x.text());
-    expect(spans.indexOf('≈ 2,50 $ · 2,00 €')).toBe(spans.indexOf('100 ₴') + 1);
-    expect(mount(AccountCard, { props: { ...props, approx: '' } }).text()).not.toContain('≈');
-    // A bank without a skin of its own: the same card, no bank mark.
-    const neutral = mount(AccountCard, { props: { ...props, bank: 'privatbank', approx: '' } });
-    expect(neutral.get('button').find('[aria-hidden="true"]').exists()).toBe(false);
-    expect(neutral.text()).toContain('100 ₴');
+  describe('AccountCard: the bank\'s physical card (spec desktop-balance-cards)', () => {
+    const props: AccountCardProps = { bank: 'monobank', variant: 'black', title: 'T', caption: 'C', amount: '100 ₴', approx: '', actual: '', bottom: 'B', net: null, netText: '', accents: [], dim: false };
+    const card = (o: Partial<AccountCardProps> = {}) => mount(AccountCard, { props: { ...props, ...o } });
+
+    it('the figures, the «≈» line under the amount and none when empty; chip and contactless mark on every card', () => {
+      const w = card({ approx: '≈ 2,50 $ · 2,00 €' });
+      const spans = w.findAll('span').map((x) => x.text());
+      expect(spans.indexOf('≈ 2,50 $ · 2,00 €')).toBe(spans.indexOf('100 ₴') + 1);
+      expect(card().text()).not.toContain('≈');
+      for (const bank of ['monobank', 'privatbank', 'abank', 'slsp', 'otherbank']) expect(card({ bank }).find('[data-test="card-chip"]').exists()).toBe(true);
+    });
+
+    it('each bank\'s wordmark, hidden from screen readers; an unknown bank gets the neutral card without one', () => {
+      const words = (bank: string) => card({ bank }).find('[data-test="card-wordmark"]');
+      expect(words('monobank').text()).toBe('monobank');
+      expect(words('privatbank').text()).toBe('PrivatBank');
+      expect(words('abank').text()).toBe('A-Bank');
+      expect(words('slsp').text()).toBe('SLOVENSKÁsporiteľňa');
+      expect(card({ bank: 'monobank' }).find('[data-test="card-wordmark"]').element.closest('[aria-hidden="true"]')).not.toBeNull();
+      const neutral = card({ bank: 'otherbank' });
+      expect(neutral.find('[data-test="card-wordmark"]').exists()).toBe(false);
+      expect(neutral.get('button').classes()).toContain('bg-nav');
+      expect(neutral.text()).toContain('100 ₴');
+    });
+
+    it('Monobank by card type: white, platinum and children\'s are light; black, iron, a jar and any other type dark', () => {
+      const tone = (variant: string | null) => card({ variant }).get('button').attributes('data-tone');
+      expect(['white', 'platinum', 'yellow'].map(tone)).toEqual(['light', 'light', 'light']);
+      expect(['black', 'iron', null, 'fop'].map(tone)).toEqual(['dark', 'dark', 'dark', 'dark']);
+      expect(card({ variant: 'fop' }).get('button').classes().join(' ')).toBe(card({ variant: 'black' }).get('button').classes().join(' '));
+      expect(card({ variant: 'white' }).get('button').classes()).toContain('text-[#16171c]');
+    });
+
+    it('people dots and the dimmed state stay on every bank\'s card', () => {
+      for (const bank of ['monobank', 'privatbank', 'abank', 'slsp', 'otherbank']) {
+        const w = card({ bank, accents: ['var(--series-blue)', 'var(--series-orange)'], dim: true });
+        expect(w.findAll('[data-test="card-dots"] > span')).toHaveLength(2);
+        expect(w.get('button').classes()).toContain('opacity-55');
+      }
+    });
+
+    it('the month\'s net arrow uses the dark ink on a light card, the bright one on a dark card', () => {
+      const arrow = (variant: string, net: number) =>
+        card({ variant, net, netText: 'n' }).findAllComponents({ name: 'VIcon' }).find((i) => String(i.props('icon')).startsWith('lucide:arrow'))?.props('color');
+      expect([arrow('white', -5), arrow('white', 5)]).toEqual(['var(--card-down-ink)', 'var(--card-up-ink)']);
+      expect([arrow('black', -5), arrow('black', 5)]).toEqual(['var(--card-down)', 'var(--card-up)']);
+    });
   });
 
   it('SummaryCard: the band in the people\'s colours, the figures, «Total», a dot per person, no bank mark; a click is the card\'s', async () => {
