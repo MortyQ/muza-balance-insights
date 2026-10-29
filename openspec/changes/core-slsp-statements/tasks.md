@@ -55,7 +55,7 @@
 
 ## 4. Docs (docs)
 
-- [ ] 4.1 `.agents/project/core-providers.md`: an «Slovenská sporiteľňa» section, the keyword hint for banks without an
+- [x] 4.1 `.agents/project/core-providers.md`: an «Slovenská sporiteľňa» section, the keyword hint for banks without an
   MCC, and the new `pdfTable` options in «Statement files». In `.agents/skills/core-architecture/SKILL.md`, the
   `pdfTable` mention. In `docs/backlog.md`: the time zone of card times abroad, the meaning of `BOLT.EU/O` and
   `/P`, and the first real SLSP upload (live checks).

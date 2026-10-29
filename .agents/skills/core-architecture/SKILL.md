@@ -79,7 +79,9 @@ Core (`packages/core`):
      change what reaches the analysis copy: only after the user's ok (root `CLAUDE.md`).
    - `statement.ts` (a bank with files): `readers: StatementReader[]`, pure, one per kind of file, reading the
      `StatementDocument` (`text`, `sheets` or `pdf`), never bytes, on the helpers of `providers/statement-kit.ts`
-     (a PDF table: `pdfTable`, its header found by column names, its rows across lines; local amounts: `localAmount`).
+     (a PDF table: `pdfTable`, its header found by column names, its rows across lines — around the anchor or, with
+     `rowBand: 'below'`, under it —, footers and trailing sections cut by `pageEndRe` / `tableEndRe`; local amounts:
+     `localAmount`).
    - `client.ts` (a bank with an API): network, pages, 429, through `src/providers/ratelimit.ts`.
 3. Add one line to each registry: `PROVIDERS` in `src/providers/info.ts`, `PROVIDER_RULES` in `src/providers/rules.ts`,
    and (with files) `STATEMENT_READERS` in `src/providers/statements.ts`.
