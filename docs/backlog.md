@@ -226,3 +226,8 @@
 - **«By bank»** (change `bank-breakdown`): with real data from two or three banks, the bars on a category's screen and
   on the income screen add up to the screen's total, follow the bank filter and the person, and a transfer fee shows
   under the bank it was sent from. The card at three widths (the right column's last card stretching), both themes.
+- **Split by banks** (change `bank-split`): with real data from two or three banks, «Spending» «By banks» — each bar's
+  bank segments add up to the category, the hover names the bank and the amount; the «Income and spending» chart «By
+  banks» — the stacked areas' top equals the «Together» spending line, for a month (running) and a range. The bank
+  colours in both themes (Monobank's foreground colour on the dark theme), PrivatBank's green beside the income line,
+  and an earlier «Who spent how much» choice carried over after the update.

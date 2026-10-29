@@ -41,9 +41,9 @@
 
 ## 5. Checks
 
-- [ ] 5.1 Add to `docs/backlog.md`, the bank filter's section: with real data from two or three banks, the bars and the
+- [x] 5.1 Add to `docs/backlog.md`, the bank filter's section: with real data from two or three banks, the bars and the
       chart by banks add up to the totals; the bank colours in both themes, PrivatBank's green beside the income line.
-- [ ] 5.2 Run each package's checks (core, mcp, desktop) and report the counts; ask the user to run `pnpm test` and
+- [x] 5.2 Run each package's checks (core, mcp, desktop) and report the counts; ask the user to run `pnpm test` and
       `pnpm typecheck` at the root and the desktop build.
 
 ## Workflow follow-up
