@@ -3,9 +3,10 @@
 import { readers as abankReaders } from './abank/statement.ts';
 import { readers as monobankReaders } from './monobank/statement.ts';
 import { readers as privatbankReaders } from './privatbank/statement.ts';
+import { readers as slspReaders } from './slsp/statement.ts';
 import type { ProviderId, StatementDocument, StatementReader } from './types.ts';
 
-export const STATEMENT_READERS: Readonly<Record<ProviderId, readonly StatementReader[]>> = { monobank: monobankReaders, privatbank: privatbankReaders, abank: abankReaders };
+export const STATEMENT_READERS: Readonly<Record<ProviderId, readonly StatementReader[]>> = { monobank: monobankReaders, privatbank: privatbankReaders, abank: abankReaders, slsp: slspReaders };
 
 const ALL_READERS: readonly StatementReader[] = Object.values(STATEMENT_READERS).flat();
 

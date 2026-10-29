@@ -13,9 +13,9 @@
 
 ## 2. SLSP provider and reader (core)
 
-- [ ] 2.1 Add `slsp` to `PROVIDER_IDS`, create `providers/slsp/info.ts` and add its line in `PROVIDERS` (design 1).
+- [x] 2.1 Add `slsp` to `PROVIDER_IDS`, create `providers/slsp/info.ts` and add its line in `PROVIDERS` (design 1).
   Verify the conformance info checks.
-- [ ] 2.2 `providers/slsp/descriptions.ts` (the type texts, the line patterns) and `categories.ts` (design 6), then
+- [x] 2.2 `providers/slsp/descriptions.ts` (the type texts, the line patterns) and `categories.ts` (design 6), then
   `merchants.ts` with the keyword list approved in the proposal review (design 7). Then `rules.ts` and its line in
   `PROVIDER_RULES`. Verify with `tests/providers/slsp/rules.test.ts`, using fictional rows:
   - every type;
@@ -28,7 +28,7 @@
   - diacritics;
   - an unknown merchant;
   - an unknown type (`knowsBankCategory` false).
-- [ ] 2.3 `providers/slsp/statement.ts`: the reader `slsp-account-pdf` (design 2–5) and its line in
+- [x] 2.3 `providers/slsp/statement.ts`: the reader `slsp-account-pdf` (design 2–5) and its line in
   `STATEMENT_READERS`. Verify with `tests/providers/slsp/statement.test.ts`, using a fictional document builder
   (`tests/providers/slsp/documents.ts`):
   - two pages with the header repeated;
@@ -41,7 +41,7 @@
   - a broken running balance (`bad-row` at that row), and totals that do not add up;
   - a header-only document (detect 1);
   - an A-Bank PDF fixture (detect 0).
-- [ ] 2.4 Conformance fixtures `tests/providers/slsp/fixtures/conformance/*.document.json` + `*.expected.json`: one
+- [x] 2.4 Conformance fixtures `tests/providers/slsp/fixtures/conformance/*.document.json` + `*.expected.json`: one
   statement and one `bad-row` case. The layout follows the masked analysis, and every value is fictional. Verify the
   conformance suite and the `purity`, `layers` and `providers-boundary` tests.
 
