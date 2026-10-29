@@ -34,9 +34,9 @@ describe('analytics helpers (main)', () => {
 
   it('foldCells: per category per bucket in hryvnia; a currency without a rate is left out', () => {
     const cells = [
-      { currency: 980, bucket: '2026-02', category: 'продукты', purchases: 1, gross: 20_000, refunds: 0, net: 20_000 },
-      { currency: 840, bucket: '2026-03', category: 'продукты', purchases: 1, gross: 100, refunds: 0, net: 100 },
-      { currency: 978, bucket: '2026-03', category: 'кафе', purchases: 1, gross: 50, refunds: 0, net: 50 },
+      { currency: 980, bucket: '2026-02', category: 'продукты', provider: null, purchases: 1, gross: 20_000, refunds: 0, net: 20_000 },
+      { currency: 840, bucket: '2026-03', category: 'продукты', provider: null, purchases: 1, gross: 100, refunds: 0, net: 100 },
+      { currency: 978, bucket: '2026-03', category: 'кафе', provider: null, purchases: 1, gross: 50, refunds: 0, net: 50 },
     ];
     const f = foldCells(cells, ['2026-02', '2026-03'], RATES);
     expect([...f.net]).toEqual([['продукты', [20_000, 4_000]]]);

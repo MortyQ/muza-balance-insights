@@ -82,7 +82,9 @@
   follows the participant view, the `transfer_fee` line rides on its debit row (so it shows with the debit's bank) —
   hence the views of disjoint banks add up to the whole. `periodInfo` applies the live rule among the chosen banks
   (`liveAccountIdsSql(providers)` in `people/accounts.ts`; completeness, covered days, pending holds); `getSyncStatus`
-  takes no filter. Tests: `tests/read/bank-view.test.ts`, the bank-view block of `tests/read/data-freshness.test.ts`.
+  takes no filter. `spendingGrid(…, byProvider)` splits each cell by the account's bank (`SpendingCell.provider`, the
+  fee line in the sending bank); the split cells add up to the unsplit one. Tests: `tests/read/bank-view.test.ts`, the
+  bank-view block of `tests/read/data-freshness.test.ts`.
 - Агрегаты трат: по категории и валюте счёта три числа — брутто, возвраты, нетто (нетто = брутто − возвраты).
   «Поступления» и «свои переводы» в траты не входят. Валюты не суммируются. Реализация: `spendingSummary`
   в `packages/core/src/read/spending.ts` (`spendingByCategory` в `packages/core/src/read/queries.ts` — обёртка).

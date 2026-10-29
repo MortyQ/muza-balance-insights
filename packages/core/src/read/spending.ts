@@ -1,6 +1,8 @@
 // Spending aggregates over the real database: spendingSummary, spendingGrid and the lines behind them. Amounts are
 // minor units of the ACCOUNT currency; different currencies are never summed. No counterparty names or descriptions.
 import { CATEGORY } from '../derive/categories.ts';
+import { parseProviderId } from '../people/connections.ts';
+import type { ProviderId } from '../providers/types.ts';
 import type { Db } from '../storage/db.ts';
 import { currencyAlpha } from '../shared/currency.ts';
 import { BUCKETS_CTE, periodArgs, periodBuckets, periodSql } from '../shared/periods.ts';
@@ -105,7 +107,8 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  *   transfer_fee) in every view, and the body is the rest (amount + commission + transfer_fee), excluded as above;
  * - only enabled accounts (accounts.ts); a transfer to or from a disabled one is an ordinary operation, counted whole.
  * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket,
- * participant_id (the account owner's, only when grouped by participant, else NULL). The caller
+ * participant_id (the account owner's, only when grouped by participant, else NULL), provider (the account's bank, only
+ * with `byProvider`, else NULL; a fee line keeps its debit row's account, so it is the sending bank's). The caller
  * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
  * `buckets`), else NULL. The buckets are the outer loop of a range join (CROSS JOIN fixes the order), so each one is an
  * index range on `time` (idx_tx_time: per account it would be one seek per account and bucket) and no row looks its
@@ -114,7 +117,7 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  */
 export async function spendingLinesSql(
   db: Db,
-  q: Period & SpendingFilters & { groupBy?: SpendingGroupBy },
+  q: Period & SpendingFilters & { groupBy?: SpendingGroupBy; byProvider?: boolean },
   unit: 'day' | 'month' | null = null,
 ): Promise<{ sql: string; args: Array<string | number> }> {
   // With buckets the period is their union, and only their bounds may reach the time index: given the period's bounds
@@ -126,6 +129,7 @@ export async function spendingLinesSql(
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
   accountWhere(q, where, args);
   const byPerson = q.groupBy === 'participant';
+  const byProvider = q.byProvider === true;
   return {
     sql: `WITH ${unit ? `${BUCKETS_CTE},` : ''}
           base AS MATERIALIZED (
@@ -134,23 +138,24 @@ export async function spendingLinesSql(
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission,
                    CASE WHEN t.amount < 0 AND t.crossing_category IS NULL THEN COALESCE(t.transfer_fee, 0) ELSE 0 END AS transfer_fee,
-                   ${unit ? 'b.k' : 'NULL'} AS bucket, ${byPerson ? 'c.participant_id' : 'NULL'} AS participant_id
+                   ${unit ? 'b.k' : 'NULL'} AS bucket, ${byPerson ? 'c.participant_id' : 'NULL'} AS participant_id,
+                   ${byProvider ? 'c.provider' : 'NULL'} AS provider
             FROM ${unit ? 'buckets b CROSS JOIN transactions t INDEXED BY idx_tx_time ON t.time >= b.s AND t.time < b.e' : 'transactions t'}
-              JOIN accounts a ON a.id = t.account_id${byPerson ? ' JOIN connections c ON c.id = a.connection_id' : ''}
+              JOIN accounts a ON a.id = t.account_id${byPerson || byProvider ? ' JOIN connections c ON c.id = a.connection_id' : ''}
             WHERE ${where.join(' AND ')}
           ),
           lines AS (
             -- body: account-currency amount without the commission and the transfer fee; the operation amount never
             -- includes the commission, and loses the transfer fee when it is in the account currency
             SELECT id, 'body' AS kind, currency, account_id, time, mcc, scope, category, amount + commission + transfer_fee AS amount, op_currency,
-                   CASE WHEN op_currency = currency THEN op_amount + transfer_fee ELSE op_amount END AS op_amount, bucket, participant_id
+                   CASE WHEN op_currency = currency THEN op_amount + transfer_fee ELSE op_amount END AS op_amount, bucket, participant_id, provider
             FROM base WHERE internal = 0
             UNION ALL
             -- commission: account currency only, no operation currency
-            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket, participant_id FROM base WHERE commission > 0
+            SELECT id, 'commission', currency, account_id, time, NULL, scope, ?, -commission, NULL, NULL, bucket, participant_id, provider FROM base WHERE commission > 0
             UNION ALL
             -- transfer fee: the same, in every view
-            SELECT id, 'transfer_fee', currency, account_id, time, NULL, scope, ?, -transfer_fee, NULL, NULL, bucket, participant_id FROM base WHERE transfer_fee > 0
+            SELECT id, 'transfer_fee', currency, account_id, time, NULL, scope, ?, -transfer_fee, NULL, NULL, bucket, participant_id, provider FROM base WHERE transfer_fee > 0
           )`,
     args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees, CATEGORY.transferFees],
   };
@@ -232,36 +237,62 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
   };
 }
 
-/** One cell of spendingGrid: one account currency, one day (YYYY-MM-DD) or month (YYYY-MM) of the period's zone, one category. */
-export type SpendingCell = { currency: number; bucket: string; category: string; purchases: number; gross: number; refunds: number; net: number };
+/**
+ * One cell of spendingGrid: one account currency, one day (YYYY-MM-DD) or month (YYYY-MM) of the period's zone, one
+ * category, and with `byProvider` one bank (else null).
+ */
+export type SpendingCell = {
+  currency: number;
+  bucket: string;
+  category: string;
+  provider: ProviderId | null;
+  purchases: number;
+  gross: number;
+  refunds: number;
+  net: number;
+};
 export type SpendingGrid = { period: PeriodInfo; unit: 'day' | 'month'; cells: SpendingCell[] };
 
 /**
  * Spending by category × day or month of the period's zone in one query, over the lines of spendingSummary
  * (spendingLinesSql + SPENDING_LINE_SQL): per currency the cells add up to its groups by category, day or month.
- * For the desktop's analytics screen; the MCP tools do not offer it.
+ * `byProvider` splits each cell by the account's bank (spec core-bank-view); the split cells add up to the unsplit one.
+ * For the desktop's screens; the MCP tools do not offer it.
  */
-export async function spendingGrid(db: Db, q: Period & SpendingFilters & { unit: 'day' | 'month' }, nowSec: number): Promise<SpendingGrid> {
+export async function spendingGrid(
+  db: Db,
+  q: Period & SpendingFilters & { unit: 'day' | 'month'; byProvider?: boolean },
+  nowSec: number,
+): Promise<SpendingGrid> {
   if (q.unit !== 'day' && q.unit !== 'month') throw new SummaryError(`unit: day | month, получено «${String(q.unit)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
   const from = await spendingLinesSql(db, q, q.unit);
   const rs = await db.execute({
     sql: `${from.sql}
-          SELECT currency, bucket AS b, category,
+          SELECT currency, bucket AS b, category, provider,
                  SUM(CASE WHEN amount < 0 THEN 1 ELSE 0 END) AS purchases,
                  SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS gross,
                  SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS refunds
           FROM lines
           WHERE ${SPENDING_LINE_SQL}
-          GROUP BY currency, b, category
-          ORDER BY currency, b, category`,
+          GROUP BY currency, b, category, provider
+          ORDER BY currency, b, category, provider`,
     args: [...from.args, ...SPENDING_LINE_ARGS],
   });
   const cells = rs.rows.map((r) => {
     const gross = Number(r.gross);
     const refunds = Number(r.refunds);
-    return { currency: Number(r.currency), bucket: String(r.b), category: String(r.category), purchases: Number(r.purchases), gross, refunds, net: gross - refunds };
+    return {
+      currency: Number(r.currency),
+      bucket: String(r.b),
+      category: String(r.category),
+      provider: r.provider === null || r.provider === undefined ? null : parseProviderId(r.provider),
+      purchases: Number(r.purchases),
+      gross,
+      refunds,
+      net: gross - refunds,
+    };
   });
   return { period, unit: q.unit, cells };
 }

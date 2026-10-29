@@ -13,7 +13,7 @@ import { categoryLines } from '../../src/read/category-lines.ts';
 import { incomeLines } from '../../src/read/income-lines.ts';
 import { incomeSummary } from '../../src/read/income.ts';
 import { findRecurring } from '../../src/read/recurring.ts';
-import { spendingSummary } from '../../src/read/spending.ts';
+import { spendingGrid, spendingSummary, type SpendingCell } from '../../src/read/spending.ts';
 import { balancesAt, getBalances } from '../../src/read/status.ts';
 import { insertAccountRow, insertTransactionRow, memoryDb } from '../helpers.ts';
 
@@ -171,5 +171,41 @@ describe('a bank view', () => {
     const series = async (providers: ProviderId[]) => (await findRecurring(db, { ...q, providers }, NOW)).length;
     expect(await series(['privatbank'])).toBe(1);
     expect(await series(['monobank', 'abank'])).toBe(0);
+  });
+});
+
+describe('the spending grid split by bank', () => {
+  const grid = async (byProvider?: boolean, v: View = {}) =>
+    (await spendingGrid(db, { ...PERIOD, ...v, unit: 'day', ...(byProvider !== undefined ? { byProvider } : {}) }, NOW)).cells;
+  const key = (c: SpendingCell) => `${c.currency}|${c.bucket}|${c.category}`;
+  const merged = (cells: readonly SpendingCell[]) => {
+    const by = new Map<string, { purchases: number; gross: number; refunds: number; net: number }>();
+    for (const c of cells) {
+      const m = by.get(key(c)) ?? { purchases: 0, gross: 0, refunds: 0, net: 0 };
+      (m.purchases += c.purchases), (m.gross += c.gross), (m.refunds += c.refunds), (m.net += c.net);
+      by.set(key(c), m);
+    }
+    return Object.fromEntries(by);
+  };
+
+  it('a cell per bank; the split cells add up to the unsplit grid', async () => {
+    for (const v of [{}, { participantId: me }]) {
+      const split = await grid(true, v);
+      const whole = await grid(undefined, v);
+      expect(merged(split)).toEqual(merged(whole));
+      expect(whole.every((c) => c.provider === null)).toBe(true);
+    }
+    const groceries = (await grid(true)).filter((c) => c.category === CATEGORY.groceries);
+    expect(groceries.map((c) => [c.provider, c.net])).toEqual([['abank', 3_000], ['monobank', 5_000], ['privatbank', 2_000]]);
+  });
+
+  it('an own transfer is in no cell; its fee is the sending bank\'s', async () => {
+    const cells = await grid(true);
+    expect(cells.filter((c) => c.category === CATEGORY.transferFees).map((c) => [c.provider, c.net])).toEqual([['monobank', 700]]);
+    expect(cells.filter((c) => c.provider === 'abank').map((c) => c.category)).toEqual([CATEGORY.groceries]);
+  });
+
+  it('without the flag the grid is as before', async () => {
+    expect(await grid(false)).toEqual(await grid());
   });
 });
