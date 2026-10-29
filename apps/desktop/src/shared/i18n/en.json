@@ -503,6 +503,9 @@
     "filters": {
       "banks": "Banks",
       "banksLocked": "At least one bank stays on",
+      "banksAll": "All banks",
+      "banksSome": "{on} of {all}",
+      "banksButton": "Banks: {shown}",
       "percent": "{pct}%",
       "retryAt": "Retrying at {at}",
       "syncing": "Syncing…",

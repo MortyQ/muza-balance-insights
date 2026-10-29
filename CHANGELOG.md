@@ -15,11 +15,11 @@ English interface.
 
 ### Home
 
-- **Look at one bank, or a few.** With cards in more than one bank, the filters at the top get a button per bank: all
-  are on at first, so every screen shows your banks together; turn some off to see only the others — balances,
-  spending, income, analytics, regular payments and planning all follow. At least one bank stays on, and the app
-  remembers your choice. A transfer between your own cards in two banks never counts as spending, so the banks shown
-  one by one add up to all of them together.
+- **Look at one bank, or a few.** With cards in more than one bank, the filters at the top get a «Banks» button showing
+  your banks' marks; it opens a list with a switch per bank. All are on at first, so every screen shows your banks
+  together; turn some off to see only the others — balances, spending, income, analytics, regular payments and planning
+  all follow. At least one bank stays on, and the app remembers your choice. A transfer between your own cards in two
+  banks never counts as spending, so the banks shown one by one add up to all of them together.
 - **See which bank you pay with.** A category's screen and the income screen now split the amount by bank, the way
   they already split it by person: a bar per bank with its amount, the number of operations and their average. It
   shows the banks you have on in the filters, and only when there are at least two.

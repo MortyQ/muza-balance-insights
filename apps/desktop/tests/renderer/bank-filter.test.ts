@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
 // The bank filter (spec desktop-bank-filter): which banks it offers, all by default, never none, remembered on this
-// computer; the data reads get the banks only while some bank is off. balanceApi is a fake; fictional names.
+// computer; the data reads get the banks only while some bank is off; one control with a panel of switches. balanceApi is a fake; fictional names.
 // Typechecked with the renderer (tsconfig.web.json): it loads renderer modules through their aliases.
 import { createPinia, setActivePinia } from 'pinia';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ConnectionView, PeopleView, PersonView, ProviderId } from '@contract/api.ts';
 
@@ -12,8 +12,16 @@ vi.mock('@/shared/api', () => ({ balanceApi: { listPeople: vi.fn(async () => api
 
 const { offeredBanks, shownBanks, useParticipantStore } = await import('@/entities/participant');
 const { default: BankFilter } = await import('@/widgets/global-filters/components/BankFilter.vue');
+const { bankFilterText } = await import('@/widgets/global-filters/utils.ts');
 const { i18n } = await import('@/shared/lib/i18n.ts');
-const filter = () => mount(BankFilter, { global: { plugins: [i18n] } });
+const filter = () => mount(BankFilter, { global: { plugins: [i18n] }, attachTo: document.body });
+const trigger = () => document.body.querySelector<HTMLButtonElement>('[aria-label^="Банки:"]');
+async function open() {
+  trigger()!.click();
+  await flushPromises();
+}
+const rows = () => Array.from(document.body.querySelectorAll('[role="group"][aria-label="Банки"] label:not(.v-switch)')).map((l) => l.textContent?.trim());
+const switches = () => Array.from(document.body.querySelectorAll<HTMLInputElement>('input[role="switch"]'));
 
 let seq = 0;
 const conn = (provider: ProviderId, o: Partial<ConnectionView> = {}): ConnectionView => ({
@@ -92,31 +100,63 @@ describe('the bank choice in the participant store', () => {
   });
 });
 
+describe('bankFilterText', () => {
+  it('«All banks» while every offered bank is on, else how many of them', () => {
+    expect(bankFilterText(3, 3)).toBe('Все банки');
+    expect(bankFilterText(2, 4)).toBe('2 из 4');
+    expect(bankFilterText(1, 2)).toBe('1 из 2');
+  });
+});
+
 describe('BankFilter', () => {
-  it('a toggle per offered bank with its name, all pressed; pressing one turns it off', async () => {
-    const s = await store();
+  it('one control named by its text, with the marks of the banks on; a switch per offered bank, all on', async () => {
+    await store();
     const w = filter();
-    const buttons = w.findAll('button');
-    expect(buttons.map((b) => b.find('span:not([aria-hidden])').text())).toEqual(['Monobank', 'PrivatBank', 'A-Bank']);
-    expect(buttons.map((b) => b.attributes('aria-pressed'))).toEqual(['true', 'true', 'true']);
-    expect(w.find('[role="group"]').attributes('aria-label')).toBe('Банки');
-    await buttons[1]!.trigger('click');
-    expect(s.selectedProviders).toEqual(['monobank', 'abank']);
+    expect(trigger()!.getAttribute('aria-label')).toBe('Банки: Все банки');
+    expect(trigger()!.textContent).toContain('Все банки');
+    expect(trigger()!.querySelector('.v-popover__lead > span')!.children).toHaveLength(3);
+    await open();
+    expect(rows()).toEqual(['Monobank', 'PrivatBank', 'A-Bank']);
+    expect(switches().map((b) => b.checked)).toEqual([true, true, true]);
+    w.unmount();
   });
 
-  it('the last bank on stays on and says why', async () => {
+  it('turning a bank off narrows the reads and says how many are on', async () => {
+    const s = await store();
+    const w = filter();
+    await open();
+    switches()[1]!.click();
+    await flushPromises();
+    expect(s.selectedProviders).toEqual(['monobank', 'abank']);
+    expect(trigger()!.getAttribute('aria-label')).toBe('Банки: 2 из 3');
+    w.unmount();
+  });
+
+  it('the switch is labelled by the bank\'s name', async () => {
+    await store();
+    const w = filter();
+    await open();
+    const box = switches()[2]!;
+    expect(document.body.querySelector(`label[for="${box.id}"]:not(.v-switch)`)?.textContent?.trim()).toBe('A-Bank');
+    w.unmount();
+  });
+
+  it('the last bank on cannot turn off and says why', async () => {
     const s = await store();
     s.selectBanks(['abank']);
     const w = filter();
-    const abank = w.findAll('button')[2]!;
-    expect(abank.attributes('aria-disabled')).toBe('true');
-    expect(abank.text()).toContain('Хотя бы один банк остаётся включённым');
-    await abank.trigger('click');
-    expect(s.selectedProviders).toEqual(['abank']);
+    await open();
+    const abank = switches()[2]!;
+    expect(abank.disabled).toBe(true);
+    expect(document.getElementById(abank.getAttribute('aria-describedby')!)?.textContent).toBe('Хотя бы один банк остаётся включённым');
+    expect(switches()[0]!.getAttribute('aria-describedby')).toBeNull();
+    w.unmount();
   });
 
   it('hidden with one bank', async () => {
     await store({ people: [person(1, [conn('monobank')])], secureStorage: true });
-    expect(filter().find('[role="group"]').exists()).toBe(false);
+    const w = filter();
+    expect(trigger()).toBeNull();
+    w.unmount();
   });
 });

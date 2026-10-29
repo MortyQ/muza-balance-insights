@@ -69,6 +69,11 @@
   }
 }
 
+.v-popover__lead {
+  display: inline-flex;
+  align-items: center;
+}
+
 .v-popover__text {
   white-space: nowrap;
 }

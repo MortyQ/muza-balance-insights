@@ -2,15 +2,15 @@
 
 ## 1. Bank filter as one popover — `feat(desktop): bank filter in a popover`
 
-- [ ] 1.1 Add an optional `trigger` slot to `shared/ui` `VPopover` (before the text; existing callers unchanged), with its
+- [x] 1.1 Add an optional `trigger` slot to `shared/ui` `VPopover` (before the text; existing callers unchanged), with its
   styles in `vpopover.scss` and a note in `shared/ui/README.md`; verify a test mounts it with and without the slot
-- [ ] 1.2 Add `bankFilterText(shown, offered)` to `widgets/global-filters/utils.ts` («All banks» / «N of M») with keys
+- [x] 1.2 Add `bankFilterText(shown, offered)` to `widgets/global-filters/utils.ts` («All banks» / «N of M») with keys
   in `uk.json`, `en.json`, `ru.json`; verify unit tests for all on, some on and one on
-- [ ] 1.3 Rewrite `BankFilter.vue` as a `VPopover`: overlapping marks of the banks on (at most four, then «+N») and the
+- [x] 1.3 Rewrite `BankFilter.vue` as a `VPopover`: overlapping marks of the banks on (at most four, then «+N») and the
   text in the trigger, a row per offered bank (mark, name as label, `VSwitch`), the last bank refusing with the locked
   hint; verify `tests/renderer/bank-filter.test.ts` covers hidden with one bank, «All banks», «2 of 4», switching off,
   the last bank, keyboard open and the switches' names
-- [ ] 1.4 Update the `GlobalFilters` / `BankFilter` lines in the root `CLAUDE.md` and the bank filter entry in
+- [x] 1.4 Update the `GlobalFilters` / `BankFilter` lines in the root `CLAUDE.md` and the bank filter entry in
   `CHANGELOG.md` («Home», `0.1.13 — unreleased`); verify the text names the control by its English UI text
 
 ## 2. «Month pace» by banks — `feat(desktop): month pace split by bank`

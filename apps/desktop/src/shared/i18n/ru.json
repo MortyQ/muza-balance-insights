@@ -503,6 +503,9 @@
     "filters": {
       "banks": "Банки",
       "banksLocked": "Хотя бы один банк остаётся включённым",
+      "banksAll": "Все банки",
+      "banksSome": "{on} из {all}",
+      "banksButton": "Банки: {shown}",
       "percent": "{pct}%",
       "retryAt": "Повтор в {at}",
       "syncing": "Синхронизация…",

@@ -147,8 +147,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
   filters every home block reads (`ParticipantFilter`, `MonthFilter`, `CurrencyToggle`, `BankFilter`) and the sync status. It sits
   outside the default layout's own scroll area (the layout is a column: the filters, then a scroll area with the grid),
   so it never scrolls and the scroll bar starts under it. Month, currency and banks on the left (`BankFilter`, the
-  widget's own component — it shows `entities/bank`'s marks — over `VToggleGroup`: a toggle per bank with imported,
-  enabled accounts, only with two or more; the choice is the participant store's `selectBanks` / `selectedProviders`,
+  widget's own component — it shows `entities/bank`'s marks — a `VPopover` like the currency's: the marks of the banks on
+  (at most `BANK_MARKS_MAX`) and `bankFilterText` («All banks» / «2 of 4») in its `trigger` slot and text, a `VSwitch` row
+  per bank with imported, enabled accounts, the last one on disabled with `home.filters.banksLocked`; only with two or more; the choice is the participant store's `selectBanks` / `selectedProviders`,
   `localStorage` `balance.banks`; spec `desktop-bank-filter`), the sync status and «Upload statement» (`QuickUploadButtonFeature`; the default layout holds `QuickUploadFeature`, the drop zone and the upload sheet — `VSheet`, one card per account of up to 12 files, spec `desktop-statement-upload`) on the right; the person switch is buttons centred
   in the row while there are at most `MAX_PARTICIPANT_BUTTONS` (4) people and they fit (`useParticipantLayout`:
   `ResizeObserver` on the row, the month with the currency, the sync status and a hidden copy of the buttons; `fitsCenter`), otherwise a

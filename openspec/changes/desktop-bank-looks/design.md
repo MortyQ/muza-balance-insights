@@ -29,8 +29,9 @@ Monobank card type behind the existing `BANK_CARDS` seam.
 The control is a `VPopover` like `CurrencyToggle`: the panel lists a row per offered bank (`BankMark` sm, name as the
 `<label>`, `VSwitch` with `role="switch"`). The trigger needs the banks' marks, which `VPopover` cannot show today (icon +
 text only), so `VPopover` gets an optional `trigger` slot rendered before the text (marks overlap with a negative
-margin and a ring in `--surface`, at most four, then «+N»). The «last bank» switch stays enabled for focus but refuses
-(`aria-disabled`, hint `home.filters.banksLocked` as its description), as `VToggleGroup`'s locked option does now.
+margin and a ring in `--surface`, at most four, then «+N»). The «last bank» switch is disabled and
+its row shows `home.filters.banksLocked`, tied to the switch by `aria-describedby`: a `VSwitch` that refused a change
+while enabled would show the thumb moved (its input is not controlled back).
 
 Alternatives: keeping `VToggleGroup` with marks only — still a row per bank and names only in tooltips (rejected by the
 user); a reka `DropdownMenu` with checkbox items — a menu closes on every pick and is less consistent with the currency
