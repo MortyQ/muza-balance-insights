@@ -9,8 +9,8 @@ sit in rows at each width, and what each one shows.
 ### Requirement: Home is a grid of tiles
 
 Home SHALL show its content as separate tiles on the window's background, in this order: «Balance», «Month pace»,
-«Month»; «Today», «This week», the «What's unusual» / «Recent operations» tile; «Spending by category» over the whole
-width. Tiles SHALL NOT sit inside another tile. Tiles of one row SHALL have the same height. «Who spent what» and the
+«Month»; «Today», «This week», the «What's unusual» / «Recent operations» tile; «Spending by category», with the «Insights»
+block beside it when that block has content, else over the whole width. Tiles SHALL NOT sit inside another tile. Tiles of one row SHALL have the same height. «Who spent what» and the
 regular payments teaser SHALL NOT be shown on home.
 
 #### Scenario: Wide window
@@ -31,8 +31,12 @@ regular payments teaser SHALL NOT be shown on home.
 - **THEN** the tiles reflow into fewer columns in the same order, and no tile is cut or overlaps another
 
 #### Scenario: Spending over the whole width
-- **WHEN** home is open in the family view with regular payments found
+- **WHEN** home is open in the family view with regular payments found and the «Insights» block has nothing to show
 - **THEN** «Spending by category» spans the whole row, with neither «Who spent what» nor the teaser beside it
+
+#### Scenario: Spending shares its row
+- **WHEN** the «Insights» block has content on a home wide enough for twelve columns
+- **THEN** «Spending by category» and the block share the row, seven columns and five
 
 ### Requirement: Balance tile
 

@@ -9,8 +9,14 @@ import type { StatementBlock, StatementComparison, StatementTarget } from '@mono
 import type { ReserveInput } from './allowance.ts';
 import { DB_KEY_RE } from './db-open.ts';
 import { ARG_SCHEMAS, STATEMENT_ACCOUNTS_MAX, accountId, cardType, id, participant } from './ipc-args.ts';
+import type { KindCategoryId } from './categories.ts';
 import type {
   AllowanceOverview,
+  CategoryKindQuery,
+  CategoryKindView,
+  GoalPayload,
+  LimitsOverview,
+  LimitsOverviewQuery,
   AllowanceQuery,
   AnalyticsOverview,
   AnalyticsQuery,
@@ -65,6 +71,13 @@ export type DataMethods = {
   addReserve: { args: [ReserveInput]; result: void };
   updateReserve: { args: [number, ReserveInput]; result: void };
   deleteReserve: { args: [number]; result: void };
+  limitsOverview: { args: [LimitsOverviewQuery]; result: LimitsOverview };
+  saveGoal: { args: [number | null, GoalPayload]; result: void };
+  deleteGoal: { args: [number]; result: void };
+  addSuggestedLimits: { args: [{ participantId?: number }]; result: void };
+  categoryKinds: { args: []; result: CategoryKindView[] };
+  setCategoryKind: { args: [CategoryKindQuery]; result: void };
+  resetCategoryKinds: { args: [KindCategoryId | null]; result: void };
   status: { args: []; result: DataStatus };
   lastSyncSec: { args: []; result: number | null };
   /** The import's connections: token ones only. */
@@ -149,6 +162,13 @@ export const DATA_ARG_SCHEMAS = {
   addReserve: ARG_SCHEMAS.addReserve,
   updateReserve: ARG_SCHEMAS.updateReserve,
   deleteReserve: ARG_SCHEMAS.deleteReserve,
+  limitsOverview: ARG_SCHEMAS.getLimitsOverview,
+  saveGoal: ARG_SCHEMAS.saveGoal,
+  deleteGoal: ARG_SCHEMAS.deleteGoal,
+  addSuggestedLimits: ARG_SCHEMAS.addSuggestedLimits,
+  categoryKinds: ARG_SCHEMAS.getCategoryKinds,
+  setCategoryKind: ARG_SCHEMAS.setCategoryKind,
+  resetCategoryKinds: ARG_SCHEMAS.resetCategoryKinds,
   status: none,
   lastSyncSec: none,
   tokenConnections: none,
@@ -184,6 +204,7 @@ export const RATED_METHODS = [
   'recurringOverview',
   'allowanceOverview',
   'analyticsOverview',
+  'limitsOverview',
 ] as const satisfies ReadonlyArray<DataMethod>;
 
 /** `connection`: an unknown connection or account (core ConnectionError); `invalid`: arguments refused; `failed`: anything else. */

@@ -47,8 +47,19 @@ vi.mock('@/shared/api', () => ({
   balanceApi: {
     getSpendingOverview: (...a: unknown[]) => getSpendingOverview(...(a as [SpendingOverviewQuery])),
     getRecentOperations: (...a: unknown[]) => getRecentOperations(...(a as [SpendingOverviewQuery])),
+    getLimitsOverview: async () => limits,
   },
 }));
+
+// The «Budget» screen's read: limits for the «Limits» slide (none by default).
+const fig = (state: 'ok' | 'attention' | 'exceeded', spent: number) => ({
+  amount: 100_000, spent, left: 100_000 - spent, percent: spent / 1_000, expected: 50_000, forecast: spent * 2, perDay: 0, daysPassed: 15, days: 30, daysLeft: 16, state,
+});
+const LIMITS = {
+  month: '2026-09', today: '2026-09-15', current: true, budget: null, savings: [], jars: [], suggestions: [], kinds: [], rates: null,
+  past: { months: [], byCategory: {}, total: [] }, limits: [] as unknown[],
+};
+let limits = LIMITS;
 
 const PEOPLE: PeopleView = {
   people: [{ id: 1, label: 'Сергей', labelFromBank: false, labelPending: false, color: 'blue', connections: [] }],
@@ -68,6 +79,7 @@ async function mountTile() {
       { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
       { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
       { path: '/insights', name: 'insights', component: defineComponent(() => () => h('div')) },
+      { path: '/budget', name: 'budget', component: defineComponent(() => () => h('div')) },
     ],
   });
   await router.push('/');
@@ -83,9 +95,26 @@ beforeEach(() => {
   getRecentOperations.mockClear();
   spending = SPENDING;
   recent = RECENT;
+  limits = LIMITS;
 });
 
 describe('home highlights', () => {
+  it('«Limits»: a slide only for limits that need attention — last, or first when one is exceeded', async () => {
+    limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('attention', 85_000) }] };
+    const w = await mountTile();
+    expect(w.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent', 'limits']);
+    w.unmount();
+    limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('exceeded', 130_000) }] };
+    const over = await mountTile();
+    expect(over.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['limits', 'unusual', 'recent']);
+    expect(over.get('[data-test="attention-limit"]').text()).toContain('Превышено на');
+    over.unmount();
+    limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('ok', 10_000) }] };
+    const calm = await mountTile();
+    expect(calm.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent']);
+    calm.unmount();
+  });
+
   it("both: «What's unusual» first, two dots; a dot shows «Recent operations», whose rows open their category", async () => {
     const w = await mountTile();
     const slides = w.findAll('.v-carousel__slide');

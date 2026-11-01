@@ -1,9 +1,10 @@
-import type { InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { BudgetStructureView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { categoryLink, incomeLink } from '@/shared/config';
-import { change, changeText, dayMonthName, monthName, monthShortName, t } from '@/shared/lib';
-import type { GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from './types.ts';
+import { budgetLink, categoryLink, incomeLink } from '@/shared/config';
+import { change, changeText, dayMonthName, i18n, monthName, monthShortName, t } from '@/shared/lib';
+import type { BudgetCardView, BudgetPartView, BudgetRowView, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from './types.ts';
 
 const monthNo = (ym: string) => Number(ym.slice(5, 7));
 
@@ -159,17 +160,139 @@ function basisLines(v: InsightsOverview): string[] {
   ];
 }
 
+const names = (ids: ReadonlyArray<CategoryId>) => ids.map((id) => categoryName({ category: id, categoryId: id })).join(', ');
+
+/** «2,4 months», one decimal, in the app language's way. */
+const monthsText = (n: number) => t('insights.budget.reserveValue', { n: new Intl.NumberFormat(i18n.global.locale.value, { maximumFractionDigits: 1 }).format(n) });
+
+/**
+ * The «Budget structure» card: a finished month's income split against 50/30/20, the fixed and loan shares and the
+ * reserve, each with a «?» that gives the formula with the user's numbers and the guide as common advice.
+ */
+export function budgetView(b: BudgetStructureView, incomplete: boolean, fmt: MoneyFormat): BudgetCardView {
+  const m = b.month;
+  const parts: BudgetPartView[] | null = m
+    ? (() => {
+        const left = m.income - m.essential - m.wants;
+        const total = Math.max(m.income, m.essential + m.wants);
+        const width = (x: number) => (total > 0 ? Math.max(0, (x / total) * 100) : 0);
+        return [
+          {
+            key: 'essential', label: t('entities.categoryKind.essential'), share: percent(m.split.essential), width: width(m.essential), color: 'var(--kind-essential)',
+            guide: t('insights.budget.guideShare', { n: 50 }),
+            help: { title: t('entities.categoryKind.essential'), lines: [
+              t('insights.budget.help.essential'),
+              t('insights.budget.help.shareOf', { amount: fmt.money(m.essential), income: fmt.money(m.income), share: percent(m.split.essential) }),
+              t('insights.budget.help.guide', { n: 50 }),
+            ] },
+          },
+          {
+            key: 'wants', label: t('entities.categoryKind.wants'), share: percent(m.split.wants), width: width(m.wants), color: 'var(--kind-wants)',
+            guide: t('insights.budget.guideShare', { n: 30 }),
+            help: { title: t('entities.categoryKind.wants'), lines: [
+              t('insights.budget.help.wants'),
+              t('insights.budget.help.shareOf', { amount: fmt.money(m.wants), income: fmt.money(m.income), share: percent(m.split.wants) }),
+              t('insights.budget.help.guide', { n: 30 }),
+            ] },
+          },
+          {
+            key: 'left', label: t('insights.budget.left'), share: percent(m.split.left), width: width(Math.max(0, left)), color: 'var(--kind-left)',
+            guide: t('insights.budget.guideShare', { n: 20 }),
+            help: { title: t('insights.budget.left'), lines: [
+              t('insights.budget.help.left'),
+              t('insights.budget.help.leftFormula', { income: fmt.money(m.income), essential: fmt.money(m.essential), wants: fmt.money(m.wants), left: `${left < 0 ? '−' : ''}${fmt.money(Math.abs(left))}`, share: percent(m.split.left) }),
+              t('insights.budget.help.guide', { n: 20 }),
+            ] },
+          },
+        ];
+      })()
+    : null;
+  const rows: BudgetRowView[] = [];
+  if (m) {
+    rows.push({
+      key: 'fixed', label: t('insights.budget.fixed'), value: percent(m.fixedShare), guide: t('insights.budget.fixedGuide'),
+      help: { title: t('insights.budget.fixed'), lines: [
+        t('insights.budget.help.fixed'),
+        t('insights.budget.help.shareOf', { amount: fmt.money(m.fixed), income: fmt.money(m.income), share: percent(m.fixedShare) }),
+        t('insights.budget.fixedGuide'),
+      ] },
+    });
+    rows.push({
+      key: 'debt', label: t('insights.budget.debt'), value: percent(m.debtShare), guide: t('insights.budget.debtGuide'),
+      help: { title: t('insights.budget.debt'), lines: [
+        t('insights.budget.help.debt'),
+        t('insights.budget.help.shareOf', { amount: fmt.money(m.debt), income: fmt.money(m.income), share: percent(m.debtShare) }),
+        t('insights.budget.debtGuide'),
+      ] },
+    });
+  }
+  const r = b.reserve;
+  rows.push({
+    key: 'reserve', label: t('insights.budget.reserve'), value: r ? monthsText(r.months) : '—', guide: r ? t('insights.budget.reserveGuide') : t('insights.budget.reserveNone'),
+    help: { title: t('insights.budget.reserve'), lines: [
+      t('insights.budget.help.reserve'),
+      ...(r ? [t('insights.budget.help.reserveFormula', { money: fmt.money(r.money), usual: fmt.money(r.usualEssential), months: monthsText(r.months) })] : [t('insights.budget.reserveNone')]),
+      t('insights.budget.reserveGuide'),
+    ] },
+  });
+  return {
+    parts,
+    marks: [50, 80],
+    note: m ? null : incomplete ? t('insights.budget.running') : t('insights.budget.noIncome'),
+    rows,
+    basis: { title: t('insights.budget.basisTitle'), lines: [
+      t('insights.budget.basis.essential', { names: names(b.kinds.essential) }),
+      t('insights.budget.basis.wants', { names: names(b.kinds.wants) }),
+      t('insights.budget.basis.savings', { names: names(b.kinds.savings) }),
+      t('insights.budget.basis.fixed', { names: names(b.kinds.fixed) }),
+      t('insights.budget.basis.rates'),
+    ] },
+  };
+}
+
+/** A monthly limit over in the month, as a feed card: how much over, spent against the limit, a link to the «Budget» screen. */
+export function limitCard(l: LimitOverView, fmt: MoneyFormat): InsightCardView {
+  const name = l.categoryId ? categoryName({ category: l.categoryId, categoryId: l.categoryId }) : t('insights.limit.budget');
+  return {
+    key: `limit-${l.categoryId ?? 'budget'}`,
+    icon: l.categoryId ? CATEGORY_ICON[l.categoryId] : 'lucide:wallet',
+    title: t('insights.limit.title', { name }),
+    severity: l.severity,
+    severityLabel: t(`insights.severity.${l.severity}`),
+    text: t('insights.limit.text', { spent: fmt.money(l.spent), amount: fmt.money(l.amount) }),
+    chip: { text: `+${fmt.money(l.over)}`, tone: 'up', arrow: 'up', sr: '' },
+    tone: 'up',
+    bars: null,
+    driver: null,
+    to: budgetLink(),
+    linkText: t('insights.limit.open'),
+  };
+}
+
+/** The detectors' cards in their own order, each limit over placed before the first card it outweighs in money. */
+function feedCards(v: InsightsOverview, fmt: MoneyFormat, scope: Scope): InsightCardView[] {
+  const limits = [...v.limitsOver];
+  const out: InsightCardView[] = [];
+  for (const c of v.cards) {
+    while (limits.length > 0 && limits[0]!.over > c.amount) out.push(limitCard(limits.shift()!, fmt));
+    out.push(cardView(c, fmt, scope));
+  }
+  return [...out, ...limits.map((l) => limitCard(l, fmt))];
+}
+
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
   const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
+  const budget = budgetView(v.budget, v.period.incomplete, fmt);
   if (!v.usual) {
-    return { glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), cards: [], calm: false, newPayees: [], oneOffs: [], basis: [] };
+    return { budget, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), cards: [], calm: false, newPayees: [], oneOffs: [], basis: [] };
   }
   return {
+    budget,
     glance,
     early: null,
-    cards: v.cards.map((c) => cardView(c, fmt, scope)),
-    calm: v.cards.length === 0,
+    cards: feedCards(v, fmt, scope),
+    calm: v.cards.length === 0 && v.limitsOver.length === 0,
     newPayees: v.newPayees.map((p) => payeeRow(p, fmt, scope)),
     oneOffs: v.oneOffs.map((o) => oneOffRow(o, fmt, scope, year)),
     basis: basisLines(v),

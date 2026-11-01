@@ -94,7 +94,8 @@ export type PayeeMonths = { name: string; now: number; months: ReadonlyArray<num
 /** The payee behind most of a category's change: its own difference (|now − its usual|) and share of the change, 0–100. */
 export type Driver = { name: string; amount: number; share: number };
 
-const median = (xs: ReadonlyArray<number>): number => {
+/** The median, rounded to a whole kopeck; 0 for none. */
+export const median = (xs: ReadonlyArray<number>): number => {
   if (xs.length === 0) return 0;
   const s = [...xs].sort((a, b) => a - b);
   const mid = s.length >> 1;

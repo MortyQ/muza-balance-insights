@@ -966,6 +966,107 @@ describe('DataService.setOperationCategory (the user\'s own category)', () => {
   });
 });
 
+describe('DataService category kinds', () => {
+  it('lists every category with a kind by id, sets, marks and resets', async () => {
+    const kinds = await svc.categoryKinds();
+    expect(kinds.map((k) => k.categoryId)).not.toContain('income');
+    expect(kinds.find((k) => k.categoryId === 'rent')).toEqual({ categoryId: 'rent', kind: 'essential', fixed: true, changed: false });
+    await svc.setCategoryKind({ categoryId: 'clothing', kind: 'essential', fixed: false });
+    expect((await svc.categoryKinds()).find((k) => k.categoryId === 'clothing')).toEqual({ categoryId: 'clothing', kind: 'essential', fixed: false, changed: true });
+    await svc.resetCategoryKinds(null);
+    expect((await svc.categoryKinds()).some((k) => k.changed)).toBe(false);
+  });
+});
+
+describe('DataService.limitsOverview (the «Budget» screen)', () => {
+  // Sunday 15 March: the week is 9–15 March, day 15 of 31. History from November: four whole months before March.
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2025-11-01'), SYNCED_TO, SYNCED_TO + 60] });
+    for (const m of ['2025-11', '2025-12', '2026-01', '2026-02']) {
+      await tx('uah', `${m}-04`, -400_000, 'кафе и рестораны');
+      await tx('uah', `${m}-06`, -50_000, 'продукты');
+    }
+    await tx('uah', '2026-03-01', -1_250_000, 'аренда жилья');
+    await tx('uah', '2026-03-02', -100_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-10', -80_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-15', -10_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-12', -30_000, 'продукты');
+    await tx('uah', '2026-03-12', -60_000, 'кафе и рестораны', { scope: 'business' });
+  });
+
+  it('limits by what needs attention, each with pace, forecast and per day; «Personal» only', async () => {
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'groceries', period: 'week', currency: 980, amount: 20_000, participantId: null });
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v).toMatchObject({ month: '2026-03', today: '2026-03-15', current: true });
+    expect(v.limits.map((l) => [l.categoryId, l.period, l.figures?.state])).toEqual([['groceries', 'week', 'exceeded'], ['cafes', 'month', 'attention']]);
+    expect(v.limits[1]!.figures).toEqual({
+      amount: 200_000, spent: 190_000, left: 10_000, percent: 95, expected: 96_774, forecast: 392_667, perDay: 588, daysPassed: 15, days: 31, daysLeft: 17, state: 'attention',
+    });
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 30_000, daysPassed: 7, days: 7, perDay: 0 });
+  });
+
+  it('the budget: a total in euros, the typed rent set aside, the rest against flexible spending', async () => {
+    await svc.saveGoal(null, { type: 'budget', currency: 978, amount: 100_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 25_000 }] });
+    const b = (await svc.limitsOverview({ month: '2026-03' })).budget!;
+    expect(b).toMatchObject({
+      total: 5_000_000, fixedTotal: 1_250_000, fixedPaid: 1_250_000, fixedTakesAll: false, result: null,
+      fixed: [{ categoryId: 'rent', amountMinor: 25_000, amount: 1_250_000, paid: 1_250_000 }],
+    });
+    expect(b.flexible).toMatchObject({ amount: 3_750_000, spent: 220_000, daysPassed: 15, days: 31, state: 'ok' });
+    // February, a past month: the result instead of the pace.
+    const feb = (await svc.limitsOverview({ month: '2026-02' })).budget!;
+    expect(feb.result).toEqual({ within: true, left: 4_550_000 });
+  });
+
+  it('suggestions from the usual months: flexible categories without a monthly limit, largest first', async () => {
+    expect((await svc.limitsOverview({ month: '2026-03' })).suggestions).toEqual([{ categoryId: 'cafes', amount: 400_000 }, { categoryId: 'groceries', amount: 50_000 }]);
+    await svc.addSuggestedLimits({});
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.suggestions).toEqual([]);
+    // Groceries' forecast is over its limit by mid-month: attention, listed first.
+    expect(v.limits.map((l) => [l.categoryId, l.amountMinor, l.figures?.state])).toEqual([['groceries', 50_000, 'attention'], ['cafes', 400_000, 'ok']]);
+    expect(v.past).toMatchObject({ months: ['2026-02', '2026-01', '2025-12', '2025-11'], byCategory: { cafes: [400_000, 400_000, 400_000, 400_000] }, total: [450_000, 450_000, 450_000, 450_000] });
+  });
+
+  it('savings goals: from a jar (its target offered by the list of jars), from cards and jars; a jar that is gone', async () => {
+    await account('jar1', null, 980, 3_100_000);
+    await db.execute({ sql: 'UPDATE accounts SET goal = ? WHERE id = ?', args: [5_000_000, 'jar1'] });
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['jar1', kyivStartOfDay('2025-11-01'), SYNCED_TO, SYNCED_TO + 60] });
+    let v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.jars).toEqual([{ id: 'jar1', name: expect.objectContaining({ kind: 'jar', currency: 980 }), currency: 980, goal: 5_000_000, owner: expect.any(Number) }]);
+    await svc.saveGoal(null, { type: 'saving', name: 'Fictional trip', currency: 980, amount: 5_000_000, participantId: null, until: '2026-10-01', source: 'jar', accountId: 'jar1' });
+    await svc.saveGoal(null, { type: 'saving', name: 'Reserve', currency: 980, amount: 10_000_000, participantId: null, until: null, source: 'own', accountId: null });
+    v = await svc.limitsOverview({ month: '2026-03' });
+    // 15 March → 1 October: March … September, 7 months.
+    expect(v.savings[0]).toMatchObject({ name: 'Fictional trip', target: 5_000_000, progress: 3_100_000, percent: 62, left: 1_900_000, months: 7, perMonth: 271_500, overdue: false });
+    expect(v.savings[1]).toMatchObject({ name: 'Reserve', source: 'own', progress: 3_100_000, perMonth: null });
+    // A jar closed in the bank: the goal keeps its id, the account is gone.
+    await db.execute(`UPDATE goals SET account_id = 'gone' WHERE name = 'Fictional trip'`);
+    expect((await svc.limitsOverview({ month: '2026-03' })).savings[0]).toMatchObject({ progress: null, percent: null });
+  });
+
+  it('the Insights read lists a monthly limit over in the shown month, «Personal» spending only', async () => {
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 150_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'groceries', period: 'month', currency: 980, amount: 100_000, participantId: null });
+    // March: cafes 190 000 personal (the 60 000 business payment left out) against 150 000; groceries within.
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.limitsOver).toEqual([{ categoryId: 'cafes', amount: 150_000, spent: 190_000, over: 40_000, severity: expect.any(String) }]);
+  });
+
+  it('a person sees their limits and the family\'s; delete; a second limit of a kind is refused', async () => {
+    const me = Number((await db.execute(`SELECT participant_id FROM connections WHERE provider = 'monobank'`)).rows[0]?.participant_id);
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 150_000, participantId: me });
+    await expect(svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 1, participantId: me })).rejects.toThrow();
+    const mine = await svc.limitsOverview({ month: '2026-03', participantId: me });
+    expect(mine.limits.map((l) => l.owner).sort()).toEqual([me, null].sort());
+    await svc.deleteGoal(mine.limits[0]!.id);
+    expect((await svc.limitsOverview({ month: '2026-03', participantId: me })).limits).toHaveLength(1);
+  });
+});
+
 describe('DataService.incomeOverview (the income screen)', () => {
   const IN = 'поступления';
   beforeEach(async () => {
@@ -1499,6 +1600,36 @@ describe('DataService.spendingOverview: usual', () => {
     expect(v.oneOffs[0]!.name).toBe('Cafe Fictional •• 0000');
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+  });
+
+  it('insightsOverview: the budget structure of a finished month, the reserve now, the kinds; a changed kind moves money', async () => {
+    await covered('2025-09-01');
+    await history();
+    // February: 100 000 in; groceries 60 000 (essential), delivery 6 000 (wants): 60 / 6 / 34.
+    const v = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.budget.month).toEqual({
+      income: 100_000, essential: 60_000, wants: 6_000, savings: 0, fixed: 0, debt: 0,
+      split: { essential: 60, wants: 6, left: 34 }, fixedShare: 0, debtShare: 0,
+    });
+    expect(v.budget.reserve).toMatchObject({ usualEssential: 60_000 });
+    expect(v.budget.kinds.essential).toContain('groceries');
+    expect(v.budget.kinds.fixed).toContain('rent');
+    await svc.setCategoryKind({ categoryId: 'delivery', kind: 'essential', fixed: true });
+    const after = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(after.budget.month).toMatchObject({ essential: 66_000, wants: 0, fixed: 6_000, split: { essential: 66, wants: 0, left: 34 }, fixedShare: 6 });
+  });
+
+  it('insightsOverview: the budget waits while the month runs; without history the month still splits, with no reserve', async () => {
+    await covered('2025-09-01');
+    await history();
+    const running = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(running.budget.month).toBeNull();
+    expect(running.budget.reserve).not.toBeNull();
+    await db.execute('DELETE FROM sync_state');
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), SYNCED_TO, SYNCED_TO + 60] });
+    const early = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(early.usual).toBeNull();
+    expect(early.budget).toMatchObject({ month: { income: 100_000, split: { essential: 60, wants: 6, left: 34 } }, reserve: null });
   });
 
   it('insightsOverview: under 3 whole months, only the month and how many months there are', async () => {

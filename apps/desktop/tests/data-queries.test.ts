@@ -79,6 +79,10 @@ async function counts(w: World): Promise<Record<string, number>> {
   // The Insights screen: the month, the usual, and one read of every spent category's lines.
   await run('insights, family', () => svc.insightsOverview({ month: '2026-03', scope: 'personal' }));
   await run('insights, past month, person', () => svc.insightsOverview({ month: '2026-02', scope: 'personal', participantId: me }));
+  // The «Budget» screen with a family limit and a person's budget: one day grid per owner and the usual months' grid.
+  await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 100_000, participantId: null });
+  await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 1_000_000, participantId: me, fixed: [{ categoryId: 'rent', amount: 100_000 }] });
+  await run('limits, person', () => svc.limitsOverview({ month: '2026-03', participantId: me }));
   db?.close();
   db = null;
   return out;
@@ -104,11 +108,12 @@ describe('the overviews run a fixed number of statements', () => {
     const long = await counts({ people: 2, accounts: 4, months: 36 });
     expect(long).toEqual(await counts({ people: 2, accounts: 4, months: 12 }));
     const short = await counts({ people: 2, accounts: 4, months: 3 });
-    // The Insights screen's past month likewise has no usual there: no grid, income, jar titles or lines.
+    // The Insights screen's past month likewise has no usual there: no grid, income, jar titles or lines, and no
+    // reserve (today's balances); its «Budget structure» asks the month's income alone instead.
     expect({
       ...long,
       'spending, past month, person': long['spending, past month, person']! - 4,
-      'insights, past month, person': long['insights, past month, person']! - 4,
+      'insights, past month, person': long['insights, past month, person']! - 1,
     }).toEqual(short);
   });
 });

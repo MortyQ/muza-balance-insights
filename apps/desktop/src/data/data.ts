@@ -10,6 +10,11 @@ import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/c
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
+import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
+import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
+import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
+import { budgetView, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
+import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -36,9 +41,18 @@ import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, mon
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
-import type { CategoryId } from '../shared/categories.ts';
+import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
+  BudgetStructureView,
+  GoalJarView,
+  GoalPayload,
+  LimitOverView,
+  SavingGoalView,
+  LimitsOverview,
+  LimitsOverviewQuery,
+  CategoryKindQuery,
+  CategoryKindView,
   AllowanceQuery,
   AnalyticsCategory,
   AnalyticsOverview,
@@ -94,6 +108,9 @@ const RECENT_LINES = 6;
 
 /** A stopped regular payment is still listed this long after its last payment. */
 const ENDED_DAYS = 120;
+
+/** Limits by what needs attention first. */
+const STATE_ORDER = { exceeded: 0, attention: 1, ok: 2 } as const;
 
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
 
@@ -461,6 +478,91 @@ export class DataService {
     return { drivers, savings, basis: { months: usual.months, from: months.at(-1)!, to: months[0]!, pendingHolds } };
   }
 
+  /**
+   * «Budget structure»: a finished month's income folded by kind (core read/budget.ts) — the income comes from the
+   * usual's read when there is one, else one income query — and the reserve: today's own money of the view's cards and
+   * jars (an account below zero counts as 0: credit money is not the user's) over the usual essential month.
+   */
+  private async budgetOf(
+    db: Db,
+    q: SpendingOverviewQuery,
+    c: { cur: Map<string, { net: number }>; found: UsualFound | null; incomplete: boolean; kinds: Map<string, KindChoice>; rates: Map<number, FxRate>; now: number },
+  ): Promise<BudgetStructureView> {
+    const byCategory = new Map([...c.cur].map(([k, a]) => [k, a.net]));
+    const totals = byKind(byCategory, c.kinds);
+    let income: number | null = null;
+    if (!c.incomplete) {
+      if (c.found?.usual.income) income = c.found.usual.income.now;
+      else {
+        const filters = { tz: systemTimeZone(), scope: q.scope, ...viewOf(q) };
+        const r = await incomeSummary(db, { ...monthBounds(q.month), ...filters, groupBy: 'month' }, c.now);
+        income = r.groups.reduce((s, g) => s + (toUah(g.total, g.currency, c.rates) ?? 0), 0);
+      }
+    }
+    const split = income !== null ? budgetSplit(income, totals) : null;
+    const month =
+      income !== null && split
+        ? {
+            income,
+            ...totals,
+            debt: byCategory.get(CATEGORY.installments) ?? 0,
+            split,
+            fixedShare: fixedShare(income, totals) ?? 0,
+            debtShare: debtShare(income, byCategory) ?? 0,
+          }
+        : null;
+    let reserve: BudgetStructureView['reserve'] = null;
+    if (c.found) {
+      const balances = await balancesAt(db, { endSec: c.now + 1, ...viewOf(q) });
+      const money = balances.accounts.reduce((s, a) => s + (a.own_funds === null ? 0 : Math.max(0, toUah(a.own_funds, a.currency, c.rates) ?? 0)), 0);
+      reserve = reserveMonths(money, c.found.byCategory.map((m) => byKind(m, c.kinds).essential));
+    }
+    const ids = (pick: (k: KindChoice) => boolean) =>
+      [...c.kinds].flatMap(([category, k]) => {
+        const id = CATEGORY_ID.get(category);
+        return id && pick(k) ? [id] : [];
+      });
+    return {
+      month,
+      reserve,
+      kinds: { essential: ids((k) => k.kind === 'essential'), wants: ids((k) => k.kind === 'wants'), savings: ids((k) => k.kind === 'savings'), fixed: ids((k) => k.fixed) },
+    };
+  }
+
+  /**
+   * The view's monthly limits over in the shown month (a person: theirs and the family's), each against its owner's
+   * «Personal» spending of every bank; the budget's flexible part too. Severity against the usual month, as the feed's.
+   */
+  private async limitsOverOf(db: Db, q: SpendingOverviewQuery, kinds: Map<string, KindChoice>, usualTotal: number, rates: Map<number, FxRate>, now: number): Promise<LimitOverView[]> {
+    const goals = (await listGoals(db)).filter(
+      (g) => (g.type === 'limit' && g.period === 'month') || g.type === 'budget',
+    ).filter((g) => q.participantId === undefined || g.participantId === null || g.participantId === q.participantId);
+    if (goals.length === 0) return [];
+    const tz = systemTimeZone();
+    const sumsOf = new Map<number | null, Sums>();
+    for (const o of new Set(goals.map((g) => g.participantId))) {
+      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
+      sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
+    }
+    const out: LimitOverView[] = [];
+    for (const g of goals) {
+      const sums = sumsOf.get(g.participantId)!;
+      const amount = toUah(g.amount, g.currency, rates);
+      if (amount === null) continue;
+      if (g.type === 'limit') {
+        const spent = sums.get(g.category) ?? 0;
+        if (spent > amount) out.push({ categoryId: CATEGORY_ID.get(g.category) as KindCategoryId, amount, spent, over: spent - amount, severity: insightSeverity(spent - amount, usualTotal) });
+      } else if (g.type === 'budget') {
+        const v = budgetView(g, (w) => CATEGORY_ID.get(w) as KindCategoryId, sums, kinds, { daysPassed: 1, days: 1 }, false, rates);
+        if (v && v.flexible.spent > v.flexible.amount) {
+          const over = v.flexible.spent - v.flexible.amount;
+          out.push({ categoryId: null, amount: v.flexible.amount, spent: v.flexible.spent, over, severity: insightSeverity(over, usualTotal) });
+        }
+      }
+    }
+    return out.sort((a, b) => b.over - a.over);
+  }
+
   private async jarTitles(db: Db): Promise<string[]> {
     const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
     return accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
@@ -560,7 +662,10 @@ export class DataService {
       rates: today,
     };
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
-    if (!found) return { ...base, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const kinds = await kindMap(db);
+    const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
+    const limitsOver = await this.limitsOverOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
+    if (!found) return { ...base, budget, limitsOver, usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -617,6 +722,8 @@ export class DataService {
         : null;
     return {
       ...base,
+      budget,
+      limitsOver,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,
@@ -880,6 +987,178 @@ export class DataService {
 
   async deleteReserve(id: number): Promise<void> {
     await deleteReserve(await this.conn(), id);
+  }
+
+  /**
+   * The «Budget» screen (data/limits.ts): the view's plans — a person's and the family's, the family view all — each
+   * counted against its owner's «Personal» spending of every bank (one day grid per owner over this month and week, or
+   * the past month), the past whole months of the view for suggestions and previews.
+   */
+  async limitsOverview(q: LimitsOverviewQuery): Promise<LimitsOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const thisMonth = today.slice(0, 7);
+    const month = q.month > thisMonth ? thisMonth : q.month;
+    const current = month === thisMonth;
+    const ratesView = await this.d.rates();
+    const rates = rateMap(ratesView);
+    const kindRows = await categoryKinds(db);
+    const kinds = new Map(kindRows.map((r) => [r.category, { kind: r.kind, fixed: r.fixed }]));
+    const idOf = (word: string) => CATEGORY_ID.get(word) as KindCategoryId;
+    const mine = (owner: number | null) => q.participantId === undefined || owner === null || owner === q.participantId;
+    const goals = (await listGoals(db)).filter((g) => mine(g.participantId));
+
+    const bounds = monthBounds(month);
+    const monday = shiftDate(today, 1 - isoWeekday(today));
+    const from = current ? (monday < bounds.from ? monday : bounds.from) : bounds.from;
+    const to = current ? today : bounds.to;
+    const sumsOf = async (owner: number | null): Promise<OwnerSums> => {
+      const grid = await spendingGrid(db, { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) }, now);
+      const fold = (a: string, b: string): Sums =>
+        new Map([...foldByCategory(cellGroups(grid.cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory].map(([k, v]) => [k, v.net]));
+      return { day: fold(today, today), week: fold(monday, today), month: fold(bounds.from, to) };
+    };
+    const owners = [...new Set(goals.filter((g) => g.type !== 'saving').map((g) => g.participantId))];
+    const sums = new Map<number | null, OwnerSums>();
+    for (const o of owners) sums.set(o, await sumsOf(o));
+    const pos = (p: 'day' | 'week' | 'month') => periodPosition(p, today, month, current);
+
+    const limits = goals
+      .flatMap((g) => (g.type === 'limit' && (current || g.period === 'month') ? [limitView(g, idOf, sums.get(g.participantId)!, pos, rates)] : []))
+      .sort((a, b) => STATE_ORDER[a.figures?.state ?? 'ok'] - STATE_ORDER[b.figures?.state ?? 'ok'] || a.categoryId.localeCompare(b.categoryId));
+    const budgets = goals.filter((g) => g.type === 'budget');
+    const own = q.participantId === undefined ? null : q.participantId;
+    const b = budgets.find((g) => g.participantId === own) ?? budgets.find((g) => g.participantId === null) ?? null;
+    const budget = b && b.type === 'budget' ? budgetView(b, idOf, sums.get(b.participantId)!.month, kinds, pos('month'), current, rates) : null;
+
+    const { dataFrom } = await this.status();
+    const months = usualMonths(month, dataFrom);
+    let past: Sums[] = [];
+    if (months.length > 0) {
+      const grid = await spendingGrid(
+        db,
+        { from: monthBounds(months.at(-1)!).from, to: monthBounds(months[0]!).to, tz, unit: 'month', scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) },
+        now,
+      );
+      past = months.map((m) => new Map([...foldByCategory(cellGroups(grid.cells, (c) => c.bucket === m, (c) => c.category), rates).byCategory].map(([k, v]) => [k, v.net])));
+    }
+    const limited = new Set(goals.flatMap((g) => (g.type === 'limit' && g.period === 'month' && g.participantId === own ? [g.category] : [])));
+    const byCategory: LimitsOverview['past']['byCategory'] = {};
+    for (const w of kinds.keys()) {
+      const values = past.map((m) => m.get(w) ?? 0);
+      if (values.some((v) => v !== 0)) byCategory[idOf(w)] = values;
+    }
+    const { savings, jars } = await this.savingsOf(db, goals, today, rates, now);
+    return {
+      month,
+      today,
+      current,
+      budget,
+      limits,
+      savings,
+      jars,
+      suggestions: suggestions(past, kinds, limited, idOf),
+      past: { months, byCategory, total: past.map((m) => [...m.entries()].filter(([w]) => kinds.has(w)).reduce((s, [, v]) => s + v, 0)) },
+      kinds: kindRows.flatMap((r) => {
+        const categoryId = CATEGORY_ID.get(r.category);
+        return categoryId && categoryId !== 'family' && categoryId !== 'ownTransfers' && categoryId !== 'income' ? [{ categoryId, kind: r.kind, fixed: r.fixed, changed: r.changed }] : [];
+      }),
+      rates: ratesView,
+    };
+  }
+
+  /**
+   * Savings goals and the jars a goal can follow: a jar goal's progress is the jar's own money now (none when the jar is
+   * gone); «cards and jars» is the owner's money now, an account below zero counted as 0 (credit money is not theirs).
+   */
+  private async savingsOf(
+    db: Db,
+    goals: ReadonlyArray<Goal>,
+    today: string,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<{ savings: SavingGoalView[]; jars: GoalJarView[] }> {
+    const jarRows = (
+      await db.execute(
+        `SELECT a.id, c.provider, a.kind, a.type, a.currency_code, a.goal, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id
+         WHERE a.kind = 'jar' AND a.id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
+      )
+    ).rows;
+    const names = accountNames(jarRows.map(accountRow));
+    const jars = jarRows.map((r) => ({
+      id: String(r.id),
+      name: names.get(String(r.id))!,
+      currency: Number(r.currency_code),
+      goal: r.goal === null ? null : Number(r.goal),
+      owner: Number(r.participant_id),
+    }));
+    const saving = goals.filter((g): g is Extract<Goal, { type: 'saving' }> => g.type === 'saving');
+    if (saving.length === 0) return { savings: [], jars };
+    const own = (a: { own_funds: number | null; currency: number }) => (a.own_funds === null ? 0 : Math.max(0, toUah(a.own_funds, a.currency, rates) ?? 0));
+    const all = await balancesAt(db, { endSec: now + 1 });
+    const byId = new Map(all.accounts.map((a) => [a.id, a]));
+    const ownerMoney = new Map<number | null, number>();
+    for (const o of new Set(saving.filter((g) => g.source === 'own').map((g) => g.participantId))) {
+      const b = o === null ? all : await balancesAt(db, { endSec: now + 1, participantId: o });
+      ownerMoney.set(o, b.accounts.reduce((s, a) => s + own(a), 0));
+    }
+    const savings = saving.map((g): SavingGoalView => {
+      const target = toUah(g.amount, g.currency, rates) ?? 0;
+      const jar = g.source === 'jar' && g.accountId ? byId.get(g.accountId) : undefined;
+      const money = g.source === 'own' ? (ownerMoney.get(g.participantId) ?? 0) : jar ? own(jar) : null;
+      const p = savingProgress(target, money, g.until, today);
+      return {
+        id: g.id, name: g.name, owner: g.participantId, currency: g.currency, amountMinor: g.amount, until: g.until, source: g.source, accountId: g.accountId,
+        target, progress: p.progress, percent: p.percent, left: p.left, perMonth: p.perMonth, months: p.months, overdue: p.overdue,
+      };
+    });
+    return { savings, jars };
+  }
+
+  /** A plan from the screen: ids to the core's words. */
+  async saveGoal(id: number | null, p: GoalPayload): Promise<void> {
+    const g: GoalInput =
+      p.type === 'limit'
+        ? { type: 'limit', category: CATEGORY[p.categoryId], period: p.period, currency: p.currency, amount: p.amount, participantId: p.participantId }
+        : p.type === 'budget'
+          ? { type: 'budget', currency: p.currency, amount: p.amount, participantId: p.participantId, fixed: p.fixed.map((r) => ({ category: CATEGORY[r.categoryId], amount: r.amount })) }
+          : { ...p };
+    const db = await this.conn();
+    if (id === null) await addGoal(db, g, this.d.nowSec());
+    else await updateGoal(db, id, g);
+  }
+
+  async deleteGoal(id: number): Promise<void> {
+    await deleteGoal(await this.conn(), id);
+  }
+
+  /** The view's suggested limits added as monthly limits in hryvnia (the person's, or the family's). */
+  async addSuggestedLimits(q: { participantId?: number }): Promise<void> {
+    const v = await this.limitsOverview({ month: localDate(this.d.nowSec() * 1000, systemTimeZone()).slice(0, 7), ...q });
+    const db = await this.conn();
+    for (const s of v.suggestions) {
+      await addGoal(db, { type: 'limit', category: CATEGORY[s.categoryId], period: 'month', currency: 980, amount: s.amount, participantId: q.participantId ?? null }, this.d.nowSec());
+    }
+  }
+
+  /** Every category with a kind (core read/category-kinds), named by the renderer's id. */
+  async categoryKinds(): Promise<CategoryKindView[]> {
+    return (await categoryKinds(await this.conn())).flatMap((r) => {
+      const categoryId = CATEGORY_ID.get(r.category);
+      return categoryId && categoryId !== 'family' && categoryId !== 'ownTransfers' && categoryId !== 'income'
+        ? [{ categoryId, kind: r.kind, fixed: r.fixed, changed: r.changed }]
+        : [];
+    });
+  }
+
+  async setCategoryKind(q: CategoryKindQuery): Promise<void> {
+    await setCategoryKind(await this.conn(), CATEGORY[q.categoryId], { kind: q.kind, fixed: q.fixed }, this.d.nowSec());
+  }
+
+  async resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void> {
+    await resetCategoryKinds(await this.conn(), categoryId === null ? null : CATEGORY[categoryId]);
   }
 
   /** The user's category of a debit, for it or its payee (core commands/categories); the key is the line's id. */

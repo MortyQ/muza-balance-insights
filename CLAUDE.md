@@ -193,6 +193,9 @@ Kept apart from the rules above until reviewed; move each item to its `.agents/p
     `min` / `max`), always up to today. The range rule is `src/shared/import-range.ts` (`isImportFrom`: from 36 months
     back to today in the system time zone), shared by the screen and main: IPC `startImport(from)` takes a real `YYYY-MM-DD`, the
     `Importer` throws on a date out of range. No arbitrary end date: coverage is one span per account (`sync_state`));
+    «Categories» (section `categories`; `CategoryKindsFeature` of `features/settings/category-kinds`: each spending
+    category's kind — «Essential / Wants / Savings» — and the «Fixed» switch, a «changed» mark, «Reset to defaults»;
+    `categoriesLink()` of `shared/config` opens it from the Insights screen's «Budget structure»);
   - Безопасность: «Блокировка» (`AppLockSettingsFeature`), «Хранение и токены» (`StorageInfoFeature`; the
     `DbEncryptionFeature` row goes into its list through a slot), «Сеть» (`NetworkInfoFeature`; hosts — IPC
     `getTrustedServices` from `TRUSTED_SERVICES`, texts — `SERVICE_TEXT`; the database path is not shown), «Данные»;

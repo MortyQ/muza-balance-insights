@@ -3,7 +3,7 @@ import type { ProviderId } from '@mono/core/providers/types';
 import type { ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
-import type { CategoryId } from './categories.ts';
+import type { CategoryId, KindCategoryId } from './categories.ts';
 import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
@@ -287,6 +287,18 @@ export type BalanceApi = {
    * `category` null returns the automatic one. The caller reloads. A line that takes no choice → error.
    */
   setOperationCategory(q: OperationCategoryQuery): Promise<OperationCategoryResult>;
+  getLimitsOverview(q: LimitsOverviewQuery): Promise<LimitsOverview>;
+  /** Adds (id null) or replaces a plan; main refuses a bad one, a second limit of a kind, an unknown id. */
+  saveGoal(id: number | null, g: GoalPayload): Promise<void>;
+  deleteGoal(id: number): Promise<void>;
+  /** Adds the suggested monthly limits of the view (the person's, or the family's). */
+  addSuggestedLimits(q: { participantId?: number }): Promise<void>;
+  /** Every category with a kind, in the category list's order (the «Categories» section). */
+  getCategoryKinds(): Promise<CategoryKindView[]>;
+  /** Sets a category's kind and fixed flag; the default itself clears the choice. The caller reloads. */
+  setCategoryKind(q: CategoryKindQuery): Promise<void>;
+  /** Back to the default: one category, or all with null. */
+  resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -513,8 +525,38 @@ export type InsightsOverview = {
   cards: InsightCardView[];
   newPayees: NewPayeeView[];
   oneOffs: OneOffView[];
+  /** «Budget structure» (core read/budget.ts). */
+  budget: BudgetStructureView;
+  /** Monthly limits of the view over in the shown month («Personal», every bank), as feed cards ranked by `over`. */
+  limitsOver: LimitOverView[];
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
+};
+
+/** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */
+export type LimitOverView = { categoryId: KindCategoryId | null; amount: number; spent: number; over: number; severity: InsightSeverity };
+
+/**
+ * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,
+ * and the reserve now. Amounts are hryvnia kopecks (for the explanations); shares whole per cent.
+ */
+export type BudgetStructureView = {
+  /** null while the month runs, or without income. */
+  month: {
+    income: number;
+    essential: number;
+    wants: number;
+    savings: number;
+    fixed: number;
+    debt: number;
+    split: { essential: number; wants: number; left: number };
+    fixedShare: number;
+    debtShare: number;
+  } | null;
+  /** The money at hand now (cards and jars of the view, credit money not counted) ÷ the usual essential month; null — fewer than 3 whole months. */
+  reserve: { months: number; money: number; usualEssential: number } | null;
+  /** The categories of each kind, and the fixed ones, for «How it was counted». */
+  kinds: { essential: CategoryId[]; wants: CategoryId[]; savings: CategoryId[]; fixed: CategoryId[] };
 };
 
 /** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */
@@ -671,6 +713,121 @@ export type RecurringMark = 'mandatory' | 'hidden';
 
 /** `key` — a CategoryLineView's key; `payee` — for every debit of its payee. */
 export type OperationCategoryQuery = { key: string; category: CategoryId | null; payee: boolean };
+
+/** The currencies a limit or a goal is set in: hryvnia, dollar, euro (as reserves). */
+export type GoalCurrency = 980 | 840 | 978;
+export type LimitPeriod = 'day' | 'week' | 'month';
+/** on track · from 80% spent or a forecast over the limit · over the limit. */
+export type LimitStateName = 'ok' | 'attention' | 'exceeded';
+
+/** A limit's figures on today (a past month: its end), hryvnia kopecks by today's rate (core read/limits.ts). */
+export type LimitFiguresView = {
+  amount: number;
+  spent: number;
+  left: number;
+  percent: number;
+  expected: number;
+  /** null for a day limit. */
+  forecast: number | null;
+  perDay: number;
+  daysPassed: number;
+  days: number;
+  daysLeft: number;
+  state: LimitStateName;
+};
+
+/** A category limit; `figures` null — no rate for its currency. `owner` null — the family's. */
+export type CategoryLimitView = {
+  id: number;
+  categoryId: KindCategoryId;
+  period: LimitPeriod;
+  owner: number | null;
+  currency: GoalCurrency;
+  /** As typed, minor units of `currency`. */
+  amountMinor: number;
+  figures: LimitFiguresView | null;
+};
+
+/** The monthly budget: the total, the user's fixed rows set aside first, the flexible part with its pace. */
+export type MonthBudgetView = {
+  id: number;
+  owner: number | null;
+  currency: GoalCurrency;
+  amountMinor: number;
+  /** Hryvnia kopecks by today's rate. */
+  total: number;
+  fixed: Array<{ categoryId: KindCategoryId; amountMinor: number; amount: number; paid: number }>;
+  fixedTotal: number;
+  fixedPaid: number;
+  fixedTakesAll: boolean;
+  /** The flexible part: its amount is total − fixed; spent counts fixed rows' overspend too. */
+  flexible: LimitFiguresView;
+  /** A past month: whether it stayed within the total, and what was left (below zero — over). */
+  result: { within: boolean; left: number } | null;
+};
+
+/** A savings goal (core read/savings-goals.ts). */
+export type SavingGoalView = {
+  id: number;
+  name: string;
+  owner: number | null;
+  currency: GoalCurrency;
+  amountMinor: number;
+  until: string | null;
+  source: 'jar' | 'own';
+  accountId: string | null;
+  /** Hryvnia kopecks by today's rate; progress null — its jar is gone. */
+  target: number;
+  progress: number | null;
+  percent: number | null;
+  left: number | null;
+  /** With a date: per month to the date, the current one counted; null — no date or met. */
+  perMonth: number | null;
+  months: number | null;
+  overdue: boolean;
+};
+
+/** A jar a savings goal can follow: its id, name and the target set in the bank (minor units of its currency). */
+export type GoalJarView = { id: string; name: AccountName; currency: number; goal: number | null; owner: number };
+
+/**
+ * The «Budget» screen and home's budget row: the view's limits and budget (a person: theirs and the family's), its
+ * savings goals, suggested limits and the past whole months the sheets preview against. Spending counts as «Spending»
+ * does, «Personal» only and every bank whatever the bank filter. Amounts are hryvnia kopecks by today's rates.
+ */
+export type LimitsOverview = {
+  month: string;
+  today: string;
+  /** The shown month is the current one: day and week limits and the pace only then. */
+  current: boolean;
+  budget: MonthBudgetView | null;
+  limits: CategoryLimitView[];
+  savings: SavingGoalView[];
+  jars: GoalJarView[];
+  /** Up to five largest flexible categories without a limit, with the suggested monthly amount. */
+  suggestions: Array<{ categoryId: KindCategoryId; amount: number }>;
+  /** The whole months before (newest first, up to 6), the view's spending by category and in all. */
+  past: { months: string[]; byCategory: Partial<Record<KindCategoryId, number[]>>; total: number[] };
+  /** The kinds now, for the flexible part and «How it was counted». */
+  kinds: CategoryKindView[];
+  rates: RatesView | null;
+};
+
+export type LimitsOverviewQuery = { month: string; participantId?: number };
+
+/** A plan as the screen sends it; `id` null — a new one. */
+export type GoalPayload =
+  | { type: 'limit'; categoryId: KindCategoryId; period: LimitPeriod; currency: GoalCurrency; amount: number; participantId: number | null }
+  | { type: 'budget'; currency: GoalCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }> }
+  | { type: 'saving'; name: string; currency: GoalCurrency; amount: number; participantId: number | null; until: string | null; source: 'jar' | 'own'; accountId: string | null };
+
+/** A spending category's kind (core read/category-kinds.ts): essential, a want or savings. */
+export type CategoryKind = 'essential' | 'wants' | 'savings';
+
+/** A category's kind as it reads now; `changed` — differs from the default. */
+export type CategoryKindView = { categoryId: KindCategoryId; kind: CategoryKind; fixed: boolean; changed: boolean };
+
+export type CategoryKindQuery = { categoryId: KindCategoryId; kind: CategoryKind; fixed: boolean };
 
 /** How many operations changed category. */
 export type OperationCategoryResult = { changed: number };

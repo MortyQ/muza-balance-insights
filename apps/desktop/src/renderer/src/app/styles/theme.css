@@ -268,6 +268,11 @@
     --category-7: oklch(58% 0.08 10);
     /* A named category below the top 7 (a picked person's): low-chroma, darker than the «N more categories» grey (--border-strong) */
     --category-other: oklch(62% 0.025 250);
+
+    /* Category kinds (entities/category-kind): essential, wants and what is left (savings) — the budget's three parts. */
+    --kind-essential: oklch(58% 0.10 235);
+    --kind-wants:     oklch(66% 0.11 65);
+    --kind-left:      oklch(60% 0.12 150);
     /* The analytics heatmap: above / below a category's usual level (orange / blue: apart in hue and lightness). */
     --heat-hot:  oklch(66% 0.16 50);
     --heat-cold: oklch(62% 0.13 240);
@@ -388,6 +393,10 @@
     --category-6: oklch(68% 0.08 185);
     --category-7: oklch(67% 0.08 10);
     --category-other: oklch(60% 0.025 250);
+
+    --kind-essential: oklch(68% 0.10 235);
+    --kind-wants:     oklch(74% 0.11 65);
+    --kind-left:      oklch(70% 0.12 150);
     --heat-hot:  oklch(70% 0.15 50);
     --heat-cold: oklch(66% 0.12 240);
     --card-band-tint: 24%;

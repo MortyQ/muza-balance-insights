@@ -5,9 +5,11 @@ import type { CategoryId } from '@contract/categories.ts';
 import { bankOf, BankMark } from '@/entities/bank';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PartBars, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
+import CategoryLimitBar from './components/CategoryLimitBar.vue';
 import CategoryPicker from './components/CategoryPicker.vue';
 import { useCategoryChoice } from './composables/useCategoryChoice.ts';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
+import { useCategoryLimit } from './composables/useCategoryLimit.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
 const { categoryId, scope, period } = defineProps<{ categoryId: CategoryId; scope: Scope; period: DetailPeriod }>();
@@ -20,6 +22,11 @@ const choice = useCategoryChoice(() => (key: string) => {
   return row ? { key, merchant: row.merchant } : null;
 });
 const { picking, busy, notice } = choice;
+// The limit bar: «Personal» limits, and only while the shown month runs (a limit is about now).
+const limit = useCategoryLimit(
+  () => categoryId,
+  () => scope === 'personal' && period.kind === 'month' && view.value?.thisMonth === period.month && categoryId !== 'income' && categoryId !== 'ownTransfers' && categoryId !== 'family',
+);
 </script>
 
 <template>
@@ -32,6 +39,7 @@ const { picking, busy, notice } = choice;
     <template v-else-if="view && summary">
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
         <DetailSummary :summary :label />
+        <div v-if="limit.view.value" class="mt-4 border-t border-border-subtle pt-4"><CategoryLimitBar :view="limit.view.value" /></div>
       </VCard>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>

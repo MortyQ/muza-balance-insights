@@ -63,6 +63,7 @@ describe('settings sections', () => {
     ['network', 'network'],
     ['appearance', 'appearance'],
     ['lock', 'lock'],
+    ['categories', 'categories'],
     ['auto-sync', 'auto-sync'],
   ])('settingsSection(%j) → %s', (q, s) => expect(settingsSection(q)).toBe(s));
 
@@ -70,7 +71,8 @@ describe('settings sections', () => {
     expect(nextSection('people', -1)).toBe('about');
     expect(nextSection('about', 1)).toBe('people');
     expect(nextSection('data', 1)).toBe('auto-sync');
-    expect(nextSection('people', 1)).toBe('lock');
+    expect(nextSection('people', 1)).toBe('categories');
+    expect(nextSection('categories', 1)).toBe('lock');
   });
 
   it('every section is in the menu, once and in the order of SETTINGS_SECTIONS', async () => {

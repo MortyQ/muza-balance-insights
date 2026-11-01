@@ -327,12 +327,23 @@ describe('the category route', () => {
 });
 
 let current: CategoryOverview = VIEW;
+// The «Budget» screen's read, for the category's limit bar.
+const LIMITS = {
+  month: '2026-09', today: '2026-09-15', current: true, budget: null, savings: [], jars: [], suggestions: [], kinds: [], rates: null,
+  past: { months: [], byCategory: {}, total: [] },
+  limits: [{
+    id: 1, categoryId: 'transport', period: 'month', owner: null, currency: 980, amountMinor: 200_000,
+    figures: { amount: 200_000, spent: 150_000, left: 50_000, percent: 75, expected: 100_000, forecast: 300_000, perDay: 3_125, daysPassed: 15, days: 30, daysLeft: 16, state: 'attention' },
+  }],
+};
+let limits: unknown = LIMITS;
 const getCategoryOverview = vi.fn(async (_q: CategoryOverviewQuery) => current);
 const setOperationCategory = vi.fn(async (_q: OperationCategoryQuery) => ({ changed: 2 }));
 vi.mock('@/shared/api', () => ({
   balanceApi: {
     getCategoryOverview: (...a: unknown[]) => getCategoryOverview(...(a as [CategoryOverviewQuery])),
     setOperationCategory: (...a: unknown[]) => setOperationCategory(...(a as [OperationCategoryQuery])),
+    getLimitsOverview: async () => limits,
     getSyncStatus: async () => ({ hasData: true }),
   },
 }));
@@ -362,7 +373,10 @@ describe('category screen mounted', () => {
     const { CategoryDetailFeature } = await import('@/features/category-detail');
     const router = createRouter({
       history: createMemoryHistory(),
-      routes: [{ path: '/', name: 'home', component: defineComponent(() => () => h('div')) }],
+      routes: [
+        { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
+        { path: '/budget', name: 'budget', component: defineComponent(() => () => h('div')) },
+      ],
     });
     await router.push('/');
     const w = mount(CategoryDetailFeature, { props: { categoryId: 'transport', scope: 'personal', period }, global: { plugins: [i18n, router] } });
@@ -387,6 +401,19 @@ describe('category screen mounted', () => {
     await w.find('button[aria-label^="Снять фильтр"]').trigger('click');
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
     expect(w.text()).toContain(`Итого по списку: ${uah(141_000)}`);
+  });
+
+  it('the category\'s limit with its pace and state while the month runs; none for a past month', async () => {
+    const w = await mountScreen();
+    const bar = w.find('[data-test="category-limit"]');
+    expect(bar.exists()).toBe(true);
+    expect(bar.text()).toContain('Прогноз выше лимита');
+    expect(bar.find('[data-test="pace-marker"]').exists()).toBe(true);
+    w.unmount();
+    current = { ...VIEW, thisMonth: '2026-10' };
+    const past = await mountScreen();
+    expect(past.find('[data-test="category-limit"]').exists()).toBe(false);
+    past.unmount();
   });
 
   it('a debit\'s «⋮» opens its menu; «Change category…» opens the picker, which saves for the payee and says what changed', async () => {
@@ -480,6 +507,7 @@ describe('the category page', () => {
       routes: [
         { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
         { path: '/category/:id', name: 'category', component: CategoryPage },
+        { path: '/budget', name: 'budget', component: defineComponent(() => () => h('div')) },
       ],
     });
     await router.push(path);

@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest';
 import { CHOOSABLE_CATEGORIES } from '@mono/core/commands/categories';
 import { CATEGORY } from '@mono/core/derive/categories';
-import { CATEGORY_IDS, CHOOSABLE_CATEGORY_IDS } from '../src/shared/categories.ts';
+import { DEFAULT_KINDS } from '@mono/core/read/category-kinds';
+import { CATEGORY_IDS, CHOOSABLE_CATEGORY_IDS, KIND_CATEGORY_IDS } from '../src/shared/categories.ts';
 import { MESSAGES } from '../src/shared/i18n/index.ts';
 import { LOCALES } from '../src/shared/locale.ts';
 
@@ -13,6 +14,10 @@ describe('spending categories', () => {
 
   it('CHOOSABLE_CATEGORY_IDS = the ids of the core CHOOSABLE_CATEGORIES', () => {
     expect(CHOOSABLE_CATEGORY_IDS.map((id) => CATEGORY[id]).sort()).toEqual([...CHOOSABLE_CATEGORIES].sort());
+  });
+
+  it('KIND_CATEGORY_IDS = the categories of the core DEFAULT_KINDS', () => {
+    expect(KIND_CATEGORY_IDS.map((id) => CATEGORY[id]).sort()).toEqual([...DEFAULT_KINDS.keys()].sort());
   });
 
   it.each(LOCALES)('%s: a name for every category', (locale) => {

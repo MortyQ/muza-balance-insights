@@ -270,7 +270,7 @@
 - Opening home asks main for the month's spending once (the block and the unusual slide share it).
 - A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.
 
-## Check on a live system: home «Insights» (`openspec/changes/desktop-home-insights`)
+## Check on a live system: home «Insights» (`openspec/changes/archive/2026-11-01-desktop-home-insights`)
 
 - «Spending» and «Insights» keep one row height at 12 columns; the block takes its own row under «Spending» below that.
 - A payee whose descriptions vary (a city or a terminal number in the text) splits and may show no driver: is that
@@ -278,10 +278,23 @@
 - A past month: the savings rate beside the usual one; the running month: drivers only, no rate.
 - Opening home still asks main for the month's spending once (the spending block, the unusual slide and the block).
 
-## Check on a live system: the Insights screen (`openspec/changes/desktop-insights-page`)
+## Check on a live system: the Insights screen (`openspec/changes/archive/2026-11-01-desktop-insights-page`)
 
 - Severity thresholds (10% / 4% of a usual month): do the marks match what feels important on real data?
 - New payees: a payee whose description changes (a terminal number, a city) may look new every month.
 - Large one-offs: a yearly payment (insurance, a subscription paid once a year) shows as a one-off each time: fine or noise?
 - The card's bars: readable at the narrowest window and with a month far above the others.
 - A running month on its first days: the meter and the empty feed read sensibly.
+
+## Check on a live system: budget, limits and goals (`openspec/changes/budget-structure`)
+
+- Category kinds: do the defaults (transfers to people and subscriptions as wants, car, kids and pets essential) feel
+  right on real spending?
+- «Budget structure»: the 50/30/20 split and the guides (fixed above 50–60%, loans under 30%, reserve 3–6 months) — do
+  they read as advice, not as a grade? The reserve counts jars too: sensible?
+- The monthly budget: rent paid as a transfer to a person counts as flexible until its payee is set to «Rent» — is it
+  clear enough from the «?» text?
+- Pace and forecast early in a month (the first week) and for week limits on Mondays: no false alarms?
+- Home's budget row at every window width; the empty row's wording; the «Limits» slide's order.
+- Savings goals: a jar's own target offered; the need per month to a date; a closed jar.
+- The «?» explanations: readable, the numbers match the screen, nothing cut in a narrow window.

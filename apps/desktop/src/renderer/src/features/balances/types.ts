@@ -110,8 +110,6 @@ export interface PaceView {
   spentTotal: number;
   /** The usual spending by `last`; null without a usual month. */
   usualByNow: number | null;
-  /** «Available per day»: the current month only. */
-  perDay: number | null;
   /** Each bank's spending added up by day, the analytics answer's order; null on the same days as `spent`. */
   banks: Array<{ provider: string; spent: Array<number | null> }>;
 }

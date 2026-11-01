@@ -45,6 +45,8 @@ export interface InsightCardView {
   /** «Mostly …: +X, N% of the change»; null — no main driver. */
   driver: string | null;
   to: RouteLocationRaw | null;
+  /** The link's text when it is not «Open operations» (a limit card opens the «Budget» screen). */
+  linkText?: string;
 }
 
 /** A row of the side lists: a new payee or a one-off. */
@@ -57,7 +59,44 @@ export interface SignalRowView {
   to: RouteLocationRaw | null;
 }
 
+/** A «?» explanation: what it means, then the formula with the user's numbers, then the guide. */
+export interface HelpView {
+  title: string;
+  lines: string[];
+}
+
+/** One part of the income bar: its share, its width on the bar (0–100) and its colour. */
+export interface BudgetPartView {
+  key: 'essential' | 'wants' | 'left';
+  label: string;
+  share: string;
+  width: number;
+  color: string;
+  guide: string;
+  help: HelpView;
+}
+
+/** One row under the bar: fixed costs, loan payments, the reserve. */
+export interface BudgetRowView {
+  key: 'fixed' | 'debt' | 'reserve';
+  label: string;
+  value: string;
+  guide: string;
+  help: HelpView;
+}
+
+/** The «Budget structure» card. `note` — why the split is missing (a running month, no income). */
+export interface BudgetCardView {
+  parts: BudgetPartView[] | null;
+  /** The 50/30/20 marks on the bar, % of its width. */
+  marks: number[];
+  note: string | null;
+  rows: BudgetRowView[];
+  basis: HelpView;
+}
+
 export interface InsightsPageView {
+  budget: BudgetCardView;
   glance: GlanceView[];
   /** Fewer than 3 whole months: the notice's text, and nothing else is shown below the glance. */
   early: string | null;

@@ -40,31 +40,31 @@ function month(
 }
 
 describe('paceView', () => {
-  it('a running month: added up to today, nothing after it; usual by the same day; per day kept', () => {
-    const v = paceView(month(['full', 'full', 'running', 'none'], [100, 200, 50, 0], [80, 160, 240, 320]), 1234);
-    expect(v).toMatchObject({ days: ['1', '2', '3', '4'], dates: ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'], spent: [100, 300, 350, null], last: 2, running: true, spentTotal: 350, usualByNow: 240, perDay: 1234 });
+  it('a running month: added up to today, nothing after it; usual by the same day', () => {
+    const v = paceView(month(['full', 'full', 'running', 'none'], [100, 200, 50, 0], [80, 160, 240, 320]));
+    expect(v).toMatchObject({ days: ['1', '2', '3', '4'], dates: ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04'], spent: [100, 300, 350, null], last: 2, running: true, spentTotal: 350, usualByNow: 240 });
   });
 
-  it('a past month: the whole month, no per day', () => {
-    const v = paceView(month(['full', 'full'], [100, 200], [90, 180]), 1234);
-    expect(v).toMatchObject({ last: 1, running: false, spentTotal: 300, usualByNow: 180, perDay: null });
+  it('a past month: the whole month', () => {
+    const v = paceView(month(['full', 'full'], [100, 200], [90, 180]));
+    expect(v).toMatchObject({ last: 1, running: false, spentTotal: 300, usualByNow: 180 });
     expect(v?.spentTotal).toBe(v?.spent.at(-1));
   });
 
   it('days before the first data are not drawn, and the sum starts there', () => {
-    const v = paceView(month(['none', 'full', 'full'], [0, 40, 60], null), null);
+    const v = paceView(month(['none', 'full', 'full'], [0, 40, 60], null));
     expect(v?.spent).toEqual([null, 40, 100]);
     expect(v).toMatchObject({ usual: null, usualByNow: null });
   });
 
   it('a month without data: no pace', () => {
-    expect(paceView(month(['none', 'none'], [0, 0], null), null)).toBeNull();
+    expect(paceView(month(['none', 'none'], [0, 0], null))).toBeNull();
   });
 });
 
 describe('paceChartOption', () => {
   it('as on the home mockup: a filled area under the month, today\'s amount in a pill, amounts on a faint grid', () => {
-    const o = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]), null)!, (n) => `${n} ₴`) as {
+    const o = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]))!, (n) => `${n} ₴`) as {
       yAxis: { splitLine: unknown; axisLabel: { formatter: (n: number) => string } };
       series: Array<{ areaStyle?: unknown; markPoint?: { data: Array<{ label: { formatter: string } }> } }>;
     };
@@ -76,10 +76,10 @@ describe('paceChartOption', () => {
   });
 
   it('the usual dashed before the month; today marked only while the month runs', () => {
-    const running = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]), null)!) as { series: Array<{ lineStyle: { type?: string }; markPoint?: { data: unknown[] } }> };
+    const running = paceChartOption(paceView(month(['full', 'running', 'none'], [10, 20, 0], [5, 10, 15]))!) as { series: Array<{ lineStyle: { type?: string }; markPoint?: { data: unknown[] } }> };
     expect(running.series.map((s) => s.lineStyle.type ?? 'solid')).toEqual(['dashed', 'solid']);
     expect(running.series[1]?.markPoint?.data).toEqual([expect.objectContaining({ coord: [1, 30] })]);
-    const past = paceChartOption(paceView(month(['full', 'full'], [10, 20], null), null)!) as { series: Array<{ markPoint?: { data: unknown[] } }> };
+    const past = paceChartOption(paceView(month(['full', 'full'], [10, 20], null))!) as { series: Array<{ markPoint?: { data: unknown[] } }> };
     expect(past.series).toHaveLength(1);
     expect(past.series[0]?.markPoint?.data).toEqual([]);
   });
@@ -87,7 +87,7 @@ describe('paceChartOption', () => {
 
 describe('paceTooltip', () => {
   const money = (n: number) => `${n} ₴`;
-  const running = () => paceView(month(['full', 'running', 'none'], [100, 50, 0], [80, 200, 300]), null)!;
+  const running = () => paceView(month(['full', 'running', 'none'], [100, 50, 0], [80, 200, 300]))!;
 
   it('a day with data and a usual month: the date, spent, usual by that day, the difference', () => {
     expect(paceTooltip(running(), 0, money)).toBe('1 октября\nПотрачено: 100 ₴\nОбычно к этому дню: 80 ₴\nНа 20 ₴ больше обычного');
@@ -99,7 +99,7 @@ describe('paceTooltip', () => {
   });
 
   it('no usual month: spent only', () => {
-    expect(paceTooltip(paceView(month(['full', 'full'], [10, 20], null), null)!, 1, money)).toBe('2 октября\nПотрачено: 30 ₴');
+    expect(paceTooltip(paceView(month(['full', 'full'], [10, 20], null))!, 1, money)).toBe('2 октября\nПотрачено: 30 ₴');
   });
 
   it('the chart shows it for the day under the pointer', () => {
@@ -115,19 +115,18 @@ describe('PacePanel', () => {
   const mountPanel = (v: ReturnType<typeof paceView>, offered = false) =>
     mount(PacePanel, { props: { view: v!, fmt, offered, split: 'together', banks: null }, global: { plugins: [i18n] } });
 
-  it('the three figures of a running month', () => {
-    const w = mountPanel(paceView(month(['full', 'running'], [10000, 5000], [8000, 12000]), 70000));
+  it('the two figures of a running month: per day on home is the budget row\'s', () => {
+    const w = mountPanel(paceView(month(['full', 'running'], [10000, 5000], [8000, 12000])));
     expect(w.find('[data-test="chart"]').exists()).toBe(true);
     const figures = w.findAll('[data-test="pace-figure"]');
-    expect(figures).toHaveLength(3);
+    expect(figures).toHaveLength(2);
     expect(figures[0]?.text()).toContain(fmt.money(15000));
     expect(figures[1]?.text()).toContain(fmt.money(12000));
-    expect(figures[2]?.text()).toContain(fmt.money(70000));
     expect(w.find('[data-test="pace-no-usual"]').exists()).toBe(false);
   });
 
   it('without a usual month: only «spent» and the note', () => {
-    const w = mountPanel(paceView(month(['full', 'full'], [10000, 5000], null), null));
+    const w = mountPanel(paceView(month(['full', 'full'], [10000, 5000], null)));
     expect(w.findAll('[data-test="pace-figure"]')).toHaveLength(1);
     expect(w.find('[data-test="pace-no-usual"]').exists()).toBe(true);
   });
@@ -142,7 +141,7 @@ describe('the pace by banks', () => {
   ]);
 
   it('each bank added up over the same days as the month; the parts add up to the total', () => {
-    const v = paceView(byBanks(), null)!;
+    const v = paceView(byBanks())!;
     expect(v.banks).toEqual([
       { provider: 'monobank', spent: [60, 60, null] },
       { provider: 'privatbank', spent: [40, 70, null] },
@@ -153,7 +152,7 @@ describe('the pace by banks', () => {
   });
 
   it('banks only while «By banks» is chosen and offered, named and coloured by the bank', () => {
-    const v = paceView(byBanks(), null)!;
+    const v = paceView(byBanks())!;
     expect(paceBanks(v, true, 'together')).toBeNull();
     expect(paceBanks(v, false, 'banks')).toBeNull();
     expect(paceBanks(null, true, 'banks')).toBeNull();
@@ -161,7 +160,7 @@ describe('the pace by banks', () => {
   });
 
   it('together draws exactly what it drew before; by banks a stacked area per bank under the unfilled month line', () => {
-    const v = paceView(byBanks(), null)!;
+    const v = paceView(byBanks())!;
     expect(JSON.stringify(paceChartOption(v, String, null))).toBe(JSON.stringify(paceChartOption(v)));
     const o = paceChartOption(v, String, paceBanks(v, true, 'banks')) as {
       series: Array<{ stack?: string; data: unknown; areaStyle?: { color: string }; lineStyle: { type?: string; color: string }; markPoint?: unknown }>;
@@ -174,7 +173,7 @@ describe('the pace by banks', () => {
   });
 
   it('the tooltip names each bank\'s part after «Spent»', () => {
-    const v = paceView(byBanks(), null)!;
+    const v = paceView(byBanks())!;
     const banks = paceBanks(v, true, 'banks');
     expect(paceTooltip(v, 1, (n) => `${n} ₴`, banks)).toBe(
       '2 октября\nПотрачено: 130 ₴\n  Monobank: 60 ₴\n  PrivatBank: 70 ₴\nОбычно к этому дню: 100 ₴\nНа 30 ₴ больше обычного',
@@ -184,7 +183,7 @@ describe('the pace by banks', () => {
   });
 
   it('the legend: each bank drawn with its colour and its amount by the last day, adding up to «Spent»; none together', () => {
-    const v = paceView(byBanks(), null)!;
+    const v = paceView(byBanks())!;
     const items = paceLegend(v, paceBanks(v, true, 'banks'));
     expect(items).toEqual([
       { provider: 'monobank', name: 'Monobank', color: 'var(--foreground)', swatch: 'color-mix(in oklch, var(--foreground) 50%, transparent)', amount: 60 },
@@ -196,7 +195,7 @@ describe('the pace by banks', () => {
 
   it('the panel shows the legend by banks only', () => {
     const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
-    const view = paceView(byBanks(), null)!;
+    const view = paceView(byBanks())!;
     const panel = (banks: ReturnType<typeof paceBanks>) =>
       mount(PacePanel, { props: { view, fmt, offered: true, split: banks ? ('banks' as const) : ('together' as const), banks }, global: { plugins: [i18n] } });
     expect(panel(null).find('[data-test="pace-legend"]').exists()).toBe(false);
@@ -206,7 +205,7 @@ describe('the pace by banks', () => {
 
   it('the menu is there only while two or more banks are on, and says the choice', async () => {
     const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
-    const props = { view: paceView(byBanks(), null)!, fmt, split: 'together' as const, banks: null };
+    const props = { view: paceView(byBanks())!, fmt, split: 'together' as const, banks: null };
     expect(mount(PacePanel, { props: { ...props, offered: false }, global: { plugins: [i18n] } }).find('[aria-label="Настройки темпа"]').exists()).toBe(false);
     const w = mount(PacePanel, { props: { ...props, offered: true }, global: { plugins: [i18n] }, attachTo: document.body });
     document.body.querySelector<HTMLElement>('[aria-label="Настройки темпа"]')!.click();

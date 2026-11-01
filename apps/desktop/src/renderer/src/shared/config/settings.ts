@@ -3,6 +3,7 @@ import { ROUTE } from './routes.ts';
 
 export const SETTINGS_SECTIONS = [
   'people',
+  'categories',
   'lock',
   'storage',
   'network',
@@ -30,6 +31,11 @@ export function settingsSection(q: unknown): SettingsSection {
  */
 export function importLink(from?: string): { name: typeof ROUTE.settings; query: Record<string, string> } {
   return { name: ROUTE.settings, query: { section: 'people', focus: 'import', ...(from ? { from } : {}) } };
+}
+
+/** A link to the «Categories» section (the kinds of the spending categories). */
+export function categoriesLink(): { name: typeof ROUTE.settings; query: Record<string, string> } {
+  return { name: ROUTE.settings, query: { section: 'categories' } };
 }
 
 /** What a settings route query asks of the history download: focus it, and from which date. */

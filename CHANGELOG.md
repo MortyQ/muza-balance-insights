@@ -67,8 +67,33 @@ English interface.
   one-off payments, and how it was all counted. With less than 3 whole months of history it says so. «All insights»
   on home's «Insights» and «What's unusual» opens it.
 
+### Budget, limits and goals
+
+- **A monthly budget on the home screen.** Set one amount for the month and list your fixed costs — rent, phone,
+  subscriptions — with what you set aside for each. They come off first, and a new row right under the balances shows
+  the rest: how much of it is spent, whether you are ahead of pace, the forecast for the month's end and how much you
+  can spend per day by the budget. Without a budget the row offers to set one; a past month shows whether it stayed
+  within the budget. Click the row to open the «Budget» screen.
+- **Limits on categories.** Set an amount for a category per day, week or month, for a person or the family, with
+  the usual month as a suggestion and a chart of past months against your amount. Each limit shows the money spent of
+  it, a marker of where you would be today spending evenly, the forecast and how much is left per day; a limit that
+  needs attention or is exceeded says so in words. Without any limits the screen offers ones at your usual level in
+  one click. A category's screen shows its limit, home's «What's unusual» tile gets a «Limits» slide when one needs
+  attention, and «Insights» lists a limit exceeded in the month.
+- **Savings goals.** Save towards a target from a Monobank jar (its own target is offered) or from all your cards and
+  jars, with an optional date — the app says how much is needed a month to get there.
+- **Budget structure in «Insights».** How a finished month's income split into essentials, wants and what was left,
+  beside the common 50/30/20 guide; the share of fixed costs and of loan payments; and how many usual months of
+  essential spending the money you have would cover. Guides are shown as common advice, not a grade.
+- **Every number explains itself.** A «?» next to each budget, limit and goal figure shows how it is counted, with
+  your own numbers, and each new screen opens with a short introduction you can bring back with «How it works».
+- **«Month pace» no longer shows «Available per day»**: on the home screen, per day now comes from your budget;
+  «Available per day» stays in «Planning».
+
 ### Categories
 
+- **Each category is essential, a want or savings, and fixed or not.** Change any of them in Settings → «Categories»;
+  «Reset to defaults» brings the app's choice back.
 - **Choose an operation's category yourself.** On a category's screen, right-click an operation or press «⋮» at the end
   of its row, then «Change category…»: pick a category from the list (with a search), for this operation alone or,
   with «For all operations from this payee», for every payment to the same place or person — past and future ones. The

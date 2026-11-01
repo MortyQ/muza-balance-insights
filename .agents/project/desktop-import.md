@@ -154,6 +154,16 @@
   payment's id, `mark` `mandatory | hidden | null`) marks its payee (core `setRecurringMark`); unknown key — error; `next` — a calendar month after the last (`nextMonthDay`). The
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
+  `getCategoryKinds()` / `setCategoryKind({ categoryId, kind, fixed })` / `resetCategoryKinds(categoryId | null)` — the
+  «Categories» section (core `read/category-kinds.ts`); `getInsightsOverview` also carries `budget` («Budget
+  structure»: the month folded by kind, the reserve from today's own money of cards and jars) and `limitsOver` (monthly
+  limits over in the month). `getLimitsOverview({ month, participantId? })` (the «Budget» screen, home's budget row and
+  «Limits» slide, the category screen's limit bar; `DataService.limitsOverview`, assembly in `data/limits.ts`): the
+  view's plans (a person: theirs and the family's), each against its owner's «Personal» spending of every bank — one
+  day grid per owner over this week and month (a past month: the month only) —, savings goals with their progress, the
+  jars a goal can follow (id, `AccountName`, the bank's target, owner — never a jar's title), suggestions and the past
+  whole months of the view. `saveGoal(id | null, GoalPayload)`, `deleteGoal(id)`, `addSuggestedLimits({ participantId? })`
+  write the plans; a goal's name is the user's own text, the only text these channels carry.
   `setOperationCategory({ key, category, payee })` (`key` — a category line's key, `category` a choosable `CategoryId`
   or null to undo, `payee` — for every debit of its payee) → `{ changed }` (core `commands/categories.ts`); a line that
   takes no choice — error. The category lines carry `choice` (core `categorySources`).

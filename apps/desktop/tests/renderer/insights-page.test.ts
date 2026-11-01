@@ -34,6 +34,15 @@ const OVERVIEW: InsightsOverview = {
   cards: [CAFES, GROCERIES],
   newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
   oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000 }],
+  limitsOver: [],
+  budget: {
+    month: {
+      income: 2_000_000, essential: 900_000, wants: 500_000, savings: 100_000, fixed: 760_000, debt: 160_000,
+      split: { essential: 45, wants: 25, left: 30 }, fixedShare: 38, debtShare: 8,
+    },
+    reserve: { months: 2.4, money: 2_160_000, usualEssential: 900_000 },
+    kinds: { essential: ['groceries', 'rent'], wants: ['cafes'], savings: ['investments'], fixed: ['rent'] },
+  },
   rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
 };
 
@@ -66,6 +75,7 @@ async function mountPage() {
       { path: '/category/:id', name: 'category', component: blank },
       { path: '/income', name: 'income', component: blank },
       { path: '/settings', name: 'settings', component: blank },
+      { path: '/budget', name: 'budget', component: blank },
     ],
   });
   await router.push('/');
@@ -161,6 +171,52 @@ describe('insights screen', () => {
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
     expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (100%)`));
     expect(plain(w.get('[data-test="one-offs"]').text())).toContain(plain(formatMoney(8_000, 978)));
+    w.unmount();
+  });
+
+  it('a monthly limit over: a «Limit exceeded» card placed among the others by money, opening the budget', async () => {
+    answer = { ...OVERVIEW, limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 750_000, over: 350_000, severity: 'high' }] };
+    const w = await mountPage();
+    // 350 000 over outweighs the cafes' +300 000 and the groceries' −60 000: first.
+    const cards = w.findAll('article');
+    expect(cards).toHaveLength(3);
+    const limit = cards[0]!;
+    expect(limit.text()).toContain('Лимит превышен: Кафе и рестораны');
+    expect(plain(limit.text())).toContain(`Потрачено ${plain(formatMoney(750_000, 980))} при лимите ${plain(formatMoney(400_000, 980))}.`);
+    expect(limit.get('[data-test="insight-open"]').text()).toContain('Открыть бюджет');
+    w.unmount();
+  });
+
+  it('«Budget structure»: the split against 50/30/20, fixed, loans and the reserve, each with its formula in the user\'s numbers', async () => {
+    const w = await mountPage();
+    const card = w.get('[data-test="budget-structure"]');
+    expect(card.get('[data-test="budget-essential"]').text()).toContain('45%');
+    expect(card.get('[data-test="budget-left"]').text()).toContain('30%');
+    expect(card.get('[data-test="budget-fixed"]').text()).toContain('38%');
+    expect(card.get('[data-test="budget-debt"]').text()).toContain('8%');
+    expect(card.get('[data-test="budget-reserve"]').text()).toContain('2,4 мес.');
+    await card.get('[data-test="budget-left"] button').trigger('click');
+    await flushPromises();
+    expect(plain(document.body.textContent ?? '')).toContain(plain(`${formatMoney(2_000_000, 980)} − ${formatMoney(900_000, 980)} − ${formatMoney(500_000, 980)} = ${formatMoney(600_000, 980)} (30%)`));
+    await card.get('[data-test="budget-kinds"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value).toMatchObject({ name: 'settings', query: { section: 'categories' } });
+    w.unmount();
+  });
+
+  it('«Budget structure» while the month runs: the reserve only, and when the shares come', async () => {
+    answer = { ...OVERVIEW, period: { ...OVERVIEW.period, incomplete: true }, budget: { ...OVERVIEW.budget, month: null } };
+    const w = await mountPage();
+    expect(w.get('[data-test="budget-note"]').text()).toBe('Доли дохода появятся, когда месяц закончится.');
+    expect(w.find('[data-test="budget-fixed"]').exists()).toBe(false);
+    expect(w.find('[data-test="budget-reserve"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it('«Budget structure» without history: no reserve, and it says why', async () => {
+    answer = { ...OVERVIEW, months: 2, usual: null, cards: [], newPayees: [], oneOffs: [], budget: { ...OVERVIEW.budget, reserve: null } };
+    const w = await mountPage();
+    expect(w.get('[data-test="budget-reserve"]').text()).toContain('Нужны хотя бы 3 целых месяца истории.');
     w.unmount();
   });
 

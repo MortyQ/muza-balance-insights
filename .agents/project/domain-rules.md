@@ -214,6 +214,32 @@
   (10%) of a usual month whose payee's usual month (`payeeUsual`, the median) is under half of it. Both largest first,
   at most `SIGNALS_MAX` (10). The desktop groups the lines of every category spent in the month (plus the unusual ones)
   by payee across categories (one `linesOfCategories` read); a refunded purchase (`refundPair`) is never a one-off.
+- **Category kinds** (migration v19, `read/category-kinds.ts`, spec `core-category-kinds`): every spending category is
+  `essential`, `wants` or `savings` and fixed or not. Defaults are `DEFAULT_KINDS` (every `CATEGORY` but own transfers,
+  income and family; bank and transfer fees have a kind since spending counts them); `category_kinds` holds a row only
+  for a category the user changed (the default itself deletes it). Read at query time, so a change needs no
+  re-derivation: a plain write like `reserves.ts`, not in `commands/`. Not in the analysis copy.
+- **Budget metrics** (`read/budget.ts`, spec `core-budget-metrics`): `byKind` folds net spending by category into
+  kinds (`fixed` counts the fixed categories whatever their kind); `budgetSplit` — essential, wants and what is left
+  (income − essential − wants; savings stay in it) as whole per cent of a month's income (null without income);
+  `fixedShare`, `debtShare` («installments and loans» only); `reserveMonths(money, essentialMonths)` — money ÷ the median
+  essential month, one decimal, null under 3 months or a zero median. Guides (`BUDGET_GUIDE` 50/30/20, `FIXED_HIGH` 50,
+  `FIXED_VERY_HIGH` 60, `DEBT_HIGH` 30, `RESERVE_MIN` 3, `RESERVE_GOOD` 6) are common advice, never a grade.
+- **Limits, the monthly budget, savings goals** (migration v20: `goals`, one table with a CHECK per type, and
+  `goal_fixed`; `read/goals.ts` — plain writes like `reserves.ts`; specs `core-spending-limits`, `core-savings-goals`):
+  a limit is a category, an amount in 980 | 840 | 978, a period (day, Monday–Sunday week, month) and an owner (a person
+  or the family, null); one per category, period and owner; at most `LIMITS_MAX` limits and `SAVINGS_MAX` goals. The
+  monthly budget is one total and its own fixed rows (`goal_fixed`: a category and the amount the user typed — nothing
+  is filled in): `budgetParts` sets the rows aside at their amounts, the rest is the flexible part, counted against
+  every category neither in the rows nor of the savings kind, plus what a row spent above its amount. The «Fixed» flag
+  of the kinds does not change the budget. `limitState` (`read/limits.ts`) — spent, left, per cent, expected by today,
+  the forecast (none for a day limit), per day (left ÷ days left, today counted), the state: exceeded above the amount,
+  attention from `ATTENTION_SHARE` (80%) or a forecast over the amount once `FORECAST_FROM` (a quarter) of the period
+  has passed. `suggestedAmount` — the median of the usual whole months scaled to the period, rounded to 100 ₴, none
+  under 3 months. Limits count «Personal» spending of every bank, whatever the bank filter, as «Spending» does. A savings
+  goal follows a jar or the owner's cards and jars (`savingProgress`, `read/savings-goals.ts`: needed per month = left ÷
+  the months to the date — the current one counted, the date's own not —, rounded up to a hryvnia; a jar that is gone →
+  no progress). A removed person's plans go with them; names are the user's text, never in the analysis copy.
 - Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular
   payment), by payee — the series key (`payeeOf`: payee + operation currency), so a mark holds for later payments and
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |

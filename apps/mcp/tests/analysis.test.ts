@@ -147,6 +147,10 @@ describe('exportAnalysis', () => {
     }
   });
 
+  it('the user\'s own choices and plans stay out: no category kinds, goals or reserves', () => {
+    for (const t of ['category_kinds', 'goals', 'goal_fixed', 'reserves', 'manual_categories', 'payee_categories']) expect(Object.keys(ANALYSIS_SCHEMA)).not.toContain(t);
+  });
+
   it('a column added to the source schema but not whitelisted is not exported', async () => {
     await source.execute('ALTER TABLE transactions ADD COLUMN secret_note TEXT');
     await source.execute({ sql: 'UPDATE transactions SET secret_note = ?', args: [CANARY.newColumn] });

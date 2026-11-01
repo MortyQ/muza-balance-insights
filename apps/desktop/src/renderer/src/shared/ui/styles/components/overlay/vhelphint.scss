@@ -1,0 +1,69 @@
+/* Ours, not copied — VHelpHint is built on reka-ui (see VHelpHint.vue header). The panel matches VPopover's. */
+
+.v-help-hint__trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  color: var(--ui-foreground-subtle);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color 120ms ease, background-color 120ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--ui-foreground);
+      background: var(--ui-surface-hover);
+    }
+  }
+
+  &[data-state="open"] {
+    color: var(--ui-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring);
+  }
+}
+
+.v-help-hint__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.v-help-hint__content {
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  max-width: 22rem;
+  padding: var(--ui-space-sm) var(--ui-space-md);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius-xl);
+  background: var(--ui-surface-raised);
+  box-shadow: var(--ui-shadow-lg);
+  color: var(--ui-foreground-secondary);
+  font-size: var(--ui-text-sm);
+  line-height: var(--ui-leading-sm);
+}
+
+.v-help-hint__title {
+  margin: 0;
+  color: var(--ui-foreground);
+  font-weight: 600;
+}
+
+.v-help-hint__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ui-space-2xs);
+}
