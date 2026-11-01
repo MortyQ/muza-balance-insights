@@ -270,7 +270,7 @@
 - Opening home asks main for the month's spending once (the block and the unusual slide share it).
 - A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.
 
-## Check on a live system: home «Insights» (`openspec/changes/desktop-home-insights`)
+## Check on a live system: home «Insights» (`openspec/changes/archive/2026-11-01-desktop-home-insights`)
 
 - «Spending» and «Insights» keep one row height at 12 columns; the block takes its own row under «Spending» below that.
 - A payee whose descriptions vary (a city or a terminal number in the text) splits and may show no driver: is that
@@ -278,7 +278,7 @@
 - A past month: the savings rate beside the usual one; the running month: drivers only, no rate.
 - Opening home still asks main for the month's spending once (the spending block, the unusual slide and the block).
 
-## Check on a live system: the Insights screen (`openspec/changes/desktop-insights-page`)
+## Check on a live system: the Insights screen (`openspec/changes/archive/2026-11-01-desktop-insights-page`)
 
 - Severity thresholds (10% / 4% of a usual month): do the marks match what feels important on real data?
 - New payees: a payee whose description changes (a terminal number, a city) may look new every month.
