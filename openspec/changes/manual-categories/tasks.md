@@ -16,8 +16,8 @@
 ## 3. Desktop: IPC, menu and picker (desktop)
 
 - [x] 3.1 IPC and `shared/api.ts`, read cache cleared after a change (design 6, 7).
-- [ ] 3.2 `VMenu` in `shared/ui`; the row menu on `OperationRow` (right click and «⋮»), keyboard. Renderer tests.
-- [ ] 3.3 The category picker with search and the payee switch; colours and icons of the new categories; keys in
+- [x] 3.2 `VMenu` in `shared/ui`; the row menu on `OperationRow` (right click and «⋮»), keyboard. Renderer tests.
+- [x] 3.3 The category picker with search and the payee switch; colours and icons of the new categories; keys in
   `uk.json`, `en.json`, `ru.json`, including the new «Подорожі й відпустки» names.
 - [ ] 3.4 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
 

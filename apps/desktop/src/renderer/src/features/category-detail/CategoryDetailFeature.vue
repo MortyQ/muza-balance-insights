@@ -5,6 +5,8 @@ import type { CategoryId } from '@contract/categories.ts';
 import { bankOf, BankMark } from '@/entities/bank';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PartBars, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
+import CategoryPicker from './components/CategoryPicker.vue';
+import { useCategoryChoice } from './composables/useCategoryChoice.ts';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 
@@ -13,6 +15,11 @@ const { categoryId, scope, period } = defineProps<{ categoryId: CategoryId; scop
 const base = useCategoryDetail(() => categoryId, () => scope, () => period);
 const { state, view } = base;
 const { summary, label, none, months, people, banks, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
+const choice = useCategoryChoice(() => (key: string) => {
+  const row = rows.value.find((r) => r.key === key);
+  return row ? { key, merchant: row.merchant } : null;
+});
+const { picking, busy, notice } = choice;
 </script>
 
 <template>
@@ -43,6 +50,14 @@ const { summary, label, none, months, people, banks, merchants, moreMerchants, w
           </VCard>
         </div>
       </div>
+      <VInfoNotice
+        v-if="notice"
+        :card="false"
+        :icon="notice.failed ? 'lucide:circle-alert' : 'lucide:check'"
+        :tone="notice.failed ? 'danger' : 'success'"
+        :subtitle="notice.text"
+        role="status"
+      />
       <VCard v-if="view.lines.length > 0" padding="md">
         <OperationList
           v-model:query="query"
@@ -52,10 +67,13 @@ const { summary, label, none, months, people, banks, merchants, moreMerchants, w
           :filter-name="merchantName"
           :where-label="$t('category.list.col.where')"
           :search-label="$t('category.list.search')"
+          with-actions
           @clear="merchant = null"
+          @action="choice.act"
         />
       </VCard>
       <p class="text-sm text-foreground-muted">{{ $t('category.footnote') }}</p>
+      <CategoryPicker :line="picking" :current="categoryId" :busy @save="choice.save" @close="picking = null" />
     </template>
   </div>
 </template>

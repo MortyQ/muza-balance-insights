@@ -116,6 +116,26 @@
     },
     "who": {
       "title": "Who spent"
+    },
+    "choice": {
+      "change": "Change category…",
+      "reset": "Return the automatic category",
+      "resetPayee": "Remove the rule for this payee",
+      "markOperation": "your choice",
+      "markPayee": "payee rule",
+      "done": "Category changed in {n} operation | Category changed in {n} operations | Category changed in {n} operations",
+      "unchanged": "The category is already that",
+      "failed": "Could not change the category. Try again."
+    },
+    "picker": {
+      "title": "Change category",
+      "search": "Find a category",
+      "none": "No such category",
+      "current": "now",
+      "payee": "For all operations from this payee",
+      "payeeHint": "Past and future ones. A category you chose for one operation stays.",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "common": {
@@ -301,12 +321,14 @@
           "amount": "Amount",
           "marks": "Marks",
           "when": "When",
-          "who": "Who · account"
+          "who": "Who · account",
+          "actions": "Actions"
         },
         "empty": "Nothing found.",
         "sort": "Sort",
         "title": "Operations",
-        "total": "List total: {amount}"
+        "total": "List total: {amount}",
+        "actions": "Actions: {name}"
       },
       "mark": {
         "foreign": "foreign currency",

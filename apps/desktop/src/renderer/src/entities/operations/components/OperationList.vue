@@ -2,11 +2,11 @@
 import { computed } from 'vue';
 import { t } from '@/shared/lib';
 import { type SegmentOption, VIcon, VInput, VSegmentedControl } from '@/shared/ui';
-import { OPERATION_COLS as COLS, SORTS } from '../constants.ts';
+import { OPERATION_COLS, OPERATION_COLS_ACTIONS, SORTS } from '../constants.ts';
 import type { LineRowView, SortKey } from '../types.ts';
 import OperationRow from './OperationRow.vue';
 
-const { rows, total, filterName, whereLabel, searchLabel } = defineProps<{
+const { rows, total, filterName, whereLabel, searchLabel, withActions = false } = defineProps<{
   rows: ReadonlyArray<LineRowView>;
   total: string;
   /** The name the list is filtered by; '' — none. */
@@ -14,10 +14,13 @@ const { rows, total, filterName, whereLabel, searchLabel } = defineProps<{
   /** The text column's header («Where», «From»). */
   whereLabel: string;
   searchLabel: string;
+  /** A menu column: rows with `actions` get «⋮» and a right-click menu. */
+  withActions?: boolean;
 }>();
 const query = defineModel<string>('query', { required: true });
 const sort = defineModel<SortKey>('sort', { required: true });
-const emit = defineEmits<{ clear: [] }>();
+const emit = defineEmits<{ clear: []; action: [key: string, id: string] }>();
+const COLS = computed(() => (withActions ? OPERATION_COLS_ACTIONS : OPERATION_COLS));
 
 const SORT_LABEL = { date: 'entities.operations.list.byDate', amount: 'entities.operations.list.byAmount' } as const;
 const sortOptions = computed<SegmentOption<SortKey>[]>(() => SORTS.map((value) => ({ value, label: t(SORT_LABEL[value]) })));
@@ -51,8 +54,9 @@ const sortOptions = computed<SegmentOption<SortKey>[]>(() => SORTS.map((value) =
           <span role="columnheader">{{ $t('entities.operations.list.col.who') }}</span>
           <span role="columnheader">{{ $t('entities.operations.list.col.marks') }}</span>
           <span role="columnheader" class="text-right">{{ $t('entities.operations.list.col.amount') }}</span>
+          <span v-if="withActions" role="columnheader"><span class="sr-only">{{ $t('entities.operations.list.col.actions') }}</span></span>
         </div>
-        <OperationRow v-for="r in rows" :key="r.key" :row="r" />
+        <OperationRow v-for="r in rows" :key="r.key" :row="r" :with-actions @action="(key, id) => emit('action', key, id)" />
         <p v-if="rows.length === 0" class="px-3 py-5 text-foreground-muted">{{ $t('entities.operations.list.empty') }}</p>
       </div>
     </div>

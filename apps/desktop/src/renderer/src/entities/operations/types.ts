@@ -1,3 +1,4 @@
+import type { MenuItem } from '@/shared/ui';
 import type { ChangeChipModel } from '@/shared/ui';
 import type { SORTS } from './constants.ts';
 
@@ -90,6 +91,8 @@ export interface LineRowView {
   incoming: boolean;
   /** The operation's own amount when its currency differs, or the account currency's when it has no rate; '' — none. */
   original: string;
+  /** What the row's menu offers (a right click or its «⋮»); none — no menu. */
+  actions?: ReadonlyArray<MenuItem>;
 }
 
 /** What «When» reads of a line (system time zone): ISO weekday, HH:mm, YYYY-MM-DD. */

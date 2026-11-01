@@ -9,3 +9,6 @@ export const PERIOD_TEXT = {
   week: { spent: 'category.summary.spentWeek', rank: 'category.summary.rankWeek', none: 'category.noneWeek' },
   month: { spent: 'category.summary.spent', rank: 'category.summary.rank', none: 'category.none' },
 } as const satisfies Record<DetailPeriod['kind'], { spent: MessageKey; rank: MessageKey; none: MessageKey }>;
+
+/** The ids of a line's menu actions. */
+export const CHOICE_ACTION = { change: 'change', reset: 'reset', resetPayee: 'reset-payee' } as const;

@@ -108,3 +108,8 @@ which very likely makes the Async Clipboard API reject even from a same-origin c
 against a running app. `copy()` falls back to `document.execCommand('copy')` on a temporary, off-screen
 `<textarea>` for that case (and for any browser without `navigator.clipboard` at all); "Copied" is only shown
 once one of the two has actually succeeded.
+
+`VMenu` and `VContextMenu` (2026-11-01) are ours too, on reka-ui's `DropdownMenu` and `ContextMenu`: muzakit has no
+menu. One `MenuItem` list (`id`, `text`, optional `icon`) and one look (`vmenu.scss`): `VMenu` opens it from an icon
+button (`label` → `aria-label`), `VContextMenu` on a right click over its slot (one element, rendered as is; no items —
+the slot alone). Both emit `select(id)`; the keys (arrows, Enter, Esc) and focus return are reka-ui's.

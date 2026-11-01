@@ -26,6 +26,9 @@ export { default as VInfoNotice, type NoticeTone } from "./components/layout/VIn
 export { default as VTooltip } from "./components/overlay/VTooltip.vue";
 export { default as VPopover } from "./components/overlay/VPopover.vue";
 export { default as VSheet } from "./components/overlay/VSheet.vue";
+export { default as VMenu } from "./components/overlay/VMenu.vue";
+export { default as VContextMenu } from "./components/overlay/VContextMenu.vue";
+export type { MenuItem } from "./components/overlay/menu";
 export { NavigationSidebar, createSidebar, type SidebarInstance, type SidebarLabels, type SidebarNavItem } from "./components/navigation-sidebar";
 export type { FieldValidation } from "./types/validation";
 export { default as VSimpleTable } from "./table/VSimpleTable.vue";
