@@ -277,3 +277,11 @@
   common on real data?
 - A past month: the savings rate beside the usual one; the running month: drivers only, no rate.
 - Opening home still asks main for the month's spending once (the spending block, the unusual slide and the block).
+
+## Check on a live system: the Insights screen (`openspec/changes/desktop-insights-page`)
+
+- Severity thresholds (10% / 4% of a usual month): do the marks match what feels important on real data?
+- New payees: a payee whose description changes (a terminal number, a city) may look new every month.
+- Large one-offs: a yearly payment (insurance, a subscription paid once a year) shows as a one-off each time: fine or noise?
+- The card's bars: readable at the narrowest window and with a month far above the others.
+- A running month on its first days: the meter and the empty feed read sensibly.

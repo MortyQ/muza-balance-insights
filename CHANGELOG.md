@@ -52,6 +52,17 @@ English interface.
   usual share, and it explains how the usual is counted. When there is nothing to explain, «Spending» keeps the whole
   width.
 
+### Insights
+
+- **A new «Insights» screen** in the menu, right after «General», for the month picked at the top. It starts with the
+  month at a glance: what you spent against a usual month (in a running month, how much of a usual month is already
+  spent against how much of the month has passed), income and the share of it you kept against your usual. Below,
+  everything unusual in the month, the biggest change in money first, each marked «High», «Medium» or «Low» by how
+  much it weighs against a usual month, with a small chart of the usual months and this one, the payee behind the
+  change and a link to its operations. Beside it: new payees (500 ₴ or more, never seen in the usual months) and large
+  one-off payments, and how it was all counted. With less than 3 whole months of history it says so. «All insights»
+  on home's «Insights» and «What's unusual» opens it.
+
 ### Categories
 
 - **Choose an operation's category yourself.** On a category's screen, right-click an operation or press «⋮» at the end

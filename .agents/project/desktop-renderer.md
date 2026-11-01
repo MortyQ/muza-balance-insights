@@ -259,6 +259,17 @@
   (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
   IPC; quiet reloads on `syncStatus.version`; a mark is a write, so back on home its cached answer is stale and reloads quietly).
   Tested in `tests/renderer/recurring.test.ts`.
+- **Insights screen** (`features/insights-page`, `InsightsFeature.vue`; `pages/insights`; spec
+  `desktop-insights-page`): route `insights`, side menu item after «General» (`home.nav.insights`, `lucide:lightbulb`),
+  the default month filter (the home month), person, banks and `useScopeStore`; one IPC `getInsightsOverview`, quiet
+  reload on `syncStatus.version`. `utils.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
+  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, income, the
+  kept share, signals by severity), the feed (`InsightCard`: icon, title, severity mark, `VChangeChip`, one sentence,
+  the driver, «Open operations»; `InsightBars` — CSS bars on sunken tracks, the shown month in the direction's tone,
+  the usual as a dashed line; no ECharts per card), and the side (`SignalList`: new payees, one-offs; empty lists say
+  so; «How it was counted»). Under 3 whole months: a card with «Download history» (`importLink()`) instead of the feed.
+  Layout: a container grid, the feed 8 and the side 4 of 12 columns from 64rem of its own width. Home's «Insights»
+  block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

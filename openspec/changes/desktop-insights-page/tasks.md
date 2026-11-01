@@ -19,8 +19,8 @@
 
 ## 4. Docs
 
-- [ ] 4.1 `domain-rules.md`, `desktop-renderer.md`, `desktop-import.md`; `CHANGELOG.md` 0.1.13; live checks in `docs/backlog.md`
-- [ ] 4.2 Commit `docs: insights screen`
+- [x] 4.1 `domain-rules.md`, `desktop-renderer.md`, `desktop-import.md`; `CHANGELOG.md` 0.1.13; live checks in `docs/backlog.md`
+- [x] 4.2 Commit `docs: insights screen`
 
 ## 5. Verification
 

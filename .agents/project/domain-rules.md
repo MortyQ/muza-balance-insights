@@ -207,6 +207,13 @@
   (one `linesOfCategories` read for all unusual categories). `savingsRate(now, months)` — (income − net spending) /
   income as whole percents for a month with income, beside the median of the usual months' rates (months with
   income, at least 3); a running month has none.
+- The Insights screen (same module, spec `core-insight-signals`): `insightSeverity(amount, usualTotal)` — the
+  difference's share of a usual month's total spending, high from `SEVERITY_HIGH` (10%), medium from `SEVERITY_MEDIUM`
+  (4%), else low (low without a usual total). `newPayees(payees)` — at least `INSIGHT_MIN` in the shown month and none
+  in every usual month. `oneOffs(ops, usualTotal)` — a spending operation of at least `INSIGHT_MIN` and `ONE_OFF_SHARE`
+  (10%) of a usual month whose payee's usual month (`payeeUsual`, the median) is under half of it. Both largest first,
+  at most `SIGNALS_MAX` (10). The desktop groups the lines of every category spent in the month (plus the unusual ones)
+  by payee across categories (one `linesOfCategories` read); a refunded purchase (`refundPair`) is never a one-off.
 - Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular
   payment), by payee — the series key (`payeeOf`: payee + operation currency), so a mark holds for later payments and
   a new description to the same IBAN; two prices at one payee share it. `setRecurringMark(db, transactionId, mark |
