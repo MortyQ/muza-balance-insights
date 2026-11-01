@@ -28,6 +28,29 @@ const reserve = z.strictObject({
   until: z.string().refine(isIsoDate).nullable(),
   participantId: id.nullable(),
 });
+const goalCurrency = z.union(RESERVE_CURRENCIES.map((c) => z.literal(c)));
+const goalAmount = z.number().int().min(1).max(RESERVE_AMOUNT_MAX);
+const kindCategory = z.enum(KIND_CATEGORY_IDS);
+const goal = z.discriminatedUnion('type', [
+  z.strictObject({ type: z.literal('limit'), categoryId: kindCategory, period: z.enum(['day', 'week', 'month']), currency: goalCurrency, amount: goalAmount, participantId: id.nullable() }),
+  z.strictObject({
+    type: z.literal('budget'),
+    currency: goalCurrency,
+    amount: goalAmount,
+    participantId: id.nullable(),
+    fixed: z.array(z.strictObject({ categoryId: kindCategory, amount: goalAmount })).max(KIND_CATEGORY_IDS.length),
+  }),
+  z.strictObject({
+    type: z.literal('saving'),
+    name: z.string().refine((v) => v.trim().length > 0 && [...v.trim()].length <= RESERVE_NAME_MAX),
+    currency: goalCurrency,
+    amount: goalAmount,
+    participantId: id.nullable(),
+    until: z.string().refine(isIsoDate).nullable(),
+    source: z.enum(['jar', 'own']),
+    accountId: z.string().min(1).max(200).nullable(),
+  }),
+]);
 const isoDate = z.string().refine(isIsoDate);
 // The days themselves (a Monday, not after today) are main's check: DataService.categoryOverview / incomeOverview → periodBounds.
 const detailPeriod = z.discriminatedUnion('kind', [
@@ -104,6 +127,10 @@ export const ARG_SCHEMAS = {
   addReserve: z.tuple([reserve]),
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),
+  getLimitsOverview: z.tuple([z.strictObject({ month, participantId: id.optional() })]),
+  saveGoal: z.tuple([id.nullable(), goal]),
+  deleteGoal: z.tuple([id]),
+  addSuggestedLimits: z.tuple([z.strictObject({ participantId: id.optional() })]),
   getCategoryKinds: z.tuple([]),
   setCategoryKind: z.tuple([z.strictObject({ categoryId: z.enum(KIND_CATEGORY_IDS), kind: z.enum(['essential', 'wants', 'savings']), fixed: z.boolean() })]),
   resetCategoryKinds: z.tuple([z.enum(KIND_CATEGORY_IDS).nullable()]),

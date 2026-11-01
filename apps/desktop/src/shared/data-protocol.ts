@@ -14,6 +14,9 @@ import type {
   AllowanceOverview,
   CategoryKindQuery,
   CategoryKindView,
+  GoalPayload,
+  LimitsOverview,
+  LimitsOverviewQuery,
   AllowanceQuery,
   AnalyticsOverview,
   AnalyticsQuery,
@@ -68,6 +71,10 @@ export type DataMethods = {
   addReserve: { args: [ReserveInput]; result: void };
   updateReserve: { args: [number, ReserveInput]; result: void };
   deleteReserve: { args: [number]; result: void };
+  limitsOverview: { args: [LimitsOverviewQuery]; result: LimitsOverview };
+  saveGoal: { args: [number | null, GoalPayload]; result: void };
+  deleteGoal: { args: [number]; result: void };
+  addSuggestedLimits: { args: [{ participantId?: number }]; result: void };
   categoryKinds: { args: []; result: CategoryKindView[] };
   setCategoryKind: { args: [CategoryKindQuery]; result: void };
   resetCategoryKinds: { args: [KindCategoryId | null]; result: void };
@@ -155,6 +162,10 @@ export const DATA_ARG_SCHEMAS = {
   addReserve: ARG_SCHEMAS.addReserve,
   updateReserve: ARG_SCHEMAS.updateReserve,
   deleteReserve: ARG_SCHEMAS.deleteReserve,
+  limitsOverview: ARG_SCHEMAS.getLimitsOverview,
+  saveGoal: ARG_SCHEMAS.saveGoal,
+  deleteGoal: ARG_SCHEMAS.deleteGoal,
+  addSuggestedLimits: ARG_SCHEMAS.addSuggestedLimits,
   categoryKinds: ARG_SCHEMAS.getCategoryKinds,
   setCategoryKind: ARG_SCHEMAS.setCategoryKind,
   resetCategoryKinds: ARG_SCHEMAS.resetCategoryKinds,
@@ -193,6 +204,7 @@ export const RATED_METHODS = [
   'recurringOverview',
   'allowanceOverview',
   'analyticsOverview',
+  'limitsOverview',
 ] as const satisfies ReadonlyArray<DataMethod>;
 
 /** `connection`: an unknown connection or account (core ConnectionError); `invalid`: arguments refused; `failed`: anything else. */

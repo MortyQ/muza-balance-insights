@@ -12,6 +12,8 @@ import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/co
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
 import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
+import { addGoal, deleteGoal, listGoals, updateGoal, type GoalInput } from '@mono/core/read/goals';
+import { budgetView, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -42,6 +44,9 @@ import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
   BudgetStructureView,
+  GoalPayload,
+  LimitsOverview,
+  LimitsOverviewQuery,
   CategoryKindQuery,
   CategoryKindView,
   AllowanceQuery,
@@ -99,6 +104,9 @@ const RECENT_LINES = 6;
 
 /** A stopped regular payment is still listed this long after its last payment. */
 const ENDED_DAYS = 120;
+
+/** Limits by what needs attention first. */
+const STATE_ORDER = { exceeded: 0, attention: 1, ok: 2 } as const;
 
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
 
@@ -939,6 +947,111 @@ export class DataService {
 
   async deleteReserve(id: number): Promise<void> {
     await deleteReserve(await this.conn(), id);
+  }
+
+  /**
+   * The «Budget» screen (data/limits.ts): the view's plans — a person's and the family's, the family view all — each
+   * counted against its owner's «Personal» spending of every bank (one day grid per owner over this month and week, or
+   * the past month), the past whole months of the view for suggestions and previews.
+   */
+  async limitsOverview(q: LimitsOverviewQuery): Promise<LimitsOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const thisMonth = today.slice(0, 7);
+    const month = q.month > thisMonth ? thisMonth : q.month;
+    const current = month === thisMonth;
+    const ratesView = await this.d.rates();
+    const rates = rateMap(ratesView);
+    const kindRows = await categoryKinds(db);
+    const kinds = new Map(kindRows.map((r) => [r.category, { kind: r.kind, fixed: r.fixed }]));
+    const idOf = (word: string) => CATEGORY_ID.get(word) as KindCategoryId;
+    const mine = (owner: number | null) => q.participantId === undefined || owner === null || owner === q.participantId;
+    const goals = (await listGoals(db)).filter((g) => mine(g.participantId));
+
+    const bounds = monthBounds(month);
+    const monday = shiftDate(today, 1 - isoWeekday(today));
+    const from = current ? (monday < bounds.from ? monday : bounds.from) : bounds.from;
+    const to = current ? today : bounds.to;
+    const sumsOf = async (owner: number | null): Promise<OwnerSums> => {
+      const grid = await spendingGrid(db, { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) }, now);
+      const fold = (a: string, b: string): Sums =>
+        new Map([...foldByCategory(cellGroups(grid.cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory].map(([k, v]) => [k, v.net]));
+      return { day: fold(today, today), week: fold(monday, today), month: fold(bounds.from, to) };
+    };
+    const owners = [...new Set(goals.filter((g) => g.type !== 'saving').map((g) => g.participantId))];
+    const sums = new Map<number | null, OwnerSums>();
+    for (const o of owners) sums.set(o, await sumsOf(o));
+    const pos = (p: 'day' | 'week' | 'month') => periodPosition(p, today, month, current);
+
+    const limits = goals
+      .flatMap((g) => (g.type === 'limit' && (current || g.period === 'month') ? [limitView(g, idOf, sums.get(g.participantId)!, pos, rates)] : []))
+      .sort((a, b) => STATE_ORDER[a.figures?.state ?? 'ok'] - STATE_ORDER[b.figures?.state ?? 'ok'] || a.categoryId.localeCompare(b.categoryId));
+    const budgets = goals.filter((g) => g.type === 'budget');
+    const own = q.participantId === undefined ? null : q.participantId;
+    const b = budgets.find((g) => g.participantId === own) ?? budgets.find((g) => g.participantId === null) ?? null;
+    const budget = b && b.type === 'budget' ? budgetView(b, idOf, sums.get(b.participantId)!.month, kinds, pos('month'), current, rates) : null;
+
+    const { dataFrom } = await this.status();
+    const months = usualMonths(month, dataFrom);
+    let past: Sums[] = [];
+    if (months.length > 0) {
+      const grid = await spendingGrid(
+        db,
+        { from: monthBounds(months.at(-1)!).from, to: monthBounds(months[0]!).to, tz, unit: 'month', scope: 'personal', ...(q.participantId !== undefined ? { participantId: q.participantId } : {}) },
+        now,
+      );
+      past = months.map((m) => new Map([...foldByCategory(cellGroups(grid.cells, (c) => c.bucket === m, (c) => c.category), rates).byCategory].map(([k, v]) => [k, v.net])));
+    }
+    const limited = new Set(goals.flatMap((g) => (g.type === 'limit' && g.period === 'month' && g.participantId === own ? [g.category] : [])));
+    const byCategory: LimitsOverview['past']['byCategory'] = {};
+    for (const w of kinds.keys()) {
+      const values = past.map((m) => m.get(w) ?? 0);
+      if (values.some((v) => v !== 0)) byCategory[idOf(w)] = values;
+    }
+    return {
+      month,
+      today,
+      current,
+      budget,
+      limits,
+      savings: [],
+      jars: [],
+      suggestions: suggestions(past, kinds, limited, idOf),
+      past: { months, byCategory, total: past.map((m) => [...m.entries()].filter(([w]) => kinds.has(w)).reduce((s, [, v]) => s + v, 0)) },
+      kinds: kindRows.flatMap((r) => {
+        const categoryId = CATEGORY_ID.get(r.category);
+        return categoryId && categoryId !== 'family' && categoryId !== 'ownTransfers' && categoryId !== 'income' ? [{ categoryId, kind: r.kind, fixed: r.fixed, changed: r.changed }] : [];
+      }),
+      rates: ratesView,
+    };
+  }
+
+  /** A plan from the screen: ids to the core's words. */
+  async saveGoal(id: number | null, p: GoalPayload): Promise<void> {
+    const g: GoalInput =
+      p.type === 'limit'
+        ? { type: 'limit', category: CATEGORY[p.categoryId], period: p.period, currency: p.currency, amount: p.amount, participantId: p.participantId }
+        : p.type === 'budget'
+          ? { type: 'budget', currency: p.currency, amount: p.amount, participantId: p.participantId, fixed: p.fixed.map((r) => ({ category: CATEGORY[r.categoryId], amount: r.amount })) }
+          : { ...p };
+    const db = await this.conn();
+    if (id === null) await addGoal(db, g, this.d.nowSec());
+    else await updateGoal(db, id, g);
+  }
+
+  async deleteGoal(id: number): Promise<void> {
+    await deleteGoal(await this.conn(), id);
+  }
+
+  /** The view's suggested limits added as monthly limits in hryvnia (the person's, or the family's). */
+  async addSuggestedLimits(q: { participantId?: number }): Promise<void> {
+    const v = await this.limitsOverview({ month: localDate(this.d.nowSec() * 1000, systemTimeZone()).slice(0, 7), ...q });
+    const db = await this.conn();
+    for (const s of v.suggestions) {
+      await addGoal(db, { type: 'limit', category: CATEGORY[s.categoryId], period: 'month', currency: 980, amount: s.amount, participantId: q.participantId ?? null }, this.d.nowSec());
+    }
   }
 
   /** Every category with a kind (core read/category-kinds), named by the renderer's id. */

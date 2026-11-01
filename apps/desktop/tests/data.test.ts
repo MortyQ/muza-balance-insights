@@ -978,6 +978,70 @@ describe('DataService category kinds', () => {
   });
 });
 
+describe('DataService.limitsOverview (the «Budget» screen)', () => {
+  // Sunday 15 March: the week is 9–15 March, day 15 of 31. History from November: four whole months before March.
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2025-11-01'), SYNCED_TO, SYNCED_TO + 60] });
+    for (const m of ['2025-11', '2025-12', '2026-01', '2026-02']) {
+      await tx('uah', `${m}-04`, -400_000, 'кафе и рестораны');
+      await tx('uah', `${m}-06`, -50_000, 'продукты');
+    }
+    await tx('uah', '2026-03-01', -1_250_000, 'аренда жилья');
+    await tx('uah', '2026-03-02', -100_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-10', -80_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-15', -10_000, 'кафе и рестораны');
+    await tx('uah', '2026-03-12', -30_000, 'продукты');
+    await tx('uah', '2026-03-12', -60_000, 'кафе и рестораны', { scope: 'business' });
+  });
+
+  it('limits by what needs attention, each with pace, forecast and per day; «Personal» only', async () => {
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'groceries', period: 'week', currency: 980, amount: 20_000, participantId: null });
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v).toMatchObject({ month: '2026-03', today: '2026-03-15', current: true });
+    expect(v.limits.map((l) => [l.categoryId, l.period, l.figures?.state])).toEqual([['groceries', 'week', 'exceeded'], ['cafes', 'month', 'attention']]);
+    expect(v.limits[1]!.figures).toEqual({
+      amount: 200_000, spent: 190_000, left: 10_000, percent: 95, expected: 96_774, forecast: 392_667, perDay: 588, daysPassed: 15, days: 31, daysLeft: 17, state: 'attention',
+    });
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 30_000, daysPassed: 7, days: 7, perDay: 0 });
+  });
+
+  it('the budget: a total in euros, the typed rent set aside, the rest against flexible spending', async () => {
+    await svc.saveGoal(null, { type: 'budget', currency: 978, amount: 100_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 25_000 }] });
+    const b = (await svc.limitsOverview({ month: '2026-03' })).budget!;
+    expect(b).toMatchObject({
+      total: 5_000_000, fixedTotal: 1_250_000, fixedPaid: 1_250_000, fixedTakesAll: false, result: null,
+      fixed: [{ categoryId: 'rent', amountMinor: 25_000, amount: 1_250_000, paid: 1_250_000 }],
+    });
+    expect(b.flexible).toMatchObject({ amount: 3_750_000, spent: 220_000, daysPassed: 15, days: 31, state: 'ok' });
+    // February, a past month: the result instead of the pace.
+    const feb = (await svc.limitsOverview({ month: '2026-02' })).budget!;
+    expect(feb.result).toEqual({ within: true, left: 4_550_000 });
+  });
+
+  it('suggestions from the usual months: flexible categories without a monthly limit, largest first', async () => {
+    expect((await svc.limitsOverview({ month: '2026-03' })).suggestions).toEqual([{ categoryId: 'cafes', amount: 400_000 }, { categoryId: 'groceries', amount: 50_000 }]);
+    await svc.addSuggestedLimits({});
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.suggestions).toEqual([]);
+    // Groceries' forecast is over its limit by mid-month: attention, listed first.
+    expect(v.limits.map((l) => [l.categoryId, l.amountMinor, l.figures?.state])).toEqual([['groceries', 50_000, 'attention'], ['cafes', 400_000, 'ok']]);
+    expect(v.past).toMatchObject({ months: ['2026-02', '2026-01', '2025-12', '2025-11'], byCategory: { cafes: [400_000, 400_000, 400_000, 400_000] }, total: [450_000, 450_000, 450_000, 450_000] });
+  });
+
+  it('a person sees their limits and the family\'s; delete; a second limit of a kind is refused', async () => {
+    const me = Number((await db.execute(`SELECT participant_id FROM connections WHERE provider = 'monobank'`)).rows[0]?.participant_id);
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 150_000, participantId: me });
+    await expect(svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 1, participantId: me })).rejects.toThrow();
+    const mine = await svc.limitsOverview({ month: '2026-03', participantId: me });
+    expect(mine.limits.map((l) => l.owner).sort()).toEqual([me, null].sort());
+    await svc.deleteGoal(mine.limits[0]!.id);
+    expect((await svc.limitsOverview({ month: '2026-03', participantId: me })).limits).toHaveLength(1);
+  });
+});
+
 describe('DataService.incomeOverview (the income screen)', () => {
   const IN = 'поступления';
   beforeEach(async () => {

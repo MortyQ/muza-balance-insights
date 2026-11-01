@@ -12,6 +12,7 @@ export const CACHED_READS = [
   'getRecurringOverview',
   'getAllowanceOverview',
   'getAnalyticsOverview',
+  'getLimitsOverview',
 ] as const satisfies ReadonlyArray<Method>;
 export type CachedRead = (typeof CACHED_READS)[number];
 
@@ -74,6 +75,9 @@ export const WRITES = [
   'deleteReserve',
   'setCategoryKind',
   'resetCategoryKinds',
+  'saveGoal',
+  'deleteGoal',
+  'addSuggestedLimits',
   'deleteAllData',
   'startOver',
 ] as const satisfies ReadonlyArray<Method>;

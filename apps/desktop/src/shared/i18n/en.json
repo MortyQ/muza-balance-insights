@@ -136,6 +136,12 @@
       "payeeHint": "Past and future ones. A category you chose for one operation stays.",
       "save": "Save",
       "cancel": "Cancel"
+    },
+    "limit": {
+      "title": "Limit per {period}",
+      "edit": "Edit the limit",
+      "set": "Set a limit",
+      "setUsual": "Set a limit · usually {amount} a month"
     }
   },
   "common": {
@@ -405,6 +411,32 @@
       "essential": "Essential",
       "wants": "Wants",
       "savings": "Savings"
+    },
+    "goal": {
+      "state": {
+        "ok": "On track",
+        "attention": "Attention",
+        "exceeded": "Exceeded"
+      },
+      "exceededBy": "Over by {amount}",
+      "forecastOver": "Forecast over the limit",
+      "spentShare": "{n}% spent",
+      "spentOf": "{spent} of {amount}",
+      "paceLine": "planned by today {expected} · forecast {forecast}",
+      "days": "{n} day | {n} days | {n} days",
+      "help": {
+        "perDayTitle": "How «per day» is counted",
+        "perDay": "What is left until the end of the period, divided by the days left, today included.",
+        "perDayFormula": "({amount} − {spent}) ÷ {days} = {perDay}",
+        "perDayNone": "Nothing is left: the whole limit is spent.",
+        "expectedTitle": "What «planned by today» means",
+        "expected": "How much you could have spent by today, spending evenly.",
+        "expectedFormula": "{amount} × {passed} of {days} days = {expected}",
+        "forecastTitle": "How the forecast is counted",
+        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period.",
+        "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
+        "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
+      }
     }
   },
   "header": {
@@ -1393,6 +1425,96 @@
         "where": "«Insights» uses the kinds to show how much of your income goes to essentials, to wants and how much is left. Changes apply at once."
       },
       "fixedOf": "Fixed: «{name}»"
+    }
+  },
+  "limits": {
+    "failed": "The budget and limits did not load.",
+    "edit": "Edit",
+    "listTitle": "Category limits",
+    "add": "Add a limit",
+    "none": "No limits yet.",
+    "noRate": "No rate for the limit's currency.",
+    "perDay": "{amount} a day",
+    "perDayByBudget": "Per day by the budget: {amount}",
+    "period": {
+      "day": "day",
+      "week": "week (Mon–Sun)",
+      "month": "month"
+    },
+    "owner": {
+      "family": "Family"
+    },
+    "intro": {
+      "title": "How the budget works",
+      "budget": "Set one amount for the month and add your fixed costs — rent, phone. They are set aside first, and the pace and «per day» count on the rest.",
+      "limits": "A category limit is an amount per day, week or month. The marker on the bar shows where you would be today spending evenly.",
+      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out."
+    },
+    "budget": {
+      "title": "Budget for {month}",
+      "paidOf": "{paid} of {amount}",
+      "fixedSummary": "paid {paid} of {amount}",
+      "flexibleOf": "Flexible · {amount}",
+      "within": "Within the budget · {amount} left",
+      "over": "Over by {amount}",
+      "helpTitle": "How the budget is counted",
+      "help": "Fixed costs are set aside first at the amounts you typed; the rest is the flexible part, and the pace counts on it alone.",
+      "helpFormula": "{total} − {fixed} fixed = {flexible} for flexible spending",
+      "helpOver": "When a fixed cost comes out above what you typed, the difference goes to the flexible part.",
+      "helpCounted": "Savings (investments) are not in the budget. Rent paid as a transfer to a person counts as flexible until you set that payee's category to «Rent».",
+      "fixedTitle": "Fixed",
+      "noFixed": "No fixed costs: the whole budget is flexible.",
+      "takesAll": "Fixed costs take the whole budget.",
+      "emptyTitle": "No monthly budget yet",
+      "emptyText": "One amount for everything; fixed costs are set aside first, the rest is shown by day.",
+      "create": "Set a budget"
+    },
+    "suggest": {
+      "text": "This is what usually goes in a month. Set limits at that level?",
+      "add": "Suggest limits",
+      "early": "Suggested amounts come with at least 3 whole months of history. You can set a limit by hand."
+    },
+    "sheet": {
+      "newLimit": "New limit",
+      "editLimit": "Limit",
+      "limitHint": "An amount for a category per day, week or month.",
+      "what": "What for",
+      "amount": "Amount",
+      "currency": "Currency",
+      "usual": "Usually {amount}",
+      "period": "Period",
+      "owner": "Whose",
+      "counted": "Refunds and transfers between your own accounts are left out; operations the bank still processes count.",
+      "failed": "Could not save. Perhaps such a limit already exists.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteAsk": "Delete it?",
+      "deleteYes": "Yes, delete",
+      "amountInvalid": "Type a whole amount above zero.",
+      "previewEmpty": "Type an amount to see the past months against it.",
+      "previewNone": "None of the {n} months went over this amount.",
+      "previewOver": "{over} of {n} months would have gone over this amount.",
+      "newBudget": "Monthly budget",
+      "editBudget": "Monthly budget",
+      "budgetHint": "One amount for all spending; fixed costs are set aside first.",
+      "totalTitle": "How much you want to spend a month, in all",
+      "total": "Amount a month",
+      "usualTotal": "Usually {amount} a month",
+      "fixedTitle": "Fixed costs",
+      "fixedHint": "Pick a category and type what you set aside for it a month. These amounts are set aside first; spending in these categories does not go into the flexible part.",
+      "fixedNone": "Nothing yet. Without fixed costs the whole budget is flexible.",
+      "fixedAmount": "Amount a month: {name}",
+      "remove": "Remove {name}",
+      "addFixed": "Add a fixed cost",
+      "totalLine": "In all a month",
+      "typeAmount": "type the amount",
+      "flexibleLine": "For flexible spending",
+      "perDayAvg": "on average a day",
+      "takesAll": "Fixed costs take the whole budget. Raise the amount or check the list.",
+      "noFixedWarn": "Rent and other must-pay costs will eat into the flexible part. Add them as fixed costs if you have them.",
+      "pastTitle": "Flexible spending in past months",
+      "saveBudget": "Save the budget"
     }
   }
 }

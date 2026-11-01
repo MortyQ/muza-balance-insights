@@ -30,10 +30,10 @@
 
 ## 6. Limits read and screen
 
-- [ ] 6.1 `getLimitsOverview` (types, channels, data process: three period reads per owner view, «Personal» only, every bank, today's rates); `saveGoal`, `deleteGoal`, `addSuggestedLimits` channels; `categoryOverview.limit`; tests in `tests/data.test.ts`, `tests/data-queries.test.ts`, `tests/ipc.test.ts`
-- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, `BudgetSheet` (total, fixed rows added, typed and removed, live result, past months chart, save waits for every amount), delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); `pages/budget` + route `/budget` (`meta.navParent: home`, no menu item, `?sheet=budget`); `tests/renderer/layouts.test.ts` (no menu entry, «General» current); `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 6.3 Tests: `tests/renderer/limits-goals.test.ts` (order, states in words, person and family owners, suggestions action, sheet preview, failed save, explanations), the category screen bar
-- [ ] 6.4 Commit `feat(desktop): limits on the «Budget» screen`
+- [x] 6.1 `getLimitsOverview` (types, channels, data process: three period reads per owner view, «Personal» only, every bank, today's rates); `saveGoal`, `deleteGoal`, `addSuggestedLimits` channels; `categoryOverview.limit`; tests in `tests/data.test.ts`, `tests/data-queries.test.ts`, `tests/ipc.test.ts`
+- [x] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, `BudgetSheet` (total, fixed rows added, typed and removed, live result, past months chart, save waits for every amount), delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); `pages/budget` + route `/budget` (`meta.navParent: home`, no menu item, `?sheet=budget`); `tests/renderer/layouts.test.ts` (no menu entry, «General» current); `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [x] 6.3 Tests: `tests/renderer/limits-goals.test.ts` (order, states in words, person and family owners, suggestions action, sheet preview, failed save, explanations), the category screen bar
+- [x] 6.4 Commit `feat(desktop): limits on the «Budget» screen`
 
 ## 7. Limits on home and in insights
 

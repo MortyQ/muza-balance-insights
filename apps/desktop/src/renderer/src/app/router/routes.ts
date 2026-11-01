@@ -44,6 +44,13 @@ export const routes: RouteRecordRaw[] = [
     beforeEnter: (to) => (isCategoryId(to.params.id) ? true : { name: ROUTE.home }),
   },
   {
+    // Opened from home's «Budget» row; no menu item of its own.
+    path: '/budget',
+    name: ROUTE.budget,
+    component: () => import('@/pages/budget').then((m) => m.BudgetPage),
+    meta: { navParent: ROUTE.home },
+  },
+  {
     // Opened from «Income» of the balances' month panel.
     path: '/income',
     name: ROUTE.income,
