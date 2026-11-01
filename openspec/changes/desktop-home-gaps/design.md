@@ -33,23 +33,27 @@ change. Descriptions are cut as on the category screen (card numbers to their la
   `#[id]`), dots under it only with two or more slides (buttons, `aria-label` «Slide N of M: label», `aria-current`),
   `useDragScroll` for the mouse, the dot of the slide in view tracked by an `IntersectionObserver`. `v-model` the slide
   in view. No motion under `prefers-reduced-motion` (`scroll-behavior: auto`).
+- `entities/scope` (new): `useScopeStore`, home's «Personal / Business» choice. It was the spending block's own `ref`;
+  the recent operations and the unusual lines follow the same switch, so it moves to a store the slices share.
 - `features/spending-summary`: the «What's unusual» tile leaves `SpendingFeature`; the slice exports
-  `SpendingInsightsFeature`, which runs the same `useSpending` request (the read cache answers it from the block's
-  request) and emits `update:available`. The unusual lines are the view's (the global filter's person).
-- `features/recent-operations` (new slice): `RecentOperationsFeature` — `api/useRecentRequest.ts`, the rows (category
-  icon from `entities/category`, money from `entities/currency-display`), `update:available`.
-- `widgets/home-highlights` (new): `HomeHighlights` composes the two features in a `VCard` + `VCarousel`, decides the
-  order and the empty text. Features never import each other; the widget does.
+  `useSpendingInsights` (the same `useSpending` request, worded; `loaded`) and the `SpendingInsights` component. The
+  unusual lines are the view's (the global filter's person).
+- `features/recent-operations` (new slice): `useRecentOperations` (`api/useRecentRequest.ts`, rows with the category
+  icon from `entities/category`, money from `entities/currency-display`, `loaded`) and `RecentOperationsList`.
+- `widgets/home-highlights` (new): `HomeHighlights` calls both composables, so it knows which slides have content
+  before any is shown (a feature inside a slide that is not shown would not be mounted to say so), and renders the
+  two components in a `VCard` + `VCarousel` with the order and the empty text. Features never import each other.
+- `shared/api/balance.ts`: the same cached read asked again while it is in flight shares that request (the spending
+  block and the unusual slide ask the same month at once); not across a data change (`desktop-read-cache`).
 - `pages/home`: the widget in the grid in place of the old tile, hidden while «Now» details are open
   (`nowDetails`, as today's `insightsHidden`). `SpendingFeature` loses `insightsHidden`; the teaser is not mounted.
 
 ## 4. Nothing beside the spending tile
 
 `SpendingFeature` stops drawing «Who spent what» and the page stops mounting `RecurringTeaserFeature`; the spending tile
-spans 12 columns from 79rem (one row span). With the people tile gone the in-block person pick has no control: the
-block's pick state (`usePick`) is removed, so the block always shows the view's person. `PeopleList` and
-`RecurringTeaserFeature` stay in their slices, unmounted, for the later place the user decides (no dead exports are
-added; the existing ones stay).
+spans the whole row (one row span). With the people tile gone the in-block person pick has no control, so it stays
+`null` and the block shows the view's person. The pick code (`usePick`), `PeopleList` and `RecurringTeaserFeature` stay
+in their slices, unmounted, for the later place the user decides.
 
 ## 5. Privacy
 
@@ -60,7 +64,7 @@ user's own screens ask for; the log gets counts; no MCP tool and no anonymised c
 
 ## Risks
 
-- Two features on one request: the insights slide relies on the read cache to not double the spending request. Checked
-  in a renderer test (one call of `getSpendingOverview` per filter change).
+- Two screens on one request: without sharing the request in flight, opening home would ask main for the month's
+  spending twice. Checked in `tests/renderer/read-cache.test.ts`.
 - A carousel inside a grid cell must keep the row's height equal (`desktop-home-tiles`): slides are stretched to the
   tallest; checked live (`docs/backlog.md`).

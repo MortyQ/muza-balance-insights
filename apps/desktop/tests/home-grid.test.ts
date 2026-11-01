@@ -18,10 +18,12 @@ describe('home tile grid', () => {
     expect(page).toMatch(/class="@container">\s*<div [^>]*data-test="home-grid"/);
   });
 
-  it('the blocks in order: balances, «Now», spending, regular payments', () => {
-    const order = ['<BalancesFeature', '<NowStripFeature', '<SpendingFeature', '<RecurringTeaserFeature'].map((t) => page.indexOf(t));
+  it("the blocks in order: balances, «Now», the «What's unusual» / «Recent operations» tile (gone with the «Now» details), spending; nothing beside it", () => {
+    const order = ['<BalancesFeature', '<NowStripFeature', '<HomeHighlights', '<SpendingFeature'].map((t) => page.indexOf(t));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(page).toMatch(/<HomeHighlights v-if="!nowDetails" \/>/);
+    expect(page).not.toContain('RecurringTeaserFeature');
   });
 
   it('the balances feature renders its tiles through one `contents` root', () => {

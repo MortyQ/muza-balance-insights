@@ -92,48 +92,7 @@ async function mountBlock(attachTo?: Element) {
 const category = (w: Awaited<ReturnType<typeof mountBlock>>) => w.findAll('a[href*="/category/"]').filter((b) => b.text().includes('Продукты'));
 const person = (w: Awaited<ReturnType<typeof mountBlock>>, name: string) => w.findAll('button[aria-pressed]').find((b) => b.text().includes(name));
 
-describe('spending block: a pick with no spending', () => {
-  it('keeps the people list and the ring; the categories column says so; another pick and «Вся семья» still work', async () => {
-    const w = await mountBlock();
-    await person(w, 'Оля')!.trigger('click');
-
-    for (const name of ['Вся семья', 'Сергей', 'Аня', 'Оля']) expect(person(w, name)?.exists()).toBe(true);
-    expect(person(w, 'Оля')?.attributes('aria-pressed')).toBe('true');
-    expect(w.text()).toContain('Оля: в этом месяце трат нет');
-    const ring = w.findComponent(CategoryRing).text();
-    expect(ring).toContain('Оля');
-    expect(ring).toContain(formatMoney(0, 980));
-    expect(ring).toContain(`на ${formatMoney(5_000, 980)} (100%) меньше`);
-    expect(category(w)).toHaveLength(0);
-    expect(w.text()).not.toContain('Трат за этот месяц нет');
-
-    await person(w, 'Аня')!.trigger('click');
-    expect(person(w, 'Аня')?.attributes('aria-pressed')).toBe('true');
-    expect(category(w)).toHaveLength(1);
-
-    await person(w, 'Оля')!.trigger('click');
-    await person(w, 'Вся семья')!.trigger('click');
-    expect(person(w, 'Вся семья')?.attributes('aria-pressed')).toBe('true');
-    expect(w.text()).not.toContain('трат нет');
-    expect(category(w)).toHaveLength(1);
-  });
-});
-
 describe('spending block: edge cases', () => {
-  it('a picked person removed while the block is open: the block falls back to the whole family', async () => {
-    const w = await mountBlock();
-    await person(w, 'Оля')!.trigger('click');
-    const { useParticipantStore } = await import('@/entities/participant');
-    useParticipantStore().view = { ...PEOPLE, people: PEOPLE.people.filter((p) => p.id !== 3) };
-    await flushPromises();
-
-    expect(person(w, 'Оля')).toBeUndefined();
-    expect(person(w, 'Вся семья')?.attributes('aria-pressed')).toBe('true');
-    expect(w.text()).not.toContain('трат нет');
-    expect(w.findComponent(CategoryRing).text()).toContain('Вся семья');
-    expect(category(w)).toHaveLength(1);
-  });
-
   it('the family view itself is empty: the month\'s empty text, no people list', async () => {
     current = EMPTY;
     const w = await mountBlock();
@@ -153,22 +112,28 @@ describe('spending block: edge cases', () => {
 });
 
 describe('spending block: the family view', () => {
-  it('requests the whole family, lists people, a pick changes the amounts, and a category opens its screen', async () => {
+  it('requests the whole family in the home scope, no people list, and a category opens its screen', async () => {
     const w = await mountBlock();
 
     expect(getSpendingOverview.mock.calls[0]?.[0]).toMatchObject({ month: expect.any(String), scope: 'personal' });
-    for (const name of ['Вся семья', 'Сергей', 'Аня', 'Оля']) expect(person(w, name)?.exists()).toBe(true);
-
-    await person(w, 'Сергей')!.trigger('click');
-    const ring = w.findComponent(CategoryRing).text();
-    expect(ring).toContain('Сергей');
-    expect(ring).toContain(formatMoney(30_000, 980));
+    expect(w.findComponent(PeopleList).exists()).toBe(false);
+    expect(w.findComponent(CategoryRing).text()).toContain('Вся семья');
 
     const row = category(w)[0]!;
     expect(row.attributes('aria-expanded')).toBeUndefined();
     await row.trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'groceries' }, query: { scope: 'personal' } });
+  });
+
+  it('the scope switch is home-wide: it sets the scope store the other home tiles read', async () => {
+    const w = await mountBlock();
+    const { useScopeStore } = await import('@/entities/scope');
+    const business = w.findAll('button').find((b) => b.text() === 'Бизнес')!;
+    await business.trigger('click');
+    await flushPromises();
+    expect(useScopeStore().scope).toBe('business');
+    expect(getSpendingOverview.mock.calls.at(-1)?.[0]).toMatchObject({ scope: 'business' });
   });
 });
 
@@ -250,20 +215,6 @@ describe('spending block: the split by banks', () => {
   });
 });
 
-describe('spending block: a month change', () => {
-  it('resets the in-block pick back to the whole family', async () => {
-    const w = await mountBlock();
-    await person(w, 'Сергей')!.trigger('click');
-    expect(person(w, 'Сергей')?.attributes('aria-pressed')).toBe('true');
-
-    const { useMonthStore } = await import('@/entities/period');
-    useMonthStore().set('2026-08', null);
-    await flushPromises();
-
-    expect(person(w, 'Вся семья')?.attributes('aria-pressed')).toBe('true');
-  });
-});
-
 describe('spending block: the only person in the app', () => {
   it('the bars keep the category colour (split on), no people list, no «who spent how much» switch', async () => {
     // Main sends no parts for the only person; a view that still had one is guarded in the renderer as well.
@@ -313,7 +264,6 @@ describe('spending block: the compared period and screen readers', () => {
     // the amount chip (+50 ₴ against 45 000 → up) and the operations difference (+1)
     expect(sr).toEqual(['больше, чем в августе', 'больше, чем в августе']);
     expect(row.text()).toContain(`+${formatMoney(5_000, 980)}`);
-    expect(person(w, 'Сергей')!.find('.v-change-chip__sr').text()).toBe('больше, чем в августе');
   });
 
 });
@@ -345,48 +295,6 @@ describe('spending block: currencies come from the home-wide choice', () => {
   });
 });
 
-describe('spending block: what is unusual', () => {
-  const INSIGHTS = {
-    months: 6,
-    running: false,
-    insights: [
-      {
-        type: 'category-less' as const, direction: 'down' as const, amount: 150_000, percent: 50,
-        category: 'продукты', categoryId: 'groceries' as const, now: 150_000, usual: 300_000,
-      },
-      { type: 'income-more' as const, direction: 'up' as const, amount: 100_000, percent: 20, category: null, categoryId: null, now: 600_000, usual: 500_000 },
-    ],
-  };
-
-  it("core's insights worded in order, what usual is; a category line opens its screen; a person picked inside the block hides it", async () => {
-    current = { ...VIEW, insights: INSIGHTS };
-    const w = await mountBlock();
-    const lines = w.find('section[aria-label="Что необычно"]').findAll('[data-test="insight-line"]');
-    expect(lines.map((l) => l.text())).toEqual([
-      `Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`,
-      `Доходы на ${formatMoney(100_000, 980)} (20%) выше обычного`,
-    ]);
-    expect(w.find('section[aria-label="Что необычно"]').text()).toContain('Сравнение с медианой за 6 месяцев');
-    expect(lines[1]!.element.tagName).toBe('DIV');
-
-    await lines[0]!.trigger('click');
-    await flushPromises();
-    expect(router.currentRoute.value.name).toBe('category');
-    expect(router.currentRoute.value.params.id).toBe('groceries');
-
-    await router.push('/');
-    await person(w, 'Аня')!.trigger('click');
-    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
-  });
-
-  it('nothing unusual, or no insights at all: no section', async () => {
-    current = { ...VIEW, insights: { ...INSIGHTS, insights: [] } };
-    expect((await mountBlock()).find('section[aria-label="Что необычно"]').exists()).toBe(false);
-    current = { ...VIEW, insights: null };
-    expect((await mountBlock()).find('section[aria-label="Что необычно"]').exists()).toBe(false);
-  });
-});
-
 describe('spending tiles', () => {
   const cat = (category: string, categoryId: 'groceries' | 'cafes' | 'transport' | 'delivery' | 'health' | 'clothing', net: number) => ({
     category, categoryId, net, purchases: 1, prev: null,
@@ -401,16 +309,15 @@ describe('spending tiles', () => {
     ],
   };
 
-  it('straight into the page grid: «Spending by category» two columns wide, «Who spent what» beside it in the family view', async () => {
+  it('straight into the page grid: «Spending by category» over the whole width, nothing beside it, no «Who spent what»', async () => {
     const w = await mountBlock();
     const root = w.element as HTMLElement;
     expect(root.classList.contains('contents')).toBe(true);
-    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['@[79rem]:col-span-9', '@[79rem]:row-span-2']));
-    const people = w.get('[data-test="spending-people"]');
-    expect(people.classes()).toContain('@[79rem]:col-span-3');
-    expect(people.text()).toContain('Кто сколько');
-    expect(w.get('[data-test="spending-tile"]').findComponent(PeopleList).exists()).toBe(false);
-    expect(people.findComponent(PeopleList).exists()).toBe(true);
+    const tile = w.get('[data-test="spending-tile"]');
+    expect(tile.classes()).toContain('col-span-full');
+    expect(tile.classes().some((c) => c.includes('col-span-9') || c.includes('row-span'))).toBe(false);
+    expect(w.find('[data-test="spending-people"]').exists()).toBe(false);
+    expect(w.findComponent(PeopleList).exists()).toBe(false);
   });
 
   it('4 category rows, the rest unfold in place and fold back', async () => {

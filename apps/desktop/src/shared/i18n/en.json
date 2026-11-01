@@ -780,6 +780,14 @@
       "showMore": "Show {n} more | Show {n} more | Show {n} more",
       "showLess": "Show less",
       "whoSpent": "Who spent what"
+    },
+    "recent": {
+      "title": "Recent operations",
+      "none": "No operations this month yet",
+      "pending": "pending at the bank"
+    },
+    "highlights": {
+      "toSlide": "Slide {n} of {total}: {label}"
     }
   },
   "income": {

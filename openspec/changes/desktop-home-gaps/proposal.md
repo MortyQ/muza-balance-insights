@@ -40,6 +40,7 @@ off home for now (their place is decided later), so «Spending by category» alw
 ### Modified Capabilities
 - `desktop-home-tiles`: the tile order loses «Who spent what» and the teaser; «What's unusual tile» becomes the
   carousel tile; «Who spent what tile» is removed.
+- `desktop-read-cache`: the same read asked twice at once is one request.
 
 ## Impact
 

@@ -19,10 +19,10 @@
 
 ## 4. Renderer: the tile (desktop)
 
-- [ ] 4.1 `SpendingInsightsFeature` out of `SpendingFeature` (`update:available`);
+- [x] 4.1 `useSpendingInsights` / `SpendingInsights` out of `SpendingFeature`, `entities/scope`, one request in flight;
   `features/recent-operations`; `widgets/home-highlights`; the page wiring with «Now» details; keys in `uk.json`,
   `en.json`, `ru.json`. Renderer tests: the order, one slide, no content, details open, one spending request.
-- [ ] 4.2 «Who spent what» and the teaser off home, the in-block pick removed, the spending tile over 12 columns
+- [x] 4.2 «Who spent what» and the teaser off home, the in-block pick removed, the spending tile over 12 columns
   (design 4); renderer tests updated.
 - [ ] 4.3 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
 

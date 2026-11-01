@@ -193,6 +193,12 @@ export interface InsightsView {
   note: string;
 }
 
+export interface UseSpendingInsightsReturn {
+  /** null — nothing unusual, no usual yet, or no answer yet. */
+  insights: ComputedRef<InsightsView | null>;
+  loaded: ComputedRef<boolean>;
+}
+
 export interface UseSpendingViewReturn {
   /** «September · Whole family». */
   subtitle: ComputedRef<string>;
@@ -204,7 +210,5 @@ export interface UseSpendingViewReturn {
   summary: ComputedRef<SummaryView | null>;
   categories: ComputedRef<CategoriesView>;
   people: ComputedRef<PersonRowView[]>;
-  /** The view's own figures only: none while a person is picked inside the block. */
-  insights: ComputedRef<InsightsView | null>;
   onPick: (id: number | null) => void;
 }
