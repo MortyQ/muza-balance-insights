@@ -1513,6 +1513,36 @@ describe('DataService.spendingOverview: usual', () => {
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
   });
 
+  it('insightsOverview: the budget structure of a finished month, the reserve now, the kinds; a changed kind moves money', async () => {
+    await covered('2025-09-01');
+    await history();
+    // February: 100 000 in; groceries 60 000 (essential), delivery 6 000 (wants): 60 / 6 / 34.
+    const v = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.budget.month).toEqual({
+      income: 100_000, essential: 60_000, wants: 6_000, savings: 0, fixed: 0, debt: 0,
+      split: { essential: 60, wants: 6, left: 34 }, fixedShare: 0, debtShare: 0,
+    });
+    expect(v.budget.reserve).toMatchObject({ usualEssential: 60_000 });
+    expect(v.budget.kinds.essential).toContain('groceries');
+    expect(v.budget.kinds.fixed).toContain('rent');
+    await svc.setCategoryKind({ categoryId: 'delivery', kind: 'essential', fixed: true });
+    const after = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(after.budget.month).toMatchObject({ essential: 66_000, wants: 0, fixed: 6_000, split: { essential: 66, wants: 0, left: 34 }, fixedShare: 6 });
+  });
+
+  it('insightsOverview: the budget waits while the month runs; without history the month still splits, with no reserve', async () => {
+    await covered('2025-09-01');
+    await history();
+    const running = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(running.budget.month).toBeNull();
+    expect(running.budget.reserve).not.toBeNull();
+    await db.execute('DELETE FROM sync_state');
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), SYNCED_TO, SYNCED_TO + 60] });
+    const early = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    expect(early.usual).toBeNull();
+    expect(early.budget).toMatchObject({ month: { income: 100_000, split: { essential: 60, wants: 6, left: 34 } }, reserve: null });
+  });
+
   it('insightsOverview: under 3 whole months, only the month and how many months there are', async () => {
     await covered('2026-01-01');
     await history();

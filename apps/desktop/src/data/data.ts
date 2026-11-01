@@ -10,7 +10,8 @@ import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/c
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
-import { categoryKinds, resetCategoryKinds, setCategoryKind } from '@mono/core/read/category-kinds';
+import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
+import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -40,6 +41,7 @@ import { periodBounds, periodCompare } from './period.ts';
 import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
+  BudgetStructureView,
   CategoryKindQuery,
   CategoryKindView,
   AllowanceQuery,
@@ -464,6 +466,57 @@ export class DataService {
     return { drivers, savings, basis: { months: usual.months, from: months.at(-1)!, to: months[0]!, pendingHolds } };
   }
 
+  /**
+   * «Budget structure»: a finished month's income folded by kind (core read/budget.ts) — the income comes from the
+   * usual's read when there is one, else one income query — and the reserve: today's own money of the view's cards and
+   * jars (an account below zero counts as 0: credit money is not the user's) over the usual essential month.
+   */
+  private async budgetOf(
+    db: Db,
+    q: SpendingOverviewQuery,
+    c: { cur: Map<string, { net: number }>; found: UsualFound | null; incomplete: boolean; kinds: Map<string, KindChoice>; rates: Map<number, FxRate>; now: number },
+  ): Promise<BudgetStructureView> {
+    const byCategory = new Map([...c.cur].map(([k, a]) => [k, a.net]));
+    const totals = byKind(byCategory, c.kinds);
+    let income: number | null = null;
+    if (!c.incomplete) {
+      if (c.found?.usual.income) income = c.found.usual.income.now;
+      else {
+        const filters = { tz: systemTimeZone(), scope: q.scope, ...viewOf(q) };
+        const r = await incomeSummary(db, { ...monthBounds(q.month), ...filters, groupBy: 'month' }, c.now);
+        income = r.groups.reduce((s, g) => s + (toUah(g.total, g.currency, c.rates) ?? 0), 0);
+      }
+    }
+    const split = income !== null ? budgetSplit(income, totals) : null;
+    const month =
+      income !== null && split
+        ? {
+            income,
+            ...totals,
+            debt: byCategory.get(CATEGORY.installments) ?? 0,
+            split,
+            fixedShare: fixedShare(income, totals) ?? 0,
+            debtShare: debtShare(income, byCategory) ?? 0,
+          }
+        : null;
+    let reserve: BudgetStructureView['reserve'] = null;
+    if (c.found) {
+      const balances = await balancesAt(db, { endSec: c.now + 1, ...viewOf(q) });
+      const money = balances.accounts.reduce((s, a) => s + (a.own_funds === null ? 0 : Math.max(0, toUah(a.own_funds, a.currency, c.rates) ?? 0)), 0);
+      reserve = reserveMonths(money, c.found.byCategory.map((m) => byKind(m, c.kinds).essential));
+    }
+    const ids = (pick: (k: KindChoice) => boolean) =>
+      [...c.kinds].flatMap(([category, k]) => {
+        const id = CATEGORY_ID.get(category);
+        return id && pick(k) ? [id] : [];
+      });
+    return {
+      month,
+      reserve,
+      kinds: { essential: ids((k) => k.kind === 'essential'), wants: ids((k) => k.kind === 'wants'), savings: ids((k) => k.kind === 'savings'), fixed: ids((k) => k.fixed) },
+    };
+  }
+
   private async jarTitles(db: Db): Promise<string[]> {
     const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
     return accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
@@ -563,7 +616,9 @@ export class DataService {
       rates: today,
     };
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
-    if (!found) return { ...base, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const kinds = await kindMap(db);
+    const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
+    if (!found) return { ...base, budget, usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -620,6 +675,7 @@ export class DataService {
         : null;
     return {
       ...base,
+      budget,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,

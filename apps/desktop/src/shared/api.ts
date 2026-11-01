@@ -519,8 +519,33 @@ export type InsightsOverview = {
   cards: InsightCardView[];
   newPayees: NewPayeeView[];
   oneOffs: OneOffView[];
+  /** «Budget structure» (core read/budget.ts). */
+  budget: BudgetStructureView;
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
+};
+
+/**
+ * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,
+ * and the reserve now. Amounts are hryvnia kopecks (for the explanations); shares whole per cent.
+ */
+export type BudgetStructureView = {
+  /** null while the month runs, or without income. */
+  month: {
+    income: number;
+    essential: number;
+    wants: number;
+    savings: number;
+    fixed: number;
+    debt: number;
+    split: { essential: number; wants: number; left: number };
+    fixedShare: number;
+    debtShare: number;
+  } | null;
+  /** The money at hand now (cards and jars of the view, credit money not counted) ÷ the usual essential month; null — fewer than 3 whole months. */
+  reserve: { months: number; money: number; usualEssential: number } | null;
+  /** The categories of each kind, and the fixed ones, for «How it was counted». */
+  kinds: { essential: CategoryId[]; wants: CategoryId[]; savings: CategoryId[]; fixed: CategoryId[] };
 };
 
 /** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */

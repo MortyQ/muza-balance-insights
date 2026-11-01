@@ -3,13 +3,14 @@ import { RouterLink } from 'vue-router';
 import { DetailSkeleton } from '@/entities/operations';
 import { importLink } from '@/shared/config';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import BudgetCard from './components/BudgetCard.vue';
 import InsightCard from './components/InsightCard.vue';
 import InsightsGlance from './components/InsightsGlance.vue';
 import SignalList from './components/SignalList.vue';
 import { useInsightsPage } from './composables/useInsightsPage.ts';
 
 // The Insights screen (spec desktop-insights-page): the month at a glance, then the feed ranked by money (eight of
-// twelve columns from 64rem of its own width) beside the payee signals and how it was counted.
+// twelve columns from 64rem of its own width) beside «Budget structure», the payee signals and how it was counted.
 const { state, view } = useInsightsPage();
 </script>
 
@@ -30,6 +31,9 @@ const { state, view } = useInsightsPage();
               {{ $t('insights.early.download') }}
             </RouterLink>
           </div>
+        </VCard>
+        <VCard v-if="view.early" padding="md" class="max-w-xl">
+          <BudgetCard :budget="view.budget" />
         </VCard>
 
         <div v-else class="grid grid-cols-1 gap-4 @5xl:grid-cols-12">
@@ -53,6 +57,9 @@ const { state, view } = useInsightsPage();
           </section>
 
           <aside class="flex min-w-0 flex-col gap-4 @5xl:col-span-4">
+            <VCard padding="md">
+              <BudgetCard :budget="view.budget" />
+            </VCard>
             <VCard padding="md" data-test="new-payees">
               <SignalList :title="$t('insights.newPayees.title')" :hint="$t('insights.newPayees.hint')" :rows="view.newPayees" :empty="$t('insights.newPayees.none')" />
             </VCard>

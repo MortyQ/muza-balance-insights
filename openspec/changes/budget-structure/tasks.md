@@ -19,9 +19,9 @@
 
 ## 4. The «Budget structure» card
 
-- [ ] 4.1 `InsightsOverview.budget`; `insightsOverview` fills it (kinds, split, fixed and debt shares, reserve from cards and jars now); `tests/data.test.ts` (finished month, running month, no income, a changed kind moves money) and `tests/data-queries.test.ts` (statement count)
-- [ ] 4.2 `BudgetCard.vue`, `budgetView`, «?» on every figure with the user's numbers, the introduction, the link to «Categories»; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/insights-page.test.ts` (finished, running, no income, no reserve, euro main, an explanation's filled formula, the link)
-- [ ] 4.3 Commit `feat(desktop): the «Budget structure» card on the Insights screen`
+- [x] 4.1 `InsightsOverview.budget`; `insightsOverview` fills it (kinds, split, fixed and debt shares, reserve from cards and jars now); `tests/data.test.ts` (finished month, running month, no income, a changed kind moves money) and `tests/data-queries.test.ts` (statement count)
+- [x] 4.2 `BudgetCard.vue`, `budgetView`, «?» on every figure with the user's numbers, the introduction, the link to «Categories»; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/insights-page.test.ts` (finished, running, no income, no reserve, euro main, an explanation's filled formula, the link)
+- [x] 4.3 Commit `feat(desktop): the «Budget structure» card on the Insights screen`
 
 ## 5. Limits in core
 

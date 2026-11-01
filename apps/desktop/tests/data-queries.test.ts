@@ -104,11 +104,12 @@ describe('the overviews run a fixed number of statements', () => {
     const long = await counts({ people: 2, accounts: 4, months: 36 });
     expect(long).toEqual(await counts({ people: 2, accounts: 4, months: 12 }));
     const short = await counts({ people: 2, accounts: 4, months: 3 });
-    // The Insights screen's past month likewise has no usual there: no grid, income, jar titles or lines.
+    // The Insights screen's past month likewise has no usual there: no grid, income, jar titles or lines, and no
+    // reserve (today's balances); its «Budget structure» asks the month's income alone instead.
     expect({
       ...long,
       'spending, past month, person': long['spending, past month, person']! - 4,
-      'insights, past month, person': long['insights, past month, person']! - 4,
+      'insights, past month, person': long['insights, past month, person']! - 1,
     }).toEqual(short);
   });
 });

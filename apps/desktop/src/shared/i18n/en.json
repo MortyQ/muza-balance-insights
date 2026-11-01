@@ -928,6 +928,47 @@
       "text": "Insights compare a month with at least 3 whole months before it; there is data for {months} so far.",
       "months": "{n} whole month | {n} whole months | {n} whole months",
       "download": "Download history"
+    },
+    "budget": {
+      "title": "Budget structure",
+      "left": "Left",
+      "guideShare": "guide {n}%",
+      "fixed": "Fixed costs",
+      "fixedGuide": "Common advice: above 50–60% of income on fixed costs leaves little room.",
+      "debt": "Loan payments",
+      "debtGuide": "Common advice: under 30% of income.",
+      "reserve": "Reserve",
+      "reserveValue": "{n} mo.",
+      "reserveGuide": "Common advice: 3–6 months of essential spending.",
+      "reserveNone": "Needs at least 3 whole months of history.",
+      "running": "The income shares come once the month is over.",
+      "noIncome": "No income this month, so there is nothing to take shares of.",
+      "basisTitle": "How it was counted",
+      "changeKinds": "Change category kinds",
+      "helpLabel": "How «{name}» is counted",
+      "basis": {
+        "essential": "Essential: {names}.",
+        "wants": "Wants: {names}.",
+        "savings": "Savings: {names} — they stay in «Left».",
+        "fixed": "Fixed: {names}.",
+        "rates": "Currencies at today's rate; transfers between your own accounts are left out, refunds lower spending."
+      },
+      "help": {
+        "essential": "What you cannot do without: groceries, housing, medicine, transport.",
+        "wants": "What you could give up: cafes, entertainment, shopping.",
+        "left": "What is left of the income after essentials and wants; investments stay here too.",
+        "leftFormula": "{income} − {essential} − {wants} = {left} ({share})",
+        "shareOf": "{amount} of {income} income = {share}",
+        "guide": "Common advice (50/30/20): about {n}%. A guide, not a grade.",
+        "fixed": "Categories marked «Fixed»: about the same amount every month.",
+        "debt": "Only the «Installments and loans» category; credit card repayments are not visible as such.",
+        "reserve": "How many usual months of essential spending your money would cover now — on cards and in jars, credit money not counted.",
+        "reserveFormula": "{money} ÷ {usual} a month = {months}"
+      },
+      "intro": {
+        "title": "What «Budget structure» shows",
+        "text": "Where a finished month's income went: to essentials, to wants and what is left — beside the common 50/30/20 guide. You can change each category's kind."
+      }
     }
   },
   "integrations": {

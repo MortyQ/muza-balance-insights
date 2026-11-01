@@ -33,6 +33,11 @@ export function importLink(from?: string): { name: typeof ROUTE.settings; query:
   return { name: ROUTE.settings, query: { section: 'people', focus: 'import', ...(from ? { from } : {}) } };
 }
 
+/** A link to the «Categories» section (the kinds of the spending categories). */
+export function categoriesLink(): { name: typeof ROUTE.settings; query: Record<string, string> } {
+  return { name: ROUTE.settings, query: { section: 'categories' } };
+}
+
 /** What a settings route query asks of the history download: focus it, and from which date. */
 export function importRequest(query: Readonly<Record<string, unknown>>): { focus: boolean; from: string | null } {
   return { focus: query.focus === 'import', from: typeof query.from === 'string' ? query.from : null };
