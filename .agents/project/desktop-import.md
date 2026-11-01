@@ -135,7 +135,7 @@
   to the weekdays the data reaches; a day — nothing); the 12 months only for a month), `getIncomeOverview({ period, participantId? })` (the
   income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `data/category.ts`) and `getRecentOperations({ month, scope, participantId?, providers? })` (home's
   «Recent operations», since 01.11 with the user's ok; `DataService.recentOperations`: core `latestLines`, the month's
-  newest six operations «Spending» counts, the description cut the same way, no comment) `getInsightsOverview(SpendingOverviewQuery)` (the Insights screen, `DataService.insightsOverview`: the month's
+  newest six operations «Spending» counts, the description cut the same way, no comment), `getInsightsOverview(SpendingOverviewQuery)` (the Insights screen, `DataService.insightsOverview`: the month's
   summary, the usual, and one `linesOfCategories` read of every spent or unusual category over the usual months and the
   shown one — each card's driver, new payees and one-offs; payee names cut the same way, since 01.11 with the user's
   ask) and `getSpendingOverview`'s
