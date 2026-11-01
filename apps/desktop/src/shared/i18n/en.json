@@ -615,7 +615,8 @@
       "collapse": "Collapse menu",
       "expand": "Expand menu",
       "openMenu": "Open menu",
-      "closeMenu": "Close menu"
+      "closeMenu": "Close menu",
+      "insights": "Insights"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
@@ -799,7 +800,8 @@
       },
       "months": "{n} month | {n} months | {n} months",
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
-      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations"
+      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations",
+      "all": "All insights"
     }
   },
   "income": {
@@ -849,6 +851,76 @@
     "title": "Income",
     "who": {
       "title": "Who received"
+    }
+  },
+  "insights": {
+    "failed": "Couldn't load insights.",
+    "glance": {
+      "spent": "Spent",
+      "income": "Income",
+      "kept": "Kept from income",
+      "signals": "Signals",
+      "ofUsual": "{share}% of a usual month · {passed}% of the month passed",
+      "above": "{diff} above usual ({usual})",
+      "below": "{diff} below usual ({usual})",
+      "asUsual": "About as usual ({usual})",
+      "monthEnd": "Counted when the month ends",
+      "noUsual": "No usual yet",
+      "noSavings": "Needs 3 months with income",
+      "usually": "usually {usual}",
+      "noSignals": "Nothing unusual"
+    },
+    "severity": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "countHigh": "{n} high | {n} high | {n} high",
+      "countMedium": "{n} medium | {n} medium | {n} medium",
+      "countLow": "{n} low | {n} low | {n} low"
+    },
+    "card": {
+      "more": "{now} this month, usually {usual}",
+      "less": "{now} this month, usually {usual}",
+      "rare": "{now} this month, usually next to nothing ({usual})",
+      "overMonth": "Already {now}: more than a usual whole month ({usual})",
+      "incomeMore": "{now} this month, usually {usual}",
+      "incomeLess": "{now} this month, usually {usual}",
+      "income": "Income",
+      "driver": "Mostly {name}: {amount}, {share}% of the change",
+      "open": "Open operations",
+      "chart": "The usual months and this one; the line is the usual, {usual}"
+    },
+    "feed": {
+      "title": "What's unusual",
+      "ranked": "By how much money changed",
+      "calm": "Everything is within the usual",
+      "calmHint": "No category moved by 20% and 500 ₴ against its usual month."
+    },
+    "newPayees": {
+      "title": "New payees",
+      "hint": "First seen this month, 500 ₴ or more",
+      "none": "No new payees this month"
+    },
+    "oneOffs": {
+      "title": "Large one-off payments",
+      "hint": "A tenth of a usual month or more, to a payee that usually gets less",
+      "none": "No large one-off payments"
+    },
+    "basis": {
+      "title": "How it was counted",
+      "months": "{n} whole month | {n} whole months | {n} whole months",
+      "usual": "The usual is the median of {months} ({from} – {to}).",
+      "excluded": "Transfers between your own accounts are left out; refunds lower spending.",
+      "threshold": "A change counts from 20% and 500 ₴ against the usual.",
+      "severity": "Importance is the change's share of a usual month's spending: high from 10%, medium from 4%.",
+      "running": "The month is still running: a category shows once it is past a whole usual month.",
+      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations"
+    },
+    "early": {
+      "title": "Not enough history yet",
+      "text": "Insights compare a month with at least 3 whole months before it; there is data for {months} so far.",
+      "months": "{n} whole month | {n} whole months | {n} whole months",
+      "download": "Download history"
     }
   },
   "integrations": {

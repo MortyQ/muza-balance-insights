@@ -6,6 +6,7 @@ export const ROUTE = {
   dbRecovery: 'db-recovery',
   home: 'home',
   income: 'income',
+  insights: 'insights',
   lock: 'lock',
   recurring: 'recurring',
   planning: 'planning',

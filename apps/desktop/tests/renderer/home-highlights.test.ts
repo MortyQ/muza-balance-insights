@@ -66,6 +66,7 @@ async function mountTile() {
     routes: [
       { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
       { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
+      { path: '/insights', name: 'insights', component: defineComponent(() => () => h('div')) },
     ],
   });
   await router.push('/');

@@ -12,10 +12,10 @@
 
 ## 3. The screen
 
-- [ ] 3.1 Route `insights` with `meta.nav` after «General»; `pages/insights`; `features/insights-page` (api, composable, utils, glance, card, bars, payee lists, basis); i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 3.2 «All insights» links in home's «Insights» block and «What's unusual» slide
-- [ ] 3.3 Tests: `tests/renderer/insights-page.test.ts` (glance, feed order and severity, bars, driver, side lists, empty and early states), layouts/nav test updates
-- [ ] 3.4 Commit `feat(desktop): the «Insights» screen`
+- [x] 3.1 Route `insights` with `meta.nav` after «General»; `pages/insights`; `features/insights-page` (api, composable, utils, glance, card, bars, payee lists, basis); i18n keys in `uk.json`, `en.json`, `ru.json`
+- [x] 3.2 «All insights» links in home's «Insights» block and «What's unusual» slide
+- [x] 3.3 Tests: `tests/renderer/insights-page.test.ts` (glance, feed order and severity, bars, driver, side lists, empty and early states), layouts/nav test updates
+- [x] 3.4 Commit `feat(desktop): the «Insights» screen`
 
 ## 4. Docs
 
