@@ -78,15 +78,15 @@ budget's «?» says the list is the budget's own.
 
 ### Home: the «Budget» row
 A full-width row between home's first and second rows (`widgets` of the default home grid), from
-`features/home-budget`: `useHomeBudget` reads `getLimitsOverview` (shared read cache with «Limits and goals») and
+`features/home-budget`: `useHomeBudget` reads `getLimitsOverview` (shared read cache with the «Budget» screen) and
 builds a view of the four parts; a past month reads the same overview for that month and shows the result. The
-invitation's dismissal is a `localStorage` key behind try/catch. «Month pace» stops asking `fetchAllowance`
+empty row has no dismissal: it stays until a budget exists. «Month pace» stops asking `fetchAllowance`
 (`useMonthPace`), so home makes one request fewer; `features/daily-allowance` in «Planning» is untouched.
 
 ### Reads and channels
 - `getLimitsOverview(q: { participantId?, month? })` → the budget (total, fixed rows paid of amounts, flexible part),
   the limits with their figures, the savings goals with their
-  progress, the suggestions, the kinds left out of the budget, today's rates. Used by the «Limits and goals» screen and
+  progress, the suggestions, the kinds left out of the budget, today's rates. Used by the «Budget» screen and
   home's «Limits» slide (which shows only attention and exceeded).
 - `categoryOverview` gains `limit` (the category's limits of the owner view for the current period) when the shown
   period is the current month.
@@ -116,11 +116,12 @@ plus short introductions.
 - `features/category-kinds`: the settings section (`SETTINGS_SECTIONS` gains `categories` after `people`).
 - `features/insights-page`: `BudgetCard.vue`, `budgetView`; the «limit exceeded» card reuses `InsightCard`.
 - `features/limits-goals`: `api/`, `composables/useLimitsGoals.ts`, `components/` (`BudgetPanel`, `LimitRow`,
-  `GoalRow`, `LimitSheet`, `GoalSheet`, `SuggestionsNote`), `LimitsGoalsFeature.vue`; `pages/planning` shows it above
-  `AllowanceFeature`.
+  `GoalRow`, `LimitSheet`, `GoalSheet`, `SuggestionsNote`), `LimitsGoalsFeature.vue`; `pages/budget` with route
+  `/budget` and `meta.navParent: home`, like `/category/:id` (no `meta.nav`, so no menu item); `?sheet=budget` opens
+  the budget sheet, used by home's «Set a budget». «Planning» is unchanged.
 - `features/category-detail`: `CategoryLimitBar.vue` from `entities/goal`.
 - Home highlights: a third slide `LimitsSlide` reading `getLimitsOverview`.
-- `features/home-budget`: the «Budget» row and its invitation; `features/limits-goals` `BudgetSheet` (form + live
+- `features/home-budget`: the «Budget» row and its empty row; `features/limits-goals` `BudgetSheet` (form + live
   result + past months chart).
 
 Bars follow the existing style: thin rounded bars on a sunken track; the pace marker is a short vertical tick.

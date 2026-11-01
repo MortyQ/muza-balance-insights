@@ -29,7 +29,7 @@ decisions (01.11).
   **50/30/20** split of a finished month's income (essential, wants, what is left), the **fixed** share of income, the
   **debt payments** share («installments and loans» only), the **reserve** in months (own money now in cards and jars
   ÷ a usual month's essential spending).
-- A **«Budget» card** on the Insights screen, first in the side column, with «How it was counted» and a link to the
+- A **«Budget structure» card** on the Insights screen, first in the side column, with «How it was counted» and a link to the
   «Categories» section.
 
 ### Limits (E2)
@@ -39,7 +39,7 @@ decisions (01.11).
   category and an amount they type, nothing filled in for them, each row removable. The fixed costs are set aside
   first; the rest (750 € with rent of 1 250 €) is the flexible part, and the pace, forecast and «per day» count on it
   only. Spending above a fixed row's amount counts against the flexible part. The «Fixed» flag of the «Categories»
-  section does not change the budget; it feeds only the fixed-cost metric of the «Budget» card. Rent paid as a
+  section does not change the budget; it feeds only the fixed-cost metric of the «Budget structure» card. Rent paid as a
   transfer to a person counts as flexible until the user sets that payee's category to rent with the existing category
   menu; the app does not guess it (decisions of 01.11).
 - **The budget sheet**: one sheet with a live result beside the form — the total with quick choices from the usual
@@ -48,8 +48,8 @@ decisions (01.11).
   it. «Save» waits until every row has an amount.
 - **A «Budget» row on home**, over the whole width between «Balance / Month pace / Month» and «Today / This week»: the
   total, fixed costs paid of their amounts, the flexible part with the pace marker, state and forecast, and «per day by
-  the budget». A past month shows the result. Without a budget, a thin invitation to create one, closed for good with
-  one click.
+  the budget». A past month shows the result. Without a budget, the place stays as a light empty row saying a budget can be set
+  right here, with «Set a budget»; it has no close button.
 - **«Month pace» no longer shows «Available per day»**: on home, per day is the budget's; «Available per day» stays in
   «Planning». «Month pace» and the budget row both stay (decision of 01.11).
 - For each limit: spent, left, per cent, the expected pace for today, the forecast for the period's end, «per day»
@@ -60,7 +60,8 @@ decisions (01.11).
   their accounts. A person's view shows their limits and the family's (decision 2).
 - **Suggested amounts**: the median of the category's (or flexible spending's) whole months, 3–6, scaled to the period;
   «Suggest limits» on the empty screen offers them for the biggest flexible categories at once.
-- A **«Limits and goals» screen** in «Planning»: the monthly budget on top, limits sorted by state, a sheet to add or
+- A **«Budget» screen** attached to home's «Budget» row like a category screen — no menu item, nothing new in
+  «Planning»: the monthly budget on top, limits sorted by state, a sheet to add or
   edit one with the suggestion and a preview of the past months against it.
 - **The category screen** shows the category's limit for the current period with the pace marker, or a quiet «Set a
   limit».
@@ -71,13 +72,13 @@ decisions (01.11).
 ### Savings goals (E2)
 - A goal: a name, a target amount (₴, $ or €), an optional date, an owner, and where its progress comes from: one
   Monobank jar (its target is offered when picked) or «cards and jars» of the owner (decision 3; a manual amount later).
-- Progress, what is left and, with a date, how much is needed per month. Shown on the «Limits and goals» screen.
+- Progress, what is left and, with a date, how much is needed per month. Shown on the «Budget» screen.
 
 ### Explanations for the user
 - Every metric, limit and goal figure has a «?» that explains it in plain words: what it means, the formula in words
   and the same formula with the user's own numbers («(4 000 ₴ − 1 900 ₴) ÷ 21 days = 100 ₴»), and what is counted and
   what is left out (refunds, own transfers, pending holds, «Personal» only, every bank, fixed and savings categories).
-- The «Limits and goals» screen, the «Categories» section and the «Budget» card open with a short introduction on the
+- The «Budget» screen, the «Categories» section and the «Budget structure» card open with a short introduction on the
   first visit, closed once and brought back by «How it works». Guides like 50/30/20 are introduced as common advice.
 
 ### CHANGELOG
@@ -97,13 +98,13 @@ many months your money would last. Every number has a «?» that explains how it
 - `core-savings-goals`: savings goals — storage, progress sources, need per month.
 - `desktop-category-kinds`: the «Categories» section.
 - `desktop-budget-help`: the «?» explanations with the user's own numbers and the first-visit introductions.
-- `desktop-limits-goals`: the «Limits and goals» screen in «Planning», the add/edit sheet, the category screen's
+- `desktop-limits-goals`: the «Budget» screen opened from home, the add/edit sheet, the category screen's
   limit bar.
 
 ### Modified Capabilities
-- `desktop-insights-page`: the «Budget» card and the «Limit exceeded» line.
+- `desktop-insights-page`: the «Budget structure» card and the «Limit exceeded» line.
 - `desktop-home-highlights`: the tile gains a «Limits» slide.
-- `desktop-home-tiles`: home gains the «Budget» row between the first and the second row, and its invitation.
+- `desktop-home-tiles`: home gains the «Budget» row between the first and the second row, and its empty row when there is no budget.
 - `desktop-balance-cards`: «Month pace» drops «Available per day».
 
 ## Impact
@@ -112,7 +113,7 @@ many months your money would last. Every number has a «?» that explains how it
   `read/limits.ts`, `read/savings-goals.ts`, commands for kinds and goals, tests.
 - `apps/desktop`: data process (`insightsOverview` gains `budget`, `categoryOverview` gains `limit`, a new
   `limitsOverview` read, channels to read and write kinds and goals), IPC, renderer (settings section, Insights card,
-  «Planning» screen, category bar, home slide), i18n `uk` / `en` / `ru`, `CHANGELOG.md`.
+  «Budget» screen, category bar, home row and slide), i18n `uk` / `en` / `ru`, `CHANGELOG.md`.
 - `apps/mcp`: none. The analysis copy: none (the new tables are not whitelisted; goal names are the user's text).
 - Trust anchors: none change.
 - User-visible: yes, the CHANGELOG entry above.

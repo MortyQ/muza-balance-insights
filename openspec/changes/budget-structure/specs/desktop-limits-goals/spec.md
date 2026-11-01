@@ -1,11 +1,12 @@
 ## Purpose
-Defines the «Limits and goals» screen in «Planning», the sheet to add or edit a limit or a goal, and the limit bar on
+Defines the «Budget» screen — a screen attached to home's «Budget» row like a category screen, with no menu item — the sheet to add or edit a limit or a goal, and the limit bar on
 the category screen.
 
 ## ADDED Requirements
 
-### Requirement: Limits and goals screen
-«Planning» SHALL have a «Limits and goals» screen showing, for the global person filter: the monthly budget on top
+### Requirement: Budget screen
+Home's «Budget» row SHALL open a «Budget» screen attached to home like a category screen: it has no menu item of its
+own, «General» stays current in the menu, and going back returns home. It SHALL show, for the global person filter: the monthly budget on top
 (the total amount; the fixed rows, each paid of its typed amount; the flexible part with spent of it, the bar with the
 pace marker, the state, the forecast and «per day»), the category limits sorted exceeded → attention → on track, then the savings goals. A person's view SHALL show
 their limits and the family's, each with its owner; the family view SHALL show all. Amounts SHALL be in the main

@@ -23,7 +23,7 @@ without a restart. «Reset to defaults» SHALL be offered only while something i
 - **THEN** the row returns to what is stored and a message says it was not saved
 
 ### Requirement: Link from the budget
-The Insights screen's «Budget» card SHALL link to the section.
+The Insights screen's «Budget structure» card SHALL link to the section.
 
 #### Scenario: Following the link
 - **WHEN** the user clicks «Change category kinds»

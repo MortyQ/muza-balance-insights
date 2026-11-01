@@ -35,7 +35,7 @@ payments teaser SHALL NOT be shown on home.
 
 #### Scenario: The budget row
 - **WHEN** a monthly budget is set and the current month is shown
-- **THEN** the «Budget» row sits between the first row and «Today», «This week»
+- **THEN** the «Budget» row sits between the first row and «Today», «This week»; without a budget the same place holds the empty row
 
 ## ADDED Requirements
 
@@ -43,7 +43,7 @@ payments teaser SHALL NOT be shown on home.
 The «Budget» row SHALL show, in one line on a wide window: the month's total with «Edit»; the fixed costs paid of the
 amount set aside, with each fixed row paid or not; the flexible part spent of its amount with the bar, the pace marker,
 the state, the expected amount by today and the forecast; and «per day by the budget» with the days left. Its parts
-SHALL wrap to two columns and then one on narrower windows. Clicking it SHALL open «Limits and goals». A past month
+SHALL wrap to two columns and then one on narrower windows. Clicking it SHALL open the «Budget» screen. A past month
 SHALL show the result instead of the pace: within the budget or over it, and what was left or how much over. It
 follows the person filter like the budget's owner rules; amounts are in the main currency.
 
@@ -56,10 +56,15 @@ follows the person filter like the budget's owner rules; amounts are in the main
 - **THEN** the row says whether the month stayed within the budget and how much was left or over
 
 ### Requirement: No budget yet
-Without a monthly budget, home SHALL show in the same place a thin line inviting to set one, with «Create budget» and a
-close button; once closed it SHALL not be shown again on this computer. In a past month without a budget nothing SHALL
-be shown.
+Without a monthly budget, home SHALL keep the «Budget» row's place in the current month as a light empty row that says
+a monthly budget can be set right here, in one sentence with what it gives (fixed costs set aside, per day for the
+rest), and a «Set a budget» action that opens the budget sheet on the «Budget» screen. It SHALL have no close button
+and SHALL stay until a budget exists. In a past month without a budget nothing SHALL be shown.
 
-#### Scenario: Closing the invitation
-- **WHEN** the user closes the invitation
-- **THEN** it is not shown again, and the budget can still be created in «Limits and goals»
+#### Scenario: Starting a budget from home
+- **WHEN** the user has no budget and presses «Set a budget» on home
+- **THEN** the «Budget» screen opens with the budget sheet open
+
+#### Scenario: A past month without a budget
+- **WHEN** a past month is shown and no budget existed
+- **THEN** home shows no «Budget» row

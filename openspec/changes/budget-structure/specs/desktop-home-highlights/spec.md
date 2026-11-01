@@ -4,7 +4,7 @@
 The third place of the «Today» / «This week» row SHALL be one tile holding «What's unusual», «Recent operations» and
 «Limits» as slides. Swipe, Shift + wheel, a mouse drag and the dots under the tile SHALL move between them, snapping to
 whole slides. The dots SHALL be shown only with two or more slides and SHALL work from the keyboard. «Limits» SHALL
-list only limits in attention or exceeded, with a link to «Limits and goals», and SHALL be a slide only when it has
+list only limits in attention or exceeded, with a link to the «Budget» screen, and SHALL be a slide only when it has
 such limits and the shown month is the current one.
 
 #### Scenario: Both have content

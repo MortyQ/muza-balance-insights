@@ -17,11 +17,11 @@
 - [ ] 3.1 `read/budget.ts` (`byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, guide constants); tests for every spec scenario
 - [ ] 3.2 Commit `feat(core): budget metrics`
 
-## 4. The «Budget» card
+## 4. The «Budget structure» card
 
 - [ ] 4.1 `InsightsOverview.budget`; `insightsOverview` fills it (kinds, split, fixed and debt shares, reserve from cards and jars now); `tests/data.test.ts` (finished month, running month, no income, a changed kind moves money) and `tests/data-queries.test.ts` (statement count)
 - [ ] 4.2 `BudgetCard.vue`, `budgetView`, «?» on every figure with the user's numbers, the introduction, the link to «Categories»; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/insights-page.test.ts` (finished, running, no income, no reserve, euro main, an explanation's filled formula, the link)
-- [ ] 4.3 Commit `feat(desktop): the «Budget» card on the Insights screen`
+- [ ] 4.3 Commit `feat(desktop): the «Budget structure» card on the Insights screen`
 
 ## 5. Limits in core
 
@@ -31,13 +31,13 @@
 ## 6. Limits read and screen
 
 - [ ] 6.1 `getLimitsOverview` (types, channels, data process: three period reads per owner view, «Personal» only, every bank, today's rates); `saveGoal`, `deleteGoal`, `addSuggestedLimits` channels; `categoryOverview.limit`; tests in `tests/data.test.ts`, `tests/data-queries.test.ts`, `tests/ipc.test.ts`
-- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, `BudgetSheet` (total, fixed rows added, typed and removed, live result, past months chart, save waits for every amount), delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); «Planning» shows it above «Available per day»; `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, `BudgetSheet` (total, fixed rows added, typed and removed, live result, past months chart, save waits for every amount), delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); `pages/budget` + route `/budget` (`meta.navParent: home`, no menu item, `?sheet=budget`); `tests/renderer/layouts.test.ts` (no menu entry, «General» current); `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
 - [ ] 6.3 Tests: `tests/renderer/limits-goals.test.ts` (order, states in words, person and family owners, suggestions action, sheet preview, failed save, explanations), the category screen bar
-- [ ] 6.4 Commit `feat(desktop): limits on the «Limits and goals» screen`
+- [ ] 6.4 Commit `feat(desktop): limits on the «Budget» screen`
 
 ## 7. Limits on home and in insights
 
-- [ ] 7.1 `features/home-budget`: the «Budget» row between home's first and second rows (four parts, wraps on narrow windows, past month result, opens «Limits and goals») and the dismissible invitation; «Month pace» drops «Available per day» (`useMonthPace` no longer reads the allowance); i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/home-budget.test.ts` and the month pace tests
+- [ ] 7.1 `features/home-budget`: the «Budget» row between home's first and second rows (four parts, wraps on narrow windows, past month result, opens the «Budget» screen) and the empty row with «Set a budget» (no close button, opens the sheet); «Month pace» drops «Available per day» (`useMonthPace` no longer reads the allowance); i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/home-budget.test.ts` and the month pace tests
 - [ ] 7.2 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
 - [ ] 7.3 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
 - [ ] 7.4 Commit `feat(desktop): the budget and limits on home and in the insights feed`

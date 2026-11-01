@@ -25,13 +25,13 @@ amount counts as flexible, and that savings categories are left out, with a link
 - **THEN** it shows «2 000 € − 1 250 € fixed (rent) = 750 € for flexible spending» and links to editing the budget
 
 ### Requirement: A short introduction on first visit
-The «Limits and goals» screen, the «Categories» section and the «Budget» card SHALL show, on the first visit, a short
+The «Budget» screen, the «Categories» section and the «Budget structure» card SHALL show, on the first visit, a short
 introduction (at most three sentences and one example) of what they are for and how to start, closed with one action
 and not shown again on this computer; a «How it works» link SHALL bring it back. Guides such as 50/30/20 SHALL be
 introduced as common advice, not as a grade.
 
 #### Scenario: Closing the introduction
-- **WHEN** the user closes the introduction of «Limits and goals» and comes back later
+- **WHEN** the user closes the introduction of the «Budget» screen and comes back later
 - **THEN** it is not shown, and «How it works» shows it again
 
 ### Requirement: Per day by the budget
