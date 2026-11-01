@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
-import { categoryLines } from '../../src/read/category-lines.ts';
+import { categoryLines, latestLines } from '../../src/read/category-lines.ts';
 import { incomeLines } from '../../src/read/income-lines.ts';
 import { kyivStartOfDay } from '../../src/shared/format.ts';
 import { spendingByCategory } from '../../src/read/queries.ts';
@@ -179,6 +179,21 @@ describe('spendingSummary', () => {
     const cafe = (await categoryLines(db, { ...Q, category: 'кафе и рестораны' }, NOW)).lines;
     expect(cafe.map((l) => l.amount)).toEqual([1_000, -4_000]); // the refund is a positive line
     expect((await categoryLines(db, { ...Q, category: 'свои переводы' }, NOW)).lines).toEqual([]);
+  });
+
+  it('latestLines: the newest operations over every category, body lines only, with their category; the limit', async () => {
+    const all = (await latestLines(db, Q, 20, NOW)).lines;
+    expect(all.map((l) => [l.category, l.amount, l.kind])).toEqual([
+      ['путешествия', -500, 'body'],
+      ['налоги и госплатежи', -7_000, 'body'],
+      ['переводы людям', -20_000, 'body'], // its commission is part of the operation, not a line here
+      ['кафе и рестораны', 1_000, 'body'], // a refund
+      ['кафе и рестораны', -4_000, 'body'],
+      ['продукты', -10_000, 'body'],
+    ]);
+    expect((await latestLines(db, Q, 2, NOW)).lines.map((l) => l.category)).toEqual(['путешествия', 'налоги и госплатежи']);
+    expect((await latestLines(db, { ...Q, scope: 'business' }, 20, NOW)).lines.map((l) => l.category)).toEqual(['налоги и госплатежи']);
+    await expect(latestLines(db, Q, 0, NOW)).rejects.toThrow(RangeError);
   });
 
   it('day (internal, not an MCP choice): one group per Kyiv day, the same totals', async () => {

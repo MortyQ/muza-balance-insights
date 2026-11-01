@@ -2,7 +2,7 @@
 
 ## 1. Core: the latest lines (core)
 
-- [ ] 1.1 `latestLines` in `read/category-lines.ts`, sharing the row mapping (design 1). Verify in
+- [x] 1.1 `latestLines` in `read/category-lines.ts`, sharing the row mapping (design 1). Verify in
   `tests/read` with fictional rows: every category, newest first, the limit, body lines only, a refund, the bank view
   and scope filters.
 
