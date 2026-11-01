@@ -55,7 +55,7 @@
 
 ## 10. Verification
 
-- [ ] 10.1 Root `pnpm test` and `pnpm typecheck` pass
+- [x] 10.1 Root `pnpm test` and `pnpm typecheck` pass
 
 ## Workflow follow-up
 
