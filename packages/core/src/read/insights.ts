@@ -82,3 +82,57 @@ export function detectInsights(input: InsightInput): Insights | null {
   found.sort((a, b) => b.amount - a.amount || (a.category ?? '').localeCompare(b.category ?? ''));
   return { months: input.months, running: input.running, insights: found };
 }
+
+// Explaining the lines: the payee behind a category's change, and how much of a finished month's income was kept.
+
+/** A payee is a category's main driver from this share of the category's difference. */
+export const DRIVER_SHARE = 0.3;
+
+/** One payee of a category: net spent in the shown month and in each usual month (0 where it had none), kopecks. */
+export type PayeeMonths = { name: string; now: number; months: ReadonlyArray<number> };
+
+/** The payee behind most of a category's change: its own difference (|now − its usual|) and share of the change, 0–100. */
+export type Driver = { name: string; amount: number; share: number };
+
+const median = (xs: ReadonlyArray<number>): number => {
+  if (xs.length === 0) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = s.length >> 1;
+  return s.length % 2 ? s[mid]! : Math.round((s[mid - 1]! + s[mid]!) / 2);
+};
+
+/**
+ * The payee whose own difference against its median goes furthest in the direction of the category's `change`
+ * (now − usual, signed); null when none reaches DRIVER_SHARE of it. Ties by name.
+ */
+export function mainDriver(change: number, payees: ReadonlyArray<PayeeMonths>): Driver | null {
+  if (change === 0) return null;
+  const sign = Math.sign(change);
+  let best: { name: string; diff: number } | null = null;
+  for (const p of payees) {
+    const diff = (p.now - median(p.months)) * sign;
+    if (diff <= 0) continue;
+    if (!best || diff > best.diff || (diff === best.diff && p.name.localeCompare(best.name) < 0)) best = { name: p.name, diff };
+  }
+  if (!best || best.diff < Math.abs(change) * DRIVER_SHARE) return null;
+  return { name: best.name, amount: best.diff, share: Math.min(100, Math.round((best.diff / Math.abs(change)) * 100)) };
+}
+
+/** A month's income and net spending, kopecks. */
+export type MonthMoney = { income: number; spent: number };
+
+/** The share of income kept, as whole percents (negative: spent more than earned), and the usual one. */
+export type SavingsRate = { rate: number; usual: number };
+
+const rateOf = (m: MonthMoney) => Math.round(((m.income - m.spent) / m.income) * 100);
+
+/**
+ * A finished month's savings rate beside the median of the usual months' rates (months with income only); null
+ * without income in the month or with fewer than INSIGHT_MIN_MONTHS such months.
+ */
+export function savingsRate(now: MonthMoney, months: ReadonlyArray<MonthMoney>): SavingsRate | null {
+  if (now.income <= 0) return null;
+  const rates = months.filter((m) => m.income > 0).map(rateOf);
+  if (rates.length < INSIGHT_MIN_MONTHS) return null;
+  return { rate: rateOf(now), usual: median(rates) };
+}

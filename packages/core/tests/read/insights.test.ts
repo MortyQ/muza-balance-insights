@@ -1,6 +1,6 @@
 // «What's unusual» detectors over fictional sums (kopecks).
 import { describe, expect, it } from 'vitest';
-import { detectInsights, type InsightInput } from '../../src/read/insights.ts';
+import { detectInsights, mainDriver, savingsRate, type InsightInput } from '../../src/read/insights.ts';
 
 const input = (o: Partial<InsightInput> = {}): InsightInput => ({
   months: 6, running: false, now: new Map(), usual: new Map(), income: null, ...o,
@@ -57,5 +57,47 @@ describe('detectInsights', () => {
       ['category-more', 'a'],
       ['category-more', 'c'],
     ]);
+  });
+});
+
+describe('mainDriver', () => {
+  const p = (name: string, now: number, months: number[]) => ({ name, now, months });
+
+  it('the payee furthest in the direction of the change, with its share', () => {
+    // Category +200 000: one payee +150 000 over its median, another +50 000.
+    expect(mainDriver(200_000, [p('Cafe B', 80_000, [30_000, 30_000, 30_000]), p('Cafe A', 250_000, [100_000, 90_000, 110_000])])).toEqual({
+      name: 'Cafe A', amount: 150_000, share: 75,
+    });
+  });
+
+  it('a drop: the payee that fell the most, never one that grew', () => {
+    expect(mainDriver(-100_000, [p('Up', 200_000, [50_000, 50_000, 50_000]), p('Down', 0, [80_000, 80_000, 70_000])])).toEqual({
+      name: 'Down', amount: 80_000, share: 80,
+    });
+  });
+
+  it('none under the share, none for no change; the share is capped and ties go by name', () => {
+    expect(mainDriver(100_000, [p('a', 20_000, [0, 0, 0]), p('b', 20_000, [0, 0, 0])])).toBeNull();
+    expect(mainDriver(0, [p('a', 50_000, [0, 0, 0])])).toBeNull();
+    expect(mainDriver(100_000, [p('b', 150_000, [0, 0, 0]), p('a', 150_000, [0, 0, 0])])).toEqual({ name: 'a', amount: 150_000, share: 100 });
+    // Even count: the median is the mean of the middle two.
+    expect(mainDriver(100_000, [p('a', 100_000, [0, 20_000, 40_000, 100_000])])).toEqual({ name: 'a', amount: 70_000, share: 70 });
+  });
+});
+
+describe('savingsRate', () => {
+  const m = (income: number, spent: number) => ({ income, spent });
+
+  it('the month beside the median of months with income', () => {
+    expect(savingsRate(m(100_000, 70_000), [m(100_000, 80_000), m(0, 50_000), m(100_000, 90_000), m(100_000, 60_000)])).toEqual({ rate: 30, usual: 20 });
+  });
+
+  it('negative when more was spent than earned', () => {
+    expect(savingsRate(m(100_000, 125_000), [m(100_000, 80_000), m(100_000, 80_000), m(100_000, 80_000)])!.rate).toBe(-25);
+  });
+
+  it('none without income or with fewer than three months with income', () => {
+    expect(savingsRate(m(0, 10_000), [m(100_000, 80_000), m(100_000, 80_000), m(100_000, 80_000)])).toBeNull();
+    expect(savingsRate(m(100_000, 10_000), [m(100_000, 80_000), m(0, 80_000), m(100_000, 80_000)])).toBeNull();
   });
 });

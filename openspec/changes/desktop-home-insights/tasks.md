@@ -1,8 +1,8 @@
 ## 1. Core rules
 
-- [ ] 1.1 `mainDriver` and `DRIVER_SHARE` in `packages/core/src/read/insights.ts`: median per payee over the given months (missing = 0), direction of the category's change, share capped at 100, at least 30%, ties by name; tests in `tests/read/insights.test.ts` for growth, a drop, a thin spread and ties
-- [ ] 1.2 `savingsRate(now, months)`: the month's rate, the median of months with income, none below 3 such months or without income; tests for a negative rate and too few months
-- [ ] 1.3 Commit `feat(core): main driver and savings rate for insights` (core tests and typecheck pass)
+- [x] 1.1 `mainDriver` and `DRIVER_SHARE` in `packages/core/src/read/insights.ts`: median per payee over the given months (missing = 0), direction of the category's change, share capped at 100, at least 30%, ties by name; tests in `tests/read/insights.test.ts` for growth, a drop, a thin spread and ties
+- [x] 1.2 `savingsRate(now, months)`: the month's rate, the median of months with income, none below 3 such months or without income; tests for a negative rate and too few months
+- [x] 1.3 Commit `feat(core): main driver and savings rate for insights` (core tests and typecheck pass)
 
 ## 2. Data process
 
