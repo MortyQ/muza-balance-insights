@@ -120,7 +120,8 @@
   `RuleTx.bankCategory`): stored as the bank states it, and mapped by the provider in `categoryHint`. Hints are the
   domain categories of `CATEGORY_HINTS` (`providers/types.ts`): every category but «комиссии банка», «свои переводы»
   and «семье», which only the derivation sets (a compile-time check in `derive/categories.ts`). The order stays
-  internal → family → override → hint → MCC → default, so an override wins over the bank's category, and a corrected
+  internal → family → the user's choice (operation, then payee) → override → hint → MCC → default, so an override
+  wins over the bank's category, and a corrected
   mapping applies to stored rows at the next re-derivation. Bank text: the main database only, never the analysis copy
   (`apps/mcp/tests/analysis.test.ts` carries a canary).
 - Фикстуры тестов — только вымышленные имена и суммы; ничего из реальных данных и отчётов.
@@ -147,6 +148,17 @@
   Возврат получает категорию покупки. Возврат без покупки в периоде считается возвратом как есть.
 - Оверрайды категорий — через `overrides:*` (только пользователь); категория валидируется по списку,
   после изменения — recategorize + обновление копии.
+- **The user's own category of a debit** (migration v18, `commands/categories.ts`, spec `core-manual-categories`):
+  `manual_categories` — one operation by its stored id (stable across re-uploads: `statementRowIds`, upsert on `id`);
+  `payee_categories` — every debit of a payee, the `counter_name` else the description, trimmed and lower-cased.
+  Imports never write them; the derivation applies them right after internal and family, above the CLI overrides,
+  the provider's hint and the MCC — debits only (a payee's credits stay income), never an own or family transfer (a
+  stored choice on a row that becomes one is ignored, not deleted). `CHOOSABLE_CATEGORIES`: every category but
+  income, «семье» and the derived-only ones; the five added with it («аренда жилья», «авто», «дети», «подписки»,
+  «инвестиции» — spending, «инвестиции» too) have no MCC mapping. `setOperationCategory` / `setPayeeCategory` re-derive
+  categories, scope and crossing and return the count of changed rows; `categorySources` tells a row's source. Both
+  tables hold bank text by reference or value: this database only, never the analysis copy. Tests:
+  `tests/commands/categories.test.ts` (the same statement twice, an overlapping one, a full re-derivation).
 
 - В логах вместо маскированного номера карты писать тип и валюту счёта (например, `black/UAH`).
 
@@ -181,6 +193,11 @@
   are split by amount (±10% of a group's median `operation_amount`), and each group's series is the run back from its
   newest payment while gaps are 25–35 days or a skipped month (55–70); at least 3 payments and 2 one-month gaps.
   `active` — the last payment at most 40 days old. The desktop puts the next payment a calendar month after the last.
+- «What's unusual» detectors: `detectInsights` (`packages/core/src/read/insights.ts`), pure over the sums the caller
+  folds (the shown month by category, the usual month's medians, income). Kept: a difference of at least
+  `INSIGHT_MIN` (500 ₴) and `INSIGHT_SHARE` (20%) of the usual; a usual under `INSIGHT_BASE` (1 000 ₴), or none, is
+  «rare» — growth only, no share. A running month: categories past a whole usual month only, no income. All ranked
+  together by the difference in money; none under `INSIGHT_MIN_MONTHS` (3) whole months. No text in core.
   `kind: 'income'` finds regular income by the same rules on the income rows (`incomeRowsSql`: no refunds, no own or
   — for the whole family — family transfers): a sender who pays about once a month.
 - Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular

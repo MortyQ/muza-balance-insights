@@ -89,13 +89,25 @@
 - **Home grid** (spec `openspec/specs/desktop-home-tiles`): `HomePage` owns one CSS grid (`data-test="home-grid"`,
   `@container`: one column, two from `@[47rem]`, twelve from `@[79rem]` — where the folded stack fits 5 of them; rows
   5 · 4 · 3 (balance, pace, month; under 65rem a row each, 65–79rem balance | month over pace — the stack never
-  stands alone in a wide row), 4 · 4 · 4 («Now» and «What's unusual»), 9 · 3 (spending, people / regular payments)). The features put their tiles straight
-  into it through a `<div class="contents">` root (one root element; a comment before it would be a second root and drop
-  the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week», or the details tile),
-  spending («What's unusual», «Spending by category» two columns × two rows, «Who spent what»), the regular payments
-  teaser. Each tile says its own span. The «Now» details tile takes «What's unusual»'s place too: `NowStripFeature`
-  `v-model:details` → `SpendingFeature` `insights-hidden` through the page (features never import each other).
-  Checked by `tests/home-grid.test.ts`.
+  stands alone in a wide row), 4 · 4 · 4 («Today», «This week», the highlights tile), 12 (spending)). The features put
+  their tiles straight into it through a `<div class="contents">` root (one root element; a comment before it would be
+  a second root and drop the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week»,
+  or the details tile), `widgets/home-highlights` (`HomeHighlights`, spec `desktop-home-highlights`), spending
+  («Spending by category» over the whole row). Each tile says its own span. The «Now» details tile takes the
+  highlights tile's place too: `NowStripFeature` `v-model:details` → `HomeHighlights v-if="!nowDetails"` in the page.
+  «Who spent what» and the regular payments teaser are off home since 01.11 (their place is decided later; their
+  components stay in their slices). Checked by `tests/home-grid.test.ts`.
+- **Highlights tile** (`widgets/home-highlights`): «What's unusual» and «Recent operations» as two slides of
+  `shared/ui` `VCarousel` (swipe, Shift + wheel, a mouse drag through `useDragScroll` of `shared/lib`, dots). The widget
+  calls `useSpendingInsights` (`features/spending-summary`) and `useRecentOperations` (`features/recent-operations`)
+  itself, so it knows which slides have content before any is shown: «What's unusual» first when it has lines, one
+  alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent operations» (the
+  composable asks nothing), «What's unusual» over the whole row, or no tile when nothing is unusual. «Recent operations» (`RecentOperationsList`): the month's newest
+  six operations «Spending» counts (IPC `getRecentOperations`), a row with the category icon, the bank's description
+  (else the category's name), the category and when, the amount (a refund with «+»), a pending mark; it links to the
+  operation's category screen. Home's «Personal / Business» choice is `entities/scope` (`useScopeStore`): the spending
+  block's switch sets it, both slides follow it. Descriptions on home: approved by the user on 01.11 (this list only).
+  Tested in `tests/renderer/home-highlights.test.ts`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
   `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
   (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,
@@ -138,17 +150,17 @@
   unknown word stay plain rows); it no longer unfolds — the per-person split is on the category screen. Category
   icons, names and rank colours live in `entities/category` (`CATEGORY_ICON`, `categoryName`, `categoryColor`), shared
   with the «Now» strip and the category screen.
-  Tiles (spec `desktop-home-tiles`): «What's unusual» (`SpendingInsights`) in its own tile in the «Now» row, hidden by
-  `insightsHidden`; the block's tile — header, notices, the summary column (ring, compare note, stats as soft tiles,
-  member card) and the category rows (`CategoryRow`: icon in a soft circle, name with share and operations, chip,
-  amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the rest in place); «Who spent what»
-  (`PeopleList`, family view only, each person with a share bar — `PersonRowView.share`).
-  «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
-  (whole-month medians) — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the
-  largest differences first, at most `INSIGHT_MAX` (3). A usual under `INSIGHT_BASE` (1 000 ₴) is too small a base for a
-  share: only «more», said by the amount. While the month runs (`usual.running`) only categories already over a whole
-  usual month, no income; a month that is over then says income (beside a category, or alone when off itself). The
-  note says the median of how many months. None while a person is picked inside the block (the usual is the view's).
+  Tiles (spec `desktop-home-tiles`): the block's tile over the whole row — header, notices, the summary column (ring,
+  compare note, stats as soft tiles, member card) and the category rows (`CategoryRow`: icon in a soft circle, name
+  with share and operations, chip, amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the
+  rest in place). «Who spent what» (`PeopleList`, each person with a share bar — `PersonRowView.share`) is not mounted
+  since 01.11, so the in-block person pick (`usePick`) stays `null`; the scope switch writes `entities/scope`.
+  «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
+  detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
+  `INSIGHT_MAX` (5), each with the money and the share (`changeText`), a «rare» one by the money alone; a category line
+  is a link to its screen (`categoryLink`, the block's scope), income lines are plain. The note says the median of how
+  many months, and that the month still runs. It is a slide of the highlights tile (`useSpendingInsights`, the same
+  request as the block, shared while in flight by `shared/api/balance.ts`).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
@@ -173,6 +185,13 @@
   12 months: main picks the window (`monthsWindow` in `data/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
+  The user's category (spec `desktop-category-menu`): a debit line with `choice` (`CategoryLineView.choice`:
+  `operation` | `payee` | `auto`; null — takes none) has a menu — a right click on its row (`VContextMenu`) or its «⋮»
+  (`VMenu`, the list's `with-actions` column): «Change category…» (`lineActions`), and «Return the automatic category» /
+  «Remove the rule for this payee» for a chosen one; a chosen line carries a mark. «Change category…» opens
+  `components/CategoryPicker.vue` (a `VSheet`: search, the choosable categories by name — `pickerOptions`, the switch
+  «For all operations from this payee»). `composables/useCategoryChoice.ts` saves (IPC `setOperationCategory`), shows
+  what changed (`choiceDoneText`) in a notice and refreshes the data status, so every screen reloads quietly.
   The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.
@@ -224,8 +243,8 @@
   stopped ones in a second list. Marks: a row's `VPopover` menu (`lucide:ellipsis`) — «Mandatory payment» / «Not
   mandatory» and «Not a regular payment»; `useRecurring.setMark` saves (IPC `setRecurringMark`) and reloads, a failure
   shows `recurring.markFailed`. A mandatory row carries a «mandatory» pill, the summary «of which mandatory …»; hidden
-  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». On home, under «Spending»,
-  `RecurringTeaserFeature`: one card-wide link to the screen — the monthly total, the count and the mandatory part
+  ones sit folded in a `<details>` «Hidden (n)», each with «Restore». `RecurringTeaserFeature` (not mounted on home since
+  01.11, kept for a later place): one card-wide link to the screen — the monthly total, the count and the mandatory part
   (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
   IPC; quiet reloads on `syncStatus.version`; a mark is a write, so back on home its cached answer is stale and reloads quietly).
   Tested in `tests/renderer/recurring.test.ts`.

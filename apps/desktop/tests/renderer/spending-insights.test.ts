@@ -1,84 +1,59 @@
 // @vitest-environment happy-dom
-// «What's unusual» of the spending block (utils/insights.ts): which categories, in what order, the income line, the
-// note; a running month and a small usual base. Fictional figures only.
+// «What's unusual» of the spending block (utils/insights.ts): core's ranked insights worded, at most five, a category
+// line linked to its screen, the note. Fictional figures only.
 import { describe, expect, it } from 'vitest';
-import type { SpendingOverview, SpendingUsual } from '@contract/api.ts';
+import type { SpendingInsight, SpendingInsights, SpendingOverview } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { insightsView } from '@/features/spending-summary/utils/index.ts';
 import { formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
-const cat = (category: string, categoryId: SpendingOverview['categories'][number]['categoryId'], net: number) => ({
-  category, categoryId, net, purchases: 1, prev: null, people: [], banks: [],
+const ins = (o: Partial<SpendingInsight> & Pick<SpendingInsight, 'type' | 'amount'>): SpendingInsight => ({
+  direction: 'up', percent: null, category: null, categoryId: null, now: 0, usual: 0, ...o,
 });
-const USUAL: SpendingUsual = {
-  months: 5,
-  running: false,
-  total: 0,
-  categories: [
-    { category: 'продукты', categoryId: 'groceries', net: 500_000 },
-    { category: 'доставка', categoryId: 'delivery', net: 100_000 },
-    { category: 'кафе и рестораны', categoryId: 'cafes', net: 200_000 },
-    { category: 'такси и транспорт', categoryId: 'transport', net: 180_000 },
-    { category: 'аптеки и здоровье', categoryId: 'health', net: 160_000 },
-  ],
-  income: { now: 70_000, usual: 100_000 },
-};
-const view = (categories: SpendingOverview['categories'], usual: SpendingUsual | null = USUAL) => ({ categories, usual }) as unknown as SpendingOverview;
+const view = (insights: SpendingInsights | null) => ({ insights }) as unknown as SpendingOverview;
+const of = (list: SpendingInsight[], running = false) => view({ months: 5, running, insights: list });
 
 describe('insightsView', () => {
-  it('a month that is over: categories off by 20% and 500 ₴, the largest differences first, at most 3; income said with its own share', () => {
+  it('every type worded, the share beside the money, in the given order; income plain, a category linked', () => {
     const v = insightsView(
-      view([
-        cat('продукты', 'groceries', 560_000), // +12%: not unusual
-        cat('доставка', 'delivery', 223_000), // +123%, +1 230 ₴
-        cat('кафе и рестораны', 'cafes', 120_000), // −40%, −800 ₴
-        cat('такси и транспорт', 'transport', 240_000), // +33%, +600 ₴
-        // health: none this month, −1 600 ₴, −100%
+      of([
+        ins({ type: 'category-less', direction: 'down', amount: 160_000, percent: 100, category: 'аптеки и здоровье', categoryId: 'health' }),
+        ins({ type: 'category-more', amount: 123_000, percent: 123, category: 'доставка', categoryId: 'delivery' }),
+        ins({ type: 'income-less', direction: 'down', amount: 30_000, percent: 30 }),
+        ins({ type: 'category-rare', amount: 938_000, category: 'переводы людям', categoryId: 'p2p' }),
+        ins({ type: 'income-more', amount: 25_000, percent: 25 }),
       ]),
       FMT,
+      'personal',
     )!;
-    expect(v.lines).toEqual([
-      { text: `Аптеки и здоровье — на ${uah(160_000)} (100%) меньше обычного`, tone: 'down' },
-      { text: `Доставка — на ${uah(123_000)} (123%) больше обычного`, tone: 'up' },
-      { text: `Кафе и рестораны — на ${uah(80_000)} (40%) меньше обычного`, tone: 'down' },
-      { text: `Доходы на ${uah(30_000)} (30%) ниже обычного`, tone: 'neutral' },
+    expect(v.lines.map(({ text, tone }) => [text, tone])).toEqual([
+      [`Аптеки и здоровье — на ${uah(160_000)} (100%) меньше обычного`, 'down'],
+      [`Доставка — на ${uah(123_000)} (123%) больше обычного`, 'up'],
+      [`Доходы на ${uah(30_000)} (30%) ниже обычного`, 'neutral'],
+      [`Переводы людям — +${uah(938_000)}, обычно здесь почти ничего`, 'up'],
+      [`Доходы на ${uah(25_000)} (25%) выше обычного`, 'neutral'],
     ]);
+    expect(v.lines[0]!.to).toEqual({ name: 'category', params: { id: 'health' }, query: { scope: 'personal' } });
+    expect(v.lines[2]!.to).toBeNull();
     expect(v.note).toBe('Сравнение с медианой за 5 месяцев');
   });
 
-  it('a usual under 1 000 ₴: more said by the amount alone, less not at all', () => {
-    const usual = { ...USUAL, categories: [{ category: 'переводы людям', categoryId: 'p2p' as const, net: 2_000 }, { category: 'другое', categoryId: 'other' as const, net: 90_000 }] };
-    const calm = { ...usual, income: { now: 100_000, usual: 100_000 } };
-    // Transfers: 20 ₴ usually, 9 400 ₴ now — no 46 900%. Other: 900 → 0, under the base: not said.
-    const v = insightsView(view([cat('переводы людям', 'p2p', 940_000)], calm), FMT)!;
-    expect(v.lines).toEqual([
-      { text: `Переводы людям — +${uah(938_000)}, обычно здесь почти ничего`, tone: 'up' },
-      { text: 'Доходы на обычном уровне', tone: 'neutral' },
-    ]);
+  it('at most five lines', () => {
+    const list = Array.from({ length: 7 }, (_, i) => ins({ type: 'category-rare', amount: 900_000 - i * 1_000, category: 'другое', categoryId: 'other' }));
+    expect(insightsView(of(list), FMT, 'personal')!.lines).toHaveLength(5);
   });
 
-  it('a running month: only what is already over a whole usual month, no income, the note says so', () => {
-    const running = { ...USUAL, running: true, income: null };
-    const v = insightsView(
-      view(
-        [
-          cat('продукты', 'groceries', 200_000), // under the usual month: nothing to say yet
-          cat('доставка', 'delivery', 223_000), // already 1 230 ₴ over a whole usual month
-        ],
-        running,
-      ),
-      FMT,
-    )!;
-    expect(v.lines).toEqual([{ text: `Доставка — уже на ${uah(123_000)} больше, чем обычно за весь месяц`, tone: 'up' }]);
+  it('a running month: the share against a whole usual month, the note says so', () => {
+    const v = insightsView(of([ins({ type: 'category-over-month', amount: 123_000, percent: 41, category: 'доставка', categoryId: 'delivery' })], true), FMT, 'business')!;
+    expect(v.lines[0]!.text).toBe(`Доставка — уже на ${uah(123_000)} (41%) больше, чем обычно за весь месяц`);
+    expect(v.lines[0]!.to).toEqual({ name: 'category', params: { id: 'delivery' }, query: { scope: 'business' } });
     expect(v.note).toBe('Сравнение с медианой целых месяцев за 5 месяцев: месяц ещё идёт');
   });
 
-  it('income alone when only it is off; nothing at all — null; no usual — null', () => {
-    const calm = USUAL.categories.map((c) => cat(c.category, c.categoryId, c.net));
-    expect(insightsView(view(calm), FMT)!.lines).toEqual([{ text: `Доходы на ${uah(30_000)} (30%) ниже обычного`, tone: 'neutral' }]);
-    expect(insightsView(view(calm, { ...USUAL, income: { now: 100_000, usual: 100_000 } }), FMT)).toBeNull();
-    expect(insightsView(view(calm, null), FMT)).toBeNull();
+  it('nothing found or no usual: null', () => {
+    expect(insightsView(of([]), FMT, 'personal')).toBeNull();
+    expect(insightsView(view(null), FMT, 'personal')).toBeNull();
   });
 });

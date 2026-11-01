@@ -108,3 +108,14 @@ which very likely makes the Async Clipboard API reject even from a same-origin c
 against a running app. `copy()` falls back to `document.execCommand('copy')` on a temporary, off-screen
 `<textarea>` for that case (and for any browser without `navigator.clipboard` at all); "Copied" is only shown
 once one of the two has actually succeeded.
+
+`VCarousel` (2026-11-01) is ours: muzakit has no carousel. Slides side by side in a native scroller without a scroll
+bar (swipe, Shift + wheel, a mouse drag through `useDragScroll` of `shared/lib`), snapping to whole slides, one slot per
+slide (`slides: { id, label }`, slot `#<id>`); a dot per slide under it only with two or more (arrows move between the
+dots); `v-model` — the slide in view, followed by an `IntersectionObserver`; slides out of view are `inert`; no smooth
+scrolling under `prefers-reduced-motion`. Built for home's «What's unusual» / «Recent operations» tile.
+
+`VMenu` and `VContextMenu` (2026-11-01) are ours too, on reka-ui's `DropdownMenu` and `ContextMenu`: muzakit has no
+menu. One `MenuItem` list (`id`, `text`, optional `icon`) and one look (`vmenu.scss`): `VMenu` opens it from an icon
+button (`label` → `aria-label`), `VContextMenu` on a right click over its slot (one element, rendered as is; no items —
+the slot alone). Both emit `select(id)`; the keys (arrows, Enter, Esc) and focus return are reka-ui's.

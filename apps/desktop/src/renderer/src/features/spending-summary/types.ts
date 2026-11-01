@@ -183,12 +183,20 @@ export interface UseSummaryViewReturn {
 export interface InsightLine {
   text: string;
   tone: 'up' | 'down' | 'neutral';
+  /** The category screen it opens; null — income. */
+  to: RouteLocationRaw | null;
 }
 
 export interface InsightsView {
   lines: InsightLine[];
   /** What «usual» is here: the median of how many months, to which day. */
   note: string;
+}
+
+export interface UseSpendingInsightsReturn {
+  /** null — nothing unusual, no usual yet, or no answer yet. */
+  insights: ComputedRef<InsightsView | null>;
+  loaded: ComputedRef<boolean>;
 }
 
 export interface UseSpendingViewReturn {
@@ -202,7 +210,5 @@ export interface UseSpendingViewReturn {
   summary: ComputedRef<SummaryView | null>;
   categories: ComputedRef<CategoriesView>;
   people: ComputedRef<PersonRowView[]>;
-  /** The view's own figures only: none while a person is picked inside the block. */
-  insights: ComputedRef<InsightsView | null>;
   onPick: (id: number | null) => void;
 }

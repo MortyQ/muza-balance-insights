@@ -6,10 +6,10 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
-import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, DetailPeriod, PeopleView } from '@contract/api.ts';
+import type { CategoryLineView, CategoryOverview, CategoryOverviewQuery, DetailPeriod, OperationCategoryQuery, PeopleView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import { besidePointer, daysChartOption, monthsChartOption, partBars, SOFT_BAR, weekdaysChartOption } from '@/entities/operations';
-import { banksView, lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, summaryView, whenView } from '@/features/category-detail/utils.ts';
+import { banksView, choiceDoneText, lineActions, lineRows, listTotal, merchantsView, monthsView, noneText, peopleView, pickerOptions, summaryView, whenView } from '@/features/category-detail/utils.ts';
 import { categoryLink, categoryRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
 
@@ -21,7 +21,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const line = (o: Partial<CategoryLineView>): CategoryLineView => ({
   key: 'k', date: '2026-09-05', time: '23:30', weekday: 6, merchant: 'Vigadane Taxi', comment: null, participantId: 1,
   account: { provider: 'monobank', kind: 'card', type: 'black', currency: 980, tag: null }, uah: -20_000, currency: 980, amount: -20_000, operation: null,
-  commission: false, hold: false, pending: false, refund: false, refunded: false, cashback: 0, ...o,
+  commission: false, hold: false, pending: false, refund: false, refunded: false, cashback: 0, choice: null, ...o,
 });
 
 const LINES: CategoryLineView[] = [
@@ -235,6 +235,37 @@ const DAY: CategoryOverview = {
   lines: LINES.slice(0, 1),
 };
 
+describe('the user\'s own category of a line', () => {
+  it('a debit offers «Change category…», and the undo of the choice it has; a line that takes none offers nothing', () => {
+    expect(lineActions(line({ choice: 'auto' })).map((a) => a.id)).toEqual(['change']);
+    expect(lineActions(line({ choice: 'operation' })).map((a) => a.id)).toEqual(['change', 'reset']);
+    expect(lineActions(line({ choice: 'payee' })).map((a) => a.id)).toEqual(['change', 'reset-payee']);
+    expect(lineActions(line({ choice: null }))).toEqual([]);
+    expect(lineActions(line({ choice: 'operation' }))[1]?.text).toBe('Вернуть автоматическую категорию');
+  });
+
+  it('a chosen line says so among its marks; the rows carry the actions', () => {
+    const { rows } = lineRows([line({ key: 'x', choice: 'operation' }), line({ key: 'y', choice: 'payee' })], { merchant: null, query: '', sort: 'date' }, [], FMT);
+    expect(rows.map((r) => r.marks.map((m) => m.text))).toEqual([['твой выбор'], ['правило получателя']]);
+    expect(rows[0]?.actions?.length).toBe(2);
+  });
+
+  it('the picker lists the choosable categories by name, the current one marked, filtered by the search', () => {
+    const all = pickerOptions('', 'transport');
+    expect(all.some((o) => o.id === 'income' || o.id === 'ownTransfers' || o.id === 'fees' || o.id === 'family')).toBe(false);
+    expect(all.find((o) => o.id === 'investments')).toMatchObject({ name: 'Инвестиции', current: false, icon: 'lucide:trending-up' });
+    expect(all.find((o) => o.id === 'transport')?.current).toBe(true);
+    expect(pickerOptions('  АРЕН ', 'transport').map((o) => o.id)).toEqual(['rent']);
+    expect(pickerOptions('нет такой', 'transport')).toEqual([]);
+  });
+
+  it('what a choice did', () => {
+    expect(choiceDoneText(0)).toBe('Категория уже такая');
+    expect(choiceDoneText(1)).toBe('Категория изменена в 1 операции');
+    expect(choiceDoneText(3)).toBe('Категория изменена в 3 операциях');
+  });
+});
+
 describe('category screen of a week or a day', () => {
   it('a week: its dates in the header, the change against last week, the figures without the 12 months', () => {
     const s = summaryView(WEEK, '', 'Личное', FMT);
@@ -297,7 +328,14 @@ describe('the category route', () => {
 
 let current: CategoryOverview = VIEW;
 const getCategoryOverview = vi.fn(async (_q: CategoryOverviewQuery) => current);
-vi.mock('@/shared/api', () => ({ balanceApi: { getCategoryOverview: (...a: unknown[]) => getCategoryOverview(...(a as [CategoryOverviewQuery])) } }));
+const setOperationCategory = vi.fn(async (_q: OperationCategoryQuery) => ({ changed: 2 }));
+vi.mock('@/shared/api', () => ({
+  balanceApi: {
+    getCategoryOverview: (...a: unknown[]) => getCategoryOverview(...(a as [CategoryOverviewQuery])),
+    setOperationCategory: (...a: unknown[]) => setOperationCategory(...(a as [OperationCategoryQuery])),
+    getSyncStatus: async () => ({ hasData: true }),
+  },
+}));
 
 const PEOPLE_VIEW: PeopleView = {
   people: [
@@ -349,6 +387,32 @@ describe('category screen mounted', () => {
     await w.find('button[aria-label^="Снять фильтр"]').trigger('click');
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
     expect(w.text()).toContain(`Итого по списку: ${uah(141_000)}`);
+  });
+
+  it('a debit\'s «⋮» opens its menu; «Change category…» opens the picker, which saves for the payee and says what changed', async () => {
+    current = { ...VIEW, lines: VIEW.lines.map((l) => ({ ...l, choice: l.key === 'a' ? 'auto' : null })) };
+    setOperationCategory.mockClear();
+    const w = await mountScreen();
+    const menus = w.findAll('button[aria-label^="Действия:"]');
+    expect(menus).toHaveLength(1);
+    await menus[0]!.trigger('keydown', { key: 'Enter' });
+    await flushPromises();
+    const change = [...document.body.querySelectorAll('[role="menuitem"]')].find((e) => e.textContent?.includes('Изменить категорию…'));
+    expect(change).toBeDefined();
+    change!.dispatchEvent(new Event('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 0));
+    await flushPromises();
+
+    const radios = [...document.body.querySelectorAll('[role="radio"]')] as HTMLElement[];
+    expect(radios.length).toBeGreaterThan(5);
+    radios.find((r) => r.textContent?.includes('Инвестиции'))!.click();
+    (document.body.querySelector('[role="switch"]') as HTMLInputElement).click();
+    await flushPromises();
+    [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Сохранить')!.click();
+    await flushPromises();
+    expect(setOperationCategory).toHaveBeenCalledWith({ key: 'a', category: 'investments', payee: true });
+    expect(w.text()).toContain('Категория изменена в 2 операциях');
+    w.unmount();
   });
 
   it('the first load shows a skeleton in place of the cards; the answer replaces it', async () => {

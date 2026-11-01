@@ -83,11 +83,6 @@ export interface UseRowScrollReturn {
   toStart: (instant?: boolean) => Promise<void>;
 }
 
-export interface UseDragScrollReturn {
-  /** A mouse drag is moving the row: snapping is off until it ends. */
-  dragging: Ref<boolean>;
-}
-
 export interface UseCardStackReturn {
   open: Ref<boolean>;
   /** A new month or person: the cards change in place, without the stagger. */

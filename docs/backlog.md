@@ -243,3 +243,29 @@
   day, the tooltip's bank parts add up to «Spent», the gear hides with one bank on and the choice survives a restart.
 - **No grey charts**: leave «General» for another screen while auto-sync runs, come back — «Month pace» keeps its
   colours and its tooltip has text.
+
+## Check on a live system: manual categories (`openspec/changes/manual-categories`)
+
+- The row menu on a real category screen: a right click and «⋮» open the same menu, the picker takes focus and gives
+  it back, the screen and home reload with the line moved.
+- A choice survives a real re-upload of the same statement and of a longer one, and an auto-sync of a Monobank card.
+- A bank that changes an operation's time or amount between two exports gives it a new id, so its one-operation
+  choice would not follow (the payee rule would). Not seen so far; watch for it.
+
+## Check on a live system: insight detectors (`openspec/changes/core-insight-detectors`)
+
+- Five lines in «What's unusual»: the «Now» row grows with the tile, and «Today» / «This week» beside it still read
+  well at the medium and the wide width.
+- A category with no spending in the usual months shows as «rare» once it passes 500 ₴; watch whether it is noise.
+- Clicking a line opens the category screen for the shown month and the block's scope.
+
+## Check on a live system: home without holes (`openspec/changes/desktop-home-gaps`)
+
+- The highlights tile: a trackpad swipe and a mouse drag between «What's unusual» and «Recent operations», the dots,
+  no stuck half slide; under reduced motion no smooth scroll.
+- The «Today» / «This week» row keeps one height with the carousel at 1, 2 and 12 columns; six rows of «Recent
+  operations» do not overflow the tile.
+- A past month: no «Recent operations», «What's unusual» across the row (or no tile), and back to the current month the
+  carousel returns.
+- Opening home asks main for the month's spending once (the block and the unusual slide share it).
+- A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.

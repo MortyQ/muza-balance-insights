@@ -1,6 +1,12 @@
-import { onWatcherCleanup, ref, toValue, watch, type MaybeRefOrGetter } from 'vue';
-import { DRAG_THRESHOLD } from '../constants.ts';
-import type { UseDragScrollReturn } from '../types.ts';
+import { onWatcherCleanup, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
+
+/** Mouse movement before a press on the row becomes a drag (px). */
+export const DRAG_THRESHOLD = 5;
+
+export interface UseDragScrollReturn {
+  /** A mouse drag is moving the row: snapping is off until it ends. */
+  dragging: Ref<boolean>;
+}
 
 /**
  * Mouse drag scrolls the row while `enabled`; touch and pen are left to native scrolling. A drag never ends in a click,

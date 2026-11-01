@@ -1,0 +1,91 @@
+/* Ours, not copied — VCarousel (see its header). */
+
+.v-carousel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--ui-space-xs);
+  min-height: 0;
+}
+
+.v-carousel__track {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &--dragging {
+    cursor: grabbing;
+    scroll-snap-type: none;
+    user-select: none;
+  }
+
+  &--single {
+    overflow-x: hidden;
+  }
+}
+
+.v-carousel__slide {
+  display: flex;
+  flex: 0 0 100%;
+  flex-direction: column;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.v-carousel__dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ui-space-2xs);
+  height: 1rem;
+}
+
+.v-carousel__dot {
+  display: grid;
+  place-items: center;
+  height: 1rem;
+  padding: 0 0.25rem;
+  border: 0;
+  border-radius: var(--ui-radius-full);
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ui-ring);
+  }
+
+  &[aria-current="true"] .v-carousel__dot-mark {
+    width: 1rem;
+    background: var(--ui-foreground-muted);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover .v-carousel__dot-mark {
+      background: var(--ui-foreground-subtle);
+    }
+  }
+}
+
+.v-carousel__dot-mark {
+  display: block;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--ui-radius-full);
+  background: var(--ui-border-strong);
+  transition: width 300ms ease, background-color 300ms ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}

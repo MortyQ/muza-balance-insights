@@ -1,4 +1,5 @@
 import type { CategoryLineView, CategoryOverview, DetailPeriod } from '@contract/api.ts';
+import { CHOOSABLE_CATEGORY_IDS, type CategoryId } from '@contract/categories.ts';
 import { accountName, bankOf } from '@/entities/bank';
 import { CATEGORY_ICON, categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
@@ -7,7 +8,8 @@ import {
   type LineRowView, type MarkView, type MonthsView, type PartView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView, type WhenView,
 } from '@/entities/operations';
 import { formatMoney, monthName, t } from '@/shared/lib';
-import { PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
+import type { MenuItem } from '@/shared/ui';
+import { CHOICE_ACTION, PERIOD_TEXT, TOP_MERCHANTS } from './constants.ts';
 
 /** Spending of a line, positive (a refund is negative); null — no rate. */
 const spent = (l: Readonly<CategoryLineView>) => (l.uah === null ? null : -l.uah);
@@ -131,7 +133,31 @@ function marksOf(l: Readonly<CategoryLineView>, fmt: MoneyFormat): MarkView[] {
   if (l.operation) marks.push({ text: t('entities.operations.mark.foreign'), tone: 'accent' });
   if (l.cashback > 0) marks.push({ text: t('category.list.mark.cashback', { amount: fmt.money(l.cashback) }), tone: 'good' });
   if (l.uah === null) marks.push({ text: t('entities.operations.mark.noRate'), tone: 'warning' });
+  if (l.choice === 'operation') marks.push({ text: t('category.choice.markOperation'), tone: 'accent' });
+  if (l.choice === 'payee') marks.push({ text: t('category.choice.markPayee'), tone: 'accent' });
   return marks;
+}
+
+/** What a line's menu offers: change its category, and undo the choice it has; nothing for a line that takes none. */
+export function lineActions(l: Readonly<CategoryLineView>): MenuItem[] {
+  if (l.choice === null) return [];
+  const actions: MenuItem[] = [{ id: CHOICE_ACTION.change, text: t('category.choice.change'), icon: 'lucide:tag' }];
+  if (l.choice === 'operation') actions.push({ id: CHOICE_ACTION.reset, text: t('category.choice.reset'), icon: 'lucide:undo-2' });
+  if (l.choice === 'payee') actions.push({ id: CHOICE_ACTION.resetPayee, text: t('category.choice.resetPayee'), icon: 'lucide:undo-2' });
+  return actions;
+}
+
+/** The picker's list: every category a debit may take, by name in the interface language, filtered by the search. */
+export function pickerOptions(query: string, current: CategoryId): Array<{ id: CategoryId; name: string; icon: string; current: boolean }> {
+  const needle = query.trim().toLocaleLowerCase();
+  return CHOOSABLE_CATEGORY_IDS.map((id) => ({ id, name: categoryName({ category: '', categoryId: id }), icon: CATEGORY_ICON[id], current: id === current }))
+    .filter((o) => needle === '' || o.name.toLocaleLowerCase().includes(needle))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** What a choice answered, for the notice. */
+export function choiceDoneText(changed: number): string {
+  return changed === 0 ? t('category.choice.unchanged') : t('category.choice.done', changed);
 }
 
 /** The list: the merchant filter, the search and the order applied (main sends the lines newest first). */
@@ -163,6 +189,7 @@ export function lineRows(
       amount: `${l.refund ? '+' : '−'}${amountOf(l)}`,
       incoming: l.refund,
       original: l.operation ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
+      actions: lineActions(l),
     };
   });
   return { rows, shown };

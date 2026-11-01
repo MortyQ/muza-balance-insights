@@ -92,6 +92,7 @@ export const ARG_SCHEMAS = {
   cancelImport: z.tuple([]),
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), providers: providers.optional() })]),
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
+  getRecentOperations: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
   getNowOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getCategoryOverview: z.tuple([
     z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() }),
@@ -103,6 +104,9 @@ export const ARG_SCHEMAS = {
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),
   setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
+  setOperationCategory: z.tuple([
+    z.strictObject({ key: z.string().min(1).max(200), category: z.enum(CATEGORY_IDS).nullable(), payee: z.boolean() }),
+  ]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z

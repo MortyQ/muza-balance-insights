@@ -274,12 +274,18 @@ export type BalanceApi = {
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
+  getRecentOperations(q: SpendingOverviewQuery): Promise<RecentOperations>;
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
+  /**
+   * The user's category of a debit (`key` — a CategoryLineView's key), for it alone or for every debit of its payee;
+   * `category` null returns the automatic one. The caller reloads. A line that takes no choice → error.
+   */
+  setOperationCategory(q: OperationCategoryQuery): Promise<OperationCategoryResult>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -342,7 +348,8 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens), and RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
+// and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), and
+// RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
 // description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 // providers: a bank view, those banks' accounts only (non-empty, each once; spec core-bank-view); absent — every bank.
@@ -417,7 +424,50 @@ export type SpendingOverview = {
   familyTotal: number | null;
   /** «Usual»: the same span of the months before (data/usual.ts); null — fewer than 3 covered months. */
   usual: SpendingUsual | null;
+  /** «What's unusual»: core's detectors over this month against `usual`, ranked; null when `usual` is. */
+  insights: SpendingInsights | null;
 };
+
+/** One detector result (core `read/insights.ts`); the renderer words it. Hryvnia kopecks. */
+export type SpendingInsight = {
+  type: 'category-more' | 'category-less' | 'category-rare' | 'category-over-month' | 'income-more' | 'income-less';
+  direction: 'up' | 'down';
+  /** |now − usual|. */
+  amount: number;
+  /** Of the usual, whole per cent; null for category-rare. */
+  percent: number | null;
+  /** The stored category word and its id; both null for income. */
+  category: string | null;
+  categoryId: CategoryId | null;
+  now: number;
+  usual: number;
+};
+
+export type SpendingInsights = { months: number; running: boolean; insights: SpendingInsight[] };
+
+/** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */
+export type RecentLineView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD and HH:mm. */
+  date: string;
+  time: string;
+  /** The bank's description, cut as on the category screen ('' — none). */
+  merchant: string;
+  category: string;
+  categoryId: CategoryId | null;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+  refund: boolean;
+};
+
+/** The newest RECENT_LINES operations of the month, for the same person, banks and scope as the spending block. */
+export type RecentOperations = { month: string; lines: RecentLineView[] };
 
 /**
  * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same
@@ -480,6 +530,8 @@ export type CategoryLineView = {
   refunded: boolean;
   /** Cashback in hryvnia kopecks (0 — none or no rate). */
   cashback: number;
+  /** Where its category comes from; null — it takes no choice (a fee line, a refund, a transfer between own accounts). */
+  choice: CategoryChoice | null;
 };
 
 /**
@@ -539,6 +591,18 @@ export type RecurringOverviewQuery = { participantId?: number; providers?: Provi
 
 /** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
 export type RecurringMark = 'mandatory' | 'hidden';
+
+/** `key` — a CategoryLineView's key; `payee` — for every debit of its payee. */
+export type OperationCategoryQuery = { key: string; category: CategoryId | null; payee: boolean };
+
+/** How many operations changed category. */
+export type OperationCategoryResult = { changed: number };
+
+/**
+ * Where a debit's category comes from: the user's choice for it (`operation`), for its payee (`payee`), or the
+ * automatic rules (`auto`).
+ */
+export type CategoryChoice = 'operation' | 'payee' | 'auto';
 
 /** `key` — a RecurringPaymentView's key; `mark` null clears it. */
 export type RecurringMarkQuery = { key: string; mark: RecurringMark | null };

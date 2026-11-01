@@ -1,5 +1,6 @@
-// Transaction categories: manual overrides by counter_name, the provider's hint from the shape of the operation
-// (transfers, installments, taxes — providers/<id>/rules.ts), then the MCC table (ISO 18245, not bank-specific).
+// Transaction categories: the user's own choices (one operation, then its payee — debits only), manual overrides by
+// counter_name, the provider's hint from the shape of the operation (transfers, installments, taxes —
+// providers/<id>/rules.ts), then the MCC table (ISO 18245, not bank-specific).
 // Recomputed after the internal-transfer pass (category depends on is_internal_transfer).
 import type { Db, Stmt } from '../storage/db.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
@@ -32,6 +33,12 @@ export const CATEGORY = {
   utilities: 'коммунальные',
   marketplaces: 'маркетплейсы',
   charity: 'благотворительность',
+  // Chosen by the user only (manual_categories, payee_categories): no MCC maps to them yet.
+  rent: 'аренда жилья',
+  car: 'авто',
+  kids: 'дети',
+  subscriptions: 'подписки',
+  investments: 'инвестиции',
   fees: 'комиссии банка', // never assigned to a row: the commission part of a row, split in aggregates
   transferFees: 'комиссии за переводы', // never assigned to a row: a cross-bank transfer's implicit fee (transfer_fee)
   p2p: 'переводы людям',
@@ -115,7 +122,26 @@ const MCC_CATEGORY: ReadonlyMap<number, string> = new Map([
 
 export type CategoryOverride = { pattern: string; matchType: 'exact' | 'contains'; category: string };
 
+/** The user's own choices: one operation by its stored id, and every debit of a payee by `payeeKeyOf`. */
+export type CategoryChoices = { byId: ReadonlyMap<string, string>; byPayee: ReadonlyMap<string, string> };
+
+export const NO_CHOICES: CategoryChoices = { byId: new Map(), byPayee: new Map() };
+
+export type PayeeField = 'counter_name' | 'description';
+
+/** A payee: its counterparty name, else its description; trimmed, lower-cased. null = neither. */
+export function payeeOf(counterName: string | null, description: string): { field: PayeeField; key: string } | null {
+  const name = counterName?.trim().toLowerCase();
+  if (name) return { field: 'counter_name', key: name };
+  const text = description.trim().toLowerCase();
+  return text ? { field: 'description', key: text } : null;
+}
+
+export const payeeKeyOf = (field: PayeeField, key: string): string => `${field}\u0000${key}`;
+
 export type CategorizeInput = {
+  /** The stored id; absent = no choice by id applies. */
+  id?: string;
   description: string;
   /** null = the bank sends none. */
   mcc: number | null;
@@ -130,10 +156,23 @@ export type CategorizeInput = {
   provider: ProviderId;
 };
 
-export function categorize(tx: CategorizeInput, overrides: readonly CategoryOverride[] = []): string {
+export function categorize(
+  tx: CategorizeInput,
+  overrides: readonly CategoryOverride[] = [],
+  choices: CategoryChoices = NO_CHOICES,
+): string {
   if (tx.isInternalTransfer) return CATEGORY.ownTransfers;
   // Before overrides, like internal: what it is structurally, not whom it went to.
   if (tx.isFamilyTransfer) return tx.amount < 0 ? CATEGORY.family : CATEGORY.income;
+
+  // The user's choices name a spending category, so they apply to debits only (a payee's incoming money stays income).
+  if (tx.amount < 0) {
+    const own = tx.id === undefined ? undefined : choices.byId.get(tx.id);
+    if (own) return own;
+    const payee = payeeOf(tx.counterName, tx.description);
+    const byPayee = payee && choices.byPayee.get(payeeKeyOf(payee.field, payee.key));
+    if (byPayee) return byPayee;
+  }
 
   const override = matchOverride(tx.counterName, overrides);
   if (override) return override.category;
@@ -171,13 +210,24 @@ export async function loadOverrides(db: Db): Promise<CategoryOverride[]> {
   }));
 }
 
+export async function loadChoices(db: Db): Promise<CategoryChoices> {
+  const [ids, payees] = await Promise.all([
+    db.execute('SELECT transaction_id, category FROM manual_categories'),
+    db.execute('SELECT field, key, category FROM payee_categories'),
+  ]);
+  return {
+    byId: new Map(ids.rows.map((r) => [String(r.transaction_id), String(r.category)])),
+    byPayee: new Map(payees.rows.map((r) => [payeeKeyOf(r.field === 'description' ? 'description' : 'counter_name', String(r.key)), String(r.category)])),
+  };
+}
+
 /**
  * Recomputes category for rows in the range (all rows if none). Writes only rows that change.
  * A refund paired with its purchase (refund_pair_id, the credit side) takes the purchase's category,
  * so it lands in that category's refunds instead of «поступления».
  */
 export async function recategorize(db: Db, range?: TimeRange | null): Promise<number> {
-  const [overrides, providers] = await Promise.all([loadOverrides(db), accountProviders(db)]);
+  const [overrides, choices, providers] = await Promise.all([loadOverrides(db), loadChoices(db), accountProviders(db)]);
   const cols = 'id, account_id, description, mcc, amount, bank_category, counter_name, is_internal_transfer, transfer_rule, category, refund_pair_id';
   const rs = range
     ? await db.execute({ sql: `SELECT ${cols} FROM transactions WHERE time BETWEEN ? AND ?`, args: [range.from, range.to] })
@@ -189,6 +239,7 @@ export async function recategorize(db: Db, range?: TimeRange | null): Promise<nu
       String(r.id),
       categorize(
         {
+          id: String(r.id),
           description: String(r.description ?? ''),
           mcc: numOrNull(r.mcc),
           amount: Number(r.amount),
@@ -199,6 +250,7 @@ export async function recategorize(db: Db, range?: TimeRange | null): Promise<nu
           provider: providerOf(providers, String(r.account_id)),
         },
         overrides,
+        choices,
       ),
     );
   }

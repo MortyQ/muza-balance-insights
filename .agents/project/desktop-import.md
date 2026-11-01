@@ -132,9 +132,11 @@
   `DataService.categoryOverview`, helpers in `data/category.ts`; `period` — `DetailPeriod`: `{ kind: 'day', date }`,
   `{ kind: 'week', from }` (a Monday) or `{ kind: 'month', month }`; zod checks the shape, `data/period.ts` the days
   (`periodBounds`: a Monday, not after today) and what it is compared with (`periodCompare`: last month; last week cut
-  to the weekdays the data reaches; a day — nothing); the 12 months only for a month) and `getIncomeOverview({ period, participantId? })` (the
-  income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `data/category.ts`) are the **only** data channels that
-  carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
+  to the weekdays the data reaches; a day — nothing); the 12 months only for a month), `getIncomeOverview({ period, participantId? })` (the
+  income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `data/category.ts`) and `getRecentOperations({ month, scope, participantId?, providers? })` (home's
+  «Recent operations», since 01.11 with the user's ok; `DataService.recentOperations`: core `latestLines`, the month's
+  newest six operations «Spending» counts, the description cut the same way, no comment) are the **only** data
+  channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
   block's (same fold), its lines come from core `categoryLines`; the income figure is the balances' «In» (all scopes,
@@ -147,6 +149,9 @@
   payment's id, `mark` `mandatory | hidden | null`) marks its payee (core `setRecurringMark`); unknown key — error; `next` — a calendar month after the last (`nextMonthDay`). The
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
+  `setOperationCategory({ key, category, payee })` (`key` — a category line's key, `category` a choosable `CategoryId`
+  or null to undo, `payee` — for every debit of its payee) → `{ changed }` (core `commands/categories.ts`); a line that
+  takes no choice — error. The category lines carry `choice` (core `categorySources`).
   `getAllowanceOverview({ participantId? })` («Available per day»; `DataService.allowanceOverview`, pure calculation in
   `data/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over

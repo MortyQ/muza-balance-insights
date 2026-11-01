@@ -937,6 +937,35 @@ describe('DataService.categoryOverview (the category screen)', () => {
   });
 });
 
+describe('DataService.setOperationCategory (the user\'s own category)', () => {
+  const GROCERIES = 'продукты';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-03-02', -10_000, GROCERIES, { description: 'Vigadanyi Market' });
+    await tx('uah', '2026-03-03', -4_000, GROCERIES, { description: 'Vigadanyi Market' });
+    await tx('uah', '2026-03-04', 1_000, GROCERIES, { description: 'Vigadanyi Market' }); // a refund
+  });
+  const march = { kind: 'month', month: '2026-03' } as const;
+  const lines = async (category: 'groceries' | 'rent' | 'investments') =>
+    (await svc.categoryOverview({ period: march, category, scope: 'personal' })).lines.map((l) => [l.amount, l.choice]);
+
+  it('one debit, then every debit of its payee; an own choice wins, a credit takes none', async () => {
+    expect(await lines('groceries')).toEqual([[1_000, null], [-4_000, 'auto'], [-10_000, 'auto']]);
+    const keyOf = async (amount: number) =>
+      (await svc.categoryOverview({ period: march, category: 'groceries', scope: 'personal' })).lines.find((l) => l.amount === amount)!.key;
+
+    expect(await svc.setOperationCategory({ key: await keyOf(-10_000), category: 'rent', payee: false })).toEqual({ changed: 1 });
+    expect(await lines('rent')).toEqual([[-10_000, 'operation']]);
+    expect(await svc.setOperationCategory({ key: await keyOf(-4_000), category: 'investments', payee: true })).toEqual({ changed: 1 });
+    expect(await lines('investments')).toEqual([[-4_000, 'payee']]);
+    expect(await lines('rent')).toEqual([[-10_000, 'operation']]);
+    expect(await lines('groceries')).toEqual([[1_000, null]]);
+
+    await expect(svc.setOperationCategory({ key: await keyOf(1_000), category: 'rent', payee: false })).rejects.toThrow();
+  });
+});
+
 describe('DataService.incomeOverview (the income screen)', () => {
   const IN = 'поступления';
   beforeEach(async () => {
@@ -1297,6 +1326,33 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
   });
 });
 
+describe('DataService.recentOperations', () => {
+  it("the month's newest operations «Spending» counts, refunds included, with the description; never a name, card or IBAN", async () => {
+    await account('uah', 'black', 980, 0);
+    await tx('uah', '2026-03-02', -12_000, 'продукты');
+    await tx('uah', '2026-03-03', 3_000, 'продукты'); // a refund: listed, but older than the six below
+    await tx('uah', '2026-03-04', 100_000, 'поступления', { mcc: 4829 }); // income: not listed
+    await tx('uah', '2026-03-05', -7_000, 'кафе и рестораны', { mcc: 5812 });
+    await tx('uah', '2026-02-27', -1_000, 'продукты'); // the month before
+    for (const d of ['06', '07', '08', '09', '10']) await tx('uah', `2026-03-${d}`, -100 * Number(d), 'продукты');
+    const v = await svc.recentOperations({ month: '2026-03', scope: 'personal' });
+    expect(v.month).toBe('2026-03');
+    expect(v.lines.map((l) => [l.date, l.categoryId, l.amount, l.refund])).toEqual([
+      ['2026-03-10', 'groceries', -1_000, false],
+      ['2026-03-09', 'groceries', -900, false],
+      ['2026-03-08', 'groceries', -800, false],
+      ['2026-03-07', 'groceries', -700, false],
+      ['2026-03-06', 'groceries', -600, false],
+      ['2026-03-05', 'cafes', -7_000, false],
+    ]);
+    expect(v.lines[0]).toMatchObject({ time: '01:00', merchant: CANARIES[1], uah: -1_000, currency: 980, pending: false, category: 'продукты' });
+    const earlier = await svc.recentOperations({ month: '2026-02', scope: 'personal' });
+    expect(earlier.lines.map((l) => l.amount)).toEqual([-1_000]);
+    const json = JSON.stringify(v);
+    for (const c of [CANARIES[0]!, CANARIES[2]!, CANARIES[3]!, CANARIES[4]!]) expect(json).not.toContain(c);
+  });
+});
+
 describe('DataService.spendingOverview: usual', () => {
   const MONTHS = ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02'];
   async function covered(from: string) {
@@ -1343,7 +1399,27 @@ describe('DataService.spendingOverview: usual', () => {
   it('fewer than 3 covered months before: none', async () => {
     await covered('2026-01-01');
     await history();
-    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).usual).toBeNull();
+    const v = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.usual).toBeNull();
+    expect(v.insights).toBeNull();
+  });
+
+  it("insights: core's detectors over the month against the usual, with the category id", async () => {
+    await covered('2025-09-01');
+    await history();
+    await tx('uah', '2026-02-12', -200_000, 'продукты');
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.insights).toEqual({
+      months: 5,
+      running: false,
+      insights: [{
+        // A usual under 1 000 ₴ is «rare»: growth only, no share.
+        type: 'category-rare', direction: 'up', amount: 200_000, percent: null,
+        category: 'продукты', categoryId: 'groceries', now: 260_000, usual: 60_000,
+      }],
+    });
+    // The running month: groceries are under a whole usual month, nothing to say.
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).insights).toEqual({ months: 6, running: true, insights: [] });
   });
 });
 

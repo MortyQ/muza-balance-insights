@@ -7,6 +7,8 @@ export const SORTS = ['date', 'amount'] as const;
 
 /** The list's columns: when, the text, who, marks, amount (header and rows alike). */
 export const OPERATION_COLS = 'grid grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem] gap-3';
+/** The same columns plus the rows' menu button. */
+export const OPERATION_COLS_ACTIONS = 'grid grid-cols-[7.5rem_minmax(0,1fr)_10rem_11rem_8rem_2rem] gap-3';
 
 /**
  * What a detail screen shows for each period: one day has no 12 months, no «per day», no weekdays and no days of the

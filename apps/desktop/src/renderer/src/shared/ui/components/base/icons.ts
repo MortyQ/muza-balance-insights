@@ -97,6 +97,14 @@ import LucideZap from "~icons/lucide/zap";
  * To add an icon: import it here and add its "lucide:<name>" key (the canonical Lucide name, not an alias). tests/ui.test.ts fails if
  * a component uses a name that is missing from this map.
  */
+import LucideHouse from "~icons/lucide/house";
+import LucideCar from "~icons/lucide/car";
+import LucideBaby from "~icons/lucide/baby";
+import LucideRepeat2 from "~icons/lucide/repeat-2";
+import LucideTrendingUp from "~icons/lucide/trending-up";
+import LucideEllipsisVertical from "~icons/lucide/ellipsis-vertical";
+import LucideUndo2 from "~icons/lucide/undo-2";
+import LucideTag from "~icons/lucide/tag";
 export const ICONS: Record<string, Component> = {
   "lucide:arrow-down-right": LucideArrowDownRight,
   "lucide:arrow-left-right": LucideArrowLeftRight,
@@ -186,4 +194,12 @@ export const ICONS: Record<string, Component> = {
   "lucide:wallet": LucideWallet,
   "lucide:x": LucideX,
   "lucide:zap": LucideZap,
+  "lucide:house": LucideHouse,
+  "lucide:car": LucideCar,
+  "lucide:baby": LucideBaby,
+  "lucide:repeat-2": LucideRepeat2,
+  "lucide:trending-up": LucideTrendingUp,
+  "lucide:ellipsis-vertical": LucideEllipsisVertical,
+  "lucide:undo-2": LucideUndo2,
+  "lucide:tag": LucideTag,
 };

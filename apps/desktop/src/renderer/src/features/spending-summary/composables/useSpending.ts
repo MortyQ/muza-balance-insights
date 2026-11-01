@@ -1,10 +1,10 @@
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import type { Scope } from '@contract/api.ts';
 import { useMoneyFormat } from '@/entities/currency-display';
 import { useImportProgressStore } from '@/entities/import-progress';
 import { useMonthStore } from '@/entities/period';
 import { colorVar, useParticipantStore } from '@/entities/participant';
+import { useScopeStore } from '@/entities/scope';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { useAsyncData } from '@/shared/lib';
 import { useSpendingRequest } from '../api/useSpendingRequest.ts';
@@ -21,7 +21,7 @@ export function useSpending(): UseSpendingReturn {
   const importProgress = useImportProgressStore();
   const participant = useParticipantStore();
   const { month, thisMonth } = storeToRefs(useMonthStore());
-  const scope = ref<Scope>('personal');
+  const { scope } = storeToRefs(useScopeStore());
   const pick = ref<number | null>(null);
 
   const participantId = () => participant.selectedId;

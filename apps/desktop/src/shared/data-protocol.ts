@@ -32,8 +32,11 @@ import type {
   PersonView,
   RatesView,
   RecurringMarkQuery,
+  OperationCategoryQuery,
+  OperationCategoryResult,
   RecurringOverview,
   RecurringOverviewQuery,
+  RecentOperations,
   SpendingOverview,
   SpendingOverviewQuery,
 } from './api.ts';
@@ -48,6 +51,7 @@ export type StatementWriteResult = { written: true; added: number } | { written:
 export type DataMethods = {
   monthOverview: { args: [MonthOverviewQuery]; result: MonthOverview };
   spendingOverview: { args: [SpendingOverviewQuery]; result: SpendingOverview };
+  recentOperations: { args: [SpendingOverviewQuery]; result: RecentOperations };
   nowOverview: { args: [NowOverviewQuery]; result: NowOverview };
   categoryOverview: { args: [CategoryOverviewQuery]; result: CategoryOverview };
   incomeOverview: { args: [IncomeOverviewQuery]; result: IncomeOverview };
@@ -55,6 +59,7 @@ export type DataMethods = {
   allowanceOverview: { args: [AllowanceQuery]; result: AllowanceOverview };
   analyticsOverview: { args: [AnalyticsQuery]; result: AnalyticsOverview };
   setRecurringMark: { args: [RecurringMarkQuery]; result: void };
+  setOperationCategory: { args: [OperationCategoryQuery]; result: OperationCategoryResult };
   addReserve: { args: [ReserveInput]; result: void };
   updateReserve: { args: [number, ReserveInput]; result: void };
   deleteReserve: { args: [number]; result: void };
@@ -129,6 +134,7 @@ const statementTarget = z.discriminatedUnion('kind', [
 export const DATA_ARG_SCHEMAS = {
   monthOverview: ARG_SCHEMAS.getMonthOverview,
   spendingOverview: ARG_SCHEMAS.getSpendingOverview,
+  recentOperations: ARG_SCHEMAS.getRecentOperations,
   nowOverview: ARG_SCHEMAS.getNowOverview,
   categoryOverview: ARG_SCHEMAS.getCategoryOverview,
   incomeOverview: ARG_SCHEMAS.getIncomeOverview,
@@ -136,6 +142,7 @@ export const DATA_ARG_SCHEMAS = {
   allowanceOverview: ARG_SCHEMAS.getAllowanceOverview,
   analyticsOverview: ARG_SCHEMAS.getAnalyticsOverview,
   setRecurringMark: ARG_SCHEMAS.setRecurringMark,
+  setOperationCategory: ARG_SCHEMAS.setOperationCategory,
   addReserve: ARG_SCHEMAS.addReserve,
   updateReserve: ARG_SCHEMAS.updateReserve,
   deleteReserve: ARG_SCHEMAS.deleteReserve,
@@ -166,6 +173,7 @@ export const DATA_METHODS = Object.keys(DATA_ARG_SCHEMAS) as DataMethod[];
 export const RATED_METHODS = [
   'monthOverview',
   'spendingOverview',
+  'recentOperations',
   'nowOverview',
   'categoryOverview',
   'incomeOverview',

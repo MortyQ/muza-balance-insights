@@ -116,6 +116,26 @@
     },
     "who": {
       "title": "Who spent"
+    },
+    "choice": {
+      "change": "Change category…",
+      "reset": "Return the automatic category",
+      "resetPayee": "Remove the rule for this payee",
+      "markOperation": "your choice",
+      "markPayee": "payee rule",
+      "done": "Category changed in {n} operation | Category changed in {n} operations | Category changed in {n} operations",
+      "unchanged": "The category is already that",
+      "failed": "Could not change the category. Try again."
+    },
+    "picker": {
+      "title": "Change category",
+      "search": "Find a category",
+      "none": "No such category",
+      "current": "now",
+      "payee": "For all operations from this payee",
+      "payeeHint": "Past and future ones. A category you chose for one operation stays.",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "common": {
@@ -301,12 +321,14 @@
           "amount": "Amount",
           "marks": "Marks",
           "when": "When",
-          "who": "Who · account"
+          "who": "Who · account",
+          "actions": "Actions"
         },
         "empty": "Nothing found.",
         "sort": "Sort",
         "title": "Operations",
-        "total": "List total: {amount}"
+        "total": "List total: {amount}",
+        "actions": "Actions: {name}"
       },
       "mark": {
         "foreign": "foreign currency",
@@ -676,8 +698,13 @@
         "telecom": "Mobile and digital services",
         "transferFees": "Transfer fees",
         "transport": "Taxi and transport",
-        "travel": "Travel",
-        "utilities": "Utilities"
+        "travel": "Travel and holidays",
+        "utilities": "Utilities",
+        "rent": "Rent",
+        "car": "Car",
+        "kids": "Kids",
+        "subscriptions": "Subscriptions",
+        "investments": "Investments"
       },
       "change": {
         "less": "{diff} less than in {month}",
@@ -706,13 +733,12 @@
       "insights": {
         "incomeLess": "Income is {diff} below usual",
         "incomeMore": "Income is {diff} above usual",
-        "incomeNormal": "Income is at its usual level",
         "less": "{name} — {diff} less than usual",
         "months": "{n} month | {n} months | {n} months",
         "more": "{name} — {diff} more than usual",
         "noteMonth": "Compared with the median of {months}",
         "noteRunning": "Compared with the median whole month of {months}: this month is still running",
-        "overMonth": "{name} — already {amount} more than in a usual whole month",
+        "overMonth": "{name} — already {diff} more than in a usual whole month",
         "rare": "{name} — +{amount}, usually next to nothing here",
         "title": "What's unusual"
       },
@@ -754,6 +780,14 @@
       "showMore": "Show {n} more | Show {n} more | Show {n} more",
       "showLess": "Show less",
       "whoSpent": "Who spent what"
+    },
+    "recent": {
+      "title": "Recent operations",
+      "none": "No operations this month yet",
+      "pending": "pending at the bank"
+    },
+    "highlights": {
+      "toSlide": "Slide {n} of {total}: {label}"
     }
   },
   "income": {

@@ -111,6 +111,30 @@ describe('the bridge wrapper', () => {
     expect(cache.generation).toBe(before);
   });
 
+  it('the same read asked twice at once is one request; after it settles, or after a data change, a new one', async () => {
+    const cache = new ReadCache();
+    let calls = 0;
+    const answers: Array<(v: unknown) => void> = [];
+    const api = wrapBridge(bridge({ getMonthOverview: () => (calls++, new Promise((r) => answers.push(r))) }).fake, cache);
+    const q: MonthOverviewQuery = { month: '2026-01' };
+    const a = api.getMonthOverview(q);
+    const b = api.getMonthOverview({ month: '2026-01' });
+    void api.getMonthOverview({ month: '2026-02' });
+    await flush();
+    expect(calls).toBe(2);
+    answers[0]!({ month: '2026-01' });
+    expect(await a).toBe(await b);
+
+    void api.getMonthOverview(q);
+    void api.getMonthOverview(q);
+    await flush();
+    expect(calls).toBe(3);
+    await api.deleteReserve(1);
+    void api.getMonthOverview(q);
+    await flush();
+    expect(calls).toBe(4);
+  });
+
   it('a read that raced a write lands stale', async () => {
     const cache = new ReadCache();
     let answer: (v: unknown) => void = () => undefined;

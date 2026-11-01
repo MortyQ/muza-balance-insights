@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from 'vue';
+import type { CategoryId } from '@contract/categories.ts';
 import type { CategoryOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { LineRowView, MonthsView, PartView, PersonView, ShareItemView, SortKey, SummaryView, WhenView } from '@/entities/operations';
@@ -37,4 +38,22 @@ export interface UseCategoryViewReturn {
   query: Ref<string>;
   sort: Ref<SortKey>;
   pickMerchant: (key: string) => void;
+}
+
+/** The line the picker is open for. */
+export interface PickingLine {
+  key: string;
+  merchant: string;
+}
+
+export interface UseCategoryChoiceReturn {
+  /** The line whose category is being picked; null — the picker is closed. */
+  picking: Ref<PickingLine | null>;
+  busy: Ref<boolean>;
+  /** What the last choice did, or why it failed; null — nothing to say. */
+  notice: Ref<{ text: string; failed: boolean } | null>;
+  /** A line's menu action. */
+  act: (key: string, action: string) => void;
+  /** The picker's choice for the line it is open for. */
+  save: (category: CategoryId, payee: boolean) => Promise<void>;
 }

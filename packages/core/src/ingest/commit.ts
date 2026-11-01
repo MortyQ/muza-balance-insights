@@ -1,6 +1,6 @@
 // Writing one span of one account: its rows, the bank's items and its coverage in one transaction, then the
 // derivation passes around the span. Shared by the API import (sync.ts) and statement files (statement-import.ts).
-import { categorize, loadOverrides, type CategoryOverride } from '../derive/categories.ts';
+import { categorize, loadChoices, loadOverrides, type CategoryChoices, type CategoryOverride } from '../derive/categories.ts';
 import type { Db, Stmt } from '../storage/db.ts';
 import { toKyivDate } from '../shared/format.ts';
 import type { NormalizedTx, ProviderId } from '../providers/types.ts';
@@ -45,12 +45,14 @@ function upsertStatements(
   it: NormalizedTx,
   syncedAt: number,
   overrides: readonly CategoryOverride[],
+  choices: CategoryChoices,
   provider: ProviderId,
 ): Stmt[] {
   const description = it.description ?? '';
   // Initial category for a new row, as if not an internal transfer; the pass corrects it if it is.
   const category = categorize(
     {
+      id: it.id,
       description,
       mcc: it.mcc ?? null,
       amount: it.amount,
@@ -61,6 +63,7 @@ function upsertStatements(
       provider,
     },
     overrides,
+    choices,
   );
   // Optional API fields → NULL when absent. Never substitute a guessed value (e.g. amount for operationAmount).
   return [
@@ -126,8 +129,11 @@ export async function prepareRows(db: Db, input: CommitRowsInput): Promise<Prepa
     missingNonHolds = missingNonHold.length;
   }
 
-  const overrides = await loadOverrides(db);
-  const stmts: Stmt[] = [...(input.before ?? []), ...items.flatMap((it) => upsertStatements(accountId, it, nowSec, overrides, input.provider))];
+  const [overrides, choices] = await Promise.all([loadOverrides(db), loadChoices(db)]);
+  const stmts: Stmt[] = [
+    ...(input.before ?? []),
+    ...items.flatMap((it) => upsertStatements(accountId, it, nowSec, overrides, choices, input.provider)),
+  ];
   if (cancelIds.length > 0) {
     stmts.push({
       sql: `UPDATE transactions SET is_cancelled = 1, synced_at = ?

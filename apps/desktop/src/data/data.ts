@@ -4,7 +4,8 @@
 // and income screens). The import worker writes the same file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
-import { categoryLines } from '@mono/core/read/category-lines';
+import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
+import { categoryLines, latestLines } from '@mono/core/read/category-lines';
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
@@ -19,6 +20,7 @@ import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
+import { detectInsights } from '@mono/core/read/insights';
 import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -48,6 +50,8 @@ import type {
   IncomeOverviewQuery,
   RecurringOverview,
   RecurringMarkQuery,
+  OperationCategoryQuery,
+  OperationCategoryResult,
   RecurringOverviewQuery,
   RecurringPaymentView,
   DataStatus,
@@ -62,8 +66,10 @@ import type {
   SpendingAmounts,
   RatesView,
   SpendingCategoryView,
+  RecentOperations,
   SpendingOverview,
   SpendingOverviewQuery,
+  SpendingInsights,
   SpendingUsual,
   SpendingPersonPart,
 } from '../shared/api.ts';
@@ -76,10 +82,26 @@ export function nextMonthDay(date: string): string {
   return new Date(Date.UTC(y, m, Math.min(d, last))).toISOString().slice(0, 10);
 }
 
+/** How many operations home's «Recent operations» lists. */
+const RECENT_LINES = 6;
+
 /** A stopped regular payment is still listed this long after its last payment. */
 const ENDED_DAYS = 120;
 
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
+
+/** «What's unusual» (core `detectInsights`) over the shown month's categories against the usual one. */
+function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: string; net: number }>): SpendingInsights | null {
+  const found = detectInsights({
+    months: usual.months,
+    running: usual.running,
+    now: new Map(categories.map((c) => [c.category, c.net])),
+    usual: new Map(usual.categories.map((c) => [c.category, c.net])),
+    income: usual.income,
+  });
+  if (!found) return null;
+  return { ...found, insights: found.insights.map((i) => ({ ...i, categoryId: i.category === null ? null : (CATEGORY_ID.get(i.category) ?? null) })) };
+}
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -369,6 +391,7 @@ export class DataService {
       q.participantId !== undefined && participants.length > 1 ? sum(foldByCategory(await summary(period), rates).byCategory).net : null;
 
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
+    const usual = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     return {
       month: q.month,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -379,7 +402,8 @@ export class DataService {
       rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
-      usual: await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now),
+      usual,
+      insights: usual ? insightsOf(usual, categories) : null,
     };
   }
 
@@ -450,6 +474,35 @@ export class DataService {
     return months12.map((m) => ({ month: m, net: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
   }
 
+  /** Home's «Recent operations»: the month's newest operations «Spending» counts, with the bank's description. */
+  async recentOperations(q: SpendingOverviewQuery): Promise<RecentOperations> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const rates = rateMap(await this.d.rates());
+    const jarTitles = (await db.execute(ACCOUNT_NAME_SQL)).rows.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const raw = await latestLines(db, { ...monthBounds(q.month), tz, scope: q.scope, ...viewOf(q) }, RECENT_LINES, now);
+    return {
+      month: q.month,
+      lines: raw.lines.map((l) => {
+        const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+        return {
+          key: l.id,
+          date,
+          time,
+          merchant: merchantText(l.description, jarTitles),
+          category: l.category,
+          categoryId: CATEGORY_ID.get(l.category) ?? null,
+          uah: toUah(l.amount, l.currency, rates),
+          currency: l.currency,
+          amount: l.amount,
+          pending: l.hold && l.time >= now - RESYNC_OVERLAP_SEC,
+          refund: l.amount > 0,
+        };
+      }),
+    };
+  }
+
   async categoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
@@ -490,6 +543,7 @@ export class DataService {
     const names = accountNames(accounts.map(accountRow));
     const jarTitles = accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
     const raw = await categoryLines(db, { ...period, ...filters, category }, now);
+    const choices = await categorySources(db, [...new Set(raw.lines.filter((l) => l.kind === 'body' && l.amount < 0).map((l) => l.id))]);
     const lines: CategoryLineView[] = raw.lines.map((l) => {
       const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
       return {
@@ -514,6 +568,7 @@ export class DataService {
         refund: l.amount > 0,
         refunded: l.refundPair && l.amount < 0,
         cashback: l.cashback > 0 ? (toUah(l.cashback, l.currency, rates) ?? 0) : 0,
+        choice: l.kind === 'body' ? (choices.get(l.id) ?? null) : null,
       };
     });
 
@@ -673,6 +728,13 @@ export class DataService {
 
   async deleteReserve(id: number): Promise<void> {
     await deleteReserve(await this.conn(), id);
+  }
+
+  /** The user's category of a debit, for it or its payee (core commands/categories); the key is the line's id. */
+  async setOperationCategory(q: OperationCategoryQuery): Promise<OperationCategoryResult> {
+    const category = q.category === null ? null : CATEGORY[q.category];
+    const write = q.payee ? setPayeeCategory : setOperationCategory;
+    return write(await this.conn(), q.key, category, this.d.nowSec());
   }
 
   /** A mark on a regular payment's payee, found by the payment `key` (core setRecurringMark). */

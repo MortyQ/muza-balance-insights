@@ -4,6 +4,7 @@ import type { Method } from '@contract/channels.ts';
 export const CACHED_READS = [
   'getMonthOverview',
   'getSpendingOverview',
+  'getRecentOperations',
   'getNowOverview',
   'getCategoryOverview',
   'getIncomeOverview',
@@ -65,6 +66,7 @@ export const WRITES = [
   'commitStatement',
   'commitUpload',
   'setRecurringMark',
+  'setOperationCategory',
   'addReserve',
   'updateReserve',
   'deleteReserve',

@@ -34,6 +34,30 @@ English interface.
 - **Account cards look like your real cards.** In the open balance row each account is drawn as its bank's card:
   Monobank's black, white, iron, platinum or children's card, PrivatBank's blue card, A-Bank's green card and
   Slovenská sporiteľňa's blue card, each with a chip and a contactless mark.
+- **«What's unusual» shows what matters most.** It lists up to five changes instead of three, the biggest in money
+  first, with income ranked among them. Each line gives both the amount and the share of your usual month, also for
+  a category already over a whole usual month. A change is listed only when it is at least 500 ₴ and at least 20% of
+  the usual, and a category you rarely spend in now shows up as soon as it passes 500 ₴. Click a category's line to
+  open its screen. The «Income is at its usual level» line is gone.
+- **«What's unusual» and «Recent operations» share one tile.** Next to «Today» and «This week», swipe, drag or use the
+  dots under the tile to switch between them, like the account cards. «Recent operations» lists the month's last six
+  operations counted in «Spending», refunds included, with the bank's description, the category and the time; click
+  one to open its category. When nothing is unusual yet, as early in a month, the tile shows «Recent operations»
+  alone, so the place is never empty. In a past month «Recent operations» is not shown: the tile holds «What's
+  unusual» across the row, or is not there when nothing was unusual.
+- **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
+  screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
+
+### Categories
+
+- **Choose an operation's category yourself.** On a category's screen, right-click an operation or press «⋮» at the end
+  of its row, then «Change category…»: pick a category from the list (with a search), for this operation alone or,
+  with «For all operations from this payee», for every payment to the same place or person — past and future ones. The
+  app says how many operations changed. Your choice comes before the bank's code and is kept when you upload the same
+  statement again or the app updates its data; «Return the automatic category» undoes it. Your own choices are marked
+  in the list.
+- **New categories:** «Rent», «Car», «Kids», «Subscriptions» and «Investments». Investments (topping up a broker,
+  buying shares) count as spending, so you see how much went there. «Travel» is now «Travel and holidays».
 
 ### Fixes
 

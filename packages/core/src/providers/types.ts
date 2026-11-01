@@ -39,7 +39,7 @@ export type OwnTransferCounterpart = { kind: 'jar'; title: string } | { kind: 'c
 export const CATEGORY_HINTS = [
   'groceries', 'cafes', 'transport', 'health', 'beauty', 'clothing', 'home', 'telecom', 'entertainment', 'travel', 'sport',
   'pets', 'insurance', 'taxes', 'cash', 'delivery', 'education', 'gifts', 'utilities', 'marketplaces', 'charity', 'p2p',
-  'installments', 'income', 'other',
+  'installments', 'income', 'other', 'rent', 'car', 'kids', 'subscriptions', 'investments',
 ] as const;
 export type CategoryHint = (typeof CATEGORY_HINTS)[number];
 
