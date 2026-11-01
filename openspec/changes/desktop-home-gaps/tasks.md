@@ -30,4 +30,4 @@
 
 - [x] 5.1 `.agents/project/desktop-renderer.md`, `.agents/project/desktop-import.md`, `docs/backlog.md` (swipe on a
   trackpad, equal row height, the tile at 1, 2 and 12 columns, a place for «Who spent what» and the teaser).
-- [ ] 5.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).
+- [x] 5.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).

@@ -66,4 +66,4 @@
 
 ## 6. Integration
 
-- [ ] 6.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)
+- [x] 6.1 Run `pnpm test` and `pnpm typecheck` at the root (by the user if the sandbox blocks pnpm)
