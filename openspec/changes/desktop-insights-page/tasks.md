@@ -24,4 +24,4 @@
 
 ## 5. Verification
 
-- [ ] 5.1 Package tests and typecheck; root `pnpm test` / `pnpm typecheck` by the user
+- [x] 5.1 Package tests and typecheck; root `pnpm test` / `pnpm typecheck`
