@@ -198,6 +198,13 @@
   `INSIGHT_MIN` (500 ₴) and `INSIGHT_SHARE` (20%) of the usual; a usual under `INSIGHT_BASE` (1 000 ₴), or none, is
   «rare» — growth only, no share. A running month: categories past a whole usual month only, no income. All ranked
   together by the difference in money; none under `INSIGHT_MIN_MONTHS` (3) whole months. No text in core.
+- Explaining them (same module, spec `core-insight-explain`): `mainDriver(change, payees)` — the payee whose own
+  difference (the shown month's net minus its median over the same whole months, a missing month = 0) goes furthest
+  in the direction of the category's change; share = its difference over the change, capped at 100; none under
+  `DRIVER_SHARE` (30%); ties by name. The desktop groups the category's body lines by `merchantKey(merchantText(…))`
+  (one `linesOfCategories` read for all unusual categories). `savingsRate(now, months)` — (income − net spending) /
+  income as whole percents for a month with income, beside the median of the usual months' rates (months with
+  income, at least 3); a running month has none.
   `kind: 'income'` finds regular income by the same rules on the income rows (`incomeRowsSql`: no refunds, no own or
   — for the whole family — family transfers): a sender who pays about once a month.
 - Marks on regular payments (migration v12, `recurring_marks`): `mandatory` (must be paid) or `hidden` (not a regular

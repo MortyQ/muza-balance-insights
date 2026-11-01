@@ -47,6 +47,10 @@ English interface.
   unusual» across the row, or is not there when nothing was unusual.
 - **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
   screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
+- **«Insights» beside «Spending».** For each unusual category it names the payee behind most of the change, with its
+  share; click it to open the category. For a finished month it shows how much of your income you kept against your
+  usual share, and it explains how the usual is counted. When there is nothing to explain, «Spending» keeps the whole
+  width.
 
 ### Categories
 

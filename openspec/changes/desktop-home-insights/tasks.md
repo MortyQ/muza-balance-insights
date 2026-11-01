@@ -20,8 +20,8 @@
 
 ## 4. Docs
 
-- [ ] 4.1 `.agents/project/domain-rules.md` (driver, savings rate), `desktop-renderer.md` (grid, the block), `desktop-import.md` (descriptions in `getSpendingOverview`); `CHANGELOG.md` entry under `0.1.13 — unreleased`; live checks in `docs/backlog.md` (row height beside «Spending», a split payee, a past month)
-- [ ] 4.2 Commit `docs: home insights block`
+- [x] 4.1 `.agents/project/domain-rules.md` (driver, savings rate), `desktop-renderer.md` (grid, the block), `desktop-import.md` (descriptions in `getSpendingOverview`); `CHANGELOG.md` entry under `0.1.13 — unreleased`; live checks in `docs/backlog.md` (row height beside «Spending», a split payee, a past month)
+- [x] 4.2 Commit `docs: home insights block`
 
 ## 5. Verification
 

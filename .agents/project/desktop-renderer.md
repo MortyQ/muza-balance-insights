@@ -89,11 +89,15 @@
 - **Home grid** (spec `openspec/specs/desktop-home-tiles`): `HomePage` owns one CSS grid (`data-test="home-grid"`,
   `@container`: one column, two from `@[47rem]`, twelve from `@[79rem]` — where the folded stack fits 5 of them; rows
   5 · 4 · 3 (balance, pace, month; under 65rem a row each, 65–79rem balance | month over pace — the stack never
-  stands alone in a wide row), 4 · 4 · 4 («Today», «This week», the highlights tile), 12 (spending)). The features put
+  stands alone in a wide row), 4 · 4 · 4 («Today», «This week», the highlights tile), 12 (spending) or 7 · 5 (spending,
+  «Insights»)). The features put
   their tiles straight into it through a `<div class="contents">` root (one root element; a comment before it would be
   a second root and drop the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week»,
   or the details tile), `widgets/home-highlights` (`HomeHighlights`, spec `desktop-home-highlights`), spending
-  («Spending by category» over the whole row). Each tile says its own span. The «Now» details tile takes the
+  («Spending by category»; `beside` → seven columns), `features/home-insights` (`HomeInsightsFeature`, spec
+  `desktop-home-insights`: five columns, rendered only with a driver or a savings rate; the page reads its `visible`
+  through `useHomeInsights` and passes it to `SpendingFeature` as `beside`, so neither slice knows the other). Each tile
+  says its own span. The «Now» details tile takes the
   highlights tile's place too: `NowStripFeature` `v-model:details` → `HomeHighlights v-if="!nowDetails"` in the page.
   «Who spent what» and the regular payments teaser are off home since 01.11 (their place is decided later; their
   components stay in their slices). Checked by `tests/home-grid.test.ts`.
@@ -108,6 +112,13 @@
   operation's category screen. Home's «Personal / Business» choice is `entities/scope` (`useScopeStore`): the spending
   block's switch sets it, both slides follow it. Descriptions on home: approved by the user on 01.11 (this list only).
   Tested in `tests/renderer/home-highlights.test.ts`.
+- **«Insights» block** (`features/home-insights`): reads `getSpendingOverview` through its own api wrapper (the read
+  cache and the in-flight sharing make it one request with the spending block and the unusual slide) and words
+  `explain` (`homeInsightsView`): driver rows in the order of «What's unusual» (the payee, «{category} · N% of the
+  change», its own difference with a sign; a row opens the category), a finished month's savings rate beside the usual
+  one («Spent more than earned» for a negative rate), and the note (the usual's months and range, what is left out,
+  pending holds). `INSIGHT_MAX` is `src/shared/insights.ts`, shared with main. Tested in
+  `tests/renderer/home-insights.test.ts`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
   `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
   (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,

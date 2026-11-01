@@ -269,3 +269,11 @@
   carousel returns.
 - Opening home asks main for the month's spending once (the block and the unusual slide share it).
 - A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.
+
+## Check on a live system: home «Insights» (`openspec/changes/desktop-home-insights`)
+
+- «Spending» and «Insights» keep one row height at 12 columns; the block takes its own row under «Spending» below that.
+- A payee whose descriptions vary (a city or a terminal number in the text) splits and may show no driver: is that
+  common on real data?
+- A past month: the savings rate beside the usual one; the running month: drivers only, no rate.
+- Opening home still asks main for the month's spending once (the spending block, the unusual slide and the block).

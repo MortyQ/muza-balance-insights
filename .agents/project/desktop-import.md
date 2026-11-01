@@ -135,7 +135,9 @@
   to the weekdays the data reaches; a day — nothing); the 12 months only for a month), `getIncomeOverview({ period, participantId? })` (the
   income screen, the same `DetailPeriod` checks; `DataService.incomeOverview`, `incomeStats` in `data/category.ts`) and `getRecentOperations({ month, scope, participantId?, providers? })` (home's
   «Recent operations», since 01.11 with the user's ok; `DataService.recentOperations`: core `latestLines`, the month's
-  newest six operations «Spending» counts, the description cut the same way, no comment) are the **only** data
+  newest six operations «Spending» counts, the description cut the same way, no comment) and `getSpendingOverview`'s
+  `explain.drivers` (home's «Insights» block, since 01.11 with the user's ok: one payee name per unusual category, the
+  description cut the same way, from core `linesOfCategories`) are the **only** data
   channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
