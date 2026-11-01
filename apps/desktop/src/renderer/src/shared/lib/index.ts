@@ -7,4 +7,5 @@ export { failedText } from './texts.ts';
 export { applyLocale, i18n, t } from './i18n.ts';
 export { throttle, type Throttled } from './throttle.ts';
 export { EXPAND_TRANSITION } from './transitions.ts';
+export { DRAG_THRESHOLD, useDragScroll, type UseDragScrollReturn } from './useDragScroll.ts';
 export { useAsyncData, type Loadable, type UseAsyncDataOptions, type UseAsyncDataReturn } from './useAsyncData.ts';

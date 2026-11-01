@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
 import { AccountCard, SummaryCard } from '@/entities/account';
-import { useDragScroll } from '../composables/useDragScroll.ts';
+import { useDragScroll } from '@/shared/lib';
 import type { RowView, Slide } from '../types.ts';
 import { slideDelay, slidePosition } from '../utils.ts';
 import FlowBars from './FlowBars.vue';
