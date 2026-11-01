@@ -545,7 +545,8 @@ export class DataService {
     const now = this.d.nowSec();
     const tz = systemTimeZone();
     const status = await this.status();
-    const rates = rateMap(await this.d.rates());
+    const today = await this.d.rates();
+    const rates = rateMap(today);
     const filters = { tz, scope: q.scope, ...viewOf(q) };
     const head = await spendingSummary(db, { ...monthBounds(q.month), ...filters, groupBy: 'category' }, now);
     const cur = foldByCategory(head, rates).byCategory;
@@ -556,6 +557,7 @@ export class DataService {
       period: { from, to, days, coveredDays, incomplete, dataUntil, pendingHolds },
       spent,
       months: usualMonths(q.month, status.dataFrom).length,
+      rates: today,
     };
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     if (!found) return { ...base, usual: null, cards: [], newPayees: [], oneOffs: [] };
@@ -627,11 +629,13 @@ export class DataService {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
-    const rates = rateMap(await this.d.rates());
+    const today = await this.d.rates();
+    const rates = rateMap(today);
     const jarTitles = (await db.execute(ACCOUNT_NAME_SQL)).rows.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
     const raw = await latestLines(db, { ...monthBounds(q.month), tz, scope: q.scope, ...viewOf(q) }, RECENT_LINES, now);
     return {
       month: q.month,
+      rates: today,
       lines: raw.lines.map((l) => {
         const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
         return {

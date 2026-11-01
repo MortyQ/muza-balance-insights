@@ -17,7 +17,7 @@ const EXPLAIN: SpendingExplain = {
   savings: { rate: 34, usual: 37 },
   basis: { months: 5, from: '2025-09', to: '2026-01', pendingHolds: 2 },
 };
-const SPENDING = { month: '2026-02', insights: null, explain: EXPLAIN } as unknown as SpendingOverview;
+const SPENDING = { month: '2026-02', insights: null, explain: EXPLAIN, rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false } } as unknown as SpendingOverview;
 
 let spending: SpendingOverview = SPENDING;
 const getSpendingOverview = vi.fn(async (_q: SpendingOverviewQuery) => spending);
@@ -52,6 +52,7 @@ async function mountBlock() {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
   getSpendingOverview.mockClear();
   spending = SPENDING;
@@ -91,6 +92,14 @@ describe('home insights block', () => {
     const none = await mountBlock();
     expect(none.find('[data-test="home-insights"]').exists()).toBe(false);
     none.unmount();
+  });
+
+  it('the drivers in the main currency by the answer\'s rates', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    const w = await mountBlock();
+    expect(w.findAll('[data-test="driver-row"]')[0]!.text()).toContain(`+${formatMoney(3_000, 978)}`);
+    w.unmount();
   });
 
   it('asks with the home scope, and again when it changes', async () => {

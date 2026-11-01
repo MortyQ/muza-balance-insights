@@ -45,6 +45,10 @@ English interface.
   one to open its category. When nothing is unusual yet, as early in a month, the tile shows «Recent operations»
   alone, so the place is never empty. In a past month «Recent operations» is not shown: the tile holds «What's
   unusual» across the row, or is not there when nothing was unusual.
+- **«Today» and «This week» list five categories** instead of three, so the tiles line up with «Recent operations»
+  next to them.
+- **«Recent operations» and «Insights» follow your currency.** With euros or dollars picked at the top, their amounts
+  are shown in that currency too, like the rest of the home screen; the «Insights» screen does the same.
 - **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
   screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
 - **«Insights» beside «Spending».** For each unusual category it names the payee behind most of the change, with its

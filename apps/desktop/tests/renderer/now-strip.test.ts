@@ -116,15 +116,21 @@ describe('now strip helpers', () => {
     expect(bare.week).toMatchObject({ chip: null, context: '' });
   });
 
-  it('a tile row: the category\'s icon and a bar against the period\'s biggest category; the rest past 3 counted with their total', () => {
-    const w = nowView(NOW, OFF).categories.week;
-    expect(w.rows.map((r) => [r.icon, r.bar])).toEqual([
+  it('a tile row: the category\'s icon and a bar against the period\'s biggest category; the rest past 5 counted with their total', () => {
+    expect(nowView(NOW, OFF).categories.week.rows.map((r) => [r.icon, r.bar])).toEqual([
       [expect.stringMatching(/^lucide:/), 100],
       [expect.any(String), 64],
       [expect.any(String), 32],
       [expect.any(String), 24],
     ]);
-    expect(w.more).toBe(`Ещё 1 категория · ${uah(30_000)}`);
+    expect(nowView(NOW, OFF).categories.week.more).toBe('');
+    const extra = [
+      { category: 'одежда', categoryId: 'clothing' as const, net: 20_000, purchases: 1, rank: null, prev: null },
+      { category: 'красота', categoryId: 'beauty' as const, net: 10_000, purchases: 1, rank: null, prev: null },
+    ];
+    const w = nowView({ ...NOW, week: { ...NOW.week, categories: [...NOW.week.categories, ...extra] } }, OFF).categories.week;
+    expect(w.rows).toHaveLength(6);
+    expect(w.more).toBe(`Ещё 1 категория · ${uah(10_000)}`);
     expect(nowView(NOW, OFF).categories.today.more).toBe('');
   });
 });
@@ -218,7 +224,7 @@ describe('now strip mounted', () => {
     return w;
   }
 
-  it('two tiles, «Today» and «This week», each with at most 3 categories; the bars hidden from screen readers', async () => {
+  it('two tiles, «Today» and «This week», each with at most 5 categories; the bars hidden from screen readers', async () => {
     const w = await mountStrip();
     expect(getNowOverview.mock.calls[0]?.[0]).toEqual({});
     const today = w.get('[data-test="now-today"]');
@@ -228,9 +234,9 @@ describe('now strip mounted', () => {
     for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`]) expect(today.text()).toContain(s);
     for (const s of ['Эта неделя · пн–сб', 'к прошлой неделе, пн–сб']) expect(week.text()).toContain(s);
     expect(today.findAll('[data-test="tile-categories"] li')).toHaveLength(2);
-    expect(week.findAll('[data-test="tile-categories"] li')).toHaveLength(3);
+    expect(week.findAll('[data-test="tile-categories"] li')).toHaveLength(4);
     expect(today.get('[data-test="now-open-today"]').text()).toBe('Подробнее');
-    expect(week.get('[data-test="now-open-week"]').text()).toBe(`Ещё 1 категория · ${uah(30_000)}`);
+    expect(week.get('[data-test="now-open-week"]').text()).toBe('Подробнее');
     expect(w.find('.v-change-chip__sr').text()).toBe('больше, чем в обычный день');
     const bars = w.findComponent(WeekBars);
     expect(bars.attributes('aria-hidden')).toBe('true');

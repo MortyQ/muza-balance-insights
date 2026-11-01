@@ -20,7 +20,6 @@ export function useHomeInsights(): UseHomeInsightsReturn {
   const participant = useParticipantStore();
   const { month } = storeToRefs(useMonthStore());
   const { scope } = storeToRefs(useScopeStore());
-  const fmt = useMoneyFormat(() => undefined);
 
   const participantId = () => participant.selectedId;
   const query = () => {
@@ -32,6 +31,7 @@ export function useHomeInsights(): UseHomeInsightsReturn {
     [month, scope, participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekSpendingOverview(query()) },
   );
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
 
   const view = computed(() => (state.value.data ? homeInsightsView(state.value.data, fmt.value, scope.value) : null));
   return { view, visible: computed(() => view.value !== null) };

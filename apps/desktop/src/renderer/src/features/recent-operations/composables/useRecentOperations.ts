@@ -21,7 +21,6 @@ export function useRecentOperations(): UseRecentOperationsReturn {
   const participant = useParticipantStore();
   const { month, thisMonth } = storeToRefs(useMonthStore());
   const { scope } = storeToRefs(useScopeStore());
-  const fmt = useMoneyFormat(() => undefined);
 
   const participantId = () => participant.selectedId;
   const query = () => {
@@ -34,6 +33,7 @@ export function useRecentOperations(): UseRecentOperationsReturn {
     [month, thisMonth, scope, participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => (current() ? peekRecentOperations(query()) : null) },
   );
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
 
   return {
     rows: computed(() => (state.value.data ? recentRows(state.value.data, fmt.value, scope.value) : [])),

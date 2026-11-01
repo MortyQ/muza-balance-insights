@@ -20,7 +20,6 @@ export function useInsightsPage(): UseInsightsPageReturn {
   const participant = useParticipantStore();
   const { month, thisMonth } = storeToRefs(useMonthStore());
   const { scope } = storeToRefs(useScopeStore());
-  const fmt = useMoneyFormat(() => undefined);
 
   const participantId = () => participant.selectedId;
   const query = () => {
@@ -32,6 +31,7 @@ export function useInsightsPage(): UseInsightsPageReturn {
     [month, scope, participantId, () => participant.banksKey],
     { quiet: [() => syncStatus.version], cached: () => peekInsightsOverview(query()) },
   );
+  const fmt = useMoneyFormat(() => state.value.data?.rates);
 
   const view = computed(() =>
     state.value.data ? insightsPageView(state.value.data, fmt.value, scope.value, Number(thisMonth.value.slice(0, 4))) : null,

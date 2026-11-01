@@ -8,6 +8,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { InsightCardView, InsightsOverview, PeopleView, SpendingOverviewQuery } from '@contract/api.ts';
+import { formatMoney } from '@/shared/lib';
 
 const series = (values: number[], now: number) => [
   ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, value: values[i]! })),
@@ -33,6 +34,7 @@ const OVERVIEW: InsightsOverview = {
   cards: [CAFES, GROCERIES],
   newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
   oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000 }],
+  rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
 };
 
 let answer: InsightsOverview = OVERVIEW;
@@ -73,6 +75,7 @@ async function mountPage() {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
   getInsightsOverview.mockClear();
   answer = OVERVIEW;
@@ -148,6 +151,16 @@ describe('insights screen', () => {
     expect(w.get('[data-test="glance-spent"]').text()).toContain('50% обычного месяца · прошло 25% месяца');
     expect(w.get('[data-test="glance-income"]').text()).toContain('Посчитаем, когда месяц закончится');
     expect(w.get('[data-test="insights-basis"]').text()).toContain('Месяц ещё идёт');
+    w.unmount();
+  });
+
+  it('every amount in the main currency by the answer\'s rates', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    const w = await mountPage();
+    expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
+    expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (100%)`));
+    expect(plain(w.get('[data-test="one-offs"]').text())).toContain(plain(formatMoney(8_000, 978)));
     w.unmount();
   });
 

@@ -56,14 +56,14 @@ row folds.
 
 ### Requirement: Today and week tiles
 
-«Today» and «This week» SHALL each show the period's amount, its change chip and at most 3 categories (icon, name, bar,
+«Today» and «This week» SHALL each show the period's amount, its change chip and at most 5 categories (icon, name, bar,
 amount), the bars relative to the period's biggest category. Each tile SHALL offer a button that opens the period's
 details; on «This week» the button SHALL name how many categories and how much are not listed. With no spending today
 the «Today» tile SHALL say so instead of categories.
 
 #### Scenario: A week with many categories
 - **WHEN** the week has 12 categories with spending
-- **THEN** the tile lists the 3 biggest and its button reads that 9 more categories are hidden, with their total
+- **THEN** the tile lists the 5 biggest and its button reads that 7 more categories are hidden, with their total
 
 ### Requirement: Period details
 

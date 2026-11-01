@@ -513,6 +513,8 @@ export type InsightsOverview = {
   cards: InsightCardView[];
   newPayees: NewPayeeView[];
   oneOffs: OneOffView[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched. */
+  rates: RatesView | null;
 };
 
 /** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */
@@ -537,7 +539,12 @@ export type RecentLineView = {
 };
 
 /** The newest RECENT_LINES operations of the month, for the same person, banks and scope as the spending block. */
-export type RecentOperations = { month: string; lines: RecentLineView[] };
+export type RecentOperations = {
+  month: string;
+  lines: RecentLineView[];
+  /** Today's rates the lines' `uah` came from; null — never fetched. */
+  rates: RatesView | null;
+};
 
 /**
  * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same
