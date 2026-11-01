@@ -1372,7 +1372,27 @@ describe('DataService.spendingOverview: usual', () => {
   it('fewer than 3 covered months before: none', async () => {
     await covered('2026-01-01');
     await history();
-    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).usual).toBeNull();
+    const v = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.usual).toBeNull();
+    expect(v.insights).toBeNull();
+  });
+
+  it("insights: core's detectors over the month against the usual, with the category id", async () => {
+    await covered('2025-09-01');
+    await history();
+    await tx('uah', '2026-02-12', -200_000, 'продукты');
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    expect(v.insights).toEqual({
+      months: 5,
+      running: false,
+      insights: [{
+        // A usual under 1 000 ₴ is «rare»: growth only, no share.
+        type: 'category-rare', direction: 'up', amount: 200_000, percent: null,
+        category: 'продукты', categoryId: 'groceries', now: 260_000, usual: 60_000,
+      }],
+    });
+    // The running month: groceries are under a whole usual month, nothing to say.
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).insights).toEqual({ months: 6, running: true, insights: [] });
   });
 });
 

@@ -8,7 +8,7 @@
 
 ## 2. Desktop: data process and contract (desktop)
 
-- [ ] 2.1 `SpendingOverview.insights` in `shared/api.ts`; `spendingOverview` calls `detectInsights` with its folded sums
+- [x] 2.1 `SpendingOverview.insights` in `shared/api.ts`; `spendingOverview` calls `detectInsights` with its folded sums
   and adds `categoryId` (design 4). Verify in `tests/data.test.ts`.
 
 ## 3. Desktop: the tile (desktop)

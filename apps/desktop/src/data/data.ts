@@ -20,6 +20,7 @@ import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
+import { detectInsights } from '@mono/core/read/insights';
 import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -67,6 +68,7 @@ import type {
   SpendingCategoryView,
   SpendingOverview,
   SpendingOverviewQuery,
+  SpendingInsights,
   SpendingUsual,
   SpendingPersonPart,
 } from '../shared/api.ts';
@@ -83,6 +85,19 @@ export function nextMonthDay(date: string): string {
 const ENDED_DAYS = 120;
 
 const CATEGORY_ID: ReadonlyMap<string, CategoryId> = new Map(Object.entries(CATEGORY).map(([id, word]) => [word, id as CategoryId]));
+
+/** «What's unusual» (core `detectInsights`) over the shown month's categories against the usual one. */
+function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: string; net: number }>): SpendingInsights | null {
+  const found = detectInsights({
+    months: usual.months,
+    running: usual.running,
+    now: new Map(categories.map((c) => [c.category, c.net])),
+    usual: new Map(usual.categories.map((c) => [c.category, c.net])),
+    income: usual.income,
+  });
+  if (!found) return null;
+  return { ...found, insights: found.insights.map((i) => ({ ...i, categoryId: i.category === null ? null : (CATEGORY_ID.get(i.category) ?? null) })) };
+}
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -372,6 +387,7 @@ export class DataService {
       q.participantId !== undefined && participants.length > 1 ? sum(foldByCategory(await summary(period), rates).byCategory).net : null;
 
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
+    const usual = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     return {
       month: q.month,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -382,7 +398,8 @@ export class DataService {
       rates: today,
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
-      usual: await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now),
+      usual,
+      insights: usual ? insightsOf(usual, categories) : null,
     };
   }
 

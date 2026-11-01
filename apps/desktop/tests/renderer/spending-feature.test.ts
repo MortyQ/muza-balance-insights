@@ -37,6 +37,7 @@ const VIEW: SpendingOverview = {
   leftOut: [],
   familyTotal: null,
   usual: null,
+  insights: null,
 };
 
 // The family view with nothing spent this month.

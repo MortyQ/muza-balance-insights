@@ -422,7 +422,26 @@ export type SpendingOverview = {
   familyTotal: number | null;
   /** «Usual»: the same span of the months before (data/usual.ts); null — fewer than 3 covered months. */
   usual: SpendingUsual | null;
+  /** «What's unusual»: core's detectors over this month against `usual`, ranked; null when `usual` is. */
+  insights: SpendingInsights | null;
 };
+
+/** One detector result (core `read/insights.ts`); the renderer words it. Hryvnia kopecks. */
+export type SpendingInsight = {
+  type: 'category-more' | 'category-less' | 'category-rare' | 'category-over-month' | 'income-more' | 'income-less';
+  direction: 'up' | 'down';
+  /** |now − usual|. */
+  amount: number;
+  /** Of the usual, whole per cent; null for category-rare. */
+  percent: number | null;
+  /** The stored category word and its id; both null for income. */
+  category: string | null;
+  categoryId: CategoryId | null;
+  now: number;
+  usual: number;
+};
+
+export type SpendingInsights = { months: number; running: boolean; insights: SpendingInsight[] };
 
 /**
  * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same
