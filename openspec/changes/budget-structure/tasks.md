@@ -14,8 +14,8 @@
 
 ## 3. Budget metrics in core
 
-- [ ] 3.1 `read/budget.ts` (`byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, guide constants); tests for every spec scenario
-- [ ] 3.2 Commit `feat(core): budget metrics`
+- [x] 3.1 `read/budget.ts` (`byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, guide constants); tests for every spec scenario
+- [x] 3.2 Commit `feat(core): budget metrics`
 
 ## 4. The «Budget structure» card
 
