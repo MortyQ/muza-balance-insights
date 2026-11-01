@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
-import { categoryLines, latestLines } from '../../src/read/category-lines.ts';
+import { categoryLines, latestLines, linesOfCategories } from '../../src/read/category-lines.ts';
 import { incomeLines } from '../../src/read/income-lines.ts';
 import { kyivStartOfDay } from '../../src/shared/format.ts';
 import { spendingByCategory } from '../../src/read/queries.ts';
@@ -194,6 +194,16 @@ describe('spendingSummary', () => {
     expect((await latestLines(db, Q, 2, NOW)).lines.map((l) => l.category)).toEqual(['путешествия', 'налоги и госплатежи']);
     expect((await latestLines(db, { ...Q, scope: 'business' }, 20, NOW)).lines.map((l) => l.category)).toEqual(['налоги и госплатежи']);
     await expect(latestLines(db, Q, 0, NOW)).rejects.toThrow(RangeError);
+  });
+
+  it('linesOfCategories: body lines of the named categories only, with their category, in one read', async () => {
+    const got = (await linesOfCategories(db, { ...Q, categories: ['кафе и рестораны', 'переводы людям'] }, NOW)).lines;
+    expect(got.map((l) => [l.category, l.amount, l.kind])).toEqual([
+      ['переводы людям', -20_000, 'body'], // its commission is not a line here
+      ['кафе и рестораны', 1_000, 'body'],
+      ['кафе и рестораны', -4_000, 'body'],
+    ]);
+    await expect(linesOfCategories(db, { ...Q, categories: [] }, NOW)).rejects.toThrow(RangeError);
   });
 
   it('day (internal, not an MCP choice): one group per Kyiv day, the same totals', async () => {

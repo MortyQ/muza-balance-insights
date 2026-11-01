@@ -45,6 +45,22 @@ export async function categoryLines(db: Db, q: Period & SpendingFilters & { cate
   return { period, lines: rows.map(lineOf) };
 }
 
+/**
+ * The body lines of several categories in the period, each with its category, newest first; filters as in
+ * spendingSummary. One read whatever the number of categories (home explains up to five at once).
+ */
+export async function linesOfCategories(
+  db: Db,
+  q: Period & SpendingFilters & { categories: ReadonlyArray<string> },
+  nowSec: number,
+): Promise<{ period: PeriodInfo; lines: LatestLine[] }> {
+  validateFilters(q);
+  if (q.categories.length === 0) throw new RangeError('categories must not be empty');
+  const period = await periodInfo(db, q, nowSec);
+  const rows = await linesOf(db, q, `kind = 'body' AND category IN (${q.categories.map(() => '?').join(', ')})`, [...q.categories], null);
+  return { period, lines: rows.map((r) => ({ ...lineOf(r), category: String(r.category) })) };
+}
+
 export type LatestLine = CategoryLine & { category: string };
 
 /**
