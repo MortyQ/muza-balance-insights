@@ -136,3 +136,48 @@ export function savingsRate(now: MonthMoney, months: ReadonlyArray<MonthMoney>):
   if (rates.length < INSIGHT_MIN_MONTHS) return null;
   return { rate: rateOf(now), usual: median(rates) };
 }
+
+// The Insights screen: how much a change weighs, and signals at the payee level (a new payee, a large one-off).
+
+/** A change's share of a usual month's total spending from which it is high, and medium. */
+export const SEVERITY_HIGH = 0.1;
+export const SEVERITY_MEDIUM = 0.04;
+/** A one-off is at least this share of a usual month's total spending. */
+export const ONE_OFF_SHARE = 0.1;
+/** At most this many new payees and one-offs. */
+export const SIGNALS_MAX = 10;
+
+export type Severity = 'high' | 'medium' | 'low';
+
+/** How much a difference weighs against a usual month's total spending; low without a usual total. */
+export function insightSeverity(amount: number, usualTotal: number): Severity {
+  if (usualTotal <= 0) return 'low';
+  const share = amount / usualTotal;
+  return share >= SEVERITY_HIGH ? 'high' : share >= SEVERITY_MEDIUM ? 'medium' : 'low';
+}
+
+/** Payees with at least INSIGHT_MIN spent in the shown month and nothing in any usual month; largest first, ties by name. */
+export function newPayees(payees: ReadonlyArray<PayeeMonths>): PayeeMonths[] {
+  return payees
+    .filter((p) => p.now >= INSIGHT_MIN && p.months.every((m) => m <= 0))
+    .sort((a, b) => b.now - a.now || a.name.localeCompare(b.name))
+    .slice(0, SIGNALS_MAX);
+}
+
+/** One spending operation of the shown month: `amount` > 0 spent, kopecks; `payeeUsual` — its payee's usual month (median). */
+export type OneOffInput = { key: string; amount: number; payeeUsual: number };
+
+/**
+ * Operations of at least INSIGHT_MIN and ONE_OFF_SHARE of a usual month whose payee usually spends less than half of
+ * them a month; largest first, ties by key.
+ */
+export function oneOffs<T extends OneOffInput>(ops: ReadonlyArray<T>, usualTotal: number): T[] {
+  const min = Math.max(INSIGHT_MIN, usualTotal * ONE_OFF_SHARE);
+  return ops
+    .filter((o) => o.amount >= min && o.payeeUsual < o.amount / 2)
+    .sort((a, b) => b.amount - a.amount || a.key.localeCompare(b.key))
+    .slice(0, SIGNALS_MAX);
+}
+
+/** The median of a payee's usual months (0 where none), the `payeeUsual` of its operations. */
+export const payeeUsual = (p: PayeeMonths): number => median(p.months);

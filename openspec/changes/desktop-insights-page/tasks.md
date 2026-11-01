@@ -1,7 +1,7 @@
 ## 1. Core rules
 
-- [ ] 1.1 `insightSeverity`, `newPayees`, `oneOffs` and their constants in `packages/core/src/read/insights.ts`; tests in `tests/read/insights.test.ts`
-- [ ] 1.2 Commit `feat(core): severity, new payees and one-offs for insights`
+- [x] 1.1 `insightSeverity`, `newPayees`, `oneOffs` and their constants in `packages/core/src/read/insights.ts`; tests in `tests/read/insights.test.ts`
+- [x] 1.2 Commit `feat(core): severity, new payees and one-offs for insights`
 
 ## 2. Data process
 
