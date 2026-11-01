@@ -426,6 +426,30 @@ export type SpendingOverview = {
   usual: SpendingUsual | null;
   /** «What's unusual»: core's detectors over this month against `usual`, ranked; null when `usual` is. */
   insights: SpendingInsights | null;
+  /** Home's «Insights» block: what explains `insights` and the month; null when `usual` is. */
+  explain: SpendingExplain | null;
+};
+
+/**
+ * The payee behind most of an unusual category's change (core `mainDriver`): the bank's description, cut as on the
+ * category screen, its own difference against its usual (hryvnia kopecks) and its share of the change, 0–100.
+ */
+export type InsightDriver = {
+  category: string;
+  categoryId: CategoryId | null;
+  name: string;
+  direction: 'up' | 'down';
+  amount: number;
+  share: number;
+};
+
+export type SpendingExplain = {
+  /** In the order of «What's unusual», only its first INSIGHT_MAX lines (`shared/insights.ts`) with a driver. */
+  drivers: InsightDriver[];
+  /** A finished month's share of income kept and the usual share, whole per cent (core `savingsRate`); else null. */
+  savings: { rate: number; usual: number } | null;
+  /** What the usual is over: how many whole months, the oldest and newest (YYYY-MM), and the holds still pending. */
+  basis: { months: number; from: string; to: string; pendingHolds: number };
 };
 
 /** One detector result (core `read/insights.ts`); the renderer words it. Hryvnia kopecks. */

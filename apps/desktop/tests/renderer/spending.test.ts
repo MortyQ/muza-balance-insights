@@ -53,6 +53,7 @@ const VIEW: SpendingOverview = {
   familyTotal: null,
   usual: null,
   insights: null,
+  explain: null,
 };
 const PREFS = { split: 'people' as const, mark: false };
 const NONE = { uah: false, usd: false, eur: false };

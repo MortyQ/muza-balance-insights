@@ -6,10 +6,10 @@
 
 ## 2. Data process
 
-- [ ] 2.1 `SpendingOverview.explain` in `apps/desktop/src/shared/api.ts` (`HomeInsightDriver`, `SavingsRate`, `InsightBasis`); `spendingUsual` returns the per-month totals and the months it used
-- [ ] 2.2 `spendingOverview` builds drivers (one `categoryLines` read per unusual category over the usual months and the shown month, grouped by `merchantKey(merchantText(...))`), the savings rate and the basis; `explain` is null without usual
-- [ ] 2.3 Tests in `tests/data.test.ts` with fictional fixtures: a driver found, none under 30%, a past month's savings rate, none for the running month, the basis months and pending holds; the descriptions canary covers the driver name
-- [ ] 2.4 Commit `feat(desktop): drivers, savings rate and basis in the spending overview`
+- [x] 2.1 `SpendingOverview.explain` in `apps/desktop/src/shared/api.ts` (`HomeInsightDriver`, `SavingsRate`, `InsightBasis`); `spendingUsual` returns the per-month totals and the months it used
+- [x] 2.2 `spendingOverview` builds drivers (one `categoryLines` read per unusual category over the usual months and the shown month, grouped by `merchantKey(merchantText(...))`), the savings rate and the basis; `explain` is null without usual
+- [x] 2.3 Tests in `tests/data.test.ts` with fictional fixtures: a driver found, none under 30%, a past month's savings rate, none for the running month, the basis months and pending holds; the descriptions canary covers the driver name
+- [x] 2.4 Commit `feat(desktop): drivers, savings rate and basis in the spending overview`
 
 ## 3. The block
 

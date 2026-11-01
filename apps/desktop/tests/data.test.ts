@@ -1421,6 +1421,50 @@ describe('DataService.spendingOverview: usual', () => {
     // The running month: groceries are under a whole usual month, nothing to say.
     expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).insights).toEqual({ months: 6, running: true, insights: [] });
   });
+
+  it("explain: the payee behind an unusual category, its card number cut and the jar's title hidden", async () => {
+    await covered('2025-09-01');
+    await history();
+    await account('jar', null, 980, 0);
+    await tx('uah', '2026-02-12', -150_000, 'продукты', { description: 'Cafe Fictional 444411******0000' });
+    await tx('uah', '2026-02-13', -50_000, 'продукты', { description: `To ${CANARIES[4]}` });
+    const v = await svc.spendingOverview({ month: '2026-02', scope: 'personal' });
+    // Groceries +200 000 over their usual: the cafe explains 75%, the jar top-up 25% (under the 30% bar).
+    expect(v.explain?.drivers).toEqual([
+      { category: 'продукты', categoryId: 'groceries', name: 'Cafe Fictional •• 0000', direction: 'up', amount: 150_000, share: 75 },
+    ]);
+    expect(JSON.stringify(v.explain)).not.toContain(CANARIES[4]);
+  });
+
+  it('explain: no driver when the change is spread thin', async () => {
+    await covered('2025-09-01');
+    await history();
+    for (const n of ['A', 'B', 'C', 'D']) await tx('uah', '2026-02-12', -50_000, 'продукты', { description: `Fictional ${n}` });
+    expect((await svc.spendingOverview({ month: '2026-02', scope: 'personal' })).explain?.drivers).toEqual([]);
+  });
+
+  it("explain: a past month's savings rate against the usual months', and what the usual is over", async () => {
+    await covered('2025-09-01');
+    await history();
+    // February keeps 34% (100 000 in, 66 000 out); September–January kept 39 … 35%, median 37.
+    expect((await svc.spendingOverview({ month: '2026-02', scope: 'personal' })).explain).toEqual({
+      drivers: [],
+      savings: { rate: 34, usual: 37 },
+      basis: { months: 5, from: '2025-09', to: '2026-01', pendingHolds: 0 },
+    });
+    // The running month: no savings rate; without a usual, nothing to explain.
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).explain).toEqual({
+      drivers: [],
+      savings: null,
+      basis: { months: 6, from: '2025-09', to: '2026-02', pendingHolds: 0 },
+    });
+  });
+
+  it('explain: none without a usual', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).explain).toBeNull();
+  });
 });
 
 // A bank view (spec core-bank-view, desktop-bank-filter): every overview narrows to the chosen banks' accounts; without

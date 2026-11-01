@@ -20,7 +20,7 @@ import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
-import { detectInsights } from '@mono/core/read/insights';
+import { detectInsights, mainDriver, savingsRate } from '@mono/core/read/insights';
 import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -29,6 +29,8 @@ import { labelPending } from './people.ts';
 import { bankParts, cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
+import { payeeMonths } from './explain.ts';
+import { INSIGHT_MAX } from '../shared/insights.ts';
 import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
@@ -69,6 +71,8 @@ import type {
   RecentOperations,
   SpendingOverview,
   SpendingOverviewQuery,
+  InsightDriver,
+  SpendingExplain,
   SpendingInsights,
   SpendingUsual,
   SpendingPersonPart,
@@ -102,6 +106,12 @@ function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: 
   if (!found) return null;
   return { ...found, insights: found.insights.map((i) => ({ ...i, categoryId: i.category === null ? null : (CATEGORY_ID.get(i.category) ?? null) })) };
 }
+
+/**
+ * The usual (spendingUsual) with what it was made of: the months (newest first), each month's net spending and — a
+ * month that is over — each month's income, hryvnia kopecks in the same order.
+ */
+type UsualFound = { usual: SpendingUsual; months: string[]; spent: number[]; income: number[] | null };
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -391,7 +401,9 @@ export class DataService {
       q.participantId !== undefined && participants.length > 1 ? sum(foldByCategory(await summary(period), rates).byCategory).net : null;
 
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
-    const usual = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
+    const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
+    const usual = found?.usual ?? null;
+    const insights = usual ? insightsOf(usual, categories) : null;
     return {
       month: q.month,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -403,8 +415,51 @@ export class DataService {
       leftOut: [...cur.leftOut].sort(([a], [b]) => a - b).map(([currency, net]) => ({ currency, net })),
       familyTotal,
       usual,
-      insights: usual ? insightsOf(usual, categories) : null,
+      insights,
+      explain: found ? await this.explain(db, q, found, insights, total.net, pendingHolds, rates, now) : null,
     };
+  }
+
+  /**
+   * Home's «Insights» block: the main driver of each of the first INSIGHT_MAX unusual categories (one read of its lines
+   * over the usual months and the shown one), a finished month's savings rate, and what the usual is over.
+   */
+  private async explain(
+    db: Db,
+    q: SpendingOverviewQuery,
+    found: UsualFound,
+    insights: SpendingInsights | null,
+    spent: number,
+    pendingHolds: number,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<SpendingExplain> {
+    const { usual, months, spent: monthSpent, income } = found;
+    const tz = systemTimeZone();
+    const filters = { tz, scope: q.scope, ...viewOf(q) };
+    const span = { from: monthBounds(months.at(-1)!).from, to: monthBounds(q.month).to };
+    const unusual = (insights?.insights ?? []).slice(0, INSIGHT_MAX).filter((i) => i.category !== null);
+    const jarTitles = unusual.length > 0 ? await this.jarTitles(db) : [];
+    const drivers: InsightDriver[] = [];
+    for (const i of unusual) {
+      const category = i.category!;
+      const raw = await categoryLines(db, { ...span, ...filters, category }, now);
+      const lines = raw.lines
+        .filter((l) => l.kind === 'body')
+        .map((l) => ({ month: localDate(l.time * 1000, tz).slice(0, 7), merchant: merchantText(l.description, jarTitles), uah: toUah(l.amount, l.currency, rates) }));
+      const d = mainDriver(i.now - i.usual, payeeMonths(lines, q.month, months));
+      if (d) drivers.push({ category, categoryId: i.categoryId, name: d.name, direction: i.direction, amount: d.amount, share: d.share });
+    }
+    const savings =
+      usual.income && income
+        ? savingsRate({ income: usual.income.now, spent }, months.map((_, k) => ({ income: income[k]!, spent: monthSpent[k]! })))
+        : null;
+    return { drivers, savings, basis: { months: usual.months, from: months.at(-1)!, to: months[0]!, pendingHolds } };
+  }
+
+  private async jarTitles(db: Db): Promise<string[]> {
+    const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
+    return accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
   }
 
   /**
@@ -418,7 +473,7 @@ export class DataService {
     dataFrom: string | null,
     rates: Map<number, FxRate>,
     now: number,
-  ): Promise<SpendingUsual | null> {
+  ): Promise<UsualFound | null> {
     if (period.incomplete && (period.dataUntil === null || period.dataUntil < period.from)) return null;
     const months = usualMonths(q.month, dataFrom);
     if (months.length === 0) return null;
@@ -437,7 +492,7 @@ export class DataService {
     const income = period.incomplete ? [] : months.map(incomeOf);
     const u = usualOf(spent);
     if (!u) return null;
-    return {
+    const usual: SpendingUsual = {
       months: months.length,
       running: period.incomplete,
       total: u.total,
@@ -446,6 +501,8 @@ export class DataService {
         .map(([category, net]) => ({ category, categoryId: CATEGORY_ID.get(category) ?? null, net })),
       income: period.incomplete ? null : { now: incomeOf(q.month), usual: median(income) },
     };
+    const totals = spent.map((m) => [...m.values()].reduce((a, b) => a + b, 0));
+    return { usual, months, spent: totals, income: period.incomplete ? null : income };
   }
 
   /**

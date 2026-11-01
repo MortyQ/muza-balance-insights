@@ -38,6 +38,7 @@ const VIEW: SpendingOverview = {
   familyTotal: null,
   usual: null,
   insights: null,
+  explain: null,
 };
 
 // The family view with nothing spent this month.
