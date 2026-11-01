@@ -13,10 +13,10 @@
 
 ## 3. Desktop: the tile (desktop)
 
-- [ ] 3.1 `insightsView` maps the detectors' output to lines; constants moved; `INSIGHT_MAX` = 5; category rows link to
-  the category screen; keys in `uk.json`, `en.json`, `ru.json` (`{share}`, `incomeNormal` removed). Renderer tests,
+- [x] 3.1 `insightsView` maps the detectors' output to lines; constants moved; `INSIGHT_MAX` = 5; category rows link to
+  the category screen; keys in `uk.json`, `en.json`, `ru.json` (`overMonth` with `{diff}`, `incomeNormal` removed). Renderer tests,
   including a mounted click on a line.
-- [ ] 3.2 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
+- [x] 3.2 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
 
 ## 4. Docs and checks
 

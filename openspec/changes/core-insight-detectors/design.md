@@ -81,14 +81,14 @@ it, but the spending block's other parts may; it is dropped in a later cleanup i
 All in the existing slice `features/spending-summary`:
 
 - `utils/insights.ts`: `insightsView` maps `SpendingInsights` to lines: a dictionary key per `type`, `{name}`,
-  `{amount}` and `{share}` params, `tone` from `direction` (income is `neutral`), and the `to` of the category screen.
-  First `INSIGHT_MAX` (5).
+  `{amount}` and `{diff}` params (`{diff}` is `changeText`: the money with the share in brackets, as the lines say
+  today), `tone` from `direction` (income is `neutral`), and the `to` of the category screen. First `INSIGHT_MAX` (5).
 - `components/SpendingInsights.vue`: a category row is a `router-link` (the whole row, focus ring, keyboard); income
   rows stay plain. Five rows in the tile: the tile already grows with its row; checked in the mounted test at the
   narrow width.
 - `constants.ts`: `INSIGHT_SHARE`, `INSIGHT_MIN`, `INSIGHT_BASE` go; `INSIGHT_MAX` becomes 5.
-- Keys under `home.spending.insights.*`: `more` / `less` / `overMonth` carry `{share}`; `incomeNormal` is removed;
-  `rare` keeps the money only.
+- Keys under `home.spending.insights.*`: `overMonth` now carries `{diff}` like `more` / `less`; `incomeNormal` is
+  removed; `rare` keeps the money only.
 
 ## 6. Security
 

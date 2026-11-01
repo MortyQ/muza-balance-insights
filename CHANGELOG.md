@@ -34,6 +34,11 @@ English interface.
 - **Account cards look like your real cards.** In the open balance row each account is drawn as its bank's card:
   Monobank's black, white, iron, platinum or children's card, PrivatBank's blue card, A-Bank's green card and
   Slovenská sporiteľňa's blue card, each with a chip and a contactless mark.
+- **«What's unusual» shows what matters most.** It lists up to five changes instead of three, the biggest in money
+  first, with income ranked among them. Each line gives both the amount and the share of your usual month, also for
+  a category already over a whole usual month. A change is listed only when it is at least 500 ₴ and at least 20% of
+  the usual, and a category you rarely spend in now shows up as soon as it passes 500 ₴. Click a category's line to
+  open its screen. The «Income is at its usual level» line is gone.
 
 ### Categories
 

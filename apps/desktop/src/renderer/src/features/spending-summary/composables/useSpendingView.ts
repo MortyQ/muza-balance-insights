@@ -8,7 +8,7 @@ import { useSummaryView } from './useSummaryView.ts';
 
 /** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
 export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
-  const { month, state, view, fmt } = base;
+  const { month, state, view, fmt, scope } = base;
   const { blockPick, who, people, onPick } = usePick(base);
   const hasData = computed(() => !!view.value && view.value.categories.some((c) => c.net > 0));
   const { rows, categories } = useCategoryRows(base, blockPick, who, hasData, prefs);
@@ -19,7 +19,7 @@ export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<Spe
   const leftOut = computed(() => (view.value ? leftOutLines(view.value) : []));
 
   // «Usual» is the view's (the family or the global filter's person), not a person picked inside the block.
-  const insights = computed(() => (view.value && hasData.value && blockPick.value === null ? insightsView(view.value, fmt.value) : null));
+  const insights = computed(() => (view.value && hasData.value && blockPick.value === null ? insightsView(view.value, fmt.value, scope.value) : null));
 
   return { subtitle, hasData, empty, leftOut, summary, categories, people, insights, onPick };
 }

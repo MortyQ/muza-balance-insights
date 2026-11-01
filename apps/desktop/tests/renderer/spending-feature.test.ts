@@ -346,35 +346,44 @@ describe('spending block: currencies come from the home-wide choice', () => {
 });
 
 describe('spending block: what is unusual', () => {
-  const USUAL = {
+  const INSIGHTS = {
     months: 6,
     running: false,
-    total: 60_000,
-    categories: [
-      { category: 'продукты', categoryId: 'groceries' as const, net: 100_000 },
-      { category: 'кафе и рестораны', categoryId: 'cafes' as const, net: 10_000 },
+    insights: [
+      {
+        type: 'category-less' as const, direction: 'down' as const, amount: 150_000, percent: 50,
+        category: 'продукты', categoryId: 'groceries' as const, now: 150_000, usual: 300_000,
+      },
+      { type: 'income-more' as const, direction: 'up' as const, amount: 100_000, percent: 20, category: null, categoryId: null, now: 600_000, usual: 500_000 },
     ],
-    income: { now: 100_000, usual: 100_000 },
   };
 
-  it('a category off its usual: the line, income beside it, what usual is; a person picked inside the block hides it', async () => {
-    current = { ...VIEW, usual: USUAL };
+  it("core's insights worded in order, what usual is; a category line opens its screen; a person picked inside the block hides it", async () => {
+    current = { ...VIEW, insights: INSIGHTS };
     const w = await mountBlock();
-    const text = w.find('section[aria-label="Что необычно"]').text();
-    expect(text).toContain(`Продукты — на ${formatMoney(50_000, 980)} (50%) меньше обычного`);
-    // Cafés: none this month, 10 000 usually — 100% less, 100 ₴ is under the threshold.
-    expect(text).not.toContain('Кафе');
-    expect(text).toContain('Доходы на обычном уровне');
-    expect(text).toContain('Сравнение с медианой за 6 месяцев');
+    const lines = w.find('section[aria-label="Что необычно"]').findAll('[data-test="insight-line"]');
+    expect(lines.map((l) => l.text())).toEqual([
+      `Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`,
+      `Доходы на ${formatMoney(100_000, 980)} (20%) выше обычного`,
+    ]);
+    expect(w.find('section[aria-label="Что необычно"]').text()).toContain('Сравнение с медианой за 6 месяцев');
+    expect(lines[1]!.element.tagName).toBe('DIV');
 
+    await lines[0]!.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('category');
+    expect(router.currentRoute.value.params.id).toBe('groceries');
+
+    await router.push('/');
     await person(w, 'Аня')!.trigger('click');
     expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
   });
 
-  it('nothing off: no section', async () => {
-    current = { ...VIEW, usual: { ...USUAL, categories: [{ category: 'продукты', categoryId: 'groceries', net: 48_000 }] } };
-    const w = await mountBlock();
-    expect(w.find('section[aria-label="Что необычно"]').exists()).toBe(false);
+  it('nothing unusual, or no insights at all: no section', async () => {
+    current = { ...VIEW, insights: { ...INSIGHTS, insights: [] } };
+    expect((await mountBlock()).find('section[aria-label="Что необычно"]').exists()).toBe(false);
+    current = { ...VIEW, insights: null };
+    expect((await mountBlock()).find('section[aria-label="Что необычно"]').exists()).toBe(false);
   });
 });
 

@@ -733,13 +733,12 @@
       "insights": {
         "incomeLess": "Income is {diff} below usual",
         "incomeMore": "Income is {diff} above usual",
-        "incomeNormal": "Income is at its usual level",
         "less": "{name} — {diff} less than usual",
         "months": "{n} month | {n} months | {n} months",
         "more": "{name} — {diff} more than usual",
         "noteMonth": "Compared with the median of {months}",
         "noteRunning": "Compared with the median whole month of {months}: this month is still running",
-        "overMonth": "{name} — already {amount} more than in a usual whole month",
+        "overMonth": "{name} — already {diff} more than in a usual whole month",
         "rare": "{name} — +{amount}, usually next to nothing here",
         "title": "What's unusual"
       },

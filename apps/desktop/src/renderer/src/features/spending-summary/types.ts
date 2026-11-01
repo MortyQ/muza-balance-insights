@@ -183,6 +183,8 @@ export interface UseSummaryViewReturn {
 export interface InsightLine {
   text: string;
   tone: 'up' | 'down' | 'neutral';
+  /** The category screen it opens; null — income. */
+  to: RouteLocationRaw | null;
 }
 
 export interface InsightsView {
