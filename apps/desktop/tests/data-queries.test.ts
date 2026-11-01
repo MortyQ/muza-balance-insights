@@ -95,6 +95,12 @@ describe('the overviews run a fixed number of statements', () => {
   });
 
   it('whatever the length of the history', async () => {
-    expect(await counts({ people: 2, accounts: 4, months: 36 })).toEqual(await counts({ people: 2, accounts: 4, months: 3 }));
+    // The «Insights» block's drivers add one fixed read (all unusual categories at once) when a category is unusual,
+    // which needs whole months behind the usual: compared between histories that both have them, and once against
+    // the shortest, where only that read is missing.
+    const long = await counts({ people: 2, accounts: 4, months: 36 });
+    expect(long).toEqual(await counts({ people: 2, accounts: 4, months: 12 }));
+    const short = await counts({ people: 2, accounts: 4, months: 3 });
+    expect({ ...long, 'spending, past month, person': long['spending, past month, person']! - 4 }).toEqual(short);
   });
 });

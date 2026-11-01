@@ -5,7 +5,7 @@
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
-import { categoryLines, latestLines } from '@mono/core/read/category-lines';
+import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/category-lines';
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
@@ -421,8 +421,8 @@ export class DataService {
   }
 
   /**
-   * Home's «Insights» block: the main driver of each of the first INSIGHT_MAX unusual categories (one read of its lines
-   * over the usual months and the shown one), a finished month's savings rate, and what the usual is over.
+   * Home's «Insights» block: the main driver of each of the first INSIGHT_MAX unusual categories (one read of their
+   * lines over the usual months and the shown one), a finished month's savings rate, and what the usual is over.
    */
   private async explain(
     db: Db,
@@ -439,16 +439,17 @@ export class DataService {
     const filters = { tz, scope: q.scope, ...viewOf(q) };
     const span = { from: monthBounds(months.at(-1)!).from, to: monthBounds(q.month).to };
     const unusual = (insights?.insights ?? []).slice(0, INSIGHT_MAX).filter((i) => i.category !== null);
-    const jarTitles = unusual.length > 0 ? await this.jarTitles(db) : [];
     const drivers: InsightDriver[] = [];
-    for (const i of unusual) {
-      const category = i.category!;
-      const raw = await categoryLines(db, { ...span, ...filters, category }, now);
-      const lines = raw.lines
-        .filter((l) => l.kind === 'body')
-        .map((l) => ({ month: localDate(l.time * 1000, tz).slice(0, 7), merchant: merchantText(l.description, jarTitles), uah: toUah(l.amount, l.currency, rates) }));
-      const d = mainDriver(i.now - i.usual, payeeMonths(lines, q.month, months));
-      if (d) drivers.push({ category, categoryId: i.categoryId, name: d.name, direction: i.direction, amount: d.amount, share: d.share });
+    if (unusual.length > 0) {
+      const jarTitles = await this.jarTitles(db);
+      const raw = await linesOfCategories(db, { ...span, ...filters, categories: unusual.map((i) => i.category!) }, now);
+      for (const i of unusual) {
+        const lines = raw.lines
+          .filter((l) => l.category === i.category)
+          .map((l) => ({ month: localDate(l.time * 1000, tz).slice(0, 7), merchant: merchantText(l.description, jarTitles), uah: toUah(l.amount, l.currency, rates) }));
+        const d = mainDriver(i.now - i.usual, payeeMonths(lines, q.month, months));
+        if (d) drivers.push({ category: i.category!, categoryId: i.categoryId, name: d.name, direction: i.direction, amount: d.amount, share: d.share });
+      }
     }
     const savings =
       usual.income && income
