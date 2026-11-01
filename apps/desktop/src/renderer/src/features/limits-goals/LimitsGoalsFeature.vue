@@ -7,6 +7,8 @@ import { useIntro } from '@/shared/lib';
 import { VButton, VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import BudgetPanel from './components/BudgetPanel.vue';
 import BudgetSheet from './components/BudgetSheet.vue';
+import GoalRow from './components/GoalRow.vue';
+import GoalSheet from './components/GoalSheet.vue';
 import LimitRow from './components/LimitRow.vue';
 import LimitSheet from './components/LimitSheet.vue';
 import { useLimitsGoals } from './composables/useLimitsGoals.ts';
@@ -18,7 +20,7 @@ const { openBudget = false } = defineProps<{ openBudget?: boolean }>();
 const { state, view, owners, defaultOwner, defaultCurrency, save, remove, addSuggested } = useLimitsGoals();
 const intro = useIntro('limits');
 
-const sheet = ref<'limit' | 'budget' | null>(null);
+const sheet = ref<'limit' | 'budget' | 'goal' | null>(null);
 const start = ref<SheetStart | null>(null);
 const failed = ref(false);
 
@@ -48,6 +50,21 @@ function editLimit(id: number) {
   start.value = { id, goal: { type: 'limit', categoryId: l.categoryId, period: l.period, currency: l.currency, amount: l.amountMinor, participantId: l.owner } };
   failed.value = false;
   sheet.value = 'limit';
+}
+function newGoal() {
+  start.value = {
+    id: null,
+    goal: { type: 'saving', name: '', currency: defaultCurrency.value, amount: 0, participantId: defaultOwner.value, until: null, source: 'jar', accountId: null },
+  };
+  failed.value = false;
+  sheet.value = 'goal';
+}
+function editGoal(id: number) {
+  const g = state.value.data?.savings.find((x) => x.id === id);
+  if (!g) return;
+  start.value = { id, goal: { type: 'saving', name: g.name, currency: g.currency, amount: g.amountMinor, participantId: g.owner, until: g.until, source: g.source, accountId: g.accountId } };
+  failed.value = false;
+  sheet.value = 'goal';
 }
 async function onSave(id: number | null, g: GoalPayload) {
   failed.value = !(await save(id, g));
@@ -105,9 +122,22 @@ onMounted(() => {
           <p v-else class="py-2 text-sm text-foreground-muted">{{ view.early ? $t('limits.suggest.early') : $t('limits.none') }}</p>
         </div>
       </VCard>
+      <VCard padding="md" data-test="goals">
+        <div class="flex flex-col gap-1">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-base font-bold">{{ $t('limits.goals.title') }}</h2>
+            <VButton variant="neutral" size="sm" icon="lucide:plus" :text="$t('limits.goals.add')" data-test="goal-add" @click="newGoal" />
+          </div>
+          <ul v-if="view.goals.length > 0" class="flex flex-col divide-y divide-border-subtle">
+            <GoalRow v-for="row in view.goals" :key="row.id" :row @edit="editGoal(row.id)" />
+          </ul>
+          <p v-else class="py-2 text-sm text-foreground-muted">{{ $t('limits.goals.none') }}</p>
+        </div>
+      </VCard>
       <VButton v-if="!intro.open.value" variant="link" size="sm" class="self-start" :text="$t('common.howItWorks')" @click="intro.show" />
 
       <LimitSheet :open="sheet === 'limit'" :start :overview="state.data" :owners :failed @update:open="(v: boolean) => !v && (sheet = null)" @save="onSave" @delete="onDelete" />
+      <GoalSheet :open="sheet === 'goal'" :start :overview="state.data" :owners :failed @update:open="(v: boolean) => !v && (sheet = null)" @save="onSave" @delete="onDelete" />
       <BudgetSheet :open="sheet === 'budget'" :start :overview="state.data" :owners :failed @update:open="(v: boolean) => !v && (sheet = null)" @save="onSave" @delete="onDelete" />
     </template>
   </div>

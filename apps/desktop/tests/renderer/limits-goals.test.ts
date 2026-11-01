@@ -37,7 +37,12 @@ const OVERVIEW: LimitsOverview = {
     { id: 2, categoryId: 'groceries', period: 'week', owner: null, currency: 980, amountMinor: 20_000, figures: fig(20_000, 30_000, 'exceeded', { forecast: null, daysPassed: 7, days: 7 }) },
     { id: 3, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 400_000, figures: fig(400_000, 100_000, 'ok') },
   ],
-  savings: [], jars: [], suggestions: [],
+  savings: [{
+    id: 9, name: 'Fictional trip', owner: null, currency: 980, amountMinor: 5_000_000, until: '2026-10-01', source: 'jar', accountId: 'jar1',
+    target: 5_000_000, progress: 3_100_000, percent: 62, left: 1_900_000, perMonth: 271_500, months: 7, overdue: false,
+  }],
+  jars: [{ id: 'jar1', name: { provider: 'monobank', kind: 'jar', type: null, currency: 980, tag: null }, currency: 980, goal: 6_000_000, owner: 1 }],
+  suggestions: [],
   past: { months: ['2026-02', '2026-01', '2025-12'], byCategory: { cafes: [500_000, 300_000, 400_000], rent: [1_250_000, 1_250_000, 1_250_000] }, total: [4_000_000, 3_800_000, 4_200_000] },
   kinds: [{ categoryId: 'investments', kind: 'savings', fixed: false, changed: false }],
   rates: null,
@@ -87,6 +92,32 @@ beforeEach(() => {
 });
 
 describe('the «Budget» screen', () => {
+  it('a savings goal: progress of the target from its jar, what is needed a month to its date, with the formula', async () => {
+    const w = await mountScreen();
+    const row = w.get('[data-test="goal-row"]');
+    expect(plain(row.text())).toContain(`${uah(3_100_000)} из ${uah(5_000_000)} · банка · 62%`);
+    expect(plain(row.get('[data-test="goal-need"]').text())).toContain(`к 1 октября · нужно ${uah(271_500)} в месяц`);
+    w.unmount();
+  });
+
+  it('the goal sheet offers the jar\'s own target when nothing is typed', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const GoalSheet = (await import('@/features/limits-goals/components/GoalSheet.vue')).default;
+    const w = mount(GoalSheet, {
+      props: {
+        open: true,
+        start: { id: null, goal: { type: 'saving', name: '', currency: 980, amount: 0, participantId: null, until: null, source: 'jar', accountId: 'jar1' } },
+        overview: OVERVIEW,
+        owners: [],
+      },
+      global: { plugins: [i18n] },
+      attachTo: document.body,
+    });
+    await flushPromises();
+    expect(inputOf(document, 'goal-amount').value).toBe('60000');
+    w.unmount();
+  });
+
   it('the budget panel: the fixed rows paid or not, the flexible part with its state and per day by the budget', async () => {
     const w = await mountScreen();
     const panel = w.get('[data-test="budget-panel"]');

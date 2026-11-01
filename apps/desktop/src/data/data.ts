@@ -12,8 +12,9 @@ import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/co
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
 import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
-import { addGoal, deleteGoal, listGoals, updateGoal, type GoalInput } from '@mono/core/read/goals';
+import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
 import { budgetView, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
+import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -44,8 +45,10 @@ import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
   BudgetStructureView,
+  GoalJarView,
   GoalPayload,
   LimitOverView,
+  SavingGoalView,
   LimitsOverview,
   LimitsOverviewQuery,
   CategoryKindQuery,
@@ -1047,14 +1050,15 @@ export class DataService {
       const values = past.map((m) => m.get(w) ?? 0);
       if (values.some((v) => v !== 0)) byCategory[idOf(w)] = values;
     }
+    const { savings, jars } = await this.savingsOf(db, goals, today, rates, now);
     return {
       month,
       today,
       current,
       budget,
       limits,
-      savings: [],
-      jars: [],
+      savings,
+      jars,
       suggestions: suggestions(past, kinds, limited, idOf),
       past: { months, byCategory, total: past.map((m) => [...m.entries()].filter(([w]) => kinds.has(w)).reduce((s, [, v]) => s + v, 0)) },
       kinds: kindRows.flatMap((r) => {
@@ -1063,6 +1067,54 @@ export class DataService {
       }),
       rates: ratesView,
     };
+  }
+
+  /**
+   * Savings goals and the jars a goal can follow: a jar goal's progress is the jar's own money now (none when the jar is
+   * gone); «cards and jars» is the owner's money now, an account below zero counted as 0 (credit money is not theirs).
+   */
+  private async savingsOf(
+    db: Db,
+    goals: ReadonlyArray<Goal>,
+    today: string,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<{ savings: SavingGoalView[]; jars: GoalJarView[] }> {
+    const jarRows = (
+      await db.execute(
+        `SELECT a.id, c.provider, a.kind, a.type, a.currency_code, a.goal, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id
+         WHERE a.kind = 'jar' AND a.id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
+      )
+    ).rows;
+    const names = accountNames(jarRows.map(accountRow));
+    const jars = jarRows.map((r) => ({
+      id: String(r.id),
+      name: names.get(String(r.id))!,
+      currency: Number(r.currency_code),
+      goal: r.goal === null ? null : Number(r.goal),
+      owner: Number(r.participant_id),
+    }));
+    const saving = goals.filter((g): g is Extract<Goal, { type: 'saving' }> => g.type === 'saving');
+    if (saving.length === 0) return { savings: [], jars };
+    const own = (a: { own_funds: number | null; currency: number }) => (a.own_funds === null ? 0 : Math.max(0, toUah(a.own_funds, a.currency, rates) ?? 0));
+    const all = await balancesAt(db, { endSec: now + 1 });
+    const byId = new Map(all.accounts.map((a) => [a.id, a]));
+    const ownerMoney = new Map<number | null, number>();
+    for (const o of new Set(saving.filter((g) => g.source === 'own').map((g) => g.participantId))) {
+      const b = o === null ? all : await balancesAt(db, { endSec: now + 1, participantId: o });
+      ownerMoney.set(o, b.accounts.reduce((s, a) => s + own(a), 0));
+    }
+    const savings = saving.map((g): SavingGoalView => {
+      const target = toUah(g.amount, g.currency, rates) ?? 0;
+      const jar = g.source === 'jar' && g.accountId ? byId.get(g.accountId) : undefined;
+      const money = g.source === 'own' ? (ownerMoney.get(g.participantId) ?? 0) : jar ? own(jar) : null;
+      const p = savingProgress(target, money, g.until, today);
+      return {
+        id: g.id, name: g.name, owner: g.participantId, currency: g.currency, amountMinor: g.amount, until: g.until, source: g.source, accountId: g.accountId,
+        target, progress: p.progress, percent: p.percent, left: p.left, perMonth: p.perMonth, months: p.months, overdue: p.overdue,
+      };
+    });
+    return { savings, jars };
   }
 
   /** A plan from the screen: ids to the core's words. */

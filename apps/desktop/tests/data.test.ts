@@ -1030,6 +1030,23 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect(v.past).toMatchObject({ months: ['2026-02', '2026-01', '2025-12', '2025-11'], byCategory: { cafes: [400_000, 400_000, 400_000, 400_000] }, total: [450_000, 450_000, 450_000, 450_000] });
   });
 
+  it('savings goals: from a jar (its target offered by the list of jars), from cards and jars; a jar that is gone', async () => {
+    await account('jar1', null, 980, 3_100_000);
+    await db.execute({ sql: 'UPDATE accounts SET goal = ? WHERE id = ?', args: [5_000_000, 'jar1'] });
+    await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['jar1', kyivStartOfDay('2025-11-01'), SYNCED_TO, SYNCED_TO + 60] });
+    let v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.jars).toEqual([{ id: 'jar1', name: expect.objectContaining({ kind: 'jar', currency: 980 }), currency: 980, goal: 5_000_000, owner: expect.any(Number) }]);
+    await svc.saveGoal(null, { type: 'saving', name: 'Fictional trip', currency: 980, amount: 5_000_000, participantId: null, until: '2026-10-01', source: 'jar', accountId: 'jar1' });
+    await svc.saveGoal(null, { type: 'saving', name: 'Reserve', currency: 980, amount: 10_000_000, participantId: null, until: null, source: 'own', accountId: null });
+    v = await svc.limitsOverview({ month: '2026-03' });
+    // 15 March → 1 October: March … September, 7 months.
+    expect(v.savings[0]).toMatchObject({ name: 'Fictional trip', target: 5_000_000, progress: 3_100_000, percent: 62, left: 1_900_000, months: 7, perMonth: 271_500, overdue: false });
+    expect(v.savings[1]).toMatchObject({ name: 'Reserve', source: 'own', progress: 3_100_000, perMonth: null });
+    // A jar closed in the bank: the goal keeps its id, the account is gone.
+    await db.execute(`UPDATE goals SET account_id = 'gone' WHERE name = 'Fictional trip'`);
+    expect((await svc.limitsOverview({ month: '2026-03' })).savings[0]).toMatchObject({ progress: null, percent: null });
+  });
+
   it('the Insights read lists a monthly limit over in the shown month, «Personal» spending only', async () => {
     await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 150_000, participantId: null });
     await svc.saveGoal(null, { type: 'limit', categoryId: 'groceries', period: 'month', currency: 980, amount: 100_000, participantId: null });

@@ -48,12 +48,27 @@ export interface SuggestionView {
   amount: string;
 }
 
+export interface GoalRowView {
+  id: number;
+  name: string;
+  /** Whole per cent for the ring; null — its jar is gone. */
+  percent: number | null;
+  /** «31 000 of 50 000 ₴ · jar». */
+  progress: string;
+  /** «by June · 2 715 ₴ a month», «met», «overdue», '' — no date. */
+  need: string;
+  tone: 'ok' | 'met' | 'late' | 'gone';
+  owner: string | null;
+  help: GoalHelp | null;
+}
+
 export interface LimitsScreenView {
   current: boolean;
   monthTitle: string;
   budget: BudgetPanelView | null;
   limits: LimitRowView[];
   suggestions: SuggestionView[];
+  goals: GoalRowView[];
   /** Fewer than 3 whole months: no suggestions yet. */
   early: boolean;
 }

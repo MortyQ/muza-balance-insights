@@ -1,10 +1,10 @@
-import type { GoalCurrency, LimitsOverview, MonthBudgetView, RatesView } from '@contract/api.ts';
+import type { GoalCurrency, LimitsOverview, MonthBudgetView, RatesView, SavingGoalView } from '@contract/api.ts';
 import type { KindCategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { limitLook } from '@/entities/goal';
-import { formatMoney, monthName, t, UAH } from '@/shared/lib';
-import type { BudgetPanelView, FixedRowView, LimitRowView, LimitsScreenView } from './types.ts';
+import { dayMonthName, formatMoney, monthName, t, UAH } from '@/shared/lib';
+import type { BudgetPanelView, FixedRowView, GoalRowView, LimitRowView, LimitsScreenView } from './types.ts';
 
 export const nameOf = (id: KindCategoryId) => categoryName({ category: id, categoryId: id });
 
@@ -63,8 +63,37 @@ export function budgetPanel(b: MonthBudgetView, month: string, current: boolean,
   };
 }
 
+/** A savings goal's row: the ring, money of the target, and what is needed a month to its date. */
+export function goalRow(g: SavingGoalView, fmt: MoneyFormat, ownerName: (id: number | null) => string | null, year: number): GoalRowView {
+  const source = t(g.source === 'jar' ? 'limits.goals.fromJar' : 'limits.goals.fromOwn');
+  const by = g.until ? dayMonthName(g.until, year) : '';
+  const tone: GoalRowView['tone'] = g.progress === null ? 'gone' : g.left === 0 ? 'met' : g.overdue ? 'late' : 'ok';
+  return {
+    id: g.id,
+    name: g.name,
+    percent: g.percent,
+    progress:
+      g.progress === null
+        ? t('limits.goals.jarGone')
+        : t('limits.goals.progress', { money: fmt.money(g.progress), target: fmt.money(g.target), source }),
+    need:
+      tone === 'met' ? t('limits.goals.met')
+        : tone === 'late' ? t('limits.goals.late', { date: by, left: fmt.money(g.left ?? 0) })
+          : g.perMonth !== null ? t('limits.goals.need', { date: by, amount: fmt.money(g.perMonth) })
+            : '',
+    tone,
+    owner: ownerName(g.owner),
+    help: g.perMonth !== null && g.months !== null && g.left !== null
+      ? {
+          title: t('limits.goals.helpTitle'),
+          lines: [t('limits.goals.help'), t('limits.goals.helpFormula', { left: fmt.money(g.left), months: g.months, amount: fmt.money(g.perMonth) })],
+        }
+      : null,
+  };
+}
+
 /** The «Budget» screen from one answer; `ownerName` — whose a plan is, in a view of several people (null — not said). */
-export function limitsScreenView(v: LimitsOverview, fmt: MoneyFormat, ownerName: (id: number | null) => string | null): LimitsScreenView {
+export function limitsScreenView(v: LimitsOverview, fmt: MoneyFormat, ownerName: (id: number | null) => string | null, year = Number(v.today.slice(0, 4))): LimitsScreenView {
   const limits: LimitRowView[] = v.limits.map((l) => ({
     id: l.id,
     categoryId: l.categoryId,
@@ -81,6 +110,7 @@ export function limitsScreenView(v: LimitsOverview, fmt: MoneyFormat, ownerName:
     budget: v.budget ? budgetPanel(v.budget, v.month, v.current, fmt) : null,
     limits,
     suggestions: v.limits.length === 0 ? v.suggestions.map((s) => ({ categoryId: s.categoryId, name: nameOf(s.categoryId), amount: fmt.money(s.amount) })) : [],
+    goals: v.savings.map((g) => goalRow(g, fmt, ownerName, year)),
     early: v.past.months.length < 3,
   };
 }

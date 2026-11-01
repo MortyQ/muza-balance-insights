@@ -44,9 +44,9 @@
 
 ## 8. Savings goals
 
-- [ ] 8.1 `read/savings-goals.ts` (progress from a jar or «cards and jars», needed per month, overdue, a missing jar); tests for every `core-savings-goals` scenario
-- [ ] 8.2 Goals in `getLimitsOverview`; `GoalRow`, `GoalSheet` (jar picker offering the jar's target), «?» on progress and need; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/data.test.ts` and `tests/renderer/limits-goals.test.ts`
-- [ ] 8.3 Commit `feat: savings goals`
+- [x] 8.1 `read/savings-goals.ts` (progress from a jar or «cards and jars», needed per month, overdue, a missing jar); tests for every `core-savings-goals` scenario
+- [x] 8.2 Goals in `getLimitsOverview`; `GoalRow`, `GoalSheet` (jar picker offering the jar's target), «?» on progress and need; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/data.test.ts` and `tests/renderer/limits-goals.test.ts`
+- [x] 8.3 Commit `feat: savings goals`
 
 ## 9. Docs
 
