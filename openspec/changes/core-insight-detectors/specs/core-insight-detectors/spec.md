@@ -29,7 +29,8 @@ it grew by at least `INSIGHT_MIN`, as `category-rare` and without a share.
 
 ### Requirement: Running month
 While the shown month runs, only categories already over a whole usual month by both thresholds SHALL be returned
-(`category-over-month`, with the share against the whole usual month); no income and no «less» insights.
+(`category-over-month`, with the share against the whole usual month); a category with a small or no usual SHALL be
+`category-rare` as in a month that is over; no income and no «less» insights.
 
 #### Scenario: Mid-month
 - **WHEN** the month is running and a category is already 40% over its whole usual month and over `INSIGHT_MIN`

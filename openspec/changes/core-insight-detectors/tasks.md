@@ -2,7 +2,7 @@
 
 ## 1. Core: detectors (core)
 
-- [ ] 1.1 `read/insights.ts`: `InsightInput`, `Insight`, the constants and `detectInsights` (design 1–3). Verify with
+- [x] 1.1 `read/insights.ts`: `InsightInput`, `Insight`, the constants and `detectInsights` (design 1–3). Verify with
   fictional sums in `tests/read/insights.test.ts`: both thresholds, rare and new categories, running month, income,
   ranking with ties, fewer than 3 months.
 
