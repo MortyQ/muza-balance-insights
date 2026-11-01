@@ -323,6 +323,7 @@ app.whenReady().then(async () => {
     getIncomeOverview: (q) => data.incomeOverview(q),
     getRecurringOverview: (q) => data.recurringOverview(q),
     setRecurringMark: (q) => data.setRecurringMark(q),
+    setOperationCategory: (q) => data.setOperationCategory(q),
     getAllowanceOverview: (q) => data.allowanceOverview(q),
     addReserve: (r) => data.addReserve(r),
     updateReserve: (id, r) => data.updateReserve(id, r),

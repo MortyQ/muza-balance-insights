@@ -676,8 +676,13 @@
         "telecom": "Mobile and digital services",
         "transferFees": "Transfer fees",
         "transport": "Taxi and transport",
-        "travel": "Travel",
-        "utilities": "Utilities"
+        "travel": "Travel and holidays",
+        "utilities": "Utilities",
+        "rent": "Rent",
+        "car": "Car",
+        "kids": "Kids",
+        "subscriptions": "Subscriptions",
+        "investments": "Investments"
       },
       "change": {
         "less": "{diff} less than in {month}",

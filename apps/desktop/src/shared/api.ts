@@ -280,6 +280,11 @@ export type BalanceApi = {
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
+  /**
+   * The user's category of a debit (`key` — a CategoryLineView's key), for it alone or for every debit of its payee;
+   * `category` null returns the automatic one. The caller reloads. A line that takes no choice → error.
+   */
+  setOperationCategory(q: OperationCategoryQuery): Promise<OperationCategoryResult>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -480,6 +485,8 @@ export type CategoryLineView = {
   refunded: boolean;
   /** Cashback in hryvnia kopecks (0 — none or no rate). */
   cashback: number;
+  /** Where its category comes from; null — it takes no choice (a fee line, a refund, a transfer between own accounts). */
+  choice: CategoryChoice | null;
 };
 
 /**
@@ -539,6 +546,18 @@ export type RecurringOverviewQuery = { participantId?: number; providers?: Provi
 
 /** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
 export type RecurringMark = 'mandatory' | 'hidden';
+
+/** `key` — a CategoryLineView's key; `payee` — for every debit of its payee. */
+export type OperationCategoryQuery = { key: string; category: CategoryId | null; payee: boolean };
+
+/** How many operations changed category. */
+export type OperationCategoryResult = { changed: number };
+
+/**
+ * Where a debit's category comes from: the user's choice for it (`operation`), for its payee (`payee`), or the
+ * automatic rules (`auto`).
+ */
+export type CategoryChoice = 'operation' | 'payee' | 'auto';
 
 /** `key` — a RecurringPaymentView's key; `mark` null clears it. */
 export type RecurringMarkQuery = { key: string; mark: RecurringMark | null };

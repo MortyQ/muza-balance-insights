@@ -103,6 +103,9 @@ export const ARG_SCHEMAS = {
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),
   setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
+  setOperationCategory: z.tuple([
+    z.strictObject({ key: z.string().min(1).max(200), category: z.enum(CATEGORY_IDS).nullable(), payee: z.boolean() }),
+  ]),
   // Whole months, from ≤ to, at most ANALYTICS_MAX_MONTHS; main also refuses a range that ends after this month.
   getAnalyticsOverview: z.tuple([
     z

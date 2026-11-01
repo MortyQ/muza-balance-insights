@@ -65,6 +65,7 @@ export const WRITES = [
   'commitStatement',
   'commitUpload',
   'setRecurringMark',
+  'setOperationCategory',
   'addReserve',
   'updateReserve',
   'deleteReserve',

@@ -9,7 +9,8 @@ export const CATEGORY_ICON: Readonly<Record<CategoryId | 'rest', string>> = {
   entertainment: 'lucide:clapperboard', travel: 'lucide:plane', sport: 'lucide:dumbbell', pets: 'lucide:paw-print',
   insurance: 'lucide:shield-check', taxes: 'lucide:landmark', cash: 'lucide:banknote', delivery: 'lucide:truck',
   education: 'lucide:graduation-cap', gifts: 'lucide:gift', utilities: 'lucide:zap', marketplaces: 'lucide:package',
-  charity: 'lucide:hand-heart', fees: 'lucide:percent', transferFees: 'lucide:badge-percent', p2p: 'lucide:send', family: 'lucide:users',
+  charity: 'lucide:hand-heart', rent: 'lucide:house', car: 'lucide:car', kids: 'lucide:baby',
+  subscriptions: 'lucide:repeat-2', investments: 'lucide:trending-up', fees: 'lucide:percent', transferFees: 'lucide:badge-percent', p2p: 'lucide:send', family: 'lucide:users',
   installments: 'lucide:credit-card', ownTransfers: 'lucide:arrow-left-right', income: 'lucide:wallet',
   other: 'lucide:circle-ellipsis', rest: 'lucide:list',
 };

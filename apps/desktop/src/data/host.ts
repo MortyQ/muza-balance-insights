@@ -43,6 +43,7 @@ export class DataHost {
       allowanceOverview: (q) => data.allowanceOverview(q),
       analyticsOverview: (q) => data.analyticsOverview(q),
       setRecurringMark: (q) => data.setRecurringMark(q),
+      setOperationCategory: (q) => data.setOperationCategory(q),
       addReserve: (r) => data.addReserve(r),
       updateReserve: (id, r) => data.updateReserve(id, r),
       deleteReserve: (id) => data.deleteReserve(id),

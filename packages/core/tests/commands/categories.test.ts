@@ -111,7 +111,7 @@ describe('commands', () => {
     expect(await categoryOf('c1')).toBe(CATEGORY.income);
     expect(await categoryOf('x1')).toBe(CATEGORY.groceries);
     const sources = await categorySources(db, ['d1', 'd3', 'x1', 'c1']);
-    expect([...sources.entries()].sort()).toEqual([['c1', 'auto'], ['d1', 'operation'], ['d3', 'payee'], ['x1', 'auto']]);
+    expect([...sources.entries()].sort()).toEqual([['c1', null], ['d1', 'operation'], ['d3', 'payee'], ['x1', 'auto']]);
 
     expect(await setPayeeCategory(db, 'd3', null, 12)).toEqual({ changed: 2 });
     expect(await categoryOf('d3')).toBe(CATEGORY.groceries);

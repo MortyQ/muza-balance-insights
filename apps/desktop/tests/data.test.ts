@@ -937,6 +937,35 @@ describe('DataService.categoryOverview (the category screen)', () => {
   });
 });
 
+describe('DataService.setOperationCategory (the user\'s own category)', () => {
+  const GROCERIES = 'продукты';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await synced('uah');
+    await tx('uah', '2026-03-02', -10_000, GROCERIES, { description: 'Vigadanyi Market' });
+    await tx('uah', '2026-03-03', -4_000, GROCERIES, { description: 'Vigadanyi Market' });
+    await tx('uah', '2026-03-04', 1_000, GROCERIES, { description: 'Vigadanyi Market' }); // a refund
+  });
+  const march = { kind: 'month', month: '2026-03' } as const;
+  const lines = async (category: 'groceries' | 'rent' | 'investments') =>
+    (await svc.categoryOverview({ period: march, category, scope: 'personal' })).lines.map((l) => [l.amount, l.choice]);
+
+  it('one debit, then every debit of its payee; an own choice wins, a credit takes none', async () => {
+    expect(await lines('groceries')).toEqual([[1_000, null], [-4_000, 'auto'], [-10_000, 'auto']]);
+    const keyOf = async (amount: number) =>
+      (await svc.categoryOverview({ period: march, category: 'groceries', scope: 'personal' })).lines.find((l) => l.amount === amount)!.key;
+
+    expect(await svc.setOperationCategory({ key: await keyOf(-10_000), category: 'rent', payee: false })).toEqual({ changed: 1 });
+    expect(await lines('rent')).toEqual([[-10_000, 'operation']]);
+    expect(await svc.setOperationCategory({ key: await keyOf(-4_000), category: 'investments', payee: true })).toEqual({ changed: 1 });
+    expect(await lines('investments')).toEqual([[-4_000, 'payee']]);
+    expect(await lines('rent')).toEqual([[-10_000, 'operation']]);
+    expect(await lines('groceries')).toEqual([[1_000, null]]);
+
+    await expect(svc.setOperationCategory({ key: await keyOf(1_000), category: 'rent', payee: false })).rejects.toThrow();
+  });
+});
+
 describe('DataService.incomeOverview (the income screen)', () => {
   const IN = 'поступления';
   beforeEach(async () => {

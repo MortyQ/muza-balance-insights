@@ -100,9 +100,9 @@ export async function setPayeeCategory(
   return { changed: await rederiveCategories(db) };
 }
 
-/** Where each of these operations' category comes from (absent ids → 'auto'). */
-export async function categorySources(db: Db, transactionIds: readonly string[]): Promise<Map<string, CategorySource>> {
-  const out = new Map<string, CategorySource>();
+/** Where each of these operations' category comes from; null — it takes no choice (a credit, an own or family transfer). */
+export async function categorySources(db: Db, transactionIds: readonly string[]): Promise<Map<string, CategorySource | null>> {
+  const out = new Map<string, CategorySource | null>();
   if (transactionIds.length === 0) return out;
   const marks = transactionIds.map(() => '?').join(', ');
   const rs = await db.execute({
@@ -116,7 +116,7 @@ export async function categorySources(db: Db, transactionIds: readonly string[])
   for (const r of rs.rows) {
     const id = String(r.id);
     const free = Number(r.amount) < 0 && Number(r.is_internal_transfer) !== 1 && r.transfer_rule !== 'family';
-    if (!free) out.set(id, 'auto');
+    if (!free) out.set(id, null);
     else if (r.own !== null) out.set(id, 'operation');
     else {
       const p = payeeOf(r.counter_name === null ? null : String(r.counter_name), String(r.description ?? ''));
