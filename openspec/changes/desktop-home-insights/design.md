@@ -35,9 +35,10 @@ block, the «What's unusual» slide and the new block one request.
   every home open, the gain is one channel fewer with descriptions, and that channel feeds only home.
 
 ### 2. Drivers: one extra query, only when there is something to explain
-`spendingOverview` computes drivers only when `insights` has category lines (at most five). It then reads
-`categoryLines` once per such category over the usual months plus the shown month (the same filters: person, banks,
-scope, time zone), groups body lines by `merchantKey(merchantText(...))` per month (net = −amount, refunds lower it),
+`spendingOverview` computes drivers only when `insights` has category lines (at most five). It then reads their
+body lines in one query (core `linesOfCategories`, so the overview runs a fixed number of statements whatever the
+number of categories) over the usual months plus the shown month (the same filters: person, banks, scope, time zone),
+groups body lines by `merchantKey(merchantText(...))` per month (net = −amount, refunds lower it),
 and hands core per-payee `now` and per-month maps. Core picks the driver (`mainDriver`): median over the same months
 (a missing month = 0), the biggest difference in the category's direction, share capped at 100, at least
 `DRIVER_SHARE` (0.3). The name shown is the payee's most frequent spelling, as `lineStats` names merchants.
@@ -74,8 +75,8 @@ untouched.
 
 ## Risks / Trade-offs
 
-- [Extra query on every home open with unusual categories] → at most five `categoryLines` calls over ≤ 7 months, only
-  when insights exist; measured against the existing per-category screen query, same indexes.
+- [Extra query on every home open with unusual categories] → one read over ≤ 7 months for all of them, only when
+  insights exist; `tests/data-queries.test.ts` keeps the statement count fixed.
 - [Payee spelling varies (a card number, a city suffix)] → `merchantKey` collapses case and spaces only; a split payee
   shows a smaller share and may fall under 30%: no driver rather than a wrong one.
 - [A ratio of medians would mislead for the savings rate] → the usual rate is the median of monthly rates, not
