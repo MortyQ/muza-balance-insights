@@ -7,33 +7,6 @@ how the open row is scrolled and paged, and how the block adapts to its width.
 
 ## Requirements
 
-### Requirement: Stack and month panel never overlap
-
-While the row is folded, the block SHALL show the card stack and the month panel («In» / «Out», jars, reserves) side by
-side when both fit at their minimum widths, and the panel under the stack otherwise. When the stack, the month panel
-and the pace panel all fit at their minimum widths, the pace panel SHALL sit to the right of the month panel; otherwise
-it SHALL go under them. No card SHALL cover any part of either panel at any block width.
-
-#### Scenario: Wide block
-
-- **WHEN** the block is wide enough for the stack and the panel at its minimum width
-- **THEN** the panel sits to the right of the stack and takes the remaining width, up to its full width
-
-#### Scenario: Very wide block
-
-- **WHEN** the block is wide enough for the stack, the month panel and the pace panel at their minimum widths
-- **THEN** the pace panel sits to the right of the month panel and takes the remaining width
-
-#### Scenario: Narrow block
-
-- **WHEN** the window is narrowed until the stack and the panel no longer fit side by side
-- **THEN** the panel moves under the stack, and the block grows to hold both
-
-#### Scenario: Row open in a narrow block
-
-- **WHEN** the row is open while the panel or the pace panel is under the stack
-- **THEN** that panel is hidden and leaves no empty space under the row
-
 ### Requirement: Total card looks like a summary, not a bank card
 
 The total of the view (the family, a picked person, and each person in the family view) SHALL be shown on a summary
@@ -130,14 +103,30 @@ colour, in both themes.
 
 ### Requirement: Account cards take their bank's look
 
-An account card SHALL be drawn in the look of the account's bank. Every account SHALL be shown in the Monobank look
-until accounts carry their bank. The account card SHALL keep today's content (name, kind, balance, limit, net of the
-month, dimmed without data on the date).
+An account card SHALL be drawn as the account's bank's physical card: its colours, its wordmark set in the app's font,
+a chip, a contactless mark and a soft sheen; a Monobank card SHALL follow its card type (black, white, iron, platinum,
+children's yellow; other types black). A bank without a look SHALL get a neutral card. No bank logo file SHALL be
+copied. The card SHALL keep today's content, people dots and dimmed state, readable on its own colours in both themes.
 
 #### Scenario: Monobank account
 
-- **WHEN** a person's row lists their Monobank card
-- **THEN** it is shown as today's dark card with the Monobank mark
+- **WHEN** a person's row lists their Monobank black card
+- **THEN** it is shown as a matte black card with the «monobank» wordmark
+
+#### Scenario: Monobank white card
+
+- **WHEN** a person's row lists their Monobank white card
+- **THEN** it is shown as a light card with dark text
+
+#### Scenario: Other banks
+
+- **WHEN** a person's row lists a PrivatBank, an A-Bank and a Slovenská sporiteľňa account
+- **THEN** they are shown as a blue card with a green brand tag, a green card and a blue card with a large arc
+
+#### Scenario: Without data on the date
+
+- **WHEN** an account has no data on the shown date
+- **THEN** its card keeps its bank's look and is dimmed
 
 ### Requirement: Open row scrolls by swipe and by arrows
 
@@ -252,3 +241,47 @@ than 3 covered months before, the usual line and figure SHALL be left out and a 
 
 - **WHEN** a person is picked in the global filters
 - **THEN** the pace panel shows that person's spending and usual
+
+### Requirement: Month pace tooltip
+
+Pointing at a day of the month pace chart SHALL show a tooltip for that day, in the style of the app's other charts: the
+date; the month's spending up to that day when the day has data; the usual month's spending up to that day when a usual
+month is known; and, when both are shown, how much more or less than usual the month is. Amounts SHALL follow the
+home's currency choice.
+
+#### Scenario: A past day of a running month
+
+- **WHEN** the current month is shown with a usual month and the user points at a day before today
+- **THEN** the tooltip shows the date, the spending up to that day, the usual up to that day and the difference
+
+#### Scenario: A day after today
+
+- **WHEN** the user points at a day after today in the current month
+- **THEN** the tooltip shows the date and the usual up to that day only
+
+#### Scenario: No usual month
+
+- **WHEN** fewer than 3 whole months before the shown one have data and the user points at a day
+- **THEN** the tooltip shows the date and the spending up to that day only
+
+### Requirement: Balance tiles never overlap
+
+The card stack, the month panel («In» / «Out», the month's result) and the pace panel SHALL be separate tiles on home
+(spec `desktop-home-tiles`). While the row is folded, the three tiles SHALL sit in one row when they fit at their
+minimum widths and reflow into fewer columns otherwise. Opening the row SHALL widen the stack's tile to the whole row and
+hide the other two. No card SHALL cover any part of another tile at any width.
+
+#### Scenario: Wide window
+
+- **WHEN** the window is wide enough for the three tiles at their minimum widths
+- **THEN** the stack, the month panel and the pace panel stand side by side as three tiles
+
+#### Scenario: Narrow window
+
+- **WHEN** the window is narrowed until the three tiles no longer fit in one row
+- **THEN** the tiles move under one another, and no card covers another tile
+
+#### Scenario: Row open
+
+- **WHEN** the row is opened
+- **THEN** the stack's tile takes the whole row, and the month and pace tiles are hidden and leave no empty space

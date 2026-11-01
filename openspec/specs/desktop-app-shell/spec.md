@@ -89,12 +89,12 @@ shared equally on both sides of the content. No fixed narrower column SHALL rema
 
 ### Requirement: Home keeps its blocks and order
 
-Home SHALL show, in this order: the balances (the card stack with the month panel), the «Now» strip at full width
-directly under them, then «Spending». Each block SHALL behave as before this change.
+Home SHALL show its content as the tiles of spec `desktop-home-tiles`, in their order, with the card stack first. The
+blocks' data and their own controls SHALL behave as before this change.
 
 #### Scenario: First view of home
 - **WHEN** the user opens home on any window width
-- **THEN** the card stack is the first block of the content
+- **THEN** the card stack is the first tile of the content
 
 ### Requirement: Settings keep their own menu
 
@@ -118,3 +118,13 @@ or controls of its own.
 #### Scenario: Folded sidebar
 - **WHEN** the user folds the sidebar and presses the logo
 - **THEN** the sidebar unfolds
+
+### Requirement: Data screens sit on the window's background
+
+The default layout SHALL NOT wrap the header and the content in a shared panel. The sidebar, the header and the content
+SHALL share the window's background; only a screen's own blocks SHALL be set off. While the content is scrolled, the
+pinned header SHALL keep the background colour and show a hairline under it.
+
+#### Scenario: Scrolled content
+- **WHEN** the user scrolls home down
+- **THEN** the tiles pass under the header, and a hairline appears under the header

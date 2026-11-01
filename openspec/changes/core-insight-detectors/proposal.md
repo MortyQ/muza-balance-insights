@@ -36,8 +36,8 @@ income is ranked apart from the categories.
 - `desktop-unusual-tile`: how the home tile words and shows the detectors' output.
 
 ### Modified Capabilities
-- None. (`desktop-home-tiles` is still an open change; its «What's unusual tile» requirement — where the tile sits —
-  is not touched.)
+- None. (`desktop-home-tiles` keeps its «What's unusual tile» requirement — where the tile sits; it is
+  not touched.)
 
 ## Impact
 
