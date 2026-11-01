@@ -7,7 +7,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { LimitsOverview, PeopleView } from '@contract/api.ts';
-import { formatMoney } from '@/shared/lib';
+import { formatMoney, type YearMonth } from '@/shared/lib';
 
 const plain = (s: string) => s.replace(/\s/gu, ' ');
 const uah = (k: number) => plain(formatMoney(k, 980));
@@ -29,12 +29,12 @@ vi.mock('@/shared/api', () => ({ balanceApi: { getLimitsOverview: async () => an
 const PEOPLE: PeopleView = { people: [{ id: 1, label: 'Сергей', labelFromBank: false, labelPending: false, color: 'blue', connections: [] }], secureStorage: true };
 let router: Router;
 
-async function mountRow(month = '2026-11') {
+async function mountRow(month: YearMonth = '2026-11') {
   const { i18n } = await import('@/shared/lib/i18n.ts');
   const { useParticipantStore } = await import('@/entities/participant');
   useParticipantStore().view = PEOPLE;
   const { useMonthStore } = await import('@/entities/period');
-  useMonthStore().$patch({ month });
+  useMonthStore().set(month, null);
   const { HomeBudgetFeature } = await import('@/features/home-budget');
   const blank = defineComponent(() => () => h('div'));
   router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', name: 'home', component: blank }, { path: '/budget', name: 'budget', component: blank }] });
