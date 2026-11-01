@@ -258,3 +258,12 @@
   well at the medium and the wide width.
 - A category with no spending in the usual months shows as «rare» once it passes 500 ₴; watch whether it is noise.
 - Clicking a line opens the category screen for the shown month and the block's scope.
+
+## Check on a live system: home without holes (`openspec/changes/desktop-home-gaps`)
+
+- The highlights tile: a trackpad swipe and a mouse drag between «What's unusual» and «Recent operations», the dots,
+  no stuck half slide; under reduced motion no smooth scroll.
+- The «Today» / «This week» row keeps one height with the carousel at 1, 2 and 12 columns; six rows of «Recent
+  operations» do not overflow the tile.
+- Opening home asks main for the month's spending once (the block and the unusual slide share it).
+- A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.

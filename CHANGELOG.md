@@ -39,6 +39,13 @@ English interface.
   a category already over a whole usual month. A change is listed only when it is at least 500 ₴ and at least 20% of
   the usual, and a category you rarely spend in now shows up as soon as it passes 500 ₴. Click a category's line to
   open its screen. The «Income is at its usual level» line is gone.
+- **«What's unusual» and «Recent operations» share one tile.** Next to «Today» and «This week», swipe, drag or use the
+  dots under the tile to switch between them, like the account cards. «Recent operations» lists the month's last six
+  operations counted in «Spending», refunds included, with the bank's description, the category and the time; click
+  one to open its category. When nothing is unusual yet, as early in a month, the tile shows «Recent operations»
+  alone, so the place is never empty.
+- **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
+  screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
 
 ### Categories
 
