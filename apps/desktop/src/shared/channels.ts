@@ -21,6 +21,7 @@ export const METHODS = [
   'cancelImport',
   'getSpendingOverview',
   'getRecentOperations',
+  'getInsightsOverview',
   'getNowOverview',
   'getCategoryOverview',
   'getIncomeOverview',

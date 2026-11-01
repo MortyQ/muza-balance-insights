@@ -1465,6 +1465,56 @@ describe('DataService.spendingOverview: usual', () => {
     await history();
     expect((await svc.spendingOverview({ month: '2026-03', scope: 'personal' })).explain).toBeNull();
   });
+
+  it('insightsOverview: every insight with its weight, months and driver; new payees and one-offs', async () => {
+    await covered('2025-09-01');
+    await history();
+    await account('jar', null, 980, 0);
+    await tx('uah', '2026-02-12', -150_000, 'продукты', { description: 'Cafe Fictional 444411******0000' });
+    await tx('uah', '2026-02-13', -50_000, 'продукты', { description: `To ${CANARIES[4]}` });
+    const v = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
+    // February spends 266 000 of 100 000 in: −166%; the usual months kept 37%.
+    expect(v).toMatchObject({
+      month: '2026-02',
+      spent: 266_000,
+      months: 5,
+      usual: { months: 5, from: '2025-09', to: '2026-01', total: 63_000, income: { now: 100_000, usual: 100_000 }, savings: { rate: -166, usual: 37 } },
+    });
+    expect(v.cards).toEqual([{
+      type: 'category-rare', direction: 'up', amount: 200_000, percent: null, category: 'продукты', categoryId: 'groceries', now: 260_000, usual: 60_000,
+      // 200 000 of a usual month of 63 000: high.
+      severity: 'high',
+      series: [
+        { month: '2025-09', value: 60_000 }, { month: '2025-10', value: 60_000 }, { month: '2025-11', value: 60_000 },
+        { month: '2025-12', value: 60_000 }, { month: '2026-01', value: 60_000 }, { month: '2026-02', value: 260_000 },
+      ],
+      driver: { name: 'Cafe Fictional •• 0000', amount: 150_000, share: 75 },
+    }]);
+    // The history's shop is paid every month: neither new nor a one-off.
+    expect(v.newPayees.map((p) => [p.name.startsWith('To ') ? 'jar' : p.name, p.categoryId, p.amount])).toEqual([
+      ['Cafe Fictional •• 0000', 'groceries', 150_000],
+      ['jar', 'groceries', 50_000],
+    ]);
+    expect(v.oneOffs.map((o) => [o.date, o.amount, o.categoryId])).toEqual([['2026-02-12', 150_000, 'groceries'], ['2026-02-13', 50_000, 'groceries']]);
+    expect(v.oneOffs[0]!.name).toBe('Cafe Fictional •• 0000');
+    const json = JSON.stringify(v);
+    for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+  });
+
+  it('insightsOverview: under 3 whole months, only the month and how many months there are', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect(await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).toMatchObject({ months: 2, usual: null, cards: [], newPayees: [], oneOffs: [] });
+  });
+
+  it('insightsOverview: a running month has no income, no savings and only categories over a whole usual month', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.usual).toMatchObject({ months: 6, income: null, savings: null });
+    expect(v.period.incomplete).toBe(true);
+    expect(v.cards).toEqual([]);
+  });
 });
 
 // A bank view (spec core-bank-view, desktop-bank-filter): every overview narrows to the chosen banks' accounts; without

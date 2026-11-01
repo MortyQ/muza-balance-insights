@@ -1,7 +1,8 @@
 // Read side of the screen in the data process: the same core aggregates as the MCP tools (spendingSummary, balancesAt),
 // mapped to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
-// and income screens). The import worker writes the same file; WAL lets both work.
+// and income screens) and the payees of insightsOverview (the Insights screen). The import worker writes the same
+// file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
@@ -20,7 +21,7 @@ import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
-import { detectInsights, mainDriver, savingsRate } from '@mono/core/read/insights';
+import { detectInsights, insightSeverity, mainDriver, newPayees, oneOffs, payeeUsual, savingsRate } from '@mono/core/read/insights';
 import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -28,7 +29,7 @@ import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
 import { bankParts, cellGroups, comparePeriod, foldByCategory, monthBounds, rankedCategories } from './spending.ts';
 import { usualMonths, usualOf } from './usual.ts';
-import { incomeStats, lineStats, merchantText, monthsWindow } from './category.ts';
+import { incomeStats, lineStats, merchantKey, merchantText, monthsWindow } from './category.ts';
 import { payeeMonths } from './explain.ts';
 import { INSIGHT_MAX } from '../shared/insights.ts';
 import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
@@ -72,6 +73,8 @@ import type {
   SpendingOverview,
   SpendingOverviewQuery,
   InsightDriver,
+  InsightCardView,
+  InsightsOverview,
   SpendingExplain,
   SpendingInsights,
   SpendingUsual,
@@ -111,7 +114,7 @@ function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: 
  * The usual (spendingUsual) with what it was made of: the months (newest first), each month's net spending and — a
  * month that is over — each month's income, hryvnia kopecks in the same order.
  */
-type UsualFound = { usual: SpendingUsual; months: string[]; spent: number[]; income: number[] | null };
+type UsualFound = { usual: SpendingUsual; months: string[]; spent: number[]; income: number[] | null; byCategory: Array<Map<string, number>> };
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -503,7 +506,7 @@ export class DataService {
       income: period.incomplete ? null : { now: incomeOf(q.month), usual: median(income) },
     };
     const totals = spent.map((m) => [...m.values()].reduce((a, b) => a + b, 0));
-    return { usual, months, spent: totals, income: period.incomplete ? null : income };
+    return { usual, months, spent: totals, income: period.incomplete ? null : income, byCategory: spent };
   }
 
   /**
@@ -530,6 +533,93 @@ export class DataService {
     }
     const firstMonth = dataFrom?.slice(0, 7) ?? null;
     return months12.map((m) => ({ month: m, net: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
+  /**
+   * The Insights screen (spec desktop-insights-page): every insight of the month with its weight, its months and its
+   * driver, the month against the usual, new payees and one-offs. One read of the lines of every category spent in the
+   * month or unusual, over the usual months and the shown one; payees named as on the category screen.
+   */
+  async insightsOverview(q: SpendingOverviewQuery): Promise<InsightsOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const status = await this.status();
+    const rates = rateMap(await this.d.rates());
+    const filters = { tz, scope: q.scope, ...viewOf(q) };
+    const head = await spendingSummary(db, { ...monthBounds(q.month), ...filters, groupBy: 'category' }, now);
+    const cur = foldByCategory(head, rates).byCategory;
+    const spent = [...cur.values()].reduce((s, a) => s + a.net, 0);
+    const { from, to, days, coveredDays, incomplete, dataUntil, pendingHolds } = head.period;
+    const base = {
+      month: q.month,
+      period: { from, to, days, coveredDays, incomplete, dataUntil, pendingHolds },
+      spent,
+      months: usualMonths(q.month, status.dataFrom).length,
+    };
+    const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
+    if (!found) return { ...base, usual: null, cards: [], newPayees: [], oneOffs: [] };
+
+    const { usual, months } = found;
+    const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
+    const insights = insightsOf(usual, ranked)?.insights ?? [];
+    const categories = [...new Set([...ranked.map((c) => c.category), ...insights.flatMap((i) => (i.category === null ? [] : [i.category]))])];
+    const span = { from: monthBounds(months.at(-1)!).from, to: monthBounds(q.month).to };
+    const jarTitles = await this.jarTitles(db);
+    const lines = categories.length === 0 ? [] : (await linesOfCategories(db, { ...span, ...filters, categories }, now)).lines;
+    const rows = lines.map((l) => {
+      const date = localDate(l.time * 1000, tz);
+      return { id: l.id, category: l.category, date, month: date.slice(0, 7), merchant: merchantText(l.description, jarTitles), uah: toUah(l.amount, l.currency, rates), refundPair: l.refundPair };
+    });
+
+    const oldestFirst = <T>(xs: ReadonlyArray<T>) => [...xs].reverse();
+    const cards: InsightCardView[] = insights.map((i) => {
+      const before =
+        i.category === null
+          ? months.map((m, k) => ({ month: m, value: found.income?.[k] ?? 0 }))
+          : months.map((m, k) => ({ month: m, value: found.byCategory[k]!.get(i.category!) ?? 0 }));
+      const driver = i.category === null ? null : mainDriver(i.now - i.usual, payeeMonths(rows.filter((r) => r.category === i.category), q.month, months));
+      return { ...i, severity: insightSeverity(i.amount, usual.total), series: [...oldestFirst(before), { month: q.month, value: i.now }], driver };
+    });
+
+    // Payees across categories: a new payee's category is where most of its month's spending went.
+    const payees = new Map(payeeMonths(rows, q.month, months).map((p) => [merchantKey(p.name), p]));
+    const shown = rows.filter((r) => r.month === q.month && r.uah !== null);
+    const categoryOf = (key: string): string => {
+      const by = new Map<string, number>();
+      for (const r of shown) if (r.merchant && merchantKey(r.merchant) === key) by.set(r.category, (by.get(r.category) ?? 0) - r.uah!);
+      return [...by].sort(([a, x], [b, y]) => y - x || a.localeCompare(b))[0]?.[0] ?? '';
+    };
+    const fresh = newPayees([...payees.values()]).map((p) => {
+      const category = categoryOf(merchantKey(p.name));
+      return { name: p.name, category, categoryId: CATEGORY_ID.get(category) ?? null, amount: p.now };
+    });
+    const ops = shown
+      .filter((r) => r.uah! < 0 && !r.refundPair)
+      .map((r) => {
+        const p = r.merchant ? payees.get(merchantKey(r.merchant)) : undefined;
+        return { key: r.id, amount: -r.uah!, payeeUsual: p ? payeeUsual(p) : 0, row: r };
+      });
+    const big = oneOffs(ops, usual.total).map(({ key, amount, row }) => ({
+      key,
+      date: row.date,
+      name: row.merchant,
+      category: row.category,
+      categoryId: CATEGORY_ID.get(row.category) ?? null,
+      amount,
+    }));
+
+    const savings =
+      usual.income && found.income
+        ? savingsRate({ income: usual.income.now, spent }, months.map((_, k) => ({ income: found.income![k]!, spent: found.spent[k]! })))
+        : null;
+    return {
+      ...base,
+      usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
+      cards,
+      newPayees: fresh,
+      oneOffs: big,
+    };
   }
 
   /** Home's «Recent operations»: the month's newest operations «Spending» counts, with the bank's description. */

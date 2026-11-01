@@ -319,6 +319,7 @@ app.whenReady().then(async () => {
     getMonthOverview: (q) => data.monthOverview(q),
     getSpendingOverview: (q) => data.spendingOverview(q),
     getRecentOperations: (q) => data.recentOperations(q),
+    getInsightsOverview: (q) => data.insightsOverview(q),
     getNowOverview: (q) => data.nowOverview(q),
     getCategoryOverview: (q) => data.categoryOverview(q),
     getIncomeOverview: (q) => data.incomeOverview(q),

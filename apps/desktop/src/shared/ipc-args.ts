@@ -92,6 +92,7 @@ export const ARG_SCHEMAS = {
   cancelImport: z.tuple([]),
   getMonthOverview: z.tuple([z.strictObject({ month, participantId: id.optional(), providers: providers.optional() })]),
   getSpendingOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
+  getInsightsOverview: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
   getRecentOperations: z.tuple([z.strictObject({ month, scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() })]),
   getNowOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getCategoryOverview: z.tuple([

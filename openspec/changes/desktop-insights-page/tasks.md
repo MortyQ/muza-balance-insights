@@ -5,10 +5,10 @@
 
 ## 2. Data process
 
-- [ ] 2.1 `InsightsOverview` types in `api.ts`; channel `getInsightsOverview` (channels, ipc-args, data-protocol + rated, main handler, host, renderer methods)
-- [ ] 2.2 `DataService.insightsOverview`: month summary, `spendingUsual` with per-category months, all insights with severity, series and drivers, new payees and one-offs from one `linesOfCategories` read
-- [ ] 2.3 Tests: `tests/data.test.ts` (feed, severity, series, new payee, one-off, too little history, the descriptions canary), `tests/data-queries.test.ts` (fixed statements), `tests/ipc.test.ts` (bad arguments)
-- [ ] 2.4 Commit `feat(desktop): the insights overview read`
+- [x] 2.1 `InsightsOverview` types in `api.ts`; channel `getInsightsOverview` (channels, ipc-args, data-protocol + rated, main handler, host, renderer methods)
+- [x] 2.2 `DataService.insightsOverview`: month summary, `spendingUsual` with per-category months, all insights with severity, series and drivers, new payees and one-offs from one `linesOfCategories` read
+- [x] 2.3 Tests: `tests/data.test.ts` (feed, severity, series, new payee, one-off, too little history, the descriptions canary), `tests/data-queries.test.ts` (fixed statements), `tests/ipc.test.ts` (bad arguments)
+- [x] 2.4 Commit `feat(desktop): the insights overview read`
 
 ## 3. The screen
 
