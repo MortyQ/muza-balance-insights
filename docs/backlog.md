@@ -285,3 +285,16 @@
 - Large one-offs: a yearly payment (insurance, a subscription paid once a year) shows as a one-off each time: fine or noise?
 - The card's bars: readable at the narrowest window and with a month far above the others.
 - A running month on its first days: the meter and the empty feed read sensibly.
+
+## Check on a live system: budget, limits and goals (`openspec/changes/budget-structure`)
+
+- Category kinds: do the defaults (transfers to people and subscriptions as wants, car, kids and pets essential) feel
+  right on real spending?
+- «Budget structure»: the 50/30/20 split and the guides (fixed above 50–60%, loans under 30%, reserve 3–6 months) — do
+  they read as advice, not as a grade? The reserve counts jars too: sensible?
+- The monthly budget: rent paid as a transfer to a person counts as flexible until its payee is set to «Rent» — is it
+  clear enough from the «?» text?
+- Pace and forecast early in a month (the first week) and for week limits on Mondays: no false alarms?
+- Home's budget row at every window width; the empty row's wording; the «Limits» slide's order.
+- Savings goals: a jar's own target offered; the need per month to a date; a closed jar.
+- The «?» explanations: readable, the numbers match the screen, nothing cut in a narrow window.

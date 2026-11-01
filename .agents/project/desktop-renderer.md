@@ -19,12 +19,12 @@
   «Month pace» (`PacePanel`, the tile `min-w-0` so the chart shrinks with the grid) and «Month» (`MonthPanel`). Opening the
   row gives «Balance» `col-span-full`; the other two get `v-show` + `inert` (kept mounted: no reload, no new chart).
   The month pace (`components/PacePanel.vue`): `composables/useMonthPace.ts`
-  asks `getAnalyticsOverview` for the block's month and person (one month: day buckets, `spending`, `usual`) and, for
-  the current month only, `getAllowanceOverview` (its failure drops only «Available per day»); `paceView` /
+  asks `getAnalyticsOverview` for the block's month and person (one month: day buckets, `spending`, `usual`; no
+  «Available per day» since 01.11 — per day on home is the «Budget» row's); `paceView` /
   `paceChartOption(view, money)` in `utils.ts` (pure, `tests/renderer/month-pace.test.ts`) — the spending added up by day
   up to the last day with data as a line with a soft filled area, the usual dashed in a pale primary, today's point with
   its amount in a pill while the month runs, amounts on a faint grid (`money` — the home's `MoneyFormat`); figures:
-  spent, usual by the same day (a past month: usual in a month), per day. No pace for a month without data; no usual
+  spent and usual by the same day (a past month: usual in a month). No pace for a month without data; no usual
   line or figure with fewer than 3 whole months, a note instead.
   Split by banks (spec `desktop-spending-split`): `PaceSettings` (`VPopover` `lucide:settings`, «Together / By banks»)
   in the panel's header while two or more banks are on; the choice is `composables/usePaceSplit.ts` (`localStorage`
@@ -229,6 +229,32 @@
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
   (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
   tested (`tests/renderer/income-detail.test.ts`).
+- **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
+  route `budget` (`/budget`, `meta.navParent: 'home'` — no menu item, like the category screen), opened from home's
+  «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
+  «Set a budget»). One IPC `getLimitsOverview` (the global month and person; banks are ignored on purpose), quiet
+  reloads; a write (`saveGoal`, `deleteGoal`, `addSuggestedLimits`) refreshes the data status. Blocks: `BudgetPanel`
+  (the total, the fixed rows paid of their amounts, the flexible part with `LimitBar`, the state, the forecast, «per day
+  by the budget»), the category limits (`LimitRow`, exceeded → attention → on track) or suggestions with «Suggest
+  limits», savings goals (`GoalRow`: a ring, money of the target, need per month). Sheets (`VSheet`): `BudgetSheet` (the
+  total with chips from the usual month, the fixed rows the user adds, types and removes — nothing preset —, whose; a
+  live result beside the form and `PastBars` of the flexible part; «Save» waits for every amount), `LimitSheet`
+  (category, amount, currency, period, whose, the suggestion's chips, `PastBars`), `GoalSheet` (name, a jar — its bank
+  target offered — or «cards and jars», target, date, whose); deleting asks in the sheet. `entities/goal`: `limitLook`
+  (the bar's fill and pace marker, the state in words — never colour alone —, the «?» explanations with the user's
+  numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. Tested in `tests/renderer/limits-goals.test.ts`.
+- **Home's «Budget» row** (`features/home-budget`, spec `desktop-home-tiles`): over the whole width between the first
+  row and «Today» / «This week»; one link to the «Budget» screen: the total, the fixed costs paid, the flexible part's
+  bar and state, per day by the budget (a past month: the result); without a budget in the current month an empty row
+  with «Set a budget», no close button. The same read gives the highlights tile its «Limits» slide (`LimitsSlide`:
+  limits in attention or exceeded; first when one is exceeded, else last). «Month pace» no longer shows «Available per
+  day». The category screen shows its limit (`CategoryLimitBar`, the same read, the current month only). Tested in
+  `tests/renderer/home-budget.test.ts`, `home-highlights.test.ts`, `category-detail.test.ts`.
+- **In-app explanations**: `shared/ui` `VHelpHint` — a «?» beside a figure with its formula in the user's numbers;
+  `shared/layout` `IntroNote` with `useIntro(id)` of `shared/lib` — a screen's short introduction, closed once
+  (`localStorage` `help.seen.<id>`, a convenience) and brought back by «How it works». The Insights screen's «Budget
+  structure» card (`BudgetCard`, first in the side column; `budgetView`): the income split against 50/30/20, fixed costs,
+  loan payments, the reserve, each with a «?»; a «Limit exceeded» card joins the feed by money (`limitCard`).
 - **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
   `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
 - **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about

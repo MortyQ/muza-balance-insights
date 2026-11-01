@@ -33,7 +33,7 @@ month uses today's kinds); limits feeding «Available per day».
 `category_kinds (category TEXT PRIMARY KEY, kind TEXT CHECK IN ('essential','wants','savings'), fixed INTEGER CHECK IN
 (0,1), set_at INTEGER)`. A row only for a changed category; reset deletes. Defaults live beside the reader
 (`read/category-kinds.ts`, `categoryKinds(db)` → every kind-bearing category with `changed`). Keyed by the stored
-category name, as `manual_categories` is. Commands in `commands/category-kinds.ts` validate and throw
+category name, as `manual_categories` is. `setCategoryKind` / `resetCategoryKinds` beside the reader validate and throw
 `CategoryKindError`; no re-derivation, since kinds are read at query time.
 
 *Alternatives:* seeding every category (a later default would not reach users who never touched it); a categories
@@ -54,7 +54,8 @@ copy. `account_id` refers to a jar by its id without a foreign key, like `manual
 the goal readable.
 
 *Alternative:* two tables — cleaner CHECKs, but two migrations, two command sets and two readers for one screen.
-*Verdict:* one table, validated in `commands/goals.ts` before the CHECKs.
+*Verdict:* one table, validated in `read/goals.ts` before the CHECKs. Like `reserves.ts`, these are plain writes that
+change nothing derived, so they stay in `read/` (`core-layout.md`: `commands/` is for writes that re-derive).
 
 ### Counting limits
 `read/limits.ts` is pure: `limitState({ amount, spent, daysPassed, days, period })` → expected, forecast, per day,
@@ -88,8 +89,8 @@ empty row has no dismissal: it stays until a budget exists. «Month pace» stops
   the limits with their figures, the savings goals with their
   progress, the suggestions, the kinds left out of the budget, today's rates. Used by the «Budget» screen and
   home's «Limits» slide (which shows only attention and exceeded).
-- `categoryOverview` gains `limit` (the category's limits of the owner view for the current period) when the shown
-  period is the current month.
+- The category screen's limit bar reads the same `getLimitsOverview` (kept and shared by the read cache) and picks its
+  category, while the shown month is the current one; `categoryOverview` stays as it is.
 - `insightsOverview` gains `budget` (split, fixed, debt, reserve, kinds) and adds «limit exceeded» cards from the
   monthly limits of the shown month (`type: 'limit-exceeded'` beside the detectors' cards, ranked by money).
 - Writes: `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds`, `saveGoal` (create or update by `id`),
@@ -113,10 +114,10 @@ plus short introductions.
 - `shared/ui`: `HelpHint`, `IntroNote`.
 - `entities/category-kind`: kind labels and the three kind colour tokens (added to the theme).
 - `entities/goal`: limit state → label, icon and colour; amount formatting helpers.
-- `features/category-kinds`: the settings section (`SETTINGS_SECTIONS` gains `categories` after `people`).
+- `features/settings/category-kinds`: the settings section (`SETTINGS_SECTIONS` gains `categories` after `people`).
 - `features/insights-page`: `BudgetCard.vue`, `budgetView`; the «limit exceeded» card reuses `InsightCard`.
 - `features/limits-goals`: `api/`, `composables/useLimitsGoals.ts`, `components/` (`BudgetPanel`, `LimitRow`,
-  `GoalRow`, `LimitSheet`, `GoalSheet`, `SuggestionsNote`), `LimitsGoalsFeature.vue`; `pages/budget` with route
+  `GoalRow`, `LimitSheet`, `BudgetSheet`, `GoalSheet`, `PastBars`), `LimitsGoalsFeature.vue`; `pages/budget` with route
   `/budget` and `meta.navParent: home`, like `/category/:id` (no `meta.nav`, so no menu item); `?sheet=budget` opens
   the budget sheet, used by home's «Set a budget». «Planning» is unchanged.
 - `features/category-detail`: `CategoryLimitBar.vue` from `entities/goal`.

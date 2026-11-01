@@ -111,7 +111,7 @@ many months your money would last. Every number has a «?» that explains how it
 
 - `packages/core`: migrations (`category_kinds`, `goals`), `read/category-kinds.ts`, `read/budget.ts`,
   `read/limits.ts`, `read/savings-goals.ts`, commands for kinds and goals, tests.
-- `apps/desktop`: data process (`insightsOverview` gains `budget`, `categoryOverview` gains `limit`, a new
+- `apps/desktop`: data process (`insightsOverview` gains `budget`, a new
   `limitsOverview` read, channels to read and write kinds and goals), IPC, renderer (settings section, Insights card,
   «Budget» screen, category bar, home row and slide), i18n `uk` / `en` / `ru`, `CHANGELOG.md`.
 - `apps/mcp`: none. The analysis copy: none (the new tables are not whitelisted; goal names are the user's text).
