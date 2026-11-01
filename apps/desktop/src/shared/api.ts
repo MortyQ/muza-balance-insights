@@ -527,9 +527,14 @@ export type InsightsOverview = {
   oneOffs: OneOffView[];
   /** «Budget structure» (core read/budget.ts). */
   budget: BudgetStructureView;
+  /** Monthly limits of the view over in the shown month («Personal», every bank), as feed cards ranked by `over`. */
+  limitsOver: LimitOverView[];
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
 };
+
+/** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */
+export type LimitOverView = { categoryId: KindCategoryId | null; amount: number; spent: number; over: number; severity: InsightSeverity };
 
 /**
  * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,

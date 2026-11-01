@@ -1030,6 +1030,14 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect(v.past).toMatchObject({ months: ['2026-02', '2026-01', '2025-12', '2025-11'], byCategory: { cafes: [400_000, 400_000, 400_000, 400_000] }, total: [450_000, 450_000, 450_000, 450_000] });
   });
 
+  it('the Insights read lists a monthly limit over in the shown month, «Personal» spending only', async () => {
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 150_000, participantId: null });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'groceries', period: 'month', currency: 980, amount: 100_000, participantId: null });
+    // March: cafes 190 000 personal (the 60 000 business payment left out) against 150 000; groceries within.
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.limitsOver).toEqual([{ categoryId: 'cafes', amount: 150_000, spent: 190_000, over: 40_000, severity: expect.any(String) }]);
+  });
+
   it('a person sees their limits and the family\'s; delete; a second limit of a kind is refused', async () => {
     const me = Number((await db.execute(`SELECT participant_id FROM connections WHERE provider = 'monobank'`)).rows[0]?.participant_id);
     await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });

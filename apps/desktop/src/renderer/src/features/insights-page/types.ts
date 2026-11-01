@@ -45,6 +45,8 @@ export interface InsightCardView {
   /** «Mostly …: +X, N% of the change»; null — no main driver. */
   driver: string | null;
   to: RouteLocationRaw | null;
+  /** The link's text when it is not «Open operations» (a limit card opens the «Budget» screen). */
+  linkText?: string;
 }
 
 /** A row of the side lists: a new payee or a one-off. */

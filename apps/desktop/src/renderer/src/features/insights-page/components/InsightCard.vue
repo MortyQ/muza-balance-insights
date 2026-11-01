@@ -33,7 +33,7 @@ const { card } = defineProps<{ card: InsightCardView }>();
             class="mt-1 inline-flex w-fit items-center gap-1 rounded-md text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-border-focus"
             data-test="insight-open"
           >
-            {{ $t('insights.card.open') }}
+            {{ card.linkText ?? $t('insights.card.open') }}
             <VIcon icon="lucide:chevron-right" class="size-3.5" />
           </RouterLink>
         </div>

@@ -45,6 +45,7 @@ import type {
   AllowanceOverview,
   BudgetStructureView,
   GoalPayload,
+  LimitOverView,
   LimitsOverview,
   LimitsOverviewQuery,
   CategoryKindQuery,
@@ -525,6 +526,40 @@ export class DataService {
     };
   }
 
+  /**
+   * The view's monthly limits over in the shown month (a person: theirs and the family's), each against its owner's
+   * «Personal» spending of every bank; the budget's flexible part too. Severity against the usual month, as the feed's.
+   */
+  private async limitsOverOf(db: Db, q: SpendingOverviewQuery, kinds: Map<string, KindChoice>, usualTotal: number, rates: Map<number, FxRate>, now: number): Promise<LimitOverView[]> {
+    const goals = (await listGoals(db)).filter(
+      (g) => (g.type === 'limit' && g.period === 'month') || g.type === 'budget',
+    ).filter((g) => q.participantId === undefined || g.participantId === null || g.participantId === q.participantId);
+    if (goals.length === 0) return [];
+    const tz = systemTimeZone();
+    const sumsOf = new Map<number | null, Sums>();
+    for (const o of new Set(goals.map((g) => g.participantId))) {
+      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
+      sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
+    }
+    const out: LimitOverView[] = [];
+    for (const g of goals) {
+      const sums = sumsOf.get(g.participantId)!;
+      const amount = toUah(g.amount, g.currency, rates);
+      if (amount === null) continue;
+      if (g.type === 'limit') {
+        const spent = sums.get(g.category) ?? 0;
+        if (spent > amount) out.push({ categoryId: CATEGORY_ID.get(g.category) as KindCategoryId, amount, spent, over: spent - amount, severity: insightSeverity(spent - amount, usualTotal) });
+      } else if (g.type === 'budget') {
+        const v = budgetView(g, (w) => CATEGORY_ID.get(w) as KindCategoryId, sums, kinds, { daysPassed: 1, days: 1 }, false, rates);
+        if (v && v.flexible.spent > v.flexible.amount) {
+          const over = v.flexible.spent - v.flexible.amount;
+          out.push({ categoryId: null, amount: v.flexible.amount, spent: v.flexible.spent, over, severity: insightSeverity(over, usualTotal) });
+        }
+      }
+    }
+    return out.sort((a, b) => b.over - a.over);
+  }
+
   private async jarTitles(db: Db): Promise<string[]> {
     const accounts = (await db.execute(ACCOUNT_NAME_SQL)).rows;
     return accounts.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
@@ -626,7 +661,8 @@ export class DataService {
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     const kinds = await kindMap(db);
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
-    if (!found) return { ...base, budget, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const limitsOver = await this.limitsOverOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
+    if (!found) return { ...base, budget, limitsOver, usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -684,6 +720,7 @@ export class DataService {
     return {
       ...base,
       budget,
+      limitsOver,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,

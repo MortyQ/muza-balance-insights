@@ -546,7 +546,6 @@
         "spent": "Spent",
         "usualByNow": "Usually by this day",
         "usualMonth": "Usually in a month",
-        "perDay": "Available per day",
         "noUsual": "A usual month shows once there are three whole months of history",
         "tip": {
           "usual": "Usual by this day",
@@ -841,6 +840,22 @@
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
       "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations",
       "all": "All insights"
+    },
+    "budget": {
+      "title": "Budget for {month}",
+      "fixed": "Fixed · paid {paid} of {amount}",
+      "flexible": "Flexible · {spent} of {amount}",
+      "daysLeft": "{n} day left | {n} days left | {n} days left",
+      "within": "Within the budget",
+      "over": "Over by {amount}",
+      "perDay": "Per day by the budget",
+      "left": "Left",
+      "open": "Open the budget",
+      "emptyTitle": "Your monthly budget goes here",
+      "emptyText": "Set one amount, mark rent and other fixed costs — and see how much you can spend a day on the rest.",
+      "set": "Set a budget",
+      "limitsTitle": "Limits",
+      "allLimits": "All limits"
     }
   },
   "income": {
@@ -1001,6 +1016,12 @@
         "title": "What «Budget structure» shows",
         "text": "Where a finished month's income went: to essentials, to wants and what is left — beside the common 50/30/20 guide. You can change each category's kind."
       }
+    },
+    "limit": {
+      "title": "Limit exceeded: {name}",
+      "budget": "the flexible budget",
+      "text": "{spent} spent against a {amount} limit.",
+      "open": "Open the budget"
     }
   },
   "integrations": {

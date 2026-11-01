@@ -1,8 +1,8 @@
-import type { BudgetStructureView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { BudgetStructureView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { categoryLink, incomeLink } from '@/shared/config';
+import { budgetLink, categoryLink, incomeLink } from '@/shared/config';
 import { change, changeText, dayMonthName, i18n, monthName, monthShortName, t } from '@/shared/lib';
 import type { BudgetCardView, BudgetPartView, BudgetRowView, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from './types.ts';
 
@@ -250,6 +250,36 @@ export function budgetView(b: BudgetStructureView, incomplete: boolean, fmt: Mon
   };
 }
 
+/** A monthly limit over in the month, as a feed card: how much over, spent against the limit, a link to the «Budget» screen. */
+export function limitCard(l: LimitOverView, fmt: MoneyFormat): InsightCardView {
+  const name = l.categoryId ? categoryName({ category: l.categoryId, categoryId: l.categoryId }) : t('insights.limit.budget');
+  return {
+    key: `limit-${l.categoryId ?? 'budget'}`,
+    icon: l.categoryId ? CATEGORY_ICON[l.categoryId] : 'lucide:wallet',
+    title: t('insights.limit.title', { name }),
+    severity: l.severity,
+    severityLabel: t(`insights.severity.${l.severity}`),
+    text: t('insights.limit.text', { spent: fmt.money(l.spent), amount: fmt.money(l.amount) }),
+    chip: { text: `+${fmt.money(l.over)}`, tone: 'up', arrow: 'up', sr: '' },
+    tone: 'up',
+    bars: null,
+    driver: null,
+    to: budgetLink(),
+    linkText: t('insights.limit.open'),
+  };
+}
+
+/** The detectors' cards in their own order, each limit over placed before the first card it outweighs in money. */
+function feedCards(v: InsightsOverview, fmt: MoneyFormat, scope: Scope): InsightCardView[] {
+  const limits = [...v.limitsOver];
+  const out: InsightCardView[] = [];
+  for (const c of v.cards) {
+    while (limits.length > 0 && limits[0]!.over > c.amount) out.push(limitCard(limits.shift()!, fmt));
+    out.push(cardView(c, fmt, scope));
+  }
+  return [...out, ...limits.map((l) => limitCard(l, fmt))];
+}
+
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
   const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
@@ -261,8 +291,8 @@ export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: S
     budget,
     glance,
     early: null,
-    cards: v.cards.map((c) => cardView(c, fmt, scope)),
-    calm: v.cards.length === 0,
+    cards: feedCards(v, fmt, scope),
+    calm: v.cards.length === 0 && v.limitsOver.length === 0,
     newPayees: v.newPayees.map((p) => payeeRow(p, fmt, scope)),
     oneOffs: v.oneOffs.map((o) => oneOffRow(o, fmt, scope, year)),
     basis: basisLines(v),

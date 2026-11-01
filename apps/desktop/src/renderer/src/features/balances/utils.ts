@@ -300,7 +300,7 @@ export function slidesOf(
  * The month pace from one month of the analytics answer: the spending added up by day up to the last day with data,
  * the usual month's running spending, and the figures under the chart. null — not one day of the month has data.
  */
-export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null): PaceView | null {
+export function paceView(a: Readonly<AnalyticsOverview>): PaceView | null {
   if (a.unit !== 'day') return null;
   const last = a.buckets.findLastIndex((b) => b.state !== 'none');
   if (last < 0) return null;
@@ -322,7 +322,6 @@ export function paceView(a: Readonly<AnalyticsOverview>, perDay: number | null):
     running,
     spentTotal: spent[last] ?? 0,
     usualByNow: a.usual?.[last] ?? null,
-    perDay: running ? perDay : null,
     banks: a.spendingByBank.map((b) => ({ provider: b.provider, spent: added(b.values) })),
   };
 }

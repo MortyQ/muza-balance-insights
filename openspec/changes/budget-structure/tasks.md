@@ -37,10 +37,10 @@
 
 ## 7. Limits on home and in insights
 
-- [ ] 7.1 `features/home-budget`: the «Budget» row between home's first and second rows (four parts, wraps on narrow windows, past month result, opens the «Budget» screen) and the empty row with «Set a budget» (no close button, opens the sheet); «Month pace» drops «Available per day» (`useMonthPace` no longer reads the allowance); i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/home-budget.test.ts` and the month pace tests
-- [ ] 7.2 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 7.3 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
-- [ ] 7.4 Commit `feat(desktop): the budget and limits on home and in the insights feed`
+- [x] 7.1 `features/home-budget`: the «Budget» row between home's first and second rows (four parts, wraps on narrow windows, past month result, opens the «Budget» screen) and the empty row with «Set a budget» (no close button, opens the sheet); «Month pace» drops «Available per day» (`useMonthPace` no longer reads the allowance); i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/home-budget.test.ts` and the month pace tests
+- [x] 7.2 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [x] 7.3 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
+- [x] 7.4 Commit `feat(desktop): the budget and limits on home and in the insights feed`
 
 ## 8. Savings goals
 

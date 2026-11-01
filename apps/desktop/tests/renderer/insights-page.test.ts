@@ -34,6 +34,7 @@ const OVERVIEW: InsightsOverview = {
   cards: [CAFES, GROCERIES],
   newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
   oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000 }],
+  limitsOver: [],
   budget: {
     month: {
       income: 2_000_000, essential: 900_000, wants: 500_000, savings: 100_000, fixed: 760_000, debt: 160_000,
@@ -74,6 +75,7 @@ async function mountPage() {
       { path: '/category/:id', name: 'category', component: blank },
       { path: '/income', name: 'income', component: blank },
       { path: '/settings', name: 'settings', component: blank },
+      { path: '/budget', name: 'budget', component: blank },
     ],
   });
   await router.push('/');
@@ -169,6 +171,19 @@ describe('insights screen', () => {
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
     expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (100%)`));
     expect(plain(w.get('[data-test="one-offs"]').text())).toContain(plain(formatMoney(8_000, 978)));
+    w.unmount();
+  });
+
+  it('a monthly limit over: a «Limit exceeded» card placed among the others by money, opening the budget', async () => {
+    answer = { ...OVERVIEW, limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 750_000, over: 350_000, severity: 'high' }] };
+    const w = await mountPage();
+    // 350 000 over outweighs the cafes' +300 000 and the groceries' −60 000: first.
+    const cards = w.findAll('article');
+    expect(cards).toHaveLength(3);
+    const limit = cards[0]!;
+    expect(limit.text()).toContain('Лимит превышен: Кафе и рестораны');
+    expect(plain(limit.text())).toContain(`Потрачено ${plain(formatMoney(750_000, 980))} при лимите ${plain(formatMoney(400_000, 980))}.`);
+    expect(limit.get('[data-test="insight-open"]').text()).toContain('Открыть бюджет');
     w.unmount();
   });
 

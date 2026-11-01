@@ -45,10 +45,6 @@ const legend = computed(() => paceLegend(view, banks));
         <div class="text-xs text-foreground-muted">{{ $t(view.running ? 'home.balances.pace.usualByNow' : 'home.balances.pace.usualMonth') }}</div>
         <div class="font-bold tabular-nums">{{ fmt.money(view.usualByNow) }}</div>
       </div>
-      <div v-if="view.perDay !== null" data-test="pace-figure">
-        <div class="text-xs text-foreground-muted">{{ $t('home.balances.pace.perDay') }}</div>
-        <div class="font-bold text-primary tabular-nums">{{ fmt.money(view.perDay) }}</div>
-      </div>
     </div>
     <p v-if="view.usual === null" class="text-xs text-foreground-muted" data-test="pace-no-usual">{{ $t('home.balances.pace.noUsual') }}</p>
   </div>
