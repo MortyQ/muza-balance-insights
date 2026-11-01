@@ -173,6 +173,13 @@
   12 months: main picks the window (`monthsWindow` in `data/category.ts`: up to the current month while the picked one
   is among its last 12, else up to the picked one) and sends `thisMonth`; the strong bar is the picked month, the
   average leaves the running month out, the caption compares the picked month with it.
+  The user's category (spec `desktop-category-menu`): a debit line with `choice` (`CategoryLineView.choice`:
+  `operation` | `payee` | `auto`; null — takes none) has a menu — a right click on its row (`VContextMenu`) or its «⋮»
+  (`VMenu`, the list's `with-actions` column): «Change category…» (`lineActions`), and «Return the automatic category» /
+  «Remove the rule for this payee» for a chosen one; a chosen line carries a mark. «Change category…» opens
+  `components/CategoryPicker.vue` (a `VSheet`: search, the choosable categories by name — `pickerOptions`, the switch
+  «For all operations from this payee»). `composables/useCategoryChoice.ts` saves (IPC `setOperationCategory`), shows
+  what changed (`choiceDoneText`) in a notice and refreshes the data status, so every screen reloads quietly.
   The first load (no data yet) shows `DetailSkeleton` of `entities/operations` (`role="status"`) in place of the cards. Past
   months' bars and «When»'s non-peak bars are the category colour mixed 45% into the surface; the strong bar is the
   colour itself.

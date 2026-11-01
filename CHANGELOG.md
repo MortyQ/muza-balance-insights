@@ -35,6 +35,17 @@ English interface.
   Monobank's black, white, iron, platinum or children's card, PrivatBank's blue card, A-Bank's green card and
   Slovenská sporiteľňa's blue card, each with a chip and a contactless mark.
 
+### Categories
+
+- **Choose an operation's category yourself.** On a category's screen, right-click an operation or press «⋮» at the end
+  of its row, then «Change category…»: pick a category from the list (with a search), for this operation alone or,
+  with «For all operations from this payee», for every payment to the same place or person — past and future ones. The
+  app says how many operations changed. Your choice comes before the bank's code and is kept when you upload the same
+  statement again or the app updates its data; «Return the automatic category» undoes it. Your own choices are marked
+  in the list.
+- **New categories:** «Rent», «Car», «Kids», «Subscriptions» and «Investments». Investments (topping up a broker,
+  buying shares) count as spending, so you see how much went there. «Travel» is now «Travel and holidays».
+
 ### Fixes
 
 - «Month pace» no longer turns grey with an empty tooltip after you come back to «General» from another screen.

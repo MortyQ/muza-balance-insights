@@ -147,6 +147,9 @@
   payment's id, `mark` `mandatory | hidden | null`) marks its payee (core `setRecurringMark`); unknown key — error; `next` — a calendar month after the last (`nextMonthDay`). The
   third channel with bank text: each payment's description through `merchantText` — never `counter_name`, an IBAN, a
   card number or a jar title (canary test in `tests/data.test.ts`).
+  `setOperationCategory({ key, category, payee })` (`key` — a category line's key, `category` a choosable `CategoryId`
+  or null to undo, `payee` — for every debit of its payee) → `{ changed }` (core `commands/categories.ts`); a line that
+  takes no choice — error. The category lines carry `choice` (core `categorySources`).
   `getAllowanceOverview({ participantId? })` («Available per day»; `DataService.allowanceOverview`, pure calculation in
   `data/allowance.ts`): the cards' own funds now (`balancesAt` now; no jars; foreign at today's rates, unrated in
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over

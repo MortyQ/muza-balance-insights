@@ -243,3 +243,11 @@
   day, the tooltip's bank parts add up to «Spent», the gear hides with one bank on and the choice survives a restart.
 - **No grey charts**: leave «General» for another screen while auto-sync runs, come back — «Month pace» keeps its
   colours and its tooltip has text.
+
+## Check on a live system: manual categories (`openspec/changes/manual-categories`)
+
+- The row menu on a real category screen: a right click and «⋮» open the same menu, the picker takes focus and gives
+  it back, the screen and home reload with the line moved.
+- A choice survives a real re-upload of the same statement and of a longer one, and an auto-sync of a Monobank card.
+- A bank that changes an operation's time or amount between two exports gives it a new id, so its one-operation
+  choice would not follow (the payee rule would). Not seen so far; watch for it.

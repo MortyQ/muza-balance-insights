@@ -19,9 +19,9 @@
 - [x] 3.2 `VMenu` in `shared/ui`; the row menu on `OperationRow` (right click and «⋮»), keyboard. Renderer tests.
 - [x] 3.3 The category picker with search and the payee switch; colours and icons of the new categories; keys in
   `uk.json`, `en.json`, `ru.json`, including the new «Подорожі й відпустки» names.
-- [ ] 3.4 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
+- [x] 3.4 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
 
 ## 4. Docs and checks
 
-- [ ] 4.1 `.agents/project/domain-rules.md` (the order), `docs/backlog.md` (ids changing between exports).
-- [ ] 4.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).
+- [x] 4.1 `.agents/project/domain-rules.md` (the order), `docs/backlog.md` (ids changing between exports).
+- [x] 4.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).
