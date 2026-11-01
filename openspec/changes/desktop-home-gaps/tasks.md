@@ -15,7 +15,7 @@
 
 - [x] 3.1 Move `useDragScroll` (and `DRAG_THRESHOLD`) to `shared/lib`, no code change; the card stack imports it from
   there. Its own commit.
-- [ ] 3.2 `shared/ui` `VCarousel` with dots, keyboard and reduced motion (design 3); README entry; renderer tests.
+- [x] 3.2 `shared/ui` `VCarousel` with dots, keyboard and reduced motion (design 3); README entry; renderer tests.
 
 ## 4. Renderer: the tile (desktop)
 

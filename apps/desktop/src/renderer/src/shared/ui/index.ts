@@ -23,6 +23,7 @@ export { default as VMonthRangePicker, type MonthRangePreset } from "./component
 export { default as VCard } from "./components/layout/VCard.vue";
 export { default as VCollapse } from "./components/layout/VCollapse.vue";
 export { default as VInfoNotice, type NoticeTone } from "./components/layout/VInfoNotice.vue";
+export { default as VCarousel, type CarouselSlide } from "./components/layout/VCarousel.vue";
 export { default as VTooltip } from "./components/overlay/VTooltip.vue";
 export { default as VPopover } from "./components/overlay/VPopover.vue";
 export { default as VSheet } from "./components/overlay/VSheet.vue";
