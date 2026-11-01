@@ -25,8 +25,8 @@
 
 ## 5. Limits in core
 
-- [ ] 5.1 Migration v20 `goals` and `goal_fixed`; `commands/goals.ts` (save with fixed rows, delete, add suggested; validation and `GoalError`); `read/limits.ts` (`limitState`, `suggestedAmount`, `budgetParts`); tests for every `core-spending-limits` scenario, the unique limit per owner, category and period, and the analysis whitelist
-- [ ] 5.2 Commit `feat(core): spending limits`
+- [x] 5.1 Migration v20 `goals` and `goal_fixed`; `commands/goals.ts` (save with fixed rows, delete, add suggested; validation and `GoalError`); `read/limits.ts` (`limitState`, `suggestedAmount`, `budgetParts`); tests for every `core-spending-limits` scenario, the unique limit per owner, category and period, and the analysis whitelist
+- [x] 5.2 Commit `feat(core): spending limits`
 
 ## 6. Limits read and screen
 

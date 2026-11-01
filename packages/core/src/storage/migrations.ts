@@ -20,6 +20,7 @@ import { v16 } from './migrations/v16.ts';
 import { v17 } from './migrations/v17.ts';
 import { v18 } from './migrations/v18.ts';
 import { v19 } from './migrations/v19.ts';
+import { v20 } from './migrations/v20.ts';
 
 export const MIGRATIONS: ReadonlyArray<Migration> = [
   v01,
@@ -41,6 +42,7 @@ export const MIGRATIONS: ReadonlyArray<Migration> = [
   v17,
   v18,
   v19,
+  v20,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.at(-1)?.version ?? 0;
