@@ -5,9 +5,10 @@
 The home grid leaves holes. «What's unusual» is drawn only when it has lines, and early in a month it never has any
 (nothing is over a whole usual month yet), so the «Today» / «This week» row ends with an empty third. Right of
 «Spending by category», with neither «Who spent what» nor the regular payments teaser, three columns stay empty too.
-The plan of 29.10 («Головна без порожніх місць», Notion) fills the first hole with «Recent operations» and stretches
-the spending tile over the second. On 01.11 the user replaced the header switch of that plan with a carousel, like the
-account cards: the two contents are slides of one tile, swiped or dragged.
+The plan of 29.10 («Головна без порожніх місць», Notion) fills the first hole with «Recent operations». On 01.11 the
+user replaced the header switch of that plan with a carousel, like the account cards: the two contents are slides of
+one tile, swiped or dragged. On the same day the user decided to take «Who spent what» and the regular payments teaser
+off home for now (their place is decided later), so «Spending by category» always takes the whole row.
 
 ## What Changes
 
@@ -20,14 +21,15 @@ account cards: the two contents are slides of one tile, swiped or dragged.
   refunds — for the same person, banks and «Personal / Business» choice as the rest of home. A row shows the
   category's icon, the bank's description, the amount and the day and time; it opens the operation's category screen.
   A pending bank operation is marked as on the category screen.
-- **«Spending by category» fills its row.** When neither «Who spent what» nor the regular payments teaser is shown, it
-  takes the whole width instead of leaving three columns empty.
+- **Nothing beside «Spending by category».** «Who spent what» and the regular payments teaser leave home; the spending
+  tile takes the whole width. Picking a person inside the spending block goes with «Who spent what» (the global filter
+  still picks a person). The components stay in their slices for a later place; «Regular payments» stays in the menu.
 - **«Now» details** still take the place of the whole row, the carousel included.
-- **New: descriptions on home (needs the user's explicit ok).** The bank's descriptions of operations today leave
+- **New: descriptions on home (approved by the user on 01.11).** The bank's descriptions of operations today leave
   main only for the category, income and regular payments screens (`shared/api.ts`). «Recent operations» shows them on
   home. Nothing leaves the computer; the comment in `api.ts` and `desktop-renderer.md` name the new place.
-- **`CHANGELOG.md`**, under `0.1.13 — unreleased`: the «What's unusual» / «Recent operations» tile and the spending tile
-  filling its row.
+- **`CHANGELOG.md`**, under `0.1.13 — unreleased`: the «What's unusual» / «Recent operations» tile; «Who spent what» and
+  the regular payments teaser no longer on home.
 
 ## Capabilities
 
@@ -36,8 +38,8 @@ account cards: the two contents are slides of one tile, swiped or dragged.
 - `desktop-recent-operations`: what «Recent operations» lists and how a row behaves.
 
 ### Modified Capabilities
-- `desktop-home-tiles`: «What's unusual tile» becomes the carousel tile; «Who spent what tile» gains the full-width
-  spending tile when no tile is beside it.
+- `desktop-home-tiles`: the tile order loses «Who spent what» and the teaser; «What's unusual tile» becomes the
+  carousel tile; «Who spent what tile» is removed.
 
 ## Impact
 
@@ -46,13 +48,14 @@ account cards: the two contents are slides of one tile, swiped or dragged.
 - `apps/desktop`: an IPC read `getRecentOperations` (main, data process, `shared/api.ts`, `ipc-args`, the read cache);
   renderer: `shared/ui` `VCarousel`, `useDragScroll` moved to `shared/lib`, a new feature `features/recent-operations`,
   the insights tile out of `SpendingFeature` into its own exported feature, a widget `widgets/home-highlights`, the
-  grid rule; i18n `uk.json`, `en.json`, `ru.json`.
+  people tile and the teaser off home; i18n `uk.json`, `en.json`, `ru.json`.
 - `apps/mcp`: untouched.
 - Trust anchors: none change.
 - User-visible: yes; the `CHANGELOG.md` entry above.
 
 ## Out of scope
 
+- A new place for «Who spent what» and the regular payments teaser.
 - A remembered slide choice (the order rule decides each time).
 - Income in «Recent operations», a search or a «show all» list.
 - Any other tile in a carousel, and the «Dashboard with chosen widgets» (P3).

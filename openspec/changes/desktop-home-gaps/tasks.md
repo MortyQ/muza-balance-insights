@@ -19,14 +19,15 @@
 
 ## 4. Renderer: the tile (desktop)
 
-- [ ] 4.1 `SpendingInsightsFeature` out of `SpendingFeature` (`update:available`, no in-block pick rule);
+- [ ] 4.1 `SpendingInsightsFeature` out of `SpendingFeature` (`update:available`);
   `features/recent-operations`; `widgets/home-highlights`; the page wiring with «Now» details; keys in `uk.json`,
   `en.json`, `ru.json`. Renderer tests: the order, one slide, no content, details open, one spending request.
-- [ ] 4.2 The grid rule for the spending tile (design 4); renderer test for the side tiles present and absent.
+- [ ] 4.2 «Who spent what» and the teaser off home, the in-block pick removed, the spending tile over 12 columns
+  (design 4); renderer tests updated.
 - [ ] 4.3 `CHANGELOG.md` entry under `0.1.13 — unreleased`.
 
 ## 5. Docs and checks
 
 - [ ] 5.1 `.agents/project/desktop-renderer.md`, `.agents/project/desktop-import.md`, `docs/backlog.md` (swipe on a
-  trackpad, equal row height, the tile at 1, 2 and 12 columns).
+  trackpad, equal row height, the tile at 1, 2 and 12 columns, a place for «Who spent what» and the teaser).
 - [ ] 5.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).

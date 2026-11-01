@@ -35,22 +35,21 @@ change. Descriptions are cut as on the category screen (card numbers to their la
   in view. No motion under `prefers-reduced-motion` (`scroll-behavior: auto`).
 - `features/spending-summary`: the «What's unusual» tile leaves `SpendingFeature`; the slice exports
   `SpendingInsightsFeature`, which runs the same `useSpending` request (the read cache answers it from the block's
-  request) and emits `update:available`. The in-block person pick no longer hides it: the unusual lines are the
-  view's (the global filter's person), and the slide does not know the block's pick.
+  request) and emits `update:available`. The unusual lines are the view's (the global filter's person).
 - `features/recent-operations` (new slice): `RecentOperationsFeature` — `api/useRecentRequest.ts`, the rows (category
   icon from `entities/category`, money from `entities/currency-display`), `update:available`.
 - `widgets/home-highlights` (new): `HomeHighlights` composes the two features in a `VCard` + `VCarousel`, decides the
   order and the empty text. Features never import each other; the widget does.
 - `pages/home`: the widget in the grid in place of the old tile, hidden while «Now» details are open
-  (`nowDetails`, as today's `insightsHidden`). `SpendingFeature` loses `insightsHidden`.
+  (`nowDetails`, as today's `insightsHidden`). `SpendingFeature` loses `insightsHidden`; the teaser is not mounted.
 
-## 4. The grid rule
+## 4. Nothing beside the spending tile
 
-The spending tile spans 9 columns from 79rem. When neither «Who spent what» nor the teaser is in the grid, it spans 12.
-One rule on the grid does it: the grid `:not(:has([data-tile="side"]))` makes its `[data-tile="spending"]` span 12
-(`:has()` — Chromium in Electron supports it), so the features stay independent; the two side tiles carry
-`data-tile="side"`. Verdict over the page knowing which tiles exist: that would need the features to report up through
-the page for layout only.
+`SpendingFeature` stops drawing «Who spent what» and the page stops mounting `RecurringTeaserFeature`; the spending tile
+spans 12 columns from 79rem (one row span). With the people tile gone the in-block person pick has no control: the
+block's pick state (`usePick`) is removed, so the block always shows the view's person. `PeopleList` and
+`RecurringTeaserFeature` stay in their slices, unmounted, for the later place the user decides (no dead exports are
+added; the existing ones stay).
 
 ## 5. Privacy
 
