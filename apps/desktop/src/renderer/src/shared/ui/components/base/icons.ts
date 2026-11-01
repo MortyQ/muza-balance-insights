@@ -42,6 +42,7 @@ import LucideHandHeart from "~icons/lucide/hand-heart";
 import LucideHeartPulse from "~icons/lucide/heart-pulse";
 import LucideInbox from "~icons/lucide/inbox";
 import LucideInfo from "~icons/lucide/info";
+import LucideCircleQuestionMark from "~icons/lucide/circle-question-mark";
 import LucideKeyRound from "~icons/lucide/key-round";
 import LucideLandmark from "~icons/lucide/landmark";
 import LucideLanguages from "~icons/lucide/languages";
@@ -151,6 +152,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:heart-pulse": LucideHeartPulse,
   "lucide:inbox": LucideInbox,
   "lucide:info": LucideInfo,
+  "lucide:circle-question-mark": LucideCircleQuestionMark,
   "lucide:key-round": LucideKeyRound,
   "lucide:landmark": LucideLandmark,
   "lucide:languages": LucideLanguages,

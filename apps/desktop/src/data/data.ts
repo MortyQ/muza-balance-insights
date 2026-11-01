@@ -10,6 +10,7 @@ import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/c
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
+import { categoryKinds, resetCategoryKinds, setCategoryKind } from '@mono/core/read/category-kinds';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -36,9 +37,11 @@ import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, mon
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
-import type { CategoryId } from '../shared/categories.ts';
+import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
+  CategoryKindQuery,
+  CategoryKindView,
   AllowanceQuery,
   AnalyticsCategory,
   AnalyticsOverview,
@@ -880,6 +883,24 @@ export class DataService {
 
   async deleteReserve(id: number): Promise<void> {
     await deleteReserve(await this.conn(), id);
+  }
+
+  /** Every category with a kind (core read/category-kinds), named by the renderer's id. */
+  async categoryKinds(): Promise<CategoryKindView[]> {
+    return (await categoryKinds(await this.conn())).flatMap((r) => {
+      const categoryId = CATEGORY_ID.get(r.category);
+      return categoryId && categoryId !== 'family' && categoryId !== 'ownTransfers' && categoryId !== 'income'
+        ? [{ categoryId, kind: r.kind, fixed: r.fixed, changed: r.changed }]
+        : [];
+    });
+  }
+
+  async setCategoryKind(q: CategoryKindQuery): Promise<void> {
+    await setCategoryKind(await this.conn(), CATEGORY[q.categoryId], { kind: q.kind, fixed: q.fixed }, this.d.nowSec());
+  }
+
+  async resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void> {
+    await resetCategoryKinds(await this.conn(), categoryId === null ? null : CATEGORY[categoryId]);
   }
 
   /** The user's category of a debit, for it or its payee (core commands/categories); the key is the line's id. */

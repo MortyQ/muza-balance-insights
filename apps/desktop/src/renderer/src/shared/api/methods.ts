@@ -18,6 +18,7 @@ export type CachedRead = (typeof CACHED_READS)[number];
 /** Calls that change none of the data the cached reads show: they pass through. */
 export const PASS_THROUGH = [
   'listPeople',
+  'getCategoryKinds',
   'listConnectionAccounts',
   'openStatement',
   'openUpload',
@@ -71,6 +72,8 @@ export const WRITES = [
   'addReserve',
   'updateReserve',
   'deleteReserve',
+  'setCategoryKind',
+  'resetCategoryKinds',
   'deleteAllData',
   'startOver',
 ] as const satisfies ReadonlyArray<Method>;

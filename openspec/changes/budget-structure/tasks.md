@@ -2,15 +2,15 @@
 
 ## 1. Category kinds in core
 
-- [ ] 1.1 Migration v19 `category_kinds`; `read/category-kinds.ts` (defaults, `categoryKinds(db)` with `changed`); `commands/category-kinds.ts` (`setCategoryKind`, `resetCategoryKinds`, `CategoryKindError`); tests in `packages/core/tests` (defaults, a choice wins, reset one / all, refusals, survives a full re-derivation, the table is not in the analysis whitelist)
-- [ ] 1.2 Commit `feat(core): category kinds`
+- [x] 1.1 Migration v19 `category_kinds`; `read/category-kinds.ts` (defaults, `categoryKinds(db)` with `changed`); `commands/category-kinds.ts` (`setCategoryKind`, `resetCategoryKinds`, `CategoryKindError`); tests in `packages/core/tests` (defaults, a choice wins, reset one / all, refusals, survives a full re-derivation, the table is not in the analysis whitelist)
+- [x] 1.2 Commit `feat(core): category kinds`
 
 ## 2. Explanations and the «Categories» section
 
-- [ ] 2.1 `shared/ui` `HelpHint` and `IntroNote` (keyboard, screen reader labels, stored dismissal behind try/catch) with tests; listed in `shared/ui/README.md`
-- [ ] 2.2 Channels `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds` (channels, ipc-args, data-protocol, main, host, renderer methods); `tests/ipc.test.ts` bad arguments
-- [ ] 2.3 `entities/category-kind`; `features/category-kinds` with its introduction; `SETTINGS_SECTIONS` + `widgets/settings`; i18n keys in `uk.json`, `en.json`, `ru.json`; `tests/renderer/category-kinds.test.ts` (rows, change, changed mark, reset, failed save reverts, introduction once) and the section order in `tests/renderer/settings.test.ts`
-- [ ] 2.4 Commit `feat(desktop): the «Categories» section and in-app explanations`
+- [x] 2.1 `shared/ui` `HelpHint` and `IntroNote` (keyboard, screen reader labels, stored dismissal behind try/catch) with tests; listed in `shared/ui/README.md`
+- [x] 2.2 Channels `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds` (channels, ipc-args, data-protocol, main, host, renderer methods); `tests/ipc.test.ts` bad arguments
+- [x] 2.3 `entities/category-kind`; `features/category-kinds` with its introduction; `SETTINGS_SECTIONS` + `widgets/settings`; i18n keys in `uk.json`, `en.json`, `ru.json`; `tests/renderer/category-kinds.test.ts` (rows, change, changed mark, reset, failed save reverts, introduction once) and the section order in `tests/renderer/settings.test.ts`
+- [x] 2.4 Commit `feat(desktop): the «Categories» section and in-app explanations`
 
 ## 3. Budget metrics in core
 

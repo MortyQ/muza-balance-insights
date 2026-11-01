@@ -5,6 +5,7 @@ import { PeopleConnectionsFeature } from '@/features/integrations';
 import {
   AppLockSettingsFeature,
   AutoSyncSettingsFeature,
+  CategoryKindsFeature,
   DbEncryptionFeature,
   DeleteDataFeature,
   LanguageSelectFeature,
@@ -29,6 +30,7 @@ const emit = defineEmits<{ select: [section: SettingsSection]; deleted: [] }>();
 // Composed below: «Storage and tokens» (the encryption row goes into its list) and «People and banks» (the people with
 // their banks, then the history download).
 const SECTIONS: Record<Exclude<SettingsSection, 'storage' | 'people'>, Component> = {
+  categories: CategoryKindsFeature,
   lock: AppLockSettingsFeature,
   network: NetworkInfoFeature,
   data: DeleteDataFeature,

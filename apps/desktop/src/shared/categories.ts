@@ -10,6 +10,10 @@ export const CATEGORY_IDS = [
 
 export type CategoryId = (typeof CATEGORY_IDS)[number];
 
+/** The categories with a kind (core DEFAULT_KINDS; tests/categories.test.ts keeps them equal): all but family, own transfers, income. */
+export const KIND_CATEGORY_IDS = CATEGORY_IDS.filter((id) => id !== 'family' && id !== 'ownTransfers' && id !== 'income');
+export type KindCategoryId = (typeof KIND_CATEGORY_IDS)[number];
+
 /** What the user may choose for a debit (core CHOOSABLE_CATEGORIES; tests/categories.test.ts keeps them equal). */
 export const CHOOSABLE_CATEGORY_IDS = CATEGORY_IDS.filter(
   (id) => id !== 'fees' && id !== 'transferFees' && id !== 'family' && id !== 'ownTransfers' && id !== 'income',

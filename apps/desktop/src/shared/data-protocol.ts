@@ -9,8 +9,11 @@ import type { StatementBlock, StatementComparison, StatementTarget } from '@mono
 import type { ReserveInput } from './allowance.ts';
 import { DB_KEY_RE } from './db-open.ts';
 import { ARG_SCHEMAS, STATEMENT_ACCOUNTS_MAX, accountId, cardType, id, participant } from './ipc-args.ts';
+import type { KindCategoryId } from './categories.ts';
 import type {
   AllowanceOverview,
+  CategoryKindQuery,
+  CategoryKindView,
   AllowanceQuery,
   AnalyticsOverview,
   AnalyticsQuery,
@@ -65,6 +68,9 @@ export type DataMethods = {
   addReserve: { args: [ReserveInput]; result: void };
   updateReserve: { args: [number, ReserveInput]; result: void };
   deleteReserve: { args: [number]; result: void };
+  categoryKinds: { args: []; result: CategoryKindView[] };
+  setCategoryKind: { args: [CategoryKindQuery]; result: void };
+  resetCategoryKinds: { args: [KindCategoryId | null]; result: void };
   status: { args: []; result: DataStatus };
   lastSyncSec: { args: []; result: number | null };
   /** The import's connections: token ones only. */
@@ -149,6 +155,9 @@ export const DATA_ARG_SCHEMAS = {
   addReserve: ARG_SCHEMAS.addReserve,
   updateReserve: ARG_SCHEMAS.updateReserve,
   deleteReserve: ARG_SCHEMAS.deleteReserve,
+  categoryKinds: ARG_SCHEMAS.getCategoryKinds,
+  setCategoryKind: ARG_SCHEMAS.setCategoryKind,
+  resetCategoryKinds: ARG_SCHEMAS.resetCategoryKinds,
   status: none,
   lastSyncSec: none,
   tokenConnections: none,

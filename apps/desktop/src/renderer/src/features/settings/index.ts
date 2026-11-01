@@ -1,5 +1,5 @@
 // The settings domain: everything the user does with the app and their data on this computer, as sub-features
-// (app-lock, app-update, auto-sync, db-encryption, db-recovery, delete-data, security-info, theme-switch,
+// (app-lock, app-update, auto-sync, category-kinds, db-encryption, db-recovery, delete-data, security-info, theme-switch,
 // language-select) with what they share in shared/. Most are sections of the settings screen; some live outside it (the
 // lock screen, the home hint and update banner, the «Database unavailable» screen).
 export { default as AppLockFeature } from './app-lock/AppLockFeature.vue';
@@ -13,6 +13,7 @@ export { default as DbEncryptionFeature } from './db-encryption/DbEncryptionFeat
 export { default as DeleteDataFeature } from './delete-data/DeleteDataFeature.vue';
 export { default as NetworkInfoFeature } from './security-info/NetworkInfoFeature.vue';
 export { default as StorageInfoFeature } from './security-info/StorageInfoFeature.vue';
+export { default as CategoryKindsFeature } from './category-kinds/CategoryKindsFeature.vue';
 export { default as ThemeSwitchFeature } from './theme-switch/ThemeSwitchFeature.vue';
 export { default as LanguageSelectFeature } from './language-select/LanguageSelectFeature.vue';
 export { LANGUAGE_OPTIONS } from './language-select/constants.ts';

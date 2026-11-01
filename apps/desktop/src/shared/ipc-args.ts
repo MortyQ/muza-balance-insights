@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
 import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX } from './allowance.ts';
 import type { Method } from './channels.ts';
-import { CATEGORY_IDS } from './categories.ts';
+import { CATEGORY_IDS, KIND_CATEGORY_IDS } from './categories.ts';
 import { COLOR_KEYS } from './colors.ts';
 import { LOCALES } from './locale.ts';
 import { PIN_RE } from './lock.ts';
@@ -104,6 +104,9 @@ export const ARG_SCHEMAS = {
   addReserve: z.tuple([reserve]),
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),
+  getCategoryKinds: z.tuple([]),
+  setCategoryKind: z.tuple([z.strictObject({ categoryId: z.enum(KIND_CATEGORY_IDS), kind: z.enum(['essential', 'wants', 'savings']), fixed: z.boolean() })]),
+  resetCategoryKinds: z.tuple([z.enum(KIND_CATEGORY_IDS).nullable()]),
   setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
   setOperationCategory: z.tuple([
     z.strictObject({ key: z.string().min(1).max(200), category: z.enum(CATEGORY_IDS).nullable(), payee: z.boolean() }),

@@ -234,7 +234,9 @@
       "months": "{n} month | {n} months | {n} months",
       "cancel": "Cancel",
       "apply": "Show"
-    }
+    },
+    "gotIt": "Got it",
+    "howItWorks": "How it works"
   },
   "entities": {
     "bank": {
@@ -398,6 +400,11 @@
       "compare": "Compared with {period}",
       "noCompare": "Not enough history to compare",
       "running": "{month} is still running — amounts are incomplete"
+    },
+    "categoryKind": {
+      "essential": "Essential",
+      "wants": "Wants",
+      "savings": "Savings"
     }
   },
   "header": {
@@ -1249,7 +1256,8 @@
       "network": "Network",
       "people": "People and banks",
       "storage": "Storage and tokens",
-      "updates": "Updates"
+      "updates": "Updates",
+      "categories": "Categories"
     },
     "page": {
       "back": "Back",
@@ -1329,6 +1337,21 @@
       "title": "Updates",
       "upToDate": "The latest version is installed.",
       "version": "Version {version}"
+    },
+    "categoryKinds": {
+      "title": "Categories",
+      "description": "Each category's kind: essential spending, a want or savings, and whether it is a fixed amount every month. «Budget structure» in «Insights» counts by it.",
+      "changed": "changed",
+      "kindOf": "Kind of «{name}»",
+      "fixed": "Fixed",
+      "reset": "Reset to defaults",
+      "intro": {
+        "title": "Why category kinds",
+        "kinds": "Essential is what you cannot do without: groceries, housing, medicine. Wants are what you could give up: cafes, entertainment. Savings are investments.",
+        "fixed": "Fixed is about the same amount every month: rent, phone, subscriptions.",
+        "where": "«Insights» uses the kinds to show how much of your income goes to essentials, to wants and how much is left. Changes apply at once."
+      },
+      "fixedOf": "Fixed: «{name}»"
     }
   }
 }

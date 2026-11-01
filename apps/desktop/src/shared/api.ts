@@ -3,7 +3,7 @@ import type { ProviderId } from '@mono/core/providers/types';
 import type { ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
-import type { CategoryId } from './categories.ts';
+import type { CategoryId, KindCategoryId } from './categories.ts';
 import type { ColorKey } from './colors.ts';
 import type { DbStateView, StartOverResult } from './db-state.ts';
 import type { Locale } from './locale.ts';
@@ -287,6 +287,12 @@ export type BalanceApi = {
    * `category` null returns the automatic one. The caller reloads. A line that takes no choice → error.
    */
   setOperationCategory(q: OperationCategoryQuery): Promise<OperationCategoryResult>;
+  /** Every category with a kind, in the category list's order (the «Categories» section). */
+  getCategoryKinds(): Promise<CategoryKindView[]>;
+  /** Sets a category's kind and fixed flag; the default itself clears the choice. The caller reloads. */
+  setCategoryKind(q: CategoryKindQuery): Promise<void>;
+  /** Back to the default: one category, or all with null. */
+  resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -671,6 +677,14 @@ export type RecurringMark = 'mandatory' | 'hidden';
 
 /** `key` — a CategoryLineView's key; `payee` — for every debit of its payee. */
 export type OperationCategoryQuery = { key: string; category: CategoryId | null; payee: boolean };
+
+/** A spending category's kind (core read/category-kinds.ts): essential, a want or savings. */
+export type CategoryKind = 'essential' | 'wants' | 'savings';
+
+/** A category's kind as it reads now; `changed` — differs from the default. */
+export type CategoryKindView = { categoryId: KindCategoryId; kind: CategoryKind; fixed: boolean; changed: boolean };
+
+export type CategoryKindQuery = { categoryId: KindCategoryId; kind: CategoryKind; fixed: boolean };
 
 /** How many operations changed category. */
 export type OperationCategoryResult = { changed: number };

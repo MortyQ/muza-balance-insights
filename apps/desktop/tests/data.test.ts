@@ -966,6 +966,18 @@ describe('DataService.setOperationCategory (the user\'s own category)', () => {
   });
 });
 
+describe('DataService category kinds', () => {
+  it('lists every category with a kind by id, sets, marks and resets', async () => {
+    const kinds = await svc.categoryKinds();
+    expect(kinds.map((k) => k.categoryId)).not.toContain('income');
+    expect(kinds.find((k) => k.categoryId === 'rent')).toEqual({ categoryId: 'rent', kind: 'essential', fixed: true, changed: false });
+    await svc.setCategoryKind({ categoryId: 'clothing', kind: 'essential', fixed: false });
+    expect((await svc.categoryKinds()).find((k) => k.categoryId === 'clothing')).toEqual({ categoryId: 'clothing', kind: 'essential', fixed: false, changed: true });
+    await svc.resetCategoryKinds(null);
+    expect((await svc.categoryKinds()).some((k) => k.changed)).toBe(false);
+  });
+});
+
 describe('DataService.incomeOverview (the income screen)', () => {
   const IN = 'поступления';
   beforeEach(async () => {

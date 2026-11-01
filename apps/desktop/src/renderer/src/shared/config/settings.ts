@@ -3,6 +3,7 @@ import { ROUTE } from './routes.ts';
 
 export const SETTINGS_SECTIONS = [
   'people',
+  'categories',
   'lock',
   'storage',
   'network',
