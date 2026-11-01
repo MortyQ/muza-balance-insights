@@ -143,12 +143,11 @@
   member card) and the category rows (`CategoryRow`: icon in a soft circle, name with share and operations, chip,
   amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the rest in place); «Who spent what»
   (`PeopleList`, family view only, each person with a share bar — `PersonRowView.share`).
-  «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` over `SpendingOverview.usual`
-  (whole-month medians) — categories off their usual by at least `INSIGHT_SHARE` (20%) and `INSIGHT_MIN` (500 ₴), the
-  largest differences first, at most `INSIGHT_MAX` (3). A usual under `INSIGHT_BASE` (1 000 ₴) is too small a base for a
-  share: only «more», said by the amount. While the month runs (`usual.running`) only categories already over a whole
-  usual month, no income; a month that is over then says income (beside a category, or alone when off itself). The
-  note says the median of how many months. None while a person is picked inside the block (the usual is the view's).
+  «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
+  detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
+  `INSIGHT_MAX` (5), each with the money and the share (`changeText`), a «rare» one by the money alone; a category line
+  is a link to its screen (`categoryLink`, the block's scope), income lines are plain. The note says the median of how
+  many months, and that the month still runs. None while a person is picked inside the block (the usual is the view's).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),

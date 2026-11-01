@@ -251,3 +251,10 @@
 - A choice survives a real re-upload of the same statement and of a longer one, and an auto-sync of a Monobank card.
 - A bank that changes an operation's time or amount between two exports gives it a new id, so its one-operation
   choice would not follow (the payee rule would). Not seen so far; watch for it.
+
+## Check on a live system: insight detectors (`openspec/changes/core-insight-detectors`)
+
+- Five lines in «What's unusual»: the «Now» row grows with the tile, and «Today» / «This week» beside it still read
+  well at the medium and the wide width.
+- A category with no spending in the usual months shows as «rare» once it passes 500 ₴; watch whether it is noise.
+- Clicking a line opens the category screen for the shown month and the block's scope.
