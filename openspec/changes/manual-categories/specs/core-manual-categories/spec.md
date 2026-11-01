@@ -1,9 +1,9 @@
 ## ADDED Requirements
 
 ### Requirement: Manual category of one operation
-The system SHALL let the user set the category of one operation to any category an override may assign, store it
-apart from the operation by the operation's stored id, and apply it after every automatic rule, the MCC and payee
-rules. The derived-only categories (own transfers, bank fees, transfer fees, family) SHALL NOT be assignable, and
+The system SHALL let the user set the category of one debit to any spending category, store it apart from the
+operation by the operation's stored id, and apply it above every automatic rule, the MCC and payee choices. Credits
+SHALL NOT take a chosen category. The derived-only categories (own transfers, bank fees, transfer fees, family) SHALL NOT be assignable, and
 operations in them SHALL NOT take a manual category.
 
 #### Scenario: A pick beats the MCC
@@ -15,13 +15,17 @@ operations in them SHALL NOT take a manual category.
 - **THEN** the operation returns to the category the automatic rules give it
 
 ### Requirement: Payee rule
-The system SHALL let the user set a category for every operation with the same counterparty name or, when it has
+The system SHALL let the user set a category for every debit with the same counterparty name or, when it has
 none, the same description (trimmed, case-insensitive), past and future, and report how many operations changed. A
 manual category of one operation SHALL win over a payee rule.
 
 #### Scenario: Applied to past operations
 - **WHEN** a payee rule «инвестиции» is set for a description shared by three operations
 - **THEN** the answer reports 3 and all three are «инвестиции»
+
+#### Scenario: The payee's credits stay income
+- **WHEN** a payee with a rule also sends money
+- **THEN** that credit keeps its automatic category
 
 #### Scenario: A one-operation pick wins
 - **WHEN** an operation has a manual category and its payee has a rule with another one

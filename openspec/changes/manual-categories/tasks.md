@@ -2,15 +2,15 @@
 
 ## 1. Core: storage and categories (core)
 
-- [ ] 1.1 Migration v18: `manual_categories` and `category_overrides.field` (design 1, 2). Verify the migration tests.
-- [ ] 1.2 New categories in `CATEGORY` / `OVERRIDE_CATEGORIES`; derivation order with manual picks and `field`
-  rules (design 3). Verify `tests/derive` with fictional rows: a pick over an MCC, a pick over a rule, undo, a
-  derived-only row ignoring a pick.
+- [x] 1.1 Migration v18: `manual_categories` and `payee_categories` (design 1, 2). Verify the migration tests.
+- [x] 1.2 New categories in `CATEGORY` / `OVERRIDE_CATEGORIES`; derivation order with manual picks and `field`
+  rules (design 3). Verify `tests/derive` with fictional rows (`tests/commands/categories.test.ts`): a pick over an MCC,
+  a pick over a rule, undo, a derived-only row ignoring a pick.
 
 ## 2. Core: commands and import survival (core)
 
-- [ ] 2.1 `commands/categories.ts` (design 4), with the changed count. Verify with fictional rows.
-- [ ] 2.2 Tests: the same statement imported twice, an overlapping statement, a full re-derivation — picks and rules
+- [x] 2.1 `commands/categories.ts` (design 4), with the changed count. Verify with fictional rows.
+- [x] 2.2 Tests: the same statement imported twice, an overlapping statement, a full re-derivation — picks and rules
   stay, no duplicates.
 
 ## 3. Desktop: IPC, menu and picker (desktop)

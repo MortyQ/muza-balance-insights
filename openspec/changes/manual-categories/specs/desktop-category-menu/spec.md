@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Row menu
-Operation rows on the category and income screens SHALL open one menu by right click and by their «⋮» button, with
+Debit rows on the category screen SHALL open one menu by right click and by their «⋮» button, with
 «Change category…» and, when the row has a manual category, «Return the automatic category». Rows in derived-only
 categories SHALL have no menu. The menu SHALL work from the keyboard (arrows, Enter, Esc).
 

@@ -10,7 +10,7 @@ not by a re-derivation.
 
 ## What Changes
 
-- **Manual category of one operation.** The user picks a category for one operation. It is stored apart from the
+- **Manual category of one debit.** The user picks a category for one operation that spends money. It is stored apart from the
   operation, keyed by its stored id, and applied last in the derivation, above every automatic rule and the MCC.
 - **A rule for all operations of a merchant or counterparty.** The same pick can apply to every operation, past and
   future, with the same counterparty name or, without one, the same description. The answer states how many
@@ -23,7 +23,7 @@ not by a re-derivation.
   No MCC is mapped to them in this change: they come from manual picks and rules.
 - **«Путешествия» is shown as «Подорожі й відпустки» / «Travel and holidays» / «Путешествия и отпуск».** Only the
   display names change; the stored value stays.
-- **A row menu on operation lists** (category and income screens): right click on a row, or its «⋮» button, opens
+- **A row menu on the category screen's debit rows**: right click on a row, or its «⋮» button, opens
   the same menu: «Change category…» (a searchable list) with «For all operations from this payee», and «Return the
   automatic category» when the row has a manual one.
 - **`CHANGELOG.md`**, under `0.1.13 — unreleased`: change an operation's category, for one operation or for a payee.

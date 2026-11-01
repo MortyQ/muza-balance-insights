@@ -6,7 +6,7 @@
 // - range mode — the rows of a committed window's span (commitRows), after its transfer marks;
 // - full mode — when the accounts' fingerprint changed (refreshCrossing), and at the end of rederiveCore.
 import { ENABLED_ACCOUNT_IDS_SQL, accountEnabledSql } from '../people/accounts.ts';
-import { categorize, loadOverrides } from './categories.ts';
+import { categorize, loadChoices, loadOverrides } from './categories.ts';
 import { accountProviders, providerOf } from '../people/connections.ts';
 import type { Db, Stmt } from '../storage/db.ts';
 import { rulesFor } from '../providers/rules.ts';
@@ -114,7 +114,7 @@ async function crossingTexts(db: Db, accounts: readonly Account[], range: TimeRa
 
 /**
  * Derives crossing_category for the rows of enabled accounts in `range` (by `time`, inclusive), or for every row
- * (null): the ordinary category of a crossing row (overrides, the provider's hint, MCC — as without the transfer mark),
+ * (null): the ordinary category of a crossing row (the user's choices, overrides, the provider's hint, MCC — as without the transfer mark),
  * NULL otherwise. Writes only the rows whose value changes; returns their number.
  */
 async function deriveCrossing(db: Db, accounts: readonly Account[], range: TimeRange | null): Promise<number> {
@@ -127,12 +127,13 @@ async function deriveCrossing(db: Db, accounts: readonly Account[], range: TimeR
     });
     const found = [...paired.rows.map(toRow), ...(await crossingTexts(db, accounts, range))];
     if (found.length > 0) {
-      const [overrides, providers] = await Promise.all([loadOverrides(db), accountProviders(db)]);
+      const [overrides, choices, providers] = await Promise.all([loadOverrides(db), loadChoices(db), accountProviders(db)]);
       for (const r of found) {
         wanted.set(
           r.id,
           categorize(
             {
+              id: r.id,
               description: r.description,
               mcc: r.mcc,
               amount: r.amount,
@@ -143,6 +144,7 @@ async function deriveCrossing(db: Db, accounts: readonly Account[], range: TimeR
               provider: providerOf(providers, r.accountId),
             },
             overrides,
+            choices,
           ),
         );
       }
