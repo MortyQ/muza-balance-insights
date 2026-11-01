@@ -10,6 +10,8 @@ import { useSpending } from './composables/useSpending.ts';
 import { useSpendingView } from './composables/useSpendingView.ts';
 import { useSpendingPrefsStore } from './store/useSpendingPrefsStore.ts';
 
+/** The «Insights» block shares the row: seven of twelve columns instead of the whole row. */
+const { beside = false } = defineProps<{ beside?: boolean }>();
 const base = useSpending();
 const { scope, state, view, periodNote, importing, family } = base;
 const prefsStore = useSpendingPrefsStore();
@@ -21,9 +23,10 @@ const { subtitle, hasData, empty, leftOut, summary, categories } = useSpendingVi
 
 <template>
   <div class="contents">
-    <!-- «Spending by category», a home tile over the whole width (spec desktop-home-tiles). «What's unusual» is a slide of
-         widgets/home-highlights; «Who spent what» is off home for now, its PeopleList kept for a later place. -->
-    <VCard padding="md" class="col-span-full" data-test="spending-tile">
+    <!-- «Spending by category», a home tile over the whole width, or beside the «Insights» block (spec desktop-home-tiles).
+         «What's unusual» is a slide of widgets/home-highlights; «Who spent what» is off home for now, its PeopleList kept
+         for a later place. -->
+    <VCard padding="md" class="col-span-full" :class="{ '@[79rem]:col-span-7': beside }" data-test="spending-tile">
       <div class="@container flex flex-col gap-4">
         <SpendingHeader v-model:scope="scope" :subtitle :prefs :family :banks @set="prefsStore.set" />
         <SpendingNotices

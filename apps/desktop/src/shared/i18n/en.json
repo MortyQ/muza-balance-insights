@@ -788,6 +788,18 @@
     },
     "highlights": {
       "toSlide": "Slide {n} of {total}: {label}"
+    },
+    "insights": {
+      "title": "Insights",
+      "share": "{category} · {share}% of the change",
+      "savings": {
+        "title": "Kept from income",
+        "over": "Spent more than earned",
+        "usual": "usually {usual}"
+      },
+      "months": "{n} month | {n} months | {n} months",
+      "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
+      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations"
     }
   },
   "income": {

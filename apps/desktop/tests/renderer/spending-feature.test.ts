@@ -321,6 +321,12 @@ describe('spending tiles', () => {
     expect(w.findComponent(PeopleList).exists()).toBe(false);
   });
 
+  it('beside the «Insights» block: seven of twelve columns, still the whole row below that', async () => {
+    const w = await mountBlock();
+    await w.setProps({ beside: true });
+    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['col-span-full', '@[79rem]:col-span-7']));
+  });
+
   it('4 category rows, the rest unfold in place and fold back', async () => {
     current = MANY;
     const w = await mountBlock();

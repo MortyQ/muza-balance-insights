@@ -13,10 +13,10 @@
 
 ## 3. The block
 
-- [ ] 3.1 `features/home-insights` (api, composable, utils, `HomeInsightsTile`, `HomeInsightsFeature`, `index.ts`); keys `home.insights.*` (title, driver row, share, savings line, «spent more than earned», the note with plural months and pending holds) in `uk.json`, `en.json`, `ru.json`
-- [ ] 3.2 `SpendingFeature` takes `beside`; `HomePage` mounts `HomeInsightsFeature` after it and passes `beside` from the feature's `visible`
-- [ ] 3.3 Tests: `tests/renderer/home-insights.test.ts` (rows and links, savings line only for a past month, the note, hidden without content, follows the scope) and `home-grid.test.ts` / `spending-feature.test.ts` (seven columns beside the block, whole row without it)
-- [ ] 3.4 Commit `feat(desktop): the «Insights» block beside «Spending»`
+- [x] 3.1 `features/home-insights` (api, composable, utils, `HomeInsightsTile`, `HomeInsightsFeature`, `index.ts`); keys `home.insights.*` (title, driver row, share, savings line, «spent more than earned», the note with plural months and pending holds) in `uk.json`, `en.json`, `ru.json`
+- [x] 3.2 `SpendingFeature` takes `beside`; `HomePage` mounts `HomeInsightsFeature` after it and passes `beside` from the feature's `visible`
+- [x] 3.3 Tests: `tests/renderer/home-insights.test.ts` (rows and links, savings line only for a past month, the note, hidden without content, follows the scope) and `home-grid.test.ts` / `spending-feature.test.ts` (seven columns beside the block, whole row without it)
+- [x] 3.4 Commit `feat(desktop): the «Insights» block beside «Spending»`
 
 ## 4. Docs
 
