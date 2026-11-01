@@ -61,7 +61,19 @@ the goal readable.
 state (with the «quarter of the period» rule and none for day limits) and `suggestedAmount(months, period)`. The data
 process reads spending per category for the current day, week and month once each with the core spending summary
 (`scope: 'personal'`, every provider, the owner's view: the family, or the person), folds by today's rates and hands
-the numbers to `limitState`. The monthly budget sums categories that are neither fixed nor savings by `categoryKinds`.
+the numbers to `limitState`.
+
+### The monthly budget: a total with fixed costs set aside
+The user thinks in one total («2 000 € a month»), not in «what is left after rent». The budget stores that total;
+`read/limits.ts` `budgetParts({ amount, fixed: [{ category, paid, usual }], flexibleSpent })` sets aside, per fixed
+category, `max(paid, usual)` and counts the rest as the flexible amount, on which `limitState` runs. `usual` comes from
+`spendingUsual`'s per-category months (median); `paid` from the current month's read. Taking the larger keeps the
+flexible part honest both before rent is paid (usual) and after a rise (paid).
+
+*Alternatives:* a limit on flexible spending typed by the user (the user does the subtraction and redoes it whenever
+rent changes); a budget on all spending (rent fills 60% of the bar on day one and the pace is meaningless).
+*Verdict:* a total with fixed costs set aside. No guessing of rent among transfers to people: the user sets the payee's
+category with the existing menu.
 Suggestions reuse `spendingUsual`'s per-category months.
 
 *Alternative:* counting inside SQL per limit — N queries for N limits. *Verdict:* three period reads per owner view,

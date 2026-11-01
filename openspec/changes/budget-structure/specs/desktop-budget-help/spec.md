@@ -17,11 +17,12 @@ dictionaries in every language, read by screen readers, and reachable from the k
 ### Requirement: What is counted and what is not
 The explanations of limits and metrics SHALL say which operations are counted and which are left out: refunds lower
 spending, transfers between own accounts are left out, pending holds count, only «Personal» spending, every bank, and
-for the monthly budget which categories are fixed or savings and so left out, each a link to the «Categories» section.
+for the monthly budget how the fixed costs are set aside first (usual or paid, whichever is larger) and which
+categories are fixed or savings, each a link to the «Categories» section.
 
 #### Scenario: The monthly budget's exclusions
 - **WHEN** the user opens the «?» of the monthly budget
-- **THEN** it names the fixed and savings categories left out and links to «Categories»
+- **THEN** it shows «2 000 € − 1 250 € fixed (rent) = 750 € for flexible spending», names the fixed and savings categories and links to «Categories»
 
 ### Requirement: A short introduction on first visit
 The «Limits and goals» screen, the «Categories» section and the «Budget» card SHALL show, on the first visit, a short

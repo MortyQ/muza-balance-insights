@@ -35,8 +35,11 @@ decisions (01.11).
 ### Limits (E2)
 - **Category limits**: a category, an amount (₴, $ or €, counted at today's rate), a period — day, week (Mon–Sun) or
   month — and an owner — a person or the family.
-- **A monthly budget** on flexible spending: one amount for every category that is neither fixed nor savings; fixed
-  costs are taken out beforehand (decision 1 of 01.11).
+- **A monthly budget** for all spending: the user enters one total (say 2 000 €); the app sets the month's fixed costs
+  aside first — each fixed category's usual month, or this month's payment when it is larger — and counts the rest
+  (750 € with rent of 1 250 €) against flexible spending, with the pace, forecast and «per day» on that part only
+  (decision 1 of 01.11, refined the same day). Rent paid as a transfer to a person counts as flexible until the user
+  sets that payee's category to rent with the existing category menu; the app does not guess it.
 - For each limit: spent, left, per cent, the expected pace for today, the forecast for the period's end, «per day»
   until the end. States: **on track** under 80%, **attention** at 80–100% or when the forecast is over the limit,
   **exceeded** over 100%. A state is always words and an icon, never colour alone.
@@ -66,8 +69,8 @@ decisions (01.11).
   first visit, closed once and brought back by «How it works». Guides like 50/30/20 are introduced as common advice.
 
 ### CHANGELOG
-`CHANGELOG.md` (0.1.13, unreleased): «Plan your money: set limits on categories or one monthly budget for flexible
-spending and see your pace, the forecast and how much you can spend per day; follow savings goals backed by a jar; and
+`CHANGELOG.md` (0.1.13, unreleased): «Plan your money: set limits on categories or one monthly budget — fixed costs like
+rent are set aside first, so the pace follows what you can control — and see your pace, the forecast and how much you can spend per day; follow savings goals backed by a jar; and
 see in «Insights» how your income splits against the 50/30/20 guide, how much goes to fixed costs and loans, and how
 many months your money would last. Every number has a «?» that explains how it is counted. Every category is now essential, a want or savings — change it in Settings →
 «Categories».»
@@ -77,7 +80,7 @@ many months your money would last. Every number has a «?» that explains how it
 ### New Capabilities
 - `core-category-kinds`: kinds and the fixed flag, defaults, the user's choices stored apart from transactions.
 - `core-budget-metrics`: 50/30/20 split, fixed share, debt share, reserve months.
-- `core-spending-limits`: limits and the monthly budget — storage, counting, pace, forecast, states, suggestions.
+- `core-spending-limits`: limits and the monthly budget (a total with fixed costs set aside) — storage, counting, pace, forecast, states, suggestions.
 - `core-savings-goals`: savings goals — storage, progress sources, need per month.
 - `desktop-category-kinds`: the «Categories» section.
 - `desktop-budget-help`: the «?» explanations with the user's own numbers and the first-visit introductions.

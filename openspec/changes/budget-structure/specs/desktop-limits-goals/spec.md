@@ -6,8 +6,8 @@ the category screen.
 
 ### Requirement: Limits and goals screen
 «Planning» SHALL have a «Limits and goals» screen showing, for the global person filter: the monthly budget on top
-(spent of the amount, the bar with the pace marker, the state, the forecast and «per day», and the fixed costs left
-out), the category limits sorted exceeded → attention → on track, then the savings goals. A person's view SHALL show
+(the total amount; the fixed costs set aside, each fixed category paid or not yet; the flexible part with spent of it,
+the bar with the pace marker, the state, the forecast and «per day»), the category limits sorted exceeded → attention → on track, then the savings goals. A person's view SHALL show
 their limits and the family's, each with its owner; the family view SHALL show all. Amounts SHALL be in the main
 currency. The screen SHALL reload quietly when the data changes.
 
@@ -29,6 +29,10 @@ A sheet SHALL add or edit a limit — what (a category or the monthly budget), a
 the suggested amount and quick choices (the suggestion, −10%, −20%), a chart of the past whole months against the
 amount and how many of them it would exceed. It SHALL also add or edit a savings goal — name, target, date, owner,
 source. Deleting SHALL ask in the sheet itself. A failed save SHALL keep the sheet open with a message.
+
+#### Scenario: Entering a total budget
+- **WHEN** the user enters a monthly budget of 2 000 € and rent is usually 1 250 €
+- **THEN** the sheet shows «fixed costs ≈ 1 250 €, 750 € left for flexible spending» before saving
 
 #### Scenario: Preview against the past
 - **WHEN** the user types 4 000 ₴ for cafes, monthly

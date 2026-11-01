@@ -1,5 +1,5 @@
 ## Purpose
-Defines spending limits — on one category or one monthly budget for flexible spending — how they are stored, counted
+Defines spending limits — on one category or one monthly budget for all spending with fixed costs taken out first — how they are stored, counted
 against spending, and turned into pace, forecast, «per day», states and suggested amounts.
 
 ## ADDED Requirements
@@ -7,18 +7,37 @@ against spending, and turned into pace, forecast, «per day», states and sugges
 ### Requirement: A limit and the monthly budget
 The system SHALL store limits apart from transactions. A category limit SHALL have a spending category with a kind, an
 amount in hryvnia, dollars or euros, a period — day, week (Monday to Sunday) or month — and an owner, a person or the
-family. The monthly budget SHALL be a monthly limit on flexible spending: every category that is neither fixed nor of
-the savings kind, by the kinds in force when it is counted. One owner SHALL have at most one limit per category and
+family. The monthly budget SHALL be one monthly amount for all spending, counted as the next requirement says. One owner SHALL have at most one limit per category and
 period and at most one monthly budget. An invalid amount, category, period or owner SHALL be refused and nothing
 stored.
-
-#### Scenario: Fixed costs stay out of the budget
-- **WHEN** the monthly budget is counted and rent is marked fixed
-- **THEN** rent is not counted against the budget
 
 #### Scenario: A second limit for the same category and period
 - **WHEN** the family already has a monthly limit on cafes and another one is added
 - **THEN** the call fails and the first one stays
+
+### Requirement: The monthly budget takes fixed costs out first
+The monthly budget's amount SHALL cover all spending. The system SHALL set aside the month's fixed costs — for each
+category marked fixed, the larger of what it spent this month and its usual month (the median of the whole months the
+usual uses; nothing without 3 whole months) — and count the rest, the flexible part, against flexible spending: every
+category that is neither fixed nor of the savings kind. Pace, forecast, per day and state SHALL apply to the flexible
+part only. For each fixed category the budget SHALL give what is paid this month and what is set aside. When the fixed
+costs reach the amount, the flexible part SHALL be 0 and the budget SHALL say the fixed costs take all of it.
+
+#### Scenario: 2 000 € with rent of 1 250 €
+- **WHEN** the budget is 2 000 € a month and rent, the only fixed category, is usually 1 250 €
+- **THEN** 1 250 € is set aside for rent and 750 € is the flexible part the pace and per day are counted on
+
+#### Scenario: Rent not paid yet
+- **WHEN** it is the 2nd of the month and rent is not paid yet
+- **THEN** 1 250 € is still set aside and rent shows as not paid
+
+#### Scenario: Rent went up
+- **WHEN** this month's rent is 1 300 € against a usual 1 250 €
+- **THEN** 1 300 € is set aside and the flexible part is 700 €
+
+#### Scenario: Rent paid as a transfer to a person
+- **WHEN** rent goes as a transfer to a person and that category is not fixed
+- **THEN** it counts against the flexible part, until the user sets the payee's category to rent
 
 ### Requirement: What a limit counts
 A limit SHALL count net spending of its categories in its current period as «Spending» does: refunds lower it,
