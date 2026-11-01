@@ -43,7 +43,8 @@ English interface.
   dots under the tile to switch between them, like the account cards. «Recent operations» lists the month's last six
   operations counted in «Spending», refunds included, with the bank's description, the category and the time; click
   one to open its category. When nothing is unusual yet, as early in a month, the tile shows «Recent operations»
-  alone, so the place is never empty.
+  alone, so the place is never empty. In a past month «Recent operations» is not shown: the tile holds «What's
+  unusual» across the row, or is not there when nothing was unusual.
 - **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
   screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
 

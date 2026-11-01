@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
 // Home's «What's unusual» / «Recent operations» tile (widgets/home-highlights, spec desktop-home-highlights): the slide
-// order, one slide alone, the empty line, rows linked to their category, the home scope. Fictional fixtures only.
+// order, one slide alone, the empty line, rows linked to their category, the home scope, a past month. Fictional fixtures only.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { PeopleView, RecentOperations, SpendingInsights, SpendingOverview, SpendingOverviewQuery } from '@contract/api.ts';
-import { formatMoney } from '@/shared/lib';
+import { formatMoney, shiftMonth } from '@/shared/lib';
 
 const INSIGHTS: SpendingInsights = {
   months: 6,
@@ -87,6 +87,7 @@ describe('home highlights', () => {
     const w = await mountTile();
     const slides = w.findAll('.v-carousel__slide');
     expect(slides.map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent']);
+    expect(w.get('[data-test="home-highlights"]').classes()).toContain('@[79rem]:col-span-4');
     expect(slides[0]!.text()).toContain(`Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`);
     const dots = w.findAll('[data-test="carousel-dot"]');
     expect(dots.map((d) => d.attributes('aria-label'))).toEqual(['Слайд 1 из 2: Что необычно', 'Слайд 2 из 2: Последние операции']);
@@ -118,6 +119,22 @@ describe('home highlights', () => {
     expect(w.find('.v-carousel').exists()).toBe(false);
     expect(w.get('[data-test="highlights-empty"]').text()).toBe('В этом месяце операций пока нет');
     w.unmount();
+  });
+
+  it('a past month: «What\'s unusual» alone over the whole row, no recent operations asked; nothing unusual — no tile', async () => {
+    const { useMonthStore } = await import('@/entities/period');
+    const months = useMonthStore();
+    months.set(shiftMonth(months.thisMonth, -1), null);
+    const w = await mountTile();
+    expect(w.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual']);
+    expect(w.get('[data-test="home-highlights"]').classes()).not.toContain('@[79rem]:col-span-4');
+    expect(getRecentOperations).not.toHaveBeenCalled();
+    w.unmount();
+
+    spending = { ...SPENDING, insights: null };
+    const empty = await mountTile();
+    expect(empty.find('[data-test="home-highlights"]').exists()).toBe(false);
+    empty.unmount();
   });
 
   it('asks both reads with the home scope, and again when it changes', async () => {

@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import type { RecentOperations } from '@contract/api.ts';
 import { useMoneyFormat } from '@/entities/currency-display';
 import { useMonthStore } from '@/entities/period';
 import { useParticipantStore } from '@/entities/participant';
@@ -12,13 +13,13 @@ import { recentRows } from '../utils.ts';
 
 /**
  * Home's «Recent operations»: the month's newest operations for the home's person, banks and scope; reloads when any
- * changes, and quietly when the data changes.
+ * changes, and quietly when the data changes. Only for the current month: a past month asks nothing and has no rows.
  */
 export function useRecentOperations(): UseRecentOperationsReturn {
   const { fetchRecentOperations, peekRecentOperations } = useRecentRequest();
   const syncStatus = useSyncStatusStore();
   const participant = useParticipantStore();
-  const { month } = storeToRefs(useMonthStore());
+  const { month, thisMonth } = storeToRefs(useMonthStore());
   const { scope } = storeToRefs(useScopeStore());
   const fmt = useMoneyFormat(() => undefined);
 
@@ -27,14 +28,15 @@ export function useRecentOperations(): UseRecentOperationsReturn {
     const id = participantId();
     return { month: month.value, scope: scope.value, ...(id !== null ? { participantId: id } : {}), ...participant.banksQuery() };
   };
-  const { state } = useAsyncData(
-    () => fetchRecentOperations(query()),
-    [month, scope, participantId, () => participant.banksKey],
-    { quiet: [() => syncStatus.version], cached: () => peekRecentOperations(query()) },
+  const current = () => month.value === thisMonth.value;
+  const { state } = useAsyncData<RecentOperations | null>(
+    () => (current() ? fetchRecentOperations(query()) : Promise.resolve(null)),
+    [month, thisMonth, scope, participantId, () => participant.banksKey],
+    { quiet: [() => syncStatus.version], cached: () => (current() ? peekRecentOperations(query()) : null) },
   );
 
   return {
     rows: computed(() => (state.value.data ? recentRows(state.value.data, fmt.value, scope.value) : [])),
-    loaded: computed(() => !!state.value.data),
+    loaded: computed(() => state.value.status === 'success'),
   };
 }

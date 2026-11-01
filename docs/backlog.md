@@ -265,5 +265,7 @@
   no stuck half slide; under reduced motion no smooth scroll.
 - The «Today» / «This week» row keeps one height with the carousel at 1, 2 and 12 columns; six rows of «Recent
   operations» do not overflow the tile.
+- A past month: no «Recent operations», «What's unusual» across the row (or no tile), and back to the current month the
+  carousel returns.
 - Opening home asks main for the month's spending once (the block and the unusual slide share it).
 - A place for «Who spent what» and the regular payments teaser: off home since 01.11, to be decided with the user.

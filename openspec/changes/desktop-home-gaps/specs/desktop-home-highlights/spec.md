@@ -24,6 +24,19 @@ When neither has content, the tile SHALL stay in its place and say the month has
 - **WHEN** the shown month has no spending lines
 - **THEN** the tile shows the no-operations text, and the row has no hole
 
+### Requirement: Past months
+«Recent operations» SHALL be shown for the current month only and SHALL NOT be requested for a past month. In a past
+month, where «Today» and «This week» are not shown either, the tile SHALL hold «What's unusual» alone over the whole
+row, and SHALL NOT be shown when that month has nothing unusual.
+
+#### Scenario: A past month with unusual lines
+- **WHEN** the user picks a past month that has unusual lines
+- **THEN** the tile shows «What's unusual» alone across the row, with no dots
+
+#### Scenario: A past month with nothing unusual
+- **WHEN** the user picks a past month with nothing unusual
+- **THEN** home shows no highlights tile and no empty text
+
 ### Requirement: Hidden with the period details
 While the «Now» details are open, the tile SHALL be hidden together with «Today» and «This week».
 

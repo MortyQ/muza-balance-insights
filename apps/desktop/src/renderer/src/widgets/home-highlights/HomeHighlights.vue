@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useMonthStore } from '@/entities/period';
 import { RecentOperationsList, useRecentOperations } from '@/features/recent-operations';
 import { SpendingInsights, useSpendingInsights } from '@/features/spending-summary';
 import { t } from '@/shared/lib';
@@ -7,6 +9,9 @@ import { VCard, VCarousel, type CarouselSlide } from '@/shared/ui';
 
 // The third place of the «Today» / «This week» row (spec desktop-home-highlights): «What's unusual» first when it has
 // lines, «Recent operations» when the month has any; one alone without dots; neither — a line, so the place is never empty.
+// A past month has no «Today» / «This week» and no «Recent operations»: «What's unusual» over the whole row, or no tile.
+const { month, thisMonth } = storeToRefs(useMonthStore());
+const past = computed(() => month.value !== thisMonth.value);
 const { insights, loaded: insightsLoaded } = useSpendingInsights();
 const { rows, loaded: recentLoaded } = useRecentOperations();
 
@@ -20,7 +25,15 @@ const dotLabel = (n: number, total: number, label: string) => t('home.highlights
 </script>
 
 <template>
-  <VCard as="section" padding="md" class="col-span-full @[79rem]:col-span-4" :aria-label="slides[0]?.label ?? t('home.recent.title')" data-test="home-highlights">
+  <VCard
+    v-if="!past || insights"
+    as="section"
+    padding="md"
+    class="col-span-full"
+    :class="{ '@[79rem]:col-span-4': !past }"
+    :aria-label="slides[0]?.label ?? t('home.recent.title')"
+    data-test="home-highlights"
+  >
     <VCarousel v-if="slides.length > 0" v-model="current" :slides :dot-label>
       <template #unusual>
         <SpendingInsights v-if="insights" :insights />

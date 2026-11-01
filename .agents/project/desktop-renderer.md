@@ -101,7 +101,8 @@
   `shared/ui` `VCarousel` (swipe, Shift + wheel, a mouse drag through `useDragScroll` of `shared/lib`, dots). The widget
   calls `useSpendingInsights` (`features/spending-summary`) and `useRecentOperations` (`features/recent-operations`)
   itself, so it knows which slides have content before any is shown: «What's unusual» first when it has lines, one
-  alone without dots, neither — `home.recent.none`. «Recent operations» (`RecentOperationsList`): the month's newest
+  alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent operations» (the
+  composable asks nothing), «What's unusual» over the whole row, or no tile when nothing is unusual. «Recent operations» (`RecentOperationsList`): the month's newest
   six operations «Spending» counts (IPC `getRecentOperations`), a row with the category icon, the bank's description
   (else the category's name), the category and when, the amount (a refund with «+»), a pending mark; it links to the
   operation's category screen. Home's «Personal / Business» choice is `entities/scope` (`useScopeStore`): the spending
