@@ -63,27 +63,29 @@ process reads spending per category for the current day, week and month once eac
 (`scope: 'personal'`, every provider, the owner's view: the family, or the person), folds by today's rates and hands
 the numbers to `limitState`.
 
-### The monthly budget: a total with fixed costs set aside
-The user thinks in one total («2 000 € a month»), not in «what is left after rent». The budget stores that total;
-`read/limits.ts` `budgetParts({ amount, fixed: [{ category, paid, usual }], flexibleSpent })` sets aside, per fixed
-category, `max(paid, usual)` and counts the rest as the flexible amount, on which `limitState` runs. `usual` comes from
-`spendingUsual`'s per-category months (median); `paid` from the current month's read. Taking the larger keeps the
-flexible part honest both before rent is paid (usual) and after a rise (paid).
+### The monthly budget: a total with the user's fixed rows
+The user thinks in one total («2 000 € a month») and knows their fixed costs better than any history: a new rent has
+none, winter utilities differ. So the budget keeps its own fixed rows — category and typed amount — in
+`goal_fixed (goal_id, category, amount, PRIMARY KEY (goal_id, category))` (the budget's currency), created with
+`goals` in v20. `read/limits.ts` `budgetParts({ amount, fixed: [{ category, amount, paid }], flexibleSpent })` sets the
+typed amounts aside and adds `max(0, paid − amount)` per row to the flexible spending; `limitState` runs on the flexible
+part. Flexible spending is every category outside the fixed rows and outside the savings kind.
 
-*Alternatives:* a limit on flexible spending typed by the user (the user does the subtraction and redoes it whenever
-rent changes); a budget on all spending (rent fills 60% of the bar on day one and the pace is meaningless).
-*Verdict:* a total with fixed costs set aside. No guessing of rent among transfers to people: the user sets the payee's
-category with the existing menu.
-Suggestions reuse `spendingUsual`'s per-category months.
+*Alternatives:* fixed costs from the «Fixed» flag with amounts from the usual month (the 01.11 first draft: presets the
+user did not choose, and a new rent has no usual); a flexible-only limit typed by the user (they redo the subtraction).
+*Verdict:* the budget's own rows. The «Fixed» flag stays for the Insights metric only; the two can differ, and the
+budget's «?» says the list is the budget's own.
 
-*Alternative:* counting inside SQL per limit — N queries for N limits. *Verdict:* three period reads per owner view,
-folded in memory.
-
-The bank filter is ignored on purpose (decision of this change: a limit is one number for all the user's money); the
-explanations say so.
+### Home: the «Budget» row
+A full-width row between home's first and second rows (`widgets` of the default home grid), from
+`features/home-budget`: `useHomeBudget` reads `getLimitsOverview` (shared read cache with «Limits and goals») and
+builds a view of the four parts; a past month reads the same overview for that month and shows the result. The
+invitation's dismissal is a `localStorage` key behind try/catch. «Month pace» stops asking `fetchAllowance`
+(`useMonthPace`), so home makes one request fewer; `features/daily-allowance` in «Planning» is untouched.
 
 ### Reads and channels
-- `getLimitsOverview(q: { participantId? })` → the budget, the limits with their figures, the savings goals with their
+- `getLimitsOverview(q: { participantId?, month? })` → the budget (total, fixed rows paid of amounts, flexible part),
+  the limits with their figures, the savings goals with their
   progress, the suggestions, the kinds left out of the budget, today's rates. Used by the «Limits and goals» screen and
   home's «Limits» slide (which shows only attention and exceeded).
 - `categoryOverview` gains `limit` (the category's limits of the owner view for the current period) when the shown
@@ -118,6 +120,8 @@ plus short introductions.
   `AllowanceFeature`.
 - `features/category-detail`: `CategoryLimitBar.vue` from `entities/goal`.
 - Home highlights: a third slide `LimitsSlide` reading `getLimitsOverview`.
+- `features/home-budget`: the «Budget» row and its invitation; `features/limits-goals` `BudgetSheet` (form + live
+  result + past months chart).
 
 Bars follow the existing style: thin rounded bars on a sunken track; the pace marker is a short vertical tick.
 
@@ -134,4 +138,4 @@ Bars follow the existing style: thin rounded bars on a sunken track; the pace ma
 
 ## Migration Plan
 
-v19 `category_kinds`, v20 `goals`: empty tables, nothing to backfill; rollback leaves unused tables.
+v19 `category_kinds`, v20 `goals` and `goal_fixed`: empty tables, nothing to backfill; rollback leaves unused tables.

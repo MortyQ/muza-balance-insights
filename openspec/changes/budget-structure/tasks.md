@@ -25,21 +25,22 @@
 
 ## 5. Limits in core
 
-- [ ] 5.1 Migration v20 `goals`; `commands/goals.ts` (save, delete, add suggested; validation and `GoalError`); `read/limits.ts` (`limitState`, `suggestedAmount`, monthly budget categories); tests for every `core-spending-limits` scenario, the unique limit per owner, category and period, and the analysis whitelist
+- [ ] 5.1 Migration v20 `goals` and `goal_fixed`; `commands/goals.ts` (save with fixed rows, delete, add suggested; validation and `GoalError`); `read/limits.ts` (`limitState`, `suggestedAmount`, `budgetParts`); tests for every `core-spending-limits` scenario, the unique limit per owner, category and period, and the analysis whitelist
 - [ ] 5.2 Commit `feat(core): spending limits`
 
 ## 6. Limits read and screen
 
 - [ ] 6.1 `getLimitsOverview` (types, channels, data process: three period reads per owner view, «Personal» only, every bank, today's rates); `saveGoal`, `deleteGoal`, `addSuggestedLimits` channels; `categoryOverview.limit`; tests in `tests/data.test.ts`, `tests/data-queries.test.ts`, `tests/ipc.test.ts`
-- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); «Planning» shows it above «Available per day»; `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, `BudgetSheet` (total, fixed rows added, typed and removed, live result, past months chart, save waits for every amount), delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); «Planning» shows it above «Available per day»; `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
 - [ ] 6.3 Tests: `tests/renderer/limits-goals.test.ts` (order, states in words, person and family owners, suggestions action, sheet preview, failed save, explanations), the category screen bar
 - [ ] 6.4 Commit `feat(desktop): limits on the «Limits and goals» screen`
 
 ## 7. Limits on home and in insights
 
-- [ ] 7.1 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 7.2 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
-- [ ] 7.3 Commit `feat(desktop): limits on home and in the insights feed`
+- [ ] 7.1 `features/home-budget`: the «Budget» row between home's first and second rows (four parts, wraps on narrow windows, past month result, opens «Limits and goals») and the dismissible invitation; «Month pace» drops «Available per day» (`useMonthPace` no longer reads the allowance); i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/home-budget.test.ts` and the month pace tests
+- [ ] 7.2 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [ ] 7.3 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
+- [ ] 7.4 Commit `feat(desktop): the budget and limits on home and in the insights feed`
 
 ## 8. Savings goals
 

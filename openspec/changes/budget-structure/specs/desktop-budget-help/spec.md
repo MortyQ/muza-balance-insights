@@ -17,12 +17,12 @@ dictionaries in every language, read by screen readers, and reachable from the k
 ### Requirement: What is counted and what is not
 The explanations of limits and metrics SHALL say which operations are counted and which are left out: refunds lower
 spending, transfers between own accounts are left out, pending holds count, only «Personal» spending, every bank, and
-for the monthly budget how the fixed costs are set aside first (usual or paid, whichever is larger) and which
-categories are fixed or savings, each a link to the «Categories» section.
+for the monthly budget how the fixed rows are set aside first at the typed amounts, that spending above a row's
+amount counts as flexible, and that savings categories are left out, with a link to edit the budget.
 
 #### Scenario: The monthly budget's exclusions
 - **WHEN** the user opens the «?» of the monthly budget
-- **THEN** it shows «2 000 € − 1 250 € fixed (rent) = 750 € for flexible spending», names the fixed and savings categories and links to «Categories»
+- **THEN** it shows «2 000 € − 1 250 € fixed (rent) = 750 € for flexible spending» and links to editing the budget
 
 ### Requirement: A short introduction on first visit
 The «Limits and goals» screen, the «Categories» section and the «Budget» card SHALL show, on the first visit, a short
@@ -33,3 +33,12 @@ introduced as common advice, not as a grade.
 #### Scenario: Closing the introduction
 - **WHEN** the user closes the introduction of «Limits and goals» and comes back later
 - **THEN** it is not shown, and «How it works» shows it again
+
+### Requirement: Per day by the budget
+The budget's «per day» SHALL be labelled as per day by the budget, and its explanation SHALL say it is what is left of
+the flexible part divided by the days left, unlike «Available per day» in «Planning», which spreads the money on cards
+until the next income.
+
+#### Scenario: Explaining the difference
+- **WHEN** the user opens the «?» of the budget's per day
+- **THEN** it gives the budget's formula with their numbers and says how it differs from «Available per day»
