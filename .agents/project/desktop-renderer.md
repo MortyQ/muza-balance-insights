@@ -89,11 +89,15 @@
 - **Home grid** (spec `openspec/specs/desktop-home-tiles`): `HomePage` owns one CSS grid (`data-test="home-grid"`,
   `@container`: one column, two from `@[47rem]`, twelve from `@[79rem]` — where the folded stack fits 5 of them; rows
   5 · 4 · 3 (balance, pace, month; under 65rem a row each, 65–79rem balance | month over pace — the stack never
-  stands alone in a wide row), 4 · 4 · 4 («Today», «This week», the highlights tile), 12 (spending)). The features put
+  stands alone in a wide row), 4 · 4 · 4 («Today», «This week», the highlights tile), 12 (spending) or 7 · 5 (spending,
+  «Insights»)). The features put
   their tiles straight into it through a `<div class="contents">` root (one root element; a comment before it would be
   a second root and drop the classes the page passes), in DOM order: balances (3 tiles), «Now» («Today», «This week»,
   or the details tile), `widgets/home-highlights` (`HomeHighlights`, spec `desktop-home-highlights`), spending
-  («Spending by category» over the whole row). Each tile says its own span. The «Now» details tile takes the
+  («Spending by category»; `beside` → seven columns), `features/home-insights` (`HomeInsightsFeature`, spec
+  `desktop-home-insights`: five columns, rendered only with a driver or a savings rate; the page reads its `visible`
+  through `useHomeInsights` and passes it to `SpendingFeature` as `beside`, so neither slice knows the other). Each tile
+  says its own span. The «Now» details tile takes the
   highlights tile's place too: `NowStripFeature` `v-model:details` → `HomeHighlights v-if="!nowDetails"` in the page.
   «Who spent what» and the regular payments teaser are off home since 01.11 (their place is decided later; their
   components stay in their slices). Checked by `tests/home-grid.test.ts`.
@@ -108,6 +112,13 @@
   operation's category screen. Home's «Personal / Business» choice is `entities/scope` (`useScopeStore`): the spending
   block's switch sets it, both slides follow it. Descriptions on home: approved by the user on 01.11 (this list only).
   Tested in `tests/renderer/home-highlights.test.ts`.
+- **«Insights» block** (`features/home-insights`): reads `getSpendingOverview` through its own api wrapper (the read
+  cache and the in-flight sharing make it one request with the spending block and the unusual slide) and words
+  `explain` (`homeInsightsView`): driver rows in the order of «What's unusual» (the payee, «{category} · N% of the
+  change», its own difference with a sign; a row opens the category), a finished month's savings rate beside the usual
+  one («Spent more than earned» for a negative rate), and the note (the usual's months and range, what is left out,
+  pending holds). `INSIGHT_MAX` is `src/shared/insights.ts`, shared with main. Tested in
+  `tests/renderer/home-insights.test.ts`.
 - **Sync status** (on the right of `GlobalFilters`, `widgets/global-filters`): the widget is where `import-progress`,
   `sync-status` and `participant` meet, and it takes the import's error wording from `features/import-statement`
   (`IMPORT_ERRORS`, `progressLine`, re-exported by its `index.ts`). `utils.ts`: `syncStatusView(progress, { line,
@@ -248,6 +259,17 @@
   (`teaserView`); only while the month filter is this month and something is active (`useRecurringTeaser`, the same
   IPC; quiet reloads on `syncStatus.version`; a mark is a write, so back on home its cached answer is stale and reloads quietly).
   Tested in `tests/renderer/recurring.test.ts`.
+- **Insights screen** (`features/insights-page`, `InsightsFeature.vue`; `pages/insights`; spec
+  `desktop-insights-page`): route `insights`, side menu item after «General» (`home.nav.insights`, `lucide:lightbulb`),
+  the default month filter (the home month), person, banks and `useScopeStore`; one IPC `getInsightsOverview`, quiet
+  reload on `syncStatus.version`. `utils.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
+  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, income, the
+  kept share, signals by severity), the feed (`InsightCard`: icon, title, severity mark, `VChangeChip`, one sentence,
+  the driver, «Open operations»; `InsightBars` — CSS bars on sunken tracks, the shown month in the direction's tone,
+  the usual as a dashed line; no ECharts per card), and the side (`SignalList`: new payees, one-offs; empty lists say
+  so; «How it was counted»). Under 3 whole months: a card with «Download history» (`importLink()`) instead of the feed.
+  Layout: a container grid, the feed 8 and the side 4 of 12 columns from 64rem of its own width. Home's «Insights»
+  block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

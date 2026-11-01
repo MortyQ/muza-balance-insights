@@ -1,6 +1,6 @@
 // «What's unusual» detectors over fictional sums (kopecks).
 import { describe, expect, it } from 'vitest';
-import { detectInsights, type InsightInput } from '../../src/read/insights.ts';
+import { detectInsights, insightSeverity, mainDriver, newPayees, oneOffs, payeeUsual, savingsRate, SIGNALS_MAX, type InsightInput } from '../../src/read/insights.ts';
 
 const input = (o: Partial<InsightInput> = {}): InsightInput => ({
   months: 6, running: false, now: new Map(), usual: new Map(), income: null, ...o,
@@ -57,5 +57,95 @@ describe('detectInsights', () => {
       ['category-more', 'a'],
       ['category-more', 'c'],
     ]);
+  });
+});
+
+describe('mainDriver', () => {
+  const p = (name: string, now: number, months: number[]) => ({ name, now, months });
+
+  it('the payee furthest in the direction of the change, with its share', () => {
+    // Category +200 000: one payee +150 000 over its median, another +50 000.
+    expect(mainDriver(200_000, [p('Cafe B', 80_000, [30_000, 30_000, 30_000]), p('Cafe A', 250_000, [100_000, 90_000, 110_000])])).toEqual({
+      name: 'Cafe A', amount: 150_000, share: 75,
+    });
+  });
+
+  it('a drop: the payee that fell the most, never one that grew', () => {
+    expect(mainDriver(-100_000, [p('Up', 200_000, [50_000, 50_000, 50_000]), p('Down', 0, [80_000, 80_000, 70_000])])).toEqual({
+      name: 'Down', amount: 80_000, share: 80,
+    });
+  });
+
+  it('none under the share, none for no change; the share is capped and ties go by name', () => {
+    expect(mainDriver(100_000, [p('a', 20_000, [0, 0, 0]), p('b', 20_000, [0, 0, 0])])).toBeNull();
+    expect(mainDriver(0, [p('a', 50_000, [0, 0, 0])])).toBeNull();
+    expect(mainDriver(100_000, [p('b', 150_000, [0, 0, 0]), p('a', 150_000, [0, 0, 0])])).toEqual({ name: 'a', amount: 150_000, share: 100 });
+    // Even count: the median is the mean of the middle two.
+    expect(mainDriver(100_000, [p('a', 100_000, [0, 20_000, 40_000, 100_000])])).toEqual({ name: 'a', amount: 70_000, share: 70 });
+  });
+});
+
+describe('savingsRate', () => {
+  const m = (income: number, spent: number) => ({ income, spent });
+
+  it('the month beside the median of months with income', () => {
+    expect(savingsRate(m(100_000, 70_000), [m(100_000, 80_000), m(0, 50_000), m(100_000, 90_000), m(100_000, 60_000)])).toEqual({ rate: 30, usual: 20 });
+  });
+
+  it('negative when more was spent than earned', () => {
+    expect(savingsRate(m(100_000, 125_000), [m(100_000, 80_000), m(100_000, 80_000), m(100_000, 80_000)])!.rate).toBe(-25);
+  });
+
+  it('none without income or with fewer than three months with income', () => {
+    expect(savingsRate(m(0, 10_000), [m(100_000, 80_000), m(100_000, 80_000), m(100_000, 80_000)])).toBeNull();
+    expect(savingsRate(m(100_000, 10_000), [m(100_000, 80_000), m(0, 80_000), m(100_000, 80_000)])).toBeNull();
+  });
+});
+
+describe('insightSeverity', () => {
+  it('weighs a difference against a usual month', () => {
+    expect(insightSeverity(300_000, 2_000_000)).toBe('high');
+    expect(insightSeverity(200_000, 2_000_000)).toBe('high');
+    expect(insightSeverity(100_000, 2_000_000)).toBe('medium');
+    expect(insightSeverity(50_000, 2_000_000)).toBe('low');
+    expect(insightSeverity(50_000, 0)).toBe('low');
+  });
+});
+
+describe('newPayees', () => {
+  const p = (name: string, now: number, months: number[]) => ({ name, now, months });
+
+  it('only payees with nothing before and at least the minimum now, largest first', () => {
+    const r = newPayees([
+      p('Shop Seen', 900_000, [0, 10_000, 0]),
+      p('Shop Small', 30_000, [0, 0, 0]),
+      p('Shop B', 60_000, [0, 0, 0]),
+      p('Shop A', 60_000, [0, 0, 0]),
+      p('Shop Big', 200_000, [0, 0, 0]),
+    ]);
+    expect(r.map((x) => x.name)).toEqual(['Shop Big', 'Shop A', 'Shop B']);
+  });
+
+  it('keeps at most SIGNALS_MAX', () => {
+    const many = Array.from({ length: SIGNALS_MAX + 3 }, (_, i) => p(`Shop ${String(i).padStart(2, '0')}`, 100_000 + i, [0, 0, 0]));
+    expect(newPayees(many)).toHaveLength(SIGNALS_MAX);
+  });
+});
+
+describe('oneOffs', () => {
+  const o = (key: string, amount: number, usual: number) => ({ key, amount, payeeUsual: usual });
+
+  it('a large operation to a payee that does not usually take half of it', () => {
+    // Usual month 2 000 000: the bar is 200 000.
+    const r = oneOffs([o('rent', 1_500_000, 1_500_000), o('sofa', 400_000, 0), o('small', 150_000, 0), o('repair', 400_000, 150_000), o('b', 250_000, 0)], 2_000_000);
+    expect(r.map((x) => x.key)).toEqual(['repair', 'sofa', 'b']);
+  });
+
+  it('never below the money minimum', () => {
+    expect(oneOffs([o('x', 40_000, 0)], 100_000)).toEqual([]);
+  });
+
+  it('payeeUsual is the median of the months', () => {
+    expect(payeeUsual({ name: 'x', now: 0, months: [0, 100, 300] })).toBe(100);
   });
 });

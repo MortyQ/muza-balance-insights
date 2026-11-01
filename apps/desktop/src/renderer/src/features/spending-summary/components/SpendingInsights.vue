@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { ROUTE } from '@/shared/config';
 import { VIcon } from '@/shared/ui';
 import { OPS_TONE } from '../constants.ts';
 import type { InsightsView } from '../types.ts';
@@ -11,7 +12,16 @@ const ICON = { up: 'lucide:arrow-up-right', down: 'lucide:arrow-down-right', neu
 
 <template>
   <div class="flex h-full flex-col gap-2">
-    <h3 class="text-sm font-bold">{{ $t('home.spending.insights.title') }}</h3>
+    <div class="flex items-baseline justify-between gap-2">
+      <h3 class="text-sm font-bold">{{ $t('home.spending.insights.title') }}</h3>
+      <RouterLink
+        :to="{ name: ROUTE.insights }"
+        class="text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-border-focus"
+        data-test="all-insights"
+      >
+        {{ $t('home.insights.all') }}
+      </RouterLink>
+    </div>
     <ul class="flex flex-col gap-1.5">
       <li v-for="(l, i) in insights.lines" :key="i">
         <component

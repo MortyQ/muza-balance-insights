@@ -47,6 +47,7 @@ import LucideLandmark from "~icons/lucide/landmark";
 import LucideLanguages from "~icons/lucide/languages";
 import LucideLayers from "~icons/lucide/layers";
 import LucideLayoutDashboard from "~icons/lucide/layout-dashboard";
+import LucideLightbulb from "~icons/lucide/lightbulb";
 import LucideList from "~icons/lucide/list";
 import LucideLoaderCircle from "~icons/lucide/loader-circle";
 import LucideLock from "~icons/lucide/lock";
@@ -79,6 +80,7 @@ import LucideSmartphone from "~icons/lucide/smartphone";
 import LucideSofa from "~icons/lucide/sofa";
 import LucideSparkles from "~icons/lucide/sparkles";
 import LucideSquare from "~icons/lucide/square";
+import LucideStore from "~icons/lucide/store";
 import LucideSun from "~icons/lucide/sun";
 import LucideTrash from "~icons/lucide/trash";
 import LucideTriangleAlert from "~icons/lucide/triangle-alert";
@@ -154,6 +156,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:languages": LucideLanguages,
   "lucide:layers": LucideLayers,
   "lucide:layout-dashboard": LucideLayoutDashboard,
+  "lucide:lightbulb": LucideLightbulb,
   "lucide:list": LucideList,
   "lucide:loader-circle": LucideLoaderCircle,
   "lucide:lock": LucideLock,
@@ -186,6 +189,7 @@ export const ICONS: Record<string, Component> = {
   "lucide:sofa": LucideSofa,
   "lucide:sparkles": LucideSparkles,
   "lucide:square": LucideSquare,
+  "lucide:store": LucideStore,
   "lucide:sun": LucideSun,
   "lucide:trash": LucideTrash,
   "lucide:triangle-alert": LucideTriangleAlert,

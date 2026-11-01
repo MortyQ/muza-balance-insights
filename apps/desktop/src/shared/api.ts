@@ -275,6 +275,7 @@ export type BalanceApi = {
   onOpenSettings(cb: () => void): () => void;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
   getRecentOperations(q: SpendingOverviewQuery): Promise<RecentOperations>;
+  getInsightsOverview(q: SpendingOverviewQuery): Promise<InsightsOverview>;
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
@@ -348,7 +349,8 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), and
+// and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), InsightsOverview, which
+// carries payees' descriptions (the Insights screen), and
 // RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
 // description (nothing else).
 // participantId: one participant's view; absent — the whole family.
@@ -426,6 +428,30 @@ export type SpendingOverview = {
   usual: SpendingUsual | null;
   /** «What's unusual»: core's detectors over this month against `usual`, ranked; null when `usual` is. */
   insights: SpendingInsights | null;
+  /** Home's «Insights» block: what explains `insights` and the month; null when `usual` is. */
+  explain: SpendingExplain | null;
+};
+
+/**
+ * The payee behind most of an unusual category's change (core `mainDriver`): the bank's description, cut as on the
+ * category screen, its own difference against its usual (hryvnia kopecks) and its share of the change, 0–100.
+ */
+export type InsightDriver = {
+  category: string;
+  categoryId: CategoryId | null;
+  name: string;
+  direction: 'up' | 'down';
+  amount: number;
+  share: number;
+};
+
+export type SpendingExplain = {
+  /** In the order of «What's unusual», only its first INSIGHT_MAX lines (`shared/insights.ts`) with a driver. */
+  drivers: InsightDriver[];
+  /** A finished month's share of income kept and the usual share, whole per cent (core `savingsRate`); else null. */
+  savings: { rate: number; usual: number } | null;
+  /** What the usual is over: how many whole months, the oldest and newest (YYYY-MM), and the holds still pending. */
+  basis: { months: number; from: string; to: string; pendingHolds: number };
 };
 
 /** One detector result (core `read/insights.ts`); the renderer words it. Hryvnia kopecks. */
@@ -444,6 +470,52 @@ export type SpendingInsight = {
 };
 
 export type SpendingInsights = { months: number; running: boolean; insights: SpendingInsight[] };
+
+/** How much a change weighs against a usual month's total spending (core `insightSeverity`). */
+export type InsightSeverity = 'high' | 'medium' | 'low';
+
+/** One card of the Insights screen: a detector's result with its weight, its months and its main driver. */
+export type InsightCardView = SpendingInsight & {
+  severity: InsightSeverity;
+  /** The usual months oldest first, then the shown month; the category's net spending or the month's income, hryvnia kopecks. */
+  series: Array<{ month: string; value: number }>;
+  driver: { name: string; amount: number; share: number } | null;
+};
+
+/** A payee seen for the first time (core `newPayees`): the bank's description cut, its main category, hryvnia kopecks spent. */
+export type NewPayeeView = { name: string; category: string; categoryId: CategoryId | null; amount: number };
+
+/** A large one-off operation (core `oneOffs`): YYYY-MM-DD in the system time zone, hryvnia kopecks spent (> 0). */
+export type OneOffView = { key: string; date: string; name: string; category: string; categoryId: CategoryId | null; amount: number };
+
+/**
+ * The Insights screen's month (spec desktop-insights-page): every insight of «What's unusual» with severity, series and
+ * driver, the month against the usual, new payees and one-offs. Carries the bank's description of payees, cut as on
+ * the category screen. `usual` null — fewer than 3 whole months: the rest is empty then.
+ */
+export type InsightsOverview = {
+  month: string;
+  period: { from: string; to: string; days: number; coveredDays: number; incomplete: boolean; dataUntil: string | null; pendingHolds: number };
+  /** Net spending of the shown month, hryvnia kopecks. */
+  spent: number;
+  /** Whole months before the shown one that the data covers (0 … 6), for the «too little history» notice. */
+  months: number;
+  usual: {
+    months: number;
+    /** Oldest and newest usual month, YYYY-MM. */
+    from: string;
+    to: string;
+    total: number;
+    /** A finished month's income and the usual; null while the month runs. */
+    income: { now: number; usual: number } | null;
+    savings: { rate: number; usual: number } | null;
+  } | null;
+  cards: InsightCardView[];
+  newPayees: NewPayeeView[];
+  oneOffs: OneOffView[];
+  /** Today's rates every amount of this answer was folded by; null — never fetched. */
+  rates: RatesView | null;
+};
 
 /** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */
 export type RecentLineView = {
@@ -467,7 +539,12 @@ export type RecentLineView = {
 };
 
 /** The newest RECENT_LINES operations of the month, for the same person, banks and scope as the spending block. */
-export type RecentOperations = { month: string; lines: RecentLineView[] };
+export type RecentOperations = {
+  month: string;
+  lines: RecentLineView[];
+  /** Today's rates the lines' `uah` came from; null — never fetched. */
+  rates: RatesView | null;
+};
 
 /**
  * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same

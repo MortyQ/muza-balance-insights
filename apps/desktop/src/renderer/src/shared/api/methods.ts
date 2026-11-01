@@ -5,6 +5,7 @@ export const CACHED_READS = [
   'getMonthOverview',
   'getSpendingOverview',
   'getRecentOperations',
+  'getInsightsOverview',
   'getNowOverview',
   'getCategoryOverview',
   'getIncomeOverview',

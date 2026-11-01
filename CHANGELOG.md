@@ -45,8 +45,27 @@ English interface.
   one to open its category. When nothing is unusual yet, as early in a month, the tile shows «Recent operations»
   alone, so the place is never empty. In a past month «Recent operations» is not shown: the tile holds «What's
   unusual» across the row, or is not there when nothing was unusual.
+- **«Today» and «This week» list five categories** instead of three, so the tiles line up with «Recent operations»
+  next to them.
+- **«Recent operations» and «Insights» follow your currency.** With euros or dollars picked at the top, their amounts
+  are shown in that currency too, like the rest of the home screen; the «Insights» screen does the same.
 - **«Spending» takes the whole width.** «Who spent what» and the regular payments card are no longer on the home
   screen for now; «Regular payments» stays in the menu, and the people filter at the top still picks a person.
+- **«Insights» beside «Spending».** For each unusual category it names the payee behind most of the change, with its
+  share; click it to open the category. For a finished month it shows how much of your income you kept against your
+  usual share, and it explains how the usual is counted. When there is nothing to explain, «Spending» keeps the whole
+  width.
+
+### Insights
+
+- **A new «Insights» screen** in the menu, right after «General», for the month picked at the top. It starts with the
+  month at a glance: what you spent against a usual month (in a running month, how much of a usual month is already
+  spent against how much of the month has passed), income and the share of it you kept against your usual. Below,
+  everything unusual in the month, the biggest change in money first, each marked «High», «Medium» or «Low» by how
+  much it weighs against a usual month, with a small chart of the usual months and this one, the payee behind the
+  change and a link to its operations. Beside it: new payees (500 ₴ or more, never seen in the usual months) and large
+  one-off payments, and how it was all counted. With less than 3 whole months of history it says so. «All insights»
+  on home's «Insights» and «What's unusual» opens it.
 
 ### Categories
 

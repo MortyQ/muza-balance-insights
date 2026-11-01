@@ -18,12 +18,19 @@ describe('home tile grid', () => {
     expect(page).toMatch(/class="@container">\s*<div [^>]*data-test="home-grid"/);
   });
 
-  it("the blocks in order: balances, «Now», the «What's unusual» / «Recent operations» tile (gone with the «Now» details), spending; nothing beside it", () => {
-    const order = ['<BalancesFeature', '<NowStripFeature', '<HomeHighlights', '<SpendingFeature'].map((t) => page.indexOf(t));
+  it("the blocks in order: balances, «Now», the «What's unusual» / «Recent operations» tile (gone with the «Now» details), spending, «Insights»", () => {
+    const order = ['<BalancesFeature', '<NowStripFeature', '<HomeHighlights', '<SpendingFeature', '<HomeInsightsFeature'].map((t) => page.indexOf(t));
     expect(order.every((i) => i > 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(page).toMatch(/<HomeHighlights v-if="!nowDetails" \/>/);
     expect(page).not.toContain('RecurringTeaserFeature');
+    // «Spending» narrows only while the block has something to show.
+    expect(page).toMatch(/<SpendingFeature :beside="insightsShown" \/>/);
+  });
+
+  it('the «Insights» block is one tile root: five of twelve columns, a row of its own below that', () => {
+    const tile = template(read('features/home-insights/HomeInsightsFeature.vue'));
+    expect(tile).toMatch(/^<VCard v-if="view"[^>]*class="col-span-full @\[79rem\]:col-span-5"/);
   });
 
   it('the balances feature renders its tiles through one `contents` root', () => {

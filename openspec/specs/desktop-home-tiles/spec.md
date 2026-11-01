@@ -9,8 +9,9 @@ sit in rows at each width, and what each one shows.
 ### Requirement: Home is a grid of tiles
 
 Home SHALL show its content as separate tiles on the window's background, in this order: «Balance», «Month pace»,
-«Month»; «Today», «This week», «What's unusual»; «Spending by category» with «Who spent what» and the regular payments
-teaser beside it. Tiles SHALL NOT sit inside another tile. Tiles of one row SHALL have the same height.
+«Month»; «Today», «This week», the «What's unusual» / «Recent operations» tile; «Spending by category» over the whole
+width. Tiles SHALL NOT sit inside another tile. Tiles of one row SHALL have the same height. «Who spent what» and the
+regular payments teaser SHALL NOT be shown on home.
 
 #### Scenario: Wide window
 - **WHEN** home is open on a window wide enough for three tiles in a row
@@ -28,6 +29,10 @@ teaser beside it. Tiles SHALL NOT sit inside another tile. Tiles of one row SHAL
 #### Scenario: Narrow window
 - **WHEN** the window is narrowed until three tiles no longer fit
 - **THEN** the tiles reflow into fewer columns in the same order, and no tile is cut or overlaps another
+
+#### Scenario: Spending over the whole width
+- **WHEN** home is open in the family view with regular payments found
+- **THEN** «Spending by category» spans the whole row, with neither «Who spent what» nor the teaser beside it
 
 ### Requirement: Balance tile
 
@@ -51,14 +56,14 @@ row folds.
 
 ### Requirement: Today and week tiles
 
-«Today» and «This week» SHALL each show the period's amount, its change chip and at most 3 categories (icon, name, bar,
+«Today» and «This week» SHALL each show the period's amount, its change chip and at most 5 categories (icon, name, bar,
 amount), the bars relative to the period's biggest category. Each tile SHALL offer a button that opens the period's
 details; on «This week» the button SHALL name how many categories and how much are not listed. With no spending today
 the «Today» tile SHALL say so instead of categories.
 
 #### Scenario: A week with many categories
 - **WHEN** the week has 12 categories with spending
-- **THEN** the tile lists the 3 biggest and its button reads that 9 more categories are hidden, with their total
+- **THEN** the tile lists the 5 biggest and its button reads that 7 more categories are hidden, with their total
 
 ### Requirement: Period details
 
@@ -72,12 +77,12 @@ switch SHALL change the period in place; closing SHALL bring the three tiles bac
 
 ### Requirement: What's unusual tile
 
-The «What's unusual» lines SHALL be shown in their own tile in the second row, and SHALL NOT be repeated inside
-«Spending by category».
+The «What's unusual» lines SHALL be shown as a slide of the carousel tile in the second row (`desktop-home-highlights`),
+and SHALL NOT be repeated inside «Spending by category». The lines SHALL be the view's (the global filter's person).
 
 #### Scenario: Insights present
 - **WHEN** the month has categories above or below usual
-- **THEN** they are listed in the «What's unusual» tile only
+- **THEN** they are listed in the carousel tile's «What's unusual» slide only
 
 ### Requirement: Spending by category summary
 
@@ -97,13 +102,3 @@ amount and a bar; the bar SHALL carry last month's mark and the people split whe
 #### Scenario: Many categories
 - **WHEN** the month has 15 categories with spending
 - **THEN** 4 rows are listed and a button unfolds the other 11 inside the tile
-
-### Requirement: Who spent what tile
-
-In the family view, the people list of «Spending by category» SHALL be its own tile next to it, each person with amount,
-share and bar, and «Whole family» first. Picking a row SHALL pick the person for «Spending by category» as before. With
-one person shown the tile SHALL NOT be shown.
-
-#### Scenario: One person in the global filter
-- **WHEN** the global filter shows one person
-- **THEN** «Who spent what» is not shown and the regular payments teaser takes its place

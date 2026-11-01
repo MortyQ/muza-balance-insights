@@ -19,8 +19,8 @@ export const REST_COLOR = 'var(--border-strong)';
 /** A named category ranked below the family's top 7 (shown when a person is picked): muted, apart from the rest-grey. */
 export const BELOW_TOP_COLOR = 'var(--category-other)';
 
-/** «What's unusual»: at most this many of core's ranked insights (the thresholds are core's, `read/insights.ts`). */
-export const INSIGHT_MAX = 5;
+/** «What's unusual»: at most this many of core's ranked insights; main explains the same ones. */
+export { INSIGHT_MAX } from '@contract/insights.ts';
 
 /** localStorage key of the menu choices (a convenience: defaults when storage is unavailable). */
 export const PREFS_KEY = 'spending.view';

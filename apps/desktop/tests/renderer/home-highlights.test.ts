@@ -36,6 +36,7 @@ const RECENT: RecentOperations = {
     { key: 't2', date: '2026-09-12', time: '14:20', merchant: 'Fictional Cafe', category: 'кафе и рестораны', categoryId: 'cafes', uah: -12_000, currency: 980, amount: -12_000, pending: true, refund: false },
     { key: 't1', date: '2026-09-10', time: '09:05', merchant: '', category: 'продукты', categoryId: 'groceries', uah: 3_000, currency: 980, amount: 3_000, pending: false, refund: true },
   ],
+  rates: { list: [{ currency: 978, rate: 40 }], fetchedAt: 0, saved: false },
 };
 
 let spending: SpendingOverview = SPENDING;
@@ -66,6 +67,7 @@ async function mountTile() {
     routes: [
       { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
       { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
+      { path: '/insights', name: 'insights', component: defineComponent(() => () => h('div')) },
     ],
   });
   await router.push('/');
@@ -75,6 +77,7 @@ async function mountTile() {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
   getSpendingOverview.mockClear();
   getRecentOperations.mockClear();
@@ -101,6 +104,18 @@ describe('home highlights', () => {
     await rows[0]!.trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'cafes' }, query: { scope: 'personal' } });
+    w.unmount();
+  });
+
+  it('«Recent operations» follow the main currency by the answer\'s rates', async () => {
+    spending = { ...SPENDING, insights: null } as unknown as SpendingOverview;
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    const w = await mountTile();
+    expect(w.findAll('[data-test="recent-row"]').map((r) => r.text().slice(-12))).toEqual([
+      expect.stringContaining(formatMoney(300, 978)),
+      expect.stringContaining(`+${formatMoney(75, 978)}`),
+    ]);
     w.unmount();
   });
 

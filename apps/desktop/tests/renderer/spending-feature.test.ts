@@ -38,6 +38,7 @@ const VIEW: SpendingOverview = {
   familyTotal: null,
   usual: null,
   insights: null,
+  explain: null,
 };
 
 // The family view with nothing spent this month.
@@ -318,6 +319,12 @@ describe('spending tiles', () => {
     expect(tile.classes().some((c) => c.includes('col-span-9') || c.includes('row-span'))).toBe(false);
     expect(w.find('[data-test="spending-people"]').exists()).toBe(false);
     expect(w.findComponent(PeopleList).exists()).toBe(false);
+  });
+
+  it('beside the «Insights» block: seven of twelve columns, still the whole row below that', async () => {
+    const w = await mountBlock();
+    await w.setProps({ beside: true });
+    expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['col-span-full', '@[79rem]:col-span-7']));
   });
 
   it('4 category rows, the rest unfold in place and fold back', async () => {

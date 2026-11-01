@@ -12,22 +12,28 @@ export const routes: RouteRecordRaw[] = [
     meta: { nav: { label: 'home.nav.general', icon: 'lucide:layout-dashboard', order: 0 } },
   },
   {
+    path: '/insights',
+    name: ROUTE.insights,
+    component: () => import('@/pages/insights').then((m) => m.InsightsPage),
+    meta: { nav: { label: 'home.nav.insights', icon: 'lucide:lightbulb', order: 1 } },
+  },
+  {
     path: '/analytics',
     name: ROUTE.analytics,
     component: () => import('@/pages/analytics').then((m) => m.AnalyticsPage),
-    meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 1 }, periodFilter: 'range' },
+    meta: { nav: { label: 'home.nav.analytics', icon: 'lucide:chart-column', order: 2 }, periodFilter: 'range' },
   },
   {
     path: '/recurring',
     name: ROUTE.recurring,
     component: () => import('@/pages/recurring').then((m) => m.RecurringPage),
-    meta: { nav: { label: 'home.nav.recurring', icon: 'lucide:repeat', order: 2 }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.recurring', icon: 'lucide:repeat', order: 3 }, periodFilter: 'none' },
   },
   {
     path: '/planning',
     name: ROUTE.planning,
     component: () => import('@/pages/planning').then((m) => m.PlanningPage),
-    meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 3 }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 4 }, periodFilter: 'none' },
   },
   {
     // Opened from a row of «Spending»; an unknown category goes home.

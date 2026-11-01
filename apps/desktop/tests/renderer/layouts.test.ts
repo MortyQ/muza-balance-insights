@@ -49,12 +49,13 @@ describe('navGroups', () => {
     expect(navGroups([r('x')])).toEqual([]);
   });
 
-  it('the app: «General» (home), «Analytics», «Regular payments», «Planning», in the default layout; the other screens are on their own', () => {
+  it('the app: «General» (home), «Insights», «Analytics», «Regular payments», «Planning», in the default layout; the other screens are on their own', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     expect(navGroups(router.getRoutes())).toEqual([
       {
         items: [
           { label: 'home.nav.general', icon: 'lucide:layout-dashboard', id: 'home' },
+          { label: 'home.nav.insights', icon: 'lucide:lightbulb', id: 'insights' },
           { label: 'home.nav.analytics', icon: 'lucide:chart-column', id: 'analytics' },
           { label: 'home.nav.recurring', icon: 'lucide:repeat', id: 'recurring' },
           { label: 'home.nav.planning', icon: 'lucide:calculator', id: 'planning' },
@@ -62,7 +63,7 @@ describe('navGroups', () => {
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
     // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning']);
@@ -73,7 +74,7 @@ describe('navItems', () => {
   it('the side menu as sidebar entries: translated, opening their route, standing for the screens that name them as parent', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const items = navItems(router.getRoutes(), (key) => `t:${key}`);
-    expect(items.map((i) => i.id)).toEqual(['home', 'analytics', 'recurring', 'planning']);
+    expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning']);
     expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
     expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income']));
     expect(items[1]?.activeFor).toEqual([]);

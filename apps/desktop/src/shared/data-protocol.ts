@@ -37,6 +37,7 @@ import type {
   RecurringOverview,
   RecurringOverviewQuery,
   RecentOperations,
+  InsightsOverview,
   SpendingOverview,
   SpendingOverviewQuery,
 } from './api.ts';
@@ -52,6 +53,7 @@ export type DataMethods = {
   monthOverview: { args: [MonthOverviewQuery]; result: MonthOverview };
   spendingOverview: { args: [SpendingOverviewQuery]; result: SpendingOverview };
   recentOperations: { args: [SpendingOverviewQuery]; result: RecentOperations };
+  insightsOverview: { args: [SpendingOverviewQuery]; result: InsightsOverview };
   nowOverview: { args: [NowOverviewQuery]; result: NowOverview };
   categoryOverview: { args: [CategoryOverviewQuery]; result: CategoryOverview };
   incomeOverview: { args: [IncomeOverviewQuery]; result: IncomeOverview };
@@ -135,6 +137,7 @@ export const DATA_ARG_SCHEMAS = {
   monthOverview: ARG_SCHEMAS.getMonthOverview,
   spendingOverview: ARG_SCHEMAS.getSpendingOverview,
   recentOperations: ARG_SCHEMAS.getRecentOperations,
+  insightsOverview: ARG_SCHEMAS.getInsightsOverview,
   nowOverview: ARG_SCHEMAS.getNowOverview,
   categoryOverview: ARG_SCHEMAS.getCategoryOverview,
   incomeOverview: ARG_SCHEMAS.getIncomeOverview,
@@ -174,6 +177,7 @@ export const RATED_METHODS = [
   'monthOverview',
   'spendingOverview',
   'recentOperations',
+  'insightsOverview',
   'nowOverview',
   'categoryOverview',
   'incomeOverview',
