@@ -2,100 +2,124 @@
 
 ## Context
 
-See proposal.md for why. Follows `.agents/project/core-layout.md` (where modules go), `domain-rules.md` (categories,
-aggregates; updated with the kinds and the metrics), `desktop-import.md` (channels; updated with the three new ones),
-`desktop-renderer.md` (FSD, i18n, the settings layout; updated with the section and the card) and the root `CLAUDE.md`
-«From the settings-ui branch» list of settings sections (updated: «Categories»).
+See proposal.md for why and for the four decisions of 01.11. Follows `.agents/project/core-layout.md` (where modules
+go), `domain-rules.md` (categories, aggregates, scope; updated with kinds, metrics, limits and goals),
+`desktop-import.md` (channels; updated with the new ones), `desktop-renderer.md` (FSD, i18n, settings layout, home
+tiles; updated with the section, the card, the screen, the slide and the explanations) and the root `CLAUDE.md` «From
+the settings-ui branch» list of settings sections (updated: «Categories»).
 
 What exists:
 - Categories are a fixed list in `derive/categories.ts` (`CATEGORY`); the user's category choices live in
   `manual_categories` / `payee_categories` (v18), apart from transactions, never in the analysis copy.
-- `insightsOverview` already reads the month's spending by category, the usual months (`spendingUsual`, with
-  `byCategory` per month and `income`) and today's rates. Savings rate is `read/insights.ts` `savingsRate`.
-- «Available per day» counts today's money from `balancesAt` (cards only). Balances count cards and jars.
-- The renderer's settings sections are `SETTINGS_SECTIONS` (`shared/config/settings.ts`) with `widgets/settings` holding
-  the menu and section map; rows use `SettingsSection` / `SettingsList` / `SettingsRow` from `shared/layout`.
+- `read/reserves.ts` + v13 are the model for a small user-owned table with currency, owner and validation
+  (`RESERVE_CURRENCIES`, `RESERVE_AMOUNT_MAX`, `ReserveError`).
+- `insightsOverview` reads the month by category, the usual months (`spendingUsual`: `byCategory` per month, `income`)
+  and today's rates; `savingsRate` is in `read/insights.ts`. `balancesAt` gives own funds per account; jars carry the
+  bank's `goal`.
+- «Planning» (`pages/planning`) holds `features/daily-allowance` only. Home's highlights tile is a carousel
+  (`widgets`/`features` of `desktop-home-highlights`). Settings sections are `SETTINGS_SECTIONS`.
 
 ## Goals / Non-Goals
 
-**Goals:** one source of kinds (core defaults + user rows), metrics as pure tested functions, one extra field on the
-Insights read (no extra round trip), a section that edits kinds in place.
+**Goals:** one source of kinds; metrics, limits and goals as pure tested functions over numbers already read; the
+fewest extra reads per screen; every figure explainable with the user's own numbers.
 
-**Non-Goals:** kinds in aggregates other than the budget card (spending block, analytics stay as they are); per-person
-kinds; history of kind changes (the metrics always use today's kinds for every month).
+**Non-Goals:** kinds or limits in the spending block or analytics; per-person kinds; history of kind changes (every
+month uses today's kinds); limits feeding «Available per day».
 
 ## Decisions
 
-### Storage: a small table of user rows over code defaults
+### Kinds: user rows over code defaults
 `category_kinds (category TEXT PRIMARY KEY, kind TEXT CHECK IN ('essential','wants','savings'), fixed INTEGER CHECK IN
-(0,1), set_at INTEGER)`, migration v19. A row exists only for a category the user changed; reset deletes rows. Defaults
-are a map in `read/category-kinds.ts` beside a `categoryKinds(db)` reader that merges them and marks `changed`.
-Keyed by the category's stored name (as `manual_categories` is), not by an id: the stored name is what aggregates group
-by.
+(0,1), set_at INTEGER)`. A row only for a changed category; reset deletes. Defaults live beside the reader
+(`read/category-kinds.ts`, `categoryKinds(db)` → every kind-bearing category with `changed`). Keyed by the stored
+category name, as `manual_categories` is. Commands in `commands/category-kinds.ts` validate and throw
+`CategoryKindError`; no re-derivation, since kinds are read at query time.
 
-*Alternatives:* storing every category's kind (seeded) — a later default change would not reach users who never
-touched it; a column on a categories table — there is no such table, categories are code. *Verdict:* user rows over
-defaults.
+*Alternatives:* seeding every category (a later default would not reach users who never touched it); a categories
+table (there is none). *Verdict:* rows over defaults.
 
-The command (`commands/category-kinds.ts`: `setCategoryKind`, `resetCategoryKinds(category | null)`) validates against
-the kind-bearing categories and throws `CategoryKindError`; it needs no re-derivation, since kinds are read at query
-time.
+### Metrics: pure functions
+`read/budget.ts`: `byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, and the guides as exported
+constants (`BUDGET_GUIDE`, `FIXED_HIGH`, `FIXED_VERY_HIGH`, `DEBT_HIGH`, `RESERVE_MIN`, `RESERVE_GOOD`) that the card,
+the explanations and the tests share. They fold the category totals `foldByCategory` already produces.
 
-### Metrics: pure functions over already-read numbers
-`read/budget.ts`: `budgetSplit({ income, byKind })`, `fixedShare`, `debtShare`, `reserveMonths(money, essentialMonths)`
-— numbers in, numbers out, no db. `byKind(byCategory, kinds)` folds a category map into essential / wants / savings and
-fixed totals. Whole percents rounded like `savingsRate`; reserve to one decimal. The guides are exported constants
-(`BUDGET_GUIDE = { essential: 50, wants: 30, left: 20 }`, `FIXED_HIGH = 50`, `FIXED_VERY_HIGH = 60`, `DEBT_HIGH = 30`,
-`RESERVE_MIN = 3`, `RESERVE_GOOD = 6`) so the card and tests share them.
+### One `goals` table for limits and savings goals
+Notion plans one goals table with limits as its first type. `goals (id, type TEXT CHECK IN ('limit','budget','saving'),
+category TEXT NULL, period TEXT NULL CHECK IN ('day','week','month'), currency, amount, participant_id NULL, name NULL,
+until NULL, source TEXT NULL CHECK IN ('jar','own'), account_id NULL, created_at)`, with CHECKs per type (a limit has a
+category and a period; the budget has neither and period month; a saving has a name and a source) and a unique index on
+(type, category, period, participant_id) for limits. `name` is the user's text, so the table stays out of the analysis
+copy. `account_id` refers to a jar by its id without a foreign key, like `manual_categories`, so a closed jar leaves
+the goal readable.
 
-*Alternative:* SQL aggregates per kind — would duplicate the fold of currencies that `foldByCategory` already does.
-*Verdict:* fold the existing category totals.
+*Alternative:* two tables — cleaner CHECKs, but two migrations, two command sets and two readers for one screen.
+*Verdict:* one table, validated in `commands/goals.ts` before the CHECKs.
 
-### Reading: `insightsOverview` gains `budget`
-After the month summary it reads `categoryKinds(db)` once; for a finished month with income it folds the month's
-`byCategory` into the split, fixed and debt shares; for the reserve it takes the essential total of each usual month
-from `spendingUsual`'s `byCategory` (already read) and today's own money of the view from `balancesAt` (cards and jars,
-`own_funds`, credit money is not own funds; foreign currencies at today's rates, without a rate left out and counted
-in `leftOut`). `budget` is `{ split, fixed, debt, reserve, kinds }` with each part null when absent, plus the
-categories per kind for «How it was counted». One extra query (`balancesAt`) and one tiny read (`category_kinds`); the
-fixed statement-count test (`data-queries.test.ts`) grows by those.
+### Counting limits
+`read/limits.ts` is pure: `limitState({ amount, spent, daysPassed, days, period })` → expected, forecast, per day,
+state (with the «quarter of the period» rule and none for day limits) and `suggestedAmount(months, period)`. The data
+process reads spending per category for the current day, week and month once each with the core spending summary
+(`scope: 'personal'`, every provider, the owner's view: the family, or the person), folds by today's rates and hands
+the numbers to `limitState`. The monthly budget sums categories that are neither fixed nor savings by `categoryKinds`.
+Suggestions reuse `spendingUsual`'s per-category months.
 
-*Alternative:* a separate `getBudgetOverview` read — a second request for the same screen and the same usual months.
-*Verdict:* extend the Insights read.
+*Alternative:* counting inside SQL per limit — N queries for N limits. *Verdict:* three period reads per owner view,
+folded in memory.
 
-Jars are counted in the reserve (they are the user's savings), unlike «Available per day», which spreads only card
-money. The card says so in «How it was counted».
+The bank filter is ignored on purpose (decision of this change: a limit is one number for all the user's money); the
+explanations say so.
 
-### Channels
-`getCategoryKinds()` → `CategoryKindView[]` (`categoryId`, `kind`, `fixed`, `changed`), `setCategoryKind({ categoryId,
-kind, fixed })`, `resetCategoryKinds({ categoryId | null })` — through the data process like `setOperationCategory`
-(zod arguments in `ipc-args.ts`, `data-protocol.ts`, main handler, host, renderer `methods.ts`). The set/reset calls are
-not cached reads; after a write the renderer refreshes the sync-status version, so the Insights read reloads quietly,
-as the category menu does. No bank text crosses these channels.
+### Reads and channels
+- `getLimitsOverview(q: { participantId? })` → the budget, the limits with their figures, the savings goals with their
+  progress, the suggestions, the kinds left out of the budget, today's rates. Used by the «Limits and goals» screen and
+  home's «Limits» slide (which shows only attention and exceeded).
+- `categoryOverview` gains `limit` (the category's limits of the owner view for the current period) when the shown
+  period is the current month.
+- `insightsOverview` gains `budget` (split, fixed, debt, reserve, kinds) and adds «limit exceeded» cards from the
+  monthly limits of the shown month (`type: 'limit-exceeded'` beside the detectors' cards, ranked by money).
+- Writes: `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds`, `saveGoal` (create or update by `id`),
+  `deleteGoal`, `addSuggestedLimits`. All through the data process like `setOperationCategory`: zod arguments in
+  `ipc-args.ts`, `data-protocol.ts`, main, host, renderer `methods.ts`. After a write the renderer bumps the sync-status
+  version so the open reads reload quietly. Goal names cross IPC; they are the user's own text, never bank text.
+
+### Explanations
+Each «?» is a `VPopover` with a short text and its formula filled in. The numbers come from the view the screen already
+has (no extra read): the composables build `explain` entries `{ key, params }`, and the template renders
+`t(key, params)`. Dictionaries get one `help.*` group per screen (`help.limits.perDay`, `help.budget.reserve`, …) in
+`uk`, `en`, `ru`. First-visit introductions are a dismissible block with `localStorage` keys
+(`help.seen.limits`, `help.seen.categories`, `help.seen.budget`) behind try/catch, as other renderer conveniences; «How
+it works» clears the key. A shared `shared/ui` `HelpHint` component (button «?» + popover, keyboard and screen reader
+labels) carries them all.
+
+*Alternative:* a separate help screen — far from the number it explains. *Verdict:* inline «?» next to each figure,
+plus short introductions.
 
 ### Renderer placement (FSD)
-- `entities/category-kind`: `CategoryKind` labels (dictionary keys) and the kind colours (`--category-…` tokens are
-  per category; kinds get three neutral tokens in the theme: essential, wants, left).
-- `features/category-kinds` (settings section): `api/useCategoryKindsRequest.ts`, `composables/useCategoryKinds.ts`
-  (optimistic change, revert and message on failure), `components/CategoryKindRow.vue` (icon, name, a `VSegmented`-like
-  three-way choice from `shared/ui`, `VSwitch`), `CategoryKindsFeature.vue`. `SETTINGS_SECTIONS` gains `categories`
-  after `people` in the first group; `widgets/settings` maps it.
-- `features/insights-page`: `components/BudgetCard.vue` (stacked bar on a sunken track with the 50/30/20 marks — the
-  thin rounded bars of the other cards — and three rows), `utils.ts` `budgetView` (texts through `t()`, amounts through
-  the money format). First in the side column.
+- `shared/ui`: `HelpHint`, `IntroNote`.
+- `entities/category-kind`: kind labels and the three kind colour tokens (added to the theme).
+- `entities/goal`: limit state → label, icon and colour; amount formatting helpers.
+- `features/category-kinds`: the settings section (`SETTINGS_SECTIONS` gains `categories` after `people`).
+- `features/insights-page`: `BudgetCard.vue`, `budgetView`; the «limit exceeded» card reuses `InsightCard`.
+- `features/limits-goals`: `api/`, `composables/useLimitsGoals.ts`, `components/` (`BudgetPanel`, `LimitRow`,
+  `GoalRow`, `LimitSheet`, `GoalSheet`, `SuggestionsNote`), `LimitsGoalsFeature.vue`; `pages/planning` shows it above
+  `AllowanceFeature`.
+- `features/category-detail`: `CategoryLimitBar.vue` from `entities/goal`.
+- Home highlights: a third slide `LimitsSlide` reading `getLimitsOverview`.
 
-*Alternative:* the kinds editor inside the Budget card — mixes a month view with a lasting choice and crowds the card.
-*Verdict:* settings section + link.
+Bars follow the existing style: thin rounded bars on a sunken track; the pace marker is a short vertical tick.
 
 ## Risks / Trade-offs
 
-- [Western guides do not fit Ukrainian incomes] → shown as «a common guide», never a grade or a red colour; the
-  thresholds are constants, easy to tune after the live check (backlog).
-- [Transfers to people hide rent or loans] → they default to wants; the user can re-kind the category or move the
-  payee to «rent» with the existing category menu. «How it was counted» names the kinds.
-- [Debt share misses credit card repayments] → the row says it counts «installments and loans» only.
-- [Reserve uses today's money for a past month] → the row says «now»; it does not change with the month filter.
+- [Western guides do not fit Ukrainian incomes] → «common advice» wording, no grade colours; thresholds are constants,
+  tuned after the live check.
+- [Transfers to people hide rent or loans] → they default to wants; the user can re-kind the category or move a payee
+  with the category menu; the explanation names the kinds.
+- [Debt share misses credit card repayments] → the explanation says it counts «installments and loans» only.
+- [Today's kinds and rates for past months] → stated in «How it was counted».
+- [A forecast early in the period is noise] → no forecast-driven state before a quarter of the period.
+- [Home reads one more overview] → the slide shares the read cache with the screen; one request per view.
 
 ## Migration Plan
 
-v19 creates an empty table; nothing to backfill; rollback leaves an unused table.
+v19 `category_kinds`, v20 `goals`: empty tables, nothing to backfill; rollback leaves unused tables.

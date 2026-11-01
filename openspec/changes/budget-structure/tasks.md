@@ -2,40 +2,59 @@
 
 ## 1. Category kinds in core
 
-- [ ] 1.1 Migration v19 `category_kinds`; `read/category-kinds.ts` (defaults for every kind-bearing category, `categoryKinds(db)` with `changed`); `commands/category-kinds.ts` (`setCategoryKind`, `resetCategoryKinds`, `CategoryKindError`); tests in `packages/core/tests` (defaults, a choice wins, reset one / all, refusals, survives a full re-derivation, not in the analysis copy whitelist)
+- [ ] 1.1 Migration v19 `category_kinds`; `read/category-kinds.ts` (defaults, `categoryKinds(db)` with `changed`); `commands/category-kinds.ts` (`setCategoryKind`, `resetCategoryKinds`, `CategoryKindError`); tests in `packages/core/tests` (defaults, a choice wins, reset one / all, refusals, survives a full re-derivation, the table is not in the analysis whitelist)
 - [ ] 1.2 Commit `feat(core): category kinds`
 
-## 2. Budget metrics in core
+## 2. Explanations and the «Categories» section
 
-- [ ] 2.1 `read/budget.ts`: `byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, guide constants; tests for the spec scenarios (within guide, spent more than earned, no income, reserve absent under 3 months or zero median)
-- [ ] 2.2 Commit `feat(core): budget metrics`
+- [ ] 2.1 `shared/ui` `HelpHint` and `IntroNote` (keyboard, screen reader labels, stored dismissal behind try/catch) with tests; listed in `shared/ui/README.md`
+- [ ] 2.2 Channels `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds` (channels, ipc-args, data-protocol, main, host, renderer methods); `tests/ipc.test.ts` bad arguments
+- [ ] 2.3 `entities/category-kind`; `features/category-kinds` with its introduction; `SETTINGS_SECTIONS` + `widgets/settings`; i18n keys in `uk.json`, `en.json`, `ru.json`; `tests/renderer/category-kinds.test.ts` (rows, change, changed mark, reset, failed save reverts, introduction once) and the section order in `tests/renderer/settings.test.ts`
+- [ ] 2.4 Commit `feat(desktop): the «Categories» section and in-app explanations`
 
-## 3. Data process and channels
+## 3. Budget metrics in core
 
-- [ ] 3.1 `InsightsOverview.budget` and `CategoryKindView` types in `api.ts`; `insightsOverview` fills `budget` (kinds, month split, fixed and debt shares, reserve from cards and jars now); channels `getCategoryKinds`, `setCategoryKind`, `resetCategoryKinds` (channels, ipc-args, data-protocol, main, host, renderer methods)
-- [ ] 3.2 Tests: `tests/data.test.ts` (budget of a finished month, a running month, no income, a changed kind moves money), `tests/data-queries.test.ts` (statement count), `tests/ipc.test.ts` (bad arguments)
-- [ ] 3.3 Commit `feat(desktop): budget in the insights read and category kind channels`
+- [ ] 3.1 `read/budget.ts` (`byKind`, `budgetSplit`, `fixedShare`, `debtShare`, `reserveMonths`, guide constants); tests for every spec scenario
+- [ ] 3.2 Commit `feat(core): budget metrics`
 
-## 4. The «Categories» section
+## 4. The «Budget» card
 
-- [ ] 4.1 `entities/category-kind`; `features/category-kinds`; `SETTINGS_SECTIONS` + `widgets/settings` map; i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 4.2 Tests: `tests/renderer/category-kinds.test.ts` (rows, change, changed mark, reset, failed save reverts), section order in `tests/renderer/settings.test.ts`
-- [ ] 4.3 Commit `feat(desktop): the «Categories» section`
+- [ ] 4.1 `InsightsOverview.budget`; `insightsOverview` fills it (kinds, split, fixed and debt shares, reserve from cards and jars now); `tests/data.test.ts` (finished month, running month, no income, a changed kind moves money) and `tests/data-queries.test.ts` (statement count)
+- [ ] 4.2 `BudgetCard.vue`, `budgetView`, «?» on every figure with the user's numbers, the introduction, the link to «Categories»; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/renderer/insights-page.test.ts` (finished, running, no income, no reserve, euro main, an explanation's filled formula, the link)
+- [ ] 4.3 Commit `feat(desktop): the «Budget» card on the Insights screen`
 
-## 5. The «Budget» card
+## 5. Limits in core
 
-- [ ] 5.1 `BudgetCard.vue`, `budgetView` in `features/insights-page/utils.ts`, first in the side column; link to the section; i18n keys in `uk.json`, `en.json`, `ru.json`
-- [ ] 5.2 Tests in `tests/renderer/insights-page.test.ts` (finished month, running month, no income, no reserve, euro main, the link)
-- [ ] 5.3 Commit `feat(desktop): the «Budget» card on the Insights screen`
+- [ ] 5.1 Migration v20 `goals`; `commands/goals.ts` (save, delete, add suggested; validation and `GoalError`); `read/limits.ts` (`limitState`, `suggestedAmount`, monthly budget categories); tests for every `core-spending-limits` scenario, the unique limit per owner, category and period, and the analysis whitelist
+- [ ] 5.2 Commit `feat(core): spending limits`
 
-## 6. Docs
+## 6. Limits read and screen
 
-- [ ] 6.1 `domain-rules.md` (kinds, metrics), `desktop-import.md` (channels), `desktop-renderer.md` (section, card), root `CLAUDE.md` settings sections list; `CHANGELOG.md` 0.1.13; live checks in `docs/backlog.md` (defaults feel right, guides, reserve with jars)
-- [ ] 6.2 Commit `docs: budget structure`
+- [ ] 6.1 `getLimitsOverview` (types, channels, data process: three period reads per owner view, «Personal» only, every bank, today's rates); `saveGoal`, `deleteGoal`, `addSuggestedLimits` channels; `categoryOverview.limit`; tests in `tests/data.test.ts`, `tests/data-queries.test.ts`, `tests/ipc.test.ts`
+- [ ] 6.2 `entities/goal`; `features/limits-goals` (budget panel, limit rows sorted by state, empty state with suggestions, `LimitSheet` with the past-months preview, delete confirmed in the sheet, introduction, «?» on spent, expected, forecast, per day and state); «Planning» shows it above «Available per day»; `CategoryLimitBar` on the category screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [ ] 6.3 Tests: `tests/renderer/limits-goals.test.ts` (order, states in words, person and family owners, suggestions action, sheet preview, failed save, explanations), the category screen bar
+- [ ] 6.4 Commit `feat(desktop): limits on the «Limits and goals» screen`
 
-## 7. Verification
+## 7. Limits on home and in insights
 
-- [ ] 7.1 Root `pnpm test` and `pnpm typecheck` pass
+- [ ] 7.1 The «Limits» slide in home's highlights tile (attention and exceeded only, first when exceeded, current month only); «limit exceeded» cards in `insightsOverview` and on the Insights screen; i18n keys in `uk.json`, `en.json`, `ru.json`
+- [ ] 7.2 Tests: `tests/renderer/home-highlights.test.ts` (three slides, order, no slide when all on track), `tests/data.test.ts` and `tests/renderer/insights-page.test.ts` (the exceeded card)
+- [ ] 7.3 Commit `feat(desktop): limits on home and in the insights feed`
+
+## 8. Savings goals
+
+- [ ] 8.1 `read/savings-goals.ts` (progress from a jar or «cards and jars», needed per month, overdue, a missing jar); tests for every `core-savings-goals` scenario
+- [ ] 8.2 Goals in `getLimitsOverview`; `GoalRow`, `GoalSheet` (jar picker offering the jar's target), «?» on progress and need; i18n keys in `uk.json`, `en.json`, `ru.json`; tests in `tests/data.test.ts` and `tests/renderer/limits-goals.test.ts`
+- [ ] 8.3 Commit `feat: savings goals`
+
+## 9. Docs
+
+- [ ] 9.1 `domain-rules.md` (kinds, metrics, limits, goals), `desktop-import.md` (channels; goal names are the user's text), `desktop-renderer.md` (section, card, screen, slide, `HelpHint`), root `CLAUDE.md` settings sections list; `CHANGELOG.md` 0.1.13; live checks in `docs/backlog.md` (defaults feel right, guides, pace and forecast early in a month, the reserve with jars, explanations read clearly)
+- [ ] 9.2 Commit `docs: budget, limits and goals`
+
+## 10. Verification
+
+- [ ] 10.1 Root `pnpm test` and `pnpm typecheck` pass
 
 ## Workflow follow-up
 

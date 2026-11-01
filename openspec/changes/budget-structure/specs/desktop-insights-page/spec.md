@@ -20,3 +20,12 @@ person, banks, scope and main currency like the rest of the screen.
 #### Scenario: Main currency
 - **WHEN** euros are picked at the top
 - **THEN** every amount the card names is in euros
+
+### Requirement: Limit exceeded in the feed
+The feed SHALL list each monthly limit exceeded in the shown month as a «Limit exceeded» card with the category (or the
+monthly budget), the amount over the limit, its severity by the same rule as the other cards and a link to
+«Limits and goals», ranked among the other cards by money.
+
+#### Scenario: An exceeded cafe limit
+- **WHEN** the shown month spent 5 300 ₴ on cafes against a 4 000 ₴ limit
+- **THEN** the feed has a «Limit exceeded» card for cafes, 1 300 ₴ over
