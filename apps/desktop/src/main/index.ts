@@ -318,6 +318,7 @@ app.whenReady().then(async () => {
     cancelImport: async () => importer.cancel(),
     getMonthOverview: (q) => data.monthOverview(q),
     getSpendingOverview: (q) => data.spendingOverview(q),
+    getRecentOperations: (q) => data.recentOperations(q),
     getNowOverview: (q) => data.nowOverview(q),
     getCategoryOverview: (q) => data.categoryOverview(q),
     getIncomeOverview: (q) => data.incomeOverview(q),

@@ -8,7 +8,7 @@
 
 ## 2. Desktop: the read (desktop)
 
-- [ ] 2.1 `getRecentOperations`: `shared/api.ts` (with the descriptions comment), `ipc-args`, channels, main, the data
+- [x] 2.1 `getRecentOperations`: `shared/api.ts` (with the descriptions comment), `ipc-args`, channels, main, the data
   process, the read cache (design 2). Verify in `tests/data.test.ts` and `tests/ipc.test.ts`.
 
 ## 3. Renderer: carousel pieces (desktop)

@@ -20,6 +20,7 @@ export const METHODS = [
   'startImport',
   'cancelImport',
   'getSpendingOverview',
+  'getRecentOperations',
   'getNowOverview',
   'getCategoryOverview',
   'getIncomeOverview',

@@ -4,6 +4,7 @@ import type { Method } from '@contract/channels.ts';
 export const CACHED_READS = [
   'getMonthOverview',
   'getSpendingOverview',
+  'getRecentOperations',
   'getNowOverview',
   'getCategoryOverview',
   'getIncomeOverview',

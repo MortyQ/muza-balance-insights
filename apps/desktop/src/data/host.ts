@@ -36,6 +36,7 @@ export class DataHost {
     this.handlers = {
       monthOverview: (q) => data.monthOverview(q),
       spendingOverview: (q) => data.spendingOverview(q),
+      recentOperations: (q) => data.recentOperations(q),
       nowOverview: (q) => data.nowOverview(q),
       categoryOverview: (q) => data.categoryOverview(q),
       incomeOverview: (q) => data.incomeOverview(q),

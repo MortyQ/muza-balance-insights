@@ -274,6 +274,7 @@ export type BalanceApi = {
   /** The «Настройки…» menu item. Returns an unsubscribe function. */
   onOpenSettings(cb: () => void): () => void;
   getSpendingOverview(q: SpendingOverviewQuery): Promise<SpendingOverview>;
+  getRecentOperations(q: SpendingOverviewQuery): Promise<RecentOperations>;
   getNowOverview(q: NowOverviewQuery): Promise<NowOverview>;
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
@@ -347,7 +348,8 @@ export type BalanceApi = {
 // All amounts are integer minor units of `currency` (ISO 4217 numeric); currencies are never summed together.
 // No names, descriptions, card numbers or IBANs: categories and account name parts only — except the lines of
 // CategoryOverview and IncomeOverview, which carry the bank's description and comment of each operation (the category
-// and income screens), and RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
+// and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), and
+// RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
 // description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 // providers: a bank view, those banks' accounts only (non-empty, each once; spec core-bank-view); absent — every bank.
@@ -442,6 +444,30 @@ export type SpendingInsight = {
 };
 
 export type SpendingInsights = { months: number; running: boolean; insights: SpendingInsight[] };
+
+/** One of home's «Recent operations»: an operation «Spending» counts (a spending body or a refund), newest first. */
+export type RecentLineView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD and HH:mm. */
+  date: string;
+  time: string;
+  /** The bank's description, cut as on the category screen ('' — none). */
+  merchant: string;
+  category: string;
+  categoryId: CategoryId | null;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  /** A hold of the last 3 days: it may still change. */
+  pending: boolean;
+  refund: boolean;
+};
+
+/** The newest RECENT_LINES operations of the month, for the same person, banks and scope as the spending block. */
+export type RecentOperations = { month: string; lines: RecentLineView[] };
 
 /**
  * The medians of whole months over the covered months before the shown one, hryvnia kopecks by today's rates; the same

@@ -36,6 +36,7 @@ import type {
   OperationCategoryResult,
   RecurringOverview,
   RecurringOverviewQuery,
+  RecentOperations,
   SpendingOverview,
   SpendingOverviewQuery,
 } from './api.ts';
@@ -50,6 +51,7 @@ export type StatementWriteResult = { written: true; added: number } | { written:
 export type DataMethods = {
   monthOverview: { args: [MonthOverviewQuery]; result: MonthOverview };
   spendingOverview: { args: [SpendingOverviewQuery]; result: SpendingOverview };
+  recentOperations: { args: [SpendingOverviewQuery]; result: RecentOperations };
   nowOverview: { args: [NowOverviewQuery]; result: NowOverview };
   categoryOverview: { args: [CategoryOverviewQuery]; result: CategoryOverview };
   incomeOverview: { args: [IncomeOverviewQuery]; result: IncomeOverview };
@@ -132,6 +134,7 @@ const statementTarget = z.discriminatedUnion('kind', [
 export const DATA_ARG_SCHEMAS = {
   monthOverview: ARG_SCHEMAS.getMonthOverview,
   spendingOverview: ARG_SCHEMAS.getSpendingOverview,
+  recentOperations: ARG_SCHEMAS.getRecentOperations,
   nowOverview: ARG_SCHEMAS.getNowOverview,
   categoryOverview: ARG_SCHEMAS.getCategoryOverview,
   incomeOverview: ARG_SCHEMAS.getIncomeOverview,
@@ -170,6 +173,7 @@ export const DATA_METHODS = Object.keys(DATA_ARG_SCHEMAS) as DataMethod[];
 export const RATED_METHODS = [
   'monthOverview',
   'spendingOverview',
+  'recentOperations',
   'nowOverview',
   'categoryOverview',
   'incomeOverview',

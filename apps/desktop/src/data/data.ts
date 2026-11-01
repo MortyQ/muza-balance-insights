@@ -5,7 +5,7 @@
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
-import { categoryLines } from '@mono/core/read/category-lines';
+import { categoryLines, latestLines } from '@mono/core/read/category-lines';
 import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
@@ -66,6 +66,7 @@ import type {
   SpendingAmounts,
   RatesView,
   SpendingCategoryView,
+  RecentOperations,
   SpendingOverview,
   SpendingOverviewQuery,
   SpendingInsights,
@@ -80,6 +81,9 @@ export function nextMonthDay(date: string): string {
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   return new Date(Date.UTC(y, m, Math.min(d, last))).toISOString().slice(0, 10);
 }
+
+/** How many operations home's «Recent operations» lists. */
+const RECENT_LINES = 6;
 
 /** A stopped regular payment is still listed this long after its last payment. */
 const ENDED_DAYS = 120;
@@ -468,6 +472,35 @@ export class DataService {
     }
     const firstMonth = dataFrom?.slice(0, 7) ?? null;
     return months12.map((m) => ({ month: m, net: firstMonth === null || m < firstMonth ? null : (byMonth.get(m) ?? 0) }));
+  }
+
+  /** Home's «Recent operations»: the month's newest operations «Spending» counts, with the bank's description. */
+  async recentOperations(q: SpendingOverviewQuery): Promise<RecentOperations> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const rates = rateMap(await this.d.rates());
+    const jarTitles = (await db.execute(ACCOUNT_NAME_SQL)).rows.filter((r) => r.kind === 'jar' && r.title).map((r) => String(r.title).trim());
+    const raw = await latestLines(db, { ...monthBounds(q.month), tz, scope: q.scope, ...viewOf(q) }, RECENT_LINES, now);
+    return {
+      month: q.month,
+      lines: raw.lines.map((l) => {
+        const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+        return {
+          key: l.id,
+          date,
+          time,
+          merchant: merchantText(l.description, jarTitles),
+          category: l.category,
+          categoryId: CATEGORY_ID.get(l.category) ?? null,
+          uah: toUah(l.amount, l.currency, rates),
+          currency: l.currency,
+          amount: l.amount,
+          pending: l.hold && l.time >= now - RESYNC_OVERLAP_SEC,
+          refund: l.amount > 0,
+        };
+      }),
+    };
   }
 
   async categoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview> {
