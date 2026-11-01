@@ -22,4 +22,4 @@
 
 - [x] 4.1 `.agents/project/domain-rules.md` (an «Insights» bullet), `docs/backlog.md` (five lines in the tile, checked
   live).
-- [ ] 4.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).
+- [x] 4.2 `pnpm test` and `pnpm typecheck` at the root (by the user where the sandbox blocks pnpm).
