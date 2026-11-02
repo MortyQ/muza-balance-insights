@@ -93,9 +93,9 @@
 
 ## 7. Wrap-up
 
-- [ ] 7.1 `docs/backlog.md`, «To check live: figure accuracy»:
+- [x] 7.1 `docs/backlog.md`, «To check live: figure accuracy»:
   - a real hold leaving a limit and coming back once final;
   - the first import after the update running one full pass;
   - the cash switch across home, Analytics and Insights;
   - a budget without taxes
-- [ ] 7.2 Run `pnpm test` and `pnpm typecheck` at the root (where the sandbox cannot, run each package from its folder and ask the user to run the root commands)
+- [x] 7.2 Run `pnpm test` and `pnpm typecheck` at the root (where the sandbox cannot, run each package from its folder and ask the user to run the root commands)

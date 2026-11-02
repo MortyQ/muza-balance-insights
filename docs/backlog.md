@@ -298,3 +298,15 @@
 - Home's budget row at every window width; the empty row's wording; the «Limits» slide's order.
 - Savings goals: a jar's own target offered; the need per month to a date; a closed jar.
 - The «?» explanations: readable, the numbers match the screen, nothing cut in a narrow window.
+
+## Check on a live system: figure accuracy (`openspec/changes/figure-accuracy`)
+
+- A real hold: a card payment from today leaves the limit's and the budget's spent amount, shows as «+ 1 pending» with
+  its amount, and counts once the bank finalises it (or vanishes when cancelled). «Spending» on home keeps it all along.
+- The first import after the update: the log shows one full «rederive», the next auto-sync is incremental again; a
+  metro or suburban-train payment (MCC 4111 / 4789) is now «Taxi and transport».
+- The cash switch off: home's «Spending», «Analytics», the budget, limits and «Insights» all drop withdrawals at once;
+  «Month pace» shows «Withdrawn in cash»; the ATM fee stays in «Bank fees»; on again restores every figure.
+- A budget with «Count taxes» off: taxes leave its flexible part and its past-months chart, the panel says so, and
+  «Spending» and «Budget structure» still show them.
+- «Forecast above the limit» in «Insights» after the first week of a month: does it read as a warning, not an alarm?
