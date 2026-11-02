@@ -3,7 +3,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
 import { accountInputs, accountInputsChanged } from '../../src/derive/derived.ts';
-import { mergeSpans, rederiveSpans } from '../../src/derive/rederive.ts';
+import { CATEGORY_RULES_VERSION } from '../../src/derive/categories.ts';
+import { mergeSpans, rederiveCore, rederiveSpans, rulesChanged } from '../../src/derive/rederive.ts';
 import { insertAccount, insertAccountRow, insertTransactionRow, memoryDb } from '../helpers.ts';
 
 let db: Db;
@@ -109,5 +110,23 @@ describe('accountInputsChanged', () => {
       await set(id, column, value);
       expect(accountInputsChanged(was, await accountInputs(db)), `${id}.${column}`).toBe(true);
     }
+  });
+});
+
+describe('rulesChanged', () => {
+  it('a database never fully re-derived counts as rules version 1; rederiveCore records the current one', async () => {
+    db = await memoryDb();
+    expect(CATEGORY_RULES_VERSION).toBeGreaterThan(1);
+    expect(await rulesChanged(db)).toBe(true);
+    await rederiveCore(db);
+    expect(await rulesChanged(db)).toBe(false);
+    const rs = await db.execute({ sql: `SELECT value FROM derived_state WHERE key = 'category_rules'` });
+    expect(rs.rows[0]?.value).toBe(String(CATEGORY_RULES_VERSION));
+  });
+
+  it('an older recorded version reads as changed', async () => {
+    db = await memoryDb();
+    await db.execute({ sql: `INSERT INTO derived_state (key, value) VALUES ('category_rules', ?)`, args: [String(CATEGORY_RULES_VERSION - 1)] });
+    expect(await rulesChanged(db)).toBe(true);
   });
 });

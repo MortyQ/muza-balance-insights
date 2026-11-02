@@ -3,6 +3,13 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.14 — unreleased
+
+### Categories
+
+- **Commuter transport.** Metro, suburban trains and other transport services now land in «Taxi and transport»
+  instead of «Other». Operations you already have are re-sorted once, at the next download.
+
 ## 0.1.13 — 2026-11-01
 
 ### Banks

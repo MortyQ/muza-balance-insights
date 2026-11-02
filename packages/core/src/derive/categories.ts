@@ -58,6 +58,13 @@ const HINTS_ARE_CATEGORIES: [Exclude<keyof typeof CATEGORY, CategoryHint | Deriv
 void HINTS_ARE_CATEGORIES;
 
 /**
+ * The version of the category rules. Bump it with any change that can give a stored operation another category (an MCC
+ * row, a keyword, a hint): the next import then runs one full re-derivation (rederive.ts `rulesChanged`).
+ * 2: MCC 4111 and 4789 → transport.
+ */
+export const CATEGORY_RULES_VERSION = 2;
+
+/**
  * MCCs seen in real data (phase 3 reports). Anything else falls back to «другое».
  * Deliberately unmapped (ambiguous, decided): 7399, 5999, 8999, 7299, 5311, 5331, 5399, 2791.
  * Transfers (4829) and 6012 come from the provider's hint, not from here.
@@ -76,6 +83,8 @@ const MCC_CATEGORY: ReadonlyMap<number, string> = new Map([
   [4121, CATEGORY.transport], // taxi
   [4131, CATEGORY.transport], // bus lines
   [4112, CATEGORY.transport], // passenger railways
+  [4111, CATEGORY.transport], // local and suburban commuter transport
+  [4789, CATEGORY.transport], // transportation services
   [5541, CATEGORY.transport], // service stations (fuel)
   [5912, CATEGORY.health], // pharmacies
   [8021, CATEGORY.health], // dentists

@@ -13,7 +13,7 @@ import type { Clock, FetchLike } from '@mono/core/shared/platform';
 import { apiOf, isTokenProvider, type TokenProviderId } from '@mono/core/providers/info';
 import type { ProviderId } from '@mono/core/providers/types';
 import { accountInputs, accountInputsChanged } from '@mono/core/derive/derived';
-import { rederiveCore, rederiveSpans } from '@mono/core/derive/rederive';
+import { rederiveCore, rederiveSpans, rulesChanged } from '@mono/core/derive/rederive';
 import {
   ConnectionDuplicateError,
   ConnectionMismatchError,
@@ -260,7 +260,7 @@ export async function runImport(d: RunImportDeps): Promise<void> {
       return;
     }
     d.emit({ type: 'progress', progress: { phase: 'rederive' } });
-    if (derivationFailed || accountInputsChanged(inputsBefore, await accountInputs(d.db))) {
+    if (derivationFailed || accountInputsChanged(inputsBefore, await accountInputs(d.db)) || (await rulesChanged(d.db))) {
       const report = await rederiveCore(d.db);
       d.emit({ type: 'log', message: `rederive: ${report[0] ?? ''}`.slice(0, 300) });
     } else {

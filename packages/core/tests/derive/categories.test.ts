@@ -13,6 +13,8 @@ describe('categorize', () => {
     expect(cat({ mcc: 5411 })).toBe('продукты');
     expect(cat({ mcc: 5814 })).toBe('кафе и рестораны');
     expect(cat({ mcc: 4121 })).toBe('такси и транспорт');
+    expect(cat({ mcc: 4111 })).toBe('такси и транспорт');
+    expect(cat({ mcc: 4789 })).toBe('такси и транспорт');
     expect(cat({ mcc: 9311 })).toBe('налоги и госплатежи');
     expect(cat({ mcc: 1234 })).toBe('другое');
   });

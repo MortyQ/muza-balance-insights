@@ -2,13 +2,23 @@
 // Its report goes to the agent via recategorize (apps/mcp/src/cli/recategorize.ts, run OUTSIDE the OS sandbox):
 // aggregates and diagnostics only — no descriptions, counterparties, comments, IBANs or card numbers
 // (apps/mcp/tests/recategorize-safety.test.ts). Change what it prints only after the user's ok.
-import { recategorize } from './categories.ts';
+import { CATEGORY_RULES_VERSION, recategorize } from './categories.ts';
 import type { Db } from '../storage/db.ts';
 import { refreshCrossing, rederiveCrossing } from './derived.ts';
 import { categoryCounts, transferDiagnostics, unknownBankCategories } from './diagnostics.ts';
 import { markRefunds } from './refunds.ts';
 import { rescope, scopeCounts } from './scope.ts';
 import { markInternalTransfers, type TimeRange } from './transfers.ts';
+
+/** derived_state key of the category rules version the last full re-derivation used; no row = version 1. */
+const RULES_KEY = 'category_rules';
+
+/** True when the category rules changed since the last full re-derivation: the stored categories may be stale. */
+export async function rulesChanged(db: Db): Promise<boolean> {
+  const rs = await db.execute({ sql: 'SELECT value FROM derived_state WHERE key = ?', args: [RULES_KEY] });
+  const stored = rs.rows[0]?.value === undefined ? 1 : Number(rs.rows[0].value);
+  return stored !== CATEGORY_RULES_VERSION;
+}
 
 export async function rederiveCore(db: Db): Promise<string[]> {
   await markInternalTransfers(db);
@@ -17,6 +27,10 @@ export async function rederiveCore(db: Db): Promise<string[]> {
   await rescope(db);
   // Crossing to disabled accounts reads the transfer marks just made; nothing of it goes into the report.
   await rederiveCrossing(db);
+  await db.execute({
+    sql: 'INSERT INTO derived_state (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+    args: [RULES_KEY, String(CATEGORY_RULES_VERSION)],
+  });
 
   const d = await transferDiagnostics(db);
   const report = [

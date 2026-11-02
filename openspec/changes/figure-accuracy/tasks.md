@@ -2,15 +2,15 @@
 
 ## 1. Category rules version and transport MCCs
 
-- [ ] 1.1 `packages/core/src/derive/categories.ts`: map MCC 4111 and 4789 to `CATEGORY.transport`; add `CATEGORY_RULES_VERSION = 2` with a comment saying when to bump it
-- [ ] 1.2 `derive/rederive.ts`: `rederiveCore` records the version under `derived_state` key `category_rules`; export `rulesChanged(db)` (a missing row reads as version 1)
-- [ ] 1.3 Full pass on a new version: the end of an import in `apps/desktop/src/worker/run-import.ts` and the upload in `packages/core/src/ingest/statement-import.ts` add `rulesChanged` to their full-pass conditions
-- [ ] 1.4 Tests:
+- [x] 1.1 `packages/core/src/derive/categories.ts`: map MCC 4111 and 4789 to `CATEGORY.transport`; add `CATEGORY_RULES_VERSION = 2` with a comment saying when to bump it
+- [x] 1.2 `derive/rederive.ts`: `rederiveCore` records the version under `derived_state` key `category_rules`; export `rulesChanged(db)` (a missing row reads as version 1)
+- [x] 1.3 Full pass on a new version: the end of an import in `apps/desktop/src/worker/run-import.ts` and the upload in `packages/core/src/ingest/statement-import.ts` add `rulesChanged` to their full-pass conditions
+- [x] 1.4 Tests:
   - `tests/derive`: 4111 and 4789 → transport; a manual or payee category still wins;
   - `rulesChanged` before and after `rederiveCore`;
   - `apps/desktop/tests`: the worker runs `rederiveCore` once on an old version and spans the next time;
   - the upload does the same
-- [ ] 1.5 `.agents/project/domain-rules.md`: the rules version and when to bump it. `CHANGELOG.md` `## 0.1.14 — unreleased`: commuter transport and transport services are now «Taxi and transport»
+- [x] 1.5 `.agents/project/domain-rules.md`: the rules version and when to bump it. `CHANGELOG.md` `## 0.1.14 — unreleased`: commuter transport and transport services are now «Taxi and transport»
 
 ## 2. Pending holds as a spending filter (core)
 

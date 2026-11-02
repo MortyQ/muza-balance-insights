@@ -160,6 +160,12 @@
   tables hold bank text by reference or value: this database only, never the analysis copy. Tests:
   `tests/commands/categories.test.ts` (the same statement twice, an overlapping one, a full re-derivation).
 
+- **The category rules version** (`CATEGORY_RULES_VERSION` in `derive/categories.ts`, spec `core-derived-data`): bump
+  it with any change that can give a stored row another category (an MCC row, a keyword, a hint, a rule's order).
+  `rederiveCore` records it in `derived_state` (`category_rules`); `rulesChanged(db)` (`derive/rederive.ts`) compares,
+  a missing row reads as 1. The end of a desktop import and a statement upload run one full pass while it differs, so
+  stored categories catch up without a recategorize. 2: MCC 4111 and 4789 → «такси и транспорт».
+
 - В логах вместо маскированного номера карты писать тип и валюту счёта (например, `black/UAH`).
 
 ## План фазы 4 (пункты 1–2 готовы, 3–4 после фазы 5)

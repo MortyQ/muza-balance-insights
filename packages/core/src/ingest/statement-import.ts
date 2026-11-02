@@ -9,7 +9,7 @@ import { ConnectionError, parseConnectionMethod, parseProviderId } from '../peop
 import type { Db, Stmt } from '../storage/db.ts';
 import { storedId } from '../providers/ids.ts';
 import type { ParsedStatement, ProviderId } from '../providers/types.ts';
-import { rederiveCore } from '../derive/rederive.ts';
+import { rederiveCore, rulesChanged } from '../derive/rederive.ts';
 import { deriveCommitted, prepareRows } from './commit.ts';
 import { getSyncState, type Window } from './plan.ts';
 
@@ -312,9 +312,10 @@ export async function commitStatement(
   await db.batch(stmts);
 
   // The pass over the file's whole span is the incremental step. A full pass only when it failed, or when the file
-  // brought an IBAN or a card number: an IBAN lets the `iban` rule see rows of other accounts outside that span.
+  // brought an IBAN or a card number: an IBAN lets the `iban` rule see rows of other accounts outside that span. New
+  // category rules since the last full pass need one too.
   const whole: Window = { from: Math.min(...comparisons.map((c) => c.span.from)), to: Math.max(...comparisons.map((c) => c.span.to)) };
   const { derivationFailed } = await deriveCommitted(db, whole, accountIds.join(', '));
-  if (derivationFailed || brought) await rederiveCore(db);
+  if (derivationFailed || brought || (await rulesChanged(db))) await rederiveCore(db);
   return { added };
 }
