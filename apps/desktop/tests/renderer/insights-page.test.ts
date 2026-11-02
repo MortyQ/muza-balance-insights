@@ -30,6 +30,7 @@ const OVERVIEW: InsightsOverview = {
   period: { from: '2026-02-01', to: '2026-02-28', days: 28, coveredDays: 28, incomplete: false, dataUntil: '2026-02-28', pendingHolds: 2 },
   spent: 1_500_000,
   months: 5,
+  cashCounts: true,
   usual: { months: 5, from: '2025-09', to: '2026-01', total: 1_200_000, income: { now: 2_000_000, usual: 2_000_000 }, savings: { rate: 25, usual: 40 } },
   cards: [CAFES, GROCERIES],
   newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
@@ -129,7 +130,12 @@ describe('insights screen', () => {
     const basis = w.get('[data-test="insights-basis"]').text();
     expect(basis).toContain('медиана 5 целых месяцев');
     expect(basis).toContain('не учтено, пока банк их не проведёт: 2 операции');
+    expect(basis).not.toContain('Снятие наличных');
     w.unmount();
+    answer = { ...OVERVIEW, cashCounts: false };
+    const off = await mountPage();
+    expect(off.get('[data-test="insights-basis"]').text()).toContain('Снятие наличных не входит в траты');
+    off.unmount();
   });
 
   it('a forecast above a limit: its card by the overrun, with the forecast and per day, opening the budget; no calm line', async () => {

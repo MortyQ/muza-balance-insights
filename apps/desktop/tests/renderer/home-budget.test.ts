@@ -20,7 +20,7 @@ const BUDGET: NonNullable<LimitsOverview['budget']> = {
   result: null,
 };
 const OVERVIEW: LimitsOverview = {
-  month: '2026-11', today: '2026-11-10', current: true, budget: BUDGET, limits: [], savings: [], jars: [], suggestions: [],
+  month: '2026-11', today: '2026-11-10', current: true, cashCounts: true, budget: BUDGET, limits: [], savings: [], jars: [], suggestions: [],
   past: { months: [], byCategory: {}, total: [] }, kinds: [], rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
 };
 let answer: LimitsOverview = OVERVIEW;

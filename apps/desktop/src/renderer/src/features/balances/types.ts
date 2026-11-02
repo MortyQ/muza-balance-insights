@@ -112,6 +112,8 @@ export interface PaceView {
   usualByNow: number | null;
   /** Each bank's spending added up by day, the analytics answer's order; null on the same days as `spent`. */
   banks: Array<{ provider: string; spent: Array<number | null> }>;
+  /** Withdrawn in cash this month while it is not spending; null — it is, or nothing was withdrawn. */
+  cashWithdrawn: number | null;
 }
 
 /** «Month pace» split (spec desktop-spending-split): one line, or a stacked area per bank. */

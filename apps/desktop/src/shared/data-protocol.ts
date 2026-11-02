@@ -78,6 +78,8 @@ export type DataMethods = {
   categoryKinds: { args: []; result: CategoryKindView[] };
   setCategoryKind: { args: [CategoryKindQuery]; result: void };
   resetCategoryKinds: { args: [KindCategoryId | null]; result: void };
+  cashCounts: { args: []; result: boolean };
+  setCashCounts: { args: [boolean]; result: void };
   status: { args: []; result: DataStatus };
   lastSyncSec: { args: []; result: number | null };
   /** The import's connections: token ones only. */
@@ -169,6 +171,8 @@ export const DATA_ARG_SCHEMAS = {
   categoryKinds: ARG_SCHEMAS.getCategoryKinds,
   setCategoryKind: ARG_SCHEMAS.setCategoryKind,
   resetCategoryKinds: ARG_SCHEMAS.resetCategoryKinds,
+  cashCounts: ARG_SCHEMAS.getCashCounts,
+  setCashCounts: ARG_SCHEMAS.setCashCounts,
   status: none,
   lastSyncSec: none,
   tokenConnections: none,

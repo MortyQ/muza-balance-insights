@@ -9,6 +9,7 @@ import type { Db } from '../src/db.ts';
 import { openDb } from '../src/db.ts';
 import { displayCounterName, kyivStartOfDay } from '@mono/core/shared/format';
 import { createServer } from '../src/mcp/tools.ts';
+import { setSetting } from '@mono/core/people/settings';
 import { createMonoClient } from '@mono/core/providers/monobank/client';
 import { MCP_ROOT } from '../src/paths.ts';
 import { TEST_TOKEN, fakeClock, fakeMonobank, insertAccountRow, item, memoryDb } from '@mono/core/test-helpers';
@@ -124,6 +125,18 @@ describe('MCP tools (in-memory client)', () => {
     ]);
     expect(r.totals).toEqual([{ currency: 'UAH', lines: 2, gross: 1434.56, refunds: 0, net: 1434.56, net_per_day: 51.23, ...op(1434.56) }]);
     expect(r.notes.join('\n')).toMatch(/Последняя синхронизация 109 ч назад/);
+  });
+
+  it('spending_summary follows the cash setting: off, a withdrawal is not spending', async () => {
+    await db.execute({
+      sql: `INSERT INTO transactions (id, account_id, time, local_date, description, mcc, hold, amount, operation_amount, currency_code, category, scope, synced_at)
+            VALUES ('atm', 'black', ?, '2026-02-12', ?, 6010, 0, -50000, -50000, 980, 'наличные', 'personal', 0)`,
+      args: [kyivStartOfDay('2026-02-12') + 3600, CANARY.description],
+    });
+    const keys = async () => (await call('spending_summary', { from: '2026-02-01', to: '2026-02-28' })).groups.map((g: { key: string }) => g.key);
+    expect(await keys()).toContain('наличные');
+    await setSetting(db, 'cash_is_spending', 'off');
+    expect(await keys()).toEqual(['продукты', 'переводы людям']);
   });
 
   it('spending_summary rejects group_by "day" (an internal core value, not an MCP one)', async () => {

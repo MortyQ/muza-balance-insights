@@ -143,8 +143,8 @@ describe('rescope (DB pass)', () => {
 });
 
 describe('settings', () => {
-  it('defaults without rows: treasury_business on, reveal_full_names off', async () => {
-    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: false });
+  it('defaults without rows: treasury_business on, reveal_full_names off, cash_is_spending on', async () => {
+    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: false, cash_is_spending: true });
   });
 
   it('set validates key and value; the default value removes the row; turning treasury off re-scopes it', async () => {
@@ -161,7 +161,7 @@ describe('settings', () => {
     await setSetting(db, 'treasury_business', 'on');
     expect((await db.execute('SELECT COUNT(*) AS n FROM settings')).rows[0]?.n).toBe(0);
     await setSetting(db, 'reveal_full_names', 'on');
-    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: true });
+    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: true, cash_is_spending: true });
   });
 });
 

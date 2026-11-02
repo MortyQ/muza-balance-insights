@@ -135,6 +135,8 @@ export const ARG_SCHEMAS = {
   getCategoryKinds: z.tuple([]),
   setCategoryKind: z.tuple([z.strictObject({ categoryId: z.enum(KIND_CATEGORY_IDS), kind: z.enum(['essential', 'wants', 'savings']), fixed: z.boolean() })]),
   resetCategoryKinds: z.tuple([z.enum(KIND_CATEGORY_IDS).nullable()]),
+  getCashCounts: z.tuple([]),
+  setCashCounts: z.tuple([z.boolean()]),
   setRecurringMark: z.tuple([z.strictObject({ key: z.string().min(1).max(200), mark: z.enum(['mandatory', 'hidden']).nullable() })]),
   setOperationCategory: z.tuple([
     z.strictObject({ key: z.string().min(1).max(200), category: z.enum(CATEGORY_IDS).nullable(), payee: z.boolean() }),

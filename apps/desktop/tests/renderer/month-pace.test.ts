@@ -35,6 +35,7 @@ function month(
     usual,
     categories: [],
     rates: null,
+    cashWithdrawn: null,
     leftOut: [],
   };
 }
@@ -123,6 +124,13 @@ describe('PacePanel', () => {
     expect(figures[0]?.text()).toContain(fmt.money(15000));
     expect(figures[1]?.text()).toContain(fmt.money(12000));
     expect(w.find('[data-test="pace-no-usual"]').exists()).toBe(false);
+    expect(w.find('[data-test="pace-cash"]').exists()).toBe(false);
+  });
+
+  it('«Withdrawn in cash» while cash is not spending, with its hint; nothing withdrawn — not shown', () => {
+    const w = mountPanel(paceView({ ...month(['full', 'running'], [10000, 5000], null), cashWithdrawn: 250_000 }));
+    expect(w.get('[data-test="pace-cash"]').text()).toBe(`Снято наличными${fmt.money(250_000)}`);
+    expect(mountPanel(paceView({ ...month(['full', 'running'], [10000, 5000], null), cashWithdrawn: 0 })).find('[data-test="pace-cash"]').exists()).toBe(false);
   });
 
   it('without a usual month: only «spent» and the note', () => {

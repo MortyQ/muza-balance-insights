@@ -21,6 +21,7 @@ import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
 import { migrate, type Db } from '@mono/core/storage/db';
 import { refreshCrossing } from '@mono/core/derive/derived';
 import { listConnections, listParticipants } from '@mono/core/people/participants';
+import { getSettings, setSetting } from '@mono/core/people/settings';
 import type { ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
@@ -29,7 +30,7 @@ import { incomeSummary } from '@mono/core/read/income';
 import { detectInsights, insightSeverity, mainDriver, newPayees, oneOffs, payeeUsual, savingsRate } from '@mono/core/read/insights';
 import { FORECAST_FROM } from '@mono/core/read/limits';
 import { periodInfo } from '@mono/core/read/filters';
-import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
+import { cashWithdrawn, spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
 import { localDate, localDateTime, systemTimeZone } from '../shared/dates.ts';
 import { labelPending } from './people.ts';
@@ -687,6 +688,7 @@ export class DataService {
       period: { from, to, days, coveredDays, incomplete, dataUntil, pendingHolds },
       spent,
       months: usualMonths(q.month, status.dataFrom).length,
+      cashCounts: (await getSettings(db)).cash_is_spending,
       rates: today,
     };
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
@@ -1103,6 +1105,7 @@ export class DataService {
         const categoryId = CATEGORY_ID.get(r.category);
         return categoryId && categoryId !== 'family' && categoryId !== 'ownTransfers' && categoryId !== 'income' ? [{ categoryId, kind: r.kind, fixed: r.fixed, changed: r.changed }] : [];
       }),
+      cashCounts: (await getSettings(db)).cash_is_spending,
       rates: ratesView,
     };
   }
@@ -1193,6 +1196,15 @@ export class DataService {
 
   async setCategoryKind(q: CategoryKindQuery): Promise<void> {
     await setCategoryKind(await this.conn(), CATEGORY[q.categoryId], { kind: q.kind, fixed: q.fixed }, this.d.nowSec());
+  }
+
+  /** Whether cash withdrawals count as spending (core people/settings.ts). */
+  async cashCounts(): Promise<boolean> {
+    return (await getSettings(await this.conn())).cash_is_spending;
+  }
+
+  async setCashCounts(on: boolean): Promise<void> {
+    await setSetting(await this.conn(), 'cash_is_spending', on ? 'on' : 'off');
   }
 
   async resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void> {
@@ -1353,6 +1365,10 @@ export class DataService {
     });
     // Every category, a net-negative one too: the balances' «Spent».
     const spending = keys.map((_, i) => sum([...cur.net.values()].map((row) => row[i]!)));
+    // Cash withdrawals out of spending: the month block still shows what was withdrawn.
+    const cash = (await getSettings(db)).cash_is_spending
+      ? null
+      : sum((await cashWithdrawn(db, { ...period, ...filters }, now)).map((c) => toUah(c.net, c.currency, rates) ?? 0));
 
     let usual: number[] | null = null;
     if (unit === 'day') {
@@ -1383,6 +1399,7 @@ export class DataService {
       spendingByBank,
       totals: { income: sum(inc.values), spending: sum(spending), prev: prevTotals },
       compare,
+      cashWithdrawn: cash,
       usual,
       categories,
       rates: todayRates,

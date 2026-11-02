@@ -157,6 +157,7 @@ function basisLines(v: InsightsOverview): string[] {
     t('insights.basis.severity'),
     ...(v.period.incomplete ? [t('insights.basis.running')] : []),
     ...(v.period.pendingHolds > 0 ? [t('insights.basis.pending', v.period.pendingHolds)] : []),
+    ...(v.cashCounts ? [] : [t('insights.basis.cashOff')]),
   ];
 }
 

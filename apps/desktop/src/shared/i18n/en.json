@@ -560,7 +560,9 @@
           "splitHint": "Each bank's spending in its colour",
           "together": "Together",
           "banks": "By banks"
-        }
+        },
+        "cash": "Withdrawn in cash",
+        "cashHint": "Cash withdrawals are left out of spending. To count them again, turn on «Count cash withdrawals as spending» in Settings → «Categories»."
       },
       "freeLine": {
         "free": "Free",
@@ -970,7 +972,8 @@
       "threshold": "A change counts from 20% and 500 ₴ against the usual.",
       "severity": "Importance is the change's share of a usual month's spending: high from 10%, medium from 4%.",
       "running": "The month is still running: a category shows once it is past a whole usual month.",
-      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations"
+      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
+      "cashOff": "Cash withdrawals are left out of spending (Settings → «Categories»)."
     },
     "early": {
       "title": "Not enough history yet",
@@ -1452,7 +1455,10 @@
         "fixed": "Fixed is about the same amount every month: rent, phone, subscriptions.",
         "where": "«Insights» uses the kinds to show how much of your income goes to essentials, to wants and how much is left. Changes apply at once."
       },
-      "fixedOf": "Fixed: «{name}»"
+      "fixedOf": "Fixed: «{name}»",
+      "cash": "Count cash withdrawals as spending",
+      "cashHint": "Off: cash withdrawals leave spending, the budget, limits and Insights, as transfers between your own cards do. Home shows how much was withdrawn in the month.",
+      "notCounted": "not counted"
     }
   },
   "limits": {

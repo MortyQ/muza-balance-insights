@@ -68,28 +68,28 @@
 
 ## 6. Cash withdrawals switch
 
-- [ ] 6.1 `people/settings.ts`: the key `cash_is_spending` (default true)
-- [ ] 6.2 `read/spending.ts`:
+- [x] 6.1 `people/settings.ts`: the key `cash_is_spending` (default true)
+- [x] 6.2 `read/spending.ts`:
   - `spendingLinesSql` reads it and, while off, excludes the cash body as an internal transfer's (the commission line stays);
   - `cashWithdrawn(db, q, nowSec)` returns the net withdrawn per currency
-- [ ] 6.3 Tests in `tests/read`:
+- [x] 6.3 Tests in `tests/read`:
   - off removes cash from summary, grid, category lines and by person and by bank, and keeps the commission;
   - on equals today;
   - `cashWithdrawn`;
   - the bench again
-- [ ] 6.4 Desktop data and IPC:
+- [x] 6.4 Desktop data and IPC:
   - `cashCounts` / `setCashCounts` (the change event refreshes the read cache);
   - the month block's read gets `cashWithdrawn` (null while on);
   - the limit sheet does not offer «Cash» while off
-- [ ] 6.5 Renderer:
+- [x] 6.5 Renderer:
   - `features/settings/category-kinds`: the switch with its hint and the «not counted» mark on «Cash»;
   - `features/balances`: «Withdrawn in cash» with its tooltip;
   - `features/insights-page`: the note says cash is left out;
   - keys in three languages
-- [ ] 6.6 Tests:
+- [x] 6.6 Tests:
   - renderer: the switch, a failed save returning it, the figure shown only while off;
   - `apps/mcp`: the spending tool without cash while off
-- [ ] 6.7 `.agents/project/domain-rules.md`: the cash switch, MCP included. `CHANGELOG.md`: cash withdrawals can be left out of spending in «Categories»
+- [x] 6.7 `.agents/project/domain-rules.md`: the cash switch, MCP included. `CHANGELOG.md`: cash withdrawals can be left out of spending in «Categories»
 
 ## 7. Wrap-up
 

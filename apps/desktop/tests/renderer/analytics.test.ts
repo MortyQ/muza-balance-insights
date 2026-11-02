@@ -40,6 +40,7 @@ const RANGE: AnalyticsOverview = {
     cat('pets', [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], 48),
   ],
   rates: null,
+  cashWithdrawn: null,
   leftOut: [],
 };
 

@@ -23,7 +23,7 @@ const fig = (amount: number, spent: number, state: 'ok' | 'attention' | 'exceede
 });
 
 const OVERVIEW: LimitsOverview = {
-  month: '2026-03', today: '2026-03-15', current: true,
+  month: '2026-03', today: '2026-03-15', current: true, cashCounts: true,
   budget: {
     id: 1, owner: null, currency: 980, amountMinor: 5_000_000, total: 5_000_000,
     fixed: [
@@ -214,6 +214,22 @@ describe('the «Budget» screen', () => {
     const off = await mountScreen();
     expect(off.get('[data-test="budget-taxes-off"]').text()).toBe('Налоги в этом бюджете не учитываются.');
     off.unmount();
+  });
+
+  it('the limit sheet offers «Cash» only while cash withdrawals count as spending', async () => {
+    const offered = async () => {
+      const w = await mountScreen();
+      await w.get('[data-test="limit-add"]').trigger('click');
+      await flushPromises();
+      const { default: LimitSheet } = await import('@/features/limits-goals/components/LimitSheet.vue');
+      const select = w.findComponent(LimitSheet).findAllComponents({ name: 'VSelect' })[0]!;
+      const values = (select.props('options') as Array<{ value: string }>).map((o) => o.value);
+      w.unmount();
+      return values;
+    };
+    expect(await offered()).toContain('cash');
+    answer = { ...OVERVIEW, cashCounts: false };
+    expect(await offered()).not.toContain('cash');
   });
 
   it('a failed save keeps the sheet open and says so', async () => {

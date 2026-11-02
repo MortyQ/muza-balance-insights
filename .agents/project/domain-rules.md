@@ -270,6 +270,12 @@
   `RESYNC_OVERLAP_SEC`, the same ones `pendingHolds` counts; `'pending'` keeps only them (their commission and fee lines
   ride along), so final + pending = all. Needs `nowSec` (`spendingSummary`, `spendingGrid`). The desktop reads limits,
   the budget and the Insights month with `'final'` and shows the pending part apart; «Spending» keeps `'all'`.
+- **Cash withdrawals as spending** (`cash_is_spending` in `people/settings.ts`, on by default; spec
+  `core-cash-withdrawals`): off, `spendingLinesSql` excludes the body of every «наличные» line as it does an internal
+  one, the commission line stays — so every spending read follows: home, analytics, budget, limits, kinds and 50/30/20,
+  the usual months, the detectors, and the MCP tools too (`settings:*` lists the key). `cashWithdrawn` (`read/spending.ts`)
+  gives the net withdrawn per currency whatever the setting, for the desktop's month block. The desktop changes it in
+  «Categories» (IPC `getCashCounts` / `setCashCounts`); no re-derivation, the categories stay as stored.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
 - `incomeLines` (`packages/core/src/read/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`

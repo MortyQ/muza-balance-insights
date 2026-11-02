@@ -21,6 +21,10 @@ English interface.
 
 ### Categories
 
+- **Cash withdrawals: spending or not, your choice.** Settings → «Categories» has a «Count cash withdrawals as spending»
+  switch, on as before. Turn it off and money you take out of an ATM no longer counts as spending anywhere — not in
+  «Spending», «Analytics», the budget, limits or «Insights» — just as moving money between your own cards does not; the
+  ATM fee still counts. «Month pace» on home then shows how much you withdrew in the month.
 - **Commuter transport.** Metro, suburban trains and other transport services now land in «Taxi and transport»
   instead of «Other». Operations you already have are re-sorted once, at the next download.
 

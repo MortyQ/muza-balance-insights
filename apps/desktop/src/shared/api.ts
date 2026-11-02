@@ -299,6 +299,10 @@ export type BalanceApi = {
   setCategoryKind(q: CategoryKindQuery): Promise<void>;
   /** Back to the default: one category, or all with null. */
   resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void>;
+  /** Whether cash withdrawals count as spending (core `cash_is_spending`, on by default). */
+  getCashCounts(): Promise<boolean>;
+  /** Off: every spending figure leaves cash withdrawals out. The caller reloads. */
+  setCashCounts(on: boolean): Promise<void>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -512,6 +516,8 @@ export type InsightsOverview = {
   spent: number;
   /** Whole months before the shown one that the data covers (0 … 6), for the «too little history» notice. */
   months: number;
+  /** Cash withdrawals count as spending (core `cash_is_spending`). */
+  cashCounts: boolean;
   usual: {
     months: number;
     /** Oldest and newest usual month, YYYY-MM. */
@@ -809,6 +815,8 @@ export type LimitsOverview = {
   today: string;
   /** The shown month is the current one: day and week limits and the pace only then. */
   current: boolean;
+  /** Cash withdrawals count as spending; off — «Cash» is not offered for a new limit. */
+  cashCounts: boolean;
   budget: MonthBudgetView | null;
   limits: CategoryLimitView[];
   savings: SavingGoalView[];
@@ -1062,6 +1070,8 @@ export type AnalyticsOverview = {
   usual: number[] | null;
   /** Spending categories of either period: this period's ranking first (net > 0, net desc), then the others by `prev`. */
   categories: AnalyticsCategory[];
+  /** Withdrawn in cash over the range while withdrawals do not count as spending (hryvnia kopecks); null while they do. */
+  cashWithdrawn: number | null;
   rates: RatesView | null;
   /** Account currencies left out (no rate today). */
   leftOut: number[];

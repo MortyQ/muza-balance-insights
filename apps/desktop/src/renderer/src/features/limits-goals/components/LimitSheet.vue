@@ -46,7 +46,11 @@ watch(
 );
 
 const categories = computed<VSelectOption[]>(() =>
-  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees').map((id) => ({ label: nameOf(id), value: id })),
+  // «Cash» only while withdrawals count as spending (a limit already on it stays choosable).
+  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && (id !== 'cash' || overview.cashCounts || category.value === 'cash')).map((id) => ({
+    label: nameOf(id),
+    value: id,
+  })),
 );
 const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
 const periods = computed(() => (['day', 'week', 'month'] as const).map((p) => ({ value: p, label: t(`limits.period.${p}`) })));

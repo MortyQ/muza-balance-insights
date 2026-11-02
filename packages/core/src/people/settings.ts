@@ -1,5 +1,5 @@
-// User settings (table settings). Changed only by the user via scripts/settings.ts; read by the scope pass
-// and, in phase 5, by the MCP tools. Only non-default values are stored.
+// User settings (table settings). Changed by the user via scripts/settings.ts or the desktop (cash_is_spending); read
+// by the scope pass, the spending reads and, in phase 5, by the MCP tools. Only non-default values are stored.
 import type { Db } from '../storage/db.ts';
 
 export const SETTING_DEFAULTS = {
@@ -7,6 +7,11 @@ export const SETTING_DEFAULTS = {
   treasury_business: true,
   /** Tool outputs show full counter_name instead of the mask «О. Т.». Never a tool parameter. */
   reveal_full_names: false,
+  /**
+   * Cash withdrawals («наличные») count as spending. Off: every spending read leaves them out like own transfers
+   * (read/spending.ts); the desktop's «Categories» section changes it.
+   */
+  cash_is_spending: true,
 } as const;
 
 export type SettingKey = keyof typeof SETTING_DEFAULTS;
