@@ -10,6 +10,7 @@ import {
   accountWhere,
   CATEGORY_SQL,
   excludedTransferSql,
+  holdsWhere,
   labelsById,
   perDay,
   periodInfo,
@@ -109,7 +110,7 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket,
  * participant_id (the account owner's, only when grouped by participant, else NULL), provider (the account's bank, only
  * with `byProvider`, else NULL; a fee line keeps its debit row's account, so it is the sending bank's). The caller
- * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
+ * keeps SPENDING_LINE_SQL. `holds` other than 'all' needs `nowSec` (filters.ts `holdsWhere`). With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
  * `buckets`), else NULL. The buckets are the outer loop of a range join (CROSS JOIN fixes the order), so each one is an
  * index range on `time` (idx_tx_time: per account it would be one seek per account and bucket) and no row looks its
  * bucket up among all of them. `base` is MATERIALIZED: `lines` reads it
@@ -119,6 +120,7 @@ export async function spendingLinesSql(
   db: Db,
   q: Period & SpendingFilters & { groupBy?: SpendingGroupBy; byProvider?: boolean },
   unit: 'day' | 'month' | null = null,
+  nowSec?: number,
 ): Promise<{ sql: string; args: Array<string | number> }> {
   // With buckets the period is their union, and only their bounds may reach the time index: given the period's bounds
   // too, SQLite takes those, and every bucket walks the whole period.
@@ -127,6 +129,7 @@ export async function spendingLinesSql(
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
+  holdsWhere(q.holds, nowSec, where, args);
   accountWhere(q, where, args);
   const byPerson = q.groupBy === 'participant';
   const byProvider = q.byProvider === true;
@@ -183,7 +186,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
 
   // Day and month keys come from the zone's own day starts (periods.ts): SQLite knows no time zones.
   const unit = groupBy === 'day' ? 'day' : groupBy === 'month' ? 'month' : null;
-  const from = await spendingLinesSql(db, q, unit);
+  const from = await spendingLinesSql(db, q, unit, nowSec);
   const rs = await db.execute({
     sql: `${from.sql}
           SELECT currency, ${KEY_SQL[groupBy]} AS k, COUNT(*) AS lines,
@@ -267,7 +270,7 @@ export async function spendingGrid(
   if (q.unit !== 'day' && q.unit !== 'month') throw new SummaryError(`unit: day | month, получено «${String(q.unit)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
-  const from = await spendingLinesSql(db, q, q.unit);
+  const from = await spendingLinesSql(db, q, q.unit, nowSec);
   const rs = await db.execute({
     sql: `${from.sql}
           SELECT currency, bucket AS b, category, provider,

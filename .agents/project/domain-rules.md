@@ -264,6 +264,11 @@
   в будущем) и среднее в день. «Последний sync» — наименее свежий `newest_synced_time` среди счетов;
   среднее делится на полностью покрытые дни (день sync не считается, если синк не дошёл до его конца).
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
+- **Pending holds in a spending read** (`SpendingFilters.holds`, `holdsWhere` in `read/filters.ts`; spec
+  `core-spending-limits`): `'all'` (default) counts every operation; `'final'` leaves out the holds of the last
+  `RESYNC_OVERLAP_SEC`, the same ones `pendingHolds` counts; `'pending'` keeps only them (their commission and fee lines
+  ride along), so final + pending = all. Needs `nowSec` (`spendingSummary`, `spendingGrid`). The desktop reads limits,
+  the budget and the Insights month with `'final'` and shows the pending part apart; «Spending» keeps `'all'`.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
 - `incomeLines` (`packages/core/src/read/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`

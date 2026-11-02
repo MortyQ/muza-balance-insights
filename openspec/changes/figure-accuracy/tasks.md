@@ -14,13 +14,13 @@
 
 ## 2. Pending holds as a spending filter (core)
 
-- [ ] 2.1 `read/filters.ts`: `holds?: 'all' | 'final' | 'pending'` in `SpendingFilters`, validated; `read/spending.ts`: `spendingLinesSql` takes `nowSec` and applies it with the `RESYNC_OVERLAP_SEC` window; every caller passes `nowSec`
-- [ ] 2.2 Tests in `tests/read`:
+- [x] 2.1 `read/filters.ts`: `holds?: 'all' | 'final' | 'pending'` in `SpendingFilters`, validated; `read/spending.ts`: `spendingLinesSql` takes `nowSec` and applies it with the `RESYNC_OVERLAP_SEC` window; every caller passes `nowSec`
+- [x] 2.2 Tests in `tests/read`:
   - `'final'` leaves out today's hold and keeps a 5-day-old one;
   - `'pending'` returns only the fresh ones, with their commissions;
   - `'all'` equals today's numbers;
   - the bench is run and compared with `bench/budgets.ts`
-- [ ] 2.3 `.agents/project/domain-rules.md`: limits and the Insights month count without pending holds
+- [x] 2.3 `.agents/project/domain-rules.md`: limits and the Insights month count without pending holds
 
 ## 3. Limits, budget and Insights without pending holds (desktop)
 
