@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { LimitBar, LimitStateChip } from '@/entities/goal';
+import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VIcon } from '@/shared/ui';
 import { useHomeBudget } from './composables/useHomeBudget.ts';
 
@@ -48,6 +48,7 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
         </div>
         <LimitBar :fill="row.flexible.fill" :pace="row.flexible.pace" :state="row.flexible.state" />
         <span v-if="row.flexible.paceText" class="text-xs text-foreground-muted tabular-nums">{{ row.flexible.paceText }}</span>
+        <PendingNote v-if="row.flexible.pending" :note="row.flexible.pending" />
       </div>
       <div class="flex min-w-0 flex-col gap-0.5" data-test="home-budget-day">
         <template v-if="row.perDay">

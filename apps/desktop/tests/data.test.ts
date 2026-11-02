@@ -39,15 +39,17 @@ type TxOpts = {
   rule?: 'pair' | 'pair_fx';
   /** A transfer between two participants: transfer_rule = family, not internal (the core's marking). */
   family?: boolean;
+  /** A hold the bank has not finalised (hold = 1). */
+  hold?: boolean;
 };
 
 async function tx(accountId: string, date: string, amount: number, category: string, o: TxOpts = {}) {
   await db.execute({
     sql: `INSERT INTO transactions (id, account_id, time, local_date, description, counter_name, mcc, hold, amount, operation_amount,
             currency_code, commission_rate, balance, category, is_internal_transfer, transfer_rule, scope, is_cancelled, synced_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, 0)`,
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, (SELECT currency_code FROM accounts WHERE id = ?)), ?, ?, ?, ?, ?, ?, 0, 0)`,
     args: [
-      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, amount, o.op?.amount ?? amount,
+      `t${++seq}`, accountId, kyivStartOfDay(date) + 3600, date, o.description ?? CANARIES[1]!, CANARIES[0]!, o.mcc ?? 5411, o.hold ? 1 : 0, amount, o.op?.amount ?? amount,
       o.op?.currency ?? null, accountId, o.commission ?? 0, o.balance ?? null, category, o.rule ? 1 : 0, o.rule ?? (o.family ? 'family' : null), o.scope ?? 'personal',
     ],
   });
@@ -1002,7 +1004,7 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect(v).toMatchObject({ month: '2026-03', today: '2026-03-15', current: true });
     expect(v.limits.map((l) => [l.categoryId, l.period, l.figures?.state])).toEqual([['groceries', 'week', 'exceeded'], ['cafes', 'month', 'attention']]);
     expect(v.limits[1]!.figures).toEqual({
-      amount: 200_000, spent: 190_000, left: 10_000, percent: 95, expected: 96_774, forecast: 392_667, perDay: 588, daysPassed: 15, days: 31, daysLeft: 17, state: 'attention',
+      amount: 200_000, spent: 190_000, left: 10_000, percent: 95, expected: 96_774, forecast: 392_667, perDay: 588, daysPassed: 15, days: 31, daysLeft: 17, state: 'attention', pending: null,
     });
     expect(v.limits[0]!.figures).toMatchObject({ spent: 30_000, daysPassed: 7, days: 7, perDay: 0 });
   });
@@ -1053,6 +1055,17 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     // March: cafes 190 000 personal (the 60 000 business payment left out) against 150 000; groceries within.
     const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
     expect(v.limitsOver).toEqual([{ categoryId: 'cafes', amount: 150_000, spent: 190_000, over: 40_000, severity: expect.any(String) }]);
+  });
+
+  it('a pending hold from today: left out of the limit and the budget, given apart; no «Limit exceeded» for it', async () => {
+    await tx('uah', '2026-03-15', -20_000, 'кафе и рестораны', { hold: true });
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 300_000, participantId: null, fixed: [] });
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 190_000, state: 'attention', pending: { count: 1, amount: 20_000 } });
+    expect(v.budget!.flexible).toMatchObject({ spent: 1_250_000 + 220_000, pending: { count: 1, amount: 20_000 } });
+    // With the hold the cafes would be 210 000 of 200 000: the feed waits for the bank.
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([]);
   });
 
   it('a person sees their limits and the family\'s; delete; a second limit of a kind is refused', async () => {

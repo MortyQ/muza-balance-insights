@@ -24,17 +24,17 @@
 
 ## 3. Limits, budget and Insights without pending holds (desktop)
 
-- [ ] 3.1 `apps/desktop/src/data/data.ts`:
+- [x] 3.1 `apps/desktop/src/data/data.ts`:
   - `limitsOverview` reads its grids with `holds: 'final'`, and a `'pending'` grid for the counts and amounts per owner and period;
   - `limitsOverOf` and the Insights and home «What's unusual» month read use `'final'`;
   - `shared/api.ts`: `pending: { count, amount } | null` on `LimitFiguresView`
-- [ ] 3.2 `apps/desktop/src/data/limits.ts`: `limitView` and `budgetView` carry the pending figures (the budget's from its flexible categories)
-- [ ] 3.3 `entities/goal/components/PendingNote.vue`: «+ N pending, X» with its tooltip; shown on the «Budget» screen (budget and limits), home's «Budget» row and the category screen's limit bar; keys in `uk` / `en` / `ru`
-- [ ] 3.4 `features/insights-page`: the «How it was counted» note says pending holds are left out and how many; keys in three languages
-- [ ] 3.5 Tests:
+- [x] 3.2 `apps/desktop/src/data/limits.ts`: `limitView` and `budgetView` carry the pending figures (the budget's from its flexible categories)
+- [x] 3.3 `entities/goal/components/PendingNote.vue`: «+ N pending, X» with its tooltip; shown on the «Budget» screen (budget and limits), home's «Budget» row and the category screen's limit bar; keys in `uk` / `en` / `ru`
+- [x] 3.4 `features/insights-page`: the «How it was counted» note says pending holds are left out and how many; keys in three languages
+- [x] 3.5 Tests:
   - `apps/desktop/tests`: a hold from today leaves a limit's spent amount and no «Limit exceeded» card, and is in `pending`;
   - renderer tests for the note on the three places and for its absence without holds
-- [ ] 3.6 `CHANGELOG.md`: pending payments no longer count towards limits, the budget and Insights until the bank finalises them
+- [x] 3.6 `CHANGELOG.md`: pending payments no longer count towards limits, the budget and Insights until the bank finalises them
 
 ## 4. «Forecast above the limit» in the Insights feed
 

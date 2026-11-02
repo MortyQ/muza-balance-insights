@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
-import { LimitBar, LimitStateChip } from '@/entities/goal';
+import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VIcon } from '@/shared/ui';
 import type { AttentionLimitView } from '../types.ts';
 
@@ -20,7 +20,10 @@ const { limits, to } = defineProps<{ limits: ReadonlyArray<AttentionLimitView>; 
           <span class="tabular-nums">{{ l.look.spentOf }}</span>
         </div>
         <LimitBar :fill="l.look.fill" :pace="l.look.pace" :state="l.look.state" />
-        <LimitStateChip :state="l.look.state" :text="l.look.stateText" />
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <LimitStateChip :state="l.look.state" :text="l.look.stateText" />
+          <PendingNote v-if="l.look.pending" :note="l.look.pending" />
+        </div>
       </li>
     </ul>
     <RouterLink :to class="mt-auto text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-border-focus">{{ $t('home.budget.allLimits') }}</RouterLink>

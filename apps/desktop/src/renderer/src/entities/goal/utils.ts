@@ -41,6 +41,9 @@ export function limitLook(f: LimitFiguresView, money: Money, running: boolean): 
       ? t('entities.goal.paceLine', { expected: money.money(f.expected), forecast: money.money(f.forecast) })
       : '',
     perDay: money.money(f.perDay),
+    pending: f.pending
+      ? { text: t('entities.goal.pending', { n: f.pending.count, amount: money.money(f.pending.amount) }, f.pending.count), hint: t('entities.goal.pendingHint') }
+      : null,
     help: {
       perDay: {
         title: t('entities.goal.help.perDayTitle'),

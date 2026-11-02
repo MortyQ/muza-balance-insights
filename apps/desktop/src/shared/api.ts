@@ -734,6 +734,8 @@ export type LimitFiguresView = {
   days: number;
   daysLeft: number;
   state: LimitStateName;
+  /** Pending holds left out of `spent` (the bank may still change them); null — none. */
+  pending: { count: number; amount: number } | null;
 };
 
 /** A category limit; `figures` null — no rate for its currency. `owner` null — the family's. */

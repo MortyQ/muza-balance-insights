@@ -423,7 +423,14 @@ export class DataService {
     const { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds } = head.period;
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     const usual = found?.usual ?? null;
-    const insights = usual ? insightsOf(usual, categories) : null;
+    // «What's unusual» counts the month without pending holds, as the Insights screen does.
+    const settled =
+      usual && pendingHolds > 0
+        ? rankedCategories(foldByCategory(await spendingSummary(db, { ...period, tz, groupBy: 'category', scope: q.scope, holds: 'final', ...viewOf(q) }, now), rates).byCategory).map(
+            ([category, a]) => ({ category, net: a.net }),
+          )
+        : categories;
+    const insights = usual ? insightsOf(usual, settled) : null;
     return {
       month: q.month,
       period: { from, to, days, incomplete, dataUntil, coveredDays, pendingHolds },
@@ -541,7 +548,7 @@ export class DataService {
     const tz = systemTimeZone();
     const sumsOf = new Map<number | null, Sums>();
     for (const o of new Set(goals.map((g) => g.participantId))) {
-      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
+      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', holds: 'final', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
       sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
     }
     const out: LimitOverView[] = [];
@@ -650,7 +657,8 @@ export class DataService {
     const today = await this.d.rates();
     const rates = rateMap(today);
     const filters = { tz, scope: q.scope, ...viewOf(q) };
-    const head = await spendingSummary(db, { ...monthBounds(q.month), ...filters, groupBy: 'category' }, now);
+    // The month without pending holds (spec desktop-insights-page): an insight does not come and go with them.
+    const head = await spendingSummary(db, { ...monthBounds(q.month), ...filters, holds: 'final', groupBy: 'category' }, now);
     const cur = foldByCategory(head, rates).byCategory;
     const spent = [...cur.values()].reduce((s, a) => s + a.net, 0);
     const { from, to, days, coveredDays, incomplete, dataUntil, pendingHolds } = head.period;
@@ -1015,10 +1023,18 @@ export class DataService {
     const from = current ? (monday < bounds.from ? monday : bounds.from) : bounds.from;
     const to = current ? today : bounds.to;
     const sumsOf = async (owner: number | null): Promise<OwnerSums> => {
-      const grid = await spendingGrid(db, { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) }, now);
-      const fold = (a: string, b: string): Sums =>
-        new Map([...foldByCategory(cellGroups(grid.cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory].map(([k, v]) => [k, v.net]));
-      return { day: fold(today, today), week: fold(monday, today), month: fold(bounds.from, to) };
+      const q = { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) } as const;
+      const grid = await spendingGrid(db, { ...q, holds: 'final' }, now);
+      const held = await spendingGrid(db, { ...q, holds: 'pending' }, now);
+      const fold = (cells: readonly SpendingCell[], a: string, b: string) =>
+        foldByCategory(cellGroups(cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory;
+      const net = (a: string, b: string): Sums => new Map([...fold(grid.cells, a, b)].map(([k, v]) => [k, v.net]));
+      return {
+        day: net(today, today),
+        week: net(monday, today),
+        month: net(bounds.from, to),
+        pending: { day: fold(held.cells, today, today), week: fold(held.cells, monday, today), month: fold(held.cells, bounds.from, to) },
+      };
     };
     const owners = [...new Set(goals.filter((g) => g.type !== 'saving').map((g) => g.participantId))];
     const sums = new Map<number | null, OwnerSums>();
@@ -1031,7 +1047,8 @@ export class DataService {
     const budgets = goals.filter((g) => g.type === 'budget');
     const own = q.participantId === undefined ? null : q.participantId;
     const b = budgets.find((g) => g.participantId === own) ?? budgets.find((g) => g.participantId === null) ?? null;
-    const budget = b && b.type === 'budget' ? budgetView(b, idOf, sums.get(b.participantId)!.month, kinds, pos('month'), current, rates) : null;
+    const budgetSums = b ? sums.get(b.participantId) : undefined;
+    const budget = b && b.type === 'budget' && budgetSums ? budgetView(b, idOf, budgetSums.month, kinds, pos('month'), current, rates, budgetSums.pending.month) : null;
 
     const { dataFrom } = await this.status();
     const months = usualMonths(month, dataFrom);

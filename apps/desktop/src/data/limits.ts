@@ -16,8 +16,28 @@ export const SUGGESTIONS_MAX = 5;
 
 /** Category word → net spending, kopecks. */
 export type Sums = ReadonlyMap<string, number>;
-/** One owner's spending of today, this week and the shown month (a past month: the month only). */
-export type OwnerSums = { day: Sums; week: Sums; month: Sums };
+/** Category word → the pending holds' net and how many operations (core `holds: 'pending'`). */
+export type PendingSums = ReadonlyMap<string, { net: number; purchases: number }>;
+/**
+ * One owner's spending of today, this week and the shown month (a past month: the month only), pending holds left
+ * out, and the pending holds of the same periods apart.
+ */
+export type OwnerSums = { day: Sums; week: Sums; month: Sums; pending: { day: PendingSums; week: PendingSums; month: PendingSums } };
+
+export const NO_PENDING: PendingSums = new Map();
+
+/** The pending holds of some categories: their amount and count (fee lines add to the amount, not the count); null — none. */
+export function pendingOf(p: PendingSums, words: Iterable<string>): { count: number; amount: number } | null {
+  let count = 0;
+  let amount = 0;
+  for (const w of words) {
+    const a = p.get(w);
+    if (!a) continue;
+    amount += a.net;
+    if (w !== CATEGORY.fees && w !== CATEGORY.transferFees) count += a.purchases;
+  }
+  return amount > 0 ? { count: Math.max(1, count), amount } : null;
+}
 
 /** Where today stands in a period: days passed (today counted) and days in it. A past month: all of it. */
 export function periodPosition(period: LimitPeriod, today: string, month: string, current: boolean): { daysPassed: number; days: number } {
@@ -27,9 +47,15 @@ export function periodPosition(period: LimitPeriod, today: string, month: string
   return { daysPassed: current ? Number(today.slice(8, 10)) : days, days };
 }
 
-export function figures(amount: number, spent: number, period: LimitPeriod, pos: { daysPassed: number; days: number }): LimitFiguresView {
+export function figures(
+  amount: number,
+  spent: number,
+  period: LimitPeriod,
+  pos: { daysPassed: number; days: number },
+  pending: { count: number; amount: number } | null = null,
+): LimitFiguresView {
   const f = limitState({ amount, spent, ...pos, period });
-  return { amount, ...f, daysPassed: pos.daysPassed, days: pos.days };
+  return { amount, ...f, daysPassed: pos.daysPassed, days: pos.days, pending };
 }
 
 const sum = (s: Sums, words: Iterable<string>) => [...words].reduce((a, w) => a + (s.get(w) ?? 0), 0);
@@ -50,7 +76,7 @@ export function limitView(
     owner: g.participantId,
     currency: g.currency,
     amountMinor: g.amount,
-    figures: amount === null ? null : figures(amount, sums[g.period].get(g.category) ?? 0, g.period, pos(g.period)),
+    figures: amount === null ? null : figures(amount, sums[g.period].get(g.category) ?? 0, g.period, pos(g.period), pendingOf(sums.pending[g.period], [g.category])),
   };
 }
 
@@ -63,6 +89,7 @@ export function budgetView(
   pos: { daysPassed: number; days: number },
   current: boolean,
   rates: ReadonlyMap<number, FxRate>,
+  pending: PendingSums = NO_PENDING,
 ): MonthBudgetView | null {
   const total = toUah(g.amount, g.currency, rates);
   if (total === null) return null;
@@ -83,7 +110,7 @@ export function budgetView(
     fixedTotal: parts.fixedTotal,
     fixedPaid,
     fixedTakesAll: parts.fixedTakesAll,
-    flexible: figures(parts.flexibleAmount, parts.flexibleSpent, 'month', pos),
+    flexible: figures(parts.flexibleAmount, parts.flexibleSpent, 'month', pos, pendingOf(pending, flexibleWords)),
     result: current ? null : { within: left >= 0, left },
   };
 }

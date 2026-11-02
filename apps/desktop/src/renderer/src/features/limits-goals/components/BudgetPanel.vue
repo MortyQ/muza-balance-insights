@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LimitBar, LimitStateChip } from '@/entities/goal';
+import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VButton, VCard, VHelpHint, VIcon } from '@/shared/ui';
 import type { BudgetPanelView } from '../types.ts';
 
@@ -59,6 +59,7 @@ const PAID_ICON = { yes: 'lucide:check', part: 'lucide:clock', no: 'lucide:minus
                 <p v-for="(line, i) in panel.flexible.help.perDay.lines" :key="i">{{ line }}</p>
               </VHelpHint>
             </span>
+            <PendingNote v-if="panel.flexible.pending" :note="panel.flexible.pending" />
           </div>
         </section>
       </div>

@@ -5,6 +5,13 @@ English interface.
 
 ## 0.1.14 — unreleased
 
+### Budget and Insights
+
+- **Pending payments wait.** A payment the bank has not finalised yet no longer counts towards your limits, the monthly
+  budget, «Insights» and «What's unusual» on home, so a limit no longer turns red over a payment that may still be
+  cancelled. Next to each limit and the budget a quiet note says how many payments are pending and for how much. They
+  count once the bank finalises them. «Spending» still includes them, as your bank balance does.
+
 ### Categories
 
 - **Commuter transport.** Metro, suburban trains and other transport services now land in «Taxi and transport»

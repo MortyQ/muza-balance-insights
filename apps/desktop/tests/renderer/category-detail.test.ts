@@ -333,7 +333,7 @@ const LIMITS = {
   past: { months: [], byCategory: {}, total: [] },
   limits: [{
     id: 1, categoryId: 'transport', period: 'month', owner: null, currency: 980, amountMinor: 200_000,
-    figures: { amount: 200_000, spent: 150_000, left: 50_000, percent: 75, expected: 100_000, forecast: 300_000, perDay: 3_125, daysPassed: 15, days: 30, daysLeft: 16, state: 'attention' },
+    figures: { amount: 200_000, spent: 150_000, left: 50_000, percent: 75, expected: 100_000, forecast: 300_000, perDay: 3_125, daysPassed: 15, days: 30, daysLeft: 16, state: 'attention', pending: null },
   }],
 };
 let limits: unknown = LIMITS;
@@ -409,7 +409,14 @@ describe('category screen mounted', () => {
     expect(bar.exists()).toBe(true);
     expect(bar.text()).toContain('Прогноз выше лимита');
     expect(bar.find('[data-test="pace-marker"]').exists()).toBe(true);
+    expect(bar.find('[data-test="pending-note"]').exists()).toBe(false);
     w.unmount();
+    // A hold from today: left out of the bar, said apart.
+    limits = { ...LIMITS, limits: [{ ...LIMITS.limits[0]!, figures: { ...LIMITS.limits[0]!.figures, pending: { count: 1, amount: 40_000 } } }] };
+    const held = await mountScreen();
+    expect(held.get('[data-test="category-limit"] [data-test="pending-note"]').text()).toBe(`+ 1 в ожидании, ${uah(40_000)}`);
+    held.unmount();
+    limits = LIMITS;
     current = { ...VIEW, thisMonth: '2026-10' };
     const past = await mountScreen();
     expect(past.find('[data-test="category-limit"]').exists()).toBe(false);

@@ -436,7 +436,9 @@
         "forecast": "If you keep spending as so far, how much you will have spent by the end of the period.",
         "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
-      }
+      },
+      "pending": "+ {n} pending, {amount} | + {n} pending, {amount} | + {n} pending, {amount}",
+      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do."
     }
   },
   "header": {
@@ -838,7 +840,7 @@
       },
       "months": "{n} month | {n} months | {n} months",
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
-      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations",
+      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
       "all": "All insights"
     },
     "budget": {
@@ -968,7 +970,7 @@
       "threshold": "A change counts from 20% and 500 ₴ against the usual.",
       "severity": "Importance is the change's share of a usual month's spending: high from 10%, medium from 4%.",
       "running": "The month is still running: a category shows once it is past a whole usual month.",
-      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations"
+      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations"
     },
     "early": {
       "title": "Not enough history yet",

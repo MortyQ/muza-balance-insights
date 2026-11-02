@@ -24,5 +24,7 @@ export interface LimitLook {
   /** «197 € planned by today · forecast 690 €»; '' for a day limit or a past month. */
   paceText: string;
   perDay: string;
+  /** «+ 2 pending, 650 ₴» and its hint: holds left out of the figures; null — none. */
+  pending: { text: string; hint: string } | null;
   help: { perDay: GoalHelp; expected: GoalHelp | null; forecast: GoalHelp | null };
 }

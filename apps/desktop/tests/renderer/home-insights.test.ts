@@ -69,7 +69,7 @@ describe('home insights block', () => {
     ]);
     expect(w.get('[data-test="savings-line"]').text()).toBe('Осталось от дохода34%обычно 37%');
     expect(w.get('[data-test="insights-note"]').text()).toContain('медиана за 5 месяцев');
-    expect(w.get('[data-test="insights-note"]').text()).toContain('Ещё в обработке банком и учтено: 2 операции');
+    expect(w.get('[data-test="insights-note"]').text()).toContain('Ещё в обработке банком и не учтено, пока банк их не проведёт: 2 операции');
     await rows[0]!.trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'cafes' }, query: { scope: 'personal' } });

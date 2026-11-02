@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { LimitBar, LimitStateChip } from '@/entities/goal';
+import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { budgetLink } from '@/shared/config';
 import type { CategoryLimitView } from '../composables/useCategoryLimit.ts';
 
@@ -20,6 +20,7 @@ const { view } = defineProps<{ view: CategoryLimitView }>();
       <p class="text-xs text-foreground-muted tabular-nums">
         <template v-if="l.look.paceText">{{ l.look.paceText }} · </template>{{ $t('limits.perDay', { amount: l.look.perDay }) }}
       </p>
+      <PendingNote v-if="l.look.pending" :note="l.look.pending" class="self-start" />
     </div>
     <RouterLink :to="budgetLink()" class="self-start text-sm font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-border-focus" data-test="category-limit-link">
       {{ view.limits.length > 0 ? $t('category.limit.edit') : view.suggestion ? $t('category.limit.setUsual', { amount: view.suggestion }) : $t('category.limit.set') }}

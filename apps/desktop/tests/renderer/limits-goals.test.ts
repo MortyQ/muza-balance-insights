@@ -19,7 +19,7 @@ const inputOf = (root: ParentNode, test: string): HTMLInputElement => {
 const uah = (k: number) => plain(formatMoney(k, 980));
 const fig = (amount: number, spent: number, state: 'ok' | 'attention' | 'exceeded', extra = {}) => ({
   amount, spent, left: amount - spent, percent: Math.round((spent / amount) * 100), expected: Math.round((amount * 15) / 31),
-  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, ...extra,
+  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, pending: null, ...extra,
 });
 
 const OVERVIEW: LimitsOverview = {
@@ -138,6 +138,20 @@ describe('the «Budget» screen', () => {
     const rows = w.findAll('[data-test="limit-row"]');
     expect(rows.map((r) => r.get('[data-test="limit-state"]').text())).toEqual([`Превышено на ${formatMoney(10_000, 980)}`, 'В темпе']);
     expect(rows[0]!.text()).toContain('неделя (пн–вс)');
+    w.unmount();
+  });
+
+  it('pending holds: a quiet note on the row and on the budget, none where nothing is pending', async () => {
+    answer = {
+      ...OVERVIEW,
+      budget: { ...OVERVIEW.budget!, flexible: { ...OVERVIEW.budget!.flexible, pending: { count: 2, amount: 65_000 } } },
+      limits: [OVERVIEW.limits[0]!, { ...OVERVIEW.limits[1]!, figures: fig(400_000, 100_000, 'ok', { pending: { count: 1, amount: 60_000 } }) }],
+    };
+    const w = await mountScreen();
+    const rows = w.findAll('[data-test="limit-row"]');
+    expect(rows[0]!.find('[data-test="pending-note"]').exists()).toBe(false);
+    expect(plain(rows[1]!.get('[data-test="pending-note"]').text())).toBe(`+ 1 в ожидании, ${uah(60_000)}`);
+    expect(plain(w.get('[data-test="budget-panel"] [data-test="pending-note"]').text())).toBe(`+ 2 в ожидании, ${uah(65_000)}`);
     w.unmount();
   });
 
