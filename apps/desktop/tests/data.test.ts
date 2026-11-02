@@ -1022,6 +1022,20 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect(feb.result).toEqual({ within: true, left: 4_550_000 });
   });
 
+  it('a budget that does not count taxes: they leave its flexible part, «Spending» keeps them', async () => {
+    await tx('uah', '2026-03-05', -70_000, 'налоги и госплатежи');
+    await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }] });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: true, flexible: { spent: 290_000 } });
+    const id = (await svc.limitsOverview({ month: '2026-03' })).budget!.id;
+    await svc.saveGoal(id, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }], countTaxes: false });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: false, flexible: { spent: 220_000 } });
+    const spending = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(spending.categories.find((c) => c.category === 'налоги и госплатежи')?.net).toBe(70_000);
+    // Off and a taxes fixed row: refused, the budget unchanged.
+    await expect(svc.saveGoal(id, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'taxes', amount: 70_000 }], countTaxes: false })).rejects.toThrow();
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget!.fixed.map((r) => r.categoryId)).toEqual(['rent']);
+  });
+
   it('suggestions from the usual months: flexible categories without a monthly limit, largest first', async () => {
     expect((await svc.limitsOverview({ month: '2026-03' })).suggestions).toEqual([{ categoryId: 'cafes', amount: 400_000 }, { categoryId: 'groceries', amount: 50_000 }]);
     await svc.addSuggestedLimits({});

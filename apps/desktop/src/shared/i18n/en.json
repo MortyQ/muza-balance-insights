@@ -1495,7 +1495,8 @@
       "takesAll": "Fixed costs take the whole budget.",
       "emptyTitle": "No monthly budget yet",
       "emptyText": "One amount for everything; fixed costs are set aside first, the rest is shown by day.",
-      "create": "Set a budget"
+      "create": "Set a budget",
+      "taxesOff": "Taxes are not counted in this budget."
     },
     "suggest": {
       "text": "This is what usually goes in a month. Set limits at that level?",
@@ -1542,7 +1543,9 @@
       "takesAll": "Fixed costs take the whole budget. Raise the amount or check the list.",
       "noFixedWarn": "Rent and other must-pay costs will eat into the flexible part. Add them as fixed costs if you have them.",
       "pastTitle": "Flexible spending in past months",
-      "saveBudget": "Save the budget"
+      "saveBudget": "Save the budget",
+      "countTaxes": "Count taxes",
+      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure»."
     },
     "goals": {
       "title": "Savings goals",

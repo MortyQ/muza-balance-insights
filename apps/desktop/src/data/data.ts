@@ -1161,7 +1161,7 @@ export class DataService {
       p.type === 'limit'
         ? { type: 'limit', category: CATEGORY[p.categoryId], period: p.period, currency: p.currency, amount: p.amount, participantId: p.participantId }
         : p.type === 'budget'
-          ? { type: 'budget', currency: p.currency, amount: p.amount, participantId: p.participantId, fixed: p.fixed.map((r) => ({ category: CATEGORY[r.categoryId], amount: r.amount })) }
+          ? { type: 'budget', currency: p.currency, amount: p.amount, participantId: p.participantId, fixed: p.fixed.map((r) => ({ category: CATEGORY[r.categoryId], amount: r.amount })), countTaxes: p.countTaxes ?? true }
           : { ...p };
     const db = await this.conn();
     if (id === null) await addGoal(db, g, this.d.nowSec());

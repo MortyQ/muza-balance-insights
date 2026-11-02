@@ -50,21 +50,21 @@
 
 ## 5. «Count taxes» in the monthly budget
 
-- [ ] 5.1 `packages/core/src/storage/migrations/v21.ts`: `goals.count_taxes` (default 1, CHECK 0/1), with a comment saying why; appended to `storage/migrations.ts`
-- [ ] 5.2 `read/goals.ts`: `countTaxes` on `BudgetInput`, read and written; refuse a taxes fixed row while it is false
-- [ ] 5.3 `apps/desktop/src/data/limits.ts`:
+- [x] 5.1 `packages/core/src/storage/migrations/v21.ts`: `goals.count_taxes` (default 1, CHECK 0/1), with a comment saying why; appended to `storage/migrations.ts`
+- [x] 5.2 `read/goals.ts`: `countTaxes` on `BudgetInput`, read and written; refuse a taxes fixed row while it is false
+- [x] 5.3 `apps/desktop/src/data/limits.ts`:
   - `budgetView` leaves taxes out of the flexible words while it is off;
   - the IPC goal input accepts `countTaxes` (`ipc-args.ts`), defaulting to true
-- [ ] 5.4 `features/limits-goals`, the budget sheet:
+- [x] 5.4 `features/limits-goals`, the budget sheet:
   - the «Count taxes» switch with its hint;
   - off: drops taxes from the preview and from «Add a fixed cost» choices, and removes a listed taxes row;
   - the «Budget» screen says when taxes are not counted;
   - keys in three languages
-- [ ] 5.5 Tests:
+- [x] 5.5 Tests:
   - core: the migration, a refusal, an old budget reading `countTaxes: true`;
   - desktop: the flexible part without taxes, while «Spending» and 50/30/20 keep them;
   - the sheet's behaviour
-- [ ] 5.6 `CHANGELOG.md`: a budget can leave taxes out
+- [x] 5.6 `CHANGELOG.md`: a budget can leave taxes out
 
 ## 6. Cash withdrawals switch
 

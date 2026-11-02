@@ -15,6 +15,9 @@ English interface.
   pace will take over its amount: the forecast for the month's end, how much over it would be and how much a day keeps
   you within. It shows only in the current month, once its first quarter has passed, so a few early payments do not
   raise it.
+- **A budget without taxes.** The monthly budget sheet has a «Count taxes» switch. Turn it off when you set taxes
+  aside apart from your budget: taxes and government payments then stay out of the budget, and cannot be one of its
+  fixed costs. «Spending» and «Budget structure» still count them.
 
 ### Categories
 

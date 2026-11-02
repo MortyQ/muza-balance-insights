@@ -237,7 +237,8 @@
   or the family, null); one per category, period and owner; at most `LIMITS_MAX` limits and `SAVINGS_MAX` goals. The
   monthly budget is one total and its own fixed rows (`goal_fixed`: a category and the amount the user typed — nothing
   is filled in): `budgetParts` sets the rows aside at their amounts, the rest is the flexible part, counted against
-  every category neither in the rows nor of the savings kind, plus what a row spent above its amount. The «Fixed» flag
+  every category neither in the rows nor of the savings kind (nor taxes while `count_taxes` is off — migration v21; then
+  taxes cannot be a row), plus what a row spent above its amount. The «Fixed» flag
   of the kinds does not change the budget. `limitState` (`read/limits.ts`) — spent, left, per cent, expected by today,
   the forecast (none for a day limit), per day (left ÷ days left, today counted), the state: exceeded above the amount,
   attention from `ATTENTION_SHARE` (80%) or a forecast over the amount once `FORECAST_FROM` (a quarter) of the period

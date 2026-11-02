@@ -45,6 +45,7 @@ const PAID_ICON = { yes: 'lucide:check', part: 'lucide:clock', no: 'lucide:minus
             <span v-else class="text-sm font-semibold" :class="panel.result.within ? 'text-success' : 'text-danger'" data-test="budget-result">{{ panel.result.text }}</span>
           </div>
           <p class="text-2xl font-extrabold tabular-nums">{{ panel.flexible.spentOf }}</p>
+          <p v-if="panel.taxesNote" class="text-xs text-foreground-muted" data-test="budget-taxes-off">{{ panel.taxesNote }}</p>
           <LimitBar :fill="panel.flexible.fill" :pace="panel.flexible.pace" :state="panel.flexible.state" thick />
           <div v-if="!panel.result" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted tabular-nums">
             <span v-if="panel.flexible.paceText" class="flex items-center gap-1">

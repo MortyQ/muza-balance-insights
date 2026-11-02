@@ -51,6 +51,7 @@ export function budgetPanel(b: MonthBudgetView, month: string, current: boolean,
             : t('limits.budget.over', { amount: fmt.money(-b.result.left) }),
         }
       : null,
+    taxesNote: b.countTaxes ? null : t('limits.budget.taxesOff'),
     help: {
       title: t('limits.budget.helpTitle'),
       lines: [

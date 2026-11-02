@@ -30,7 +30,7 @@ const OVERVIEW: LimitsOverview = {
       { categoryId: 'rent', amountMinor: 1_250_000, amount: 1_250_000, paid: 1_250_000 },
       { categoryId: 'utilities', amountMinor: 110_000, amount: 110_000, paid: 0 },
     ],
-    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false,
+    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false, countTaxes: true,
     flexible: fig(3_640_000, 2_300_000, 'attention'), result: null,
   },
   limits: [
@@ -187,6 +187,33 @@ describe('the «Budget» screen', () => {
     const save = () => sheet().querySelector<HTMLButtonElement>('[data-test="budget-save"]')!;
     expect(save().disabled).toBe(false);
     w.unmount();
+  });
+
+  it('«Count taxes»: off drops a taxes row and its choice, is saved with the budget, and the panel says so', async () => {
+    answer = {
+      ...OVERVIEW,
+      budget: { ...OVERVIEW.budget!, fixed: [...OVERVIEW.budget!.fixed, { categoryId: 'taxes', amountMinor: 50_000, amount: 50_000, paid: 0 }] },
+    };
+    const w = await mountScreen();
+    expect(w.find('[data-test="budget-taxes-off"]').exists()).toBe(false);
+    await w.get('[data-test="budget-edit"]').trigger('click');
+    await flushPromises();
+    const sheet = document.querySelector('[data-test="budget-sheet"]')!;
+    const names = () => [...sheet.querySelectorAll('[data-test="fixed-input"]')].map((r) => r.textContent?.trim() ?? '');
+    expect(names().some((n) => n.startsWith('Налоги'))).toBe(true);
+    const sw = sheet.querySelector<HTMLInputElement>('[data-test="budget-count-taxes"]')!;
+    expect(sw.checked).toBe(true);
+    sw.click();
+    await flushPromises();
+    expect(names().some((n) => n.startsWith('Налоги'))).toBe(false);
+    sheet.querySelector<HTMLButtonElement>('[data-test="budget-save"]')!.click();
+    await flushPromises();
+    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', countTaxes: false, fixed: [{ categoryId: 'rent', amount: 1_250_000 }, { categoryId: 'utilities', amount: 110_000 }] }));
+    w.unmount();
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, countTaxes: false } };
+    const off = await mountScreen();
+    expect(off.get('[data-test="budget-taxes-off"]').text()).toBe('Налоги в этом бюджете не учитываются.');
+    off.unmount();
   });
 
   it('a failed save keeps the sheet open and says so', async () => {
