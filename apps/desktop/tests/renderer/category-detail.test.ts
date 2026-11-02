@@ -208,6 +208,9 @@ describe('category screen helpers', () => {
     expect(lineRows(LINES, { merchant: null, query: 'аэро', sort: 'date' }, PEOPLE, FMT).rows).toHaveLength(0);
     expect(lineRows(LINES, { merchant: null, query: 'аеро', sort: 'date' }, PEOPLE, FMT).rows.map((r) => r.key)).toEqual(['a']);
     expect(lineRows(LINES, { merchant: null, query: '640', sort: 'date' }, PEOPLE, FMT).rows.map((r) => r.key)).toEqual(['a']);
+    // A cancellation («Скасування. …») stays with its merchant when the list is filtered by it.
+    const cancel = { ...LINES.find((l) => l.key === 'd')!, key: 'x', merchant: 'Скасування. Imaginary Bus', amount: 5_000, uah: 5_000, refund: true };
+    expect(lineRows([cancel, ...LINES], { merchant: 'imaginary bus', query: '', sort: 'date' }, PEOPLE, FMT).rows.map((r) => r.key)).toContain('x');
   });
 
   it('a month without lines says so', () => {

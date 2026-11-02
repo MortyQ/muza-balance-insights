@@ -25,6 +25,9 @@ English interface.
 
 ### Categories
 
+- **Cancelled purchases count against their shop.** A refund the bank labels as a cancellation («Скасування. …») now
+  lowers its shop in a category's «Where» and in «Insights» instead of vanishing: a 26 € ticket with 20 € returned shows
+  as 6 €, no longer as 26 € and over 100% of the category.
 - **Cash withdrawals: spending or not, your choice.** Settings → «Categories» has a «Count cash withdrawals as spending»
   switch, on as before. Turn it off and money you take out of an ATM no longer counts as spending anywhere — not in
   «Spending», «Analytics», the budget, limits or «Insights» — just as moving money between your own cards does not; the

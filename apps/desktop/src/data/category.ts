@@ -1,6 +1,7 @@
 // Pure helpers of the category and income screens in main (DataService.categoryOverview / incomeOverview): the bank's
 // text made fit for the screen, and what the screen counts from the lines (where, who; «When» the screen counts itself).
 import type { CategoryLineView, CategoryOverview, IncomeAmounts, IncomeLineView, IncomeOverview, IncomeSourceId, SpendingAmounts } from '../shared/api.ts';
+import { payeeKey } from '../shared/payee.ts';
 import { byRegistry } from './spending.ts';
 
 /** A masked card number (6 digits, stars, 4 digits) anywhere in the text. */
@@ -17,8 +18,8 @@ export function merchantText(description: string, jarTitles: Iterable<string>): 
   return d.replace(CARD_PAN, '•• $1');
 }
 
-/** Merchants are told apart case- and space-insensitively. */
-export const merchantKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
+/** Merchants are told apart case- and space-insensitively; a cancellation («Скасування. …») goes to its merchant. */
+export const merchantKey = payeeKey;
 
 /** A line that is spending (a purchase or a commission), not a refund. */
 export const isSpending = (l: Pick<CategoryLineView, 'amount'>): boolean => l.amount < 0;
@@ -63,7 +64,8 @@ export function lineStats(lines: readonly CategoryLineView[], people: readonly n
     const m = merchants.get(key) ?? { net: 0, purchases: 0, spellings: new Map<string, number>() };
     m.net += net;
     m.purchases += spend ? 1 : 0;
-    m.spellings.set(l.merchant, (m.spellings.get(l.merchant) ?? 0) + 1);
+    // A refund's text («Скасування. …») never names the merchant while a purchase can.
+    if (spend || !m.spellings.size) m.spellings.set(l.merchant, (m.spellings.get(l.merchant) ?? 0) + (spend ? 1 : 0));
     merchants.set(key, m);
     if (spend) {
       spent.push(-l.uah);
@@ -73,7 +75,7 @@ export function lineStats(lines: readonly CategoryLineView[], people: readonly n
     if (l.cashback > 0) (cashback += l.cashback), (cashbackLines += 1);
   }
 
-  // The most frequent spelling names a merchant; a tie → the first seen (lines come newest first).
+  // The most frequent spelling among purchases names a merchant; a tie → the first seen (lines come newest first).
   const name = (spellings: Map<string, number>) => [...spellings].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
   return {
     merchants: [...merchants.values()]

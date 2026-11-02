@@ -35,6 +35,18 @@ describe('lineStats', () => {
     expect(s.people).toEqual([{ participantId: 1, net: 2_500, purchases: 1 }, { participantId: 2, net: 1_000, purchases: 1 }]);
     expect(s).toMatchObject({ median: 2_000, activeDays: 2, largest: 'a', cashback: 30, cashbackLines: 1 });
   });
+  it('a partial cancellation («Скасування. …», newest first) lowers its merchant, named by the purchase', () => {
+    const s = lineStats(
+      [
+        line({ key: 'r', uah: 2_000, amount: 2_000, refund: true, merchant: 'Скасування. Vigadana Zaliznytsia' }),
+        line({ key: 'p', uah: -2_600, merchant: 'Vigadana Zaliznytsia' }),
+        line({ key: 't', uah: -1_100 }),
+      ],
+      null,
+    );
+    expect(s.merchants).toEqual([{ name: 'Vigadane Taxi', net: 1_100, purchases: 1 }, { name: 'Vigadana Zaliznytsia', net: 600, purchases: 1 }]);
+    expect(merchantKey('Скасування. Vigadana Zaliznytsia')).toBe(merchantKey('vigadana zaliznytsia'));
+  });
   it('no people asked → none; no spending → no median or largest', () => {
     expect(lineStats([], null)).toMatchObject({ people: [], banks: [], median: null, largest: null, activeDays: 0 });
   });
