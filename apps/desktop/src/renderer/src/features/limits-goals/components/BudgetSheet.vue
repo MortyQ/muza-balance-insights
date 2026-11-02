@@ -5,13 +5,13 @@ import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES } from '@contract/allowance.ts';
 import { KIND_CATEGORY_IDS, type KindCategoryId } from '@contract/categories.ts';
 import { goalMinor } from '@/entities/goal';
 import { currencySymbol, formatMoney, t } from '@/shared/lib';
-import { VButton, VInput, VSelect, VSheet, type VSelectOption } from '@/shared/ui';
+import { VButton, VInput, VSelect, VSheet, VSwitch, type VSelectOption } from '@/shared/ui';
 import type { SheetStart } from '../types.ts';
 import { nameOf, pastFlexible, usualTotal } from '../utils.ts';
 import PastBars from './PastBars.vue';
 
 // The monthly budget in one sheet: one total for all spending, the user's own fixed costs (a category and the amount
-// they type, nothing filled in), whose; beside the form, the live result — the total, each fixed row taken off, the
+// they type, nothing filled in), whether taxes count, whose; beside the form, the live result — the total, each fixed row taken off, the
 // flexible part and its average per day, and the past months' flexible spending against it.
 const { start, overview, owners, failed = false } = defineProps<{
   start: SheetStart | null;
@@ -27,6 +27,7 @@ const total = ref('');
 const currency = ref<GoalCurrency>(980);
 const rows = ref<Array<{ categoryId: KindCategoryId; amount: string }>>([]);
 const owner = ref<number | string>(FAMILY);
+const countTaxes = ref(true);
 const adding = ref<KindCategoryId | null>(null);
 const confirming = ref(false);
 
@@ -38,6 +39,7 @@ watch(
     currency.value = s.goal.currency;
     rows.value = s.goal.fixed.map((r) => ({ categoryId: r.categoryId, amount: String(r.amount / 100) }));
     owner.value = s.goal.participantId ?? FAMILY;
+    countTaxes.value = s.goal.countTaxes ?? true;
     confirming.value = false;
   },
   { immediate: true },
@@ -49,10 +51,15 @@ watch(adding, (id) => {
   adding.value = null;
 });
 
+// Taxes left out: they cannot be a fixed cost either.
+watch(countTaxes, (on) => {
+  if (!on) rows.value = rows.value.filter((r) => r.categoryId !== 'taxes');
+});
+
 const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
 const ownerOptions = computed<VSelectOption[]>(() => [...owners.map((p) => ({ label: p.name, value: p.id })), { label: t('limits.owner.family'), value: FAMILY }]);
 const free = computed<VSelectOption[]>(() =>
-  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),
+  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && (countTaxes.value || id !== 'taxes') && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),
 );
 
 const totalMinor = computed(() => goalMinor(total.value, RESERVE_AMOUNT_MAX));
@@ -62,7 +69,7 @@ const flexibleMinor = computed(() => (totalMinor.value === null ? null : totalMi
 const complete = computed(() => totalMinor.value !== null && rowMinor.value.every((m) => m !== null));
 const usual = computed(() => usualTotal(overview, currency.value));
 const chips = computed(() => (usual.value ? [usual.value, Math.round(usual.value * 0.9), Math.round(usual.value * 0.8)] : []));
-const past = computed(() => pastFlexible(overview, rows.value.map((r) => r.categoryId), currency.value));
+const past = computed(() => pastFlexible(overview, [...rows.value.map((r) => r.categoryId), ...(countTaxes.value ? [] : ['taxes' as const])], currency.value));
 const money = (minor: number) => formatMoney(minor, currency.value);
 const signed = (minor: number) => `${minor < 0 ? '−' : ''}${money(Math.abs(minor))}`;
 
@@ -74,6 +81,7 @@ function save() {
     amount: totalMinor.value,
     participantId: typeof owner.value === 'number' ? owner.value : null,
     fixed: rows.value.map((r, i) => ({ categoryId: r.categoryId, amount: rowMinor.value[i]! })),
+    countTaxes: countTaxes.value,
   });
 }
 </script>
@@ -109,6 +117,14 @@ function save() {
         </ul>
         <VSelect v-model="adding" :options="free" :placeholder="$t('limits.sheet.addFixed')" :label="$t('limits.sheet.addFixed')" data-test="fixed-add" />
       </section>
+
+      <div class="flex items-start justify-between gap-3">
+        <label for="budget-count-taxes" class="flex min-w-0 flex-col gap-0.5">
+          <span class="text-sm font-semibold">{{ $t('limits.sheet.countTaxes') }}</span>
+          <span class="text-xs text-foreground-muted">{{ $t('limits.sheet.countTaxesHint') }}</span>
+        </label>
+        <VSwitch id="budget-count-taxes" v-model="countTaxes" role="switch" data-test="budget-count-taxes" />
+      </div>
 
       <VSelect v-if="owners.length > 0" v-model="owner" :options="ownerOptions" :label="$t('limits.sheet.owner')" />
 

@@ -34,7 +34,7 @@ function editBudget() {
   if (!b) return;
   start.value = {
     id: b.id,
-    goal: { type: 'budget', currency: b.currency, amount: b.amountMinor, participantId: b.owner, fixed: b.fixed.map((r) => ({ categoryId: r.categoryId, amount: r.amountMinor })) },
+    goal: { type: 'budget', currency: b.currency, amount: b.amountMinor, participantId: b.owner, fixed: b.fixed.map((r) => ({ categoryId: r.categoryId, amount: r.amountMinor })), countTaxes: b.countTaxes },
   };
   failed.value = false;
   sheet.value = 'budget';

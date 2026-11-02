@@ -56,6 +56,8 @@ export class DataHost {
       categoryKinds: () => data.categoryKinds(),
       setCategoryKind: (q) => data.setCategoryKind(q),
       resetCategoryKinds: (c) => data.resetCategoryKinds(c),
+      cashCounts: () => data.cashCounts(),
+      setCashCounts: (on) => data.setCashCounts(on),
       status: () => data.status(),
       lastSyncSec: () => data.lastSyncSec(),
       tokenConnections: () => data.connections(),

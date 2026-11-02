@@ -30,11 +30,13 @@ const OVERVIEW: InsightsOverview = {
   period: { from: '2026-02-01', to: '2026-02-28', days: 28, coveredDays: 28, incomplete: false, dataUntil: '2026-02-28', pendingHolds: 2 },
   spent: 1_500_000,
   months: 5,
+  cashCounts: true,
   usual: { months: 5, from: '2025-09', to: '2026-01', total: 1_200_000, income: { now: 2_000_000, usual: 2_000_000 }, savings: { rate: 25, usual: 40 } },
   cards: [CAFES, GROCERIES],
   newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
   oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000 }],
   limitsOver: [],
+  limitsAhead: [],
   budget: {
     month: {
       income: 2_000_000, essential: 900_000, wants: 500_000, savings: 100_000, fixed: 760_000, debt: 160_000,
@@ -127,8 +129,35 @@ describe('insights screen', () => {
     expect(oneOff).toContain('4 000 ₴');
     const basis = w.get('[data-test="insights-basis"]').text();
     expect(basis).toContain('медиана 5 целых месяцев');
-    expect(basis).toContain('учтено: 2 операции');
+    expect(basis).toContain('не учтено, пока банк их не проведёт: 2 операции');
+    expect(basis).not.toContain('Снятие наличных');
     w.unmount();
+    answer = { ...OVERVIEW, cashCounts: false };
+    const off = await mountPage();
+    expect(off.get('[data-test="insights-basis"]').text()).toContain('Снятие наличных не входит в траты');
+    off.unmount();
+  });
+
+  it('a forecast above a limit: its card by the overrun, with the forecast and per day, opening the budget; no calm line', async () => {
+    answer = {
+      ...OVERVIEW,
+      limitsAhead: [{ categoryId: null, amount: 3_000_000, spent: 1_900_000, forecast: 3_100_000, over: 100_000, perDay: 70_000, severity: 'medium' }],
+    };
+    const w = await mountPage();
+    // 100 000 over: after the cafes' +300 000, before the groceries' −60 000.
+    const cards = w.findAll('article');
+    expect(cards).toHaveLength(3);
+    const ahead = cards[1]!;
+    expect(ahead.text()).toContain('Прогноз выше лимита: бюджет на гибкие траты');
+    expect(plain(ahead.text())).toContain(
+      `В таком темпе месяц закончится на ${plain(formatMoney(3_100_000, 980))} при лимите ${plain(formatMoney(3_000_000, 980))}. Чтобы уложиться, тратьте не больше ${plain(formatMoney(70_000, 980))} в день.`,
+    );
+    expect(ahead.get('[data-test="insight-open"]').text()).toContain('Открыть бюджет');
+    w.unmount();
+    answer = { ...OVERVIEW, cards: [], limitsAhead: answer.limitsAhead };
+    const only = await mountPage();
+    expect(only.find('[data-test="insights-calm"]').exists()).toBe(false);
+    only.unmount();
   });
 
   it('nothing unusual: a calm line; empty side lists say so', async () => {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { VChart } from '@/shared/ui';
+import { VChart, VTooltip } from '@/shared/ui';
 import type { PaceBank, PaceSplit, PaceView } from '../types.ts';
 import { paceChartOption, paceLegend } from '../utils.ts';
 import PaceLegend from './PaceLegend.vue';
@@ -44,6 +44,12 @@ const legend = computed(() => paceLegend(view, banks));
       <div v-if="view.usualByNow !== null" data-test="pace-figure">
         <div class="text-xs text-foreground-muted">{{ $t(view.running ? 'home.balances.pace.usualByNow' : 'home.balances.pace.usualMonth') }}</div>
         <div class="font-bold tabular-nums">{{ fmt.money(view.usualByNow) }}</div>
+      </div>
+      <div v-if="view.cashWithdrawn !== null" data-test="pace-cash">
+        <VTooltip :text="$t('home.balances.pace.cashHint')" placement="top">
+          <div class="text-xs text-foreground-muted underline decoration-dotted underline-offset-2" tabindex="0">{{ $t('home.balances.pace.cash') }}</div>
+        </VTooltip>
+        <div class="font-bold tabular-nums">{{ fmt.money(view.cashWithdrawn) }}</div>
       </div>
     </div>
     <p v-if="view.usual === null" class="text-xs text-foreground-muted" data-test="pace-no-usual">{{ $t('home.balances.pace.noUsual') }}</p>

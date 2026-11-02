@@ -1,4 +1,4 @@
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, type Ref } from 'vue';
 import type { CategoryKindView } from '@contract/api.ts';
 import type { KindCategoryId } from '@contract/categories.ts';
 import { useSyncStatusStore } from '@/entities/sync-status';
@@ -11,7 +11,7 @@ import { kindRows } from '../utils.ts';
  * The «Categories» section: every category's kind and fixed flag. A change shows at once and is rolled back with a
  * message if main could not save it; after a save the data status refreshes, so the screens that use kinds reload.
  */
-export function useCategoryKinds(): UseCategoryKindsReturn {
+export function useCategoryKinds(cashCounts: Readonly<Ref<boolean | null>>): UseCategoryKindsReturn {
   const request = useCategoryKindsRequest();
   const syncStatus = useSyncStatusStore();
   const kinds = ref<CategoryKindView[] | null>(null);
@@ -43,7 +43,7 @@ export function useCategoryKinds(): UseCategoryKindsReturn {
   }
 
   return {
-    rows: computed(() => (kinds.value ? kindRows(kinds.value) : null)),
+    rows: computed(() => (kinds.value ? kindRows(kinds.value, cashCounts.value !== false) : null)),
     anyChanged: computed(() => kinds.value?.some((k) => k.changed) ?? false),
     error,
     change,

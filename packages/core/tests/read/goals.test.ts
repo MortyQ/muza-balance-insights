@@ -13,7 +13,7 @@ beforeEach(async () => {
 afterEach(() => db.close());
 
 const CAFES: GoalInput = { type: 'limit', category: CATEGORY.cafes, period: 'month', currency: 980, amount: 400_000, participantId: null };
-const BUDGET: GoalInput = { type: 'budget', currency: 978, amount: 200_000, participantId: null, fixed: [{ category: CATEGORY.rent, amount: 125_000 }] };
+const BUDGET: GoalInput = { type: 'budget', currency: 978, amount: 200_000, participantId: null, fixed: [{ category: CATEGORY.rent, amount: 125_000 }], countTaxes: true };
 
 describe('goals', () => {
   it('add, list oldest first with the budget\'s rows, change, delete', async () => {
@@ -54,6 +54,8 @@ describe('goals', () => {
       { ...CAFES, participantId: 99 },
       { ...BUDGET, fixed: [{ category: CATEGORY.rent, amount: 0 }] },
       { ...BUDGET, fixed: [{ category: CATEGORY.rent, amount: 1 }, { category: CATEGORY.rent, amount: 2 }] },
+      { ...BUDGET, countTaxes: false, fixed: [{ category: CATEGORY.taxes, amount: 1 }] },
+      { ...BUDGET, countTaxes: undefined as never },
       { type: 'saving', name: ' ', currency: 980, amount: 1, participantId: null, until: null, source: 'own', accountId: null },
       { type: 'saving', name: 'x', currency: 980, amount: 1, participantId: null, until: '2026-02-30', source: 'own', accountId: null },
       { type: 'saving', name: 'x', currency: 980, amount: 1, participantId: null, until: null, source: 'jar', accountId: 'nope' },
@@ -65,6 +67,18 @@ describe('goals', () => {
 
   it('the table refuses what the code would: a limit without a period', async () => {
     await expect(db.execute(`INSERT INTO goals (type, category, currency, amount, created_at) VALUES ('limit', 'кафе и рестораны', 980, 1, 1)`)).rejects.toThrow();
+  });
+
+  it('«count taxes»: kept with the budget; a budget saved before the choice existed counts them', async () => {
+    const b = await addGoal(db, { ...BUDGET, countTaxes: false }, 1);
+    expect((await listGoals(db))[0]).toMatchObject({ id: b.id, countTaxes: false });
+    await updateGoal(db, b.id, { ...BUDGET, countTaxes: true, fixed: [{ category: CATEGORY.taxes, amount: 10_000 }] });
+    expect((await listGoals(db))[0]).toMatchObject({ countTaxes: true, fixed: [{ category: CATEGORY.taxes, amount: 10_000 }] });
+    // A row written as v20 wrote it (another owner's budget): no count_taxes given, the column's default.
+    const p = Number((await db.execute(`INSERT INTO participants (label, label_source, created_at) VALUES ('Вигадана Особа', 'user', 0) RETURNING id`)).rows[0]?.id);
+    await db.execute({ sql: `INSERT INTO goals (type, period, currency, amount, participant_id, created_at) VALUES ('budget', 'month', 980, 1000, ?, 2)`, args: [p] });
+    expect((await listGoals(db))[1]).toMatchObject({ type: 'budget', countTaxes: true });
+    await expect(db.execute(`UPDATE goals SET count_taxes = 2`)).rejects.toThrow();
   });
 
   it('a goal keeps its type; an unknown id is refused', async () => {

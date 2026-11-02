@@ -20,6 +20,7 @@ export type CachedRead = (typeof CACHED_READS)[number];
 export const PASS_THROUGH = [
   'listPeople',
   'getCategoryKinds',
+  'getCashCounts',
   'listConnectionAccounts',
   'openStatement',
   'openUpload',
@@ -78,6 +79,7 @@ export const WRITES = [
   'saveGoal',
   'deleteGoal',
   'addSuggestedLimits',
+  'setCashCounts',
   'deleteAllData',
   'startOver',
 ] as const satisfies ReadonlyArray<Method>;

@@ -2,6 +2,7 @@
 // minor units of the ACCOUNT currency; different currencies are never summed. No counterparty names or descriptions.
 import { CATEGORY } from '../derive/categories.ts';
 import { parseProviderId } from '../people/connections.ts';
+import { getSettings } from '../people/settings.ts';
 import type { ProviderId } from '../providers/types.ts';
 import type { Db } from '../storage/db.ts';
 import { currencyAlpha } from '../shared/currency.ts';
@@ -10,6 +11,7 @@ import {
   accountWhere,
   CATEGORY_SQL,
   excludedTransferSql,
+  holdsWhere,
   labelsById,
   perDay,
   periodInfo,
@@ -109,7 +111,8 @@ export const SPENDING_LINE_ARGS: readonly string[] = [CATEGORY.income, CATEGORY.
  * `lines`: id, kind, currency, account_id, time, mcc, scope, category, amount, op_currency, op_amount, bucket,
  * participant_id (the account owner's, only when grouped by participant, else NULL), provider (the account's bank, only
  * with `byProvider`, else NULL; a fee line keeps its debit row's account, so it is the sending bank's). The caller
- * keeps SPENDING_LINE_SQL. With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
+ * keeps SPENDING_LINE_SQL. While cash withdrawals are not spending (`cash_is_spending` off, unless `cash` is 'keep') their
+ * bodies are excluded as internal ones are; the commission stays. `holds` other than 'all' needs `nowSec` (filters.ts `holdsWhere`). With `unit`, `bucket` is the row's day or month of the period's zone (the key of the CTE
  * `buckets`), else NULL. The buckets are the outer loop of a range join (CROSS JOIN fixes the order), so each one is an
  * index range on `time` (idx_tx_time: per account it would be one seek per account and bucket) and no row looks its
  * bucket up among all of them. `base` is MATERIALIZED: `lines` reads it
@@ -119,6 +122,8 @@ export async function spendingLinesSql(
   db: Db,
   q: Period & SpendingFilters & { groupBy?: SpendingGroupBy; byProvider?: boolean },
   unit: 'day' | 'month' | null = null,
+  nowSec?: number,
+  cash: 'setting' | 'keep' = 'setting',
 ): Promise<{ sql: string; args: Array<string | number> }> {
   // With buckets the period is their union, and only their bounds may reach the time index: given the period's bounds
   // too, SQLite takes those, and every bucket walks the whole period.
@@ -127,14 +132,18 @@ export async function spendingLinesSql(
   if (q.scope) (where.push('t.scope = ?'), args.push(q.scope));
   if (q.accountId) (where.push('t.account_id = ?'), args.push(q.accountId));
   if (q.operationCurrency !== undefined) (where.push('t.currency_code = ?'), args.push(q.operationCurrency));
+  holdsWhere(q.holds, nowSec, where, args);
   accountWhere(q, where, args);
   const byPerson = q.groupBy === 'participant';
   const byProvider = q.byProvider === true;
+  // Cash withdrawals out of spending (people/settings.ts): the body goes the way of an own transfer, the commission stays.
+  const cashOut = cash === 'setting' && !(await getSettings(db)).cash_is_spending;
+  const internal = cashOut ? `(${excludedTransferSql(personView(q))} OR ${CATEGORY_SQL} = ?)` : excludedTransferSql(personView(q));
   return {
     sql: `WITH ${unit ? `${BUCKETS_CTE},` : ''}
           base AS MATERIALIZED (
             SELECT t.id, a.currency_code AS currency, t.account_id, t.time, t.mcc, t.scope, ${CATEGORY_SQL} AS category,
-                   ${excludedTransferSql(personView(q))} AS internal, t.amount, t.currency_code AS op_currency,
+                   ${internal} AS internal, t.amount, t.currency_code AS op_currency,
                    COALESCE(t.operation_amount, CASE WHEN t.currency_code = a.currency_code THEN t.amount END) AS op_amount,
                    CASE WHEN t.amount < 0 THEN COALESCE(t.commission_rate, 0) ELSE 0 END AS commission,
                    CASE WHEN t.amount < 0 AND t.crossing_category IS NULL THEN COALESCE(t.transfer_fee, 0) ELSE 0 END AS transfer_fee,
@@ -157,7 +166,7 @@ export async function spendingLinesSql(
             -- transfer fee: the same, in every view
             SELECT id, 'transfer_fee', currency, account_id, time, NULL, scope, ?, -transfer_fee, NULL, NULL, bucket, participant_id, provider FROM base WHERE transfer_fee > 0
           )`,
-    args: [...(unit ? [periodBuckets(q, unit)] : []), ...args, CATEGORY.fees, CATEGORY.transferFees],
+    args: [...(unit ? [periodBuckets(q, unit)] : []), ...(cashOut ? [CATEGORY.cash] : []), ...args, CATEGORY.fees, CATEGORY.transferFees],
   };
 }
 
@@ -183,7 +192,7 @@ export async function spendingSummary(db: Db, q: SpendingQuery, nowSec: number):
 
   // Day and month keys come from the zone's own day starts (periods.ts): SQLite knows no time zones.
   const unit = groupBy === 'day' ? 'day' : groupBy === 'month' ? 'month' : null;
-  const from = await spendingLinesSql(db, q, unit);
+  const from = await spendingLinesSql(db, q, unit, nowSec);
   const rs = await db.execute({
     sql: `${from.sql}
           SELECT currency, ${KEY_SQL[groupBy]} AS k, COUNT(*) AS lines,
@@ -267,7 +276,7 @@ export async function spendingGrid(
   if (q.unit !== 'day' && q.unit !== 'month') throw new SummaryError(`unit: day | month, получено «${String(q.unit)}»`);
   validateFilters(q);
   const period = await periodInfo(db, q, nowSec);
-  const from = await spendingLinesSql(db, q, q.unit);
+  const from = await spendingLinesSql(db, q, q.unit, nowSec);
   const rs = await db.execute({
     sql: `${from.sql}
           SELECT currency, bucket AS b, category, provider,
@@ -317,4 +326,19 @@ function currencyTotals(groups: readonly SpendingGroup[], period: PeriodInfo): C
   return [...by.values()]
     .sort((a, b) => a.currency - b.currency)
     .map(({ opOk, operation, ...t }) => ({ ...t, netPerDay: perDay(t.net, period), ...(opOk && operation ? { operation } : {}) }));
+}
+
+/**
+ * Withdrawn in cash over a period and view, per account currency: the net of the «наличные» bodies (refunds lower it,
+ * the commission is not in it), whatever `cash_is_spending` says — for the desktop's month block while it is off.
+ */
+export async function cashWithdrawn(db: Db, q: Period & SpendingFilters, nowSec: number): Promise<Array<{ currency: number; net: number }>> {
+  validateFilters(q);
+  const from = await spendingLinesSql(db, q, null, nowSec, 'keep');
+  const rs = await db.execute({
+    sql: `${from.sql}
+          SELECT currency, -SUM(amount) AS net FROM lines WHERE kind = 'body' AND category = ? GROUP BY currency ORDER BY currency`,
+    args: [...from.args, CATEGORY.cash],
+  });
+  return rs.rows.map((r) => ({ currency: Number(r.currency), net: Number(r.net) }));
 }

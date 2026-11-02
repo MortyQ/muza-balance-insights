@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
 import { addConnection, addParticipant } from '../../src/people/participants.ts';
 import { monobankCardReader } from '../../src/providers/monobank/statement.ts';
+import { CATEGORY_RULES_VERSION } from '../../src/derive/categories.ts';
 import * as rederive from '../../src/derive/rederive.ts';
 import { commitStatement } from '../../src/ingest/statement-import.ts';
 import { derivedColumns, insertAccountRow, insertTransactionRow, memoryDb, testConnection } from '../helpers.ts';
@@ -31,8 +32,10 @@ beforeEach(() => {
 });
 afterEach(() => db?.close());
 
-async function upload(): Promise<void> {
+/** A database whose last full pass used the current category rules (`version`: an older one). */
+async function upload(version = CATEGORY_RULES_VERSION): Promise<void> {
   db = await memoryDb();
+  await db.execute({ sql: `INSERT INTO derived_state (key, value) VALUES ('category_rules', ?)`, args: [String(version)] });
   const conn = await addConnection(db, await addParticipant(db, { label: 'Вигадана Особа' }, 0), 'monobank', 0, 'file');
   const r = monobankCardReader.read({ format: 'text', text: readFileSync(new URL('../providers/monobank/fixtures/statement-card-uk.csv', import.meta.url), 'utf8') });
   if (!r.ok) throw new Error(r.problem);
@@ -59,6 +62,12 @@ describe('commitStatement and the full pass', () => {
     await upload();
     expect(rederive.rederiveCore).toHaveBeenCalledTimes(1);
     await equalsFullPass();
+  });
+
+  it('new category rules since the last full pass: one full pass, which records them', async () => {
+    await upload(CATEGORY_RULES_VERSION - 1);
+    expect(rederive.rederiveCore).toHaveBeenCalledTimes(1);
+    expect(await rederive.rulesChanged(db)).toBe(false);
   });
 });
 

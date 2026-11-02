@@ -24,6 +24,9 @@ const fixed = computed<boolean>({ get: () => row.fixed, set: (next) => emit('cha
       <span v-if="row.changed" class="rounded-full bg-primary-subtle px-2 py-0.5 text-xs font-semibold text-primary" data-test="kind-changed">
         {{ $t('settings.categoryKinds.changed') }}
       </span>
+      <span v-if="row.notCounted" class="rounded-full bg-surface-sunken px-2 py-0.5 text-xs font-semibold text-foreground-muted" data-test="kind-not-counted">
+        {{ $t('settings.categoryKinds.notCounted') }}
+      </span>
     </div>
     <VSegmentedControl v-model="kind" :options size="sm" :aria-label="$t('settings.categoryKinds.kindOf', { name: row.name })" />
     <span class="flex items-center gap-2 text-sm text-foreground-secondary">

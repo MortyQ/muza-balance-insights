@@ -15,12 +15,12 @@ const uah = (k: number) => plain(formatMoney(k, 980));
 const BUDGET: NonNullable<LimitsOverview['budget']> = {
   id: 1, owner: null, currency: 978, amountMinor: 200_000, total: 10_000_000,
   fixed: [{ categoryId: 'rent', amountMinor: 125_000, amount: 6_250_000, paid: 6_250_000 }, { categoryId: 'utilities', amountMinor: 11_000, amount: 550_000, paid: 0 }],
-  fixedTotal: 6_800_000, fixedPaid: 6_250_000, fixedTakesAll: false,
-  flexible: { amount: 3_200_000, spent: 1_150_000, left: 2_050_000, percent: 36, expected: 1_066_667, forecast: 3_450_000, perDay: 97_619, daysPassed: 10, days: 30, daysLeft: 21, state: 'attention' },
+  fixedTotal: 6_800_000, fixedPaid: 6_250_000, fixedTakesAll: false, countTaxes: true,
+  flexible: { amount: 3_200_000, spent: 1_150_000, left: 2_050_000, percent: 36, expected: 1_066_667, forecast: 3_450_000, perDay: 97_619, daysPassed: 10, days: 30, daysLeft: 21, state: 'attention', reason: 'forecast', pace: 'even', forecastShown: true, pending: null },
   result: null,
 };
 const OVERVIEW: LimitsOverview = {
-  month: '2026-11', today: '2026-11-10', current: true, budget: BUDGET, limits: [], savings: [], jars: [], suggestions: [],
+  month: '2026-11', today: '2026-11-10', current: true, cashCounts: true, budget: BUDGET, limits: [], savings: [], jars: [], suggestions: [],
   past: { months: [], byCategory: {}, total: [] }, kinds: [], rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
 };
 let answer: LimitsOverview = OVERVIEW;
@@ -61,6 +61,12 @@ describe('home budget row', () => {
     await row.trigger('click');
     await flushPromises();
     expect(router.currentRoute.value.name).toBe('budget');
+  });
+
+  it('pending holds of the flexible part: a quiet note under the bar', async () => {
+    answer = { ...OVERVIEW, budget: { ...BUDGET, flexible: { ...BUDGET.flexible, pending: { count: 3, amount: 120_000 } } } };
+    const w = await mountRow();
+    expect(plain(w.get('[data-test="home-budget-flexible"] [data-test="pending-note"]').text())).toBe(`+ 3 в ожидании, ${uah(120_000)}`);
   });
 
   it('a past month: the result instead of the pace', async () => {

@@ -39,6 +39,8 @@ export const METHODS = [
   'getCategoryKinds',
   'setCategoryKind',
   'resetCategoryKinds',
+  'getCashCounts',
+  'setCashCounts',
   'getAnalyticsOverview',
   'getMonthOverview',
   'getSyncStatus',

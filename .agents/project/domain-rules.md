@@ -160,6 +160,12 @@
   tables hold bank text by reference or value: this database only, never the analysis copy. Tests:
   `tests/commands/categories.test.ts` (the same statement twice, an overlapping one, a full re-derivation).
 
+- **The category rules version** (`CATEGORY_RULES_VERSION` in `derive/categories.ts`, spec `core-derived-data`): bump
+  it with any change that can give a stored row another category (an MCC row, a keyword, a hint, a rule's order).
+  `rederiveCore` records it in `derived_state` (`category_rules`); `rulesChanged(db)` (`derive/rederive.ts`) compares,
+  a missing row reads as 1. The end of a desktop import and a statement upload run one full pass while it differs, so
+  stored categories catch up without a recategorize. 2: MCC 4111 and 4789 → «такси и транспорт».
+
 - В логах вместо маскированного номера карты писать тип и валюту счёта (например, `black/UAH`).
 
 ## План фазы 4 (пункты 1–2 готовы, 3–4 после фазы 5)
@@ -231,11 +237,15 @@
   or the family, null); one per category, period and owner; at most `LIMITS_MAX` limits and `SAVINGS_MAX` goals. The
   monthly budget is one total and its own fixed rows (`goal_fixed`: a category and the amount the user typed — nothing
   is filled in): `budgetParts` sets the rows aside at their amounts, the rest is the flexible part, counted against
-  every category neither in the rows nor of the savings kind, plus what a row spent above its amount. The «Fixed» flag
+  every category neither in the rows nor of the savings kind (nor taxes while `count_taxes` is off — migration v21; then
+  taxes cannot be a row), plus what a row spent above its amount. The «Fixed» flag
   of the kinds does not change the budget. `limitState` (`read/limits.ts`) — spent, left, per cent, expected by today,
   the forecast (none for a day limit), per day (left ÷ days left, today counted), the state: exceeded above the amount,
-  attention from `ATTENTION_SHARE` (80%) or a forecast over the amount once `FORECAST_FROM` (a quarter) of the period
-  has passed. `suggestedAmount` — the median of the usual whole months scaled to the period, rounded to 100 ₴, none
+  attention when spending runs well ahead of the pace (≥ `PACE_RATIO` 1.3 × the expected amount and ≥ `PACE_SHARE` 5% of
+  the limit above it, from the first day), from `ATTENTION_SHARE` (80%), or for a forecast over the amount once
+  `FORECAST_FROM` (a quarter) of the period has passed — with its `reason` (`pace` → `forecast` → `share`), the `pace`
+  (`under` / `even` / `ahead`, ±`PACE_EVEN` 10% of the plan) and `forecastShown` (from day `min(FORECAST_SHOW_DAYS 5,
+  ⌈days / 4⌉)`). `suggestedAmount` — the median of the usual whole months scaled to the period, rounded to 100 ₴, none
   under 3 months. Limits count «Personal» spending of every bank, whatever the bank filter, as «Spending» does. A savings
   goal follows a jar or the owner's cards and jars (`savingProgress`, `read/savings-goals.ts`: needed per month = left ÷
   the months to the date — the current one counted, the date's own not —, rounded up to a hryvnia; a jar that is gone →
@@ -258,6 +268,17 @@
   в будущем) и среднее в день. «Последний sync» — наименее свежий `newest_synced_time` среди счетов;
   среднее делится на полностью покрытые дни (день sync не считается, если синк не дошёл до его конца).
 - Холды старше 3 дней (окно повторного sync) — окончательные: `pendingHolds` / `pending_holds` считают только свежие.
+- **Pending holds in a spending read** (`SpendingFilters.holds`, `holdsWhere` in `read/filters.ts`; spec
+  `core-spending-limits`): `'all'` (default) counts every operation; `'final'` leaves out the holds of the last
+  `RESYNC_OVERLAP_SEC`, the same ones `pendingHolds` counts; `'pending'` keeps only them (their commission and fee lines
+  ride along), so final + pending = all. Needs `nowSec` (`spendingSummary`, `spendingGrid`). The desktop reads limits,
+  the budget and the Insights month with `'final'` and shows the pending part apart; «Spending» keeps `'all'`.
+- **Cash withdrawals as spending** (`cash_is_spending` in `people/settings.ts`, on by default; spec
+  `core-cash-withdrawals`): off, `spendingLinesSql` excludes the body of every «наличные» line as it does an internal
+  one, the commission line stays — so every spending read follows: home, analytics, budget, limits, kinds and 50/30/20,
+  the usual months, the detectors, and the MCP tools too (`settings:*` lists the key). `cashWithdrawn` (`read/spending.ts`)
+  gives the net withdrawn per currency whatever the setting, for the desktop's month block. The desktop changes it in
+  «Categories» (IPC `getCashCounts` / `setCashCounts`); no re-derivation, the categories stay as stored.
 - `incomeSummary`: источник по форме операции, не по имени: `other_bank` (6012), `named_sender` («Від: …», люди и клиенты ФОП),
   `transfer` (прочие 4829), `other`. Возвраты и internal — не доход, кэшбэк не входит.
 - `incomeLines` (`packages/core/src/read/income-lines.ts`, for the desktop's income screen only): the rows behind `incomeSummary`

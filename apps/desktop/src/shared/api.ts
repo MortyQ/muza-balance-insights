@@ -299,6 +299,10 @@ export type BalanceApi = {
   setCategoryKind(q: CategoryKindQuery): Promise<void>;
   /** Back to the default: one category, or all with null. */
   resetCategoryKinds(categoryId: KindCategoryId | null): Promise<void>;
+  /** Whether cash withdrawals count as spending (core `cash_is_spending`, on by default). */
+  getCashCounts(): Promise<boolean>;
+  /** Off: every spending figure leaves cash withdrawals out. The caller reloads. */
+  setCashCounts(on: boolean): Promise<void>;
   getAllowanceOverview(q: AllowanceQuery): Promise<AllowanceOverview>;
   /** Reserves of «Available per day» (core reserves.ts): main refuses a bad one, an unknown id, past RESERVES_MAX. */
   addReserve(r: ReserveInput): Promise<void>;
@@ -512,6 +516,8 @@ export type InsightsOverview = {
   spent: number;
   /** Whole months before the shown one that the data covers (0 … 6), for the «too little history» notice. */
   months: number;
+  /** Cash withdrawals count as spending (core `cash_is_spending`). */
+  cashCounts: boolean;
   usual: {
     months: number;
     /** Oldest and newest usual month, YYYY-MM. */
@@ -529,12 +535,17 @@ export type InsightsOverview = {
   budget: BudgetStructureView;
   /** Monthly limits of the view over in the shown month («Personal», every bank), as feed cards ranked by `over`. */
   limitsOver: LimitOverView[];
+  /** Monthly limits the current month's forecast puts over, not over yet; empty for a past month. */
+  limitsAhead: LimitAheadView[];
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
 };
 
 /** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */
 export type LimitOverView = { categoryId: KindCategoryId | null; amount: number; spent: number; over: number; severity: InsightSeverity };
+
+/** A monthly limit ahead of pace in the current month: the forecast, how much it would be over, per day to stay within. */
+export type LimitAheadView = { categoryId: KindCategoryId | null; amount: number; spent: number; forecast: number; over: number; perDay: number; severity: InsightSeverity };
 
 /**
  * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,
@@ -719,6 +730,8 @@ export type GoalCurrency = 980 | 840 | 978;
 export type LimitPeriod = 'day' | 'week' | 'month';
 /** on track · from 80% spent or a forecast over the limit · over the limit. */
 export type LimitStateName = 'ok' | 'attention' | 'exceeded';
+/** Why a limit needs attention (core read/limits.ts), the most telling first. */
+export type LimitReason = 'pace' | 'forecast' | 'share';
 
 /** A limit's figures on today (a past month: its end), hryvnia kopecks by today's rate (core read/limits.ts). */
 export type LimitFiguresView = {
@@ -734,6 +747,14 @@ export type LimitFiguresView = {
   days: number;
   daysLeft: number;
   state: LimitStateName;
+  /** The attention's reason; null — on track or exceeded. */
+  reason: LimitReason | null;
+  /** Spent against the expected amount by today: under 90%, even, ahead above 110%. */
+  pace: 'under' | 'even' | 'ahead';
+  /** The forecast is reliable enough to show (from the fifth day of a month). */
+  forecastShown: boolean;
+  /** Pending holds left out of `spent` (the bank may still change them); null — none. */
+  pending: { count: number; amount: number } | null;
 };
 
 /** A category limit; `figures` null — no rate for its currency. `owner` null — the family's. */
@@ -760,6 +781,8 @@ export type MonthBudgetView = {
   fixedTotal: number;
   fixedPaid: number;
   fixedTakesAll: boolean;
+  /** false: taxes stay out of the flexible part (the budget's own choice). */
+  countTaxes: boolean;
   /** The flexible part: its amount is total − fixed; spent counts fixed rows' overspend too. */
   flexible: LimitFiguresView;
   /** A past month: whether it stayed within the total, and what was left (below zero — over). */
@@ -800,6 +823,8 @@ export type LimitsOverview = {
   today: string;
   /** The shown month is the current one: day and week limits and the pace only then. */
   current: boolean;
+  /** Cash withdrawals count as spending; off — «Cash» is not offered for a new limit. */
+  cashCounts: boolean;
   budget: MonthBudgetView | null;
   limits: CategoryLimitView[];
   savings: SavingGoalView[];
@@ -818,7 +843,7 @@ export type LimitsOverviewQuery = { month: string; participantId?: number };
 /** A plan as the screen sends it; `id` null — a new one. */
 export type GoalPayload =
   | { type: 'limit'; categoryId: KindCategoryId; period: LimitPeriod; currency: GoalCurrency; amount: number; participantId: number | null }
-  | { type: 'budget'; currency: GoalCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }> }
+  | { type: 'budget'; currency: GoalCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }>; countTaxes?: boolean }
   | { type: 'saving'; name: string; currency: GoalCurrency; amount: number; participantId: number | null; until: string | null; source: 'jar' | 'own'; accountId: string | null };
 
 /** A spending category's kind (core read/category-kinds.ts): essential, a want or savings. */
@@ -1053,6 +1078,8 @@ export type AnalyticsOverview = {
   usual: number[] | null;
   /** Spending categories of either period: this period's ranking first (net > 0, net desc), then the others by `prev`. */
   categories: AnalyticsCategory[];
+  /** Withdrawn in cash over the range while withdrawals do not count as spending (hryvnia kopecks); null while they do. */
+  cashWithdrawn: number | null;
   rates: RatesView | null;
   /** Account currencies left out (no rate today). */
   leftOut: number[];

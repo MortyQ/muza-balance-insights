@@ -323,6 +323,7 @@ export function paceView(a: Readonly<AnalyticsOverview>): PaceView | null {
     spentTotal: spent[last] ?? 0,
     usualByNow: a.usual?.[last] ?? null,
     banks: a.spendingByBank.map((b) => ({ provider: b.provider, spent: added(b.values) })),
+    cashWithdrawn: a.cashWithdrawn !== null && a.cashWithdrawn > 0 ? a.cashWithdrawn : null,
   };
 }
 

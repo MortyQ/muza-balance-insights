@@ -19,18 +19,18 @@ const inputOf = (root: ParentNode, test: string): HTMLInputElement => {
 const uah = (k: number) => plain(formatMoney(k, 980));
 const fig = (amount: number, spent: number, state: 'ok' | 'attention' | 'exceeded', extra = {}) => ({
   amount, spent, left: amount - spent, percent: Math.round((spent / amount) * 100), expected: Math.round((amount * 15) / 31),
-  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, ...extra,
+  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, reason: state === 'attention' ? ('forecast' as const) : null, pace: 'even' as const, forecastShown: true, pending: null, ...extra,
 });
 
 const OVERVIEW: LimitsOverview = {
-  month: '2026-03', today: '2026-03-15', current: true,
+  month: '2026-03', today: '2026-03-15', current: true, cashCounts: true,
   budget: {
     id: 1, owner: null, currency: 980, amountMinor: 5_000_000, total: 5_000_000,
     fixed: [
       { categoryId: 'rent', amountMinor: 1_250_000, amount: 1_250_000, paid: 1_250_000 },
       { categoryId: 'utilities', amountMinor: 110_000, amount: 110_000, paid: 0 },
     ],
-    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false,
+    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false, countTaxes: true,
     flexible: fig(3_640_000, 2_300_000, 'attention'), result: null,
   },
   limits: [
@@ -141,6 +141,20 @@ describe('the «Budget» screen', () => {
     w.unmount();
   });
 
+  it('pending holds: a quiet note on the row and on the budget, none where nothing is pending', async () => {
+    answer = {
+      ...OVERVIEW,
+      budget: { ...OVERVIEW.budget!, flexible: { ...OVERVIEW.budget!.flexible, pending: { count: 2, amount: 65_000 } } },
+      limits: [OVERVIEW.limits[0]!, { ...OVERVIEW.limits[1]!, figures: fig(400_000, 100_000, 'ok', { pending: { count: 1, amount: 60_000 } }) }],
+    };
+    const w = await mountScreen();
+    const rows = w.findAll('[data-test="limit-row"]');
+    expect(rows[0]!.find('[data-test="pending-note"]').exists()).toBe(false);
+    expect(plain(rows[1]!.get('[data-test="pending-note"]').text())).toBe(`+ 1 в ожидании, ${uah(60_000)}`);
+    expect(plain(w.get('[data-test="budget-panel"] [data-test="pending-note"]').text())).toBe(`+ 2 в ожидании, ${uah(65_000)}`);
+    w.unmount();
+  });
+
   it('the «?» of per day gives the formula with the user\'s numbers', async () => {
     const w = await mountScreen();
     await w.findAll('[data-test="limit-row"]')[1]!.get('button[aria-label="Как считается «можно в день»"]').trigger('click');
@@ -173,6 +187,49 @@ describe('the «Budget» screen', () => {
     const save = () => sheet().querySelector<HTMLButtonElement>('[data-test="budget-save"]')!;
     expect(save().disabled).toBe(false);
     w.unmount();
+  });
+
+  it('«Count taxes»: off drops a taxes row and its choice, is saved with the budget, and the panel says so', async () => {
+    answer = {
+      ...OVERVIEW,
+      budget: { ...OVERVIEW.budget!, fixed: [...OVERVIEW.budget!.fixed, { categoryId: 'taxes', amountMinor: 50_000, amount: 50_000, paid: 0 }] },
+    };
+    const w = await mountScreen();
+    expect(w.find('[data-test="budget-taxes-off"]').exists()).toBe(false);
+    await w.get('[data-test="budget-edit"]').trigger('click');
+    await flushPromises();
+    const sheet = document.querySelector('[data-test="budget-sheet"]')!;
+    const names = () => [...sheet.querySelectorAll('[data-test="fixed-input"]')].map((r) => r.textContent?.trim() ?? '');
+    expect(names().some((n) => n.startsWith('Налоги'))).toBe(true);
+    const sw = sheet.querySelector<HTMLInputElement>('[data-test="budget-count-taxes"]')!;
+    expect(sw.checked).toBe(true);
+    sw.click();
+    await flushPromises();
+    expect(names().some((n) => n.startsWith('Налоги'))).toBe(false);
+    sheet.querySelector<HTMLButtonElement>('[data-test="budget-save"]')!.click();
+    await flushPromises();
+    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', countTaxes: false, fixed: [{ categoryId: 'rent', amount: 1_250_000 }, { categoryId: 'utilities', amount: 110_000 }] }));
+    w.unmount();
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, countTaxes: false } };
+    const off = await mountScreen();
+    expect(off.get('[data-test="budget-taxes-off"]').text()).toBe('Налоги в этом бюджете не учитываются.');
+    off.unmount();
+  });
+
+  it('the limit sheet offers «Cash» only while cash withdrawals count as spending', async () => {
+    const offered = async () => {
+      const w = await mountScreen();
+      await w.get('[data-test="limit-add"]').trigger('click');
+      await flushPromises();
+      const { default: LimitSheet } = await import('@/features/limits-goals/components/LimitSheet.vue');
+      const select = w.findComponent(LimitSheet).findAllComponents({ name: 'VSelect' })[0]!;
+      const values = (select.props('options') as Array<{ value: string }>).map((o) => o.value);
+      w.unmount();
+      return values;
+    };
+    expect(await offered()).toContain('cash');
+    answer = { ...OVERVIEW, cashCounts: false };
+    expect(await offered()).not.toContain('cash');
   });
 
   it('a failed save keeps the sheet open and says so', async () => {

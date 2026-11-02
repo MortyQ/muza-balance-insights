@@ -3,6 +3,38 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.14 — unreleased
+
+### Budget and Insights
+
+- **Pending payments wait.** A payment the bank has not finalised yet no longer counts towards your limits, the monthly
+  budget, «Insights» and «What's unusual» on home, so a limit no longer turns red over a payment that may still be
+  cancelled. Next to each limit and the budget a quiet note says how many payments are pending and for how much. They
+  count once the bank finalises them. «Spending» still includes them, as your bank balance does.
+- **Limits say what is really going on.** A limit or the budget no longer reads «On track» while you spend far faster
+  than planned: spending well ahead of the plan by today (at least 1.3 times it, and by at least 5% of the limit) needs
+  attention from the first day and says by how much — «4 € ahead of plan (×2.6)». A smaller lead reads «A little ahead
+  of plan», spending below the plan says by how much, and the forecast for the month's end appears from its fifth day,
+  when it means something.
+- **A warning before a limit is over.** «Insights» now lists a monthly limit, or the monthly budget, that runs well
+  ahead of its plan or whose forecast is over it: the forecast for the month's end, how much over it would be and how
+  much a day keeps you within. It shows only in the current month, by the same rule as the «Budget» screen.
+- **A budget without taxes.** The monthly budget sheet has a «Count taxes» switch. Turn it off when you set taxes
+  aside apart from your budget: taxes and government payments then stay out of the budget, and cannot be one of its
+  fixed costs. «Spending» and «Budget structure» still count them.
+
+### Categories
+
+- **Cancelled purchases count against their shop.** A refund the bank labels as a cancellation («Скасування. …») now
+  lowers its shop in a category's «Where» and in «Insights» instead of vanishing: a 26 € ticket with 20 € returned shows
+  as 6 €, no longer as 26 € and over 100% of the category.
+- **Cash withdrawals: spending or not, your choice.** Settings → «Categories» has a «Count cash withdrawals as spending»
+  switch, on as before. Turn it off and money you take out of an ATM no longer counts as spending anywhere — not in
+  «Spending», «Analytics», the budget, limits or «Insights» — just as moving money between your own cards does not; the
+  ATM fee still counts. «Month pace» on home then shows how much you withdrew in the month.
+- **Commuter transport.** Metro, suburban trains and other transport services now land in «Taxi and transport»
+  instead of «Other». Operations you already have are re-sorted once, at the next download.
+
 ## 0.1.13 — 2026-11-01
 
 ### Banks

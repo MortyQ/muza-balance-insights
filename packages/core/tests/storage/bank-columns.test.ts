@@ -31,7 +31,7 @@ describe('migration v17', () => {
   it('adds both columns as NULL and keeps every row as it was', async () => {
     const d = await v16();
     const before = (await d.execute('SELECT * FROM transactions')).rows;
-    expect(await migrate(d, 2)).toEqual([17, 18, 19, 20]);
+    expect(await migrate(d, 2)).toEqual([17, 18, 19, 20, 21]);
     const after = (await d.execute('SELECT * FROM transactions')).rows;
     expect(after).toHaveLength(1);
     expect(after[0]).toEqual({ ...before[0], bank_category: null, transfer_fee: null });

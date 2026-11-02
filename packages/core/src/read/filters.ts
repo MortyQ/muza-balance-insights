@@ -138,8 +138,16 @@ export const personView = (q: Filters & { groupBy?: string }) => q.participantId
 /** Rows crossing to a disabled account get their ordinary category (derived.ts). */
 export const CATEGORY_SQL = 'COALESCE(t.crossing_category, t.category)';
 
-/** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania. */
-export type SpendingFilters = Filters & { operationCurrency?: number };
+/**
+ * Which holds a spending read counts. A pending hold is one from the last RESYNC_OVERLAP_SEC (the window a sync
+ * re-reads, as `pendingHolds`); an older hold is final. 'all' (the default) counts every operation; 'final' leaves the
+ * pending holds out (limits, the budget, the Insights month); 'pending' counts only them.
+ */
+export const HOLDS = ['all', 'final', 'pending'] as const;
+export type Holds = (typeof HOLDS)[number];
+
+/** Spending filters also accept the operation currency (ISO numeric), e.g. 8 = ALL for a trip to Albania, and `holds`. */
+export type SpendingFilters = Filters & { operationCurrency?: number; holds?: Holds };
 
 /** A bank view's list: non-empty, known provider ids, each once. */
 export function isProviderList(v: readonly unknown[]): v is readonly ProviderId[] {
@@ -150,6 +158,16 @@ export function validateFilters(f: Filters): void {
   if (f.scope !== undefined && !isScope(f.scope)) throw new SummaryError(`scope: personal или business, получено «${String(f.scope)}»`);
   if (f.participantId !== undefined && !Number.isInteger(f.participantId)) throw new SummaryError('participant: id участника (целое число)');
   if (f.providers !== undefined && !isProviderList(f.providers)) throw new SummaryError('providers: a non-empty list of known banks, each once');
+  const holds = (f as SpendingFilters).holds;
+  if (holds !== undefined && !HOLDS.includes(holds)) throw new SummaryError(`holds: ${HOLDS.join(' | ')}`);
+}
+
+/** WHERE part for `holds` (rows of t) and its argument; nothing for 'all'. */
+export function holdsWhere(holds: Holds | undefined, nowSec: number | undefined, where: string[], args: Array<string | number>): void {
+  if (holds === undefined || holds === 'all') return;
+  if (nowSec === undefined) throw new SummaryError('holds: needs the current time');
+  where.push(holds === 'final' ? 'NOT (t.hold = 1 AND t.time >= ?)' : 't.hold = 1 AND t.time >= ?');
+  args.push(nowSec - RESYNC_OVERLAP_SEC);
 }
 
 export async function labelsById(db: Db): Promise<Map<string, string>> {

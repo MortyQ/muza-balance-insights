@@ -11,9 +11,16 @@ const START: CategoryKindView[] = [
   { categoryId: 'groceries', kind: 'essential', fixed: false, changed: false },
   { categoryId: 'clothing', kind: 'essential', fixed: false, changed: true },
   { categoryId: 'rent', kind: 'essential', fixed: true, changed: false },
+  { categoryId: 'cash', kind: 'wants', fixed: false, changed: false },
 ];
 let stored: CategoryKindView[] = START;
 let failNext = false;
+let cash = true;
+let failCash = false;
+const setCashCounts = vi.fn(async (on: boolean) => {
+  if (failCash) throw new Error('refused');
+  cash = on;
+});
 const setCategoryKind = vi.fn(async (q: CategoryKindQuery) => {
   if (failNext) {
     failNext = false;
@@ -29,6 +36,8 @@ vi.mock('@/shared/api', () => ({
     getCategoryKinds: async () => stored,
     setCategoryKind: (q: CategoryKindQuery) => setCategoryKind(q),
     resetCategoryKinds: () => resetCategoryKinds(),
+    getCashCounts: async () => cash,
+    setCashCounts: (on: boolean) => setCashCounts(on),
     getSyncStatus: async () => ({ hasData: true }),
   },
 }));
@@ -46,15 +55,23 @@ beforeEach(() => {
   localStorage.clear();
   stored = START;
   failNext = false;
+  cash = true;
+  failCash = false;
   setCategoryKind.mockClear();
+  setCashCounts.mockClear();
 });
 
 describe('categories section', () => {
   it('a row per category with its name, the changed mark only where changed', async () => {
     const w = await mountSection();
     const rows = w.findAll('[data-test="kind-row"]');
-    expect(rows.map((r) => r.text())).toEqual([expect.stringContaining('Продукты'), expect.stringContaining('Одежда'), expect.stringContaining('Аренда жилья')]);
-    expect(rows.map((r) => r.find('[data-test="kind-changed"]').exists())).toEqual([false, true, false]);
+    expect(rows.map((r) => r.text())).toEqual([
+      expect.stringContaining('Продукты'),
+      expect.stringContaining('Одежда'),
+      expect.stringContaining('Аренда жилья'),
+      expect.stringContaining('Наличные'),
+    ]);
+    expect(rows.map((r) => r.find('[data-test="kind-changed"]').exists())).toEqual([false, true, false, false]);
     expect(w.find('[data-test="kinds-reset"]').exists()).toBe(true);
     w.unmount();
   });
@@ -74,6 +91,24 @@ describe('categories section', () => {
     await flushPromises();
     expect(w.text()).toContain('Не удалось');
     expect((w.findAll('[data-test="kind-row"]')[2]!.get('input[type="checkbox"]').element as HTMLInputElement).checked).toBe(true);
+    w.unmount();
+  });
+
+  it('cash withdrawals: the switch on by default, off saves and marks «Cash» as not counted; a failed save comes back', async () => {
+    const w = await mountSection();
+    const sw = () => w.get<HTMLInputElement>('[data-test="kinds-cash"]');
+    expect(sw().element.checked).toBe(true);
+    expect(w.find('[data-test="kind-not-counted"]').exists()).toBe(false);
+    await sw().setValue(false);
+    await flushPromises();
+    expect(setCashCounts).toHaveBeenCalledWith(false);
+    expect(sw().element.checked).toBe(false);
+    expect(w.findAll('[data-test="kind-row"]')[3]!.get('[data-test="kind-not-counted"]').text()).toBe('не учитывается');
+    failCash = true;
+    await sw().setValue(true);
+    await flushPromises();
+    expect(sw().element.checked).toBe(false);
+    expect(w.find('[data-test="kinds-cash-error"]').text()).toContain('Не удалось');
     w.unmount();
   });
 

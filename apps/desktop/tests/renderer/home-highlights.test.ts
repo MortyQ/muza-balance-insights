@@ -53,7 +53,7 @@ vi.mock('@/shared/api', () => ({
 
 // The «Budget» screen's read: limits for the «Limits» slide (none by default).
 const fig = (state: 'ok' | 'attention' | 'exceeded', spent: number) => ({
-  amount: 100_000, spent, left: 100_000 - spent, percent: spent / 1_000, expected: 50_000, forecast: spent * 2, perDay: 0, daysPassed: 15, days: 30, daysLeft: 16, state,
+  amount: 100_000, spent, left: 100_000 - spent, percent: spent / 1_000, expected: 50_000, forecast: spent * 2, perDay: 0, daysPassed: 15, days: 30, daysLeft: 16, state, reason: state === 'attention' ? ('forecast' as const) : null, pace: 'even' as const, forecastShown: true, pending: null,
 });
 const LIMITS = {
   month: '2026-09', today: '2026-09-15', current: true, budget: null, savings: [], jars: [], suggestions: [], kinds: [], rates: null,

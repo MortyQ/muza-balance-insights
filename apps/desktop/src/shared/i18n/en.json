@@ -436,7 +436,13 @@
         "forecast": "If you keep spending as so far, how much you will have spent by the end of the period.",
         "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
-      }
+      },
+      "pending": "+ {n} pending, {amount} | + {n} pending, {amount} | + {n} pending, {amount}",
+      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do.",
+      "ahead": "{amount} ahead of plan (×{times})",
+      "aheadSoft": "A little ahead of plan",
+      "under": "{amount} under plan",
+      "paceLineEarly": "planned by today {expected}"
     }
   },
   "header": {
@@ -558,7 +564,9 @@
           "splitHint": "Each bank's spending in its colour",
           "together": "Together",
           "banks": "By banks"
-        }
+        },
+        "cash": "Withdrawn in cash",
+        "cashHint": "Cash withdrawals are left out of spending. To count them again, turn on «Count cash withdrawals as spending» in Settings → «Categories»."
       },
       "freeLine": {
         "free": "Free",
@@ -838,7 +846,7 @@
       },
       "months": "{n} month | {n} months | {n} months",
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
-      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations",
+      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
       "all": "All insights"
     },
     "budget": {
@@ -968,7 +976,8 @@
       "threshold": "A change counts from 20% and 500 ₴ against the usual.",
       "severity": "Importance is the change's share of a usual month's spending: high from 10%, medium from 4%.",
       "running": "The month is still running: a category shows once it is past a whole usual month.",
-      "pending": "Still pending at the bank and counted: {n} operation | Still pending at the bank and counted: {n} operations | Still pending at the bank and counted: {n} operations"
+      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
+      "cashOff": "Cash withdrawals are left out of spending (Settings → «Categories»)."
     },
     "early": {
       "title": "Not enough history yet",
@@ -1022,6 +1031,11 @@
       "budget": "the flexible budget",
       "text": "{spent} spent against a {amount} limit.",
       "open": "Open the budget"
+    },
+    "limitAhead": {
+      "title": "Forecast above the limit: {name}",
+      "text": "At this pace the month ends at {forecast} against a {amount} limit. To stay within, spend at most {perDay} a day.",
+      "chip": "would be over by"
     }
   },
   "integrations": {
@@ -1445,7 +1459,10 @@
         "fixed": "Fixed is about the same amount every month: rent, phone, subscriptions.",
         "where": "«Insights» uses the kinds to show how much of your income goes to essentials, to wants and how much is left. Changes apply at once."
       },
-      "fixedOf": "Fixed: «{name}»"
+      "fixedOf": "Fixed: «{name}»",
+      "cash": "Count cash withdrawals as spending",
+      "cashHint": "Off: cash withdrawals leave spending, the budget, limits and Insights, as transfers between your own cards do. Home shows how much was withdrawn in the month.",
+      "notCounted": "not counted"
     }
   },
   "limits": {
@@ -1488,7 +1505,8 @@
       "takesAll": "Fixed costs take the whole budget.",
       "emptyTitle": "No monthly budget yet",
       "emptyText": "One amount for everything; fixed costs are set aside first, the rest is shown by day.",
-      "create": "Set a budget"
+      "create": "Set a budget",
+      "taxesOff": "Taxes are not counted in this budget."
     },
     "suggest": {
       "text": "This is what usually goes in a month. Set limits at that level?",
@@ -1535,7 +1553,9 @@
       "takesAll": "Fixed costs take the whole budget. Raise the amount or check the list.",
       "noFixedWarn": "Rent and other must-pay costs will eat into the flexible part. Add them as fixed costs if you have them.",
       "pastTitle": "Flexible spending in past months",
-      "saveBudget": "Save the budget"
+      "saveBudget": "Save the budget",
+      "countTaxes": "Count taxes",
+      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure»."
     },
     "goals": {
       "title": "Savings goals",

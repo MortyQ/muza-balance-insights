@@ -9,6 +9,8 @@ export interface CategoryKindRowView {
   kind: CategoryKind;
   fixed: boolean;
   changed: boolean;
+  /** «Cash» while cash withdrawals do not count as spending. */
+  notCounted: boolean;
 }
 
 export interface UseCategoryKindsReturn {

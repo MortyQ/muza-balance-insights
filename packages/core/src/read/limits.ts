@@ -11,6 +11,20 @@ export type LimitStateName = 'ok' | 'attention' | 'exceeded';
 export const ATTENTION_SHARE = 0.8;
 /** A forecast over the limit makes a state only once this share of the period has passed. */
 export const FORECAST_FROM = 0.25;
+/**
+ * Spending well ahead of the pace needs attention from the first day: at least PACE_RATIO times the expected amount
+ * and at least PACE_SHARE of the limit above it — both, so one early purchase does not raise it.
+ */
+export const PACE_RATIO = 1.3;
+export const PACE_SHARE = 0.05;
+/** Within this share of the expected amount either way the pace is even; below it — under, above it — ahead. */
+export const PACE_EVEN = 0.1;
+/** The forecast is shown from this day of a month (a quarter of a shorter period): from two days it is noise. */
+export const FORECAST_SHOW_DAYS = 5;
+
+/** Why a limit needs attention, the most telling first; null — it does not. */
+export type LimitReason = 'pace' | 'forecast' | 'share';
+export type LimitPace = 'under' | 'even' | 'ahead';
 /** Days in an average month, to scale a monthly suggestion to a week or a day. */
 export const MONTH_DAYS = 30.44;
 /** Suggested amounts are rounded to 100 ₴ (kopecks). */
@@ -30,6 +44,12 @@ export type LimitFigures = {
   perDay: number;
   daysLeft: number;
   state: LimitStateName;
+  /** The attention's reason; null — on track or exceeded. */
+  reason: LimitReason | null;
+  /** Spent against the expected amount by today. */
+  pace: LimitPace;
+  /** The forecast is reliable enough to show (FORECAST_SHOW_DAYS); always false for a day limit. */
+  forecastShown: boolean;
 };
 
 /** A limit's figures on a day of its period: `daysPassed` 1 … `days`, today counted. */
@@ -38,17 +58,25 @@ export function limitState(l: { amount: number; spent: number; daysPassed: numbe
   const left = l.amount - l.spent;
   const forecast = l.period === 'day' ? null : Math.round((l.spent / Math.max(1, l.daysPassed)) * l.days);
   const percent = l.amount > 0 ? Math.round((l.spent / l.amount) * 100) : 0;
+  const expected = Math.round((l.amount * l.daysPassed) / l.days);
   const forecastCounts = forecast !== null && l.daysPassed >= l.days * FORECAST_FROM && forecast > l.amount;
-  const state: LimitStateName = l.spent > l.amount ? 'exceeded' : l.spent >= l.amount * ATTENTION_SHARE || forecastCounts ? 'attention' : 'ok';
+  const paceWell = l.spent >= expected * PACE_RATIO && l.spent - expected >= l.amount * PACE_SHARE;
+  const shareOver = l.spent >= l.amount * ATTENTION_SHARE;
+  const state: LimitStateName = l.spent > l.amount ? 'exceeded' : paceWell || forecastCounts || shareOver ? 'attention' : 'ok';
+  const reason: LimitReason | null = state !== 'attention' ? null : paceWell ? 'pace' : forecastCounts ? 'forecast' : 'share';
+  const pace: LimitPace = l.spent > expected * (1 + PACE_EVEN) ? 'ahead' : l.spent < expected * (1 - PACE_EVEN) ? 'under' : 'even';
   return {
     spent: l.spent,
     left,
     percent,
-    expected: Math.round((l.amount * l.daysPassed) / l.days),
+    expected,
     forecast,
     perDay: Math.max(0, Math.round(left / daysLeft)),
     daysLeft,
     state,
+    reason,
+    pace,
+    forecastShown: forecast !== null && l.daysPassed >= Math.min(FORECAST_SHOW_DAYS, Math.ceil(l.days * FORECAST_FROM)),
   };
 }
 

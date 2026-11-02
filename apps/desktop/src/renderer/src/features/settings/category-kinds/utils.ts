@@ -2,7 +2,7 @@ import type { CategoryKindView } from '@contract/api.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { CategoryKindRowView } from './types.ts';
 
-export function kindRows(kinds: ReadonlyArray<CategoryKindView>): CategoryKindRowView[] {
+export function kindRows(kinds: ReadonlyArray<CategoryKindView>, cashCounts: boolean): CategoryKindRowView[] {
   return kinds.map((k) => ({
     categoryId: k.categoryId,
     name: categoryName({ category: k.categoryId, categoryId: k.categoryId }),
@@ -10,5 +10,6 @@ export function kindRows(kinds: ReadonlyArray<CategoryKindView>): CategoryKindRo
     kind: k.kind,
     fixed: k.fixed,
     changed: k.changed,
+    notCounted: k.categoryId === 'cash' && !cashCounts,
   }));
 }

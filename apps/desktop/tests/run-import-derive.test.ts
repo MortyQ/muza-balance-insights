@@ -1,8 +1,9 @@
-// The end of an import: only the spans its windows touched are re-derived, unless a window's derivation failed or the
-// accounts' IBANs or jar titles changed (then a full pass). Separate file: vi.mock wraps the core's rederive module.
+// The end of an import: only the spans its windows touched are re-derived, unless a window's derivation failed, the
+// accounts' IBANs or jar titles changed, or the category rules did (then a full pass). Separate file: vi.mock wraps the core's rederive module.
 // Mock Monobank, fictional data only.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
+import { CATEGORY_RULES_VERSION } from '@mono/core/derive/categories';
 import * as rederive from '@mono/core/derive/rederive';
 import { WINDOW_SEC } from '@mono/core/ingest/plan';
 import { TEST_TOKEN, derivedColumns, fakeClock, fakeMonobank, item, memoryDb, testConnection } from '@mono/core/test-helpers';
@@ -95,6 +96,14 @@ describe('runImport: the end-of-import pass', () => {
     const { opts, run } = await bank({ accounts: [{ id: 'cardA' }], jars: [{ id: 'jar1', title: 'Fictional goal', balance: 100 }] });
     await run();
     opts.jars.push({ id: 'jar2', title: 'Fictional goal', balance: 100 });
+    expect(await endPass(await run())).toBe('spans');
+  });
+
+  it('new category rules since the last full pass: one full pass, then the spans again', async () => {
+    const { run } = await bank({ accounts: [{ id: 'cardA' }], jars: [] });
+    await run();
+    await db.execute({ sql: `UPDATE derived_state SET value = ? WHERE key = 'category_rules'`, args: [String(CATEGORY_RULES_VERSION - 1)] });
+    expect(await endPass(await run())).toBe('full');
     expect(await endPass(await run())).toBe('spans');
   });
 

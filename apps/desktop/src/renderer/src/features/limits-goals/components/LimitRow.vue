@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LimitBar, LimitStateChip } from '@/entities/goal';
+import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VButton, VHelpHint, VIcon } from '@/shared/ui';
 import type { LimitRowView } from '../types.ts';
 
@@ -31,6 +31,7 @@ const emit = defineEmits<{ edit: [] }>();
             <p v-for="(line, i) in row.look.help.perDay.lines" :key="i">{{ line }}</p>
           </VHelpHint>
         </span>
+        <PendingNote v-if="row.look.pending" :note="row.look.pending" />
       </div>
     </template>
     <p v-else class="text-xs text-foreground-muted">{{ $t('limits.noRate') }}</p>
