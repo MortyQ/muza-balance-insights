@@ -38,15 +38,15 @@
 
 ## 4. «Forecast above the limit» in the Insights feed
 
-- [ ] 4.1 `data.ts`: `limitsOverOf` → `limitSignalsOf` returning `limitsOver` and `limitsAhead` (current month only, by `limitState`, not exceeded, forecast counted); `shared/api.ts`: `LimitAheadView` and `limitsAhead` on the overview
-- [ ] 4.2 `features/insights-page/utils.ts`: `limitAheadCard` (forecast, overrun, per day, link to «Budget»), merged into the feed by the overrun; `calm` also checks `limitsAhead`; keys in three languages
-- [ ] 4.3 Tests:
+- [x] 4.1 `data.ts`: `limitsOverOf` → `limitSignalsOf` returning `limitsOver` and `limitsAhead` (current month only, by `limitState`, not exceeded, forecast counted); `shared/api.ts`: `LimitAheadView` and `limitsAhead` on the overview
+- [x] 4.2 `features/insights-page/utils.ts`: `limitAheadCard` (forecast, overrun, per day, link to «Budget»), merged into the feed by the overrun; `calm` also checks `limitsAhead`; keys in three languages
+- [x] 4.3 Tests:
   - day 10 of 30 with 1 900 of 4 000 gives a card: 5 700 forecast, 1 700 over, 100 a day;
   - nothing on day 5;
   - an exceeded limit gives only «Limit exceeded»;
   - a past month gives none;
   - the feed order with other cards
-- [ ] 4.4 `CHANGELOG.md`: «Forecast above the limit» in Insights
+- [x] 4.4 `CHANGELOG.md`: «Forecast above the limit» in Insights
 
 ## 5. «Count taxes» in the monthly budget
 

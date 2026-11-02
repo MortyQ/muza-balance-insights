@@ -11,6 +11,10 @@ English interface.
   budget, «Insights» and «What's unusual» on home, so a limit no longer turns red over a payment that may still be
   cancelled. Next to each limit and the budget a quiet note says how many payments are pending and for how much. They
   count once the bank finalises them. «Spending» still includes them, as your bank balance does.
+- **A warning before a limit is over.** «Insights» now lists a monthly limit, or the monthly budget, that the month's
+  pace will take over its amount: the forecast for the month's end, how much over it would be and how much a day keeps
+  you within. It shows only in the current month, once its first quarter has passed, so a few early payments do not
+  raise it.
 
 ### Categories
 

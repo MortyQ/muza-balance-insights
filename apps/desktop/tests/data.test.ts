@@ -1068,6 +1068,18 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([]);
   });
 
+  it('the Insights read lists a monthly limit the forecast puts over, from a quarter of the month on, never a past one', async () => {
+    // 15 March: cafes 190 000 against 400 000, forecast 392 667 — within; against 300 000 — ahead.
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 300_000, participantId: null });
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    expect(v.limitsOver).toEqual([]);
+    expect(v.limitsAhead).toEqual([{ categoryId: 'cafes', amount: 300_000, spent: 190_000, forecast: 392_667, over: 92_667, perDay: 6_471, severity: expect.any(String) }]);
+    expect((await svc.insightsOverview({ month: '2026-02', scope: 'personal' })).limitsAhead).toEqual([]);
+    // 5 March: only 100 000 spent, the forecast is far over, but the month is too young for it.
+    const early = new DataService({ open: async () => db, release: async () => undefined, nowSec: () => kyivStartOfDay('2026-03-05') + 43_200, rates: todayRates });
+    expect((await early.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsAhead).toEqual([]);
+  });
+
   it('a person sees their limits and the family\'s; delete; a second limit of a kind is refused', async () => {
     const me = Number((await db.execute(`SELECT participant_id FROM connections WHERE provider = 'monobank'`)).rows[0]?.participant_id);
     await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });

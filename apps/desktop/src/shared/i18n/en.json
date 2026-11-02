@@ -1024,6 +1024,11 @@
       "budget": "the flexible budget",
       "text": "{spent} spent against a {amount} limit.",
       "open": "Open the budget"
+    },
+    "limitAhead": {
+      "title": "Forecast above the limit: {name}",
+      "text": "At this pace the month ends at {forecast} against a {amount} limit. To stay within, spend at most {perDay} a day.",
+      "chip": "would be over by"
     }
   },
   "integrations": {

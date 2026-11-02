@@ -529,12 +529,17 @@ export type InsightsOverview = {
   budget: BudgetStructureView;
   /** Monthly limits of the view over in the shown month («Personal», every bank), as feed cards ranked by `over`. */
   limitsOver: LimitOverView[];
+  /** Monthly limits the current month's forecast puts over, not over yet; empty for a past month. */
+  limitsAhead: LimitAheadView[];
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
 };
 
 /** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */
 export type LimitOverView = { categoryId: KindCategoryId | null; amount: number; spent: number; over: number; severity: InsightSeverity };
+
+/** A monthly limit ahead of pace in the current month: the forecast, how much it would be over, per day to stay within. */
+export type LimitAheadView = { categoryId: KindCategoryId | null; amount: number; spent: number; forecast: number; over: number; perDay: number; severity: InsightSeverity };
 
 /**
  * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,

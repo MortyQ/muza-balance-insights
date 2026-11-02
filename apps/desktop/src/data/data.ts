@@ -13,7 +13,7 @@ import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInp
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
 import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
 import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
-import { budgetView, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
+import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
@@ -27,6 +27,7 @@ import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
 import { detectInsights, insightSeverity, mainDriver, newPayees, oneOffs, payeeUsual, savingsRate } from '@mono/core/read/insights';
+import { FORECAST_FROM } from '@mono/core/read/limits';
 import { periodInfo } from '@mono/core/read/filters';
 import { spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -47,6 +48,8 @@ import type {
   BudgetStructureView,
   GoalJarView,
   GoalPayload,
+  LimitAheadView,
+  LimitFiguresView,
   LimitOverView,
   SavingGoalView,
   LimitsOverview,
@@ -537,37 +540,54 @@ export class DataService {
   }
 
   /**
-   * The view's monthly limits over in the shown month (a person: theirs and the family's), each against its owner's
-   * «Personal» spending of every bank; the budget's flexible part too. Severity against the usual month, as the feed's.
+   * The view's monthly limits in the feed (a person: theirs and the family's), each against its owner's «Personal»
+   * spending of every bank, pending holds left out; the budget's flexible part too. Over: spent above the amount. Ahead
+   * (the current month only): not over yet, the forecast above it once FORECAST_FROM of the month has passed — the rule
+   * of the «attention» state. Severity against the usual month, as the feed's.
    */
-  private async limitsOverOf(db: Db, q: SpendingOverviewQuery, kinds: Map<string, KindChoice>, usualTotal: number, rates: Map<number, FxRate>, now: number): Promise<LimitOverView[]> {
+  private async limitSignalsOf(
+    db: Db,
+    q: SpendingOverviewQuery,
+    kinds: Map<string, KindChoice>,
+    usualTotal: number,
+    rates: Map<number, FxRate>,
+    now: number,
+  ): Promise<{ limitsOver: LimitOverView[]; limitsAhead: LimitAheadView[] }> {
     const goals = (await listGoals(db)).filter(
       (g) => (g.type === 'limit' && g.period === 'month') || g.type === 'budget',
     ).filter((g) => q.participantId === undefined || g.participantId === null || g.participantId === q.participantId);
-    if (goals.length === 0) return [];
+    if (goals.length === 0) return { limitsOver: [], limitsAhead: [] };
     const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const current = q.month === today.slice(0, 7);
+    const pos = periodPosition('month', today, q.month, current);
     const sumsOf = new Map<number | null, Sums>();
     for (const o of new Set(goals.map((g) => g.participantId))) {
       const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', holds: 'final', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
       sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
     }
-    const out: LimitOverView[] = [];
+    const limitsOver: LimitOverView[] = [];
+    const limitsAhead: LimitAheadView[] = [];
+    const add = (categoryId: KindCategoryId | null, f: LimitFiguresView) => {
+      if (f.spent > f.amount) {
+        const over = f.spent - f.amount;
+        limitsOver.push({ categoryId, amount: f.amount, spent: f.spent, over, severity: insightSeverity(over, usualTotal) });
+      } else if (current && f.forecast !== null && f.forecast > f.amount && f.daysPassed >= f.days * FORECAST_FROM) {
+        const over = f.forecast - f.amount;
+        limitsAhead.push({ categoryId, amount: f.amount, spent: f.spent, forecast: f.forecast, over, perDay: f.perDay, severity: insightSeverity(over, usualTotal) });
+      }
+    };
     for (const g of goals) {
       const sums = sumsOf.get(g.participantId)!;
-      const amount = toUah(g.amount, g.currency, rates);
-      if (amount === null) continue;
       if (g.type === 'limit') {
-        const spent = sums.get(g.category) ?? 0;
-        if (spent > amount) out.push({ categoryId: CATEGORY_ID.get(g.category) as KindCategoryId, amount, spent, over: spent - amount, severity: insightSeverity(spent - amount, usualTotal) });
+        const amount = toUah(g.amount, g.currency, rates);
+        if (amount !== null) add(CATEGORY_ID.get(g.category) as KindCategoryId, figures(amount, sums.get(g.category) ?? 0, 'month', pos));
       } else if (g.type === 'budget') {
-        const v = budgetView(g, (w) => CATEGORY_ID.get(w) as KindCategoryId, sums, kinds, { daysPassed: 1, days: 1 }, false, rates);
-        if (v && v.flexible.spent > v.flexible.amount) {
-          const over = v.flexible.spent - v.flexible.amount;
-          out.push({ categoryId: null, amount: v.flexible.amount, spent: v.flexible.spent, over, severity: insightSeverity(over, usualTotal) });
-        }
+        const v = budgetView(g, (w) => CATEGORY_ID.get(w) as KindCategoryId, sums, kinds, pos, current, rates);
+        if (v) add(null, v.flexible);
       }
     }
-    return out.sort((a, b) => b.over - a.over);
+    return { limitsOver: limitsOver.sort((a, b) => b.over - a.over), limitsAhead: limitsAhead.sort((a, b) => b.over - a.over) };
   }
 
   private async jarTitles(db: Db): Promise<string[]> {
@@ -672,8 +692,8 @@ export class DataService {
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     const kinds = await kindMap(db);
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
-    const limitsOver = await this.limitsOverOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
-    if (!found) return { ...base, budget, limitsOver, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const { limitsOver, limitsAhead } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -732,6 +752,7 @@ export class DataService {
       ...base,
       budget,
       limitsOver,
+      limitsAhead,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,

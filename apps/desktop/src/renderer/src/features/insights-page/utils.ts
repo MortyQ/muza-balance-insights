@@ -1,4 +1,4 @@
-import type { BudgetStructureView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { BudgetStructureView, LimitAheadView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
@@ -250,13 +250,15 @@ export function budgetView(b: BudgetStructureView, incomplete: boolean, fmt: Mon
   };
 }
 
+const limitName = (l: { categoryId: LimitOverView['categoryId'] }) =>
+  l.categoryId ? categoryName({ category: l.categoryId, categoryId: l.categoryId }) : t('insights.limit.budget');
+
 /** A monthly limit over in the month, as a feed card: how much over, spent against the limit, a link to the «Budget» screen. */
 export function limitCard(l: LimitOverView, fmt: MoneyFormat): InsightCardView {
-  const name = l.categoryId ? categoryName({ category: l.categoryId, categoryId: l.categoryId }) : t('insights.limit.budget');
   return {
     key: `limit-${l.categoryId ?? 'budget'}`,
     icon: l.categoryId ? CATEGORY_ICON[l.categoryId] : 'lucide:wallet',
-    title: t('insights.limit.title', { name }),
+    title: t('insights.limit.title', { name: limitName(l) }),
     severity: l.severity,
     severityLabel: t(`insights.severity.${l.severity}`),
     text: t('insights.limit.text', { spent: fmt.money(l.spent), amount: fmt.money(l.amount) }),
@@ -269,15 +271,36 @@ export function limitCard(l: LimitOverView, fmt: MoneyFormat): InsightCardView {
   };
 }
 
-/** The detectors' cards in their own order, each limit over placed before the first card it outweighs in money. */
+/** A monthly limit the forecast puts over, as a feed card: the forecast, the overrun, per day to stay within. */
+export function limitAheadCard(l: LimitAheadView, fmt: MoneyFormat): InsightCardView {
+  return {
+    key: `limit-ahead-${l.categoryId ?? 'budget'}`,
+    icon: l.categoryId ? CATEGORY_ICON[l.categoryId] : 'lucide:wallet',
+    title: t('insights.limitAhead.title', { name: limitName(l) }),
+    severity: l.severity,
+    severityLabel: t(`insights.severity.${l.severity}`),
+    text: t('insights.limitAhead.text', { forecast: fmt.money(l.forecast), amount: fmt.money(l.amount), perDay: fmt.money(l.perDay) }),
+    chip: { text: `+${fmt.money(l.over)}`, tone: 'up', arrow: 'up', sr: t('insights.limitAhead.chip') },
+    tone: 'up',
+    bars: null,
+    driver: null,
+    to: budgetLink(),
+    linkText: t('insights.limit.open'),
+  };
+}
+
+/** The detectors' cards in their own order, each limit card (over or ahead) placed before the first card it outweighs in money. */
 function feedCards(v: InsightsOverview, fmt: MoneyFormat, scope: Scope): InsightCardView[] {
-  const limits = [...v.limitsOver];
+  const limits = [
+    ...v.limitsOver.map((l) => ({ over: l.over, card: () => limitCard(l, fmt) })),
+    ...v.limitsAhead.map((l) => ({ over: l.over, card: () => limitAheadCard(l, fmt) })),
+  ].sort((a, b) => b.over - a.over);
   const out: InsightCardView[] = [];
   for (const c of v.cards) {
-    while (limits.length > 0 && limits[0]!.over > c.amount) out.push(limitCard(limits.shift()!, fmt));
+    while (limits.length > 0 && limits[0]!.over > c.amount) out.push(limits.shift()!.card());
     out.push(cardView(c, fmt, scope));
   }
-  return [...out, ...limits.map((l) => limitCard(l, fmt))];
+  return [...out, ...limits.map((l) => l.card())];
 }
 
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
@@ -292,7 +315,7 @@ export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: S
     glance,
     early: null,
     cards: feedCards(v, fmt, scope),
-    calm: v.cards.length === 0 && v.limitsOver.length === 0,
+    calm: v.cards.length === 0 && v.limitsOver.length === 0 && v.limitsAhead.length === 0,
     newPayees: v.newPayees.map((p) => payeeRow(p, fmt, scope)),
     oneOffs: v.oneOffs.map((o) => oneOffRow(o, fmt, scope, year)),
     basis: basisLines(v),
