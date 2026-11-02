@@ -730,6 +730,8 @@ export type GoalCurrency = 980 | 840 | 978;
 export type LimitPeriod = 'day' | 'week' | 'month';
 /** on track · from 80% spent or a forecast over the limit · over the limit. */
 export type LimitStateName = 'ok' | 'attention' | 'exceeded';
+/** Why a limit needs attention (core read/limits.ts), the most telling first. */
+export type LimitReason = 'pace' | 'forecast' | 'share';
 
 /** A limit's figures on today (a past month: its end), hryvnia kopecks by today's rate (core read/limits.ts). */
 export type LimitFiguresView = {
@@ -745,6 +747,12 @@ export type LimitFiguresView = {
   days: number;
   daysLeft: number;
   state: LimitStateName;
+  /** The attention's reason; null — on track or exceeded. */
+  reason: LimitReason | null;
+  /** Spent against the expected amount by today: under 90%, even, ahead above 110%. */
+  pace: 'under' | 'even' | 'ahead';
+  /** The forecast is reliable enough to show (from the fifth day of a month). */
+  forecastShown: boolean;
   /** Pending holds left out of `spent` (the bank may still change them); null — none. */
   pending: { count: number; amount: number } | null;
 };

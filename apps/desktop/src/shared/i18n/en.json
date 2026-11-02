@@ -438,7 +438,11 @@
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
       },
       "pending": "+ {n} pending, {amount} | + {n} pending, {amount} | + {n} pending, {amount}",
-      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do."
+      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do.",
+      "ahead": "{amount} ahead of plan (×{times})",
+      "aheadSoft": "A little ahead of plan",
+      "under": "{amount} under plan",
+      "paceLineEarly": "planned by today {expected}"
     }
   },
   "header": {

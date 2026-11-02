@@ -19,7 +19,7 @@ const inputOf = (root: ParentNode, test: string): HTMLInputElement => {
 const uah = (k: number) => plain(formatMoney(k, 980));
 const fig = (amount: number, spent: number, state: 'ok' | 'attention' | 'exceeded', extra = {}) => ({
   amount, spent, left: amount - spent, percent: Math.round((spent / amount) * 100), expected: Math.round((amount * 15) / 31),
-  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, pending: null, ...extra,
+  forecast: Math.round((spent / 15) * 31), perDay: Math.max(0, Math.round((amount - spent) / 17)), daysPassed: 15, days: 31, daysLeft: 17, state, reason: state === 'attention' ? ('forecast' as const) : null, pace: 'even' as const, forecastShown: true, pending: null, ...extra,
 });
 
 const OVERVIEW: LimitsOverview = {

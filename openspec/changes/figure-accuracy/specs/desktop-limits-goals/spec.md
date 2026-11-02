@@ -64,3 +64,19 @@ marker, the state and a link to edit; without a limit, a quiet «Set a limit» w
 #### Scenario: Pending on the category screen
 - **WHEN** the category's list shows a pending hold from today
 - **THEN** the limit bar leaves it out and says it is pending, while the list still shows the operation
+
+## ADDED Requirements
+
+### Requirement: The state in words says the real problem
+A limit's and the budget's state SHALL be said by its reason: «Over by N»; «N ahead of plan (×2.6)» for the pace;
+«Forecast over the limit»; «N% spent»; «A little ahead of plan» in a neutral look for a lead below attention, never
+«On track»; «N under plan»; else «On track». The bar SHALL take the state's colour. Until the forecast is shown, the
+pace line SHALL give only what the plan allows by today.
+
+#### Scenario: Two days, a quarter of the limit
+- **WHEN** a 35 € transport limit has 6 € spent on day 2 of 30
+- **THEN** the row says «4 € ahead of plan (×2.6)» in the attention look, and the pace line has no forecast
+
+#### Scenario: A small lead
+- **WHEN** the budget's flexible part is a little above its plan by today, below the attention thresholds
+- **THEN** it says «A little ahead of plan» in a neutral look, not «On track»

@@ -28,7 +28,6 @@ import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
 import { incomeSummary } from '@mono/core/read/income';
 import { detectInsights, insightSeverity, mainDriver, newPayees, oneOffs, payeeUsual, savingsRate } from '@mono/core/read/insights';
-import { FORECAST_FROM } from '@mono/core/read/limits';
 import { periodInfo } from '@mono/core/read/filters';
 import { cashWithdrawn, spendingGrid, spendingSummary, type SpendingCell } from '@mono/core/read/spending';
 import { accountNames } from '../shared/account-name.ts';
@@ -543,8 +542,8 @@ export class DataService {
   /**
    * The view's monthly limits in the feed (a person: theirs and the family's), each against its owner's «Personal»
    * spending of every bank, pending holds left out; the budget's flexible part too. Over: spent above the amount. Ahead
-   * (the current month only): not over yet, the forecast above it once FORECAST_FROM of the month has passed — the rule
-   * of the «attention» state. Severity against the usual month, as the feed's.
+   * (the current month only): not over yet, in attention for its pace or its forecast — the «Budget» screen's rule
+   * (core limitState). Severity against the usual month, as the feed's.
    */
   private async limitSignalsOf(
     db: Db,
@@ -573,7 +572,7 @@ export class DataService {
       if (f.spent > f.amount) {
         const over = f.spent - f.amount;
         limitsOver.push({ categoryId, amount: f.amount, spent: f.spent, over, severity: insightSeverity(over, usualTotal) });
-      } else if (current && f.forecast !== null && f.forecast > f.amount && f.daysPassed >= f.days * FORECAST_FROM) {
+      } else if (current && f.forecast !== null && f.forecast > f.amount && (f.reason === 'pace' || f.reason === 'forecast')) {
         const over = f.forecast - f.amount;
         limitsAhead.push({ categoryId, amount: f.amount, spent: f.spent, forecast: f.forecast, over, perDay: f.perDay, severity: insightSeverity(over, usualTotal) });
       }

@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { LimitStateName } from '@contract/api.ts';
-import { STATE_LOOK } from '../constants.ts';
+import { STATE_LOOK, type StateLookName } from '../constants.ts';
 
 // A limit's bar: spent of the amount on a sunken track, coloured by the state, and the pace marker — where the pace
 // allows by today. Hidden from screen readers: the same figures are beside it as text.
 const { fill, pace = null, state, color = null, thick = false } = defineProps<{
   fill: number;
   pace?: number | null;
-  state: LimitStateName;
+  state: StateLookName;
   /** The fill while on track (a category's colour); else the state's. */
   color?: string | null;
   thick?: boolean;
 }>();
-const fillColor = computed(() => (state === 'ok' && color ? color : STATE_LOOK[state].fill));
+const fillColor = computed(() => ((state === 'ok' || state === 'ahead') && color ? color : STATE_LOOK[state].fill));
 </script>
 
 <template>

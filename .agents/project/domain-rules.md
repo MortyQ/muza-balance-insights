@@ -241,8 +241,11 @@
   taxes cannot be a row), plus what a row spent above its amount. The «Fixed» flag
   of the kinds does not change the budget. `limitState` (`read/limits.ts`) — spent, left, per cent, expected by today,
   the forecast (none for a day limit), per day (left ÷ days left, today counted), the state: exceeded above the amount,
-  attention from `ATTENTION_SHARE` (80%) or a forecast over the amount once `FORECAST_FROM` (a quarter) of the period
-  has passed. `suggestedAmount` — the median of the usual whole months scaled to the period, rounded to 100 ₴, none
+  attention when spending runs well ahead of the pace (≥ `PACE_RATIO` 1.3 × the expected amount and ≥ `PACE_SHARE` 5% of
+  the limit above it, from the first day), from `ATTENTION_SHARE` (80%), or for a forecast over the amount once
+  `FORECAST_FROM` (a quarter) of the period has passed — with its `reason` (`pace` → `forecast` → `share`), the `pace`
+  (`under` / `even` / `ahead`, ±`PACE_EVEN` 10% of the plan) and `forecastShown` (from day `min(FORECAST_SHOW_DAYS 5,
+  ⌈days / 4⌉)`). `suggestedAmount` — the median of the usual whole months scaled to the period, rounded to 100 ₴, none
   under 3 months. Limits count «Personal» spending of every bank, whatever the bank filter, as «Spending» does. A savings
   goal follows a jar or the owner's cards and jars (`savingProgress`, `read/savings-goals.ts`: needed per month = left ÷
   the months to the date — the current one counted, the date's own not —, rounded up to a hryvnia; a jar that is gone →

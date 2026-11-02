@@ -1,4 +1,4 @@
-import type { LimitStateName } from '@contract/api.ts';
+import type { StateLookName } from './constants.ts';
 
 /** Amounts go through a structural money format (MoneyFormat fits; entities do not import each other). */
 export interface Money {
@@ -17,11 +17,12 @@ export interface LimitLook {
   fill: number;
   /** Where the pace allows by today, % of the bar; null — a day limit or a past month. */
   pace: number | null;
-  state: LimitStateName;
+  /** The state's look: `ahead` for an on-track limit ahead of its plan. */
+  state: StateLookName;
   stateText: string;
   stateIcon: string;
   spentOf: string;
-  /** «197 € planned by today · forecast 690 €»; '' for a day limit or a past month. */
+  /** «197 € planned by today · forecast 690 €» (the forecast from the fifth day); '' for a day limit or a past month. */
   paceText: string;
   perDay: string;
   /** «+ 2 pending, 650 ₴» and its hint: holds left out of the figures; null — none. */

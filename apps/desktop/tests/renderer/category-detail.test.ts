@@ -333,7 +333,7 @@ const LIMITS = {
   past: { months: [], byCategory: {}, total: [] },
   limits: [{
     id: 1, categoryId: 'transport', period: 'month', owner: null, currency: 980, amountMinor: 200_000,
-    figures: { amount: 200_000, spent: 150_000, left: 50_000, percent: 75, expected: 100_000, forecast: 300_000, perDay: 3_125, daysPassed: 15, days: 30, daysLeft: 16, state: 'attention', pending: null },
+    figures: { amount: 200_000, spent: 150_000, left: 50_000, percent: 75, expected: 100_000, forecast: 300_000, perDay: 3_125, daysPassed: 15, days: 30, daysLeft: 16, state: 'attention', reason: 'pace', pace: 'ahead', forecastShown: true, pending: null },
   }],
 };
 let limits: unknown = LIMITS;
@@ -407,7 +407,8 @@ describe('category screen mounted', () => {
     const w = await mountScreen();
     const bar = w.find('[data-test="category-limit"]');
     expect(bar.exists()).toBe(true);
-    expect(bar.text()).toContain('Прогноз выше лимита');
+    // 1 500 of 2 000 by day 15 of 30 (1 000 planned): ×1.5 — the pace, in words.
+    expect(bar.text()).toContain(`Быстрее плана на ${uah(50_000)} (×1,5)`);
     expect(bar.find('[data-test="pace-marker"]').exists()).toBe(true);
     expect(bar.find('[data-test="pending-note"]').exists()).toBe(false);
     w.unmount();

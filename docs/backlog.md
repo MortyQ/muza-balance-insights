@@ -310,3 +310,6 @@
 - A budget with «Count taxes» off: taxes leave its flexible part and its past-months chart, the panel says so, and
   «Spending» and «Budget structure» still show them.
 - «Forecast above the limit» in «Insights» after the first week of a month: does it read as a warning, not an alarm?
+- The pace rule (attention at ≥ 1.3 × the plan and ≥ 5% of the limit above it; «a little ahead» above 110% of the
+  plan): on real months, does it warn early enough without crying wolf after one large purchase? Tune the thresholds in
+  `packages/core/src/read/limits.ts`.

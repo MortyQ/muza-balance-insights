@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { LimitStateName } from '@contract/api.ts';
 import { VIcon } from '@/shared/ui';
-import { STATE_LOOK } from '../constants.ts';
+import { STATE_LOOK, type StateLookName } from '../constants.ts';
 
-const { state, text } = defineProps<{ state: LimitStateName; text: string }>();
+const { state, text } = defineProps<{ state: StateLookName; text: string }>();
 </script>
 
 <template>

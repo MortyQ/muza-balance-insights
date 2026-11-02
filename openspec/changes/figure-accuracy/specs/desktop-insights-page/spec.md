@@ -49,18 +49,22 @@ the «Budget» screen, ranked among the other cards by money. Spent amounts SHAL
 ## ADDED Requirements
 
 ### Requirement: Forecast above the limit in the feed
-In the current month, once a quarter of it has passed, the feed SHALL list each monthly limit (and the budget's
-flexible part) not exceeded but forecast above it as a «Forecast above the limit» card: the category (or the budget),
-the forecast, the overrun, «per day» to stay within and a link to the «Budget» screen. Its severity and rank SHALL
-follow the other cards' rule, from the overrun. A past month SHALL have no such cards.
+In the current month the feed SHALL list each monthly limit (and the budget's flexible part) that is not exceeded but
+in attention for its pace or its forecast — the rule of the «Budget» screen — as a «Forecast above the limit» card: the
+category (or the budget), the forecast, the overrun, «per day» to stay within and a link to the «Budget» screen. Its
+severity and rank SHALL follow the other cards' rule, from the overrun. A past month SHALL have no such cards.
 
 #### Scenario: Ahead of pace on cafes
 - **WHEN** on day 10 of 30 cafes have 1 900 ₴ spent against a 4 000 ₴ monthly limit
 - **THEN** the feed has a «Forecast above the limit» card for cafes: forecast 5 700 ₴, 1 700 ₴ over, 100 ₴ a day to stay within
 
-#### Scenario: Too early
-- **WHEN** on day 5 of 30 the forecast is above the limit
+#### Scenario: A small lead early in the month
+- **WHEN** on day 2 of 30 a limit's spending is only slightly ahead of its pace
 - **THEN** there is no forecast card
+
+#### Scenario: Well ahead early in the month
+- **WHEN** on day 2 of 30 a 35 € limit has 6 € spent
+- **THEN** the feed has its «Forecast above the limit» card
 
 #### Scenario: Already exceeded
 - **WHEN** the limit is exceeded

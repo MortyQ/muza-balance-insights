@@ -111,6 +111,22 @@ booleans.
      `cashWithdrawn` field, null while cash counts).
    - Every text is an i18n key in `uk`, `en` and `ru`.
 
+8. **The state follows the pace** (added after the first review on live data: «On track» on day 2 with a quarter
+   of the limit spent).
+   - `limitState` adds attention when spending is at least `PACE_RATIO` (1.3) times the expected amount and at least
+     `PACE_SHARE` (5%) of the limit above it, from the first day. The forecast rule after `FORECAST_FROM` and the 80%
+     share stay. Both thresholds together keep one early purchase from raising it: 60 € on day 1 of a 1 050 € budget
+     is 25 € (2.4%) over the plan.
+   - It returns the reason (`pace` → `forecast` → `share`), the pace (`under` below 90% of the plan, `even` to 110%,
+     `ahead` above) and `forecastShown` (from day `min(5, ⌈days / 4⌉)`), so the renderer words it without rules.
+   - Renderer: `entities/goal` — the state words by reason, and a neutral `ahead` look in `STATE_LOOK` for an
+     on-track limit ahead of its plan (the bar keeps the on-track fill).
+   - The Insights «Forecast above the limit» card follows the reason (`pace` or `forecast`), so the feed and the
+     «Budget» screen agree.
+   - Alternative: only lower `FORECAST_FROM`. Rejected: the forecast from two days is noise either way, while the pace
+     against the plan by today is what the bar already draws.
+   - The thresholds are guesses from two real cases; the live check tunes them (`docs/backlog.md`).
+
 ## Risks / Trade-offs
 
 - **The budget and «Spending» differ by the holds.** With pending holds, home's «Spending» and the «Budget» row

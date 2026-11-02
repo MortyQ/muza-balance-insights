@@ -91,6 +91,13 @@
   - `apps/mcp`: the spending tool without cash while off
 - [x] 6.7 `.agents/project/domain-rules.md`: the cash switch, MCP included. `CHANGELOG.md`: cash withdrawals can be left out of spending in «Categories»
 
+## 8. The state follows the pace
+
+- [x] 8.1 `packages/core/src/read/limits.ts`: `PACE_RATIO`, `PACE_SHARE`, `PACE_EVEN`, `FORECAST_SHOW_DAYS`; `limitState` returns `reason`, `pace` and `forecastShown`, and attention for a pace well ahead; tests in `tests/read/limits.test.ts` (the two live cases, a small early lead, under the pace, a day limit)
+- [x] 8.2 `apps/desktop/src/shared/api.ts` `LimitFiguresView` carries them; `data.ts` `limitSignalsOf` puts a limit ahead by its reason; data tests updated
+- [x] 8.3 `entities/goal`: the state words by reason (`entities.goal.ahead`, `aheadSoft`, `under`), the neutral `ahead` look, the pace line without the forecast until it is shown; keys in three languages; renderer tests
+- [x] 8.4 `CHANGELOG.md` and `.agents/project/domain-rules.md`: the state follows the pace
+
 ## 7. Wrap-up
 
 - [x] 7.1 `docs/backlog.md`, «To check live: figure accuracy»:

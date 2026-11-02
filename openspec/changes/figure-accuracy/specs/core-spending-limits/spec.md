@@ -71,3 +71,38 @@ fixed row SHALL be refused. The choice SHALL NOT change category limits, «Spend
 #### Scenario: An existing budget
 - **WHEN** a budget saved before this choice existed is read
 - **THEN** it counts taxes
+
+### Requirement: Pace, forecast, per day and state
+For each limit the system SHALL give spent, left (limit − spent), the per cent spent, the expected amount by today
+(limit × days passed ÷ days in the period, today counted), the forecast for the period's end (spent ÷ days passed ×
+days in the period) and «per day» (left ÷ days left, today counted; 0 when nothing is left). The state SHALL be
+exceeded above 100%; attention from 80% to 100%, when spending runs well ahead of the pace (at least 1.3 times the
+expected amount and at least 5% of the limit above it), or when the forecast is above the limit once a quarter of the
+period has passed; on track otherwise. An attention state SHALL say its reason: the pace, the forecast or the share
+spent, the pace first. The system SHALL also give the pace: under (below 90% of the expected amount), even (up to 110%)
+or ahead (above), so a small lead that is not yet attention is not called on track in words. The forecast SHALL be
+given for showing only from the fifth day of a month (a quarter of a shorter period), and never for a day limit.
+
+#### Scenario: Ahead of pace
+- **WHEN** a 4 000 ₴ monthly limit has 1 900 ₴ spent on day 10 of 30
+- **THEN** the expected amount is 1 333 ₴, the forecast 5 700 ₴, per day 100 ₴, and the state is attention for the pace
+
+#### Scenario: Exceeded
+- **WHEN** 5 300 ₴ is spent against 4 000 ₴
+- **THEN** the state is exceeded, left is −1 300 ₴, per day 0
+
+#### Scenario: Too early for a forecast
+- **WHEN** on day 3 of 30 the forecast is above the limit and 12% is spent (10% expected)
+- **THEN** the state is on track with the pace ahead: the lead is under 1.3 times the plan
+
+#### Scenario: Well ahead in the first days
+- **WHEN** a 35 € monthly limit has 6 € spent on day 2 of 30 (2.33 € expected)
+- **THEN** the state is attention for the pace, though the forecast is not shown yet
+
+#### Scenario: A small lead early in the month
+- **WHEN** a 1 050 € budget's flexible part has 60 € spent on day 1 of 30 (35 € expected)
+- **THEN** the state is on track with the pace ahead, and the forecast is not shown yet
+
+#### Scenario: Under the pace
+- **WHEN** a 4 000 ₴ monthly limit has 500 ₴ spent on day 15 of 30
+- **THEN** the state is on track and the pace under

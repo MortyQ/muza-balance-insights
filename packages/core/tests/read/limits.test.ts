@@ -6,6 +6,7 @@ describe('limit figures', () => {
   it('ahead of pace: 1 900 of 4 000 on day 10 of 30 — expected 1 333, forecast 5 700, 100 a day, attention', () => {
     expect(limitState({ amount: 400_000, spent: 190_000, daysPassed: 10, days: 30, period: 'month' })).toEqual({
       spent: 190_000, left: 210_000, percent: 48, expected: 133_333, forecast: 570_000, perDay: 10_000, daysLeft: 21, state: 'attention',
+      reason: 'pace', pace: 'ahead', forecastShown: true,
     });
   });
 
@@ -20,9 +21,32 @@ describe('limit figures', () => {
     expect(limitState({ amount: 100_000, spent: 100_001, daysPassed: 30, days: 30, period: 'month' }).state).toBe('exceeded');
   });
 
-  it('too early for a forecast: 20% on day 3 of 30 is on track; a day limit has no forecast', () => {
-    expect(limitState({ amount: 400_000, spent: 80_000, daysPassed: 3, days: 30, period: 'month' }).state).toBe('ok');
-    expect(limitState({ amount: 50_000, spent: 30_000, daysPassed: 1, days: 1, period: 'day' })).toMatchObject({ forecast: null, perDay: 20_000, state: 'ok' });
+  it('too early for a forecast: 12% on day 3 of 30 (10% planned) is on track, ahead in words; a day limit has no forecast', () => {
+    expect(limitState({ amount: 400_000, spent: 48_000, daysPassed: 3, days: 30, period: 'month' })).toMatchObject({ state: 'ok', reason: null, pace: 'ahead', forecastShown: false });
+    expect(limitState({ amount: 50_000, spent: 30_000, daysPassed: 1, days: 1, period: 'day' })).toMatchObject({ forecast: null, perDay: 20_000, state: 'ok', forecastShown: false });
+  });
+
+  it('well ahead in the first days: 6 € of 35 € on day 2 of 30 — attention for the pace, the forecast not shown yet', () => {
+    expect(limitState({ amount: 3_500, spent: 600, daysPassed: 2, days: 30, period: 'month' })).toMatchObject({
+      expected: 233, state: 'attention', reason: 'pace', pace: 'ahead', forecastShown: false,
+    });
+    // The budget: 133 € of 1 050 € on day 2 (70 € planned): 1.9 times, 6% of it above.
+    expect(limitState({ amount: 105_000, spent: 13_300, daysPassed: 2, days: 30, period: 'month' })).toMatchObject({ state: 'attention', reason: 'pace' });
+  });
+
+  it('one early purchase: 60 € on day 1 of a 1 050 € budget (35 € planned) is ahead, not attention', () => {
+    expect(limitState({ amount: 105_000, spent: 6_000, daysPassed: 1, days: 30, period: 'month' })).toMatchObject({ state: 'ok', pace: 'ahead', reason: null });
+  });
+
+  it('the reason: the forecast after a quarter, then the share; under and even pace; the forecast shown from day 5', () => {
+    // Day 10: 36% spent, 33% planned — even, yet the forecast (108%) is over.
+    expect(limitState({ amount: 100_000, spent: 36_000, daysPassed: 10, days: 30, period: 'month' })).toMatchObject({ state: 'attention', reason: 'forecast', pace: 'even' });
+    // Day 28: 82% spent of 93% planned — under the pace, attention for the share.
+    expect(limitState({ amount: 100_000, spent: 82_000, daysPassed: 28, days: 30, period: 'month' })).toMatchObject({ state: 'attention', reason: 'share', pace: 'under' });
+    expect(limitState({ amount: 400_000, spent: 50_000, daysPassed: 15, days: 30, period: 'month' })).toMatchObject({ state: 'ok', pace: 'under' });
+    expect(limitState({ amount: 100_000, spent: 1_000, daysPassed: 4, days: 30, period: 'month' }).forecastShown).toBe(false);
+    expect(limitState({ amount: 100_000, spent: 1_000, daysPassed: 5, days: 30, period: 'month' }).forecastShown).toBe(true);
+    expect(limitState({ amount: 10_000, spent: 1_000, daysPassed: 2, days: 7, period: 'week' }).forecastShown).toBe(true);
   });
 });
 

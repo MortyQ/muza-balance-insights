@@ -11,10 +11,14 @@ English interface.
   budget, «Insights» and «What's unusual» on home, so a limit no longer turns red over a payment that may still be
   cancelled. Next to each limit and the budget a quiet note says how many payments are pending and for how much. They
   count once the bank finalises them. «Spending» still includes them, as your bank balance does.
-- **A warning before a limit is over.** «Insights» now lists a monthly limit, or the monthly budget, that the month's
-  pace will take over its amount: the forecast for the month's end, how much over it would be and how much a day keeps
-  you within. It shows only in the current month, once its first quarter has passed, so a few early payments do not
-  raise it.
+- **Limits say what is really going on.** A limit or the budget no longer reads «On track» while you spend far faster
+  than planned: spending well ahead of the plan by today (at least 1.3 times it, and by at least 5% of the limit) needs
+  attention from the first day and says by how much — «4 € ahead of plan (×2.6)». A smaller lead reads «A little ahead
+  of plan», spending below the plan says by how much, and the forecast for the month's end appears from its fifth day,
+  when it means something.
+- **A warning before a limit is over.** «Insights» now lists a monthly limit, or the monthly budget, that runs well
+  ahead of its plan or whose forecast is over it: the forecast for the month's end, how much over it would be and how
+  much a day keeps you within. It shows only in the current month, by the same rule as the «Budget» screen.
 - **A budget without taxes.** The monthly budget sheet has a «Count taxes» switch. Turn it off when you set taxes
   aside apart from your budget: taxes and government payments then stay out of the budget, and cannot be one of its
   fixed costs. «Spending» and «Budget structure» still count them.
