@@ -803,7 +803,12 @@
         "noteRunning": "Compared with the median whole month of {months}: this month is still running",
         "overMonth": "{name} — already {diff} more than in a usual whole month",
         "rare": "{name} — +{amount}, usually next to nothing here",
-        "title": "What's unusual"
+        "title": "What's unusual",
+        "income": "Income",
+        "caption": "{now} · usually {usual}",
+        "captionRare": "{now} · usually almost nothing",
+        "captionOver": "{now} · already above a usual month, {usual}",
+        "help": "Categories and income that stand out against the usual month: the median of up to 6 whole months before. The bar shows this month, the mark the usual. The largest changes first."
       },
       "leftOut": "+ {amount} without an exchange rate — not in the totals",
       "markTitle": "In {month} — {amount}",

@@ -120,7 +120,7 @@ describe('home highlights', () => {
     const slides = w.findAll('.v-carousel__slide');
     expect(slides.map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent']);
     expect(w.get('[data-test="home-highlights"]').classes()).toContain('@[79rem]:col-span-4');
-    expect(slides[0]!.text()).toContain(`Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`);
+    expect(slides[0]!.get('[data-test="insight-line"]').attributes('aria-label')).toBe(`Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`);
     const dots = w.findAll('[data-test="carousel-dot"]');
     expect(dots.map((d) => d.attributes('aria-label'))).toEqual(['Слайд 1 из 2: Что необычно', 'Слайд 2 из 2: Последние транзакции']);
 

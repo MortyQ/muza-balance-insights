@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // «What's unusual» of the spending block (utils/insights.ts): core's ranked insights worded, at most five, a category
-// line linked to its screen, the note. Fictional figures only.
+// line linked to its screen, each a row like «Spending»'s (colour by rank, now and the usual, the change chip, the bar),
+// the note. Fictional figures only.
 import { describe, expect, it } from 'vitest';
 import type { SpendingInsight, SpendingInsights, SpendingOverview } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
@@ -12,7 +13,9 @@ const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: 
 const ins = (o: Partial<SpendingInsight> & Pick<SpendingInsight, 'type' | 'amount'>): SpendingInsight => ({
   direction: 'up', percent: null, category: null, categoryId: null, now: 0, usual: 0, ...o,
 });
-const view = (insights: SpendingInsights | null) => ({ insights }) as unknown as SpendingOverview;
+// «Spending»'s categories in the family's order: «доставка» is second, so it takes `--category-2`.
+const CATEGORIES = [{ category: 'продукты' }, { category: 'доставка' }];
+const view = (insights: SpendingInsights | null) => ({ insights, categories: CATEGORIES }) as unknown as SpendingOverview;
 const of = (list: SpendingInsight[], running = false) => view({ months: 5, running, insights: list });
 
 describe('insightsView', () => {
@@ -38,6 +41,32 @@ describe('insightsView', () => {
     expect(v.lines[0]!.to).toEqual({ name: 'category', params: { id: 'health' }, query: { scope: 'personal' } });
     expect(v.lines[2]!.to).toBeNull();
     expect(v.note).toBe('Сравнение с медианой за 5 месяцев');
+  });
+
+  it('a row: icon and colour by rank, now and the usual, the change chip, the bar of now against the usual', () => {
+    const v = insightsView(
+      of([
+        ins({ type: 'category-more', amount: 105_000, percent: 404, category: 'доставка', categoryId: 'delivery', now: 131_000, usual: 26_000 }),
+        ins({ type: 'category-less', direction: 'down', amount: 110_000, percent: 73, category: 'аптеки и здоровье', categoryId: 'health', now: 40_000, usual: 150_000 }),
+        ins({ type: 'income-more', amount: 68_000, percent: 25, now: 340_000, usual: 272_000 }),
+        ins({ type: 'category-rare', amount: 90_000, category: 'переводы людям', categoryId: 'p2p', now: 90_000, usual: 0 }),
+      ]),
+      FMT,
+      'personal',
+    )!;
+    const [more, less, income, rare] = v.lines;
+    expect(more).toMatchObject({
+      name: 'Доставка', icon: 'lucide:truck', color: 'var(--category-2)', caption: `${uah(131_000)} · обычно ${uah(26_000)}`,
+      chip: { text: `+${uah(105_000)} (×5,0)`, tone: 'up', arrow: 'up' },
+    });
+    expect(more!.bar.value).toBe(100);
+    expect(Math.round(more!.bar.mark)).toBe(20);
+    expect(less).toMatchObject({ color: 'var(--category-other)', chip: { text: `−${uah(110_000)} (73%)`, tone: 'down' } });
+    expect(less!.bar.mark).toBe(100);
+    expect(Math.round(less!.bar.value)).toBe(27);
+    expect(income).toMatchObject({ name: 'Доходы', icon: 'lucide:wallet', color: 'var(--success)', to: null, chip: { tone: 'neutral', arrow: null } });
+    expect(rare).toMatchObject({ caption: `${uah(90_000)} · обычно почти ничего`, chip: { text: `+${uah(90_000)}` } });
+    expect(rare!.bar).toEqual({ value: 100, mark: 0 });
   });
 
   it('at most five lines', () => {

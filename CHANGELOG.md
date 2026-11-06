@@ -48,6 +48,9 @@ English interface.
 - **Hints on figures and marks.** The «pending» mark of a transaction says the bank has not finalised it yet; the
   change in the number of transactions says it in words («4 fewer transactions than in August»); «… a day», «Free» and
   «Compared with …» explain themselves. Limits and the budget's explanations say pending payments wait.
+- **«What's unusual» in the home style.** Each line is now a row like those of «Spending»: the category's icon in its
+  colour, this month and the usual under the name, the change as a chip and a thin bar of this month with the usual
+  marked. A past month's block, which takes the whole row, lays the rows out in two columns.
 - **Tidier lists and words.** A transactions list without any marks no longer keeps an empty «Marks» column; an empty
   search says what was searched; regular payments read «Hide from regular payments» and «Not seen in recent months».
 

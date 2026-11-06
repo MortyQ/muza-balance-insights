@@ -168,8 +168,12 @@
   since 01.11, so the in-block person pick (`usePick`) stays `null`; the scope switch writes `entities/scope`.
   «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
   detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
-  `INSIGHT_MAX` (5), each with the money and the share (`changeText`), a «rare» one by the money alone; a category line
-  is a link to its screen (`categoryLink`, the block's scope), income lines are plain. The note says the median of how
+  `INSIGHT_MAX` (5), each a row in «Spending»'s look: the category's icon in a soft circle of its rank colour (the
+  `view.categories` order; income `--success` with a wallet), the name, «now · usually …», a `VChangeChip` with the
+  money and the share (`changeText`; a «rare» one the money alone), a chevron, and a `VShareBar` of now against the
+  usual (the larger is 100%, the usual a mark); the whole sentence is the row's `aria-label`. A category line is a link
+  to its screen (`categoryLink`, the block's scope), income lines are plain. Over the whole row (a past month, `wide`)
+  the rows stand in two columns from 60rem. The note says the median of how
   many months, and that the month still runs. It is a slide of the highlights tile (`useSpendingInsights`, the same
   request as the block, shared while in flight by `shared/api/balance.ts`).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
