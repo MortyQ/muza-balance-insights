@@ -64,3 +64,9 @@ export function leftForecast(a: { day: number; days: number; spent: { essential:
   };
   return { value: left(median), low: left((xs) => Math.max(...xs)), high: left((xs) => Math.min(...xs)) };
 }
+
+/** A month's share against the user's usual of it: better, worse or about the same by TREND_POINTS. */
+export function versusUsual(now: number, usual: number, goodUp: boolean): TrendDirection {
+  const diff = goodUp ? now - usual : usual - now;
+  return diff >= TREND_POINTS ? 'better' : diff <= -TREND_POINTS ? 'worse' : 'same';
+}

@@ -39,6 +39,7 @@ const OVERVIEW: InsightsOverview = {
   limitsAhead: [],
   monthlyLimits: 0,
   standing: { left: 'within', essential: 'within', wants: 'within', fixed: 'within', debt: 'within', reserve: 'near', limits: null },
+  health: null,
   history: [
     { month: '2025-09', left: 22, wants: 28, leftStanding: 'within', wantsStanding: 'within' },
     { month: '2025-10', left: 25, wants: 27, leftStanding: 'within', wantsStanding: 'within' },

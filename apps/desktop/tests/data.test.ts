@@ -1647,6 +1647,8 @@ describe('DataService.spendingOverview: usual', () => {
     expect(v.oneOffs[0]!.name).toBe('Cafe Fictional •• 0000');
     // Severity by the cards' rule against a usual month of 63 000: 150 000 and 50 000 are both high.
     expect([...v.newPayees, ...v.oneOffs].map((x) => x.severity)).toEqual(['high', 'high', 'high', 'high']);
+    // Strong signals: the card and the four payee signals, all high.
+    expect(v.health!.strong).toEqual({ n: 5, standing: 'outside' });
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
   });
@@ -1664,6 +1666,17 @@ describe('DataService.spendingOverview: usual', () => {
     // 60 / 6 / 34: essential is 10 points over its guide; no monthly limits, so no limits standing.
     expect(v.standing).toMatchObject({ left: 'within', essential: 'outside', wants: 'within', fixed: 'within', debt: 'within', limits: null });
     expect(v.standing.reserve).not.toBeNull();
+    // The user's own references: the usual months' median, February against it, the cushion and spending items.
+    expect(v.health).toMatchObject({
+      chart: { left: { usual: 37, unusual: [null, null, null, null, null, null], trend: { now: 35, before: 38, direction: 'worse' } } },
+      versus: { left: { usual: 37, direction: 'worse' }, essential: { usual: 60, direction: 'same' } },
+      forecast: null,
+      redMonths: { n: 0, of: 6, standing: 'within' },
+      income: { now: 100_000, usual: 100_000, standing: 'within' },
+      // 66 000 against a usual 63 000: under 10% over.
+      spending: { kind: 'month', now: 66_000, usual: 63_000, standing: 'near' },
+      strong: { n: 0, standing: 'within' },
+    });
     // The chart: the five usual months oldest first (delivery grows 1 000 a month), then February, finished.
     expect(v.history).toEqual([
       ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, left: 39 - i, wants: 1 + i, leftStanding: 'within', wantsStanding: 'within' })),
@@ -1680,6 +1693,9 @@ describe('DataService.spendingOverview: usual', () => {
     await covered('2025-09-01');
     await history();
     const running = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    // Day 9 of 31: no forecast yet; the pace is 19% of a usual month against 29% of the month passed.
+    expect(running.health).toMatchObject({ forecast: null, income: null, spending: { kind: 'pace', spent: 19, passed: 29, standing: 'within' } });
+    expect(running.health!.versus.left).toBeNull();
     expect(running.budget.month).toBeNull();
     expect(running.standing).toMatchObject({ left: null, essential: null, wants: null, fixed: null, debt: null });
     expect(running.budget.reserve).not.toBeNull();
@@ -1691,6 +1707,7 @@ describe('DataService.spendingOverview: usual', () => {
     const early = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
     expect(early.usual).toBeNull();
     expect(early.history).toEqual([]);
+    expect(early.health).toBeNull();
     expect(early.budget).toMatchObject({ month: { income: 100_000, split: { essential: 60, wants: 6, left: 34 } }, reserve: null });
   });
 

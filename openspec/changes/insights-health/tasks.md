@@ -71,11 +71,11 @@
 
 ## 8. Data: the history widened, the forecast, the new items
 
-- [ ] 8.1 `history` carries the five shares and their standings; the overview gains `references` (usual, unusual months,
+- [x] 8.1 `history` carries the five shares and their standings; the overview gains `references` (usual, unusual months,
       trends per share), `forecast` (running month: value, range, standing) and the new items' figures and standings
-- [ ] 8.2 The running month's spending by kind so far comes from the month's own read (no new query); the forecast's
+- [x] 8.2 The running month's spending by kind so far comes from the month's own read (no new query); the forecast's
       usual months from `found`
-- [ ] 8.3 Tests in `tests/data.test.ts`; commit `feat(desktop): health references and the month's forecast`
+- [x] 8.3 Tests in `tests/data.test.ts`; commit `feat(desktop): health references and the month's forecast`
 
 ## 9. Renderer: references on the chart, tiles, a fuller checklist
 

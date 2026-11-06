@@ -546,6 +546,8 @@ export type InsightsOverview = {
   monthlyLimits: number;
   /** Each checklist figure against its guide (core `guideStanding` / `limitsStanding`); null — no figure to place. */
   standing: HealthStanding;
+  /** The user's own references and the cushion and spending items; null without a usual. */
+  health: HealthReferences | null;
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
 };
@@ -561,6 +563,40 @@ export type Standing = 'within' | 'near' | 'outside';
 
 /** The «Financial health» checklist's standings: the shares need a finished month with income, the reserve 3 whole months, the limits at least one. */
 export type HealthStanding = Record<'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits', Standing | null>;
+
+/** A share against the user's own usual (core `versusUsual` / `shareTrend`). */
+export type TrendDirection = 'better' | 'worse' | 'same';
+
+/** The income shares of the checklist. */
+export type ShareKey = 'left' | 'essential' | 'wants' | 'fixed' | 'debt';
+
+/** One chart metric's references (core `usualOf`, `shareTrend`): `unusual` is aligned with `history`. */
+export type ChartReferences = {
+  usual: number;
+  unusual: Array<'above' | 'below' | null>;
+  trend: { now: number; before: number; direction: TrendDirection } | null;
+};
+
+/**
+ * «Financial health» beyond the guides (spec desktop-insights-health): the user's usual on the chart, the shown month
+ * against it, the running month's forecast and the cushion and spending items. Shares whole per cent, money kopecks.
+ */
+export type HealthReferences = {
+  /** Null under 3 months with income on the chart. */
+  chart: Record<'left' | 'wants', ChartReferences | null>;
+  /** A finished month's share against the usual months' median of it; null — no share or under 3 usual months with income. */
+  versus: Record<ShareKey, { usual: number; direction: TrendDirection } | null>;
+  /** The running month's left share (core `leftForecast`); null — a past month or too early. */
+  forecast: { value: number; low: number; high: number; standing: Standing } | null;
+  /** Of the chart's months with income, how many left less than zero. */
+  redMonths: { n: number; of: number; standing: Standing } | null;
+  /** A finished month's income against the usual median. */
+  income: { now: number; usual: number; standing: Standing } | null;
+  /** A finished month's total against the usual month, or a running month's share of it against the month passed. */
+  spending: { kind: 'month'; now: number; usual: number; standing: Standing } | { kind: 'pace'; spent: number; passed: number; standing: Standing } | null;
+  /** The feed's high items. */
+  strong: { n: number; standing: Standing };
+};
 
 /** One month of the Insights screen's shares chart: whole per cent of that month's income. */
 export type MonthSharesView = {
