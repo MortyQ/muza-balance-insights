@@ -29,3 +29,6 @@ export const SEVERITY_FILL: Readonly<Record<InsightSeverity, string>> = {
   medium: 'bg-[color-mix(in_oklch,var(--series-orange)_35%,transparent)]',
   low: 'bg-[color-mix(in_oklch,var(--foreground)_22%,transparent)]',
 };
+
+/** localStorage key of the feed filter (a convenience: «All» when storage is unavailable). */
+export const FEED_FILTER_KEY = 'insights.feedFilter';

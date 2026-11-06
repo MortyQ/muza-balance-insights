@@ -42,13 +42,13 @@
 
 ## 5. One feed with filters
 
-- [ ] 5.1 `utils/feed.ts`: merge cards, limit cards, new payees and one-offs into `FeedItemView[]` by money; counts by
+- [x] 5.1 `utils/feed.ts`: merge cards, limit cards, new payees and one-offs into `FeedItemView[]` by money; counts by
       severity; filter by severity and kind
-- [ ] 5.2 `SignalCard.vue` for a payee / one-off; remove `SignalList.vue` and the side column
-- [ ] 5.3 `useFeedFilter()` (`localStorage` `insights.feedFilter`, try/catch, unknown → all); `FeedFilters.vue` on
+- [x] 5.2 `SignalCard.vue` for a payee / one-off; remove `SignalList.vue` and the side column
+- [x] 5.3 `useFeedFilter()` (`localStorage` `insights.feedFilter`, try/catch, unknown → all); `FeedFilters.vue` on
       `VToggleGroup`; the empty state with «Reset filters»
-- [ ] 5.4 Texts for the filter buttons and the empty state in all three dictionaries
-- [ ] 5.5 Renderer tests: ranking with a one-off first, each filter, both rows, nothing matches → reset, the stored
+- [x] 5.4 Texts for the filter buttons and the empty state in all three dictionaries
+- [x] 5.5 Renderer tests: ranking with a one-off first, each filter, both rows, nothing matches → reset, the stored
       choice read back and a bad stored value; commit `feat(desktop): filters on the insights feed`
 
 ## 6. Docs and checks

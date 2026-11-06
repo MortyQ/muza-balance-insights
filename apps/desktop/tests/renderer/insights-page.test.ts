@@ -127,9 +127,21 @@ describe('insights screen', () => {
     early.unmount();
   });
 
-  it('the feed: every card ranked as given, with severity, the change, the bars and the driver; a card opens its category', async () => {
+  it('the feed: every item ranked by money, a one-off and a new payee among the cards', async () => {
     const w = await mountPage();
-    const cards = w.findAll('article');
+    const items = w.findAll('article').map((a) => a.attributes('data-test'));
+    // 400 000 one-off, cafes +300 000, the new payee 90 000, groceries −60 000.
+    expect(items).toEqual(['signal-card-high', 'insight-card-high', 'signal-card-low', 'insight-card-medium']);
+    const oneOff = plain(w.findAll('article')[0]!.text());
+    expect(oneOff).toContain('Разовый платёж · 14 февраля · Маркетплейсы');
+    expect(oneOff).toContain('4 000 ₴');
+    expect(w.findAll('article')[2]!.text()).toContain('Fictional Studio');
+    w.unmount();
+  });
+
+  it('a card: severity, the change, the bars and the driver; it opens its category', async () => {
+    const w = await mountPage();
+    const cards = w.findAll('[data-test^="insight-card"]');
     expect(cards).toHaveLength(2);
     expect(cards[0]!.get('[data-test="severity"]').text()).toBe('Высокий');
     expect(cards[1]!.get('[data-test="severity"]').text()).toBe('Средний');
@@ -145,16 +157,13 @@ describe('insights screen', () => {
     w.unmount();
   });
 
-  it('the side lists and how it was counted; a one-off without a description shows its category', async () => {
+  it('how it was counted, the payee signals\' thresholds included', async () => {
     const w = await mountPage();
-    expect(w.get('[data-test="new-payees"]').text()).toContain('Fictional Studio');
-    const oneOff = plain(w.get('[data-test="one-offs"] [data-test="signal-row"]').text());
-    expect(oneOff).toContain('14 февраля');
-    expect(oneOff).toContain('4 000 ₴');
     const basis = w.get('[data-test="insights-basis"]').text();
     expect(basis).toContain('медиана 5 целых месяцев');
     expect(basis).toContain('не учтено, пока банк их не проведёт: 2 транзакции');
     expect(basis).not.toContain('Снятие наличных');
+    expect(basis).toContain('Новые получатели: впервые в этом месяце');
     w.unmount();
     answer = { ...OVERVIEW, cashCounts: false };
     const off = await mountPage();
@@ -169,7 +178,7 @@ describe('insights screen', () => {
     };
     const w = await mountPage();
     // 100 000 over: after the cafes' +300 000, before the groceries' −60 000.
-    const cards = w.findAll('article');
+    const cards = w.findAll('[data-test^="insight-card"]');
     expect(cards).toHaveLength(3);
     const ahead = cards[1]!;
     expect(ahead.text()).toContain('Прогноз выше лимита: бюджет на гибкие траты');
@@ -184,12 +193,12 @@ describe('insights screen', () => {
     only.unmount();
   });
 
-  it('nothing unusual: a calm line; empty side lists say so', async () => {
+  it('nothing unusual: a calm line and no filters', async () => {
     answer = { ...OVERVIEW, cards: [], newPayees: [], oneOffs: [] };
     const w = await mountPage();
     expect(w.find('[data-test="insights-calm"]').exists()).toBe(true);
     expect(w.findAll('article')).toHaveLength(0);
-    expect(w.findAll('[data-test="signal-empty"]')).toHaveLength(2);
+    expect(w.find('[data-test="feed-filters"]').exists()).toBe(false);
     expect(w.get('[data-test="glance-signals"]').text()).toContain('Ничего необычного');
     w.unmount();
   });
@@ -222,16 +231,16 @@ describe('insights screen', () => {
     useCurrencyDisplayStore().setMain(978);
     const w = await mountPage();
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
-    expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
-    expect(plain(w.get('[data-test="one-offs"]').text())).toContain(plain(formatMoney(8_000, 978)));
+    expect(plain(w.findAll('[data-test^="insight-card"]')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
+    expect(plain(w.get('[data-test="signal-card-high"]').text())).toContain(plain(formatMoney(8_000, 978)));
     w.unmount();
   });
 
   it('a monthly limit over: a «Limit exceeded» card placed among the others by money, opening the budget', async () => {
     answer = { ...OVERVIEW, limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 750_000, over: 350_000, severity: 'high' }] };
     const w = await mountPage();
-    // 350 000 over outweighs the cafes' +300 000 and the groceries' −60 000: first.
-    const cards = w.findAll('article');
+    // 350 000 over outweighs the cafes' +300 000 and the groceries' −60 000: first of the cards.
+    const cards = w.findAll('[data-test^="insight-card"]');
     expect(cards).toHaveLength(3);
     const limit = cards[0]!;
     expect(limit.text()).toContain('Лимит превышен: Кафе и рестораны');
@@ -328,6 +337,51 @@ describe('insights screen', () => {
     expect(w.find('[data-test="shares-chart"]').exists()).toBe(false);
     expect(w.get('[data-test="health-reserve"]').text()).toContain('Нужны хотя бы 3 целых месяца истории.');
     w.unmount();
+  });
+
+  it('filters: severity with the month\'s counts, then kind; both rows together; pressed state announced', async () => {
+    const w = await mountPage();
+    const sev = w.get('[data-test="filter-severity"]');
+    expect(sev.attributes('role')).toBe('group');
+    expect(sev.findAll('button').map((b) => plain(b.text()))).toEqual(['Все 4', 'Высокие 2', 'Средние 1', 'Низкие 1']);
+    await w.get('[data-test="filter-severity-high"]').trigger('click');
+    expect(w.get('[data-test="filter-severity-high"]').attributes('aria-pressed')).toBe('true');
+    expect(w.get('[data-test="filter-severity-all"]').attributes('aria-pressed')).toBe('false');
+    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high', 'insight-card-high']);
+    await w.get('[data-test="filter-kind-oneOffs"]').trigger('click');
+    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high']);
+    // The severity counts stay those of the month.
+    expect(plain(w.get('[data-test="filter-severity-high"]').text())).toBe('Высокие 2');
+    w.unmount();
+  });
+
+  it('a filter with nothing in it says so and resets both rows', async () => {
+    const w = await mountPage();
+    await w.get('[data-test="filter-severity-medium"]').trigger('click');
+    await w.get('[data-test="filter-kind-payees"]').trigger('click');
+    expect(w.findAll('article')).toHaveLength(0);
+    expect(w.get('[data-test="feed-empty"]').text()).toContain('Под этот фильтр сигналов нет.');
+    await w.get('[data-test="feed-reset"]').trigger('click');
+    expect(w.findAll('article')).toHaveLength(4);
+    expect(w.get('[data-test="filter-kind-all"]').attributes('aria-pressed')).toBe('true');
+    w.unmount();
+  });
+
+  it('the filter is remembered on this computer; a bad stored value reads as «All»', async () => {
+    const first = await mountPage();
+    await first.get('[data-test="filter-severity-low"]').trigger('click');
+    first.unmount();
+    expect(JSON.parse(localStorage.getItem('insights.feedFilter')!)).toEqual({ severity: 'low', kind: 'all' });
+    answer = { ...OVERVIEW, month: '2026-01' };
+    const again = await mountPage();
+    expect(again.get('[data-test="filter-severity-low"]').attributes('aria-pressed')).toBe('true');
+    expect(again.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-low']);
+    again.unmount();
+    localStorage.setItem('insights.feedFilter', '{"severity":"huge","kind":7}');
+    const bad = await mountPage();
+    expect(bad.get('[data-test="filter-severity-all"]').attributes('aria-pressed')).toBe('true');
+    expect(bad.get('[data-test="filter-kind-all"]').attributes('aria-pressed')).toBe('true');
+    bad.unmount();
   });
 
   it('asks with the scope, and again when it changes', async () => {

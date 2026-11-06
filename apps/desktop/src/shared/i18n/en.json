@@ -985,13 +985,11 @@
     },
     "newPayees": {
       "title": "New payees",
-      "hint": "First seen this month, 500 ₴ or more",
-      "none": "No new payees this month"
+      "hint": "First seen this month, 500 ₴ or more"
     },
     "oneOffs": {
       "title": "Large one-off payments",
-      "hint": "A tenth of a usual month or more, to a payee that usually gets less",
-      "none": "No large one-off payments"
+      "hint": "A tenth of a usual month or more, to a payee that usually gets less"
     },
     "basis": {
       "title": "How it was counted",
@@ -1095,6 +1093,31 @@
         "ahead": "{n} forecast over",
         "within": "all within",
         "help": "This view's monthly limits and monthly budget: «Personal» spending, without holds the bank has not finalised."
+      }
+    },
+    "filter": {
+      "severityGroup": "Severity",
+      "kindGroup": "Kind",
+      "severity": {
+        "all": "All",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "kind": {
+        "all": "All kinds",
+        "up": "Spending up",
+        "down": "Spending down",
+        "income": "Income",
+        "limits": "Limits",
+        "payees": "New payees",
+        "oneOffs": "One-offs"
+      },
+      "empty": "No signal matches this filter.",
+      "reset": "Reset filters",
+      "signal": {
+        "payee": "New payee",
+        "oneOff": "One-off payment"
       }
     }
   },

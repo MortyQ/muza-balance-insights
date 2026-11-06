@@ -147,16 +147,36 @@ export interface HealthView {
   count: string | null;
 }
 
+/** What a feed item is, for the kind filter. */
+export type FeedKind = 'up' | 'down' | 'income' | 'limits' | 'payees' | 'oneOffs';
+
+/** The feed's filter: one choice per row, `all` — no filter. */
+export interface FeedFilter {
+  severity: 'all' | InsightSeverity;
+  kind: 'all' | FeedKind;
+}
+
+/** A new payee or a one-off as a feed card. */
+export interface SignalCardView extends SignalRowView {
+  severity: InsightSeverity;
+  severityLabel: string;
+}
+
+/** One item of the feed, ranked by `money` (the change, the overrun or the amount, kopecks). */
+export type FeedItemView = { key: string; kind: FeedKind; severity: InsightSeverity; money: number } & (
+  | { card: InsightCardView; signal: null }
+  | { card: null; signal: SignalCardView }
+);
+
 export interface InsightsPageView {
   health: HealthView;
   glance: GlanceView[];
   /** Fewer than 3 whole months: the notice's text, and nothing else is shown below the glance. */
   early: string | null;
-  cards: InsightCardView[];
-  /** There is a usual and nothing is unusual. */
+  /** Every item of the month, ranked by money: insights, limits, new payees, one-offs. */
+  feed: FeedItemView[];
+  /** There is a usual and the feed is empty. */
   calm: boolean;
-  newPayees: SignalRowView[];
-  oneOffs: SignalRowView[];
   /** «How it was counted»: one sentence per line. */
   basis: string[];
 }
