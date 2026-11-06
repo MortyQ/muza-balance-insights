@@ -2,11 +2,11 @@
 
 ## 1. ČSOB provider and reader (core)
 
-- [ ] 1.1 Add `csob` to `PROVIDER_IDS`, create `providers/csob/info.ts` and add its line in `PROVIDERS` (design 1).
+- [x] 1.1 Add `csob` to `PROVIDER_IDS`, create `providers/csob/info.ts` and add its line in `PROVIDERS` (design 1).
   Verify the conformance info checks.
-- [ ] 1.2 `providers/csob/iban.ts` (design 4). Verify with `tests/providers/csob/iban.test.ts`: a number without a
+- [x] 1.2 `providers/csob/iban.ts` (design 4). Verify with `tests/providers/csob/iban.test.ts`: a number without a
   prefix, with a prefix, short numbers padded, and a known-valid fictional IBAN's check digits.
-- [ ] 1.3 `providers/csob/descriptions.ts` (types, the standing order pattern), `categories.ts` (design 5), then
+- [x] 1.3 `providers/csob/descriptions.ts` (types, the standing order pattern), `categories.ts` (design 5), then
   `rules.ts` and its line in `PROVIDER_RULES`. Verify with `tests/providers/csob/rules.test.ts`, using fictional rows:
   - every type;
   - an incoming and an outgoing transfer with a generic category;
@@ -15,7 +15,7 @@
   - a cash deposit;
   - every category;
   - an unknown category (`knowsBankCategory` false).
-- [ ] 1.4 `providers/csob/statement.ts`: the reader `csob-account-csv-en` (design 2, 3, 6) and its line in
+- [x] 1.4 `providers/csob/statement.ts`: the reader `csob-account-csv-en` (design 2, 3, 6) and its line in
   `STATEMENT_READERS`. Verify with `tests/providers/csob/statement.test.ts`, on a fictional document builder:
   - unsigned integer amounts by type;
   - signed amounts with a decimal comma and with a dot;
@@ -27,7 +27,7 @@
   - two account numbers or two currencies (`bad-row`);
   - newest-first input handed over oldest first;
   - the header alone (detect 1), with the title (detect 2), and a Monobank CSV fixture (detect 0).
-- [ ] 1.5 Conformance fixtures `tests/providers/csob/fixtures/conformance/*.document.json` + `*.expected.json`: one
+- [x] 1.5 Conformance fixtures `tests/providers/csob/fixtures/conformance/*.document.json` + `*.expected.json`: one
   statement and one `bad-row` case, in the masked layout with fictional values. Verify the conformance suite and the
   `purity`, `layers` and `providers-boundary` tests.
 
