@@ -2,13 +2,13 @@
 
 ## 1. Core: shares by month and standing
 
-- [ ] 1.1 `packages/core/src/read/budget.ts`: `monthShares(income, byCategory, kinds)` → `{ left, wants } | null`
+- [x] 1.1 `packages/core/src/read/budget.ts`: `monthShares(income, byCategory, kinds)` → `{ left, wants } | null`
       (whole per cent, null without income), reusing `byKind` and the split's arithmetic
-- [ ] 1.2 `guideStanding(metric, value)` → `within | near | outside` for left, essential, wants, fixed, debt and the
+- [x] 1.2 `guideStanding(metric, value)` → `within | near | outside` for left, essential, wants, fixed, debt and the
       reserve; `limitsStanding(over, ahead)`; guides and the 5-point band as constants
-- [ ] 1.3 Tests in `packages/core/tests/read/budget.test.ts`: the spec's examples (24% / 32%, 18% near, 1.5 months
+- [x] 1.3 Tests in `packages/core/tests/read/budget.test.ts`: the spec's examples (24% / 32%, 18% near, 1.5 months
       outside, limits ahead near), no income, the band's edges
-- [ ] 1.4 Commit `feat(core): budget shares by month and standing against guides`
+- [x] 1.4 Commit `feat(core): budget shares by month and standing against guides`
 
 ## 2. Data: history and payee severity
 
