@@ -7,9 +7,9 @@ export const CARD_REFUND = 'Card transaction - refund';
 export const CASH_DEPOSIT = 'Cash deposit through cash deposit ATM';
 export const FOREIGN_FEE = 'Foreign payment - fee';
 
-/** A standing order names itself with its number: `El. banking standing order (123)`. */
+/** A standing order names itself with its number: `El. banking standing order 14`. */
 export const STANDING_ORDER = 'El. banking standing order';
-const STANDING_ORDER_RE = /^El\. banking standing order \(.*\)$/;
+const STANDING_ORDER_RE = /^El\. banking standing order(?: .*)?$/;
 
 /** A type as the rules know it: a standing order without its number. */
 export const typeName = (type: string) => (STANDING_ORDER_RE.test(type.trim()) ? STANDING_ORDER : type.trim());

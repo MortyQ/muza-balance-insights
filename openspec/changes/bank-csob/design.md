@@ -24,7 +24,7 @@ fictional.
   - `rate` is `99,999` or empty;
   - `ID transakce` is unique on every row.
 - **Types:** «Debit card transaction», «Outgoing instant payment», «Incoming instant payment», «Outgoing payment»,
-  «Incoming payment», «Outgoing payment - Payment button», «El. banking standing order (<number>)», «Foreign payment -
+  «Incoming payment», «Outgoing payment - Payment button», «El. banking standing order <number>», «Foreign payment -
   fee», «Incoming foreign payment», «Card transaction - refund», «Cash deposit through cash deposit ATM».
 - **Categories (20):** Groceries, Outgoing unclassified, Restaurants, Income, Bank transactions, Shopping and services,
   Taxes, Fuel, Drugstore goods, Transportation, Leisure time and entertainment, TV, internet, phone, ATM Withdrawals,
@@ -63,7 +63,7 @@ refuse every real upload. Backlog: check the arithmetic on the first real upload
 ### 3. Direction
 
 `descriptions.ts` holds `CREDIT_TYPES` and `DEBIT_TYPES`, plus the standing order pattern
-`/^El\. banking standing order \(.+\)$/`. A sign in the amount wins over the type, because a real export may well be
+`/^El\. banking standing order(?: .*)?$/` (a number after it, with or without brackets). A sign in the amount wins over the type, because a real export may well be
 signed. An unsigned amount with an unknown type is `bad-row`. A guess would put money on the wrong side of the balance.
 
 ### 4. IBAN from the account number

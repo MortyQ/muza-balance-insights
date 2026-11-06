@@ -37,7 +37,7 @@ describe('csob-account-csv-en', () => {
     expect(one({ date: '01.10.2026', amount: '40', type: 'Card transaction - refund', category: 'Groceries' }).amount).toBe(4000);
     expect(one({ date: '01.10.2026', amount: '2000', type: 'Cash deposit through cash deposit ATM', category: 'Income' }).amount).toBe(200000);
     expect(one({ date: '01.10.2026', amount: '35', type: 'Foreign payment - fee', category: 'Bank transactions' }).amount).toBe(-3500);
-    expect(one({ date: '01.10.2026', amount: '500', type: 'El. banking standing order (7)', category: 'Outgoing unclassified' }).amount).toBe(-50000);
+    expect(one({ date: '01.10.2026', amount: '500', type: 'El. banking standing order 7', category: 'Outgoing unclassified' }).amount).toBe(-50000);
   });
 
   it('a sign wins over the type; a decimal comma or dot reads', () => {
