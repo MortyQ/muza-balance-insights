@@ -58,3 +58,32 @@
       filter remembered after a restart
 - [ ] 6.3 `pnpm test` and `pnpm typecheck` at the root (the user runs them where the sandbox cannot); commit
       `docs: insights-health changelog and live checks`
+
+## 7. Core: references, trend, forecast, new standings
+
+- [ ] 7.1 `packages/core/src/read/health.ts` (new, the read layer): `usualOf(shares)` (median of ≥ 3, unusual beyond
+      `UNUSUAL_POINTS` = 15), `shareTrend(shares, goodUp)` (last 3 vs up to 3 before, `TREND_POINTS` = 3),
+      `leftForecast({ day, days, spent, usual })` from day `FORECAST_FROM_DAY` = 10 with its range
+- [ ] 7.2 Standings for months in the red, income against the usual, spending against the usual (finished and pace) and
+      strong signals, next to `guideStanding` in `read/budget.ts`
+- [ ] 7.3 Tests in `packages/core/tests/read/health.test.ts` and `budget.test.ts`: the spec's examples, the edges
+      (2 months, no income, day 9 / 10); commit `feat(core): usual, trend and forecast of the budget shares`
+
+## 8. Data: the history widened, the forecast, the new items
+
+- [ ] 8.1 `history` carries the five shares and their standings; the overview gains `references` (usual, unusual months,
+      trends per share), `forecast` (running month: value, range, standing) and the new items' figures and standings
+- [ ] 8.2 The running month's spending by kind so far comes from the month's own read (no new query); the forecast's
+      usual months from `found`
+- [ ] 8.3 Tests in `tests/data.test.ts`; commit `feat(desktop): health references and the month's forecast`
+
+## 9. Renderer: references on the chart, tiles, a fuller checklist
+
+- [ ] 9.1 Chart: the usual line and band, unusual outlines with ▲ / ▼, the hatched forecast bar with its whisker, the
+      legend in words
+- [ ] 9.2 Three tiles above the chart (usual, trend, forecast or the month itself)
+- [ ] 9.3 Checklist: three groups, the direction beside each share, the four new items with their «?»; «How it was
+      counted» says how the forecast is made
+- [ ] 9.4 New texts in `uk.json`, `en.json`, `ru.json`; renderer tests for each requirement; commit
+      `feat(desktop): references and a fuller checklist in financial health`
+- [ ] 9.5 `CHANGELOG.md` entry widened; `docs/backlog.md`: check the forecast against the month's real end

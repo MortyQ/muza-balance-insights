@@ -83,3 +83,65 @@ or «bad». The header SHALL say how many items are within the guide out of thos
 #### Scenario: Colour is not the only cue
 - **WHEN** the checklist is read by a screen reader
 - **THEN** each item reads its name, figure and standing in words
+
+### Requirement: Personal references on the chart
+Beside the guide the chart SHALL draw the user's own usual — the median of the months it shows — as a solid line with a
+light band of ± 15 percentage points around it («your usual range»), and SHALL mark a month outside that band as
+unusual with a dashed outline and ▲ (above) or ▼ (below). A legend in words SHALL name each reference. With fewer than
+3 months with income there SHALL be no usual line, band or marks.
+
+#### Scenario: An unusual month
+- **WHEN** the months show −21, 44, 18, −12, 8 and −59% (usual −2%)
+- **THEN** June (44%) is marked ▲ and October (−59%) ▼; the others stay plain
+
+### Requirement: Summary tiles
+Above the chart three tiles SHALL say, in plain words: the user's usual with the guide beside it; whether the last 3
+months with income are better, worse or about the same as the months before them (core rule), with both averages;
+and, while the shown month runs, the forecast of it (otherwise the shown month's own figure against the usual).
+
+#### Scenario: Getting worse
+- **WHEN** the last three months average −21% and the three before 14%
+- **THEN** the trend tile reads «worse» with both averages
+
+#### Scenario: Too early for a forecast
+- **WHEN** the current month is on its 6th day
+- **THEN** the forecast tile says it is too early to tell
+
+### Requirement: Forecast bar
+While the shown month runs and the forecast exists (core rule), the chart SHALL end with a hatched bar for it, its
+range as a whisker and «≈ X%» on it, coloured by the forecast's standing; «How it was counted» SHALL say how it is made.
+
+#### Scenario: A running month on day 15
+- **WHEN** the forecast of the left share is −5% with a range of −15 to 5%
+- **THEN** the last bar is hatched, reads «≈ −5%» and shows the range
+
+### Requirement: Direction in the checklist
+Each share item of a finished month SHALL say beside its figure whether it is better, worse or about as usual against
+the user's usual of that share (core rule), with the usual's value — better meaning more left, or less of the others.
+
+#### Scenario: Wants better than usual
+- **WHEN** wants are 32% and usually 36%
+- **THEN** the wants item reads «better than usual (36%)»
+
+### Requirement: Checklist groups
+The checklist SHALL group its items under three headings: «This month» (the income shares), «Safety cushion» (the
+reserve, months in the red, income against the usual) and «Spending and plans» (spending against the usual, the
+monthly limits, strong signals).
+
+#### Scenario: Three groups
+- **WHEN** a finished month with income and monthly limits is shown
+- **THEN** the items sit under «This month», «Safety cushion» and «Spending and plans», in that order
+
+### Requirement: Cushion and spending items
+The checklist SHALL add, each with a figure, a standing (core rule) and a «?»: months in the red (of the chart's months
+with income, how many left less than zero), income against the usual (a finished month against the usual median),
+spending against the usual (a finished month's total, or a running month's share of a usual month against the share of
+the month passed) and strong signals (the feed's high items, with a link down to them).
+
+#### Scenario: A running month has more than the reserve
+- **WHEN** the current month is shown
+- **THEN** besides the income shares row, the checklist shows the reserve, months in the red, spending against the usual's pace, the limits and strong signals
+
+#### Scenario: Two months in the red
+- **WHEN** two of the six months on the chart left less than zero
+- **THEN** «Months in the red» reads «2 of 6», outside the guide
