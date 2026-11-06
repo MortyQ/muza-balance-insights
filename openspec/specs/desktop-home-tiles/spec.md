@@ -9,7 +9,7 @@ sit in rows at each width, and what each one shows.
 ### Requirement: Home is a grid of tiles
 
 Home SHALL show its content as separate tiles on the window's background, in this order: «Balance», «Month pace»,
-«Month»; the «Budget» row over the whole width; «Today», «This week», the «What's unusual» / «Recent operations» tile;
+«Month»; the «Budget» row over the whole width; «Today», «This week», the «What's unusual» / «Recent transactions» tile;
 «Spending by category», with the «Insights» block beside it when that block has content, else over the whole width.
 Tiles SHALL NOT sit inside another tile. Tiles of one row SHALL have the same height. «Who spent what» and the regular
 payments teaser SHALL NOT be shown on home.
