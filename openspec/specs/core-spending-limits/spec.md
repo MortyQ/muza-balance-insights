@@ -22,10 +22,14 @@ The monthly budget SHALL hold one total amount for all spending and its own list
 category and an amount the user types; the list starts empty, nothing is filled in for the user, a category appears in
 it at most once and a row can be removed. The fixed costs SHALL be set aside first, at the typed amounts; the rest is
 the flexible part, counted against flexible spending: every category that is neither in the budget's fixed list nor
-of the savings kind. What a listed category spends above its typed amount SHALL count against the flexible part. Pace,
-forecast, per day and state SHALL apply to the flexible part only. For each fixed row the budget SHALL give what is
-paid this month against the typed amount. When the fixed costs reach the total, the flexible part SHALL be 0 and the
-budget SHALL say so. A row without an amount SHALL be refused.
+of the savings kind, nor taxes while the budget does not count taxes. What a listed category spends above its typed
+amount SHALL count against the flexible part. Pace, forecast, per day and state SHALL apply to the flexible part only.
+For each fixed row the budget SHALL give what is paid this month against the typed amount. When the fixed costs reach
+the total, the flexible part SHALL be 0 and the budget SHALL say so. A row without an amount SHALL be refused.
+
+The budget SHALL have a «count taxes» choice, on by default and kept with the budget. Off, «Taxes and government
+payments» SHALL count neither against the flexible part nor as a fixed row: a budget that is off and lists taxes as a
+fixed row SHALL be refused. The choice SHALL NOT change category limits, «Spending» or the 50/30/20 split.
 
 #### Scenario: 2 000 € with rent of 1 250 €
 - **WHEN** the budget is 2 000 € and its only fixed row is rent at 1 250 €
@@ -47,11 +51,27 @@ budget SHALL say so. A row without an amount SHALL be refused.
 - **WHEN** a category is marked fixed in the «Categories» section but is not in the budget's fixed list
 - **THEN** the budget counts it as flexible
 
+#### Scenario: Taxes left out
+- **WHEN** the budget does not count taxes and the month paid 300 € of taxes and 500 € of groceries
+- **THEN** the flexible part reads 500 € spent, and the taxes stay in «Spending» and in the essential share of 50/30/20
+
+#### Scenario: Taxes as a fixed row while off
+- **WHEN** a budget that does not count taxes is saved with a taxes fixed row
+- **THEN** the save fails and nothing is stored
+
+#### Scenario: An existing budget
+- **WHEN** a budget saved before this choice existed is read
+- **THEN** it counts taxes
+
 ### Requirement: What a limit counts
 A limit SHALL count net spending of its categories in its current period as «Spending» does: refunds lower it,
-transfers between own accounts are left out, pending holds count. It SHALL count «Personal» spending only and every
-bank, whatever the bank filter. A family limit SHALL count every person; a person's limit SHALL count that person's
-accounts. Amounts in another currency than the limit's SHALL be compared at today's rate.
+transfers between own accounts are left out, cash withdrawals are left out while they do not count as spending. Pending
+holds — holds from the last 3 days, which the next sync may still change or cancel — SHALL be left out of the spent
+amount, the forecast and the state; for each limit the system SHALL give how many pending holds its categories have in
+the period and their amount, so they can be shown apart. A hold older than 3 days counts as final spending. It SHALL
+count «Personal» spending only and every bank, whatever the bank filter. A family limit SHALL count every person; a
+person's limit SHALL count that person's accounts. Amounts in another currency than the limit's SHALL be compared at
+today's rate.
 
 #### Scenario: A refund lowers the spent amount
 - **WHEN** a cafe limit's month has 3 000 ₴ spent and a 500 ₴ refund
@@ -61,24 +81,48 @@ accounts. Amounts in another currency than the limit's SHALL be compared at toda
 - **WHEN** a cafe payment is in «Business» scope
 - **THEN** it does not count against the limit
 
+#### Scenario: A pending hold
+- **WHEN** a 4 000 ₴ cafe limit has 3 800 ₴ of final payments and a 600 ₴ hold from today
+- **THEN** the limit reads 3 800 ₴ spent, state attention, with one pending hold of 600 ₴ given apart
+
+#### Scenario: An old hold
+- **WHEN** a hold is five days old and still flagged
+- **THEN** it counts as spending
+
 ### Requirement: Pace, forecast, per day and state
 For each limit the system SHALL give spent, left (limit − spent), the per cent spent, the expected amount by today
 (limit × days passed ÷ days in the period, today counted), the forecast for the period's end (spent ÷ days passed ×
 days in the period) and «per day» (left ÷ days left, today counted; 0 when nothing is left). The state SHALL be
-exceeded above 100%, attention from 80% to 100% or when the forecast is above the limit, on track otherwise. The
-forecast SHALL NOT make a state before a quarter of the period has passed, and never for a day limit.
+exceeded above 100%; attention from 80% to 100%, when spending runs well ahead of the pace (at least 1.3 times the
+expected amount and at least 5% of the limit above it), or when the forecast is above the limit once a quarter of the
+period has passed; on track otherwise. An attention state SHALL say its reason: the pace, the forecast or the share
+spent, the pace first. The system SHALL also give the pace: under (below 90% of the expected amount), even (up to 110%)
+or ahead (above), so a small lead that is not yet attention is not called on track in words. The forecast SHALL be
+given for showing only from the fifth day of a month (a quarter of a shorter period), and never for a day limit.
 
 #### Scenario: Ahead of pace
 - **WHEN** a 4 000 ₴ monthly limit has 1 900 ₴ spent on day 10 of 30
-- **THEN** the expected amount is 1 333 ₴, the forecast 5 700 ₴, per day 100 ₴, and the state is attention
+- **THEN** the expected amount is 1 333 ₴, the forecast 5 700 ₴, per day 100 ₴, and the state is attention for the pace
 
 #### Scenario: Exceeded
 - **WHEN** 5 300 ₴ is spent against 4 000 ₴
 - **THEN** the state is exceeded, left is −1 300 ₴, per day 0
 
 #### Scenario: Too early for a forecast
-- **WHEN** on day 3 of 30 the forecast is above the limit and 20% is spent
-- **THEN** the state is on track
+- **WHEN** on day 3 of 30 the forecast is above the limit and 12% is spent (10% expected)
+- **THEN** the state is on track with the pace ahead: the lead is under 1.3 times the plan
+
+#### Scenario: Well ahead in the first days
+- **WHEN** a 35 € monthly limit has 6 € spent on day 2 of 30 (2.33 € expected)
+- **THEN** the state is attention for the pace, though the forecast is not shown yet
+
+#### Scenario: A small lead early in the month
+- **WHEN** a 1 050 € budget's flexible part has 60 € spent on day 1 of 30 (35 € expected)
+- **THEN** the state is on track with the pace ahead, and the forecast is not shown yet
+
+#### Scenario: Under the pace
+- **WHEN** a 4 000 ₴ monthly limit has 500 ₴ spent on day 15 of 30
+- **THEN** the state is on track and the pace under
 
 ### Requirement: Suggested amount
 The system SHALL suggest a limit's amount as the median of its categories' (or flexible spending's) net spending over
