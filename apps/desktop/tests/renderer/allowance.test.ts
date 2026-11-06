@@ -12,7 +12,7 @@ import { formatMoney } from '@/shared/lib';
 import { VDatepicker, VSelect } from '@/shared/ui';
 
 const uah = (k: number) => formatMoney(k, 980);
-const NONE = { uah: false, usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false, czk: false };
 const RATES = { list: [{ currency: 840, rate: 40 }, { currency: 978, rate: 45 }], fetchedAt: 0, saved: false };
 const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const EUR = moneyFormat(RATES, { main: 978, also: NONE });

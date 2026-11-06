@@ -112,7 +112,7 @@ describe('paceTooltip', () => {
 });
 
 describe('PacePanel', () => {
-  const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+  const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
   const mountPanel = (v: ReturnType<typeof paceView>, offered = false) =>
     mount(PacePanel, { props: { view: v!, fmt, offered, split: 'together', banks: null }, global: { plugins: [i18n] } });
 
@@ -202,7 +202,7 @@ describe('the pace by banks', () => {
   });
 
   it('the panel shows the legend by banks only', () => {
-    const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+    const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
     const view = paceView(byBanks())!;
     const panel = (banks: ReturnType<typeof paceBanks>) =>
       mount(PacePanel, { props: { view, fmt, offered: true, split: banks ? ('banks' as const) : ('together' as const), banks }, global: { plugins: [i18n] } });
@@ -212,7 +212,7 @@ describe('the pace by banks', () => {
   });
 
   it('the menu is there only while two or more banks are on, and says the choice', async () => {
-    const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+    const fmt = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
     const props = { view: paceView(byBanks())!, fmt, split: 'together' as const, banks: null };
     expect(mount(PacePanel, { props: { ...props, offered: false }, global: { plugins: [i18n] } }).find('[aria-label="Настройки темпа"]').exists()).toBe(false);
     const w = mount(PacePanel, { props: { ...props, offered: true }, global: { plugins: [i18n] }, attachTo: document.body });

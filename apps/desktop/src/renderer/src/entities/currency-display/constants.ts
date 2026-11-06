@@ -6,6 +6,7 @@ export const CURRENCIES: ReadonlyArray<{ currency: MainCurrency; key: CurrencyKe
   { currency: 980, key: 'uah', label: 'entities.currencyDisplay.uah' },
   { currency: 840, key: 'usd', label: 'entities.currencyDisplay.usd' },
   { currency: 978, key: 'eur', label: 'entities.currencyDisplay.eur' },
+  { currency: 203, key: 'czk', label: 'entities.currencyDisplay.czk' },
 ];
 
 /** localStorage key of the choice (a convenience: defaults when storage is unavailable). */

@@ -9,7 +9,7 @@ import { insightsView } from '@/features/spending-summary/utils/index.ts';
 import { formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
-const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
 const ins = (o: Partial<SpendingInsight> & Pick<SpendingInsight, 'type' | 'amount'>): SpendingInsight => ({
   direction: 'up', percent: null, category: null, categoryId: null, now: 0, usual: 0, ...o,
 });

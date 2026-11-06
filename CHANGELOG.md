@@ -11,6 +11,8 @@ English interface.
   date, amount, the bank's own category and the other side's account, so payments to and from your accounts in other
   banks are recognised as your own transfers. Card payments abroad keep their original amount and currency. ČSOB states
   only the date of a payment, not its time.
+- **Czech koruna.** The currency choice on home now offers Czech koruny (Kč) as the main currency or next to it, by
+  Monobank's cross rate.
 
 ### Budget and Insights
 

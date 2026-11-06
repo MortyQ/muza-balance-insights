@@ -32,7 +32,7 @@ describe('formatMoney', () => {
   });
 
   it('symbols for common currencies, the ISO code otherwise', () => {
-    expect([980, 840, 978, 826, 985, 8].map(currencySymbol)).toEqual(['₴', '$', '€', '£', 'zł', 'ALL']);
+    expect([980, 840, 978, 203, 826, 985, 8].map(currencySymbol)).toEqual(['₴', '$', '€', 'Kč', '£', 'zł', 'ALL']);
   });
 });
 

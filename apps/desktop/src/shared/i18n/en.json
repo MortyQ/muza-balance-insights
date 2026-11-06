@@ -308,6 +308,7 @@
     "currencyDisplay": {
       "alsoTitle": "Also show",
       "button": "Currencies: {shown}",
+      "czk": "Czech koruna Kč",
       "eur": "Euro €",
       "mainNote": "Every amount on the home screen",
       "mainTitle": "Main currency",

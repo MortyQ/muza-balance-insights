@@ -21,24 +21,24 @@ globalThis.ResizeObserver ??= ResizeObserverStub;
 // 2026-10-05 10:00 Kyiv (UTC+3).
 const FETCHED = Date.UTC(2026, 9, 5, 7, 0) / 1000;
 const RATES: RatesView = { list: [{ currency: 840, rate: 40 }, { currency: 978, rate: 50 }], fetchedAt: FETCHED, saved: false };
-const NONE = { uah: false, usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false, czk: false };
 
 describe('parseCurrencyChoice', () => {
   it('hryvnia and nothing else by default, for garbage too', () => {
     for (const raw of [null, '{oops', '[1]', '{"main":123}']) expect(parseCurrencyChoice(raw)).toEqual({ main: 980, also: NONE });
   });
   it('the new shape; each «also» field on its own', () => {
-    expect(parseCurrencyChoice('{"main":978,"also":{"uah":true,"usd":"x"}}')).toEqual({ main: 978, also: { uah: true, usd: false, eur: false } });
+    expect(parseCurrencyChoice('{"main":978,"also":{"uah":true,"usd":"x"}}')).toEqual({ main: 978, also: { uah: true, usd: false, eur: false, czk: false } });
   });
   it('the old { usd, eur } (and spending.view) value: hryvnia main, the same «≈» currencies', () => {
-    expect(parseCurrencyChoice('{"usd":true,"eur":false}')).toEqual({ main: 980, also: { uah: false, usd: true, eur: false } });
-    expect(parseCurrencyChoice('{"split":false,"mark":true,"usd":false,"eur":true}')).toEqual({ main: 980, also: { uah: false, usd: false, eur: true } });
+    expect(parseCurrencyChoice('{"usd":true,"eur":false}')).toEqual({ main: 980, also: { uah: false, usd: true, eur: false, czk: false } });
+    expect(parseCurrencyChoice('{"split":false,"mark":true,"usd":false,"eur":true}')).toEqual({ main: 980, also: { uah: false, usd: false, eur: true, czk: false } });
   });
 });
 
 describe('moneyFormat', () => {
   it('hryvnia main: as is, «≈» lines in the other picked currencies', () => {
-    const f = moneyFormat(RATES, { main: 980, also: { uah: true, usd: true, eur: true } });
+    const f = moneyFormat(RATES, { main: 980, also: { uah: true, usd: true, eur: true, czk: false } });
     expect(f.currency).toBe(980);
     expect(f.money(4_000_00)).toBe(formatMoney(4_000_00, 980));
     expect(f.approx(4_000_00)).toEqual([`≈ ${formatMoney(100_00, 840)}`, `≈ ${formatMoney(80_00, 978)}`]);
@@ -46,14 +46,23 @@ describe('moneyFormat', () => {
     expect(f.alsoParts(4_000_00)).toEqual([{ currency: 840, minor: 100_00 }, { currency: 978, minor: 80_00 }]);
   });
   it('euro main: amounts in euros, hryvnia as a «≈» line; convert gives euro cents', () => {
-    const f = moneyFormat(RATES, { main: 978, also: { uah: true, usd: false, eur: true } });
+    const f = moneyFormat(RATES, { main: 978, also: { uah: true, usd: false, eur: true, czk: false } });
     expect(f.currency).toBe(978);
     expect(f.convert(5_000_00)).toBe(100_00);
     expect(f.money(5_000_00)).toBe(formatMoney(100_00, 978));
     expect(f.approx(5_000_00)).toEqual([`≈ ${formatMoney(5_000_00, 980)}`]);
   });
+  it('koruna main: amounts in koruny by the cross rate; koruna also reads back from storage', () => {
+    const rates: RatesView = { ...RATES, list: [...RATES.list, { currency: 203, rate: 2 }] };
+    const f = moneyFormat(rates, { main: 203, also: { uah: true, usd: false, eur: false, czk: false } });
+    expect(f.currency).toBe(203);
+    expect(f.convert(1_000_00)).toBe(500_00);
+    expect(f.money(1_000_00)).toBe(formatMoney(500_00, 203));
+    expect(shownText(rates, { main: 203, also: { uah: true, usd: false, eur: false, czk: false } })).toBe('Kč · ₴');
+    expect(parseCurrencyChoice('{"main":203,"also":{"czk":true}}')).toEqual({ main: 203, also: { ...NONE, czk: true } });
+  });
   it('no rates: back to hryvnia, no «≈» lines', () => {
-    const f = moneyFormat(null, { main: 840, also: { uah: true, usd: true, eur: true } });
+    const f = moneyFormat(null, { main: 840, also: { uah: true, usd: true, eur: true, czk: false } });
     expect(f.currency).toBe(980);
     expect(f.money(100)).toBe(formatMoney(100, 980));
     expect(f.approx(100)).toEqual([]);
@@ -64,9 +73,9 @@ describe('moneyFormat', () => {
 
 describe('shownText and rateDate', () => {
   it('main first, then the «≈» currencies that have a rate', () => {
-    expect(shownText(RATES, { main: 840, also: { uah: true, usd: true, eur: true } })).toBe('$ · ₴ €');
+    expect(shownText(RATES, { main: 840, also: { uah: true, usd: true, eur: true, czk: false } })).toBe('$ · ₴ €');
     expect(shownText(RATES, { main: 980, also: NONE })).toBe('₴');
-    expect(shownText(null, { main: 978, also: { uah: false, usd: true, eur: false } })).toBe('₴');
+    expect(shownText(null, { main: 978, also: { uah: false, usd: true, eur: false, czk: false } })).toBe('₴');
   });
   it('the fetch time in the system time zone (Kyiv in this suite): «05.10, 10:00»', () => {
     expect(rateDate(FETCHED)).toBe('05.10, 10:00');
@@ -92,7 +101,7 @@ describe('useCurrencyDisplayStore', () => {
   it('carries the old spending.view choice over once, writing the new key at once', async () => {
     mem.set('spending.view', '{"split":true,"mark":false,"usd":true,"eur":false}');
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
-    const expected = { main: 980, also: { uah: false, usd: true, eur: false } };
+    const expected = { main: 980, also: { uah: false, usd: true, eur: false, czk: false } };
     expect(useCurrencyDisplayStore().choice).toEqual(expected);
     expect(JSON.parse(mem.get('home.currencies')!)).toEqual(expected);
   });
@@ -110,10 +119,10 @@ describe('useCurrencyDisplayStore', () => {
     mem.set('home.currencies', '{"main":840,"also":{"eur":true}}');
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     const s = useCurrencyDisplayStore();
-    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true } });
+    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true, czk: false } });
     s.setMain(978);
     s.setAlso('uah', true);
-    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ main: 978, also: { uah: true, usd: false, eur: true } });
+    expect(JSON.parse(mem.get('home.currencies')!)).toEqual({ main: 978, also: { uah: true, usd: false, eur: true, czk: false } });
   });
 
   it('setRates: undefined until the first answer, the newest snapshot wins, null never replaces a real one', async () => {
@@ -140,7 +149,7 @@ describe('useCurrencyDisplayStore', () => {
     expect(s.choice).toEqual({ main: 980, also: NONE });
     expect(() => s.setAlso('eur', true)).not.toThrow();
     expect(() => s.setMain(840)).not.toThrow();
-    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true } });
+    expect(s.choice).toEqual({ main: 840, also: { uah: false, usd: false, eur: true, czk: false } });
   });
 });
 

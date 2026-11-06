@@ -1,6 +1,6 @@
 /** The home screen's main currency (every amount is shown in it) and the «≈» currencies next to it. */
-export type MainCurrency = 980 | 840 | 978;
-export type CurrencyKey = 'uah' | 'usd' | 'eur';
+export type MainCurrency = 980 | 840 | 978 | 203;
+export type CurrencyKey = 'uah' | 'usd' | 'eur' | 'czk';
 export interface CurrencyChoice {
   main: MainCurrency;
   also: Record<CurrencyKey, boolean>;

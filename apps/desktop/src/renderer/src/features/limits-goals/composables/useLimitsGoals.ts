@@ -56,7 +56,8 @@ export function useLimitsGoals(): UseLimitsGoalsReturn {
     fmt,
     owners: computed(() => (participant.multiple ? participant.people.map((p) => ({ id: p.id, name: p.label })) : [])),
     defaultOwner: computed(() => participant.selectedId),
-    defaultCurrency: computed<GoalCurrency>(() => currencies.choice.main),
+    // Goals keep to hryvnia, dollars and euros: a koruna main currency starts a new goal in hryvnia.
+    defaultCurrency: computed<GoalCurrency>(() => (currencies.choice.main === 203 ? 980 : currencies.choice.main)),
     save: (id: number | null, g: GoalPayload) => done(() => api.saveGoal(id, g)),
     remove: (id: number) => done(() => api.deleteGoal(id)),
     addSuggested: () => done(() => api.addSuggested(participantId() !== null ? { participantId: participantId()! } : {})),

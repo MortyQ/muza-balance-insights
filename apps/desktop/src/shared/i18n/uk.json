@@ -308,6 +308,7 @@
     "currencyDisplay": {
       "alsoTitle": "Показувати також",
       "button": "Валюти: {shown}",
+      "czk": "Чеська крона Kč",
       "eur": "Євро €",
       "mainNote": "Усі суми на головному екрані",
       "mainTitle": "Основна валюта",
