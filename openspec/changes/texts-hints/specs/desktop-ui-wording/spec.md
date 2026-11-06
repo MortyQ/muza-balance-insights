@@ -18,12 +18,10 @@ name lists of them SHALL use the same word («Transactions», «Recent transacti
 - **THEN** the list is headed «Transactions»
 
 ### Requirement: A change says money first
-A change of an amount against a base (a previous month or week, a usual month or day) SHALL be said as the difference in
-money with its direction. Below twice the base it SHALL add the percent («+90 ₴ (9%)», «−300 ₴ (25%)»); from twice
-the base up to ten times it SHALL add the ratio instead («+105 € (×5.0)»), with one decimal in the language's format;
-above ten times the base it SHALL give the money alone, and the base SHALL be in the chip's hint. A change under 3% of
-the base SHALL still read «as before», and a change from a base of zero SHALL still read as new. Every change chip and
-change line SHALL follow this one rule.
+Every change of an amount against a base (a previous month or week, a usual month or day) SHALL be said as the
+difference in money with its direction, then: below twice the base the percent; from twice up to ten times the base
+the ratio «×N» with one decimal; above ten times nothing, with the base in the hint. Under 3% of the base it SHALL
+read «as before», and from a base of zero as new.
 
 #### Scenario: Five times the previous month
 - **WHEN** a category spent 131 € in September against 26 € in August
