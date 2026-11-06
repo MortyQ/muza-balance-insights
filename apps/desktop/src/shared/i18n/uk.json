@@ -313,10 +313,10 @@
       },
       "change": {
         "week": {
-          "less": "на {diff} менше, ніж минулого тижня",
-          "lessPartial": "на {diff} менше, ніж до цього дня минулого тижня",
-          "more": "на {diff} більше, ніж минулого тижня",
-          "morePartial": "на {diff} більше, ніж до цього дня минулого тижня",
+          "less": "на {diff} менше, ніж минулого тижня ({base})",
+          "lessPartial": "на {diff} менше, ніж до цього дня минулого тижня ({base})",
+          "more": "на {diff} більше, ніж минулого тижня ({base})",
+          "morePartial": "на {diff} більше, ніж до цього дня минулого тижня ({base})",
           "same": "як минулого тижня"
         }
       },
@@ -713,7 +713,9 @@
       "until": "Дані до {date}",
       "vsUsual": "до звичайного дня ≈ {amount}",
       "vsWeek": "до минулого тижня, {days}",
-      "week": "Цей тиждень · {days}"
+      "week": "Цей тиждень · {days}",
+      "baseUsual": "Звичайний день: {base}",
+      "baseWeek": "Ті самі дні минулого тижня: {base}"
     },
     "spending": {
       "category": {
@@ -753,10 +755,10 @@
         "investments": "Інвестиції"
       },
       "change": {
-        "less": "на {diff} менше, ніж у {month}",
-        "lessPartial": "на {diff} менше, ніж до цього дня у {month}",
-        "more": "на {diff} більше, ніж у {month}",
-        "morePartial": "на {diff} більше, ніж до цього дня у {month}",
+        "less": "на {diff} менше, ніж у {month} ({base})",
+        "lessPartial": "на {diff} менше, ніж до цього дня у {month} ({base})",
+        "more": "на {diff} більше, ніж у {month} ({base})",
+        "morePartial": "на {diff} більше, ніж до цього дня у {month} ({base})",
         "new": "нове",
         "same": "як у {month}",
         "srLess": "менше, ніж у {month}",

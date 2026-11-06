@@ -313,10 +313,10 @@
       },
       "change": {
         "week": {
-          "less": "{diff} less than last week",
-          "lessPartial": "{diff} less than by this day last week",
-          "more": "{diff} more than last week",
-          "morePartial": "{diff} more than by this day last week",
+          "less": "{diff} less than last week ({base})",
+          "lessPartial": "{diff} less than by this day last week ({base})",
+          "more": "{diff} more than last week ({base})",
+          "morePartial": "{diff} more than by this day last week ({base})",
           "same": "as last week"
         }
       },
@@ -713,7 +713,9 @@
       "until": "Data until {date}",
       "vsUsual": "vs a usual day ≈ {amount}",
       "vsWeek": "vs last week, {days}",
-      "week": "This week · {days}"
+      "week": "This week · {days}",
+      "baseUsual": "Usual day: {base}",
+      "baseWeek": "Same days last week: {base}"
     },
     "spending": {
       "category": {
@@ -753,10 +755,10 @@
         "investments": "Investments"
       },
       "change": {
-        "less": "{diff} less than in {month}",
-        "lessPartial": "{diff} less than by this day in {month}",
-        "more": "{diff} more than in {month}",
-        "morePartial": "{diff} more than by this day in {month}",
+        "less": "{diff} less than in {month} ({base})",
+        "lessPartial": "{diff} less than by this day in {month} ({base})",
+        "more": "{diff} more than in {month} ({base})",
+        "morePartial": "{diff} more than by this day in {month} ({base})",
         "new": "new",
         "same": "as in {month}",
         "srLess": "less than in {month}",

@@ -68,8 +68,8 @@ describe('now strip helpers', () => {
   });
 
   it('chips: the amount and the percent with the sign and the arrow, «as usual» under 3%, none without a base or with a base of 0', () => {
-    expect(nowChip(72_000, 52_000, 'usual', OFF)).toEqual({ text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' });
-    expect(nowChip(322_000, 360_000, 'week', OFF)).toEqual({ text: `−${uah(38_000)} (11%)`, tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе' });
+    expect(nowChip(72_000, 52_000, 'usual', OFF)).toEqual({ text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(52_000)}` });
+    expect(nowChip(322_000, 360_000, 'week', OFF)).toEqual({ text: `−${uah(38_000)} (11%)`, tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе', title: `Те же дни прошлой недели: ${uah(360_000)}` });
     expect(nowChip(52_500, 52_000, 'usual', OFF)).toEqual({ text: 'как обычно', tone: 'neutral', arrow: null, sr: '' });
     expect(nowChip(100, null, 'week', OFF)).toBeNull();
     expect(nowChip(100, 0, 'usual', OFF)).toBeNull();
@@ -89,7 +89,7 @@ describe('now strip helpers', () => {
       amount: uah(72_000),
       ops: '3 транзакции',
       conv: '',
-      chip: { text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день' },
+      chip: { text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(52_000)}` },
       context: `к обычному дню ≈ ${uah(52_000)}`,
       until: '',
     });

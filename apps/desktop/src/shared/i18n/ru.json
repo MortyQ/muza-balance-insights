@@ -313,10 +313,10 @@
       },
       "change": {
         "week": {
-          "less": "на {diff} меньше, чем на прошлой неделе",
-          "lessPartial": "на {diff} меньше, чем к этому дню на прошлой неделе",
-          "more": "на {diff} больше, чем на прошлой неделе",
-          "morePartial": "на {diff} больше, чем к этому дню на прошлой неделе",
+          "less": "на {diff} меньше, чем на прошлой неделе ({base})",
+          "lessPartial": "на {diff} меньше, чем к этому дню на прошлой неделе ({base})",
+          "more": "на {diff} больше, чем на прошлой неделе ({base})",
+          "morePartial": "на {diff} больше, чем к этому дню на прошлой неделе ({base})",
           "same": "как на прошлой неделе"
         }
       },
@@ -713,7 +713,9 @@
       "until": "Данные до {date}",
       "vsUsual": "к обычному дню ≈ {amount}",
       "vsWeek": "к прошлой неделе, {days}",
-      "week": "Эта неделя · {days}"
+      "week": "Эта неделя · {days}",
+      "baseUsual": "Обычный день: {base}",
+      "baseWeek": "Те же дни прошлой недели: {base}"
     },
     "spending": {
       "category": {
@@ -753,10 +755,10 @@
         "investments": "Инвестиции"
       },
       "change": {
-        "less": "на {diff} меньше, чем в {month}",
-        "lessPartial": "на {diff} меньше, чем к этому дню в {month}",
-        "more": "на {diff} больше, чем в {month}",
-        "morePartial": "на {diff} больше, чем к этому дню в {month}",
+        "less": "на {diff} меньше, чем в {month} ({base})",
+        "lessPartial": "на {diff} меньше, чем к этому дню в {month} ({base})",
+        "more": "на {diff} больше, чем в {month} ({base})",
+        "morePartial": "на {diff} больше, чем к этому дню в {month} ({base})",
         "new": "новое",
         "same": "как в {month}",
         "srLess": "меньше, чем в {month}",

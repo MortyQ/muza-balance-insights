@@ -34,8 +34,9 @@ layout changes), any change of what a figure counts, main-process texts beyond t
    Alternative: keep «операція» in uk/ru and «transaction» in en — rejected, the item asks for one term and the
    mixed en is the bug.
 2. **The change rule in `changeText`.** Thresholds as constants in `change.ts`: `RATIO_FROM = 2`, `RATIO_UNTIL = 10`.
-   `Change` gains `ratio` (now ÷ base, for `up` only). `changeText` picks the bracket: percent below `RATIO_FROM`,
-   «×N» up to `RATIO_UNTIL`, nothing above. `times()` moves from `entities/goal` to `shared/lib/format` and both use
+   The ratio is `1 + pct ÷ 100` (so the chips built from core's insights, which carry only the amount and the percent,
+   follow the same rule). `changeText` picks the bracket: percent below `RATIO_FROM`,
+   «×N» up to `RATIO_UNTIL`, nothing above. `times()` moves from `entities/goal` to `shared/lib/change.ts` and both use
    it. The hint texts that name the base («105 € more than in August (26 €)») get the base amount as a new
    placeholder where they do not have it yet.
    Alternative: the bug page's per-period minimum bases (1 000 ₴ a day, 5 000 ₴ a week …) — rejected: they are in

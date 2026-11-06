@@ -72,7 +72,7 @@ export function changeChip(
   const diff = changeText(c, fmt.money);
   // Short on the chip; the whole comparison («…than up to this day last week») in its tooltip.
   const short = up ? 'home.spending.change.shortMore' : 'home.spending.change.shortLess';
-  return { text: t(short, { diff }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '', title: t(key, { diff, month }) };
+  return { text: t(short, { diff }), tone: up ? 'up' : 'down', arrow: up ? 'up' : 'down', sr: '', title: t(key, { diff, month, base: fmt.money(prev ?? 0) }) };
 }
 
 /**

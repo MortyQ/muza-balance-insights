@@ -13,13 +13,13 @@
 
 ## 2. The change rule: money first, «×N» for large changes
 
-- [ ] 2.1 Move `times()` from `entities/goal/utils.ts` to `shared/lib` and use it from there
-- [ ] 2.2 `shared/lib/change.ts`: `ratio` on `Change`, `RATIO_FROM` / `RATIO_UNTIL`, the bracket choice in
+- [x] 2.1 Move `times()` from `entities/goal/utils.ts` to `shared/lib` and use it from there
+- [x] 2.2 `shared/lib/change.ts`: the ratio from the percent, `RATIO_FROM` / `RATIO_UNTIL`, the bracket choice in
       `changeText`; unit tests for 9%, ×5.0, ×10 and above, a decrease, «as before» and a new amount
-- [ ] 2.3 Give the hint texts that name a base the base amount (category / income chip, «What's unusual», «Today» /
+- [x] 2.3 Give the hint texts that name a base the base amount (category / income chip, «What's unusual», «Today» /
       «This week», the Insights glance), in all three dictionaries
-- [ ] 2.4 Update the tests of every change chip user (category, income, spending, unusual, now strip, insights page)
-- [ ] 2.5 Commit `feat(desktop): a change says money first`
+- [x] 2.4 Update the tests of every change chip user (category, income, spending, unusual, now strip, insights page)
+- [x] 2.5 Commit `feat(desktop): a change says money first`
 
 ## 3. Hints
 

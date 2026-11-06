@@ -109,7 +109,7 @@ describe('insights screen', () => {
     expect(cards).toHaveLength(2);
     expect(cards[0]!.get('[data-test="severity"]').text()).toBe('Высокий');
     expect(cards[1]!.get('[data-test="severity"]').text()).toBe('Средний');
-    expect(plain(cards[0]!.text())).toContain('+3 000 ₴ (100%)');
+    expect(plain(cards[0]!.text())).toContain('+3 000 ₴ (×2,0)');
     expect(plain(cards[0]!.get('[data-test="insight-driver"]').text())).toBe('В основном Fictional Cafe: +2 000 ₴, 67% изменения');
     expect(cards[1]!.find('[data-test="insight-driver"]').exists()).toBe(false);
     // Six bars, the usual line at 300 000 of 600 000.
@@ -198,7 +198,7 @@ describe('insights screen', () => {
     useCurrencyDisplayStore().setMain(978);
     const w = await mountPage();
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
-    expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (100%)`));
+    expect(plain(w.findAll('article')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
     expect(plain(w.get('[data-test="one-offs"]').text())).toContain(plain(formatMoney(8_000, 978)));
     w.unmount();
   });

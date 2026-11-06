@@ -44,7 +44,7 @@ export function centerChip(now: number, prev: number | null, month: string, fmt:
   const diff = changeText(c, fmt.money);
   // Short on the chip; the whole comparison («…than up to this day in August») in its tooltip.
   const short = c.kind === 'up' ? 'home.spending.change.shortMore' : 'home.spending.change.shortLess';
-  return { text: t(short, { diff }), tone: tone(c), arrow: arrow(c), sr: '', title: t(key, { diff, month: prevIn(month) }) };
+  return { text: t(short, { diff }), tone: tone(c), arrow: arrow(c), sr: '', title: t(key, { diff, month: prevIn(month), base: fmt.money(prev ?? 0) }) };
 }
 
 /** The short chip of the people list: «+1 090 ₴ (9%)». */
