@@ -4,15 +4,15 @@ import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { budgetLink, categoryLink, incomeLink } from '@/shared/config';
 import { change, changeText, dayMonthName, i18n, monthName, monthShortName, t } from '@/shared/lib';
-import type { BudgetCardView, BudgetPartView, BudgetRowView, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from './types.ts';
+import { monthsText, percent } from './format.ts';
+import { healthView } from './health.ts';
+import type { BudgetCardView, BudgetPartView, BudgetRowView, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from '../types.ts';
 
 const monthNo = (ym: string) => Number(ym.slice(5, 7));
 
 /** «2025-09» → «Sep 2025». */
 const monthText = (ym: string) => `${monthShortName(monthNo(ym))} ${ym.slice(0, 4)}`;
 
-/** A whole percent with a real minus sign. */
-const percent = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n)}%`;
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -172,7 +172,6 @@ function basisLines(v: InsightsOverview): string[] {
 const names = (ids: ReadonlyArray<CategoryId>) => ids.map((id) => categoryName({ category: id, categoryId: id })).join(', ');
 
 /** «2,4 months», one decimal, in the app language's way. */
-const monthsText = (n: number) => t('insights.budget.reserveValue', { n: new Intl.NumberFormat(i18n.global.locale.value, { maximumFractionDigits: 1 }).format(n) });
 
 /**
  * The «Budget structure» card: a finished month's income split against 50/30/20, the fixed and loan shares and the
@@ -315,12 +314,12 @@ function feedCards(v: InsightsOverview, fmt: MoneyFormat, scope: Scope): Insight
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
   const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
-  const budget = budgetView(v.budget, v.period.incomplete, fmt);
+  const health = healthView(v, budgetView(v.budget, v.period.incomplete, fmt));
   if (!v.usual) {
-    return { budget, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), cards: [], calm: false, newPayees: [], oneOffs: [], basis: [] };
+    return { health, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), cards: [], calm: false, newPayees: [], oneOffs: [], basis: [] };
   }
   return {
-    budget,
+    health,
     glance,
     early: null,
     cards: feedCards(v, fmt, scope),

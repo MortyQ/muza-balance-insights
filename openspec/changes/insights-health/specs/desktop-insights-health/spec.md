@@ -15,13 +15,13 @@ banks, scope and main currency like the rest of the screen, and show only the ch
 
 ### Requirement: Shares chart
 The chart SHALL draw, as one line, the share of income left after essential and wants spending for each whole month of
-the usual (oldest first, up to 6) and for the shown month when it is finished, with the 20% guide as a dashed line and
-the newest value named beside the chart with its change since the first month in percentage points. A month without
-income SHALL be a gap in the line, not a zero. The chart SHALL have a text equivalent listing each month's value.
+the usual (oldest first, up to 6) and the shown month when finished, the 20% guide dashed, the newest value beside it
+with its change in percentage points from the first month with income. A month without income SHALL be a gap, not a
+zero. The chart SHALL have a text equivalent listing each month's value.
 
 #### Scenario: Six months
 - **WHEN** the left share was 15, 17, 13, 19, 21 and 24% from May to October and October is shown finished
-- **THEN** the line has six points, reads 24% and «+9 pp since May», with the 20% guide drawn
+- **THEN** the line has six points, reads 24% and «+9 pp over 6 mo.», with the 20% guide drawn
 
 #### Scenario: A running month
 - **WHEN** the current month is shown

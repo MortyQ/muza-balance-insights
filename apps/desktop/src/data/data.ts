@@ -11,7 +11,7 @@ import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
-import { budgetSplit, byKind, debtShare, fixedShare, monthShares, reserveMonths } from '@mono/core/read/budget';
+import { budgetSplit, byKind, debtShare, fixedShare, guideStanding, limitsStanding, monthShares, reserveMonths } from '@mono/core/read/budget';
 import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
 import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
@@ -46,6 +46,8 @@ import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
   BudgetStructureView,
+  HealthStanding,
+  Standing,
   GoalJarView,
   GoalPayload,
   LimitAheadView,
@@ -135,6 +137,20 @@ function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: 
  * month that is over — each month's income, hryvnia kopecks in the same order.
  */
 type UsualFound = { usual: SpendingUsual; months: string[]; spent: number[]; income: number[] | null; byCategory: Array<Map<string, number>> };
+
+/** The «Financial health» checklist against its guides (spec core-budget-metrics «Standing against a guide»). */
+function healthStanding(b: BudgetStructureView, limits: Standing | null): HealthStanding {
+  const m = b.month;
+  return {
+    left: m ? guideStanding('left', m.split.left) : null,
+    essential: m ? guideStanding('essential', m.split.essential) : null,
+    wants: m ? guideStanding('wants', m.split.wants) : null,
+    fixed: m ? guideStanding('fixed', m.fixedShare) : null,
+    debt: m ? guideStanding('debt', m.debtShare) : null,
+    reserve: b.reserve ? guideStanding('reserve', b.reserve.months) : null,
+    limits,
+  };
+}
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -552,11 +568,11 @@ export class DataService {
     usualTotal: number,
     rates: Map<number, FxRate>,
     now: number,
-  ): Promise<{ limitsOver: LimitOverView[]; limitsAhead: LimitAheadView[] }> {
+  ): Promise<{ limitsOver: LimitOverView[]; limitsAhead: LimitAheadView[]; monthlyLimits: number }> {
     const goals = (await listGoals(db)).filter(
       (g) => (g.type === 'limit' && g.period === 'month') || g.type === 'budget',
     ).filter((g) => q.participantId === undefined || g.participantId === null || g.participantId === q.participantId);
-    if (goals.length === 0) return { limitsOver: [], limitsAhead: [] };
+    if (goals.length === 0) return { limitsOver: [], limitsAhead: [], monthlyLimits: 0 };
     const tz = systemTimeZone();
     const today = localDate(now * 1000, tz);
     const current = q.month === today.slice(0, 7);
@@ -587,7 +603,7 @@ export class DataService {
         if (v) add(null, v.flexible);
       }
     }
-    return { limitsOver: limitsOver.sort((a, b) => b.over - a.over), limitsAhead: limitsAhead.sort((a, b) => b.over - a.over) };
+    return { limitsOver: limitsOver.sort((a, b) => b.over - a.over), limitsAhead: limitsAhead.sort((a, b) => b.over - a.over), monthlyLimits: goals.length };
   }
 
   private async jarTitles(db: Db): Promise<string[]> {
@@ -693,8 +709,9 @@ export class DataService {
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     const kinds = await kindMap(db);
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
-    const { limitsOver, limitsAhead } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
-    if (!found) return { ...base, budget, limitsOver, limitsAhead, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const { limitsOver, limitsAhead, monthlyLimits } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
+    const standing = healthStanding(budget, monthlyLimits > 0 ? limitsStanding(limitsOver.length, limitsAhead.length) : null);
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -768,6 +785,8 @@ export class DataService {
       budget,
       limitsOver,
       limitsAhead,
+      monthlyLimits,
+      standing,
       history,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,

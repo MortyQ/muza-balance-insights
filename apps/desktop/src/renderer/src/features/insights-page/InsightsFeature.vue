@@ -3,7 +3,7 @@ import { RouterLink } from 'vue-router';
 import { DetailSkeleton } from '@/entities/operations';
 import { importLink } from '@/shared/config';
 import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
-import BudgetCard from './components/BudgetCard.vue';
+import HealthBlock from './components/HealthBlock.vue';
 import InsightCard from './components/InsightCard.vue';
 import InsightsGlance from './components/InsightsGlance.vue';
 import SignalList from './components/SignalList.vue';
@@ -22,6 +22,7 @@ const { state, view } = useInsightsPage();
     <template v-else-if="view">
       <div class="flex flex-col gap-4" :class="{ 'opacity-60': state.status === 'loading' }">
         <InsightsGlance :items="view.glance" />
+        <HealthBlock :health="view.health" />
 
         <VCard v-if="view.early" padding="md" data-test="insights-early">
           <div class="flex flex-col items-start gap-2">
@@ -32,10 +33,6 @@ const { state, view } = useInsightsPage();
             </RouterLink>
           </div>
         </VCard>
-        <VCard v-if="view.early" padding="md" class="max-w-xl">
-          <BudgetCard :budget="view.budget" />
-        </VCard>
-
         <div v-else class="grid grid-cols-1 gap-4 @5xl:grid-cols-12">
           <section class="flex min-w-0 flex-col gap-3 @5xl:col-span-8" :aria-label="$t('insights.feed.title')">
             <div class="flex items-baseline justify-between gap-2">
@@ -57,9 +54,6 @@ const { state, view } = useInsightsPage();
           </section>
 
           <aside class="flex min-w-0 flex-col gap-4 @5xl:col-span-4">
-            <VCard padding="md">
-              <BudgetCard :budget="view.budget" />
-            </VCard>
             <VCard padding="md" data-test="new-payees">
               <SignalList :title="$t('insights.newPayees.title')" :hint="$t('insights.newPayees.hint')" :rows="view.newPayees" :empty="$t('insights.newPayees.none')" />
             </VCard>

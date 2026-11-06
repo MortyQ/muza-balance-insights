@@ -1061,6 +1061,41 @@
       "title": "Forecast above the limit: {name}",
       "text": "At this pace the month ends at {forecast} against a {amount} limit. To stay within, spend at most {perDay} a day.",
       "chip": "would be over by"
+    },
+    "health": {
+      "title": "Financial health",
+      "chart": {
+        "caption": "Share of income by month",
+        "change": "{diff} pp over {n} mo.",
+        "guide": "guide {n}%",
+        "switch": "What the chart shows",
+        "noIncome": "no income",
+        "text": "{name} by month: {list}."
+      },
+      "checklist": {
+        "title": "Within the guides",
+        "count": "{n} of {m}",
+        "pending": "after the month ends",
+        "noIncome": "no income"
+      },
+      "standing": {
+        "within": "within the guide",
+        "near": "near the guide",
+        "outside": "outside the guide"
+      },
+      "guide": {
+        "atLeast": "from {n}%",
+        "atMost": "up to {n}%",
+        "reserve": "from 3 mo.",
+        "limits": "none exceeded"
+      },
+      "limits": {
+        "title": "Monthly limits",
+        "over": "{n} over",
+        "ahead": "{n} forecast over",
+        "within": "all within",
+        "help": "This view's monthly limits and monthly budget: «Personal» spending, without holds the bank has not finalised."
+      }
     }
   },
   "integrations": {

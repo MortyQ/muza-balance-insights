@@ -29,13 +29,15 @@
 
 ## 4. Financial health block
 
-- [ ] 4.1 `utils/health.ts`: the chart view (points, gaps, guide, newest value, change in points, text equivalent) and
+- [x] 4.1 `utils/health.ts`: the chart view (points, gaps, guide, newest value, change in points, text equivalent) and
       the checklist view (seven items, figure, standing, «?» texts moved from `BudgetCard`, header count)
-- [ ] 4.2 `SharesChart.vue` (`VChart`, dashed guide, the «Left» / «Wants» switch), `HealthChecklist.vue` (income bar,
+- [x] 4.2 `SharesChart.vue` (`VChart`, dashed guide, the «Left» / «Wants» switch), `HealthChecklist.vue` (income bar,
       items with circle + icon + figure, standing in words for screen readers), `HealthBlock.vue`; remove `BudgetCard.vue`
-- [ ] 4.3 New texts (block title, switch, standings, «N of M within the guide», «comes when the month ends», «no income»)
+- [x] 4.3 New texts (block title, switch, standings, «N of M within the guide», «comes when the month ends», «no income»)
       in all three dictionaries
-- [ ] 4.4 Renderer tests: a finished month, a running month, no income, two months of history (no chart), limits over
+- [x] 4.5 The overview carries `monthlyLimits` (the view's monthly limits and budget) and `standing` (core
+      `guideStanding` / `limitsStanding`, computed in the data process: the renderer may not import core's read layer)
+- [x] 4.4 Renderer tests: a finished month, a running month, no income, two months of history (no chart), limits over
       and ahead, screen-reader text; commit `feat(desktop): financial health on the Insights screen`
 
 ## 5. One feed with filters

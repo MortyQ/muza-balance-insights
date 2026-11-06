@@ -1069,6 +1069,11 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     // March: cafes 190 000 personal (the 60 000 business payment left out) against 150 000; groceries within.
     const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
     expect(v.limitsOver).toEqual([{ categoryId: 'cafes', amount: 150_000, spent: 190_000, over: 40_000, severity: expect.any(String) }]);
+    // The checklist names the limits only when the view has some.
+    expect(v.monthlyLimits).toBe(2);
+    expect(v.standing.limits).toBe('outside');
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'week', currency: 980, amount: 10_000, participantId: null });
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).monthlyLimits).toBe(2);
   });
 
   it('a pending hold from today: left out of the limit and the budget, given apart; no «Limit exceeded» for it', async () => {
@@ -1656,6 +1661,9 @@ describe('DataService.spendingOverview: usual', () => {
       split: { essential: 60, wants: 6, left: 34 }, fixedShare: 0, debtShare: 0,
     });
     expect(v.budget.reserve).toMatchObject({ usualEssential: 60_000 });
+    // 60 / 6 / 34: essential is 10 points over its guide; no monthly limits, so no limits standing.
+    expect(v.standing).toMatchObject({ left: 'within', essential: 'outside', wants: 'within', fixed: 'within', debt: 'within', limits: null });
+    expect(v.standing.reserve).not.toBeNull();
     // The chart: the five usual months oldest first (delivery grows 1 000 a month), then February, finished.
     expect(v.history).toEqual([
       ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, left: 39 - i, wants: 1 + i })),
@@ -1673,6 +1681,7 @@ describe('DataService.spendingOverview: usual', () => {
     await history();
     const running = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
     expect(running.budget.month).toBeNull();
+    expect(running.standing).toMatchObject({ left: null, essential: null, wants: null, fixed: null, debt: null });
     expect(running.budget.reserve).not.toBeNull();
     // A running month: the chart ends at the last whole month, its income read for the chart alone.
     expect(running.history.map((h) => h.month)).toEqual(['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02']);

@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
-import type { InsightSeverity, InsightsOverview } from '@contract/api.ts';
+import type { InsightSeverity, InsightsOverview, Standing } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
@@ -104,8 +104,51 @@ export interface BudgetCardView {
   basis: HelpView;
 }
 
-export interface InsightsPageView {
+/** The two lines the health chart can show. */
+export type ChartMetric = 'left' | 'wants';
+
+/** The «Financial health» chart for one metric: a point per month, null — no income that month. */
+export interface HealthChartView {
+  metric: ChartMetric;
+  name: string;
+  points: Array<{ month: string; label: string; value: number | null }>;
+  /** The guide, per cent of income. */
+  guide: number;
+  guideText: string;
+  /** The newest value, «24%»; null — no month with income. */
+  latest: string | null;
+  /** «+9 pp over 6 mo.»; null — fewer than two months with income. */
+  change: string | null;
+  changeTone: 'good' | 'bad' | 'neutral';
+  /** The chart in words, for screen readers. */
+  text: string;
+}
+
+/** One checklist item: its figure, its guide and where it stands (null — nothing to place yet, `note` says why). */
+export interface HealthItemView {
+  key: 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits';
+  label: string;
+  value: string;
+  guide: string;
+  standing: Standing | null;
+  standingText: string;
+  note: string | null;
+  help: HelpView;
+}
+
+/** The «Financial health» block (spec desktop-insights-health). */
+export interface HealthView {
+  /** Null — too little history for a chart. */
+  chart: Record<ChartMetric, HealthChartView> | null;
+  /** The income bar against 50/30/20 (a finished month with income), the checklist's help on «?», and the basis. */
   budget: BudgetCardView;
+  items: HealthItemView[];
+  /** «4 of 6»: items within the guide of those with a standing; null — none has one. */
+  count: string | null;
+}
+
+export interface InsightsPageView {
+  health: HealthView;
   glance: GlanceView[];
   /** Fewer than 3 whole months: the notice's text, and nothing else is shown below the glance. */
   early: string | null;

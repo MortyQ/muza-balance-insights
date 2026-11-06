@@ -37,6 +37,8 @@ const OVERVIEW: InsightsOverview = {
   oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000, severity: 'high' }],
   limitsOver: [],
   limitsAhead: [],
+  monthlyLimits: 0,
+  standing: { left: 'within', essential: 'within', wants: 'within', fixed: 'within', debt: 'within', reserve: 'near', limits: null },
   history: [
     { month: '2025-09', left: 22, wants: 28 }, { month: '2025-10', left: 25, wants: 27 }, { month: '2025-11', left: null, wants: null },
     { month: '2025-12', left: 19, wants: 31 }, { month: '2026-01', left: 27, wants: 26 }, { month: '2026-02', left: 30, wants: 25 },
@@ -238,36 +240,93 @@ describe('insights screen', () => {
     w.unmount();
   });
 
-  it('«Budget structure»: the split against 50/30/20, fixed, loans and the reserve, each with its formula in the user\'s numbers', async () => {
+  it('«Financial health»: the left share by month against 20%, a gap for a month without income, the chart in words', async () => {
     const w = await mountPage();
-    const card = w.get('[data-test="budget-structure"]');
-    expect(card.get('[data-test="budget-essential"]').text()).toContain('45%');
-    expect(card.get('[data-test="budget-left"]').text()).toContain('30%');
-    expect(card.get('[data-test="budget-fixed"]').text()).toContain('38%');
-    expect(card.get('[data-test="budget-debt"]').text()).toContain('8%');
-    expect(card.get('[data-test="budget-reserve"]').text()).toContain('2,4 мес.');
-    await card.get('[data-test="budget-left"] button').trigger('click');
+    const chart = w.get('[data-test="shares-chart"]');
+    expect(chart.get('[data-test="shares-latest"]').text()).toBe('30%');
+    // 22% in September to 30% in February, November without income left out.
+    expect(chart.get('[data-test="shares-change"]').text()).toBe('+8 п.п. за 6 мес.');
+    expect(chart.get('[data-test="shares-change"]').classes()).toContain('text-success');
+    const label = chart.get('[data-test="shares-plot"]').attributes('aria-label')!;
+    expect(label).toContain('Остаётся по месяцам:');
+    expect(label).toContain('2025 — без дохода');
+    expect(label).toContain('2026 — 30%');
+    w.unmount();
+  });
+
+  it('«Financial health»: the switch shows wants against 30%; a fall reads as progress there', async () => {
+    const w = await mountPage();
+    const chart = w.get('[data-test="shares-chart"]');
+    const wants = chart.get('[data-test="shares-switch"]').findAll('button').find((b) => b.text().includes('Желательные'))!;
+    await wants.trigger('click');
+    await flushPromises();
+    expect(chart.get('[data-test="shares-latest"]').text()).toBe('25%');
+    expect(chart.get('[data-test="shares-change"]').text()).toBe('−3 п.п. за 6 мес.');
+    expect(chart.get('[data-test="shares-change"]').classes()).toContain('text-success');
+    expect(chart.text()).toContain('ориентир 30%');
+    w.unmount();
+  });
+
+  it('the checklist: each figure with its guide and standing in words; the income bar; the formula on «?»; the kinds link', async () => {
+    const w = await mountPage();
+    const list = w.get('[data-test="health-checklist"]');
+    expect(list.find('[data-test="health-bar"]').exists()).toBe(true);
+    const row = (k: string) => list.get(`[data-test="health-${k}"]`);
+    expect(row('left').text()).toContain('30%');
+    expect(row('left').text()).toContain('от 20%');
+    expect(row('essential').text()).toContain('45%');
+    expect(row('fixed').text()).toContain('38%');
+    expect(row('debt').text()).toContain('8%');
+    expect(row('reserve').text()).toContain('2,4 мес.');
+    expect(row('reserve').get('[data-test="health-standing"]').text()).toBe(', близко к ориентиру');
+    expect(row('left').get('[data-test="health-standing"]').text()).toBe(', в ориентире');
+    expect(list.find('[data-test="health-limits"]').exists()).toBe(false);
+    expect(list.get('[data-test="health-count"]').text()).toBe('5 из 6');
+    expect(list.text()).not.toMatch(/хорош|плох/i);
+    await row('left').get('button').trigger('click');
     await flushPromises();
     expect(plain(document.body.textContent ?? '')).toContain(plain(`${formatMoney(2_000_000, 980)} − ${formatMoney(900_000, 980)} − ${formatMoney(500_000, 980)} = ${formatMoney(600_000, 980)} (30%)`));
-    await card.get('[data-test="budget-kinds"]').trigger('click');
+    await list.get('[data-test="budget-kinds"]').trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'settings', query: { section: 'categories' } });
     w.unmount();
   });
 
-  it('«Budget structure» while the month runs: the reserve only, and when the shares come', async () => {
-    answer = { ...OVERVIEW, period: { ...OVERVIEW.period, incomplete: true }, budget: { ...OVERVIEW.budget, month: null } };
+  it('the checklist with monthly limits: one over is outside the guide', async () => {
+    answer = {
+      ...OVERVIEW,
+      monthlyLimits: 2,
+      limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 530_000, over: 130_000, severity: 'medium' }],
+      standing: { ...OVERVIEW.standing, limits: 'outside' },
+    };
     const w = await mountPage();
-    expect(w.get('[data-test="budget-note"]').text()).toBe('Доли дохода появятся, когда месяц закончится.');
-    expect(w.find('[data-test="budget-fixed"]').exists()).toBe(false);
-    expect(w.find('[data-test="budget-reserve"]').exists()).toBe(true);
+    const limits = w.get('[data-test="health-limits"]');
+    expect(limits.text()).toContain('превышено: 1');
+    expect(limits.get('[data-test="health-standing"]').text()).toBe(', вне ориентира');
     w.unmount();
   });
 
-  it('«Budget structure» without history: no reserve, and it says why', async () => {
-    answer = { ...OVERVIEW, months: 2, usual: null, cards: [], newPayees: [], oneOffs: [], budget: { ...OVERVIEW.budget, reserve: null } };
+  it('the checklist while the month runs: the shares wait for its end, the reserve keeps its standing', async () => {
+    answer = {
+      ...OVERVIEW,
+      period: { ...OVERVIEW.period, incomplete: true },
+      budget: { ...OVERVIEW.budget, month: null },
+      standing: { ...OVERVIEW.standing, left: null, essential: null, wants: null, fixed: null, debt: null },
+    };
     const w = await mountPage();
-    expect(w.get('[data-test="budget-reserve"]').text()).toContain('Нужны хотя бы 3 целых месяца истории.');
+    const list = w.get('[data-test="health-checklist"]');
+    expect(list.find('[data-test="health-bar"]').exists()).toBe(false);
+    expect(list.get('[data-test="health-wants"]').text()).toContain('после конца месяца');
+    expect(list.get('[data-test="health-wants"]').find('[data-test="health-standing"]').exists()).toBe(false);
+    expect(list.get('[data-test="health-count"]').text()).toBe('0 из 1');
+    w.unmount();
+  });
+
+  it('too little history: the checklist without the chart; the reserve says why it is missing', async () => {
+    answer = { ...OVERVIEW, months: 2, usual: null, history: [], cards: [], newPayees: [], oneOffs: [], budget: { ...OVERVIEW.budget, reserve: null }, standing: { ...OVERVIEW.standing, reserve: null } };
+    const w = await mountPage();
+    expect(w.find('[data-test="shares-chart"]').exists()).toBe(false);
+    expect(w.get('[data-test="health-reserve"]').text()).toContain('Нужны хотя бы 3 целых месяца истории.');
     w.unmount();
   });
 

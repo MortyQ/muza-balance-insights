@@ -8,7 +8,7 @@ import { useSyncStatusStore } from '@/entities/sync-status';
 import { useAsyncData } from '@/shared/lib';
 import { useInsightsRequest } from '../api/useInsightsRequest.ts';
 import type { UseInsightsPageReturn } from '../types.ts';
-import { insightsPageView } from '../utils.ts';
+import { insightsPageView } from '../utils/index.ts';
 
 /**
  * The Insights screen for the global month, person, banks and «Personal / Business»: reloads when any changes, quietly

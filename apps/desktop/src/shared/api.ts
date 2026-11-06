@@ -542,6 +542,10 @@ export type InsightsOverview = {
   limitsOver: LimitOverView[];
   /** Monthly limits the current month's forecast puts over, not over yet; empty for a past month. */
   limitsAhead: LimitAheadView[];
+  /** How many monthly limits (and the monthly budget) the view has: the «Financial health» checklist names them only when there are some. */
+  monthlyLimits: number;
+  /** Each checklist figure against its guide (core `guideStanding` / `limitsStanding`); null — no figure to place. */
+  standing: HealthStanding;
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
 };
@@ -551,6 +555,12 @@ export type LimitOverView = { categoryId: KindCategoryId | null; amount: number;
 
 /** A monthly limit ahead of pace in the current month: the forecast, how much it would be over, per day to stay within. */
 export type LimitAheadView = { categoryId: KindCategoryId | null; amount: number; spent: number; forecast: number; over: number; perDay: number; severity: InsightSeverity };
+
+/** Where a figure stands against its guide (core `Standing`). */
+export type Standing = 'within' | 'near' | 'outside';
+
+/** The «Financial health» checklist's standings: the shares need a finished month with income, the reserve 3 whole months, the limits at least one. */
+export type HealthStanding = Record<'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits', Standing | null>;
 
 /** One month of the Insights screen's shares chart: whole per cent of that month's income. */
 export type MonthSharesView = { month: string; left: number | null; wants: number | null };
