@@ -2,14 +2,14 @@
 
 ## 1. One term: «transaction»
 
-- [ ] 1.1 In `uk.json`, `ru.json` and `en.json`, say «транзакція» / «транзакция» / «transaction» wherever a value says
+- [x] 1.1 In `uk.json`, `ru.json` and `en.json`, say «транзакція» / «транзакция» / «transaction» wherever a value says
       «операція» / «операция» / «operation» for a bank operation, with full plural forms; headings «Transactions» and
       «Recent transactions»; main's `main.*` texts included
-- [ ] 1.2 Remove `home.now.opsShort` and `home.spending.opsShort`; their users (`now-strip/utils.ts`,
+- [x] 1.2 Remove `home.now.opsShort` and `home.spending.opsShort`; their users (`now-strip/utils.ts`,
       `spending-summary/utils/people.ts`, `income-detail/utils.ts`, `entities/operations/utils.ts` `countCaption`)
       take the full plural key
-- [ ] 1.3 Update the renderer and main i18n tests that read the old words; `tests/i18n.test.ts` stays green
-- [ ] 1.4 Commit `feat(desktop): one term for a transaction`
+- [x] 1.3 Update the renderer and main i18n tests that read the old words; `tests/i18n.test.ts` stays green
+- [x] 1.4 Commit `feat(desktop): one term for a transaction`
 
 ## 2. The change rule: money first, «×N» for large changes
 

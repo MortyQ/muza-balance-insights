@@ -77,7 +77,7 @@ export function breakdown(
       name: categoryName(c),
       color: categoryColor(c.rank),
       amount: fmt.money(c.net),
-      ops: t('home.now.opsShort', { n: c.purchases }),
+      ops: t('home.now.ops', c.purchases),
       share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
       bar: biggest > 0 ? Math.max(0, Math.round((c.net / biggest) * 100)) : 0,
       icon: CATEGORY_ICON[c.categoryId ?? 'other'],

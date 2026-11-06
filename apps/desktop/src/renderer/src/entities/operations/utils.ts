@@ -110,7 +110,7 @@ export function monthsView(
 
 /** «N ops · avg X», the caption of a person or a name. */
 function countCaption(value: number, count: number, fmt: Money): string {
-  return [t('home.spending.opsShort', { n: count }), count > 0 ? t('entities.operations.avg', { amount: fmt.money(Math.round(value / count)) }) : '']
+  return [t('home.spending.ops', count), count > 0 ? t('entities.operations.avg', { amount: fmt.money(Math.round(value / count)) }) : '']
     .filter(Boolean)
     .join(' · ');
 }

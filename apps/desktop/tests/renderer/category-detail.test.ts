@@ -67,7 +67,7 @@ describe('category screen helpers', () => {
     expect(s.prev).toBe(`в августе было ${uah(100_000)}`);
     expect(s.note).toBe(`Списано ${uah(164_000)} · возвраты −${uah(23_000)}`);
     expect(s.stats.map((x) => [x.label, x.value])).toEqual([
-      ['Операций', '4'],
+      ['Транзакций', '4'],
       ['Средний чек', uah(41_000)],
       ['В день', uah(4_700)],
       ['Доля всех трат', '8%'],
@@ -128,8 +128,8 @@ describe('category screen helpers', () => {
       FMT,
     );
     expect(bars).toEqual([
-      { key: 'b', name: 'B', color: 'blue', amount: uah(40_000), caption: `1 оп. · ср. ${uah(40_000)}`, width: 100 },
-      { key: 'a', name: 'A', color: 'red', amount: uah(10_000), caption: `2 оп. · ср. ${uah(5_000)}`, width: 25 },
+      { key: 'b', name: 'B', color: 'blue', amount: uah(40_000), caption: `1 транзакция · ср. ${uah(40_000)}`, width: 100 },
+      { key: 'a', name: 'A', color: 'red', amount: uah(10_000), caption: `2 транзакции · ср. ${uah(5_000)}`, width: 25 },
     ]);
   });
 
@@ -143,8 +143,8 @@ describe('category screen helpers', () => {
 
   it('who, where, when', () => {
     expect(peopleView(VIEW, PEOPLE, FMT).map((p) => [p.name, p.width, p.caption])).toEqual([
-      ['Сергей', 100, `3 оп. · ср. ${uah(27_067)}`],
-      ['Аня', 73.6, `1 оп. · ср. ${uah(59_800)}`],
+      ['Сергей', 100, `3 транзакции · ср. ${uah(27_067)}`],
+      ['Аня', 73.6, `1 транзакция · ср. ${uah(59_800)}`],
     ]);
     const where = merchantsView(VIEW, 'imaginary bus', FMT);
     expect(where.map((m) => [m.key, m.width, m.pressed])).toEqual([['vigadane taxi', 83.1, false], ['imaginary bus', 100, true]]);
@@ -264,8 +264,8 @@ describe('the user\'s own category of a line', () => {
 
   it('what a choice did', () => {
     expect(choiceDoneText(0)).toBe('Категория уже такая');
-    expect(choiceDoneText(1)).toBe('Категория изменена в 1 операции');
-    expect(choiceDoneText(3)).toBe('Категория изменена в 3 операциях');
+    expect(choiceDoneText(1)).toBe('Категория изменена в 1 транзакции');
+    expect(choiceDoneText(3)).toBe('Категория изменена в 3 транзакциях');
   });
 });
 
@@ -275,7 +275,7 @@ describe('category screen of a week or a day', () => {
     expect(s.subtitle).toBe('Неделя 14 сен – 20 сен · Личное');
     expect(s.chip).toMatchObject({ tone: 'up', text: `на ${uah(4_200)} (7%) больше`, title: `на ${uah(4_200)} (7%) больше, чем на прошлой неделе` });
     expect(s.prev).toBe(`на прошлой неделе было ${uah(59_800)}`);
-    expect(s.stats.map((x) => x.label)).toEqual(['Операций', 'Средний чек', 'В день', 'Доля всех трат', 'Самая крупная', 'Кэшбэк']);
+    expect(s.stats.map((x) => x.label)).toEqual(['Транзакций', 'Средний чек', 'В день', 'Доля всех трат', 'Самая крупная', 'Кэшбэк']);
     expect(s.stats[0]!.note).toBe('на прошлой неделе — 1');
     expect(s.stats[2]!.note).toBe('дней с тратами: 2 из 7');
     expect(s.stats[3]!.note).toBe('2-е место за неделю');
@@ -390,7 +390,7 @@ describe('category screen mounted', () => {
   it('asks for the month, the category and the scope; shows every block; a merchant filters the list and a chip clears it', async () => {
     const w = await mountScreen();
     expect(getCategoryOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal' });
-    for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Операции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
+    for (const s of ['Траты', 'Такси и транспорт', 'Динамика за 12 месяцев', 'Кто тратил', 'Где', 'Когда', 'Транзакции', 'Вигаданий аеропорт']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
     expect(w.findAll('.v-chart').length).toBeGreaterThan(0);
 
@@ -449,7 +449,7 @@ describe('category screen mounted', () => {
     [...document.body.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Сохранить')!.click();
     await flushPromises();
     expect(setOperationCategory).toHaveBeenCalledWith({ key: 'a', category: 'investments', payee: true });
-    expect(w.text()).toContain('Категория изменена в 2 операциях');
+    expect(w.text()).toContain('Категория изменена в 2 транзакциях');
     w.unmount();
   });
 

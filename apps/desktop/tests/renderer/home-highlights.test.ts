@@ -122,7 +122,7 @@ describe('home highlights', () => {
     expect(w.get('[data-test="home-highlights"]').classes()).toContain('@[79rem]:col-span-4');
     expect(slides[0]!.text()).toContain(`Продукты — на ${formatMoney(150_000, 980)} (50%) меньше обычного`);
     const dots = w.findAll('[data-test="carousel-dot"]');
-    expect(dots.map((d) => d.attributes('aria-label'))).toEqual(['Слайд 1 из 2: Что необычно', 'Слайд 2 из 2: Последние операции']);
+    expect(dots.map((d) => d.attributes('aria-label'))).toEqual(['Слайд 1 из 2: Что необычно', 'Слайд 2 из 2: Последние транзакции']);
 
     await dots[1]!.trigger('click');
     const rows = w.findAll('[data-test="recent-row"]');
@@ -161,7 +161,7 @@ describe('home highlights', () => {
     recent = { ...RECENT, lines: [] };
     const w = await mountTile();
     expect(w.find('.v-carousel').exists()).toBe(false);
-    expect(w.get('[data-test="highlights-empty"]').text()).toBe('В этом месяце операций пока нет');
+    expect(w.get('[data-test="highlights-empty"]').text()).toBe('В этом месяце транзакций пока нет');
     w.unmount();
   });
 

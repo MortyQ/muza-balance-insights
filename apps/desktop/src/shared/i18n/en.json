@@ -71,7 +71,7 @@
   "category": {
     "back": "Spending",
     "failed": "Couldn't load the category.",
-    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the transaction's own currency.",
     "list": {
       "col": {
         "where": "Where"
@@ -91,12 +91,12 @@
       "activeDays": "days with spending: {n} of {days}",
       "avg": "Average",
       "cashback": "Cashback",
-      "cashbackLines": "from {n} operation | from {n} operations | from {n} operations",
+      "cashbackLines": "from {n} transaction | from {n} transactions | from {n} transactions",
       "gross": "Charged {gross} · refunds −{refunds}",
       "largest": "Largest",
       "largestWhere": "{merchant}, {date} at {time}",
       "median": "median {amount}",
-      "ops": "Operations",
+      "ops": "Transactions",
       "opsPrev": "{n} in {month}",
       "opsPrevWeek": "{n} last week",
       "perDay": "Per day",
@@ -123,7 +123,7 @@
       "resetPayee": "Remove the rule for this payee",
       "markOperation": "your choice",
       "markPayee": "payee rule",
-      "done": "Category changed in {n} operation | Category changed in {n} operations | Category changed in {n} operations",
+      "done": "Category changed in {n} transaction | Category changed in {n} transactions | Category changed in {n} transactions",
       "unchanged": "The category is already that",
       "failed": "Could not change the category. Try again."
     },
@@ -132,8 +132,8 @@
       "search": "Find a category",
       "none": "No such category",
       "current": "now",
-      "payee": "For all operations from this payee",
-      "payeeHint": "Past and future ones. A category you chose for one operation stays.",
+      "payee": "For all transactions from this payee",
+      "payeeHint": "Past and future ones. A category you chose for one transaction stays.",
       "save": "Save",
       "cancel": "Cancel"
     },
@@ -334,7 +334,7 @@
         },
         "empty": "Nothing found.",
         "sort": "Sort",
-        "title": "Operations",
+        "title": "Transactions",
         "total": "List total: {amount}",
         "actions": "Actions: {name}"
       },
@@ -700,8 +700,7 @@
       "date": "{weekday}, {month} {day}",
       "label": "Now",
       "noneWeek": "No spending yet this week",
-      "ops": "{n} operation | {n} operations | {n} operations",
-      "opsShort": "{n} op.",
+      "ops": "{n} transaction | {n} transactions | {n} transactions",
       "pending": "Processing at the bank: {count}",
       "pendingTitle": "Their amounts may still change",
       "sameUsual": "about as usual",
@@ -795,11 +794,10 @@
       "noData": "No data yet: download the statement in «Import».",
       "noneBy": "{name}: no spending this month",
       "notYet": "Data is downloaded only up to {date}: there is none for this month yet.",
-      "operations": "Operations",
-      "ops": "{n} operation | {n} operations | {n} operations",
+      "operations": "Transactions",
+      "ops": "{n} transaction | {n} transactions | {n} transactions",
       "opsPrev": "In {month} — {ops}",
       "opsSame": "same",
-      "opsShort": "{n} op.",
       "opsVs": "{diff} vs {month}",
       "partial": "The month is not complete: data up to {date}, the numbers will still grow.",
       "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
@@ -829,8 +827,8 @@
       "whoSpent": "Who spent what"
     },
     "recent": {
-      "title": "Recent operations",
-      "none": "No operations this month yet",
+      "title": "Recent transactions",
+      "none": "No transactions this month yet",
       "pending": "pending at the bank"
     },
     "highlights": {
@@ -846,7 +844,7 @@
       },
       "months": "{n} month | {n} months | {n} months",
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
-      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
+      "pending": "Still pending at the bank and left out until it finalises them: {n} transaction | Still pending at the bank and left out until it finalises them: {n} transactions | Still pending at the bank and left out until it finalises them: {n} transactions",
       "all": "All insights"
     },
     "budget": {
@@ -869,7 +867,7 @@
   "income": {
     "back": "Balance",
     "failed": "Couldn't load the income.",
-    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the operation's own currency. Refunds for purchases and transfers between your own accounts are not counted here.",
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate; under an amount — the transaction's own currency. Refunds for purchases and transfers between your own accounts are not counted here.",
     "from": {
       "more": "{n} more sender | {n} more senders | {n} more senders",
       "title": "From"
@@ -949,7 +947,7 @@
       "incomeLess": "{now} this month, usually {usual}",
       "income": "Income",
       "driver": "Mostly {name}: {amount}, {share}% of the change",
-      "open": "Open operations",
+      "open": "Open transactions",
       "chart": "The usual months and this one; the line is the usual, {usual}"
     },
     "feed": {
@@ -976,7 +974,7 @@
       "threshold": "A change counts from 20% and 500 ₴ against the usual.",
       "severity": "Importance is the change's share of a usual month's spending: high from 10%, medium from 4%.",
       "running": "The month is still running: a category shows once it is past a whole usual month.",
-      "pending": "Still pending at the bank and left out until it finalises them: {n} operation | Still pending at the bank and left out until it finalises them: {n} operations | Still pending at the bank and left out until it finalises them: {n} operations",
+      "pending": "Still pending at the bank and left out until it finalises them: {n} transaction | Still pending at the bank and left out until it finalises them: {n} transactions | Still pending at the bank and left out until it finalises them: {n} transactions",
       "cashOff": "Cash withdrawals are left out of spending (Settings → «Categories»)."
     },
     "early": {
@@ -1107,7 +1105,7 @@
       "label": "How to connect",
       "token": "Token",
       "file": "Statement file",
-      "tokenHint": "The app downloads new operations by itself with the token.",
+      "tokenHint": "The app downloads new transactions by itself with the token.",
       "fileHint": "No token: you upload a statement file whenever you want fresh data. Nothing updates by itself."
     },
     "file": {
@@ -1115,7 +1113,7 @@
     },
     "statement": {
       "pick": "Choose file",
-      "summary": "Operations in the file: {rows} · {from} – {to}",
+      "summary": "Transactions in the file: {rows} · {from} – {to}",
       "account": "Account",
       "newCard": "New card",
       "cardType": "Card type",
@@ -1126,9 +1124,9 @@
       "blockedToken": "A token connection: the statement is only checked, it is not written here.",
       "blockedCurrency": "The file's currency is not the account's.",
       "blockedGap": "No data from {from} to {to}: upload the statement for those days first.",
-      "nothingNew": "No new operations.",
+      "nothingNew": "No new transactions.",
       "add": "Add",
-      "added": "Operations added: {count}.",
+      "added": "Transactions added: {count}.",
       "expired": "Choose the file again.",
       "importRunning": "Wait for the import to finish first.",
       "compareFailed": "Could not compare the file with the account.",
@@ -1141,7 +1139,7 @@
         "otherBank": "This is another bank's statement. Upload it into a connection of that bank.",
         "language": "The statement is in English: its service texts are translated and transfers are not recognised. Make the statement in Ukrainian.",
         "unsupportedKind": "This kind of statement is not supported yet, only a card statement.",
-        "empty": "The file has no operations.",
+        "empty": "The file has no transactions.",
         "badRow": "Line {row} of the file does not read.",
         "tooLarge": "The file is too large: over 10 MB.",
         "noFormat": "This bank cannot be uploaded by file yet.",
@@ -1163,12 +1161,12 @@
       "checkOnly": "Connected by token: the statement is only checked, not written.",
       "gap": "There is a gap between this file and the data: upload the statement for the earlier days first.",
       "fileSkipped": "File {n} skipped",
-      "summary": "Ready: {ready} · new operations: {added}",
+      "summary": "Ready: {ready} · new transactions: {added}",
       "waiting": "waiting for a person: {count}",
       "import": "Import",
       "cancel": "Cancel",
       "close": "Close",
-      "added": "Operations added: {count}.",
+      "added": "Transactions added: {count}.",
       "leftOut": "Files not written: {count}."
     },
     "people": {
@@ -1523,7 +1521,7 @@
       "usual": "Usually {amount}",
       "period": "Period",
       "owner": "Whose",
-      "counted": "Refunds and transfers between your own accounts are left out; operations the bank still processes count.",
+      "counted": "Refunds and transfers between your own accounts are left out; transactions the bank still processes count.",
       "failed": "Could not save. Perhaps such a limit already exists.",
       "save": "Save",
       "cancel": "Cancel",

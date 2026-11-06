@@ -129,7 +129,7 @@ describe('insights screen', () => {
     expect(oneOff).toContain('4 000 ₴');
     const basis = w.get('[data-test="insights-basis"]').text();
     expect(basis).toContain('медиана 5 целых месяцев');
-    expect(basis).toContain('не учтено, пока банк их не проведёт: 2 операции');
+    expect(basis).toContain('не учтено, пока банк их не проведёт: 2 транзакции');
     expect(basis).not.toContain('Снятие наличных');
     w.unmount();
     answer = { ...OVERVIEW, cashCounts: false };

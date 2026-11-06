@@ -77,17 +77,17 @@ describe('income screen helpers', () => {
   it('by bank: each bank with income, the larger first, its lines and average', () => {
     const v: IncomeOverview = { ...VIEW, banks: [{ provider: 'monobank', total: 300_000, lines: 2 }, { provider: 'abank', total: 60_000, lines: 2 }] };
     expect(banksView(v, FMT).map((b) => [b.name, b.width, b.caption])).toEqual([
-      ['Monobank', 100, `2 оп. · ср. ${uah(150_000)}`],
-      ['A-Bank', 20, `2 оп. · ср. ${uah(30_000)}`],
+      ['Monobank', 100, `2 транзакции · ср. ${uah(150_000)}`],
+      ['A-Bank', 20, `2 транзакции · ср. ${uah(30_000)}`],
     ]);
   });
 
   it('who, where from, from whom, when', () => {
     expect(peopleView(VIEW, PEOPLE, FMT).map((p) => [p.name, p.width])).toEqual([['Сергей', 100], ['Аня', 4.3]]);
     expect(sourcesView(VIEW, FMT).map((s) => [s.label, s.width, s.caption])).toEqual([
-      ['Из других банков', 100, '1 оп. · 83%'],
-      ['Переводы', 13.3, '1 оп. · 11%'],
-      ['От людей и клиентов', 6.7, '2 оп. · 6%'],
+      ['Из других банков', 100, '1 транзакция · 83%'],
+      ['Переводы', 13.3, '1 транзакция · 11%'],
+      ['От людей и клиентов', 6.7, '2 транзакции · 6%'],
     ]);
     expect(sendersView(VIEW, 'vigadana osoba', FMT).map((s) => [s.key, s.pressed])).toEqual([
       ['vigadana firma', false], ['imaginary client', false], ['vigadana osoba', true],
@@ -217,7 +217,7 @@ describe('income screen mounted', () => {
   it('asks for the month; shows every block; a sender filters the list and a chip clears it', async () => {
     const w = await mountScreen();
     expect(getIncomeOverview.mock.calls[0]?.[0]).toEqual({ period: { kind: 'month', month: '2026-09' } });
-    for (const s of ['Баланс', 'Поступления', 'Динамика за 12 месяцев', 'Откуда', 'От кого', 'Кто получал', 'Когда', 'Операции', 'Вигадана зарплата']) expect(w.text()).toContain(s);
+    for (const s of ['Баланс', 'Поступления', 'Динамика за 12 месяцев', 'Откуда', 'От кого', 'Кто получал', 'Когда', 'Транзакции', 'Вигадана зарплата']) expect(w.text()).toContain(s);
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
 
     const osoba = w.findAll('button[aria-pressed]').find((b) => b.text().includes('Vigadana Osoba'))!;
