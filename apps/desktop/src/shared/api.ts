@@ -499,10 +499,10 @@ export type InsightCardView = SpendingInsight & {
 };
 
 /** A payee seen for the first time (core `newPayees`): the bank's description cut, its main category, hryvnia kopecks spent. */
-export type NewPayeeView = { name: string; category: string; categoryId: CategoryId | null; amount: number };
+export type NewPayeeView = { name: string; category: string; categoryId: CategoryId | null; amount: number; severity: InsightSeverity };
 
 /** A large one-off operation (core `oneOffs`): YYYY-MM-DD in the system time zone, hryvnia kopecks spent (> 0). */
-export type OneOffView = { key: string; date: string; name: string; category: string; categoryId: CategoryId | null; amount: number };
+export type OneOffView = { key: string; date: string; name: string; category: string; categoryId: CategoryId | null; amount: number; severity: InsightSeverity };
 
 /**
  * The Insights screen's month (spec desktop-insights-page): every insight of «What's unusual» with severity, series and
@@ -533,6 +533,11 @@ export type InsightsOverview = {
   oneOffs: OneOffView[];
   /** «Budget structure» (core read/budget.ts). */
   budget: BudgetStructureView;
+  /**
+   * The left and wants shares of income (core `monthShares`) for each usual month, oldest first, then the shown month
+   * when it is finished; null shares — no income that month. Empty without a usual.
+   */
+  history: MonthSharesView[];
   /** Monthly limits of the view over in the shown month («Personal», every bank), as feed cards ranked by `over`. */
   limitsOver: LimitOverView[];
   /** Monthly limits the current month's forecast puts over, not over yet; empty for a past month. */
@@ -546,6 +551,9 @@ export type LimitOverView = { categoryId: KindCategoryId | null; amount: number;
 
 /** A monthly limit ahead of pace in the current month: the forecast, how much it would be over, per day to stay within. */
 export type LimitAheadView = { categoryId: KindCategoryId | null; amount: number; spent: number; forecast: number; over: number; perDay: number; severity: InsightSeverity };
+
+/** One month of the Insights screen's shares chart: whole per cent of that month's income. */
+export type MonthSharesView = { month: string; left: number | null; wants: number | null };
 
 /**
  * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,

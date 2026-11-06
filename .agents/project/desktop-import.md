@@ -138,7 +138,9 @@
   newest six operations «Spending» counts, the description cut the same way, no comment), `getInsightsOverview(SpendingOverviewQuery)` (the Insights screen, `DataService.insightsOverview`: the month's
   summary, the usual, and one `linesOfCategories` read of every spent or unusual category over the usual months and the
   shown one — each card's driver, new payees and one-offs; payee names cut the same way, since 01.11 with the user's
-  ask) and `getSpendingOverview`'s
+  ask; it also carries `history` — the left and wants shares of each usual month and of the shown month once finished,
+  core `monthShares`, a running month reading the usual months' income once more for it — and a severity on new
+  payees and one-offs, core `insightSeverity`) and `getSpendingOverview`'s
   `explain.drivers` (home's «Insights» block, since 01.11 with the user's ok: one payee name per unusual category, the
   description cut the same way, from core `linesOfCategories`) are the **only** data
   channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an

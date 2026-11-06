@@ -33,10 +33,14 @@ const OVERVIEW: InsightsOverview = {
   cashCounts: true,
   usual: { months: 5, from: '2025-09', to: '2026-01', total: 1_200_000, income: { now: 2_000_000, usual: 2_000_000 }, savings: { rate: 25, usual: 40 } },
   cards: [CAFES, GROCERIES],
-  newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000 }],
-  oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000 }],
+  newPayees: [{ name: 'Fictional Studio', category: 'спорт', categoryId: 'sport', amount: 90_000, severity: 'low' }],
+  oneOffs: [{ key: 't9', date: '2026-02-14', name: '', category: 'маркетплейсы', categoryId: 'marketplaces', amount: 400_000, severity: 'high' }],
   limitsOver: [],
   limitsAhead: [],
+  history: [
+    { month: '2025-09', left: 22, wants: 28 }, { month: '2025-10', left: 25, wants: 27 }, { month: '2025-11', left: null, wants: null },
+    { month: '2025-12', left: 19, wants: 31 }, { month: '2026-01', left: 27, wants: 26 }, { month: '2026-02', left: 30, wants: 25 },
+  ],
   budget: {
     month: {
       income: 2_000_000, essential: 900_000, wants: 500_000, savings: 100_000, fixed: 760_000, debt: 160_000,

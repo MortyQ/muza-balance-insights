@@ -11,7 +11,7 @@ import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
-import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
+import { budgetSplit, byKind, debtShare, fixedShare, monthShares, reserveMonths } from '@mono/core/read/budget';
 import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
 import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
@@ -694,7 +694,7 @@ export class DataService {
     const kinds = await kindMap(db);
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
     const { limitsOver, limitsAhead } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
-    if (!found) return { ...base, budget, limitsOver, limitsAhead, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -728,7 +728,7 @@ export class DataService {
     };
     const fresh = newPayees([...payees.values()]).map((p) => {
       const category = categoryOf(merchantKey(p.name));
-      return { name: p.name, category, categoryId: CATEGORY_ID.get(category) ?? null, amount: p.now };
+      return { name: p.name, category, categoryId: CATEGORY_ID.get(category) ?? null, amount: p.now, severity: insightSeverity(p.now, usual.total) };
     });
     const ops = shown
       .filter((r) => r.uah! < 0 && !r.refundPair)
@@ -743,17 +743,32 @@ export class DataService {
       category: row.category,
       categoryId: CATEGORY_ID.get(row.category) ?? null,
       amount,
+      severity: insightSeverity(amount, usual.total),
     }));
 
     const savings =
       usual.income && found.income
         ? savingsRate({ income: usual.income.now, spent }, months.map((_, k) => ({ income: found.income![k]!, spent: found.spent[k]! })))
         : null;
+    // The chart's months (spec desktop-insights-health): the usual's, oldest first, then the shown one once finished.
+    const shares = (month: string, income: number | null, byCategory: ReadonlyMap<string, number>) => {
+      const m = income === null ? null : monthShares(income, byCategory, kinds);
+      return { month, left: m?.left ?? null, wants: m?.wants ?? null };
+    };
+    // A running month's usual carries no income (its day decides it), so the chart reads the whole months' income once.
+    const usualIncome: number[] =
+      found.income ??
+      (await incomeSummary(db, { from: monthBounds(months.at(-1)!).from, to: monthBounds(months[0]!).to, ...filters, groupBy: 'month' }, now).then((r) =>
+        months.map((m) => r.groups.filter((g) => g.key === m).reduce((s, g) => s + (toUah(g.total, g.currency, rates) ?? 0), 0)),
+      ));
+    const history = oldestFirst(months.map((m, k) => shares(m, usualIncome[k]!, found.byCategory[k]!)));
+    if (!incomplete) history.push(shares(q.month, budget.month?.income ?? null, new Map([...cur].map(([k, a]) => [k, a.net]))));
     return {
       ...base,
       budget,
       limitsOver,
       limitsAhead,
+      history,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,

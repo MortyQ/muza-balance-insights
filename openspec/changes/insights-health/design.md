@@ -35,7 +35,8 @@ insights.
 2. **History from what is already read.** Core gets `monthShares(income, byCategory, kinds)` in `read/budget.ts`
    (pure: `byKind` + the split's arithmetic, null without income). The data process maps it over `found`'s months
    (oldest first) plus the shown month when finished: `history: Array<{ month, left: number | null, wants: number | null }>`.
-   No new SQL. Without a usual (`found` null) `history` is empty.
+   A finished month needs no new query; a running month's usual carries no income (home relies on that), so the
+   overview reads the usual months' income once more by month for the chart only. Without a usual `history` is empty.
    Alternative: a separate 12-month query — rejected: more reads for a chart that would then disagree with the usual.
 3. **Standing is a core rule.** `guideStanding(kind, value)` in `read/budget.ts` returns `within | near | outside`
    with the 5-point band and the reserve's 2-month floor; the limits' standing from `limitsOver.length` and

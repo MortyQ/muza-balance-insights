@@ -1640,6 +1640,8 @@ describe('DataService.spendingOverview: usual', () => {
     ]);
     expect(v.oneOffs.map((o) => [o.date, o.amount, o.categoryId])).toEqual([['2026-02-12', 150_000, 'groceries'], ['2026-02-13', 50_000, 'groceries']]);
     expect(v.oneOffs[0]!.name).toBe('Cafe Fictional •• 0000');
+    // Severity by the cards' rule against a usual month of 63 000: 150 000 and 50 000 are both high.
+    expect([...v.newPayees, ...v.oneOffs].map((x) => x.severity)).toEqual(['high', 'high', 'high', 'high']);
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
   });
@@ -1654,6 +1656,11 @@ describe('DataService.spendingOverview: usual', () => {
       split: { essential: 60, wants: 6, left: 34 }, fixedShare: 0, debtShare: 0,
     });
     expect(v.budget.reserve).toMatchObject({ usualEssential: 60_000 });
+    // The chart: the five usual months oldest first (delivery grows 1 000 a month), then February, finished.
+    expect(v.history).toEqual([
+      ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, left: 39 - i, wants: 1 + i })),
+      { month: '2026-02', left: 34, wants: 6 },
+    ]);
     expect(v.budget.kinds.essential).toContain('groceries');
     expect(v.budget.kinds.fixed).toContain('rent');
     await svc.setCategoryKind({ categoryId: 'delivery', kind: 'essential', fixed: true });
@@ -1667,10 +1674,14 @@ describe('DataService.spendingOverview: usual', () => {
     const running = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
     expect(running.budget.month).toBeNull();
     expect(running.budget.reserve).not.toBeNull();
+    // A running month: the chart ends at the last whole month, its income read for the chart alone.
+    expect(running.history.map((h) => h.month)).toEqual(['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02']);
+    expect(running.history.at(-1)).toEqual({ month: '2026-02', left: 34, wants: 6 });
     await db.execute('DELETE FROM sync_state');
     await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), SYNCED_TO, SYNCED_TO + 60] });
     const early = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });
     expect(early.usual).toBeNull();
+    expect(early.history).toEqual([]);
     expect(early.budget).toMatchObject({ month: { income: 100_000, split: { essential: 60, wants: 6, left: 34 } }, reserve: null });
   });
 

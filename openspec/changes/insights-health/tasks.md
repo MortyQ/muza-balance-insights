@@ -12,13 +12,13 @@
 
 ## 2. Data: history and payee severity
 
-- [ ] 2.1 `src/shared/api.ts`: `InsightsOverview.history`, `severity` on `NewPayeeView` and `OneOffView`
-- [ ] 2.2 `data/data.ts` `insightsOverview`: `history` from `found`'s months oldest first, plus the shown month when
+- [x] 2.1 `src/shared/api.ts`: `InsightsOverview.history`, `severity` on `NewPayeeView` and `OneOffView`
+- [x] 2.2 `data/data.ts` `insightsOverview`: `history` from `found`'s months oldest first, plus the shown month when
       finished; empty without a usual; payee and one-off severity by `insightSeverity`
-- [ ] 2.3 Tests in `tests/data.test.ts` (fictional rows): history order and nulls, a running month left out, severities;
+- [x] 2.3 Tests in `tests/data.test.ts` (fictional rows): history order and nulls, a running month left out, severities;
       the canary test still finds no `counter_name`, IBAN or card number
-- [ ] 2.4 `.agents/project/desktop-import.md`: `getInsightsOverview` carries `history`
-- [ ] 2.5 Commit `feat(desktop): insights history and payee severity`
+- [x] 2.4 `.agents/project/desktop-import.md`: `getInsightsOverview` carries `history`
+- [x] 2.5 Commit `feat(desktop): insights history and payee severity`
 
 ## 3. Signals at a glance
 
