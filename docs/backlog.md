@@ -313,3 +313,15 @@
 - The pace rule (attention at ≥ 1.3 × the plan and ≥ 5% of the limit above it; «a little ahead» above 110% of the
   plan): on real months, does it warn early enough without crying wolf after one large purchase? Tune the thresholds in
   `packages/core/src/read/limits.ts`.
+
+## Check on a live system: texts and hints (`openspec/changes/texts-hints`)
+
+- Whole plural counts («12 транзакцій») in the narrowest places: the people captions of «Spending», «Who received» on
+  the income screen, the «Today» / «This week» tiles; nothing cut that matters.
+- The «?» popovers at every window width and in both themes: none cut by the window's edge, the header rows keep
+  their height, the balance header's «?» does not open or fold the card row.
+- Tooltips by keyboard: Tab reaches a «pending» mark, the count change, «… a day» in the ring, «Free» and «Compared
+  with …», and each shows its hint; a screen reader reads it.
+- The «Marks» column toggling while picking a payee or searching: the columns do not jump in a distracting way.
+- «×N» on real months: does «+105 € (×5.0)» read better than the percent did, and is the money alone above ten times
+  clear enough with the base in the hint?

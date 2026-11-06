@@ -76,7 +76,7 @@ describe('texts', () => {
   });
 
   it('the summary and the comparison: counts, what differs, what blocks, nothing new', () => {
-    expect(summaryText({ rows: 5, from: '2026-10-03', to: '2026-10-07' })).toBe('Операций в файле: 5 · 03.10.2026 – 07.10.2026');
+    expect(summaryText({ rows: 5, from: '2026-10-03', to: '2026-10-07' })).toBe('Транзакций в файле: 5 · 03.10.2026 – 07.10.2026');
     expect(comparisonLines(comparison())).toEqual(['Уже есть: 0 · Новых: 5']);
     expect(comparisonLines(comparison({ matched: 3, amountDiffers: 1, missingInFile: 2, added: 1, blocked: 'token' }))).toEqual([
       'Уже есть: 3 · Новых: 1',
@@ -87,11 +87,11 @@ describe('texts', () => {
     expect(comparisonLines(comparison({ blocked: 'gap', gap: { from: '2026-10-07', to: '2026-11-02' } })).at(-1)).toBe(
       'С 07.10.2026 по 02.11.2026 нет данных: сначала загрузи выписку за эти дни.',
     );
-    expect(comparisonLines(comparison({ matched: 5, added: 0 })).at(-1)).toBe('Новых операций нет.');
+    expect(comparisonLines(comparison({ matched: 5, added: 0 })).at(-1)).toBe('Новых транзакций нет.');
   });
 
   it('after «Add»', () => {
-    expect(commitText({ written: true, added: 4 })).toBe('Добавлено операций: 4.');
+    expect(commitText({ written: true, added: 4 })).toBe('Добавлено транзакций: 4.');
     expect(commitText({ written: false, reason: 'expired' })).toBe('Выбери файл ещё раз.');
     expect(commitText({ written: false, reason: 'import-running' })).toBe('Сначала дождись конца импорта.');
   });
@@ -148,7 +148,7 @@ describe('useStatementUpload', () => {
 
     await u.add();
     expect(api.commitStatement).toHaveBeenCalledWith('st-1', [{ kind: 'new', type: 'white' }]);
-    expect(u.state.value).toEqual({ step: 'done', message: 'Добавлено операций: 5.' });
+    expect(u.state.value).toEqual({ step: 'done', message: 'Добавлено транзакций: 5.' });
     expect(api.listPeople).toHaveBeenCalled();
     expect(api.getSyncStatus).toHaveBeenCalled();
   });
@@ -226,7 +226,7 @@ describe('on the screen', () => {
     expect(w.text()).toContain('В приложении Monobank сформируй выписку карты в формате CSV на украинском языке.');
     await w.find('button').trigger('click');
     await flushPromises();
-    expect(w.text()).toContain('Операций в файле: 5 · 03.10.2026 – 07.10.2026');
+    expect(w.text()).toContain('Транзакций в файле: 5 · 03.10.2026 – 07.10.2026');
     expect(w.text()).toContain('Уже есть: 0 · Новых: 5');
     const add = w.findAll('button').find((b) => b.text() === 'Добавить');
     expect(add?.attributes('disabled')).toBeUndefined();
@@ -253,7 +253,7 @@ describe('on the screen', () => {
     const w = await mountIt(AddConnectionFeature, { provider: 'monobank', defaultLabel: 'Я' });
     await flushPromises();
     expect(w.text()).toContain('Как подключить');
-    expect(w.text()).toContain('Приложение само загружает новые операции по токену.');
+    expect(w.text()).toContain('Приложение само загружает новые транзакции по токену.');
     const fileOption = w.findAll('button').find((b) => b.text() === 'Файл выписки');
     await fileOption?.trigger('click');
     await flushPromises();

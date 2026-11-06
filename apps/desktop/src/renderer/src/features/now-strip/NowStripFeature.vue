@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef, watch } from 'vue';
 import { t } from '@/shared/lib';
-import { VCard, VChangeChip, VIcon, VSegmentedControl, type SegmentOption } from '@/shared/ui';
+import { VCard, VChangeChip, VHelpHint, VIcon, VSegmentedControl, type SegmentOption } from '@/shared/ui';
 import CategoryList from './components/CategoryList.vue';
 import TileCategories from './components/TileCategories.vue';
 import WeekBars from './components/WeekBars.vue';
@@ -41,7 +41,7 @@ const list = computed(() => view.value?.categories[period.value] ?? null);
         <VCard as="section" padding="md" class="@[79rem]:col-span-4" :aria-label="view.today.title" data-test="now-today">
           <div class="flex h-full flex-col gap-3">
             <div>
-              <h3 class="text-sm font-bold">{{ view.today.title }}</h3>
+              <div class="flex items-center gap-1"><h3 class="text-sm font-bold">{{ view.today.title }}</h3><VHelpHint :label="$t('common.helpLabel', { name: view.today.title })">{{ $t('home.now.help') }}</VHelpHint></div>
               <p class="mt-1 flex flex-wrap items-center gap-2">
                 <span class="text-2xl font-bold whitespace-nowrap tabular-nums">{{ view.today.amount }}</span>
                 <VChangeChip v-if="view.today.chip" :chip="view.today.chip" size="sm" />
@@ -68,7 +68,7 @@ const list = computed(() => view.value?.categories[period.value] ?? null);
           <div class="flex h-full flex-col gap-3">
             <div class="flex items-end justify-between gap-3">
               <div class="min-w-0">
-                <h3 class="text-sm font-bold">{{ view.week.title }}</h3>
+                <div class="flex items-center gap-1"><h3 class="text-sm font-bold">{{ view.week.title }}</h3><VHelpHint :label="$t('common.helpLabel', { name: view.week.title })">{{ $t('home.now.help') }}</VHelpHint></div>
                 <p class="mt-1 flex flex-wrap items-center gap-2">
                   <span class="text-2xl font-bold whitespace-nowrap tabular-nums">{{ view.week.amount }}</span>
                   <VChangeChip v-if="view.week.chip" :chip="view.week.chip" size="sm" />

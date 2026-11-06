@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { VChart, VTooltip } from '@/shared/ui';
+import { VChart, VHelpHint, VTooltip } from '@/shared/ui';
 import type { PaceBank, PaceSplit, PaceView } from '../types.ts';
 import { paceChartOption, paceLegend } from '../utils.ts';
 import PaceLegend from './PaceLegend.vue';
@@ -26,7 +26,7 @@ const legend = computed(() => paceLegend(view, banks));
   <div class="flex min-w-0 flex-col gap-3">
     <div class="flex items-start gap-2">
       <div class="flex grow flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3>
+        <div class="flex items-center gap-1"><h3 class="text-base font-bold">{{ $t('home.balances.pace.title') }}</h3><VHelpHint :label="$t('common.helpLabel', { name: $t('home.balances.pace.title') })">{{ $t('home.balances.pace.help') }}</VHelpHint></div>
         <span class="text-xs text-foreground-muted">{{ $t('home.balances.pace.subtitle') }}</span>
       </div>
       <PaceSettings v-if="offered" class="-my-1 shrink-0" :split @split="$emit('split', $event)" />

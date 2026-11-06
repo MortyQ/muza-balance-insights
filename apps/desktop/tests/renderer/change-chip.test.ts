@@ -17,9 +17,23 @@ describe('change', () => {
 
   it('changeText: the amount first, the percent in brackets; the sign only for a short chip', () => {
     const money = (k: number) => `${k} ₴`;
-    expect(changeText(change(33_500, 1_500)!, money)).toBe('32000 ₴ (2133%)');
+    expect(changeText(change(109, 100)!, money, true)).toBe('+9 ₴ (9%)');
     expect(changeText(change(110, 100)!, money, true)).toBe('+10 ₴ (10%)');
     expect(changeText(change(80, 100)!, money, true)).toBe('−20 ₴ (20%)');
+    expect(changeText(change(199, 100)!, money, true)).toBe('+99 ₴ (99%)');
+  });
+
+  it('changeText (spec desktop-ui-wording): from twice the base «×N», above ten times the money alone', () => {
+    const money = (k: number) => `${k} €`;
+    expect(changeText(change(13_100, 2_600)!, money, true)).toBe('+10500 € (×5,0)');
+    expect(changeText(change(200, 100)!, money, true)).toBe('+100 € (×2,0)');
+    expect(changeText(change(1_000, 100)!, money, true)).toBe('+900 € (×10,0)');
+    expect(changeText(change(300_000, 5_000)!, money, true)).toBe('+295000 €');
+    expect(changeText(change(33_500, 1_500)!, money)).toBe('32000 €');
+    // A decrease keeps its percent; «as before» and «new» are unchanged.
+    expect(changeText(change(10, 100)!, money, true)).toBe('−90 € (90%)');
+    expect(change(102, 100)!.kind).toBe('same');
+    expect(change(50, 0)!.kind).toBe('new');
   });
 });
 

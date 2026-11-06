@@ -105,7 +105,7 @@ describe('spending block: edge cases', () => {
   it('pending bank operations: a warning-toned note with a spinning icon', async () => {
     current = { ...VIEW, period: { ...VIEW.period, pendingHolds: 2 } };
     const w = await mountBlock();
-    const note = w.findAll('p').find((p) => p.text().includes('Операций в обработке банком'));
+    const note = w.findAll('p').find((p) => p.text().includes('Транзакций в обработке банком'));
     expect(note?.classes()).toContain('text-warning');
     expect(note?.find('svg').exists()).toBe(true);
     expect(note?.find('svg').attributes('aria-hidden')).toBe('true');

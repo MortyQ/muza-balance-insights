@@ -125,8 +125,8 @@ describe('screens and notices', () => {
   it('missing tokens: all, some (named), unreadable, or an unfinished import', () => {
     const labelOf = (id: number) => (id === 2 ? 'Вигадана · Monobank' : 'Я · Monobank');
     const missing = [conn(2, { token: token({ present: false, stored: null }) })];
-    expect(noTokenText(missing, 1, 'idle', labelOf)).toMatch(/^Нет токена: новые операции не загружаются/);
-    expect(noTokenText(missing, 2, 'idle', labelOf)).toBe('Нет токена: Вигадана · Monobank. Их новые операции не загружаются.');
+    expect(noTokenText(missing, 1, 'idle', labelOf)).toMatch(/^Нет токена: новые транзакции не загружаются/);
+    expect(noTokenText(missing, 2, 'idle', labelOf)).toBe('Нет токена: Вигадана · Monobank. Их новые транзакции не загружаются.');
     expect(noTokenText([conn(2, { token: token({ present: false, needsReentry: true }) })], 2, 'idle', labelOf)).toMatch(/Вигадана · Monobank.*заново/);
     expect(noTokenText(missing, 2, 'needs-token', labelOf)).toMatch(/незавершённый импорт/);
   });

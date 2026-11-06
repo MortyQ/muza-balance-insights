@@ -111,7 +111,7 @@ describe('balance tiles', () => {
     const panel = b.get('[data-test="panel"]');
     expect(pace.isVisible()).toBe(true);
     expect(panel.attributes('inert')).toBeUndefined();
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     expect(b.get('[data-test="balance-tile"]').classes()).toContain('col-span-full');
     for (const tile of [pace, panel]) {
       expect(tile.element.isConnected).toBe(true);
@@ -179,7 +179,7 @@ function rowOf(b: VueWrapper, { endOnScroll = true } = {}) {
 }
 const pointer = (type: string, clientX: number, pointerType = 'mouse') =>
   new PointerEvent(type, { pointerType, clientX, button: 0, pointerId: 1, bubbles: true, cancelable: true });
-const expanded = (b: VueWrapper) => b.get('button[aria-expanded]').attributes('aria-expanded');
+const expanded = (b: VueWrapper) => b.get('button[aria-expanded]:not([aria-haspopup])').attributes('aria-expanded');
 
 describe('the open row', () => {
   it('is a snapping scroller without a scroll bar; folded, it only clips', async () => {
@@ -187,7 +187,7 @@ describe('the open row', () => {
     const row = b.get('[data-test="row"]');
     expect(row.classes()).toContain('overflow-clip');
     expect(row.classes()).not.toContain('snap-x');
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     expect(row.classes()).toEqual(expect.arrayContaining(['overflow-x-auto', 'snap-x', 'snap-mandatory', '[scrollbar-width:none]']));
     // At the start: only the right edge fades.
     expect(row.attributes('style')).toContain('--fade-l: 0px');
@@ -208,7 +208,7 @@ describe('the open row', () => {
 
   it('a mouse drag scrolls the row with snapping off, and the click after it does not fold the row', async () => {
     const b = await mountBlock();
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     const { el } = rowOf(b);
     const card = b.findAll('[data-test="row"] button')[1]!.element;
     card.dispatchEvent(pointer('pointerdown', 300));
@@ -228,7 +228,7 @@ describe('the open row', () => {
 
   it('touch is left to native scrolling, and a plain click still folds the row', async () => {
     const b = await mountBlock();
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     const { el } = rowOf(b);
     const card = b.findAll('[data-test="row"] button')[0]!.element as HTMLElement;
     card.dispatchEvent(pointer('pointerdown', 300, 'touch'));
@@ -244,7 +244,7 @@ describe('the open row', () => {
     const dots = () => b.findAll('[data-test="row-dot"]');
     expect(dots()).toHaveLength(5);
     expect(dots()[0]!.element.parentElement?.getAttribute('aria-hidden')).toBe('true');
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     const { scrollTo } = rowOf(b);
     expect(dots()[0]!.element.parentElement?.getAttribute('aria-hidden')).toBe('false');
     expect(dots()[0]!.attributes('aria-label')).toBe('Карта 1 из 5: Семья');
@@ -256,7 +256,7 @@ describe('the open row', () => {
 
   it('folding a scrolled row goes back to its start first, then stacks; focus returns to the front card', async () => {
     const b = await mountBlock();
-    await b.get('button[aria-expanded]').trigger('click');
+    await b.get('button[aria-expanded]:not([aria-haspopup])').trigger('click');
     const { el, scrollTo, setLeft } = rowOf(b, { endOnScroll: false });
     setLeft(832);
     const cards = b.findAll('[data-test="row"] button');

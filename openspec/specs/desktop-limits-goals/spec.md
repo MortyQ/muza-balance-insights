@@ -14,9 +14,22 @@ pace marker, the state, the forecast and «per day»), the category limits sorte
 their limits and the family's, each with its owner; the family view SHALL show all. Amounts SHALL be in the main
 currency. The screen SHALL reload quietly when the data changes.
 
+Spent amounts SHALL leave pending holds out. Where the budget's flexible part or a limit has pending holds, it SHALL
+show a quiet note with their number and amount («+ 2 pending, 650 ₴») and a tooltip saying they count once the bank
+finalises them. Home's «Budget» row SHALL follow the same figures. A budget that does not count taxes SHALL say so
+under its flexible part.
+
 #### Scenario: Sorted by state
 - **WHEN** one limit is exceeded and one is on track
 - **THEN** the exceeded one is listed first with «Exceeded by N» and an icon
+
+#### Scenario: A pending hold on a limit
+- **WHEN** a cafe limit has a 600 ₴ hold from today
+- **THEN** the limit's spent amount and bar leave it out and the row says «+ 1 pending, 600 ₴»
+
+#### Scenario: No pending holds
+- **WHEN** nothing is pending
+- **THEN** no note is shown
 
 ### Requirement: Empty state with suggestions
 Without any limit, the screen SHALL offer the suggested limits for the largest flexible categories with their amounts
@@ -40,10 +53,13 @@ source. Deleting SHALL ask in the sheet itself. A failed save SHALL keep the she
 ### Requirement: Monthly budget sheet
 The monthly budget SHALL be created and edited in one sheet: the total with its currency and quick choices from the
 usual month (the usual, −10%, −20%); the fixed costs, empty at first, where «Add a fixed cost» picks a category not yet
-listed and the user types its amount, and each row can be removed; the owner. Beside the form a live result SHALL show
+listed and the user types its amount, and each row can be removed; a «Count taxes» switch, on by default, with a hint
+that taxes then stay out of the budget but not out of «Spending»; the owner. Beside the form a live result SHALL show
 the total, each fixed row taken off, the flexible part and its average per day, a chart of the past whole months'
-flexible spending (without the listed categories) against the flexible part with how many months would exceed it, and
-a warning when the fixed costs take the whole total. Saving SHALL be unavailable while a row has no amount.
+flexible spending (without the listed categories, and without taxes while the switch is off) against the flexible part
+with how many months would exceed it, and a warning when the fixed costs take the whole total. Saving SHALL be
+unavailable while a row has no amount. While «Count taxes» is off, taxes SHALL NOT be offered as a fixed cost, and
+turning it off with a taxes row listed SHALL remove that row.
 
 #### Scenario: Building a budget
 - **WHEN** the user types 2 000 €, adds rent and types 1 250 €
@@ -57,11 +73,33 @@ a warning when the fixed costs take the whole total. Saving SHALL be unavailable
 - **WHEN** the user removes the rent row
 - **THEN** rent is no longer set aside and the flexible part grows by its amount
 
+#### Scenario: Taxes off
+- **WHEN** the user turns «Count taxes» off
+- **THEN** the past months' chart drops taxes, taxes leave the «Add a fixed cost» choices, and a listed taxes row is removed
+
 ### Requirement: Limit bar on the category screen
 The category screen SHALL show the category's limit for the current period when the shown month is the current one:
-spent of the limit, the bar with the pace marker, the state and a link to edit; without a limit, a quiet «Set a
-limit» with the suggestion.
+spent of the limit (pending holds left out, with the same note as on the «Budget» screen), the bar with the pace
+marker, the state and a link to edit; without a limit, a quiet «Set a limit» with the suggestion.
 
 #### Scenario: A category with a limit
 - **WHEN** the user opens cafes in the current month with a monthly limit
 - **THEN** the screen shows spent of the limit with the pace marker and its state
+
+#### Scenario: Pending on the category screen
+- **WHEN** the category's list shows a pending hold from today
+- **THEN** the limit bar leaves it out and says it is pending, while the list still shows the operation
+
+### Requirement: The state in words says the real problem
+A limit's and the budget's state SHALL be said by its reason: «Over by N»; «N ahead of plan (×2.6)» for the pace;
+«Forecast over the limit»; «N% spent»; «A little ahead of plan» in a neutral look for a lead below attention, never
+«On track»; «N under plan»; else «On track». The bar SHALL take the state's colour. Until the forecast is shown, the
+pace line SHALL give only what the plan allows by today.
+
+#### Scenario: Two days, a quarter of the limit
+- **WHEN** a 35 € transport limit has 6 € spent on day 2 of 30
+- **THEN** the row says «4 € ahead of plan (×2.6)» in the attention look, and the pace line has no forecast
+
+#### Scenario: A small lead
+- **WHEN** the budget's flexible part is a little above its plan by today, below the attention thresholds
+- **THEN** it says «A little ahead of plan» in a neutral look, not «On track»

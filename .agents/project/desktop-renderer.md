@@ -101,12 +101,12 @@
   highlights tile's place too: `NowStripFeature` `v-model:details` → `HomeHighlights v-if="!nowDetails"` in the page.
   «Who spent what» and the regular payments teaser are off home since 01.11 (their place is decided later; their
   components stay in their slices). Checked by `tests/home-grid.test.ts`.
-- **Highlights tile** (`widgets/home-highlights`): «What's unusual» and «Recent operations» as two slides of
+- **Highlights tile** (`widgets/home-highlights`): «What's unusual» and «Recent transactions» as two slides of
   `shared/ui` `VCarousel` (swipe, Shift + wheel, a mouse drag through `useDragScroll` of `shared/lib`, dots). The widget
   calls `useSpendingInsights` (`features/spending-summary`) and `useRecentOperations` (`features/recent-operations`)
   itself, so it knows which slides have content before any is shown: «What's unusual» first when it has lines, one
-  alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent operations» (the
-  composable asks nothing), «What's unusual» over the whole row, or no tile when nothing is unusual. «Recent operations» (`RecentOperationsList`): the month's newest
+  alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent transactions» (the
+  composable asks nothing), «What's unusual» over the whole row, or no tile when nothing is unusual. «Recent transactions» (`RecentOperationsList`): the month's newest
   six operations «Spending» counts (IPC `getRecentOperations`), a row with the category icon, the bank's description
   (else the category's name), the category and when, the amount (a refund with «+»), a pending mark; it links to the
   operation's category screen. Home's «Personal / Business» choice is `entities/scope` (`useScopeStore`): the spending
@@ -168,8 +168,12 @@
   since 01.11, so the in-block person pick (`usePick`) stays `null`; the scope switch writes `entities/scope`.
   «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
   detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
-  `INSIGHT_MAX` (5), each with the money and the share (`changeText`), a «rare» one by the money alone; a category line
-  is a link to its screen (`categoryLink`, the block's scope), income lines are plain. The note says the median of how
+  `INSIGHT_MAX` (5), each a row in «Spending»'s look: the category's icon in a soft circle of its rank colour (the
+  `view.categories` order; income `--success` with a wallet), the name, «now · usually …», a `VChangeChip` with the
+  money and the share (`changeText`; a «rare» one the money alone), a chevron, and a `VShareBar` of now against the
+  usual (the larger is 100%, the usual a mark); the whole sentence is the row's `aria-label`. A category line is a link
+  to its screen (`categoryLink`, the block's scope), income lines are plain. Over the whole row (a past month, `wide`)
+  the rows stand in two columns from 60rem. The note says the median of how
   many months, and that the month still runs. It is a slide of the highlights tile (`useSpendingInsights`, the same
   request as the block, shared while in flight by `shared/api/balance.ts`).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
@@ -211,7 +215,8 @@
   `WhenCharts` (`WeekdayBars`, `DayPartBars`, `MonthDayBars`), `PartBars` (`PartBar`: a split card's rows, the mark is
   the `mark` slot — the screens put `BankMark` there for «By bank»), `PeopleBars` (`PartBars` with `VAvatar`), `ShareList` (`ShareItem`:
   merchants / senders that filter the list), `OperationList` (the `role="table"` list with search and order, rows —
-  `OperationRow`, columns `OPERATION_COLS`; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
+  `OperationRow`, columns `operationCols(withActions, withMarks)` — no «Marks» column while no shown row has a mark; a
+  mark's `hint` is a focusable `VTooltip` with sr-only text; column and search texts come as props), `BackLink`, `DetailSkeleton`. Every
   block only shows what it is given and emits what was picked; loading stays in the feature's `api/`; pure helpers in `utils.ts` (`monthsView`,
   `whenView` / `whenTotals` over a `value` accessor, `partBars`, `peopleBars`, `shareItems`, `changeChip`, `searchText`, `nameKey`).
   Texts — `entities.operations.*`. Amounts go through a structural `Money` (`MoneyFormat` fits; entities do not import
@@ -345,7 +350,9 @@
 - **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
   one look and one rule for «Spending» and the strip. A change against a base is said in money first, the percent in
   brackets — «+1 090 ₴ (9%)», in a sentence «1 090 ₴ (9%) more than…» (`changeText`; analytics: `diffText`): a
-  percent alone reads wrong over a small base. Dictionary keys take it as `{diff}`. Shares («45% of the family») stay
+  percent alone reads wrong over a small base. From twice the base the bracket is «×N» (`times()`, one decimal), above
+  ten times there is none; a chip's hint names the base (spec `desktop-ui-wording`). Every change chip goes through
+  `changeText`, never its own percent. Dictionary keys take it as `{diff}`. Shares («45% of the family») stay
   percent only.
 - Стили renderer — Tailwind v4 (`@tailwindcss/vite`), токены — копия `muzakit/libs/config/src/tailwind/theme.css`
   в `apps/desktop/src/renderer/src/app/styles/theme.css` (сканирование только renderer: `source(none)` + `@source`).
@@ -443,6 +450,9 @@
     request, stale → shown at once and replaced by a quiet load, none → as before; `reload()` always asks. Tests:
     `tests/renderer/read-cache.test.ts`, the store's part in `sync-status.test.ts`.
 - **Interface texts** — every text on a screen goes through vue-i18n, no literals:
+  - a bank operation is a «transaction» in every language (uk «транзакція», ru «транзакция»), never abbreviated
+    (spec `desktop-ui-wording`); a block whose figures are not obvious gets a «?» (`VHelpHint`,
+    `common.helpLabel`), a single figure or mark a focusable `VTooltip` with the same text sr-only;
   - templates: `$t('key')`, `$t('key', { name })`, plurals `$t('key', n)`; script code (`utils.ts`, composables,
     stores): `t` from `@/shared/lib`, called when the text is needed — never at module load (a constant built with `t`
     does not follow a language switch). Tables of texts in `constants.ts` hold keys (`MessageKey` from

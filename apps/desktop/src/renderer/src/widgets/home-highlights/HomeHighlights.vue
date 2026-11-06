@@ -45,7 +45,7 @@ const dotLabel = (n: number, total: number, label: string) => t('home.highlights
   >
     <VCarousel v-if="slides.length > 0" v-model="current" :slides :dot-label>
       <template #unusual>
-        <SpendingInsights v-if="insights" :insights />
+        <SpendingInsights v-if="insights" :insights :wide="past" />
       </template>
       <template #recent>
         <RecentOperationsList :rows />

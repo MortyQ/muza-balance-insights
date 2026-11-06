@@ -5,7 +5,7 @@ import { bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
-import { VChart, VSegmentedControl } from '@/shared/ui';
+import { VChart, VHelpHint, VSegmentedControl } from '@/shared/ui';
 import { FLOW_BANK_FILL } from '../constants.ts';
 import { useFlowSplit } from '../composables/useFlowSplit.ts';
 import type { FlowBank, FlowSplit } from '../types.ts';
@@ -39,7 +39,7 @@ const swatch = (color: string) => `color-mix(in oklch, ${color} ${FLOW_BANK_FILL
   <section class="flex h-full flex-col gap-3">
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h2 class="text-base font-bold">{{ $t('analytics.flow.title') }}</h2>
+        <div class="flex items-center gap-1"><h2 class="text-base font-bold">{{ $t('analytics.flow.title') }}</h2><VHelpHint :label="$t('common.helpLabel', { name: $t('analytics.flow.title') })">{{ $t('analytics.help.flow') }}</VHelpHint></div>
         <p class="text-sm text-foreground-muted">{{ days ? $t('analytics.flow.days') : $t('analytics.flow.months') }}</p>
       </div>
       <div class="flex flex-wrap items-center gap-4">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VButton, VIcon } from '@/shared/ui';
+import { VButton, VHelpHint, VIcon } from '@/shared/ui';
 
 const { open, title, subtitle, canPrev, canNext } = defineProps<{
   open: boolean;
@@ -21,7 +21,7 @@ const emit = defineEmits<{ prev: []; next: []; stub: []; close: [] }>();
       :inert="open"
     >
       <div class="flex items-baseline gap-3">
-        <h3 class="text-base font-bold">{{ $t('home.balances.title') }}</h3>
+        <div class="flex items-center gap-1"><h3 class="text-base font-bold">{{ $t('home.balances.title') }}</h3><VHelpHint :label="$t('common.helpLabel', { name: $t('home.balances.title') })">{{ $t('home.balances.help') }}</VHelpHint></div>
         <span class="inline-flex items-center gap-1.5 text-xs text-foreground-muted">
           <VIcon icon="lucide:maximize-2" :size="14" />
           {{ $t('home.balances.expandHint') }}

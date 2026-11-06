@@ -1,6 +1,6 @@
 import type { MoneyFormat } from '@/entities/currency-display';
 import { change, changeText, monthShortName, t, type Change } from '@/shared/lib';
-import type { ChipView, OpsView } from '../types.ts';
+import type { ChipView, OpsDiffView, OpsView } from '../types.ts';
 import { prevIn, prevMonthNumber } from './month.ts';
 
 const tone = (c: Change): ChipView['tone'] => (c.kind === 'up' ? 'up' : c.kind === 'down' ? 'down' : 'neutral');
@@ -44,7 +44,7 @@ export function centerChip(now: number, prev: number | null, month: string, fmt:
   const diff = changeText(c, fmt.money);
   // Short on the chip; the whole comparison («…than up to this day in August») in its tooltip.
   const short = c.kind === 'up' ? 'home.spending.change.shortMore' : 'home.spending.change.shortLess';
-  return { text: t(short, { diff }), tone: tone(c), arrow: arrow(c), sr: '', title: t(key, { diff, month: prevIn(month) }) };
+  return { text: t(short, { diff }), tone: tone(c), arrow: arrow(c), sr: '', title: t(key, { diff, month: prevIn(month), base: fmt.money(prev ?? 0) }) };
 }
 
 /** The short chip of the people list: «+1 090 ₴ (9%)». */
@@ -67,8 +67,10 @@ export function opsView(now: number, prev: number | null, month: string, partial
 }
 
 /** `home.spending.opsVs` under the ring («+4 vs Aug.»), with the tone of the difference. */
-export function opsVs(now: number, prev: number | null, month: string, partial = false): Pick<OpsView, 'text' | 'tone' | 'sr'> {
+export function opsVs(now: number, prev: number | null, month: string, partial = false): OpsDiffView {
   const v = opsView(now, prev, month, partial);
-  if (!v.diff || v.tone === 'neutral') return { text: v.diff, tone: v.tone, sr: '' };
-  return { text: t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) }), tone: v.tone, sr: v.sr };
+  if (!v.diff || v.tone === 'neutral' || prev === null) return { text: v.diff, tone: v.tone, sr: '' };
+  const n = Math.abs(now - prev);
+  const hint = t(now > prev ? 'home.spending.opsMoreHint' : 'home.spending.opsLessHint', { n, month: prevIn(month) }, n);
+  return { text: t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) }), tone: v.tone, sr: v.sr, hint };
 }

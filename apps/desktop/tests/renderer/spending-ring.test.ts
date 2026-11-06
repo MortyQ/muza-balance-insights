@@ -5,6 +5,7 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import CategoryRing from '@/features/spending-summary/components/summary/CategoryRing.vue';
 import { CANVAS_MARGIN, HOVER_GROW } from '@/features/spending-summary/utils/ring.ts';
+import { i18n } from '@/shared/lib';
 import { chartCalls } from './setup-charts.ts';
 
 const part = (name: string, value: number, share: string) => ({ key: name, name, value, color: 'var(--category-1)', amount: `${value} ₴`, share });
@@ -14,6 +15,7 @@ describe('CategoryRing', () => {
     const before = chartCalls.length;
     const w = mount(CategoryRing, {
       props: { parts: [part('Продукты', 300, '60%'), part('Кафе', 200, '40%')], label: 'Вся семья', amount: '500 ₴', perDay: '20 ₴ в день', chip: null, conv: [] },
+      global: { plugins: [i18n] },
     });
     const chart = chartCalls[before]!;
     expect(w.text()).toContain('500 ₴');

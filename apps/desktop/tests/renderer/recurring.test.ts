@@ -109,7 +109,7 @@ describe('regular payments screen mounted', () => {
   it('the family: asks without a person; the total, the active rows with their person, the stopped ones apart', async () => {
     const w = await mountScreen();
     expect(getRecurringOverview.mock.calls[0]?.[0]).toEqual({});
-    for (const s of ['Регулярные платежи', uah(59_900), 'в месяц', 'Codehub', 'Связь и цифровые сервисы · Аня', 'Прекратились', 'Gym Fictional']) {
+    for (const s of ['Регулярные платежи', uah(59_900), 'в месяц', 'Codehub', 'Связь и цифровые сервисы · Аня', 'Не встречались последние месяцы', 'Gym Fictional']) {
       expect(w.text()).toContain(s);
     }
     const lists = w.findAll('ul');
@@ -148,7 +148,7 @@ describe('regular payments screen mounted', () => {
     w.unmount();
   });
 
-  it('«Not a regular payment» hides it; the hidden list restores it', async () => {
+  it('«Hide from regular payments» hides it; the hidden list restores it', async () => {
     current = { ...VIEW, hidden: [payment({ key: 'h', name: 'Bean Bar', mark: 'hidden' })] };
     const w = await mountScreen();
     expect(w.text()).toContain('Скрытые (1)');
@@ -159,7 +159,7 @@ describe('regular payments screen mounted', () => {
 
     document.body.querySelector<HTMLElement>('[aria-label="Действия: Streamio"]')!.click();
     await flushPromises();
-    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Не регулярный платёж')!.click();
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Скрыть из регулярных платежей')!.click();
     await flushPromises();
     expect(setRecurringMark).toHaveBeenLastCalledWith({ key: 'b', mark: 'hidden' });
     w.unmount();
@@ -170,7 +170,7 @@ describe('regular payments screen mounted', () => {
     const w = await mountScreen();
     document.body.querySelector<HTMLElement>('[aria-label="Действия: Codehub"]')!.click();
     await flushPromises();
-    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Не регулярный платёж')!.click();
+    Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Скрыть из регулярных платежей')!.click();
     await flushPromises();
     expect(w.text()).toContain('Не удалось сохранить отметку.');
     expect(getRecurringOverview).toHaveBeenCalledTimes(1);

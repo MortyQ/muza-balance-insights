@@ -107,7 +107,8 @@ export interface UseSpendingReturn {
 }
 
 /** A toned difference of operations («+4 vs Aug.», «+2»): `OPS_TONE`, `sr` — the direction for screen readers. */
-export type OpsDiffView = Pick<OpsView, 'text' | 'tone' | 'sr'>;
+/** The difference in the number of transactions; `hint` says it in words («4 fewer transactions than in August»). */
+export type OpsDiffView = Pick<OpsView, 'text' | 'tone' | 'sr'> & { hint?: string };
 
 /** A category row with the screen it opens (`categoryLink`); null — «N more categories» or an unknown word. */
 export interface CategoryRowView extends RowView {
@@ -181,10 +182,21 @@ export interface UseSummaryViewReturn {
 /** The block's display state from `useSpending` and the menu choices: everything the template binds. */
 /** One line of «What's unusual»: more spent (up), less (down), or about income (neutral). */
 export interface InsightLine {
+  /** The whole line in words, for screen readers and the link's name. */
   text: string;
   tone: 'up' | 'down' | 'neutral';
   /** The category screen it opens; null — income. */
   to: RouteLocationRaw | null;
+  name: string;
+  icon: string;
+  /** The category's colour by its rank in «Spending» (`--category-N`), income green. */
+  color: string;
+  /** «1 450 € · usually 410 €». */
+  caption: string;
+  /** The change in money first («+1 040 € (×3,5)»), its tone; neutral for income. */
+  chip: ChangeChipModel;
+  /** This month against the usual on one scale: the fill and the usual's mark, % of the larger. */
+  bar: { value: number; mark: number };
 }
 
 export interface InsightsView {

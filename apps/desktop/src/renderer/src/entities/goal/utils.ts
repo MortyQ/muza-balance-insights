@@ -1,5 +1,5 @@
 import type { LimitFiguresView } from '@contract/api.ts';
-import { i18n, t } from '@/shared/lib';
+import { t, times } from '@/shared/lib';
 import { STATE_LOOK, type StateLookName } from './constants.ts';
 import type { LimitLook, Money } from './types.ts';
 
@@ -12,9 +12,6 @@ export function goalMinor(text: string, max: number): number | null {
 }
 
 const clamp = (n: number) => Math.max(0, Math.min(100, n));
-
-/** «×2.6», one decimal, in the app language's way. */
-const times = (n: number) => new Intl.NumberFormat(i18n.global.locale.value, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(n);
 
 /** The state in words by its reason (spec desktop-limits-goals): what is wrong, with the user's numbers. */
 function stateWords(f: LimitFiguresView, money: Money, running: boolean): { state: StateLookName; text: string } {

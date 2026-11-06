@@ -60,7 +60,7 @@ describe('useQuickUpload', () => {
     u.choose(0, 1, 2);
     await u.commit();
     expect(api.commitUpload).toHaveBeenCalledWith('up-1', [[null, 2], []]);
-    expect(u.state.value).toEqual({ step: 'done', request: {}, message: 'Добавлено операций: 4.' });
+    expect(u.state.value).toEqual({ step: 'done', request: {}, message: 'Добавлено транзакций: 4.' });
   });
 
   it('bound to a connection: main gets its id; too many files and an expired upload say why; a cancelled dialog shows nothing', async () => {
@@ -133,7 +133,7 @@ describe('QuickUploadFeature', () => {
     button.click();
     await flushPromises();
     expect(api.commitUpload).toHaveBeenCalledWith('up-1', [[null, 2], []]);
-    expect(sheet()?.textContent).toContain('Добавлено операций: 4.');
+    expect(sheet()?.textContent).toContain('Добавлено транзакций: 4.');
     w.unmount();
   });
 

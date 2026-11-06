@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { AnalyticsOverview } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { currencySymbol, t } from '@/shared/lib';
-import { VSegmentedControl } from '@/shared/ui';
+import { VHelpHint, VSegmentedControl } from '@/shared/ui';
 import { VIEW_ICON, VIEW_IDS } from '../constants.ts';
 import type { CategoryRow, LinesMode, ViewId } from '../types.ts';
 import { columns, compareRows, heatRows, miniCards } from '../utils.ts';
@@ -44,7 +44,7 @@ const compare = computed(() => (current.value === 'compare' ? compareRows(view, 
   <section class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <div class="min-w-0">
-        <h2 class="text-base font-bold">{{ $t('analytics.views.title') }}</h2>
+        <div class="flex items-center gap-1"><h2 class="text-base font-bold">{{ $t('analytics.views.title') }}</h2><VHelpHint :label="$t('common.helpLabel', { name: $t('analytics.views.title') })">{{ $t('analytics.help.views') }}</VHelpHint></div>
         <p class="text-sm text-foreground-muted">{{ hint }}</p>
       </div>
       <VSegmentedControl v-model="current" :options size="md" />

@@ -127,7 +127,7 @@ export function whenView(lines: ReadonlyArray<CategoryLineView>, v: Readonly<Pic
 
 function marksOf(l: Readonly<CategoryLineView>, fmt: MoneyFormat): MarkView[] {
   const marks: MarkView[] = [];
-  if (l.pending) marks.push({ text: t('entities.operations.mark.pending'), tone: 'warning' });
+  if (l.pending) marks.push({ text: t('entities.operations.mark.pending'), tone: 'warning', hint: t('entities.operations.mark.pendingHint') });
   if (l.refund) marks.push({ text: t('category.list.mark.refund'), tone: 'good' });
   if (l.refunded) marks.push({ text: t('category.list.mark.refunded'), tone: 'neutral' });
   if (l.commission) marks.push({ text: t('category.list.mark.fee'), tone: 'neutral' });

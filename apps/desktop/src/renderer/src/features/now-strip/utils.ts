@@ -44,7 +44,8 @@ export function nowChip(now: number, base: number | null, against: 'usual' | 'we
   if (!c || c.kind === 'new') return null;
   if (c.kind === 'same') return { text: t(SAME[against]), tone: 'neutral', arrow: null, sr: '' };
   const dir = c.kind === 'up' ? 'up' : 'down';
-  return { text: changeText(c, fmt.money, true), tone: dir, arrow: dir, sr: t(SR[against][dir]) };
+  const title = t(against === 'usual' ? 'home.now.baseUsual' : 'home.now.baseWeek', { base: fmt.money(base) });
+  return { text: changeText(c, fmt.money, true), tone: dir, arrow: dir, sr: t(SR[against][dir]), title };
 }
 
 /** A category against the same days last week: «+120 ₴» (no percent: the row has no room), «same», «new»; null — no comparison. */
@@ -77,7 +78,7 @@ export function breakdown(
       name: categoryName(c),
       color: categoryColor(c.rank),
       amount: fmt.money(c.net),
-      ops: t('home.now.opsShort', { n: c.purchases }),
+      ops: t('home.now.ops', c.purchases),
       share: total.net > 0 ? Math.min(100, Math.round((c.net / total.net) * 100)) : 0,
       bar: biggest > 0 ? Math.max(0, Math.round((c.net / biggest) * 100)) : 0,
       icon: CATEGORY_ICON[c.categoryId ?? 'other'],
