@@ -35,6 +35,22 @@ English interface.
 - **Commuter transport.** Metro, suburban trains and other transport services now land in «Taxi and transport»
   instead of «Other». Operations you already have are re-sorted once, at the next download.
 
+### Clearer words and hints
+
+- **One word for a bank operation.** Every screen now says «transaction» (in Ukrainian and Russian too), with whole
+  words instead of «op.»: «Transactions» on a category's screen, «Recent transactions» on home.
+- **Big changes read as «×N».** A change against last month or the usual one says the money first; when the amount
+  at least doubled it adds how many times over instead of a percent — «+105 € (×5.0)» rather than «399%». Above ten
+  times it gives the money alone. Each chip's hint now names the amount it is compared with.
+- **«?» on home and in «Analytics».** «Balance», «Month pace», «Today» and «This week», «Spending» and «Insights» on
+  home, and the totals, «Income and spending», the changes and the category views in «Analytics» each have a «?» that
+  says what they count and what they leave out.
+- **Hints on figures and marks.** The «pending» mark of a transaction says the bank has not finalised it yet; the
+  change in the number of transactions says it in words («4 fewer transactions than in August»); «… a day», «Free» and
+  «Compared with …» explain themselves. Limits and the budget's explanations say pending payments wait.
+- **Tidier lists and words.** A transactions list without any marks no longer keeps an empty «Marks» column; an empty
+  search says what was searched; regular payments read «Hide from regular payments» and «Not seen in recent months».
+
 ## 0.1.13 — 2026-11-01
 
 ### Banks

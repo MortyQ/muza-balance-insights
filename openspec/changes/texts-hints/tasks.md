@@ -43,9 +43,9 @@
 
 ## 5. Docs and checks
 
-- [ ] 5.1 `CHANGELOG.md` `## 0.1.14 — unreleased`: «Clearer words and hints» entry
-- [ ] 5.2 `.agents/project/desktop-renderer.md`: a change is said through `changeText`; one term «transaction»
-- [ ] 5.3 `docs/backlog.md`: live checks — long plural counts in narrow chips, the hints' popovers at every width and
+- [x] 5.1 `CHANGELOG.md` `## 0.1.14 — unreleased`: «Clearer words and hints» entry
+- [x] 5.2 `.agents/project/desktop-renderer.md`: a change is said through `changeText`; one term «transaction»
+- [x] 5.3 `docs/backlog.md`: live checks — long plural counts in narrow chips, the hints' popovers at every width and
       both themes, the «Marks» column toggling while filtering
 - [ ] 5.4 `pnpm test` and `pnpm typecheck` at the root (the user runs them where the sandbox cannot); commit
       `docs: texts-hints changelog and live checks`
