@@ -40,7 +40,7 @@
 
 ## 3. Docs (docs)
 
-- [ ] 3.1 `.agents/project/core-providers.md`: a «ČSOB» section (reader, direction, IBAN, the bank category rule). In
+- [x] 3.1 `.agents/project/core-providers.md`: a «ČSOB» section (reader, direction, IBAN, the bank category rule). In
   `docs/backlog.md`: the first real ČSOB upload (sign and decimals of amounts, whether the balances reconcile, then the
   self-check), and a Czech-language export.
 

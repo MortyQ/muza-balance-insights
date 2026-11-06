@@ -342,3 +342,16 @@
   month; is the range honest, too wide to help, or too narrow?
 - The usual band (± 15 points) on real months: does it mark the months the user would call unusual, or too many?
 - The checklist's three groups at narrow widths: headings and directions not cut; «Show» moves to the feed's high items.
+
+## Check on a live system: ČSOB (`openspec/changes/bank-csob`)
+
+- **The first real ČSOB upload.** The only sample had edited amounts (unsigned integers that never matched the
+  balances). Check on a real export: whether amounts carry a sign and decimals, that debits and credits land on the
+  right side, and whether each row's balance follows from the one before. If it does, add the self-check SLSP has
+  (refuse a file whose running balance breaks).
+- **Own transfers by IBAN** between a ČSOB account and the user's account in another Czech bank: the counter account
+  is turned into an IBAN; check that the pair is found.
+- **Rows dated at midnight** (ČSOB states no time): check how a day's operations sort against another bank's.
+- **The Czech-language export** (`číslo účtu, datum splatnosti, …`) is refused as an unknown format; a reader for it
+  once a real one is seen.
+- **«Foreign payment - fee»** stays a row of its own; consider making it the commission of its payment.
