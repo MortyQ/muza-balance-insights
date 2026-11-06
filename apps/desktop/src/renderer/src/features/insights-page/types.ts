@@ -1,6 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
 import type { RouteLocationRaw } from 'vue-router';
-import type { InsightSeverity, InsightsOverview } from '@contract/api.ts';
+import type { InsightSeverity, InsightsOverview, Standing } from '@contract/api.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { Loadable } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
@@ -13,6 +13,15 @@ export interface GlanceView {
   note: string;
   tone: 'up' | 'down' | 'good' | 'bad' | 'neutral';
   meter: { value: number; mark: number } | null;
+  /** The signals figure: its severities on one bar, high first, each with its count in words; absent elsewhere. */
+  split?: GlanceSplitPart[] | null;
+}
+
+/** One part of the signals bar: as wide as its count. */
+export interface GlanceSplitPart {
+  severity: InsightSeverity;
+  count: number;
+  text: string;
 }
 
 /** One bar of a card's chart: a usual month or the shown one, its height in % of the tallest. */
@@ -95,16 +104,109 @@ export interface BudgetCardView {
   basis: HelpView;
 }
 
-export interface InsightsPageView {
+/** The two lines the health chart can show. */
+export type ChartMetric = 'left' | 'wants';
+
+/** The «Financial health» chart for one metric: a bar per month, null — no income that month. */
+export interface HealthChartView {
+  metric: ChartMetric;
+  /** The switch's label. */
+  tab: string;
+  /** «How much of your income is left» and what it counts. */
+  title: string;
+  hint: string;
+  points: Array<{ month: string; label: string; value: number | null; standing: Standing | null; unusual: 'above' | 'below' | null }>;
+  /** The user's usual (median of the months shown) and its ± band; null — under 3 months with income. */
+  usual: { value: number; low: number; high: number; text: string } | null;
+  /** The running month's forecast as a hatched last bar; null — none. */
+  forecast: { label: string; value: number; low: number; high: number; standing: Standing; text: string } | null;
+  /** The three tiles above the chart. */
+  tiles: HealthTileView[];
+  /** The references in words: guide, usual, band, unusual months, forecast — those drawn. */
+  references: Array<{ key: 'guide' | 'usual' | 'band' | 'unusual' | 'forecast'; text: string }>;
+  /** The guide, per cent of income. */
+  guide: number;
+  guideText: string;
+  /** The newest month: «−59%», its standing and a plain sentence; null — no month with income. */
+  latest: { value: string; standing: Standing | null; sentence: string } | null;
+  /** «5 mo. ago: −21%» — the first month with income; null — fewer than two. */
+  before: string | null;
+  /** What each colour means, then a line about bars below zero (the left share only). */
+  legend: Array<{ standing: Standing; text: string }>;
+  belowZero: string | null;
+  /** The chart in words, for screen readers. */
+  text: string;
+}
+
+/** A tile above the chart: a label, a value in words, a line under it. */
+export interface HealthTileView {
+  key: 'usual' | 'trend' | 'month';
+  label: string;
+  value: string;
+  sub: string;
+  tone: 'good' | 'bad' | 'warn' | 'neutral';
+  icon: string | null;
+}
+
+/** One checklist item: its figure, its guide and where it stands (null — nothing to place yet, `note` says why). */
+export interface HealthItemView {
+  /** `shares` — the five income shares as one row while there is no finished month with income. */
+  key: 'shares' | 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits' | 'red' | 'income' | 'spending' | 'strong';
+  label: string;
+  value: string;
+  guide: string;
+  /** A share against the user's usual of it: «better than usual (36%)». */
+  direction: { text: string; tone: 'good' | 'bad' | 'neutral' } | null;
+  /** «Show»: the item points at the feed's high signals. */
+  showSignals?: boolean;
+  standing: Standing | null;
+  standingText: string;
+  note: string | null;
+  help: HelpView;
+}
+
+/** The «Financial health» block (spec desktop-insights-health). */
+export interface HealthView {
+  /** Null — too little history for a chart. */
+  chart: Record<ChartMetric, HealthChartView> | null;
+  /** The income bar against 50/30/20 (a finished month with income), the checklist's help on «?», and the basis. */
   budget: BudgetCardView;
+  /** The checklist in its three groups; an empty group is left out. */
+  groups: Array<{ key: 'month' | 'cushion' | 'plans'; title: string; items: HealthItemView[] }>;
+  /** «4 of 6»: items within the guide of those with a standing; null — none has one. */
+  count: string | null;
+}
+
+/** What a feed item is, for the kind filter. */
+export type FeedKind = 'up' | 'down' | 'income' | 'limits' | 'payees' | 'oneOffs';
+
+/** The feed's filter: one choice per row, `all` — no filter. */
+export interface FeedFilter {
+  severity: 'all' | InsightSeverity;
+  kind: 'all' | FeedKind;
+}
+
+/** A new payee or a one-off as a feed card. */
+export interface SignalCardView extends SignalRowView {
+  severity: InsightSeverity;
+  severityLabel: string;
+}
+
+/** One item of the feed, ranked by `money` (the change, the overrun or the amount, kopecks). */
+export type FeedItemView = { key: string; kind: FeedKind; severity: InsightSeverity; money: number } & (
+  | { card: InsightCardView; signal: null }
+  | { card: null; signal: SignalCardView }
+);
+
+export interface InsightsPageView {
+  health: HealthView;
   glance: GlanceView[];
   /** Fewer than 3 whole months: the notice's text, and nothing else is shown below the glance. */
   early: string | null;
-  cards: InsightCardView[];
-  /** There is a usual and nothing is unusual. */
+  /** Every item of the month, ranked by money: insights, limits, new payees, one-offs. */
+  feed: FeedItemView[];
+  /** There is a usual and the feed is empty. */
   calm: boolean;
-  newPayees: SignalRowView[];
-  oneOffs: SignalRowView[];
   /** «How it was counted»: one sentence per line. */
   basis: string[];
 }

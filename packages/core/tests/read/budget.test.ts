@@ -1,7 +1,7 @@
 // Budget metrics (budget.ts): folding by kind, the 50/30/20 split, fixed and debt shares, the reserve.
 import { describe, expect, it } from 'vitest';
 import { CATEGORY } from '../../src/derive/categories.ts';
-import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '../../src/read/budget.ts';
+import { budgetSplit, byKind, countStanding, debtShare, fixedShare, guideStanding, incomeStanding, limitsStanding, monthShares, paceStanding, reserveMonths, spendingStanding } from '../../src/read/budget.ts';
 import { DEFAULT_KINDS } from '../../src/read/category-kinds.ts';
 
 const C = CATEGORY;
@@ -43,5 +43,35 @@ describe('budget metrics', () => {
   it('no reserve with fewer than 3 months or a zero median', () => {
     expect(reserveMonths(70_000_00, [20_000_00, 20_000_00])).toBeNull();
     expect(reserveMonths(70_000_00, [0, 0, 0])).toBeNull();
+  });
+
+  it('a month\'s shares: 50 000 income, 22 000 essential, 16 000 wants — left 24%, wants 32%; no income — none', () => {
+    const m = new Map<string, number>([[C.groceries, 22_000_00], [C.cafes, 16_000_00], [C.investments, 3_000_00]]);
+    expect(monthShares(50_000_00, m, DEFAULT_KINDS)).toEqual({ left: 24, wants: 32 });
+    expect(monthShares(0, m, DEFAULT_KINDS)).toBeNull();
+  });
+
+  it('standing against a guide: a 5-point band, the reserve near from 2 months', () => {
+    expect([20, 18, 15, 14].map((v) => guideStanding('left', v))).toEqual(['within', 'near', 'near', 'outside']);
+    expect([50, 51, 55, 56].map((v) => guideStanding('essential', v))).toEqual(['within', 'near', 'near', 'outside']);
+    expect([30, 32, 36].map((v) => guideStanding('wants', v))).toEqual(['within', 'near', 'outside']);
+    expect([60, 65, 66].map((v) => guideStanding('fixed', v))).toEqual(['within', 'near', 'outside']);
+    expect([30, 35, 36].map((v) => guideStanding('debt', v))).toEqual(['within', 'near', 'outside']);
+    expect([3, 2.9, 2, 1.5].map((v) => guideStanding('reserve', v))).toEqual(['within', 'near', 'near', 'outside']);
+  });
+
+  it('limits: any over is outside, none over but one ahead is near', () => {
+    expect(limitsStanding(1, 0)).toBe('outside');
+    expect(limitsStanding(0, 1)).toBe('near');
+    expect(limitsStanding(0, 0)).toBe('within');
+  });
+
+  it('the cushion and spending standings: counts, income and spending against the usual, the pace', () => {
+    expect([0, 1, 2].map(countStanding)).toEqual(['within', 'near', 'outside']);
+    expect([95, 80, 70].map((n) => incomeStanding(n, 100))).toEqual(['within', 'near', 'outside']);
+    expect(incomeStanding(50, 0)).toBeNull();
+    expect([100, 110, 111].map((n) => spendingStanding(n, 100))).toEqual(['within', 'near', 'outside']);
+    // Day 10 of 30: a third of the month passed.
+    expect([33, 43, 45].map((n) => paceStanding(n, 33))).toEqual(['within', 'near', 'outside']);
   });
 });

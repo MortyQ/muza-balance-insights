@@ -1,18 +1,18 @@
-import type { BudgetStructureView, LimitAheadView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { BudgetStructureView, LimitAheadView, LimitOverView, InsightCardView as InsightCard, InsightSeverity, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { budgetLink, categoryLink, incomeLink } from '@/shared/config';
 import { change, changeText, dayMonthName, i18n, monthName, monthShortName, t } from '@/shared/lib';
-import type { BudgetCardView, BudgetPartView, BudgetRowView, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalRowView } from './types.ts';
+import { monthsText, percent } from './format.ts';
+import { healthView } from './health.ts';
+import type { BudgetCardView, BudgetPartView, BudgetRowView, FeedItemView, FeedKind, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalCardView, SignalRowView } from '../types.ts';
 
 const monthNo = (ym: string) => Number(ym.slice(5, 7));
 
 /** «2025-09» → «Sep 2025». */
 const monthText = (ym: string) => `${monthShortName(monthNo(ym))} ${ym.slice(0, 4)}`;
 
-/** A whole percent with a real minus sign. */
-const percent = (n: number) => `${n < 0 ? '−' : ''}${Math.abs(n)}%`;
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
@@ -57,20 +57,28 @@ function keptGlance(v: InsightsOverview): GlanceView {
   return { key: 'kept', label, value: percent(s.rate), note: t('insights.glance.usually', { usual: percent(s.usual) }), tone: s.rate >= s.usual ? 'good' : 'bad', meter: null };
 }
 
+/** Every feed item's severity: the cards, the limits (over and ahead), new payees and one-offs. */
+export function feedSeverities(v: InsightsOverview): InsightSeverity[] {
+  return [...v.cards, ...v.limitsOver, ...v.limitsAhead, ...v.newPayees, ...v.oneOffs].map((x) => x.severity);
+}
+
+const SEVERITIES: ReadonlyArray<InsightSeverity> = ['high', 'medium', 'low'];
+const COUNT_KEY = { high: 'insights.severity.countHigh', medium: 'insights.severity.countMedium', low: 'insights.severity.countLow' } as const;
+
+/** The signals figure: every feed item, split by severity on one bar (spec desktop-insights-page «The month at a glance»). */
 function signalsGlance(v: InsightsOverview): GlanceView {
-  const by = (s: string) => v.cards.filter((c) => c.severity === s).length;
-  const parts = [
-    by('high') > 0 ? t('insights.severity.countHigh', by('high')) : '',
-    by('medium') > 0 ? t('insights.severity.countMedium', by('medium')) : '',
-    by('low') > 0 ? t('insights.severity.countLow', by('low')) : '',
-  ].filter(Boolean);
+  const all = feedSeverities(v);
+  const parts = SEVERITIES.map((severity) => ({ severity, count: all.filter((s) => s === severity).length }))
+    .filter((p) => p.count > 0)
+    .map((p) => ({ ...p, text: t(COUNT_KEY[p.severity], p.count) }));
   return {
     key: 'signals',
     label: t('insights.glance.signals'),
-    value: v.usual ? String(v.cards.length) : '—',
-    note: v.usual ? (parts.length > 0 ? parts.join(' · ') : t('insights.glance.noSignals')) : '',
-    tone: by('high') > 0 ? 'up' : 'neutral',
+    value: v.usual ? String(all.length) : '—',
+    note: v.usual && parts.length === 0 ? t('insights.glance.noSignals') : '',
+    tone: parts[0]?.severity === 'high' ? 'up' : 'neutral',
     meter: null,
+    split: v.usual && parts.length > 0 ? parts : null,
   };
 }
 
@@ -130,7 +138,7 @@ function payeeRow(p: NewPayeeView, fmt: MoneyFormat, scope: Scope): SignalRowVie
     key: p.name,
     icon: CATEGORY_ICON[p.categoryId ?? 'rest'],
     name: p.name,
-    caption: categoryName(p),
+    caption: `${t('insights.filter.signal.payee')} · ${categoryName(p)}`,
     amount: fmt.money(p.amount),
     to: p.categoryId ? categoryLink(p.categoryId, scope) : null,
   };
@@ -142,7 +150,7 @@ function oneOffRow(o: OneOffView, fmt: MoneyFormat, scope: Scope, year: number):
     key: o.key,
     icon: CATEGORY_ICON[o.categoryId ?? 'rest'],
     name: o.name || category,
-    caption: `${dayMonthName(o.date, year)} · ${category}`,
+    caption: `${t('insights.filter.signal.oneOff')} · ${dayMonthName(o.date, year)} · ${category}`,
     amount: fmt.money(o.amount),
     to: o.categoryId ? categoryLink(o.categoryId, scope) : null,
   };
@@ -155,7 +163,10 @@ function basisLines(v: InsightsOverview): string[] {
     t('insights.basis.excluded'),
     t('insights.basis.threshold'),
     t('insights.basis.severity'),
+    `${t('insights.newPayees.title')}: ${t('insights.newPayees.hint').toLowerCase()}.`,
+    `${t('insights.oneOffs.title')}: ${t('insights.oneOffs.hint').toLowerCase()}.`,
     ...(v.period.incomplete ? [t('insights.basis.running')] : []),
+    ...(v.health?.forecast ? [t('insights.health.forecastBasis')] : []),
     ...(v.period.pendingHolds > 0 ? [t('insights.basis.pending', v.period.pendingHolds)] : []),
     ...(v.cashCounts ? [] : [t('insights.basis.cashOff')]),
   ];
@@ -164,7 +175,6 @@ function basisLines(v: InsightsOverview): string[] {
 const names = (ids: ReadonlyArray<CategoryId>) => ids.map((id) => categoryName({ category: id, categoryId: id })).join(', ');
 
 /** «2,4 months», one decimal, in the app language's way. */
-const monthsText = (n: number) => t('insights.budget.reserveValue', { n: new Intl.NumberFormat(i18n.global.locale.value, { maximumFractionDigits: 1 }).format(n) });
 
 /**
  * The «Budget structure» card: a finished month's income split against 50/30/20, the fixed and loan shares and the
@@ -290,35 +300,45 @@ export function limitAheadCard(l: LimitAheadView, fmt: MoneyFormat): InsightCard
   };
 }
 
-/** The detectors' cards in their own order, each limit card (over or ahead) placed before the first card it outweighs in money. */
-function feedCards(v: InsightsOverview, fmt: MoneyFormat, scope: Scope): InsightCardView[] {
-  const limits = [
-    ...v.limitsOver.map((l) => ({ over: l.over, card: () => limitCard(l, fmt) })),
-    ...v.limitsAhead.map((l) => ({ over: l.over, card: () => limitAheadCard(l, fmt) })),
-  ].sort((a, b) => b.over - a.over);
-  const out: InsightCardView[] = [];
-  for (const c of v.cards) {
-    while (limits.length > 0 && limits[0]!.over > c.amount) out.push(limits.shift()!.card());
-    out.push(cardView(c, fmt, scope));
-  }
-  return [...out, ...limits.map((l) => l.card())];
+const KIND_OF: Readonly<Record<InsightCard['type'], FeedKind>> = {
+  'category-more': 'up',
+  'category-rare': 'up',
+  'category-over-month': 'up',
+  'category-less': 'down',
+  'income-more': 'income',
+  'income-less': 'income',
+};
+
+/**
+ * The feed (spec desktop-insights-page «The full feed»): the insights, the limits (over and ahead), new payees and
+ * one-offs, ranked by money — the change, the overrun or the amount; equal money keeps that order.
+ */
+export function feedItems(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): FeedItemView[] {
+  const signal = (row: SignalRowView, severity: InsightSeverity): SignalCardView => ({ ...row, severity, severityLabel: t(`insights.severity.${severity}`) });
+  const items: FeedItemView[] = [
+    ...v.cards.map((c): FeedItemView => ({ key: `card-${c.type}-${c.categoryId ?? 'income'}`, kind: KIND_OF[c.type], severity: c.severity, money: c.amount, card: cardView(c, fmt, scope), signal: null })),
+    ...v.limitsOver.map((l): FeedItemView => ({ key: `limit-${l.categoryId ?? 'budget'}`, kind: 'limits', severity: l.severity, money: l.over, card: limitCard(l, fmt), signal: null })),
+    ...v.limitsAhead.map((l): FeedItemView => ({ key: `ahead-${l.categoryId ?? 'budget'}`, kind: 'limits', severity: l.severity, money: l.over, card: limitAheadCard(l, fmt), signal: null })),
+    ...v.newPayees.map((p): FeedItemView => ({ key: `payee-${p.name}`, kind: 'payees', severity: p.severity, money: p.amount, card: null, signal: signal(payeeRow(p, fmt, scope), p.severity) })),
+    ...v.oneOffs.map((o): FeedItemView => ({ key: `oneoff-${o.key}`, kind: 'oneOffs', severity: o.severity, money: o.amount, card: null, signal: signal(oneOffRow(o, fmt, scope, year), o.severity) })),
+  ];
+  return items.sort((a, b) => b.money - a.money);
 }
 
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
   const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
-  const budget = budgetView(v.budget, v.period.incomplete, fmt);
+  const health = healthView(v, budgetView(v.budget, v.period.incomplete, fmt), fmt);
+  const feed = v.usual ? feedItems(v, fmt, scope, year) : [];
   if (!v.usual) {
-    return { budget, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), cards: [], calm: false, newPayees: [], oneOffs: [], basis: [] };
+    return { health, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), feed: [], calm: false, basis: [] };
   }
   return {
-    budget,
+    health,
     glance,
     early: null,
-    cards: feedCards(v, fmt, scope),
-    calm: v.cards.length === 0 && v.limitsOver.length === 0 && v.limitsAhead.length === 0,
-    newPayees: v.newPayees.map((p) => payeeRow(p, fmt, scope)),
-    oneOffs: v.oneOffs.map((o) => oneOffRow(o, fmt, scope, year)),
+    feed,
+    calm: feed.length === 0,
     basis: basisLines(v),
   };
 }

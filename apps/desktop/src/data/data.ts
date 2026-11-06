@@ -11,7 +11,21 @@ import { incomeLines } from '@mono/core/read/income-lines';
 import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
-import { budgetSplit, byKind, debtShare, fixedShare, reserveMonths } from '@mono/core/read/budget';
+import {
+  budgetSplit,
+  byKind,
+  countStanding,
+  debtShare,
+  fixedShare,
+  guideStanding,
+  incomeStanding,
+  limitsStanding,
+  monthShares,
+  paceStanding,
+  reserveMonths,
+  spendingStanding,
+} from '@mono/core/read/budget';
+import { leftForecast, shareTrend, usualOf as usualShare, versusUsual } from '@mono/core/read/health';
 import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput } from '@mono/core/read/goals';
 import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
@@ -46,6 +60,12 @@ import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
   BudgetStructureView,
+  ChartReferences,
+  HealthReferences,
+  HealthStanding,
+  MonthSharesView,
+  ShareKey,
+  Standing,
   GoalJarView,
   GoalPayload,
   LimitAheadView,
@@ -135,6 +155,96 @@ function insightsOf(usual: SpendingUsual, categories: ReadonlyArray<{ category: 
  * month that is over — each month's income, hryvnia kopecks in the same order.
  */
 type UsualFound = { usual: SpendingUsual; months: string[]; spent: number[]; income: number[] | null; byCategory: Array<Map<string, number>> };
+
+/** A month's five income shares (core read/budget.ts); null without income. */
+function fiveShares(income: number, byCategory: ReadonlyMap<string, number>, kinds: ReadonlyMap<string, KindChoice>): Record<ShareKey, number> | null {
+  const t = byKind(byCategory, kinds);
+  const split = budgetSplit(income, t);
+  if (!split) return null;
+  return { left: split.left, essential: split.essential, wants: split.wants, fixed: fixedShare(income, t) ?? 0, debt: debtShare(income, byCategory) ?? 0 };
+}
+
+const SHARE_KEYS: ReadonlyArray<ShareKey> = ['left', 'essential', 'wants', 'fixed', 'debt'];
+
+/**
+ * «Financial health» beyond the guides (spec desktop-insights-health): the chart's usual and trend, the shown month
+ * against the usual months, the running month's forecast, the cushion and spending items.
+ */
+function healthReferences(a: {
+  history: ReadonlyArray<MonthSharesView>;
+  usualMonths: ReadonlyArray<{ income: number; byCategory: ReadonlyMap<string, number> }>;
+  kinds: ReadonlyMap<string, KindChoice>;
+  budget: BudgetStructureView;
+  period: { days: number; coveredDays: number; incomplete: boolean };
+  spent: number;
+  usual: SpendingUsual;
+  curNet: ReadonlyMap<string, number>;
+  high: number;
+}): HealthReferences {
+  const chartOf = (metric: 'left' | 'wants'): ChartReferences | null => {
+    const values = a.history.map((h) => h[metric]);
+    const u = usualShare(values);
+    return u ? { usual: u.usual, unusual: u.unusual, trend: shareTrend(values, metric === 'left') } : null;
+  };
+  const usualShares = a.usualMonths.flatMap((m) => {
+    const f = fiveShares(m.income, m.byCategory, a.kinds);
+    return f ? [f] : [];
+  });
+  const m = a.budget.month;
+  const now = m ? fiveShares(m.income, a.curNet, a.kinds) : null;
+  const versus = Object.fromEntries(
+    SHARE_KEYS.map((k) => {
+      const u = usualShare(usualShares.map((x) => x[k]));
+      return [k, now && u ? { usual: u.usual, direction: versusUsual(now[k], u.usual, k === 'left') } : null];
+    }),
+  ) as HealthReferences['versus'];
+  const forecast = a.period.incomplete
+    ? leftForecast({
+        day: a.period.coveredDays,
+        days: a.period.days,
+        spent: (({ essential, wants }) => ({ essential, wants }))(byKind(a.curNet, a.kinds)),
+        usual: a.usualMonths.map((x) => {
+          const t = byKind(x.byCategory, a.kinds);
+          return { income: x.income, essential: t.essential, wants: t.wants };
+        }),
+      })
+    : null;
+  const known = a.history.flatMap((h) => (h.left === null ? [] : [h.left]));
+  const n = known.filter((x) => x < 0).length;
+  const usualIncome = a.usual.income?.usual ?? 0;
+  const incomeNow = a.usual.income?.now ?? null;
+  const spendingRef = (): HealthReferences['spending'] => {
+    if (a.usual.total <= 0) return null;
+    if (!a.period.incomplete) return { kind: 'month', now: a.spent, usual: a.usual.total, standing: spendingStanding(a.spent, a.usual.total)! };
+    const spentShare = Math.round((a.spent / a.usual.total) * 100);
+    const passed = a.period.days > 0 ? Math.round((a.period.coveredDays / a.period.days) * 100) : 0;
+    return { kind: 'pace', spent: spentShare, passed, standing: paceStanding(spentShare, passed) };
+  };
+  const incomeStand = incomeNow !== null ? incomeStanding(incomeNow, usualIncome) : null;
+  return {
+    chart: { left: chartOf('left'), wants: chartOf('wants') },
+    versus,
+    forecast: forecast ? { ...forecast, standing: guideStanding('left', forecast.value) } : null,
+    redMonths: known.length > 0 ? { n, of: known.length, standing: countStanding(n) } : null,
+    income: incomeNow !== null && incomeStand ? { now: incomeNow, usual: usualIncome, standing: incomeStand } : null,
+    spending: spendingRef(),
+    strong: { n: a.high, standing: countStanding(a.high) },
+  };
+}
+
+/** The «Financial health» checklist against its guides (spec core-budget-metrics «Standing against a guide»). */
+function healthStanding(b: BudgetStructureView, limits: Standing | null): HealthStanding {
+  const m = b.month;
+  return {
+    left: m ? guideStanding('left', m.split.left) : null,
+    essential: m ? guideStanding('essential', m.split.essential) : null,
+    wants: m ? guideStanding('wants', m.split.wants) : null,
+    fixed: m ? guideStanding('fixed', m.fixedShare) : null,
+    debt: m ? guideStanding('debt', m.debtShare) : null,
+    reserve: b.reserve ? guideStanding('reserve', b.reserve.months) : null,
+    limits,
+  };
+}
 
 /** Hryvnia — the currency the total card shows; other currencies are never summed with it. */
 const UAH = 980;
@@ -552,11 +662,11 @@ export class DataService {
     usualTotal: number,
     rates: Map<number, FxRate>,
     now: number,
-  ): Promise<{ limitsOver: LimitOverView[]; limitsAhead: LimitAheadView[] }> {
+  ): Promise<{ limitsOver: LimitOverView[]; limitsAhead: LimitAheadView[]; monthlyLimits: number }> {
     const goals = (await listGoals(db)).filter(
       (g) => (g.type === 'limit' && g.period === 'month') || g.type === 'budget',
     ).filter((g) => q.participantId === undefined || g.participantId === null || g.participantId === q.participantId);
-    if (goals.length === 0) return { limitsOver: [], limitsAhead: [] };
+    if (goals.length === 0) return { limitsOver: [], limitsAhead: [], monthlyLimits: 0 };
     const tz = systemTimeZone();
     const today = localDate(now * 1000, tz);
     const current = q.month === today.slice(0, 7);
@@ -587,7 +697,7 @@ export class DataService {
         if (v) add(null, v.flexible);
       }
     }
-    return { limitsOver: limitsOver.sort((a, b) => b.over - a.over), limitsAhead: limitsAhead.sort((a, b) => b.over - a.over) };
+    return { limitsOver: limitsOver.sort((a, b) => b.over - a.over), limitsAhead: limitsAhead.sort((a, b) => b.over - a.over), monthlyLimits: goals.length };
   }
 
   private async jarTitles(db: Db): Promise<string[]> {
@@ -693,8 +803,9 @@ export class DataService {
     const found = await this.spendingUsual(db, q, head.period, status.dataFrom, rates, now);
     const kinds = await kindMap(db);
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
-    const { limitsOver, limitsAhead } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
-    if (!found) return { ...base, budget, limitsOver, limitsAhead, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const { limitsOver, limitsAhead, monthlyLimits } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
+    const standing = healthStanding(budget, monthlyLimits > 0 ? limitsStanding(limitsOver.length, limitsAhead.length) : null);
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, health: null, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -728,7 +839,7 @@ export class DataService {
     };
     const fresh = newPayees([...payees.values()]).map((p) => {
       const category = categoryOf(merchantKey(p.name));
-      return { name: p.name, category, categoryId: CATEGORY_ID.get(category) ?? null, amount: p.now };
+      return { name: p.name, category, categoryId: CATEGORY_ID.get(category) ?? null, amount: p.now, severity: insightSeverity(p.now, usual.total) };
     });
     const ops = shown
       .filter((r) => r.uah! < 0 && !r.refundPair)
@@ -743,17 +854,53 @@ export class DataService {
       category: row.category,
       categoryId: CATEGORY_ID.get(row.category) ?? null,
       amount,
+      severity: insightSeverity(amount, usual.total),
     }));
 
     const savings =
       usual.income && found.income
         ? savingsRate({ income: usual.income.now, spent }, months.map((_, k) => ({ income: found.income![k]!, spent: found.spent[k]! })))
         : null;
+    // The chart's months (spec desktop-insights-health): the usual's, oldest first, then the shown one once finished.
+    const shares = (month: string, income: number | null, byCategory: ReadonlyMap<string, number>) => {
+      const m = income === null ? null : monthShares(income, byCategory, kinds);
+      return {
+        month,
+        left: m?.left ?? null,
+        wants: m?.wants ?? null,
+        leftStanding: m ? guideStanding('left', m.left) : null,
+        wantsStanding: m ? guideStanding('wants', m.wants) : null,
+      };
+    };
+    // A running month's usual carries no income (its day decides it), so the chart reads the whole months' income once.
+    const usualIncome: number[] =
+      found.income ??
+      (await incomeSummary(db, { from: monthBounds(months.at(-1)!).from, to: monthBounds(months[0]!).to, ...filters, groupBy: 'month' }, now).then((r) =>
+        months.map((m) => r.groups.filter((g) => g.key === m).reduce((s, g) => s + (toUah(g.total, g.currency, rates) ?? 0), 0)),
+      ));
+    const curNet = new Map([...cur].map(([k, a]) => [k, a.net]));
+    const history = oldestFirst(months.map((m, k) => shares(m, usualIncome[k]!, found.byCategory[k]!)));
+    if (!incomplete) history.push(shares(q.month, budget.month?.income ?? null, curNet));
+    const health = healthReferences({
+      history,
+      usualMonths: oldestFirst(months.map((_, k) => ({ income: usualIncome[k]!, byCategory: found.byCategory[k]! }))),
+      kinds,
+      budget,
+      period: head.period,
+      spent,
+      usual,
+      curNet,
+      high: [...cards, ...limitsOver, ...limitsAhead, ...fresh, ...big].filter((x) => x.severity === 'high').length,
+    });
     return {
       ...base,
       budget,
       limitsOver,
       limitsAhead,
+      monthlyLimits,
+      standing,
+      health,
+      history,
       usual: { months: usual.months, from: months.at(-1)!, to: months[0]!, total: usual.total, income: usual.income, savings },
       cards,
       newPayees: fresh,

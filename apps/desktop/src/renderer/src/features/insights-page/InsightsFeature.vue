@@ -1,17 +1,32 @@
 <script setup lang="ts">
+import { computed, nextTick, useTemplateRef } from 'vue';
 import { RouterLink } from 'vue-router';
 import { DetailSkeleton } from '@/entities/operations';
 import { importLink } from '@/shared/config';
-import { VCard, VIcon, VInfoNotice } from '@/shared/ui';
-import BudgetCard from './components/BudgetCard.vue';
+import { VButton, VCard, VIcon, VInfoNotice } from '@/shared/ui';
+import FeedFilters from './components/FeedFilters.vue';
+import HealthBlock from './components/HealthBlock.vue';
 import InsightCard from './components/InsightCard.vue';
 import InsightsGlance from './components/InsightsGlance.vue';
-import SignalList from './components/SignalList.vue';
+import SignalCard from './components/SignalCard.vue';
+import { useFeedFilter } from './composables/useFeedFilter.ts';
 import { useInsightsPage } from './composables/useInsightsPage.ts';
+import { filterFeed } from './utils/feed.ts';
 
-// The Insights screen (spec desktop-insights-page): the month at a glance, then the feed ranked by money (eight of
-// twelve columns from 64rem of its own width) beside «Budget structure», the payee signals and how it was counted.
+// The Insights screen (specs desktop-insights-page, desktop-insights-health): the month at a glance, financial health,
+// then one feed of every signal ranked by money with its filters, and how it was counted.
 const { state, view } = useInsightsPage();
+const { filter, set, reset } = useFeedFilter();
+const shown = computed(() => (view.value ? filterFeed(view.value.feed, filter.value) : []));
+const feedEl = useTemplateRef<HTMLElement>('feed');
+
+/** «Strong signals» → «Show»: the feed filtered to high items, scrolled into view. */
+async function showStrong(): Promise<void> {
+  set({ severity: 'high', kind: 'all' });
+  await nextTick();
+  const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  feedEl.value?.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+}
 </script>
 
 <template>
@@ -22,6 +37,7 @@ const { state, view } = useInsightsPage();
     <template v-else-if="view">
       <div class="flex flex-col gap-4" :class="{ 'opacity-60': state.status === 'loading' }">
         <InsightsGlance :items="view.glance" />
+        <HealthBlock :health="view.health" @show-signals="showStrong" />
 
         <VCard v-if="view.early" padding="md" data-test="insights-early">
           <div class="flex flex-col items-start gap-2">
@@ -32,12 +48,9 @@ const { state, view } = useInsightsPage();
             </RouterLink>
           </div>
         </VCard>
-        <VCard v-if="view.early" padding="md" class="max-w-xl">
-          <BudgetCard :budget="view.budget" />
-        </VCard>
 
-        <div v-else class="grid grid-cols-1 gap-4 @5xl:grid-cols-12">
-          <section class="flex min-w-0 flex-col gap-3 @5xl:col-span-8" :aria-label="$t('insights.feed.title')">
+        <template v-else>
+          <section ref="feed" class="flex min-w-0 scroll-mt-4 flex-col gap-3" :aria-label="$t('insights.feed.title')" data-test="insights-feed">
             <div class="flex items-baseline justify-between gap-2">
               <h2 class="text-base font-bold">{{ $t('insights.feed.title') }}</h2>
               <span class="text-xs text-foreground-muted">{{ $t('insights.feed.ranked') }}</span>
@@ -53,27 +66,28 @@ const { state, view } = useInsightsPage();
                 </div>
               </div>
             </VCard>
-            <InsightCard v-for="c in view.cards" :key="c.key" :card="c" />
+            <template v-else>
+              <FeedFilters :items="view.feed" :filter @change="set" />
+              <VCard v-if="shown.length === 0" padding="md" data-test="feed-empty">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm text-foreground-secondary">{{ $t('insights.filter.empty') }}</p>
+                  <VButton variant="link" size="sm" :text="$t('insights.filter.reset')" data-test="feed-reset" @click="reset" />
+                </div>
+              </VCard>
+              <template v-for="item in shown" :key="item.key">
+                <InsightCard v-if="item.card" :card="item.card" />
+                <SignalCard v-else-if="item.signal" :signal="item.signal" />
+              </template>
+            </template>
           </section>
 
-          <aside class="flex min-w-0 flex-col gap-4 @5xl:col-span-4">
-            <VCard padding="md">
-              <BudgetCard :budget="view.budget" />
-            </VCard>
-            <VCard padding="md" data-test="new-payees">
-              <SignalList :title="$t('insights.newPayees.title')" :hint="$t('insights.newPayees.hint')" :rows="view.newPayees" :empty="$t('insights.newPayees.none')" />
-            </VCard>
-            <VCard padding="md" data-test="one-offs">
-              <SignalList :title="$t('insights.oneOffs.title')" :hint="$t('insights.oneOffs.hint')" :rows="view.oneOffs" :empty="$t('insights.oneOffs.none')" />
-            </VCard>
-            <VCard padding="md" data-test="insights-basis">
-              <h2 class="text-sm font-bold">{{ $t('insights.basis.title') }}</h2>
-              <ul class="mt-2 flex list-disc flex-col gap-1 pl-4 text-xs text-foreground-muted">
-                <li v-for="(line, i) in view.basis" :key="i">{{ line }}</li>
-              </ul>
-            </VCard>
-          </aside>
-        </div>
+          <VCard padding="md" data-test="insights-basis">
+            <h2 class="text-sm font-bold">{{ $t('insights.basis.title') }}</h2>
+            <ul class="mt-2 flex list-disc flex-col gap-1 pl-4 text-xs text-foreground-muted">
+              <li v-for="(line, i) in view.basis" :key="i">{{ line }}</li>
+            </ul>
+          </VCard>
+        </template>
       </div>
     </template>
   </div>
