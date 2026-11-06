@@ -73,6 +73,8 @@ export interface WhenView {
 export interface MarkView {
   text: string;
   tone: 'warning' | 'good' | 'neutral' | 'accent';
+  /** What the mark means, in a tooltip and for screen readers. */
+  hint?: string;
 }
 
 export interface LineRowView {

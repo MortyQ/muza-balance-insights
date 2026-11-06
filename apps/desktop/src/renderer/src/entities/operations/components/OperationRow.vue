@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VContextMenu, VMenu } from '@/shared/ui';
+import { VContextMenu, VMenu, VTooltip } from '@/shared/ui';
 import { OPERATION_COLS, OPERATION_COLS_ACTIONS } from '../constants.ts';
 import type { LineRowView, MarkView } from '../types.ts';
 
@@ -36,7 +36,12 @@ const MARK_TONE: Record<MarkView['tone'], string> = {
         </span>
       </span>
       <span role="cell" class="flex flex-wrap gap-1">
-        <span v-for="m in row.marks" :key="m.text" class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold" :class="MARK_TONE[m.tone]">{{ m.text }}</span>
+        <template v-for="m in row.marks" :key="m.text">
+          <VTooltip v-if="m.hint" :text="m.hint" placement="top" tabindex="0" wrapper-class="inline-flex" data-test="mark-hint">
+            <span class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold" :class="MARK_TONE[m.tone]">{{ m.text }}<span class="sr-only">: {{ m.hint }}</span></span>
+          </VTooltip>
+          <span v-else class="whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-bold" :class="MARK_TONE[m.tone]">{{ m.text }}</span>
+        </template>
       </span>
       <span role="cell" class="flex flex-col items-end">
         <span class="whitespace-nowrap font-bold tabular-nums" :class="{ 'text-success': row.incoming }">{{ row.amount }}</span>

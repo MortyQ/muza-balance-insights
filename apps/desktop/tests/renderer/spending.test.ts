@@ -103,8 +103,8 @@ describe('opsView', () => {
   });
 
   it('opsVs: «+2 к авг» under the ring; neutral differences as they are', () => {
-    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up', sr: 'больше, чем в августе' });
-    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down', sr: 'меньше, чем в декабре' });
+    expect(opsVs(38, 36, '2026-09')).toEqual({ text: '+2 к авг', tone: 'up', sr: 'больше, чем в августе', hint: 'На 2 транзакции больше, чем в августе' });
+    expect(opsVs(21, 24, '2026-01')).toEqual({ text: '−3 к дек', tone: 'down', sr: 'меньше, чем в декабре', hint: 'На 3 транзакции меньше, чем в декабре' });
     expect(opsVs(5, 5, '2026-09')).toEqual({ text: 'столько же', tone: 'neutral', sr: '' });
     expect(opsVs(2, 0, '2026-09')).toEqual({ text: 'новое', tone: 'neutral', sr: '' });
     expect(opsVs(2, null, '2026-09')).toEqual({ text: '', tone: 'neutral', sr: '' });

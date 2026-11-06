@@ -107,9 +107,10 @@ describe('the analytics period', () => {
   });
 
   it('the note: what the pick is compared with, and the running month', () => {
-    expect(compareText({ from: '2026-09', to: '2026-09' }, '2026-10', '2024-01-01')).toEqual({ compare: 'Для сравнения: август 2026', running: null });
+    expect(compareText({ from: '2026-09', to: '2026-09' }, '2026-10', '2024-01-01')).toEqual({ compare: 'Для сравнения: август 2026', comparable: true, running: null });
     expect(compareText({ from: '2025-10', to: '2026-10' }, '2026-10', '2024-01-01')).toEqual({
       compare: 'Для сравнения: сен 2024 – сен 2025',
+      comparable: true,
       running: 'Октябрь ещё идёт — суммы неполные',
     });
     expect(compareText({ from: '2025-10', to: '2026-09' }, '2026-10', '2025-01-01').compare).toBe('Для сравнения не хватает истории');

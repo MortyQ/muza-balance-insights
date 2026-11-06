@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { VChangeChip, VChart } from '@/shared/ui';
+import { VChangeChip, VChart, VTooltip } from '@/shared/ui';
 import type { ChipView, RingPart } from '../../types.ts';
 import { ringOption } from '../../utils/index.ts';
 
@@ -38,7 +38,9 @@ function hover(item: { seriesIndex: number; dataIndex: number } | null): void {
       <div v-else class="pointer-events-none absolute inset-3.5 flex flex-col items-center justify-center gap-0.5 rounded-full bg-surface px-2 text-center">
         <span class="max-w-full truncate text-xs text-foreground-muted">{{ label }}</span>
         <span class="whitespace-nowrap text-xl font-bold tabular-nums">{{ amount }}</span>
-        <span v-if="perDay" class="whitespace-nowrap text-xs text-foreground-muted">{{ perDay }}</span>
+        <VTooltip v-if="perDay" :text="$t('home.spending.perDayHint')" placement="bottom" tabindex="0" wrapper-class="pointer-events-auto inline-flex">
+          <span class="whitespace-nowrap text-xs text-foreground-muted underline decoration-dotted underline-offset-2">{{ perDay }}</span><span class="sr-only">: {{ $t('home.spending.perDayHint') }}</span>
+        </VTooltip>
         <span v-for="c in conv" :key="c" class="whitespace-nowrap text-xs text-foreground-secondary tabular-nums">{{ c }}</span>
       </div>
     </div>

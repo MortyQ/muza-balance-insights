@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { VTooltip } from '@/shared/ui';
 import type { FreeLineView } from '../types.ts';
 
 const { line } = defineProps<{ line: Readonly<FreeLineView> }>();
@@ -11,7 +12,7 @@ const { line } = defineProps<{ line: Readonly<FreeLineView> }>();
   <div class="flex flex-col gap-1.5" data-test="free-line">
     <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
       <p class="flex items-baseline gap-2">
-        <span class="text-sm text-foreground-muted">{{ $t('home.balances.freeLine.free') }}</span>
+        <VTooltip :text="$t('home.balances.freeLine.freeHint')" placement="top" tabindex="0" wrapper-class="inline-flex"><span class="text-sm text-foreground-muted underline decoration-dotted underline-offset-2">{{ $t('home.balances.freeLine.free') }}</span><span class="sr-only">: {{ $t('home.balances.freeLine.freeHint') }}</span></VTooltip>
         <span class="text-xl font-bold tabular-nums" :class="line.negative ? 'text-negative-soft' : 'text-primary'" data-test="free-amount">{{ line.free }}</span>
       </p>
       <span v-if="line.reserved" class="text-sm text-foreground-muted tabular-nums">{{ $t('home.balances.freeLine.reservedAmount', { amount: line.reserved }) }}</span>

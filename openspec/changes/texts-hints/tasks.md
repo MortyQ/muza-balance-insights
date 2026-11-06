@@ -23,14 +23,14 @@
 
 ## 3. Hints
 
-- [ ] 3.1 `MarkView.hint` and a focusable `VTooltip` around a hinted mark in `OperationRow`; the «pending» mark's hint
+- [x] 3.1 `MarkView.hint` and a focusable `VTooltip` around a hinted mark in `OperationRow`; the «pending» mark's hint
       on the category and income screens and in «Recent transactions»
-- [ ] 3.2 Tooltips on the «Spending» count change («4 fewer transactions than in August»), «… a day», «Compared with
+- [x] 3.2 Tooltips on the «Spending» count change («4 fewer transactions than in August»), «… a day», «Compared with
       …» in «Analytics» and «Free» on the balance card
-- [ ] 3.3 A «?» with two or three sentences on home's «Balance», «Month pace», «Today» / «This week», «Spending»,
+- [x] 3.3 A «?» with two or three sentences on home's «Balance», «Month pace», «Today» / «This week», «Spending»,
       «Insights», and on «Analytics»' totals, «Income and spending», changes list and category views
-- [ ] 3.4 The limits and budget «?» texts say pending holds are left out until the bank finalises them
-- [ ] 3.5 Renderer tests: each hint present, keyboard-reachable, the mark's hint read; commit
+- [x] 3.4 The limits and budget «?» texts say pending holds are left out until the bank finalises them
+- [x] 3.5 Renderer tests: each hint present, keyboard-reachable, the mark's hint read; commit
       `feat(desktop): hints on figures and marks`
 
 ## 4. Marks column and wording

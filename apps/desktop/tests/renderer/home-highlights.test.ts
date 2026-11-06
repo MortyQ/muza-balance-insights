@@ -127,7 +127,7 @@ describe('home highlights', () => {
     await dots[1]!.trigger('click');
     const rows = w.findAll('[data-test="recent-row"]');
     expect(rows.map((r) => r.text())).toEqual([
-      `Fictional CafeКафе и рестораны · 12.09, 14:20 · в обработке банком${formatMoney(12_000, 980)}`,
+      `Fictional CafeКафе и рестораны · 12.09, 14:20 · в обработке банком: Банк ещё не провёл эту транзакцию; её сумма ещё может измениться.${formatMoney(12_000, 980)}`,
       `ПродуктыПродукты · 10.09, 09:05+${formatMoney(3_000, 980)}`,
     ]);
     await rows[0]!.trigger('click');

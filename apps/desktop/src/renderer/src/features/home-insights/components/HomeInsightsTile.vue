@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import { ROUTE } from '@/shared/config';
-import { VIcon } from '@/shared/ui';
+import { VHelpHint, VIcon } from '@/shared/ui';
 import { DRIVER_TONE } from '../constants.ts';
 import type { HomeInsightsView } from '../types.ts';
 
@@ -12,7 +12,7 @@ const { view } = defineProps<{ view: HomeInsightsView }>();
 <template>
   <div class="flex h-full flex-col gap-3">
     <div class="flex items-baseline justify-between gap-2">
-      <h3 class="text-sm font-bold">{{ $t('home.insights.title') }}</h3>
+      <div class="flex items-center gap-1"><h3 class="text-sm font-bold">{{ $t('home.insights.title') }}</h3><VHelpHint :label="$t('common.helpLabel', { name: $t('home.insights.title') })">{{ $t('home.insights.help') }}</VHelpHint></div>
       <RouterLink
         :to="{ name: ROUTE.insights }"
         class="text-xs font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-border-focus"

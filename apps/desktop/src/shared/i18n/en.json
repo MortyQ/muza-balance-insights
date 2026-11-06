@@ -66,7 +66,14 @@
     "leftOut": "No rate for today, left out: {currencies}",
     "failed": "Could not load the analytics.",
     "empty": "No data for this period.",
-    "footnote": "Amounts in other currencies are converted at today's Monobank rate."
+    "footnote": "Amounts in other currencies are converted at today's Monobank rate.",
+    "help": {
+      "kpis": "Income, spending, what was left and the share of income kept over the picked months, against the same number of months right before them. Personal and business spending together.",
+      "flow": "Income and spending by day for one month, by month for a range. For one month the amounts add up from the 1st, and the dashed line is the usual month by the same day: the average of up to 3 months before.",
+      "changes": "The categories whose spending grew most against the period before, and the one that fell most.",
+      "views": "Every category with spending in the period. The heatmap colours each cell by its spending per day against the category's own average; the other views show the same sums as small charts, lines, or against the period before.",
+      "kpisName": "Totals"
+    }
   },
   "category": {
     "back": "Spending",
@@ -242,7 +249,8 @@
       "apply": "Show"
     },
     "gotIt": "Got it",
-    "howItWorks": "How it works"
+    "howItWorks": "How it works",
+    "helpLabel": "How «{name}» is counted"
   },
   "entities": {
     "bank": {
@@ -341,7 +349,8 @@
       "mark": {
         "foreign": "foreign currency",
         "noRate": "no rate",
-        "pending": "pending"
+        "pending": "pending",
+        "pendingHint": "The bank has not finalised this transaction yet; its amount may still change."
       },
       "months": {
         "above": "{month}: {amount} above the average",
@@ -405,7 +414,8 @@
       "all": "All time",
       "compare": "Compared with {period}",
       "noCompare": "Not enough history to compare",
-      "running": "{month} is still running — amounts are incomplete"
+      "running": "{month} is still running — amounts are incomplete",
+      "compareHint": "The period right before yours, of the same length."
     },
     "categoryKind": {
       "essential": "Essential",
@@ -433,7 +443,7 @@
         "expected": "How much you could have spent by today, spending evenly.",
         "expectedFormula": "{amount} × {passed} of {days} days = {expected}",
         "forecastTitle": "How the forecast is counted",
-        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period.",
+        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period. Payments the bank has not finalised yet are left out until it does.",
         "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
       },
@@ -566,14 +576,17 @@
           "banks": "By banks"
         },
         "cash": "Withdrawn in cash",
-        "cashHint": "Cash withdrawals are left out of spending. To count them again, turn on «Count cash withdrawals as spending» in Settings → «Categories»."
+        "cashHint": "Cash withdrawals are left out of spending. To count them again, turn on «Count cash withdrawals as spending» in Settings → «Categories».",
+        "help": "Spending added up day by day through the month, against the usual month by the same day: the average of up to 3 months before it. Refunds lower spending; transfers between your own accounts and income are not spending."
       },
       "freeLine": {
         "free": "Free",
-        "reservedAmount": "reserved {amount}"
+        "reservedAmount": "reserved {amount}",
+        "freeHint": "Money on your cards minus your reserves."
       },
       "monthTile": "Month",
-      "monthResult": "Month's result"
+      "monthResult": "Month's result",
+      "help": "Your own money on the enabled accounts at the end of the shown month — now, for the current one — as the bank reports it. Other currencies are converted at today's Monobank rate."
     },
     "filters": {
       "banks": "Banks",
@@ -715,7 +728,8 @@
       "vsWeek": "vs last week, {days}",
       "week": "This week · {days}",
       "baseUsual": "Usual day: {base}",
-      "baseWeek": "Same days last week: {base}"
+      "baseWeek": "Same days last week: {base}",
+      "help": "«Today» is set against a usual day: the median of the 30 days before, with at least 7 days of data. «This week» runs from Monday and is set against the same days of last week. Only «Personal» spending counts."
     },
     "spending": {
       "category": {
@@ -826,7 +840,11 @@
       "whole": "Whole family",
       "showMore": "Show {n} more | Show {n} more | Show {n} more",
       "showLess": "Show less",
-      "whoSpent": "Who spent what"
+      "whoSpent": "Who spent what",
+      "opsMoreHint": "{n} more transaction than in {month} | {n} more transactions than in {month} | {n} more transactions than in {month}",
+      "opsLessHint": "{n} fewer transaction than in {month} | {n} fewer transactions than in {month} | {n} fewer transactions than in {month}",
+      "perDayHint": "Average per calendar day of the month so far.",
+      "help": "Spending is what was charged minus refunds. Transfers between your own accounts and income are not spending. The month is compared with the previous one, by the same day while it runs."
     },
     "recent": {
       "title": "Recent transactions",
@@ -847,7 +865,8 @@
       "months": "{n} month | {n} months | {n} months",
       "note": "The usual is the median of {months} ({from} – {to}). Transfers between your own accounts are left out; refunds lower spending.",
       "pending": "Still pending at the bank and left out until it finalises them: {n} transaction | Still pending at the bank and left out until it finalises them: {n} transactions | Still pending at the bank and left out until it finalises them: {n} transactions",
-      "all": "All insights"
+      "all": "All insights",
+      "help": "The categories that changed most against the usual month — the median of up to 6 whole months before — with the payee behind each change, and for a finished month the share of income you kept."
     },
     "budget": {
       "title": "Budget for {month}",
@@ -1486,7 +1505,7 @@
       "title": "How the budget works",
       "budget": "Set one amount for the month and add your fixed costs — rent, phone. They are set aside first, and the pace and «per day» count on the rest.",
       "limits": "A category limit is an amount per day, week or month. The marker on the bar shows where you would be today spending evenly.",
-      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out."
+      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out. Payments the bank has not finalised yet are left out until it does."
     },
     "budget": {
       "title": "Budget for {month}",
@@ -1523,7 +1542,7 @@
       "usual": "Usually {amount}",
       "period": "Period",
       "owner": "Whose",
-      "counted": "Refunds and transfers between your own accounts are left out; transactions the bank still processes count.",
+      "counted": "Refunds lower spending and transfers between your own accounts are left out; payments the bank has not finalised yet are left out until it does.",
       "failed": "Could not save. Perhaps such a limit already exists.",
       "save": "Save",
       "cancel": "Cancel",

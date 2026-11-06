@@ -135,7 +135,7 @@ export function whenView(lines: ReadonlyArray<IncomeLineView>, v: Readonly<Pick<
 
 function marksOf(l: Readonly<IncomeLineView>): MarkView[] {
   const marks: MarkView[] = [];
-  if (l.pending) marks.push({ text: t('entities.operations.mark.pending'), tone: 'warning' });
+  if (l.pending) marks.push({ text: t('entities.operations.mark.pending'), tone: 'warning', hint: t('entities.operations.mark.pendingHint') });
   if (l.operation) marks.push({ text: t('entities.operations.mark.foreign'), tone: 'accent' });
   if (l.uah === null) marks.push({ text: t('entities.operations.mark.noRate'), tone: 'warning' });
   return marks;

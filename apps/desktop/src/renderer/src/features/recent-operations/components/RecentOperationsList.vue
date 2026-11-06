@@ -25,7 +25,7 @@ const { rows } = defineProps<{ rows: ReadonlyArray<RecentRowView> }>();
           <span class="flex min-w-0 flex-1 flex-col">
             <span class="truncate">{{ r.name }}</span>
             <span class="truncate text-xs text-foreground-muted">
-              {{ r.caption }}<template v-if="r.pending"> · {{ $t('home.recent.pending') }}</template>
+              {{ r.caption }}<template v-if="r.pending"> · <span :title="$t('entities.operations.mark.pendingHint')" data-test="recent-pending">{{ $t('home.recent.pending') }}<span class="sr-only">: {{ $t('entities.operations.mark.pendingHint') }}</span></span></template>
             </span>
           </span>
           <span class="shrink-0 tabular-nums" :class="{ 'text-success': r.refund }">{{ r.amount }}</span>

@@ -1,6 +1,6 @@
 import type { MoneyFormat } from '@/entities/currency-display';
 import { change, changeText, monthShortName, t, type Change } from '@/shared/lib';
-import type { ChipView, OpsView } from '../types.ts';
+import type { ChipView, OpsDiffView, OpsView } from '../types.ts';
 import { prevIn, prevMonthNumber } from './month.ts';
 
 const tone = (c: Change): ChipView['tone'] => (c.kind === 'up' ? 'up' : c.kind === 'down' ? 'down' : 'neutral');
@@ -67,8 +67,10 @@ export function opsView(now: number, prev: number | null, month: string, partial
 }
 
 /** `home.spending.opsVs` under the ring («+4 vs Aug.»), with the tone of the difference. */
-export function opsVs(now: number, prev: number | null, month: string, partial = false): Pick<OpsView, 'text' | 'tone' | 'sr'> {
+export function opsVs(now: number, prev: number | null, month: string, partial = false): OpsDiffView {
   const v = opsView(now, prev, month, partial);
-  if (!v.diff || v.tone === 'neutral') return { text: v.diff, tone: v.tone, sr: '' };
-  return { text: t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) }), tone: v.tone, sr: v.sr };
+  if (!v.diff || v.tone === 'neutral' || prev === null) return { text: v.diff, tone: v.tone, sr: '' };
+  const n = Math.abs(now - prev);
+  const hint = t(now > prev ? 'home.spending.opsMoreHint' : 'home.spending.opsLessHint', { n, month: prevIn(month) }, n);
+  return { text: t('home.spending.opsVs', { diff: v.diff, month: monthShortName(prevMonthNumber(month)) }), tone: v.tone, sr: v.sr, hint };
 }

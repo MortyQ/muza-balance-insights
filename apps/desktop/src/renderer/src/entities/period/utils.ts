@@ -29,11 +29,12 @@ export function rangePresets(thisMonth: YearMonth, floor: YearMonth): { month: M
 }
 
 /** The picker's note: what the pick is compared with (main's rule, src/data/analytics.ts), and whether it reaches this running month. */
-export function compareText(r: { from: string; to: string }, thisMonth: string, dataFrom: string | null): { compare: string; running: string | null } {
+export function compareText(r: { from: string; to: string }, thisMonth: string, dataFrom: string | null): { compare: string; comparable: boolean; running: string | null } {
   const n = span(r.from, r.to);
   const pFrom = shiftMonth(r.from as YearMonth, -n);
   const pTo = shiftMonth(r.from as YearMonth, -1);
   const period = n === 1 ? full(pFrom).toLowerCase() : `${short(pFrom)} – ${short(pTo)}`;
-  const compare = dataFrom === null || dataFrom > `${pFrom}-01` ? t('entities.period.noCompare') : t('entities.period.compare', { period });
-  return { compare, running: r.to === thisMonth ? t('entities.period.running', { month: monthName(Number(thisMonth.slice(5, 7))) }) : null };
+  const comparable = dataFrom !== null && dataFrom <= `${pFrom}-01`;
+  const compare = comparable ? t('entities.period.compare', { period }) : t('entities.period.noCompare');
+  return { compare, comparable, running: r.to === thisMonth ? t('entities.period.running', { month: monthName(Number(thisMonth.slice(5, 7))) }) : null };
 }

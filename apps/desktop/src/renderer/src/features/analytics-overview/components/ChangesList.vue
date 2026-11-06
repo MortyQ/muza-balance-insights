@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { VIcon } from '@/shared/ui';
+import { VHelpHint, VIcon } from '@/shared/ui';
 import type { ChangeRow } from '../types.ts';
 
 const { rows, vs, canCompare } = defineProps<{
@@ -13,7 +13,7 @@ const emit = defineEmits<{ open: [key: string]; all: [] }>();
 
 <template>
   <section class="flex flex-col">
-    <h2 class="text-base font-bold">{{ $t('analytics.changes.title') }}</h2>
+    <div class="flex items-center gap-1"><h2 class="text-base font-bold">{{ $t('analytics.changes.title') }}</h2><VHelpHint :label="$t('common.helpLabel', { name: $t('analytics.changes.title') })">{{ $t('analytics.help.changes') }}</VHelpHint></div>
     <p v-if="vs" class="text-sm text-foreground-muted">{{ vs }}</p>
     <p v-if="!canCompare" class="mt-3 text-sm text-foreground-muted">{{ $t('analytics.changes.noCompare') }}</p>
     <p v-else-if="rows.length === 0" class="mt-3 text-sm text-foreground-muted">{{ $t('analytics.changes.none') }}</p>

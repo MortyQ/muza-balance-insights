@@ -107,7 +107,8 @@ export interface UseSpendingReturn {
 }
 
 /** A toned difference of operations («+4 vs Aug.», «+2»): `OPS_TONE`, `sr` — the direction for screen readers. */
-export type OpsDiffView = Pick<OpsView, 'text' | 'tone' | 'sr'>;
+/** The difference in the number of transactions; `hint` says it in words («4 fewer transactions than in August»). */
+export type OpsDiffView = Pick<OpsView, 'text' | 'tone' | 'sr'> & { hint?: string };
 
 /** A category row with the screen it opens (`categoryLink`); null — «N more categories» or an unknown word. */
 export interface CategoryRowView extends RowView {
