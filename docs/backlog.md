@@ -8,19 +8,11 @@
   однозначно: автопополнение банки («10%», «До 10₴») с выключенной карты, «З Чорної картки» при двух чёрных картах,
   одна из которых включена. Нужны данные о том, как банк подписывает такие строки, прежде чем ловить их иначе.
 
-- **Проверка безопасности для OAuth и open banking** (решение пользователя 27.09.2026: делаем обязательно; токен API
-  банка — не самый надёжный способ доступа, цель — перейти на open banking). Сейчас сетевые правила запрещают редиректы
-  и любые адреса вне `TRUSTED_SERVICES` (`apps/desktop/src/net/allowlist.ts`, `.agents/project/desktop-security.md`),
-  а OAuth требует и того и другого. Отдельная спека и ревью до кода:
-  - как проходит вход: системный браузер + loopback / свой протокол, PKCE, `state`; обработка редиректа только в main,
-    renderer не видит ни кода, ни токенов;
-  - какие хосты банка и провайдера open banking добавляются в список доверенных, редиректы — только по точному списку
-    (правка `allowlist.test.ts` отдельным шагом);
-  - хранение access / refresh токенов (safeStorage, как `TokenVault`), срок жизни, обновление и отзыв, «Удалить все данные»
-    и «Начать заново» их тоже стирают;
-  - CSP и fuses не ослабляются; что меняется в `wipe.ts`, `start-over.ts`, импорте под замком.
-  Подготовка уже есть: домен `integrations` (папка на банк), `ways: ('token' | 'oauth' | 'file')[]` у банка в `entities/bank`.
-  Следом — общий тип доступа вместо строки-токена (этап 5 плана `docs/superpowers/plans/2026-09-27-integrations-domain.md`).
+- **Security review of bank access** (the user's decision of 27.09.2026, revised 06.11.2026): the review stays, open
+  banking itself does not — access to it cannot be obtained for now. Review what there is: the API token (`TokenVault`,
+  `safeStorage`, the allowlist), statement files (the decoder process, size and count limits) and what a future OAuth
+  flow would need (system browser + loopback / own protocol, PKCE, `state`, redirects only by an exact list, tokens in
+  main only). A spec and a review before any code.
 
 - **Statement files: not checked on a live system** (plan `docs/superpowers/plans/2026-10-07-statement-files.md`,
   Task 9) — the reference check: a Ukrainian Monobank card statement for a period the token already covers, «Check
@@ -38,18 +30,12 @@
 - **Токены и ключ базы на Linux без keyring — проверить вживую** (VM или `--password-store=basic`): по коду async API без
   keyring шифрует встроенным ключом (`v10`), и `SecureStore` должен счесть это `insecure` (токены в памяти, база открыта с
   `no-secure-storage`).
-- Когда приложение станет MCP-сервером — замок должен закрывать и MCP-доступ. Windows Hello — отдельным шагом (нативный модуль).
 - Веб-версия (Nuxt SPA) снята с плана: вместо неё десктоп на Electron (этап 1). Веб — возможная будущая версия.
-- **Приложение как MCP-сервер для Claude Desktop**: данные в приложении, вопросы в Claude по подписке пользователя,
-  без API-ключа. Главная будущая фича.
-- **Единая база**: когда десктоп станет MCP-сервером, Claude Desktop читает базу десктопа (userData «Balance Insights»),
-  а `apps/mcp` остаётся инструментом разработчика.
-- Трей: импорт продолжается при закрытом окне.
 - Распространение (бесплатно): публичный репо, сборка electron-builder в GitHub Actions по тегу (mac .dmg, win .exe,
   linux AppImage), публикация в GitHub Releases с SHA-256 и build provenance attestations. Страница установки
   со скриншотами обхода Gatekeeper и SmartScreen. Windows: заявка в SignPath Foundation на бесплатную подпись.
   macOS: без подписи, пока не решено иначе.
-- Остальные экраны: сравнение месяцев, поездки по валюте операции, доходы, поиск операций.
+- Остальные экраны: сравнение месяцев, поездки по валюте операции.
 - AI-режим со своим API-ключом: ключ в main через safeStorage, модель выбирает график из белого списка компонентов,
   код не генерирует.
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
@@ -78,6 +64,15 @@
 - «Spending by category» with 4+ categories unfolded and folded; «Who spent what» in the family view, absent for one
   person; the regular payments tile beside it.
 - The header's hairline while scrolling; both themes (the new dark one included); the pace chart's pill near the top.
+
+- Windows Hello for the app lock — its own step (a native module).
+
+## Far plans (06.11.2026)
+
+- Transaction search, across the app and inside «Spending» — not needed for now.
+- Tray: the import goes on with the window closed.
+- Dropped: the desktop app as an MCP server for Claude Desktop (and the shared database it needed); `apps/mcp` stays a
+  developer tool.
 
 ## Later: currencies
 

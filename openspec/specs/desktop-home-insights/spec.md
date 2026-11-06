@@ -21,7 +21,7 @@ homes the block SHALL take the whole row under «Spending». Without anything to
 
 ### Requirement: Drivers
 The block SHALL list, in the order of «What's unusual», each category line that has a driver: the category, the
-payee's name (the bank's description, cut as in «Recent operations»), its change in money with its direction, and its
+payee's name (the bank's description, cut as in «Recent transactions»), its change in money with its direction, and its
 share of the category's change. A row SHALL open that category's screen for the shown month and scope.
 
 #### Scenario: A driver row
