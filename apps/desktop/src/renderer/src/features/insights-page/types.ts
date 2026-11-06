@@ -115,7 +115,15 @@ export interface HealthChartView {
   /** «How much of your income is left» and what it counts. */
   title: string;
   hint: string;
-  points: Array<{ month: string; label: string; value: number | null; standing: Standing | null }>;
+  points: Array<{ month: string; label: string; value: number | null; standing: Standing | null; unusual: 'above' | 'below' | null }>;
+  /** The user's usual (median of the months shown) and its ± band; null — under 3 months with income. */
+  usual: { value: number; low: number; high: number; text: string } | null;
+  /** The running month's forecast as a hatched last bar; null — none. */
+  forecast: { label: string; value: number; low: number; high: number; standing: Standing; text: string } | null;
+  /** The three tiles above the chart. */
+  tiles: HealthTileView[];
+  /** The references in words: guide, usual, band, unusual months, forecast — those drawn. */
+  references: Array<{ key: 'guide' | 'usual' | 'band' | 'unusual' | 'forecast'; text: string }>;
   /** The guide, per cent of income. */
   guide: number;
   guideText: string;
@@ -130,13 +138,27 @@ export interface HealthChartView {
   text: string;
 }
 
+/** A tile above the chart: a label, a value in words, a line under it. */
+export interface HealthTileView {
+  key: 'usual' | 'trend' | 'month';
+  label: string;
+  value: string;
+  sub: string;
+  tone: 'good' | 'bad' | 'warn' | 'neutral';
+  icon: string | null;
+}
+
 /** One checklist item: its figure, its guide and where it stands (null — nothing to place yet, `note` says why). */
 export interface HealthItemView {
   /** `shares` — the five income shares as one row while there is no finished month with income. */
-  key: 'shares' | 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits';
+  key: 'shares' | 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits' | 'red' | 'income' | 'spending' | 'strong';
   label: string;
   value: string;
   guide: string;
+  /** A share against the user's usual of it: «better than usual (36%)». */
+  direction: { text: string; tone: 'good' | 'bad' | 'neutral' } | null;
+  /** «Show»: the item points at the feed's high signals. */
+  showSignals?: boolean;
   standing: Standing | null;
   standingText: string;
   note: string | null;
@@ -149,7 +171,8 @@ export interface HealthView {
   chart: Record<ChartMetric, HealthChartView> | null;
   /** The income bar against 50/30/20 (a finished month with income), the checklist's help on «?», and the basis. */
   budget: BudgetCardView;
-  items: HealthItemView[];
+  /** The checklist in its three groups; an empty group is left out. */
+  groups: Array<{ key: 'month' | 'cushion' | 'plans'; title: string; items: HealthItemView[] }>;
   /** «4 of 6»: items within the guide of those with a standing; null — none has one. */
   count: string | null;
 }

@@ -105,6 +105,8 @@ import LucideCar from "~icons/lucide/car";
 import LucideBaby from "~icons/lucide/baby";
 import LucideRepeat2 from "~icons/lucide/repeat-2";
 import LucideTrendingUp from "~icons/lucide/trending-up";
+import LucideTrendingDown from "~icons/lucide/trending-down";
+import LucideArrowRight from "~icons/lucide/arrow-right";
 import LucideEllipsisVertical from "~icons/lucide/ellipsis-vertical";
 import LucideUndo2 from "~icons/lucide/undo-2";
 import LucideTag from "~icons/lucide/tag";
@@ -205,6 +207,8 @@ export const ICONS: Record<string, Component> = {
   "lucide:baby": LucideBaby,
   "lucide:repeat-2": LucideRepeat2,
   "lucide:trending-up": LucideTrendingUp,
+  "lucide:trending-down": LucideTrendingDown,
+  "lucide:arrow-right": LucideArrowRight,
   "lucide:ellipsis-vertical": LucideEllipsisVertical,
   "lucide:undo-2": LucideUndo2,
   "lucide:tag": LucideTag,

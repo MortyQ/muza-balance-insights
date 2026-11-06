@@ -79,11 +79,11 @@
 
 ## 9. Renderer: references on the chart, tiles, a fuller checklist
 
-- [ ] 9.1 Chart: the usual line and band, unusual outlines with ▲ / ▼, the hatched forecast bar with its whisker, the
+- [x] 9.1 Chart: the usual line and band, unusual outlines with ▲ / ▼, the hatched forecast bar with its whisker, the
       legend in words
-- [ ] 9.2 Three tiles above the chart (usual, trend, forecast or the month itself)
-- [ ] 9.3 Checklist: three groups, the direction beside each share, the four new items with their «?»; «How it was
+- [x] 9.2 Three tiles above the chart (usual, trend, forecast or the month itself)
+- [x] 9.3 Checklist: three groups, the direction beside each share, the four new items with their «?»; «How it was
       counted» says how the forecast is made
-- [ ] 9.4 New texts in `uk.json`, `en.json`, `ru.json`; renderer tests for each requirement; commit
+- [x] 9.4 New texts in `uk.json`, `en.json`, `ru.json`; renderer tests for each requirement; commit
       `feat(desktop): references and a fuller checklist in financial health`
-- [ ] 9.5 `CHANGELOG.md` entry widened; `docs/backlog.md`: check the forecast against the month's real end
+- [x] 9.5 `CHANGELOG.md` entry widened; `docs/backlog.md`: check the forecast against the month's real end

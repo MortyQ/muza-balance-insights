@@ -338,3 +338,7 @@
   buttons match the «Signals» figure.
 - Keyboard: Tab reaches each filter button, Enter / Space presses it, a screen reader says «pressed»; the checklist's
   standing is read after each figure.
+- The forecast against the month's real end: note the forecast on the 10th, 15th and 20th and compare with the finished
+  month; is the range honest, too wide to help, or too narrow?
+- The usual band (± 15 points) on real months: does it mark the months the user would call unusual, or too many?
+- The checklist's three groups at narrow widths: headings and directions not cut; «Show» moves to the feed's high items.

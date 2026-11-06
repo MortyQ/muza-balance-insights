@@ -166,6 +166,7 @@ function basisLines(v: InsightsOverview): string[] {
     `${t('insights.newPayees.title')}: ${t('insights.newPayees.hint').toLowerCase()}.`,
     `${t('insights.oneOffs.title')}: ${t('insights.oneOffs.hint').toLowerCase()}.`,
     ...(v.period.incomplete ? [t('insights.basis.running')] : []),
+    ...(v.health?.forecast ? [t('insights.health.forecastBasis')] : []),
     ...(v.period.pendingHolds > 0 ? [t('insights.basis.pending', v.period.pendingHolds)] : []),
     ...(v.cashCounts ? [] : [t('insights.basis.cashOff')]),
   ];
@@ -327,7 +328,7 @@ export function feedItems(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, y
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
   const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
-  const health = healthView(v, budgetView(v.budget, v.period.incomplete, fmt));
+  const health = healthView(v, budgetView(v.budget, v.period.incomplete, fmt), fmt);
   const feed = v.usual ? feedItems(v, fmt, scope, year) : [];
   if (!v.usual) {
     return { health, glance, early: t('insights.early.text', { months: t('insights.early.months', v.months) }), feed: [], calm: false, basis: [] };

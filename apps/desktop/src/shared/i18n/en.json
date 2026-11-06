@@ -1117,7 +1117,68 @@
         "ahead": "{n} forecast over",
         "within": "all within",
         "help": "This view's monthly limits and monthly budget: «Personal» spending, without holds the bank has not finalised."
-      }
+      },
+      "tiles": {
+        "usual": "Your usual",
+        "usualSub": "median of {n} mo. · guide {guide}%",
+        "trend": "Last 3 months",
+        "better": "better",
+        "worse": "worse",
+        "same": "about the same",
+        "trendSub": "{now} on average against {before} before",
+        "trendNone": "needs 4 months with income",
+        "forecast": "This month's forecast",
+        "forecastValue": "about {value}",
+        "forecastSub": "{low} to {high} · the month runs",
+        "early": "too early to tell",
+        "earlySub": "the forecast comes from the 10th",
+        "month": "This month",
+        "monthPending": "after the month ends",
+        "monthWants": "the forecast is for what is left only"
+      },
+      "refs": {
+        "usual": "usually {value}",
+        "guide": "guide",
+        "usualLine": "your usual",
+        "band": "your usual range",
+        "unusual": "unusual month ▲ ▼",
+        "forecast": "forecast",
+        "forecastLabel": "≈ {value}",
+        "unusualAbove": "unusually high",
+        "unusualBelow": "unusually low"
+      },
+      "groups": {
+        "month": "This month",
+        "cushion": "Safety cushion",
+        "plans": "Spending and plans"
+      },
+      "direction": {
+        "better": "better than usual ({usual})",
+        "worse": "worse than usual ({usual})",
+        "same": "as usual"
+      },
+      "items": {
+        "red": "Months in the red",
+        "redValue": "{n} of {of}",
+        "redGuide": "none",
+        "redHelp": "How many months on the chart you spent more than you earned.",
+        "income": "Income",
+        "incomeValue": "{share} of usual",
+        "incomeGuide": "from 90% of usual",
+        "incomeHelp": "The month's income against your usual (the median of past months): {now} against a usual {usual}.",
+        "spending": "Spending",
+        "spendingValue": "{share} of usual",
+        "spendingGuide": "no more than usual",
+        "spendingHelp": "The month's spending against a usual month: {now} against a usual {usual}.",
+        "paceValue": "{spent} in {passed} of the month",
+        "paceGuide": "at the month's pace",
+        "paceHelp": "{spent} of a usual month spent with {passed} of the month passed.",
+        "strong": "Strong signals",
+        "strongGuide": "none",
+        "strongHelp": "High signals in the feed below: changes from 10% of a usual month.",
+        "strongShow": "Show"
+      },
+      "forecastBasis": "Forecast: what is spent so far plus the usual rest of the month for each kind of spending, with your usual income; the range takes your lightest and heaviest months."
     },
     "filter": {
       "severityGroup": "Severity",

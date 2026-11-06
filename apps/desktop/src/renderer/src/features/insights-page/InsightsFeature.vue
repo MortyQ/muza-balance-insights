@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, useTemplateRef } from 'vue';
 import { RouterLink } from 'vue-router';
 import { DetailSkeleton } from '@/entities/operations';
 import { importLink } from '@/shared/config';
@@ -18,6 +18,15 @@ import { filterFeed } from './utils/feed.ts';
 const { state, view } = useInsightsPage();
 const { filter, set, reset } = useFeedFilter();
 const shown = computed(() => (view.value ? filterFeed(view.value.feed, filter.value) : []));
+const feedEl = useTemplateRef<HTMLElement>('feed');
+
+/** «Strong signals» → «Show»: the feed filtered to high items, scrolled into view. */
+async function showStrong(): Promise<void> {
+  set({ severity: 'high', kind: 'all' });
+  await nextTick();
+  const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  feedEl.value?.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' });
+}
 </script>
 
 <template>
@@ -28,7 +37,7 @@ const shown = computed(() => (view.value ? filterFeed(view.value.feed, filter.va
     <template v-else-if="view">
       <div class="flex flex-col gap-4" :class="{ 'opacity-60': state.status === 'loading' }">
         <InsightsGlance :items="view.glance" />
-        <HealthBlock :health="view.health" />
+        <HealthBlock :health="view.health" @show-signals="showStrong" />
 
         <VCard v-if="view.early" padding="md" data-test="insights-early">
           <div class="flex flex-col items-start gap-2">
@@ -41,7 +50,7 @@ const shown = computed(() => (view.value ? filterFeed(view.value.feed, filter.va
         </VCard>
 
         <template v-else>
-          <section class="flex min-w-0 flex-col gap-3" :aria-label="$t('insights.feed.title')">
+          <section ref="feed" class="flex min-w-0 scroll-mt-4 flex-col gap-3" :aria-label="$t('insights.feed.title')" data-test="insights-feed">
             <div class="flex items-baseline justify-between gap-2">
               <h2 class="text-base font-bold">{{ $t('insights.feed.title') }}</h2>
               <span class="text-xs text-foreground-muted">{{ $t('insights.feed.ranked') }}</span>

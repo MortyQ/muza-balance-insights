@@ -257,9 +257,9 @@
   `tests/renderer/home-budget.test.ts`, `home-highlights.test.ts`, `category-detail.test.ts`.
 - **In-app explanations**: `shared/ui` `VHelpHint` — a «?» beside a figure with its formula in the user's numbers;
   `shared/layout` `IntroNote` with `useIntro(id)` of `shared/lib` — a screen's short introduction, closed once
-  (`localStorage` `help.seen.<id>`, a convenience) and brought back by «How it works». The Insights screen's «Budget
-  structure» card (`BudgetCard`, first in the side column; `budgetView`): the income split against 50/30/20, fixed costs,
-  loan payments, the reserve, each with a «?»; a «Limit exceeded» card joins the feed by money (`limitCard`).
+  (`localStorage` `help.seen.<id>`, a convenience) and brought back by «How it works». The Insights screen's
+  «Financial health» checklist (`HealthChecklist`; `budgetView` feeds its income bar and «?» texts): each figure with a
+  «?»; a «Limit exceeded» card joins the feed by money (`limitCard`).
 - **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
   `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
 - **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about
@@ -293,14 +293,19 @@
 - **Insights screen** (`features/insights-page`, `InsightsFeature.vue`; `pages/insights`; spec
   `desktop-insights-page`): route `insights`, side menu item after «General» (`home.nav.insights`, `lucide:lightbulb`),
   the default month filter (the home month), person, banks and `useScopeStore`; one IPC `getInsightsOverview`, quiet
-  reload on `syncStatus.version`. `utils.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
+  reload on `syncStatus.version`. `utils/index.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
   the usual month — a running month a meter of the usual month spent with a mark at the month passed —, income, the
-  kept share, signals by severity), the feed (`InsightCard`: icon, title, severity mark, `VChangeChip`, one sentence,
-  the driver, «Open operations»; `InsightBars` — CSS bars on sunken tracks, the shown month in the direction's tone,
-  the usual as a dashed line; no ECharts per card), and the side (`SignalList`: new payees, one-offs; empty lists say
-  so; «How it was counted»). Under 3 whole months: a card with «Download history» (`importLink()`) instead of the feed.
-  Layout: a container grid, the feed 8 and the side 4 of 12 columns from 64rem of its own width. Home's «Insights»
-  block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
+  kept share, the signals figure — every feed item split by severity on one bar), «Financial health» (`HealthBlock`,
+  spec `desktop-insights-health`, `utils/health.ts`: `SharesChart` — the left or wants share by month as ECharts bars
+  coloured by each month's standing, the guide dashed, the user's usual line and ± band, unusual months outlined with
+  ▲ / ▼, a running month's forecast hatched, three tiles (usual, trend, the month or its forecast), legends in words,
+  growing to the checklist's height; `HealthChecklist` — the income bar and the items in three groups with a circle,
+  an icon, the standing in words and, for a share, its direction against the usual; standings and references come
+  from the data process), then one feed (`feedItems`: `InsightCard`s and `SignalCard`s — new payees, one-offs —
+  ranked by money; `InsightBars` CSS bars, no ECharts per card) with `FeedFilters` (severity and kind,
+  `useFeedFilter`, `localStorage` `insights.feedFilter`), and «How it was counted». «Strong signals» → «Show» sets the
+  filter to high and scrolls to the feed. Under 3 whole months: a card with «Download history» (`importLink()`)
+  instead of the feed. Home's «Insights» block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec
   `docs/superpowers/specs/2026-10-06-analytics-design.md`): route `analytics` with `meta.periodFilter: 'range'` — the
   global filters show `PeriodRangeFilter` (`entities/period`: `useRangeStore` — whole months, default the last 12 whole

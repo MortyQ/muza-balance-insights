@@ -11,7 +11,12 @@ English interface.
   what is left of your income after essentials and wants for each of the last months, against the 20% guide (or the
   wants share against 30%), and a checklist of your figures against common guides — what is left, essentials, wants,
   fixed costs, loan payments, the reserve and your monthly limits. Each says «within the guide», «near the guide» or
-  «outside the guide» with a mark and its figure; it replaces the «Budget structure» card. New payees and large
+  «outside the guide» with a mark and its figure; it replaces the «Budget structure» card. The chart also shows your own
+  usual and its range, marks the months that fell far outside it, and, while a month runs, a forecast of how it ends;
+  three tiles say your usual, whether the last three months got better or worse, and the month or its forecast. The
+  checklist is grouped into «This month», «Safety cushion» and «Spending and plans», says for each share whether it is
+  better or worse than your usual, and adds months in the red, income and spending against your usual, and strong
+  signals. New payees and large
   one-off payments now sit in the feed with everything else, and the feed can be filtered by severity and by kind; the
   filter is remembered. The «Signals» figure shows its high, medium and low counts on one bar.
 - **Pending payments wait.** A payment the bank has not finalised yet no longer counts towards your limits, the monthly

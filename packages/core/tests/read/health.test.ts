@@ -1,6 +1,6 @@
 // «Financial health» references (read/health.ts): the usual and unusual months, the trend of a share, the forecast.
 import { describe, expect, it } from 'vitest';
-import { leftForecast, shareTrend, usualOf } from '../../src/read/health.ts';
+import { leftForecast, shareTrend, usualOf, versusUsual } from '../../src/read/health.ts';
 
 const SHARES = [-21, 44, 18, -12, 8, -59];
 
@@ -31,5 +31,11 @@ describe('health references', () => {
     expect(leftForecast({ day: 9, days: 30, spent, usual })).toBeNull();
     expect(leftForecast({ day: 10, days: 30, spent, usual })).not.toBeNull();
     expect(leftForecast({ day: 15, days: 30, spent, usual: usual.slice(1) })).toBeNull();
+  });
+
+  it('a month against the usual: 3 points in the good direction decide', () => {
+    expect(versusUsual(32, 36, false)).toBe('better');
+    expect(versusUsual(34, 37, true)).toBe('worse');
+    expect(versusUsual(36, 37, true)).toBe('same');
   });
 });

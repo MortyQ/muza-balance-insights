@@ -39,7 +39,25 @@ const OVERVIEW: InsightsOverview = {
   limitsAhead: [],
   monthlyLimits: 0,
   standing: { left: 'within', essential: 'within', wants: 'within', fixed: 'within', debt: 'within', reserve: 'near', limits: null },
-  health: null,
+  // The user's own references (fictional): September … February with November without income.
+  health: {
+    chart: {
+      left: { usual: 22, unusual: [null, null, null, null, null, 'below'], trend: { now: 11, before: 24, direction: 'worse' } },
+      wants: { usual: 28, unusual: [null, null, null, null, null, 'above'], trend: { now: 36, before: 28, direction: 'worse' } },
+    },
+    versus: {
+      left: { usual: 24, direction: 'better' },
+      essential: { usual: 45, direction: 'same' },
+      wants: { usual: 28, direction: 'better' },
+      fixed: { usual: 38, direction: 'same' },
+      debt: { usual: 8, direction: 'same' },
+    },
+    forecast: null,
+    redMonths: { n: 1, of: 5, standing: 'near' },
+    income: { now: 2_000_000, usual: 2_000_000, standing: 'within' },
+    spending: { kind: 'month', now: 1_500_000, usual: 1_200_000, standing: 'outside' },
+    strong: { n: 2, standing: 'outside' },
+  },
   history: [
     { month: '2025-09', left: 22, wants: 28, leftStanding: 'within', wantsStanding: 'within' },
     { month: '2025-10', left: 25, wants: 27, leftStanding: 'within', wantsStanding: 'within' },
@@ -304,7 +322,7 @@ describe('insights screen', () => {
     expect(row('reserve').get('[data-test="health-standing"]').text()).toBe(', близко к ориентиру');
     expect(row('left').get('[data-test="health-standing"]').text()).toBe(', в ориентире');
     expect(list.find('[data-test="health-limits"]').exists()).toBe(false);
-    expect(list.get('[data-test="health-count"]').text()).toBe('5 из 6');
+    expect(list.get('[data-test="health-count"]').text()).toBe('6 из 10');
     expect(list.text()).not.toMatch(/хорош|плох/i);
     await row('left').get('button').trigger('click');
     await flushPromises();
@@ -312,6 +330,65 @@ describe('insights screen', () => {
     await list.get('[data-test="budget-kinds"]').trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'settings', query: { section: 'categories' } });
+    w.unmount();
+  });
+
+  it('the checklist in three groups, each share beside the user\'s usual of it, the cushion and spending items', async () => {
+    const w = await mountPage();
+    const groups = w.findAll('[data-test^="health-group-"]');
+    expect(groups.map((g) => g.find('h4').text())).toEqual(['Этот месяц', 'Запас прочности', 'Траты и планы']);
+    expect(w.get('[data-test="health-group-cushion"]').findAll('li').map((l) => l.attributes('data-test'))).toEqual(['health-reserve', 'health-red', 'health-income']);
+    expect(w.get('[data-test="health-group-plans"]').findAll('li').map((l) => l.attributes('data-test'))).toEqual(['health-spending', 'health-strong']);
+    expect(w.get('[data-test="health-left"] [data-test="health-direction"]').text()).toBe('лучше обычного (24%)');
+    expect(w.get('[data-test="health-essential"] [data-test="health-direction"]').text()).toBe('как обычно');
+    expect(w.get('[data-test="health-red"]').text()).toContain('1 из 5');
+    expect(w.get('[data-test="health-income"]').text()).toContain('100% обычного');
+    expect(w.get('[data-test="health-spending"]').text()).toContain('125% обычного');
+    expect(w.get('[data-test="health-spending"] [data-test="health-standing"]').text()).toBe(', вне ориентира');
+    w.unmount();
+  });
+
+  it('«Strong signals» → «Show» filters the feed to the high items', async () => {
+    const w = await mountPage();
+    expect(w.get('[data-test="health-strong"]').text()).toContain('2');
+    await w.get('[data-test="health-show-signals"]').trigger('click');
+    await flushPromises();
+    expect(w.get('[data-test="filter-severity-high"]').attributes('aria-pressed')).toBe('true');
+    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high', 'insight-card-high']);
+    w.unmount();
+  });
+
+  it('the chart\'s references: the usual and its range, an unusual month in words, three tiles', async () => {
+    const w = await mountPage();
+    const chart = w.get('[data-test="shares-chart"]');
+    expect(chart.get('[data-test="shares-usual"]').text()).toBe('обычно 22%');
+    expect(chart.get('[data-test="shares-references"]').text()).toContain('твоё обычное');
+    expect(chart.get('[data-test="shares-references"]').text()).toContain('обычный коридор');
+    expect(chart.get('[data-test="shares-references"]').text()).toContain('необычный месяц');
+    expect(chart.get('[data-test="shares-plot"]').attributes('aria-label')).toContain('2026 — −12% (необычно низко)');
+    expect(chart.get('[data-test="shares-tile-usual"]').text()).toContain('22%');
+    expect(chart.get('[data-test="shares-tile-trend"]').text()).toContain('хуже');
+    expect(chart.get('[data-test="shares-tile-trend"]').text()).toContain('в среднем 11% против 24% до этого');
+    // A finished month: the third tile is the month against the user's usual.
+    expect(chart.get('[data-test="shares-tile-month"]').text()).toContain('Февраль');
+    expect(chart.get('[data-test="shares-tile-month"]').text()).toContain('лучше обычного (24%)');
+    w.unmount();
+  });
+
+  it('a running month\'s forecast: a tile with its range, a hatched bar named in words, how it is made', async () => {
+    answer = {
+      ...OVERVIEW,
+      period: { ...OVERVIEW.period, incomplete: true },
+      budget: { ...OVERVIEW.budget, month: null },
+      health: { ...OVERVIEW.health!, forecast: { value: -5, low: -15, high: 5, standing: 'outside' } },
+    };
+    const w = await mountPage();
+    const tile = w.get('[data-test="shares-tile-month"]');
+    expect(tile.text()).toContain('около −5%');
+    expect(tile.text()).toContain('от −15% до 5%');
+    expect(w.get('[data-test="shares-references"]').text()).toContain('прогноз');
+    expect(w.get('[data-test="shares-plot"]').attributes('aria-label')).toContain('прогноз ≈ −5%');
+    expect(w.get('[data-test="insights-basis"]').text()).toContain('Прогноз: уже потраченное');
     w.unmount();
   });
 
@@ -335,16 +412,26 @@ describe('insights screen', () => {
       period: { ...OVERVIEW.period, incomplete: true },
       budget: { ...OVERVIEW.budget, month: null },
       standing: { ...OVERVIEW.standing, left: null, essential: null, wants: null, fixed: null, debt: null },
+      health: {
+        ...OVERVIEW.health!,
+        versus: { left: null, essential: null, wants: null, fixed: null, debt: null },
+        income: null,
+        spending: { kind: 'pace', spent: 45, passed: 33, standing: 'outside' },
+      },
     };
     const w = await mountPage();
     const list = w.get('[data-test="health-checklist"]');
+    expect(list.get('[data-test="health-spending"]').text()).toContain('45% за 33% месяца');
+    // Day 7: the forecast tile says it is too early.
+    expect(w.get('[data-test="shares-tile-month"]').text()).toContain('рано судить');
     expect(list.find('[data-test="health-bar"]').exists()).toBe(false);
     // One row for the five shares, not five rows saying the same.
     expect(list.find('[data-test="health-wants"]').exists()).toBe(false);
     expect(list.get('[data-test="health-shares"]').text()).toContain('Доли от дохода');
     expect(list.get('[data-test="health-shares"]').text()).toContain('после конца месяца');
     expect(list.get('[data-test="health-shares"]').find('[data-test="health-standing"]').exists()).toBe(false);
-    expect(list.get('[data-test="health-count"]').text()).toBe('0 из 1');
+    // The reserve, months in the red, the pace and strong signals: one within the guide.
+    expect(list.get('[data-test="health-count"]').text()).toBe('0 из 4');
     w.unmount();
   });
 
