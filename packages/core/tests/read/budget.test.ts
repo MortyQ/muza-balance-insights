@@ -1,7 +1,7 @@
 // Budget metrics (budget.ts): folding by kind, the 50/30/20 split, fixed and debt shares, the reserve.
 import { describe, expect, it } from 'vitest';
 import { CATEGORY } from '../../src/derive/categories.ts';
-import { budgetSplit, byKind, debtShare, fixedShare, guideStanding, limitsStanding, monthShares, reserveMonths } from '../../src/read/budget.ts';
+import { budgetSplit, byKind, countStanding, debtShare, fixedShare, guideStanding, incomeStanding, limitsStanding, monthShares, paceStanding, reserveMonths, spendingStanding } from '../../src/read/budget.ts';
 import { DEFAULT_KINDS } from '../../src/read/category-kinds.ts';
 
 const C = CATEGORY;
@@ -64,5 +64,14 @@ describe('budget metrics', () => {
     expect(limitsStanding(1, 0)).toBe('outside');
     expect(limitsStanding(0, 1)).toBe('near');
     expect(limitsStanding(0, 0)).toBe('within');
+  });
+
+  it('the cushion and spending standings: counts, income and spending against the usual, the pace', () => {
+    expect([0, 1, 2].map(countStanding)).toEqual(['within', 'near', 'outside']);
+    expect([95, 80, 70].map((n) => incomeStanding(n, 100))).toEqual(['within', 'near', 'outside']);
+    expect(incomeStanding(50, 0)).toBeNull();
+    expect([100, 110, 111].map((n) => spendingStanding(n, 100))).toEqual(['within', 'near', 'outside']);
+    // Day 10 of 30: a third of the month passed.
+    expect([33, 43, 45].map((n) => paceStanding(n, 33))).toEqual(['within', 'near', 'outside']);
   });
 });

@@ -92,7 +92,7 @@ unusual with a dashed outline and ▲ (above) or ▼ (below). A legend in words 
 
 #### Scenario: An unusual month
 - **WHEN** the months show −21, 44, 18, −12, 8 and −59% (usual −2%)
-- **THEN** June (44%) is marked ▲ and October (−59%) ▼; the others stay plain
+- **THEN** June (44%) and July (18%) are marked ▲, May (−21%) and October (−59%) ▼; August and September stay plain
 
 ### Requirement: Summary tiles
 Above the chart three tiles SHALL say, in plain words: the user's usual with the guide beside it; whether the last 3

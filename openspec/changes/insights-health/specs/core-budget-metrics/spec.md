@@ -37,7 +37,7 @@ mark a month unusual when it is more than 15 percentage points from it, above or
 
 #### Scenario: Unusual months
 - **WHEN** the shares are −21, 44, 18, −12, 8 and −59%
-- **THEN** the usual is −2%, June and October are unusual
+- **THEN** the usual is −2%; May, June, July and October are unusual
 
 ### Requirement: Trend of a share
 The system SHALL compare the mean of the last 3 months with income with the mean of the months with income before them

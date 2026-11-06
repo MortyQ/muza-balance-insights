@@ -61,12 +61,12 @@
 
 ## 7. Core: references, trend, forecast, new standings
 
-- [ ] 7.1 `packages/core/src/read/health.ts` (new, the read layer): `usualOf(shares)` (median of ≥ 3, unusual beyond
+- [x] 7.1 `packages/core/src/read/health.ts` (new, the read layer): `usualOf(shares)` (median of ≥ 3, unusual beyond
       `UNUSUAL_POINTS` = 15), `shareTrend(shares, goodUp)` (last 3 vs up to 3 before, `TREND_POINTS` = 3),
       `leftForecast({ day, days, spent, usual })` from day `FORECAST_FROM_DAY` = 10 with its range
-- [ ] 7.2 Standings for months in the red, income against the usual, spending against the usual (finished and pace) and
+- [x] 7.2 Standings for months in the red, income against the usual, spending against the usual (finished and pace) and
       strong signals, next to `guideStanding` in `read/budget.ts`
-- [ ] 7.3 Tests in `packages/core/tests/read/health.test.ts` and `budget.test.ts`: the spec's examples, the edges
+- [x] 7.3 Tests in `packages/core/tests/read/health.test.ts` and `budget.test.ts`: the spec's examples, the edges
       (2 months, no income, day 9 / 10); commit `feat(core): usual, trend and forecast of the budget shares`
 
 ## 8. Data: the history widened, the forecast, the new items

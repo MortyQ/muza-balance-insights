@@ -116,3 +116,35 @@ export function guideStanding(metric: GuidedMetric, value: number): Standing {
 export function limitsStanding(over: number, ahead: number): Standing {
   return over > 0 ? 'outside' : ahead > 0 ? 'near' : 'within';
 }
+
+/** A count where none is the guide: 0 within, 1 near, more outside (months in the red, strong signals). */
+export function countStanding(n: number): Standing {
+  return n <= 0 ? 'within' : n === 1 ? 'near' : 'outside';
+}
+
+/** Income at INCOME_WITHIN of the usual or more is within; from INCOME_NEAR near; below outside. */
+export const INCOME_WITHIN = 0.9;
+export const INCOME_NEAR = 0.75;
+
+/** A finished month's income against the usual median; null without a usual income. */
+export function incomeStanding(now: number, usual: number): Standing | null {
+  if (usual <= 0) return null;
+  const r = now / usual;
+  return r >= INCOME_WITHIN ? 'within' : r >= INCOME_NEAR ? 'near' : 'outside';
+}
+
+/** Spending up to SPENDING_NEAR over the usual month (or points over the pace) is near. */
+export const SPENDING_NEAR = 0.1;
+export const PACE_NEAR_POINTS = 10;
+
+/** A finished month's total spending against the usual month; null without a usual. */
+export function spendingStanding(now: number, usual: number): Standing | null {
+  if (usual <= 0) return null;
+  return now <= usual ? 'within' : now <= usual * (1 + SPENDING_NEAR) ? 'near' : 'outside';
+}
+
+/** A running month: the share of a usual month spent against the share of the month passed, whole per cent. */
+export function paceStanding(spentShare: number, passedShare: number): Standing {
+  const over = spentShare - passedShare;
+  return over <= 0 ? 'within' : over <= PACE_NEAR_POINTS ? 'near' : 'outside';
+}
