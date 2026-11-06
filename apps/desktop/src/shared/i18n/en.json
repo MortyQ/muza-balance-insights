@@ -344,7 +344,8 @@
         "sort": "Sort",
         "title": "Transactions",
         "total": "List total: {amount}",
-        "actions": "Actions: {name}"
+        "actions": "Actions: {name}",
+        "emptyQuery": "No transactions match “{query}” in this period."
       },
       "mark": {
         "foreign": "foreign currency",
@@ -1234,11 +1235,11 @@
     "actions": "Actions: {name}",
     "count": "{n} regular payment | {n} regular payments | {n} regular payments",
     "empty": "No regular payments found in the last 13 months.",
-    "ended": "Stopped",
+    "ended": "Not seen in recent months",
     "failed": "Couldn't load the regular payments.",
     "footnote": "A regular payment goes to one payee about once a month for about the same amount, at least three times. The app finds them in the statement by itself. Amounts in other currencies are converted at today's Monobank rate.",
     "hiddenTitle": "Hidden ({n})",
-    "hide": "Not a regular payment",
+    "hide": "Hide from regular payments",
     "last": "last {date}",
     "mandatory": "mandatory",
     "mandatoryPart": "of which mandatory {amount}",

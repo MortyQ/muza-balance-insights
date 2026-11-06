@@ -35,11 +35,11 @@
 
 ## 4. Marks column and wording
 
-- [ ] 4.1 `OperationList`: no «Marks» column (header, cells, grid template) when no shown row has a mark; tests for a
+- [x] 4.1 `OperationList`: no «Marks» column (header, cells, grid template) when no shown row has a mark; tests for a
       list without marks and a payee filter that brings one
-- [ ] 4.2 «Hide from regular payments», «Not seen in recent months», the category list's empty search state naming
-      the search and the scope, in all three dictionaries; tests updated
-- [ ] 4.3 Commit `feat(desktop): no empty marks column, clearer wording`
+- [x] 4.2 «Hide from regular payments», «Not seen in recent months», the transactions list's empty search state naming
+      the search, in all three dictionaries; tests updated
+- [x] 4.3 Commit `feat(desktop): no empty marks column, clearer wording`
 
 ## 5. Docs and checks
 

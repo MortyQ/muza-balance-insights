@@ -28,8 +28,8 @@ figure-accuracy; the rest of the app should do the same.
     «Free» on the balance card («Money on cards minus reserves»).
 - **The «Marks» column hides** when no row in the list has a mark, and the row takes the width back.
 - **Wording**: «Not a regular payment» → «Hide from regular payments»; «Stopped» → «Not seen in recent months»; the
-  empty search state of a category list says what was searched and where («No transactions match “…” in this category
-  and month»); the budget and limits «?» texts say that pending holds are left out until the bank finalises them (the
+  empty search state of a transactions list says what was searched («No transactions match “…” in this period» — the
+  list is shared by the category and income screens); the budget and limits «?» texts say that pending holds are left out until the bank finalises them (the
   behaviour since figure-accuracy; the spec still said they count).
 
 ## Capabilities

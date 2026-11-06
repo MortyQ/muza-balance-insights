@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import type { LineRowView } from '@/entities/operations';
+import OperationList from '@/entities/operations/components/OperationList.vue';
 import OperationRow from '@/entities/operations/components/OperationRow.vue';
 import AnalyticsKpis from '@/features/analytics-overview/components/AnalyticsKpis.vue';
 import FreeLine from '@/features/balances/components/FreeLine.vue';
@@ -44,4 +45,31 @@ describe('hints on marks and figures', () => {
     expect(w.findAll('button[aria-haspopup]').map((b) => b.attributes('aria-label'))).toEqual(['Как считается «Итоги»']);
   });
 
+});
+
+describe('the transactions table (spec desktop-ui-wording «No empty columns»)', () => {
+  const list = (rows: LineRowView[], query = '') =>
+    mount(OperationList, {
+      props: { rows, total: '120 ₴', filterName: '', whereLabel: 'Где', searchLabel: 'Поиск', query, sort: 'date' },
+      global: { plugins: [i18n] },
+    });
+
+  it('no row with a mark: no «Marks» header or cell, the grid without its column', () => {
+    const w = list([row([]), { ...row([]), key: 'l2' }]);
+    expect(w.find('[data-test="col-marks"]').exists()).toBe(false);
+    const grids = w.findAll('[role="row"]').map((r) => r.classes().join(' '));
+    expect(grids.every((g) => g.includes('grid-cols-[7.5rem_minmax(0,1fr)_10rem_8rem]'))).toBe(true);
+    expect(w.findAll('[role="cell"]')).toHaveLength(2 * 4);
+  });
+
+  it('one row with a mark brings the column back for every row', () => {
+    const w = list([row([]), { ...row([{ text: 'возврат', tone: 'good' }]), key: 'l2' }]);
+    expect(w.get('[data-test="col-marks"]').text()).toBe('Отметки');
+    expect(w.findAll('[role="cell"]')).toHaveLength(2 * 5);
+  });
+
+  it('an empty search says what was searched', () => {
+    expect(list([], 'кофе').text()).toContain('Нет транзакций, подходящих под «кофе», за этот период.');
+    expect(list([]).text()).toContain('Ничего не нашлось.');
+  });
 });

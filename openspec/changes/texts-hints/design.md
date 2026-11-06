@@ -48,7 +48,7 @@ layout changes), any change of what a figure counts, main-process texts beyond t
 4. **The «Marks» column.** `OperationList` computes whether any shown row has marks and switches between two grid
    templates in `entities/operations/constants.ts`; the header follows. The filtered list (a payee picked) is the
    shown list.
-5. **Wording.** «Hide from regular payments», «Not seen in recent months», the category list's empty search state and
+5. **Wording.** «Hide from regular payments», «Not seen in recent months», the transactions list's empty search state and
    the holds line in the limits / budget help are dictionary edits only.
 
 ## Risks / Trade-offs
