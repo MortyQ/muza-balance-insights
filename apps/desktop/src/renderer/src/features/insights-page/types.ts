@@ -13,6 +13,15 @@ export interface GlanceView {
   note: string;
   tone: 'up' | 'down' | 'good' | 'bad' | 'neutral';
   meter: { value: number; mark: number } | null;
+  /** The signals figure: its severities on one bar, high first, each with its count in words; absent elsewhere. */
+  split?: GlanceSplitPart[] | null;
+}
+
+/** One part of the signals bar: as wide as its count. */
+export interface GlanceSplitPart {
+  severity: InsightSeverity;
+  count: number;
+  text: string;
 }
 
 /** One bar of a card's chart: a usual month or the shown one, its height in % of the tallest. */

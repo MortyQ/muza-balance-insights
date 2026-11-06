@@ -22,10 +22,10 @@
 
 ## 3. Signals at a glance
 
-- [ ] 3.1 `GlanceView.split`; `signalsGlance()` counts every feed item (cards, limits, payees, one-offs)
-- [ ] 3.2 `InsightsGlance.vue`: the severity bar and labelled counts, no « · »; keys in `uk.json`, `en.json`, `ru.json`
+- [x] 3.1 `GlanceView.split`; `signalsGlance()` counts every feed item (cards, limits, payees, one-offs)
+- [x] 3.2 `InsightsGlance.vue`: the severity bar and labelled counts, no « · »; keys in `uk.json`, `en.json`, `ru.json`
       if a label is new
-- [ ] 3.3 Renderer tests: 4 / 1 / 12, only low, no usual; commit `feat(desktop): signals by severity at a glance`
+- [x] 3.3 Renderer tests: 4 / 1 / 12, only low, no usual; commit `feat(desktop): signals by severity at a glance`
 
 ## 4. Financial health block
 

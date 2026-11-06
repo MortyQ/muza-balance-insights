@@ -1,4 +1,4 @@
-import type { BudgetStructureView, LimitAheadView, LimitOverView, InsightCardView as InsightCard, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
+import type { BudgetStructureView, LimitAheadView, LimitOverView, InsightCardView as InsightCard, InsightSeverity, InsightsOverview, NewPayeeView, OneOffView, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
@@ -57,20 +57,28 @@ function keptGlance(v: InsightsOverview): GlanceView {
   return { key: 'kept', label, value: percent(s.rate), note: t('insights.glance.usually', { usual: percent(s.usual) }), tone: s.rate >= s.usual ? 'good' : 'bad', meter: null };
 }
 
+/** Every feed item's severity: the cards, the limits (over and ahead), new payees and one-offs. */
+export function feedSeverities(v: InsightsOverview): InsightSeverity[] {
+  return [...v.cards, ...v.limitsOver, ...v.limitsAhead, ...v.newPayees, ...v.oneOffs].map((x) => x.severity);
+}
+
+const SEVERITIES: ReadonlyArray<InsightSeverity> = ['high', 'medium', 'low'];
+const COUNT_KEY = { high: 'insights.severity.countHigh', medium: 'insights.severity.countMedium', low: 'insights.severity.countLow' } as const;
+
+/** The signals figure: every feed item, split by severity on one bar (spec desktop-insights-page «The month at a glance»). */
 function signalsGlance(v: InsightsOverview): GlanceView {
-  const by = (s: string) => v.cards.filter((c) => c.severity === s).length;
-  const parts = [
-    by('high') > 0 ? t('insights.severity.countHigh', by('high')) : '',
-    by('medium') > 0 ? t('insights.severity.countMedium', by('medium')) : '',
-    by('low') > 0 ? t('insights.severity.countLow', by('low')) : '',
-  ].filter(Boolean);
+  const all = feedSeverities(v);
+  const parts = SEVERITIES.map((severity) => ({ severity, count: all.filter((s) => s === severity).length }))
+    .filter((p) => p.count > 0)
+    .map((p) => ({ ...p, text: t(COUNT_KEY[p.severity], p.count) }));
   return {
     key: 'signals',
     label: t('insights.glance.signals'),
-    value: v.usual ? String(v.cards.length) : '—',
-    note: v.usual ? (parts.length > 0 ? parts.join(' · ') : t('insights.glance.noSignals')) : '',
-    tone: by('high') > 0 ? 'up' : 'neutral',
+    value: v.usual ? String(all.length) : '—',
+    note: v.usual && parts.length === 0 ? t('insights.glance.noSignals') : '',
+    tone: parts[0]?.severity === 'high' ? 'up' : 'neutral',
     meter: null,
+    split: v.usual && parts.length > 0 ? parts : null,
   };
 }
 

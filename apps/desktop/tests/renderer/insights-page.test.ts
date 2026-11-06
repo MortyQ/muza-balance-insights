@@ -103,8 +103,26 @@ describe('insights screen', () => {
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain('на 3 000 ₴ (25%) больше обычного (12 000 ₴)');
     expect(w.get('[data-test="glance-income"]').text()).toContain('Примерно как обычно');
     expect(w.get('[data-test="glance-kept"]').text()).toBe('Осталось от дохода25%обычно 40%');
-    expect(w.get('[data-test="glance-signals"]').text()).toBe('Сигналы21 высокий · 1 средний');
+    // Every feed item counts: two cards, the one-off (high) and the new payee (low).
+    const signals = w.get('[data-test="glance-signals"]');
+    expect(signals.text()).not.toContain('·');
+    expect(signals.findAll('[data-test="signals-count"]').map((c) => c.text())).toEqual(['2 высоких', '1 средний', '1 низкий']);
+    expect(signals.get('[data-test="signals-bar"]').findAll('span').map((p) => p.attributes('style'))).toEqual(['flex-grow: 2;', 'flex-grow: 1;', 'flex-grow: 1;']);
+    expect(signals.text()).toMatch(/^Сигналы4/);
     w.unmount();
+  });
+
+  it('the signals figure: only low items — one part; no usual — the dash and no bar', async () => {
+    answer = { ...OVERVIEW, cards: [{ ...GROCERIES, severity: 'low' }], oneOffs: [] };
+    const w = await mountPage();
+    const signals = w.get('[data-test="glance-signals"]');
+    expect(signals.findAll('[data-test="signals-count"]').map((c) => c.text())).toEqual(['2 низких']);
+    w.unmount();
+    answer = { ...OVERVIEW, usual: null, cards: [], newPayees: [], oneOffs: [] };
+    const early = await mountPage();
+    expect(early.find('[data-test="signals-bar"]').exists()).toBe(false);
+    expect(early.get('[data-test="glance-signals"]').text()).toContain('—');
+    early.unmount();
   });
 
   it('the feed: every card ranked as given, with severity, the change, the bars and the driver; a card opens its category', async () => {

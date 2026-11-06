@@ -22,3 +22,10 @@ export const SEVERITY_CHIP: Readonly<Record<InsightSeverity, string>> = {
   medium: 'bg-[color-mix(in_oklch,var(--series-orange)_8%,transparent)] text-foreground-secondary',
   low: 'bg-surface-sunken text-foreground-muted',
 };
+
+/** A part of the signals bar, in the severity chips' tint at full strength. */
+export const SEVERITY_FILL: Readonly<Record<InsightSeverity, string>> = {
+  high: 'bg-[color-mix(in_oklch,var(--series-orange)_80%,transparent)]',
+  medium: 'bg-[color-mix(in_oklch,var(--series-orange)_35%,transparent)]',
+  low: 'bg-[color-mix(in_oklch,var(--foreground)_22%,transparent)]',
+};
