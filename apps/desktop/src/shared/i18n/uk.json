@@ -276,6 +276,9 @@
         },
         "slsp": {
           "card": "Рахунок Slovenská sporiteľňa"
+        },
+        "csob": {
+          "card": "Рахунок ČSOB"
         }
       },
       "other": "Інші банки",

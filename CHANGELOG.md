@@ -5,6 +5,13 @@ English interface.
 
 ## 0.1.14 — unreleased
 
+### Banks
+
+- **ČSOB.** Add a ČSOB account from its payment history exported as a CSV file in English. The app reads each payment's
+  date, amount, the bank's own category and the other side's account, so payments to and from your accounts in other
+  banks are recognised as your own transfers. Card payments abroad keep their original amount and currency. ČSOB states
+  only the date of a payment, not its time.
+
 ### Budget and Insights
 
 - **Insights: financial health and signal filters.** A new «Financial health» block under the month's figures shows

@@ -33,10 +33,10 @@
 
 ## 2. Desktop: the bank's look and names (desktop)
 
-- [ ] 2.1 Create `entities/bank/looks/csob.ts` and add `entities.bank.cardType.csob.card` to `uk.json`, `en.json` and
+- [x] 2.1 Create `entities/bank/looks/csob.ts` and add `entities.bank.cardType.csob.card` to `uk.json`, `en.json` and
   `ru.json` (design 8). Verify `apps/desktop` `providers.test.ts`, `i18n.test.ts`, `renderer/integrations.test.ts` and
   `renderer/registry-banks.test.ts`.
-- [ ] 2.2 `CHANGELOG.md`, `0.1.14 — unreleased`: a «Banks» entry for ČSOB, with no internal terms.
+- [x] 2.2 `CHANGELOG.md`, `0.1.14 — unreleased`: a «Banks» entry for ČSOB, with no internal terms.
 
 ## 3. Docs (docs)
 
