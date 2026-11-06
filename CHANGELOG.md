@@ -7,6 +7,13 @@ English interface.
 
 ### Budget and Insights
 
+- **Insights: financial health and signal filters.** A new «Financial health» block under the month's figures shows
+  what is left of your income after essentials and wants for each of the last months, against the 20% guide (or the
+  wants share against 30%), and a checklist of your figures against common guides — what is left, essentials, wants,
+  fixed costs, loan payments, the reserve and your monthly limits. Each says «within the guide», «near the guide» or
+  «outside the guide» with a mark and its figure; it replaces the «Budget structure» card. New payees and large
+  one-off payments now sit in the feed with everything else, and the feed can be filtered by severity and by kind; the
+  filter is remembered. The «Signals» figure shows its high, medium and low counts on one bar.
 - **Pending payments wait.** A payment the bank has not finalised yet no longer counts towards your limits, the monthly
   budget, «Insights» and «What's unusual» on home, so a limit no longer turns red over a payment that may still be
   cancelled. Next to each limit and the budget a quiet note says how many payments are pending and for how much. They
@@ -21,7 +28,7 @@ English interface.
   much a day keeps you within. It shows only in the current month, by the same rule as the «Budget» screen.
 - **A budget without taxes.** The monthly budget sheet has a «Count taxes» switch. Turn it off when you set taxes
   aside apart from your budget: taxes and government payments then stay out of the budget, and cannot be one of its
-  fixed costs. «Spending» and «Budget structure» still count them.
+  fixed costs. «Spending» and «Financial health» still count them.
 
 ### Categories
 

@@ -53,8 +53,8 @@
 
 ## 6. Docs and checks
 
-- [ ] 6.1 `CHANGELOG.md` under `## 0.1.14 — unreleased`: «Insights: financial health and signal filters»
-- [ ] 6.2 `docs/backlog.md`: live checks — the chart in both themes and narrow widths, the health block stacked, the
+- [x] 6.1 `CHANGELOG.md` under `## 0.1.14 — unreleased`: «Insights: financial health and signal filters»
+- [x] 6.2 `docs/backlog.md`: live checks — the chart in both themes and narrow widths, the health block stacked, the
       filter remembered after a restart
 - [ ] 6.3 `pnpm test` and `pnpm typecheck` at the root (the user runs them where the sandbox cannot); commit
       `docs: insights-health changelog and live checks`

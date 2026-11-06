@@ -325,3 +325,16 @@
 - The «Marks» column toggling while picking a payee or searching: the columns do not jump in a distracting way.
 - «×N» on real months: does «+105 € (×5.0)» read better than the percent did, and is the money alone above ten times
   clear enough with the base in the hint?
+
+## Check on a live system: Insights health and filters (`openspec/changes/insights-health`)
+
+- The shares chart in both themes and at narrow widths: the dashed guide visible, a month without income a gap, the
+  axis labels not cut; the «What is left» / «Wants» switch keeps the chart's height.
+- The «Financial health» block stacked under 48rem of the screen's width, side by side above it; the checklist's «?»
+  popovers not cut by the window's edge.
+- The figures on real months: is «what is left» on the chart what the user expects next to «Kept» at the top (the
+  chart counts investments as left, «Kept» counts them as spending)?
+- The feed's filter remembered after a restart of the app and across months and people; the counts on the severity
+  buttons match the «Signals» figure.
+- Keyboard: Tab reaches each filter button, Enter / Space presses it, a screen reader says «pressed»; the checklist's
+  standing is read after each figure.
