@@ -107,26 +107,33 @@ export interface BudgetCardView {
 /** The two lines the health chart can show. */
 export type ChartMetric = 'left' | 'wants';
 
-/** The «Financial health» chart for one metric: a point per month, null — no income that month. */
+/** The «Financial health» chart for one metric: a bar per month, null — no income that month. */
 export interface HealthChartView {
   metric: ChartMetric;
-  name: string;
-  points: Array<{ month: string; label: string; value: number | null }>;
+  /** The switch's label. */
+  tab: string;
+  /** «How much of your income is left» and what it counts. */
+  title: string;
+  hint: string;
+  points: Array<{ month: string; label: string; value: number | null; standing: Standing | null }>;
   /** The guide, per cent of income. */
   guide: number;
   guideText: string;
-  /** The newest value, «24%»; null — no month with income. */
-  latest: string | null;
-  /** «+9 pp over 6 mo.»; null — fewer than two months with income. */
-  change: string | null;
-  changeTone: 'good' | 'bad' | 'neutral';
+  /** The newest month: «−59%», its standing and a plain sentence; null — no month with income. */
+  latest: { value: string; standing: Standing | null; sentence: string } | null;
+  /** «5 mo. ago: −21%» — the first month with income; null — fewer than two. */
+  before: string | null;
+  /** What each colour means, then a line about bars below zero (the left share only). */
+  legend: Array<{ standing: Standing; text: string }>;
+  belowZero: string | null;
   /** The chart in words, for screen readers. */
   text: string;
 }
 
 /** One checklist item: its figure, its guide and where it stands (null — nothing to place yet, `note` says why). */
 export interface HealthItemView {
-  key: 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits';
+  /** `shares` — the five income shares as one row while there is no finished month with income. */
+  key: 'shares' | 'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits';
   label: string;
   value: string;
   guide: string;

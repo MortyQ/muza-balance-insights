@@ -563,7 +563,14 @@ export type Standing = 'within' | 'near' | 'outside';
 export type HealthStanding = Record<'left' | 'essential' | 'wants' | 'fixed' | 'debt' | 'reserve' | 'limits', Standing | null>;
 
 /** One month of the Insights screen's shares chart: whole per cent of that month's income. */
-export type MonthSharesView = { month: string; left: number | null; wants: number | null };
+export type MonthSharesView = {
+  month: string;
+  left: number | null;
+  wants: number | null;
+  /** Each share against its guide (core `guideStanding`), for the bar's colour; null — no income. */
+  leftStanding: Standing | null;
+  wantsStanding: Standing | null;
+};
 
 /**
  * The «Budget structure» card: a finished month's income split by kind against 50/30/20, the fixed and loan shares,

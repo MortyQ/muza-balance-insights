@@ -40,8 +40,12 @@ const OVERVIEW: InsightsOverview = {
   monthlyLimits: 0,
   standing: { left: 'within', essential: 'within', wants: 'within', fixed: 'within', debt: 'within', reserve: 'near', limits: null },
   history: [
-    { month: '2025-09', left: 22, wants: 28 }, { month: '2025-10', left: 25, wants: 27 }, { month: '2025-11', left: null, wants: null },
-    { month: '2025-12', left: 19, wants: 31 }, { month: '2026-01', left: 27, wants: 26 }, { month: '2026-02', left: 30, wants: 25 },
+    { month: '2025-09', left: 22, wants: 28, leftStanding: 'within', wantsStanding: 'within' },
+    { month: '2025-10', left: 25, wants: 27, leftStanding: 'within', wantsStanding: 'within' },
+    { month: '2025-11', left: null, wants: null, leftStanding: null, wantsStanding: null },
+    { month: '2025-12', left: 19, wants: 31, leftStanding: 'near', wantsStanding: 'near' },
+    { month: '2026-01', left: 27, wants: 26, leftStanding: 'within', wantsStanding: 'within' },
+    { month: '2026-02', left: -12, wants: 52, leftStanding: 'outside', wantsStanding: 'outside' },
   ],
   budget: {
     month: {
@@ -249,29 +253,38 @@ describe('insights screen', () => {
     w.unmount();
   });
 
-  it('«Financial health»: the left share by month against 20%, a gap for a month without income, the chart in words', async () => {
+  it('«Financial health»: what is left of income as bars, said in plain words; below zero explained; the chart in words', async () => {
     const w = await mountPage();
     const chart = w.get('[data-test="shares-chart"]');
-    expect(chart.get('[data-test="shares-latest"]').text()).toBe('30%');
-    // 22% in September to 30% in February, November without income left out.
-    expect(chart.get('[data-test="shares-change"]').text()).toBe('+8 п.п. за 6 мес.');
-    expect(chart.get('[data-test="shares-change"]').classes()).toContain('text-success');
+    expect(chart.get('[data-test="shares-title"]').text()).toBe('Сколько остаётся от дохода');
+    // February spent more than came in: the sentence says so instead of «−12%» alone.
+    expect(chart.get('[data-test="shares-latest"]').text()).toBe('−12%');
+    expect(chart.get('[data-test="shares-latest"]').classes()).toContain('text-danger');
+    expect(chart.get('[data-test="shares-sentence"]').text()).toBe('Февраль — траты больше дохода');
+    // The first month with income, September, five months before.
+    expect(chart.get('[data-test="shares-before"]').text()).toBe('5 мес. назад: 22%');
+    expect(chart.text()).not.toContain('п.п.');
+    expect(chart.get('[data-test="shares-legend"]').text()).toContain('от 20% — в ориентире');
+    expect(chart.get('[data-test="shares-legend"]').text()).toContain('15–19% — близко');
+    expect(chart.get('[data-test="shares-below-zero"]').text()).toBe('Ниже нуля — месяц, когда потратили больше, чем заработали.');
     const label = chart.get('[data-test="shares-plot"]').attributes('aria-label')!;
-    expect(label).toContain('Остаётся по месяцам:');
+    expect(label).toContain('Сколько остаётся от дохода по месяцам:');
     expect(label).toContain('2025 — без дохода');
-    expect(label).toContain('2026 — 30%');
+    expect(label).toContain('2026 — −12%');
     w.unmount();
   });
 
-  it('«Financial health»: the switch shows wants against 30%; a fall reads as progress there', async () => {
+  it('«Financial health»: the switch shows what goes on wants against 30%', async () => {
     const w = await mountPage();
     const chart = w.get('[data-test="shares-chart"]');
     const wants = chart.get('[data-test="shares-switch"]').findAll('button').find((b) => b.text().includes('Желательные'))!;
     await wants.trigger('click');
     await flushPromises();
-    expect(chart.get('[data-test="shares-latest"]').text()).toBe('25%');
-    expect(chart.get('[data-test="shares-change"]').text()).toBe('−3 п.п. за 6 мес.');
-    expect(chart.get('[data-test="shares-change"]').classes()).toContain('text-success');
+    expect(chart.get('[data-test="shares-title"]').text()).toBe('Сколько уходит на желательное');
+    expect(chart.get('[data-test="shares-sentence"]').text()).toBe('Февраль — на желательное ушло 52% дохода');
+    expect(chart.get('[data-test="shares-before"]').text()).toBe('5 мес. назад: 28%');
+    expect(chart.get('[data-test="shares-legend"]').text()).toContain('31–35% — близко');
+    expect(chart.find('[data-test="shares-below-zero"]').exists()).toBe(false);
     expect(chart.text()).toContain('ориентир 30%');
     w.unmount();
   });
@@ -315,7 +328,7 @@ describe('insights screen', () => {
     w.unmount();
   });
 
-  it('the checklist while the month runs: the shares wait for its end, the reserve keeps its standing', async () => {
+  it('the checklist while the month runs: one row says the shares wait for its end, the reserve keeps its standing', async () => {
     answer = {
       ...OVERVIEW,
       period: { ...OVERVIEW.period, incomplete: true },
@@ -325,8 +338,11 @@ describe('insights screen', () => {
     const w = await mountPage();
     const list = w.get('[data-test="health-checklist"]');
     expect(list.find('[data-test="health-bar"]').exists()).toBe(false);
-    expect(list.get('[data-test="health-wants"]').text()).toContain('после конца месяца');
-    expect(list.get('[data-test="health-wants"]').find('[data-test="health-standing"]').exists()).toBe(false);
+    // One row for the five shares, not five rows saying the same.
+    expect(list.find('[data-test="health-wants"]').exists()).toBe(false);
+    expect(list.get('[data-test="health-shares"]').text()).toContain('Доли от дохода');
+    expect(list.get('[data-test="health-shares"]').text()).toContain('после конца месяца');
+    expect(list.get('[data-test="health-shares"]').find('[data-test="health-standing"]').exists()).toBe(false);
     expect(list.get('[data-test="health-count"]').text()).toBe('0 из 1');
     w.unmount();
   });

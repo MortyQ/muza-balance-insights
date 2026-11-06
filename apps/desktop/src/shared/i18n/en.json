@@ -1063,8 +1063,31 @@
     "health": {
       "title": "Financial health",
       "chart": {
-        "caption": "Share of income by month",
-        "change": "{diff} pp over {n} mo.",
+        "left": {
+          "title": "How much of your income is left",
+          "hint": "after essential and wants spending",
+          "tab": "Left",
+          "now": "{month}: {share} of income left",
+          "negative": "{month}: spent more than earned",
+          "legend": {
+            "within": "{n}% or more — within the guide",
+            "near": "{from}–{to}% — near",
+            "outside": "less — below the guide"
+          },
+          "belowZero": "Below zero — a month when you spent more than you earned."
+        },
+        "wants": {
+          "title": "How much goes on wants",
+          "hint": "the share of income spent on wants",
+          "tab": "Wants",
+          "now": "{month}: {share} of income on wants",
+          "legend": {
+            "within": "up to {n}% — within the guide",
+            "near": "{from}–{to}% — near",
+            "outside": "more — above the guide"
+          }
+        },
+        "before": "{n} mo. ago: {share}",
         "guide": "guide {n}%",
         "switch": "What the chart shows",
         "noIncome": "no income",
@@ -1074,7 +1097,8 @@
         "title": "Within the guides",
         "count": "{n} of {m}",
         "pending": "after the month ends",
-        "noIncome": "no income"
+        "noIncome": "no income",
+        "shares": "Income shares"
       },
       "standing": {
         "within": "within the guide",

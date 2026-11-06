@@ -770,7 +770,13 @@ export class DataService {
     // The chart's months (spec desktop-insights-health): the usual's, oldest first, then the shown one once finished.
     const shares = (month: string, income: number | null, byCategory: ReadonlyMap<string, number>) => {
       const m = income === null ? null : monthShares(income, byCategory, kinds);
-      return { month, left: m?.left ?? null, wants: m?.wants ?? null };
+      return {
+        month,
+        left: m?.left ?? null,
+        wants: m?.wants ?? null,
+        leftStanding: m ? guideStanding('left', m.left) : null,
+        wantsStanding: m ? guideStanding('wants', m.wants) : null,
+      };
     };
     // A running month's usual carries no income (its day decides it), so the chart reads the whole months' income once.
     const usualIncome: number[] =

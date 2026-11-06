@@ -1666,8 +1666,8 @@ describe('DataService.spendingOverview: usual', () => {
     expect(v.standing.reserve).not.toBeNull();
     // The chart: the five usual months oldest first (delivery grows 1 000 a month), then February, finished.
     expect(v.history).toEqual([
-      ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, left: 39 - i, wants: 1 + i })),
-      { month: '2026-02', left: 34, wants: 6 },
+      ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, left: 39 - i, wants: 1 + i, leftStanding: 'within', wantsStanding: 'within' })),
+      { month: '2026-02', left: 34, wants: 6, leftStanding: 'within', wantsStanding: 'within' },
     ]);
     expect(v.budget.kinds.essential).toContain('groceries');
     expect(v.budget.kinds.fixed).toContain('rent');
@@ -1685,7 +1685,7 @@ describe('DataService.spendingOverview: usual', () => {
     expect(running.budget.reserve).not.toBeNull();
     // A running month: the chart ends at the last whole month, its income read for the chart alone.
     expect(running.history.map((h) => h.month)).toEqual(['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02']);
-    expect(running.history.at(-1)).toEqual({ month: '2026-02', left: 34, wants: 6 });
+    expect(running.history.at(-1)).toMatchObject({ month: '2026-02', left: 34, wants: 6 });
     await db.execute('DELETE FROM sync_state');
     await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['uah', kyivStartOfDay('2026-01-01'), SYNCED_TO, SYNCED_TO + 60] });
     const early = await svc.insightsOverview({ month: '2026-02', scope: 'personal' });

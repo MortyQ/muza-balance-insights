@@ -62,6 +62,13 @@ insights.
    `utils/feed.ts` (merge, filter, counts); `utils.ts` becomes `utils/index.ts` if it grows past ~400 lines. A new
    slice was considered for the health block — rejected: it is fed by the same overview and only lives on this screen.
 
+9. **Bars, not a line (revised 06.11 after the first live look).** A line of «−59%» with «−38 pp over 6 mo.» read
+   like a stock chart. Bars coloured by each month's standing, a sentence for the newest month, «N mo. ago: X%» and a
+   legend in words read without any finance background. The month's standing comes with `history`
+   (`leftStanding`, `wantsStanding`, core `guideStanding`), so a bar's colour never disagrees with the checklist. The
+   chart grows to the checklist's height (at least 14rem). While no finished month has income, the five share rows
+   fold into one «Income shares» row.
+
 ## Risks / Trade-offs
 
 - Coloured marks reverse the «no grade colour» rule of «Budget structure». Mitigated by neutral words, an icon and the
