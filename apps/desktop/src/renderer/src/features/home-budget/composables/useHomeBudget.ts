@@ -37,7 +37,6 @@ export function useHomeBudget(): UseHomeBudgetReturn {
     }),
     empty: computed(() => state.value.data?.current === true && state.value.data.budget === null),
     attention,
-    anyExceeded: computed(() => attention.value.some((l) => l.look.state === 'exceeded')),
     budgetTo: budgetLink(),
     setTo: budgetLink(true),
   };

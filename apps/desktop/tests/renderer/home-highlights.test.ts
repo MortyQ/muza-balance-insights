@@ -99,20 +99,29 @@ beforeEach(() => {
 });
 
 describe('home highlights', () => {
-  it('«Limits»: a slide only for limits that need attention — last, or first when one is exceeded', async () => {
+  it('«Limits»: a slide only for limits that need attention, always between «What\'s unusual» and «Recent operations»', async () => {
     limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('attention', 85_000) }] };
     const w = await mountTile();
-    expect(w.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent', 'limits']);
+    expect(w.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'limits', 'recent']);
     w.unmount();
     limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('exceeded', 130_000) }] };
     const over = await mountTile();
-    expect(over.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['limits', 'unusual', 'recent']);
+    expect(over.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'limits', 'recent']);
     expect(over.get('[data-test="attention-limit"]').text()).toContain('Превышено на');
     over.unmount();
     limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('ok', 10_000) }] };
     const calm = await mountTile();
     expect(calm.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['unusual', 'recent']);
     calm.unmount();
+  });
+
+  it('nothing unusual and a limit in attention: opens on «Limits», «Recent operations» second', async () => {
+    spending = { ...SPENDING, insights: null };
+    limits = { ...LIMITS, limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('attention', 85_000) }] };
+    const w = await mountTile();
+    expect(w.findAll('.v-carousel__slide').map((s) => s.attributes('data-slide'))).toEqual(['limits', 'recent']);
+    expect(w.findAll('[data-test="carousel-dot"]')).toHaveLength(2);
+    w.unmount();
   });
 
   it("both: «What's unusual» first, two dots; a dot shows «Recent operations», whose rows open their category", async () => {

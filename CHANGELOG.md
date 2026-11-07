@@ -5,6 +5,11 @@ English interface.
 
 ## 0.1.15 — unreleased
 
+### Home
+
+- The tile beside «Today» and «This week» always shows its slides in one order: «What's unusual», then «Limits», then
+  «Recent transactions». With nothing unusual and no limit to watch, it opens on «Recent transactions».
+
 ### Fixes
 
 - A limit's warning label, such as «€99 ahead of plan (×1.4)», is readable in the dark theme again.
