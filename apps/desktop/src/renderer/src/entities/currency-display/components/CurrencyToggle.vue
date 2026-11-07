@@ -5,14 +5,14 @@ import { VPopover, VSegmentedControl, VSwitch, type SegmentOption } from '@/shar
 import { CURRENCIES } from '../constants.ts';
 import { useCurrencyDisplayStore } from '../store/useCurrencyDisplayStore.ts';
 import type { MainCurrency } from '../types.ts';
-import { hasRate, rateDate, shownText } from '../utils.ts';
+import { hasRate, rateDate, shortLabel, shownText } from '../utils.ts';
 
 const store = useCurrencyDisplayStore();
 const id = useId();
 const rates = computed(() => store.rates ?? null);
 const shown = computed(() => shownText(rates.value, store.choice));
 const rated = computed(() => CURRENCIES.filter((c) => hasRate(rates.value, c.currency)));
-const options = computed<SegmentOption<MainCurrency>[]>(() => rated.value.map((c) => ({ label: t(c.label), value: c.currency })));
+const options = computed<SegmentOption<MainCurrency>[]>(() => rated.value.map((c) => ({ label: shortLabel(c.currency), tooltip: t(c.label), value: c.currency })));
 // A main currency without a rate falls back to hryvnia on screen, so the control shows hryvnia too.
 const main = computed<MainCurrency>({
   get: () => (hasRate(rates.value, store.choice.main) ? store.choice.main : UAH),
@@ -29,11 +29,11 @@ const footer = computed(() => {
 
 <template>
   <VPopover icon="lucide:chevron-down" :text="shown" :label="$t('entities.currencyDisplay.button', { shown })" align="start">
-    <div class="flex flex-col gap-1">
+    <div class="flex w-72 max-w-full flex-col gap-1">
       <p class="px-2 pt-2 text-xs font-semibold text-foreground-muted">{{ $t('entities.currencyDisplay.mainTitle') }}</p>
       <p class="px-2 text-xs text-foreground-muted">{{ $t('entities.currencyDisplay.mainNote') }}</p>
       <div class="px-2 py-1.5">
-        <VSegmentedControl v-model="main" :options role="group" :aria-label="$t('entities.currencyDisplay.mainTitle')" />
+        <VSegmentedControl v-model="main" :options full-width role="group" :aria-label="$t('entities.currencyDisplay.mainTitle')" />
       </div>
       <template v-if="also.length > 0">
         <p class="px-2 pt-1 text-xs font-semibold text-foreground-muted">{{ $t('entities.currencyDisplay.alsoTitle') }}</p>

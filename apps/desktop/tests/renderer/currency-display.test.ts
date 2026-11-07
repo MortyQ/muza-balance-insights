@@ -200,7 +200,7 @@ describe('CurrencyToggle', () => {
   it('no answer yet: no footer, only hryvnia to pick', async () => {
     const { w } = await openToggle();
     expect(document.body.querySelector('[aria-label="Валюты: ₴"]')).not.toBeNull();
-    expect(segments()).toEqual(['Гривна ₴']);
+    expect(segments()).toEqual(['₴ UAH']);
     const text = document.body.textContent ?? '';
     expect(text).toContain('Все суммы на главном экране');
     expect(text).not.toContain('Курс');
@@ -210,14 +210,14 @@ describe('CurrencyToggle', () => {
 
   it('no rates: says hryvnia only for now', async () => {
     const { w } = await openToggle(null);
-    expect(segments()).toEqual(['Гривна ₴']);
+    expect(segments()).toEqual(['₴ UAH']);
     expect(document.body.textContent).toContain('Курсы ещё не загружены: пока только гривна');
     w.unmount();
   });
 
   it('with rates: ₴ $ €; picking $ saves it, «also» lists hryvnia and euro, the footer names the rate', async () => {
     const { w, store } = await openToggle(RATES);
-    expect(segments()).toEqual(['Гривна ₴', 'Доллары $', 'Евро €']);
+    expect(segments()).toEqual(['₴ UAH', '$ USD', '€ EUR']);
     expect(document.body.textContent).toContain('Курс продажи Monobank, 05.10, 10:00');
 
     const dollars = Array.from(document.body.querySelectorAll<HTMLButtonElement>('[aria-label="Основная валюта"] button'))[1]!;
@@ -234,6 +234,13 @@ describe('CurrencyToggle', () => {
     await flushPromises();
     expect(store.choice.also.eur).toBe(true);
     expect(document.body.querySelector('[aria-label="Валюты: $ · €"]')).not.toBeNull();
+    w.unmount();
+  });
+
+  it('four currencies fit: short labels, koruna included', async () => {
+    const { w } = await openToggle({ ...RATES, list: [...RATES.list, { currency: 203, rate: 2 }] });
+    expect(segments()).toEqual(['₴ UAH', '$ USD', '€ EUR', 'Kč CZK']);
+    expect(document.body.querySelector('[aria-label="Основная валюта"]')!.classList).toContain('v-segmented-control--full-width');
     w.unmount();
   });
 

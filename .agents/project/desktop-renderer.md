@@ -341,7 +341,7 @@
   `details` model (not remembered, closed when the strip hides); the period is remembered (`useNowPrefsStore`,
   `localStorage` `now.categories`, `parsePrefs`, default the week). Categories and numbers only: the lines with the
   bank's text stay on the category screen, which each row opens for that day or week.
-- **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / €) and the «≈» currencies.
+- **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / € / Kč) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and
   `rates` — the newest `RatesView` snapshot of any block's answer (`setRates`), `undefined` until the first answer
@@ -349,8 +349,9 @@
   `useMoneyFormat(() => answer.rates)` and formats through the returned `MoneyFormat` (`currency`, `convert`, `money`,
   `approx`, `approxInline`); without a rate for the main currency it falls back to ₴. Balances, «In / Out», the «Now»
   strip and «Spending» all format this way; no block formats a hryvnia amount itself. `CurrencyToggle` (in
-  `GlobalFilters` after `MonthFilter`): a `VPopover` whose text is `shownText` («$ · ₴ €»), a `VSegmentedControl` for
-  the main currency, «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
+  `GlobalFilters` after `MonthFilter`): a `VPopover` whose text is `shownText` («$ · ₴ €»), a full-width `VSegmentedControl` for
+  the main currency (short labels «Kč CZK», `shortLabel`; the full name is the segment's tooltip; the popover is 18rem
+  wide — more currencies than fit there call for a new control, not longer labels), «Also show» `VSwitch` rows for the others, and a footer with the rate's fetch time («saved» when
   main served the cached rates offline, or «no rates»).
 - **Change chips** — `shared/ui/VChangeChip` (ours, `ChangeChipModel`) and `change()` in `shared/lib` (3 % → «same»):
   one look and one rule for «Spending» and the strip. A change against a base is said in money first, the percent in
