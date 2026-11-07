@@ -104,8 +104,8 @@
 - **Highlights tile** (`widgets/home-highlights`): «What's unusual» and «Recent transactions» as two slides of
   `shared/ui` `VCarousel` (swipe, Shift + wheel, a mouse drag through `useDragScroll` of `shared/lib`, dots). The widget
   calls `useSpendingInsights` (`features/spending-summary`) and `useRecentOperations` (`features/recent-operations`)
-  itself, so it knows which slides have content before any is shown: «What's unusual» first when it has lines, one
-  alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent transactions» (the
+  itself, so it knows which slides have content before any is shown: always «What's unusual», «Limits», «Recent
+  transactions», each only with content; one alone without dots, neither — `home.recent.none`. A past month (no «Now» tiles there): no «Recent transactions» (the
   composable asks nothing), «What's unusual» over the whole row, or no tile when nothing is unusual. «Recent transactions» (`RecentOperationsList`): the month's newest
   six operations «Spending» counts (IPC `getRecentOperations`), a row with the category icon, the bank's description
   (else the category's name), the category and when, the amount (a refund with «+»), a pending mark; it links to the
@@ -252,7 +252,7 @@
   row and «Today» / «This week»; one link to the «Budget» screen: the total, the fixed costs paid, the flexible part's
   bar and state, per day by the budget (a past month: the result); without a budget in the current month an empty row
   with «Set a budget», no close button. The same read gives the highlights tile its «Limits» slide (`LimitsSlide`:
-  limits in attention or exceeded; first when one is exceeded, else last). «Month pace» no longer shows «Available per
+  limits in attention or exceeded; always between «What's unusual» and «Recent transactions»). «Month pace» no longer shows «Available per
   day». The category screen shows its limit (`CategoryLimitBar`, the same read, the current month only). Tested in
   `tests/renderer/home-budget.test.ts`, `home-highlights.test.ts`, `category-detail.test.ts`.
 - **In-app explanations**: `shared/ui` `VHelpHint` — a «?» beside a figure with its formula in the user's numbers;

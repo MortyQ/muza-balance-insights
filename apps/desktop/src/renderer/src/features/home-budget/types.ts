@@ -40,7 +40,6 @@ export interface UseHomeBudgetReturn {
   empty: ComputedRef<boolean>;
   /** Limits in attention or exceeded, exceeded first; the current month only. */
   attention: ComputedRef<AttentionLimitView[]>;
-  anyExceeded: ComputedRef<boolean>;
   budgetTo: RouteLocationRaw;
   setTo: RouteLocationRaw;
 }
