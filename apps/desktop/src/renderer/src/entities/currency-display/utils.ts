@@ -1,3 +1,4 @@
+import { currencyAlpha } from '@mono/core/shared/currency';
 import type { RatesView } from '@contract/api.ts';
 import { localDateTime } from '@contract/dates.ts';
 import { currencySymbol, formatMoney, shortDate, UAH } from '@/shared/lib';
@@ -74,6 +75,11 @@ export function shownText(rates: RatesView | null, choice: Readonly<CurrencyChoi
   const also = CURRENCIES.filter((c) => choice.also[c.key] && c.currency !== f.currency && hasRate(rates, c.currency));
   const main = currencySymbol(f.currency);
   return also.length === 0 ? main : `${main} · ${also.map((c) => currencySymbol(c.currency)).join(' ')}`;
+}
+
+/** A segment of the main currency switch: the symbol and the ISO code («Kč CZK»); the full name is its tooltip. */
+export function shortLabel(currency: number): string {
+  return `${currencySymbol(currency)} ${currencyAlpha(currency)}`;
 }
 
 /** When the rates were fetched (epoch seconds), in the system time zone: «05.10, 10:00». */
