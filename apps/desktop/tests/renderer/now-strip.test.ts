@@ -41,7 +41,7 @@ const NOW: NowOverview = {
   },
   rates: { list: [{ currency: 840, rate: 41 }, { currency: 978, rate: 45 }], fetchedAt: 0, saved: false },
 };
-const NONE = { uah: false, usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false, czk: false };
 const OFF = moneyFormat(NOW.rates, { main: 980, also: NONE });
 
 let current: NowOverview = NOW;
@@ -94,11 +94,11 @@ describe('now strip helpers', () => {
       until: '',
     });
     expect(v.week).toMatchObject({ title: 'Эта неделя · пн–сб', amount: uah(322_000), context: 'к прошлой неделе, пн–сб', pending: 0 });
-    expect(nowView(NOW, moneyFormat(NOW.rates, { main: 980, also: { uah: true, usd: true, eur: true } })).today.conv).toBe(`≈ ${formatMoney(Math.round(72_000 / 41), 840)} · ${formatMoney(1_600, 978)}`);
+    expect(nowView(NOW, moneyFormat(NOW.rates, { main: 980, also: { uah: true, usd: true, eur: true, czk: false } })).today.conv).toBe(`≈ ${formatMoney(Math.round(72_000 / 41), 840)} · ${formatMoney(1_600, 978)}`);
   });
 
   it('euro main: every amount in euros, «≈» in the other picked currencies', () => {
-    const fmt = moneyFormat(NOW.rates, { main: 978, also: { uah: true, usd: false, eur: true } });
+    const fmt = moneyFormat(NOW.rates, { main: 978, also: { uah: true, usd: false, eur: true, czk: false } });
     const v = nowView(NOW, fmt);
     expect(v.today.amount).toBe(fmt.money(72_000));
     expect(v.today.amount).toBe(formatMoney(1_600, 978));

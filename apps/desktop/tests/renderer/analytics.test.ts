@@ -11,7 +11,7 @@ import {
   bucketTitle, categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, flowList, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
 } from '@/features/analytics-overview/utils.ts';
 
-const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false } });
+const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
 const MONTHS = ['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'];
 /** Thousands of hryvnias → kopecks. */
 const k = (x: number) => x * 100_000;

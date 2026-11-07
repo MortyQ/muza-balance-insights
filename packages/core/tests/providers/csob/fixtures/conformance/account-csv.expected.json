@@ -1,0 +1,92 @@
+{
+  "reader": "csob-account-csv-en",
+  "result": {
+    "ok": true,
+    "statements": [
+      {
+        "kind": "card",
+        "currencyCode": 203,
+        "account": {
+          "iban": "CZ6203000000000123456789",
+          "cards": [],
+          "type": null
+        },
+        "rows": [
+          {
+            "time": 1790805600,
+            "amount": -25000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -25000,
+            "bankCategory": "Groceries",
+            "raw": "{\"date\":\"01.10.2026\",\"amount\":\"250\",\"currency\":\"CZK\",\"balance\":\"5050\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Debit card transaction\",\"note\":\"Amount: 250,00 CZK, Place: TEST MARKET PRAHA\",\"category\":\"Groceries\",\"original\":\"250,00 CZK\",\"id\":\"TESTTRANS-0-0006\"}",
+            "description": "TEST MARKET PRAHA",
+            "balance": 505000
+          },
+          {
+            "time": 1790892000,
+            "amount": -89000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -89000,
+            "bankCategory": "TV, internet, phone",
+            "raw": "{\"date\":\"02.10.2026\",\"amount\":\"890\",\"currency\":\"CZK\",\"balance\":\"4160\",\"counterAccount\":\"123457\",\"counterBank\":\"0100\",\"counterName\":\"TEST TELECOM\",\"type\":\"El. banking standing order (3)\",\"note\":\"\",\"category\":\"TV, internet, phone\",\"original\":\"\",\"id\":\"TESTTRANS-0-0005\"}",
+            "description": "TEST TELECOM",
+            "balance": 416000,
+            "counterIban": "CZ7001000000000000123457",
+            "counterName": "TEST TELECOM"
+          },
+          {
+            "time": 1790892000,
+            "amount": 4000000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": 4000000,
+            "bankCategory": "Incoming payment",
+            "raw": "{\"date\":\"02.10.2026\",\"amount\":\"40000\",\"currency\":\"CZK\",\"balance\":\"44160\",\"counterAccount\":\"19-1234567890\",\"counterBank\":\"0800\",\"counterName\":\"TEST EMPLOYER S.R.O.\",\"type\":\"Incoming payment\",\"note\":\"\",\"category\":\"Income\",\"original\":\"\",\"id\":\"TESTTRANS-0-0004\"}",
+            "description": "TEST EMPLOYER S.R.O.",
+            "balance": 4416000,
+            "counterIban": "CZ9008000000191234567890",
+            "counterName": "TEST EMPLOYER S.R.O."
+          },
+          {
+            "time": 1790978400,
+            "amount": -31000,
+            "currencyCode": 978,
+            "hold": false,
+            "operationAmount": -1250,
+            "bankCategory": "Vacation",
+            "raw": "{\"date\":\"03.10.2026\",\"amount\":\"310\",\"currency\":\"CZK\",\"balance\":\"43850\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Debit card transaction\",\"note\":\"Amount: 12,50 EUR, Place: TEST HOTEL WIEN\",\"category\":\"Vacation\",\"original\":\"12,50 EUR\",\"id\":\"TESTTRANS-0-0003\"}",
+            "description": "TEST HOTEL WIEN",
+            "balance": 4385000
+          },
+          {
+            "time": 1791064800,
+            "amount": -150000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -150000,
+            "bankCategory": "Outgoing instant payment",
+            "raw": "{\"date\":\"04.10.2026\",\"amount\":\"1500\",\"currency\":\"CZK\",\"balance\":\"42350\",\"counterAccount\":\"1234567890\",\"counterBank\":\"0800\",\"counterName\":\"TEST PERSON\",\"type\":\"Outgoing instant payment\",\"note\":\"\",\"category\":\"Outgoing unclassified\",\"original\":\"\",\"id\":\"TESTTRANS-0-0002\"}",
+            "description": "TEST PERSON",
+            "balance": 4235000,
+            "counterIban": "CZ0708000000001234567890",
+            "counterName": "TEST PERSON"
+          },
+          {
+            "time": 1791151200,
+            "amount": -3500,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -3500,
+            "bankCategory": "Bank transactions",
+            "raw": "{\"date\":\"05.10.2026\",\"amount\":\"35\",\"currency\":\"CZK\",\"balance\":\"42315\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Foreign payment - fee\",\"note\":\"\",\"category\":\"Bank transactions\",\"original\":\"\",\"id\":\"TESTTRANS-0-0001\"}",
+            "description": "Foreign payment - fee",
+            "balance": 4231500
+          }
+        ],
+        "closingBalance": 4231500
+      }
+    ]
+  }
+}

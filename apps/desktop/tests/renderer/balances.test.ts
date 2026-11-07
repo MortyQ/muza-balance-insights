@@ -34,7 +34,7 @@ import { formatAmount, formatMoney } from '@/shared/lib';
 vi.mock('@/shared/api', () => ({ balanceApi: {} }));
 
 const RATES: RatesView = { list: [{ currency: 840, rate: 40 }, { currency: 978, rate: 50 }], fetchedAt: 0, saved: false };
-const NONE = { uah: false, usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false, czk: false };
 const UAH_FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const EUR_FMT = moneyFormat(RATES, { main: 978, also: NONE });
 
@@ -405,7 +405,7 @@ describe('balances utils', () => {
   });
 
   it('slidesOf: total cards carry the other picked currencies as rows of the column; none picked — no column', () => {
-    const fmt = moneyFormat(RATES, { main: 980, also: { uah: false, usd: true, eur: true } });
+    const fmt = moneyFormat(RATES, { main: 980, also: { uah: false, usd: true, eur: true, czk: false } });
     const v: MonthOverview = {
       month: '2026-09',
       reserved: null,

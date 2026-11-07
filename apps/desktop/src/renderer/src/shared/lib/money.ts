@@ -5,7 +5,7 @@ import { currencyAlpha, currencyExponent, toMajor } from '@mono/core/shared/curr
 /** Hryvnia, ISO 4217 numeric: the currency every total on screen is in. */
 export const UAH = 980;
 
-const SYMBOL: Readonly<Record<string, string>> = { UAH: '₴', USD: '$', EUR: '€', GBP: '£', PLN: 'zł' };
+const SYMBOL: Readonly<Record<string, string>> = { UAH: '₴', USD: '$', EUR: '€', CZK: 'Kč', GBP: '£', PLN: 'zł' };
 
 export function currencySymbol(code: number): string {
   const alpha = currencyAlpha(code);

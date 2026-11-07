@@ -1,0 +1,8 @@
+{
+  "reader": "csob-account-csv-en",
+  "result": {
+    "ok": false,
+    "problem": "bad-row",
+    "row": 4
+  }
+}

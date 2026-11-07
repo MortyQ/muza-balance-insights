@@ -12,7 +12,7 @@ const MAINS: ReadonlyArray<number> = CURRENCIES.map((c) => c.currency);
  * a parsed JSON object's fields after the object / array guard.
  */
 export function parseCurrencyChoice(raw: string | null): CurrencyChoice {
-  const d: CurrencyChoice = { main: UAH as MainCurrency, also: { uah: false, usd: false, eur: false } };
+  const d: CurrencyChoice = { main: UAH as MainCurrency, also: { uah: false, usd: false, eur: false, czk: false } };
   if (raw === null) return d;
   let v: unknown;
   try {
@@ -25,7 +25,7 @@ export function parseCurrencyChoice(raw: string | null): CurrencyChoice {
   const flags = (src: unknown): Record<CurrencyKey, boolean> => {
     const s = typeof src === 'object' && src !== null && !Array.isArray(src) ? (src as Record<string, unknown>) : {};
     const f = (k: CurrencyKey) => s[k] === true;
-    return { uah: f('uah'), usd: f('usd'), eur: f('eur') };
+    return { uah: f('uah'), usd: f('usd'), eur: f('eur'), czk: f('czk') };
   };
   if ('main' in o) {
     return typeof o.main === 'number' && MAINS.includes(o.main) ? { main: o.main as MainCurrency, also: flags(o.also) } : d;

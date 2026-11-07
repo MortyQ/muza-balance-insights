@@ -276,6 +276,9 @@
         },
         "slsp": {
           "card": "Рахунок Slovenská sporiteľňa"
+        },
+        "csob": {
+          "card": "Рахунок ČSOB"
         }
       },
       "other": "Інші банки",
@@ -305,6 +308,7 @@
     "currencyDisplay": {
       "alsoTitle": "Показувати також",
       "button": "Валюти: {shown}",
+      "czk": "Чеська крона Kč",
       "eur": "Євро €",
       "mainNote": "Усі суми на головному екрані",
       "mainTitle": "Основна валюта",

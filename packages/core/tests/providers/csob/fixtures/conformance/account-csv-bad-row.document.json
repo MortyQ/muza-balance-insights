@@ -1,0 +1,4 @@
+{
+  "format": "text",
+  "text": "\"Payment history 123456789/0300 on 07.10.2026 12:00:00.\"\r\n\r\n\"account number\",\"due date\",\"amount\",\"currency\",\"balance\",\"counter account\",\"counter account bank code\",\"counter account name\",\"counterparty address\",\"constant symbol\",\"variable symbol\",\"specific symbol\",\"transaction type\",\"standing order name\",\"personal note\",\"note\",\"category\",\"original transaction\",\"rate\",\"end-to-end reference\",\"payer reference\",\"original payer\",\"the final beneficiary\",\"ID transakce\"\r\n\"123456789/0300\",\"02.10.2026\",\"100\",\"CZK\",\"10000\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Debit card transaction\",\"\",\"\",\"\",\"Groceries\",\"\",\"\",\"\",\"\",\"\",\"\",\"TESTTRANS-0-0007\"\r\n\"123456789/0300\",\"01.10.2026\",\"100\",\"CZK\",\"10000\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Unknown test type\",\"\",\"\",\"\",\"Groceries\",\"\",\"\",\"\",\"\",\"\",\"\",\"TESTTRANS-0-0008\"\r\n"
+}

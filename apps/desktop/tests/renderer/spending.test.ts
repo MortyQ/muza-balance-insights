@@ -56,9 +56,9 @@ const VIEW: SpendingOverview = {
   explain: null,
 };
 const PREFS = { split: 'people' as const, mark: false };
-const NONE = { uah: false, usd: false, eur: false };
+const NONE = { uah: false, usd: false, eur: false, czk: false };
 const UAH_FMT = moneyFormat(VIEW.rates, { main: 980, also: NONE });
-const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: false, eur: false } });
+const EUR_FMT = moneyFormat(VIEW.rates, { main: 978, also: { uah: true, usd: false, eur: false, czk: false } });
 
 describe('change', () => {
   it('the chip under the ring: more / less with the amount and the percent (by this day while partial), new, same', () => {
@@ -290,7 +290,7 @@ describe('totalFor / shareOf / ring / centerConv', () => {
     expect(ringOf(rowsFor(view, null, P, PREFS, UAH_FMT), view, null).every((p) => p.value > 0)).toBe(true);
   });
   it('currency lines under the ring: the «≈» lines of the picked currencies, no chip (one rate for both months)', () => {
-    expect(centerConv(41_000, moneyFormat(VIEW.rates, { main: 980, also: { uah: false, usd: true, eur: true } }))).toEqual([
+    expect(centerConv(41_000, moneyFormat(VIEW.rates, { main: 980, also: { uah: false, usd: true, eur: true, czk: false } }))).toEqual([
       `≈ ${formatMoney(1_000, 840)}`,
       `≈ ${formatMoney(820, 978)}`,
     ]);
