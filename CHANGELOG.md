@@ -3,6 +3,12 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.15 — unreleased
+
+### Fixes
+
+- A limit's warning label, such as «€99 ahead of plan (×1.4)», is readable in the dark theme again.
+
 ## 0.1.14 — 2026-11-07
 
 ### Banks
