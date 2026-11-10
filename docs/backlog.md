@@ -41,6 +41,19 @@
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
 
+## To check live: global search (global-search)
+
+- Cmd+K on macOS and Ctrl+K on Windows / Linux open the sheet with the field focused; Escape and a click outside close
+  it; the button in the filters row fits beside the sync status at every width.
+- Speed on 36 months of real data: the bench (40 000 fictional operations) reads the lines in about 0.6 s per search, so
+  a pause after typing is expected; check it stays usable, or cache the lines in the data process.
+- Real descriptions: «Скасування. …», card transfers (only the last 4 digits), jar transfers (the title hidden), a
+  comment found by its words; amounts in dollars or euros as the main currency (±1 of it).
+- Dates typed in each language: «12 жовт», «5–11 окт», «October 2026»; a payee whose name contains a short month name
+  («Лист…») stays text.
+- Opening a result: the category screen shows that month with the list searched or filtered; picking another month
+  in the filter keeps the search (the list's field shows it and clears it).
+
 ## To check live: app shell (desktop-app-shell)
 
 - The sidebar under the title bar: macOS traffic lights and the Windows / Linux overlay buttons do not cover it.

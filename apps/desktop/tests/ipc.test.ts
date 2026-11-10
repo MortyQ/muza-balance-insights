@@ -220,6 +220,20 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getCategoryOverview', [{ period: { kind: 'month', month: '2026-09' }, category: 'transport', scope: 'personal', providers: [] }]],
     ['getIncomeOverview', [{ period: { kind: 'month', month: '2026-09' }, providers: ['abank', 'abank'] }]],
     ['getRecurringOverview', [{ providers: [] }]],
+    // The search: a bounded text, real days in order, an amount range in whole kopecks, the usual view.
+    ['searchOverview', []],
+    ['searchOverview', [{}]],
+    ['searchOverview', [{ query: 'x'.repeat(101) }]],
+    ['searchOverview', [{ query: 1 }]],
+    ['searchOverview', [{ query: 'a', from: '2026-02-30' }]],
+    ['searchOverview', [{ query: 'a', from: '2026-10-12', to: '2026-10-05' }]],
+    ['searchOverview', [{ query: '', amount: { min: 25_100, max: 24_900 } }]],
+    ['searchOverview', [{ query: '', amount: { min: -1, max: 100 } }]],
+    ['searchOverview', [{ query: '', amount: { min: 0.5, max: 100 } }]],
+    ['searchOverview', [{ query: 'a', providers: [] }]],
+    ['searchOverview', [{ query: 'a', participantId: 0 }]],
+    ['searchOverview', [{ query: 'a', limit: 500 }]],
+    ['searchOverview', [{ query: 'a' }, { query: 'b' }]],
     ['getAllowanceOverview', [{ providers: ['otherbank'] }]],
     ['getAnalyticsOverview', [{ from: '2026-09', to: '2026-09', providers: [] }]],
     ['listPeople', [1]],
@@ -382,6 +396,9 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
     const inc = { period: { kind: 'day', date: '2026-09-30' }, participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
+    const search = { query: 'кава', from: '2026-10-05', to: '2026-10-11', amount: { min: 24_900, max: 25_100 }, participantId: 2, providers: ['monobank'] };
+    await expect(ipc.handlers.get('balance:searchOverview')!(good, search)).resolves.toEqual({ m: 'searchOverview', a: [search] });
+    await expect(ipc.handlers.get('balance:searchOverview')!(good, { query: 'x'.repeat(100) })).resolves.toEqual({ m: 'searchOverview', a: [{ query: 'x'.repeat(100) }] });
     const fop = { year: 2026, quarter: 4, participantId: 2 };
     await expect(ipc.handlers.get('balance:getFopTaxOverview')!(good, fop)).resolves.toEqual({ m: 'getFopTaxOverview', a: [fop] });
     const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most

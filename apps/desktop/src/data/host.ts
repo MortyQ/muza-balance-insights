@@ -42,6 +42,7 @@ export class DataHost {
       categoryOverview: (q) => data.categoryOverview(q),
       incomeOverview: (q) => data.incomeOverview(q),
       recurringOverview: (q) => data.recurringOverview(q),
+      searchOverview: (q) => data.searchOverview(q),
       fopTaxOverview: (q) => data.fopTaxOverview(q),
       allowanceOverview: (q) => data.allowanceOverview(q),
       analyticsOverview: (q) => data.analyticsOverview(q),

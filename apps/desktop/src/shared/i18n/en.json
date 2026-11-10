@@ -1823,5 +1823,29 @@
     "disclaimer": "This is an estimate, not tax advice. Check the rate and the amount before you pay.",
     "esv": "The single social contribution (ЄСВ) is not included.",
     "unavailable": "No FOP account is connected or turned on. Add or turn it on in «People and banks»."
+  },
+  "search": {
+    "open": "Search",
+    "shortcutMac": "⌘K",
+    "shortcutOther": "Ctrl+K",
+    "title": "Search",
+    "placeholder": "Search transactions by name, amount or date",
+    "label": "Search transactions",
+    "hint": "For example: a payee, an amount like «250» or a date like «12 Oct», «5–11 Oct», «October 2026».",
+    "empty": "No transactions match “{query}”",
+    "failed": "The search failed. Try again.",
+    "searching": "Searching…",
+    "range": "{from} – {to}",
+    "amount": "{amount} ± 1",
+    "more": "Showing {shown} of {total}",
+    "lines": "{n} transaction | {n} transactions | {n} transactions",
+    "active": "Active",
+    "ended": "Ended",
+    "group": {
+      "transactions": "Transactions",
+      "payees": "Payees",
+      "categories": "Categories",
+      "recurring": "Regular payments"
+    }
   }
 }

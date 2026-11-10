@@ -14,6 +14,8 @@ const { month } = storeToRefs(useMonthStore());
 const request = computed(() => categoryRequest(route.params, route.query));
 // A day or a week from the link, else the global filter's month.
 const period = computed((): DetailPeriod => request.value.period ?? { kind: 'month', month: month.value });
+// The list's search or payee from the link (the global search).
+const open = computed(() => ({ q: request.value.q, merchant: request.value.merchant }));
 
 // Picking a month in the global filter while a day or a week is open switches the screen to that month.
 watch(month, () => {
@@ -23,5 +25,5 @@ watch(month, () => {
 </script>
 
 <template>
-  <CategoryDetailFeature v-if="request.id" :category-id="request.id" :scope="request.scope" :period></CategoryDetailFeature>
+  <CategoryDetailFeature v-if="request.id" :category-id="request.id" :scope="request.scope" :period :open></CategoryDetailFeature>
 </template>

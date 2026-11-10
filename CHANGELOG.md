@@ -59,6 +59,16 @@ English interface.
   Refunds and transfers from your own or your family's cards are not counted as income. You can also type your own
   amount instead. The figure is an estimate, not tax advice, and the single social contribution (ЄСВ) is not included.
 
+### Search
+
+- A search field at the top of every data screen, also opened with Cmd+K (Ctrl+K on Windows and Linux): «Search
+  transactions by name, amount or date». Type a payee or a comment, an amount such as «250» (anything within 1 of it
+  in your main currency), or a date such as «12 Oct», «5–11 Oct» or «October 2026» — or several at once. Results come
+  in groups: «Transactions», «Payees», «Categories» and «Regular payments»; the arrow keys and Enter pick one.
+- A transaction opens its category for its month with the list searched by its description; a payee opens its category
+  with the payee filter on; a category opens its screen; a regular payment opens «Regular payments». The search follows
+  the person and banks picked at the top. With nothing found it says «No transactions match “…”».
+
 ### Fixes
 
 - Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget

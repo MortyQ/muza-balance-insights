@@ -144,9 +144,15 @@
   usual: spent so far (no pending holds) + the regular payments of the same scope, person and banks (core
   `findRecurring` over 13 months, not hidden, active, next date after today within the month) + the typical day × the
   days left, the typical day the median of the usual months' totals without the regular series spanning them over
-  their days, the range their quartiles; pure part `data/forecast.ts`, change `month-forecast`) and `getSpendingOverview`'s
+  their days, the range their quartiles; pure part `data/forecast.ts`, change `month-forecast`), `getSpendingOverview`'s
   `explain.drivers` (home's «Insights» block, since 01.11 with the user's ok: one payee name per unusual category, the
-  description cut the same way, from core `linesOfCategories`) are the **only** data
+  description cut the same way, from core `linesOfCategories`) and `searchOverview({ query, from?, to?, amount?,
+  participantId?, providers? })` (the global search, since 10.11 with the user's plan; `DataService.searchOverview`:
+  core `periodLines` — every operation the category screens list, both scopes, the view —, matched with core
+  `normalizeSearch` on `merchantText` and the comment only, never on `counter_name`; `amount` — a hryvnia kopeck range
+  against the line by today's rates; at most 50 transactions newest first with the total, and with text up to 10 payees
+  by `merchantKey` and 10 regular payments by name, core `findRecurring` as the regular payments screen; never kept by
+  the read cache) are the **only** data
   channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending

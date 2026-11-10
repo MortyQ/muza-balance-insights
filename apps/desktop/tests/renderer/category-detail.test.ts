@@ -333,8 +333,18 @@ describe('the category route', () => {
   it('a link from «Spending» carries the category and the scope; the page reads them back', () => {
     const link = categoryLink('transport', 'business');
     expect(link).toEqual({ name: 'category', params: { id: 'transport' }, query: { scope: 'business' } });
-    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business', period: null });
-    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal', period: null });
+    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business', period: null, q: '', merchant: null });
+    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal', period: null, q: '', merchant: null });
+  });
+
+  it('a link from the search carries the list\'s search or payee filter; empty ones are left out, a long text is cut', () => {
+    const q = categoryLink('groceries', 'personal', undefined, { q: 'Fictional Market' });
+    expect(q.query).toEqual({ scope: 'personal', q: 'Fictional Market' });
+    expect(categoryRequest(q.params, q.query)).toMatchObject({ q: 'Fictional Market', merchant: null });
+    const payee = categoryLink('groceries', 'personal', undefined, { merchant: 'fictional market', q: '' });
+    expect(payee.query).toEqual({ scope: 'personal', merchant: 'fictional market' });
+    expect(categoryRequest(payee.params, payee.query)).toMatchObject({ q: '', merchant: 'fictional market' });
+    expect(categoryRequest({ id: 'groceries' }, { q: 'x'.repeat(300), merchant: ['a'] })).toMatchObject({ q: 'x'.repeat(100), merchant: null });
   });
 
   it('a link from the «Now» strip carries a day or a week; a date that is not real is dropped', () => {
@@ -566,6 +576,20 @@ describe('the category page', () => {
     await flushPromises();
     expect(router.currentRoute.value.query).toEqual({ scope: 'personal' });
     expect(getCategoryOverview.mock.calls.at(-1)?.[0]).toMatchObject({ period: { kind: 'month', month: '2026-08' } });
+  });
+
+  it('a link from the search opens the list searched or filtered by a payee; a link without them shows every line', async () => {
+    current = VIEW;
+    const { w, router } = await mountPage('/category/transport?scope=personal&merchant=imaginary%20bus');
+    expect(w.findAll('[role="row"]')).toHaveLength(3);
+    expect(w.text()).toContain('Когда: IMAGINARY  bus');
+    await router.push('/category/transport?scope=personal&q=Vigadane');
+    await flushPromises();
+    expect(w.findAll('[role="row"]')).toHaveLength(4); // the three taxi lines and the header
+    expect(w.text()).toContain('Vigadane Taxi');
+    await router.push('/category/transport?scope=personal');
+    await flushPromises();
+    expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
   });
 
   it('no day or week: the global filter\'s month', async () => {

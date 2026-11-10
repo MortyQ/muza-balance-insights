@@ -7,6 +7,7 @@ import { useImportProgressStore } from '@/entities/import-progress';
 import { ParticipantFilter, useParticipantStore } from '@/entities/participant';
 import { MonthFilter, PeriodRangeFilter, useMonthStore } from '@/entities/period';
 import { useSyncStatusStore } from '@/entities/sync-status';
+import { GlobalSearchFeature } from '@/features/global-search';
 import { QuickUploadButtonFeature } from '@/features/integrations';
 import { monthOf } from '@/shared/lib';
 import BankFilter from './components/BankFilter.vue';
@@ -64,6 +65,7 @@ const { mode } = useParticipantLayout({
       <ParticipantFilter v-if="syncStatus.hasData && mode === 'buttons'" :failed />
     </div>
     <div ref="right" class="flex items-center gap-3 justify-self-end whitespace-nowrap">
+      <GlobalSearchFeature v-if="syncStatus.hasData" />
       <SyncStatus v-if="status.text" :view="status" />
       <FreshnessList v-if="freshness.length > 0" :rows="freshness" :today="monthStore.today" />
       <QuickUploadButtonFeature />

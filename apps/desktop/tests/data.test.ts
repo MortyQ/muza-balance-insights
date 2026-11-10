@@ -6,7 +6,7 @@ import { rescope } from '@mono/core/derive/scope';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/data/category.ts';
-import { DataService, nextMonthDay } from '../src/data/data.ts';
+import { DataService, nextMonthDay, searchPayees } from '../src/data/data.ts';
 import { amountChange } from '../src/data/income-regular.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/data/now.ts';
@@ -1707,6 +1707,105 @@ describe('DataService.recentOperations', () => {
     expect(earlier.lines.map((l) => l.amount)).toEqual([-1_000]);
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0]!, CANARIES[2]!, CANARIES[3]!, CANARIES[4]!]) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.searchOverview (the global search)', () => {
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden, and never matched
+    for (const id of ['uah', 'usd']) await synced(id);
+    for (const d of ['2026-01-05', '2026-02-05', '2026-03-05']) await tx('uah', d, -19_900, 'связь и цифровые сервисы', { mcc: 5815, description: 'Streamio' });
+    await tx('uah', '2026-03-02', -25_000, 'продукты', { description: 'Fictional Market' });
+    await tx('uah', '2026-03-03', -25_080, 'продукты', { description: 'fictional  market' });
+    await tx('uah', '2026-03-04', 1_000, 'продукты', { description: 'Fictional Market' }); // a refund
+    await tx('usd', '2026-03-06', -625, 'кафе и рестораны', { mcc: 5812, description: 'Cafe Imaginary' }); // 6.25 $ = 250 ₴
+    await tx('uah', '2026-03-07', -5_000, 'переводы людям', { mcc: 4829, description: `Переказ на картку 444411******0000 ${CANARIES[4]}` });
+    await tx('uah', '2026-03-08', -3_000, 'кафе и рестораны', { mcc: 5812, description: 'Бар Вигаданий' });
+    await db.execute(`UPDATE transactions SET comment = 'Обід з командою' WHERE description = 'Бар Вигаданий'`);
+    await tx('uah', '2026-03-09', 100_000, 'поступления', { mcc: 4829, description: 'Fictional Market payout' }); // income: not a category line
+  });
+
+  it('text: the description as the screen shows it and the comment, case-insensitive, newest first; nothing without a query', async () => {
+    const v = await svc.searchOverview({ query: 'FICTIONAL market' });
+    expect(v.transactions.map((t) => [t.date, t.merchant, t.categoryId, t.amount, t.uah, t.refund, t.scope])).toEqual([
+      ['2026-03-04', 'Fictional Market', 'groceries', 1_000, 1_000, true, 'personal'],
+      ['2026-03-03', 'fictional  market', 'groceries', -25_080, -25_080, false, 'personal'],
+      ['2026-03-02', 'Fictional Market', 'groceries', -25_000, -25_000, false, 'personal'],
+    ]);
+    expect(v.total).toBe(3);
+    expect(v.rates).toEqual(RATES);
+    expect((await svc.searchOverview({ query: 'з командою' })).transactions.map((t) => [t.merchant, t.comment])).toEqual([['Бар Вигаданий', 'Обід з командою']]);
+    expect((await svc.searchOverview({ query: 'бар вигаданий' })).transactions).toHaveLength(1);
+    expect(await svc.searchOverview({ query: '  ' })).toEqual({ transactions: [], total: 0, payees: [], recurring: [], rates: RATES });
+  });
+
+  it('payees: grouped as the category screen\'s «Where», with category, month and net; regular payments by name', async () => {
+    const v = await svc.searchOverview({ query: 'fictional' });
+    expect(v.payees).toEqual([
+      { key: 'fictional market', name: 'Fictional Market', category: 'продукты', categoryId: 'groceries', scope: 'personal', month: '2026-03', lines: 3, net: 49_080 },
+    ]);
+    const s = await svc.searchOverview({ query: 'stream' });
+    expect(s.recurring.map((r) => [r.name, r.categoryId, r.uah, r.active])).toEqual([['Streamio', 'telecom', 19_900, true]]);
+    expect(s.transactions).toHaveLength(3);
+    expect(s.payees.map((p) => [p.name, p.lines, p.month])).toEqual([['Streamio', 3, '2026-03']]);
+  });
+
+  it('amount: the absolute amount in hryvnia within the range (the renderer sends 250 ₴ ± 1 ₴), any currency by today\'s rate', async () => {
+    const v = await svc.searchOverview({ query: '', amount: { min: 24_900, max: 25_100 } });
+    expect(v.transactions.map((t) => [t.merchant, t.currency, t.amount, t.uah])).toEqual([
+      ['Cafe Imaginary', 840, -625, -25_000],
+      ['fictional  market', 980, -25_080, -25_080],
+      ['Fictional Market', 980, -25_000, -25_000],
+    ]);
+    expect(v.payees).toEqual([]); // no text: transactions only
+    rates = null;
+    expect((await svc.searchOverview({ query: '', amount: { min: 24_900, max: 25_100 } })).transactions.map((t) => t.currency)).toEqual([980, 980]);
+  });
+
+  it('dates: only the days asked for; a range past today ends today', async () => {
+    const v = await svc.searchOverview({ query: '', from: '2026-03-02', to: '2026-03-03' });
+    expect(v.transactions.map((t) => t.date)).toEqual(['2026-03-03', '2026-03-02']);
+    expect((await svc.searchOverview({ query: 'streamio', from: '2026-02-01', to: '2026-02-28' })).transactions.map((t) => t.date)).toEqual(['2026-02-05']);
+    expect((await svc.searchOverview({ query: '', from: '2026-03-08', to: '2026-12-31' })).transactions.map((t) => t.date)).toEqual(['2026-03-08']);
+    expect((await svc.searchOverview({ query: '', from: '2026-04-01', to: '2026-04-30' })).transactions).toEqual([]);
+  });
+
+  it('the view: a person and banks', async () => {
+    const other = await svc.searchOverview({ query: 'fictional', providers: ['abank'] });
+    expect(other.transactions).toEqual([]);
+    const mono = await svc.searchOverview({ query: 'fictional', providers: ['monobank'] });
+    expect(mono.transactions).toHaveLength(3);
+    expect(mono.transactions[0]!.participantId).toBeGreaterThan(0);
+  });
+
+  it('limits: at most 50 transactions (newest first) with the total, at most 10 payees', async () => {
+    for (let i = 0; i < 60; i += 1) await tx('uah', `2026-02-${String((i % 27) + 1).padStart(2, '0')}`, -(100 + i), 'продукты', { description: `Shop Fictional ${i % 12}` });
+    const v = await svc.searchOverview({ query: 'shop fictional' });
+    expect(v.total).toBe(60);
+    expect(v.transactions).toHaveLength(50);
+    expect(v.transactions.map((t) => t.date)).toEqual([...v.transactions.map((t) => t.date)].sort().reverse());
+    expect(v.payees).toHaveLength(10);
+    expect(v.payees.every((p) => p.lines === 5)).toBe(true);
+  });
+
+  it('searchPayees: a line without a description is no payee', () => {
+    const line = { key: 'x', date: '2026-03-01', time: '10:00', merchant: '', comment: null, category: 'продукты', categoryId: 'groceries' as const, scope: 'personal' as const, participantId: 1, uah: -100, currency: 980, amount: -100, refund: false };
+    expect(searchPayees([line])).toEqual([]);
+  });
+
+  it('canary: never a name, card number, IBAN or jar title — and none of them is matched', async () => {
+    const v = await svc.searchOverview({ query: 'переказ' });
+    expect(v.transactions.map((t) => t.merchant)).toEqual(['Переказ на картку •• 0000 •••']);
+    for (const q of [{ query: 'переказ' }, { query: '', from: '2026-01-01', to: '2026-03-15' }, { query: 'stream' }]) {
+      const json = JSON.stringify(await svc.searchOverview(q));
+      for (const c of [CANARIES[0]!, CANARIES[2]!, CANARIES[3]!, CANARIES[4]!, '444411']) expect(json).not.toContain(c);
+    }
+    // No oracle: the counterparty's name, the jar title, the IBAN and the full card number find nothing.
+    for (const query of ['Ivanka Fictional', 'CANARY-JAR', 'UA00CANARY', '444411']) {
+      expect((await svc.searchOverview({ query })).transactions, query).toEqual([]);
+    }
   });
 });
 

@@ -178,8 +178,10 @@
   request as the block, shared while in flight by `shared/api/balance.ts`).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
-  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
-  written by `categoryLink(id, scope, period?)` and read back by `categoryRequest`), default layout without its
+  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date), and
+  the list's `query.q` (its search) / `query.merchant` (a payee key), written by `categoryLink(id, scope, period?,
+  filter?)` and read back by `categoryRequest`; the list starts every new period, person or bank view from them —
+  `useCategoryView`'s `open`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
   The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week (`periodRequest` of
@@ -359,6 +361,16 @@
   `details` model (not remembered, closed when the strip hides); the period is remembered (`useNowPrefsStore`,
   `localStorage` `now.categories`, `parsePrefs`, default the week). Categories and numbers only: the lines with the
   bank's text stay on the category screen, which each row opens for that day or week.
+- **Global search** (`features/global-search`, `GlobalSearchFeature`, mounted in `widgets/global-filters` while there
+  is data; spec `desktop-global-search`): a field-like button (Cmd+K / Ctrl+K anywhere) opens a `VSheet` with a
+  combobox input (`search.placeholder`), the arrows and Enter walk the rows. The input is taken apart by `parseSearch`
+  (`shared/lib/searchQuery.ts`: dates in uk / en / ru, one amount, the text) and sent after a 200 ms pause as one
+  `searchOverview` (`desktop-import.md`) with the global person and banks; the amount in the main currency becomes a
+  hryvnia range ±1 (`amountRange`). Groups: «Transactions», «Payees», «Categories» (found here by their translated
+  name), «Regular payments»; a transaction → `categoryLink(id, scope, undefined, { q: description })` and the global
+  month set to its month, a payee → `{ merchant: key }`, a regular payment → the recurring route. Not a cached read
+  (`PASS_THROUGH`); a closed sheet drops the answer and the text. Tests: `tests/renderer/global-search.test.ts`,
+  `search-query.test.ts`.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / € / Kč) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

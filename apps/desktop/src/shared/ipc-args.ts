@@ -11,6 +11,7 @@ import { PIN_RE } from './lock.ts';
 import { ANALYTICS_MAX_MONTHS, monthSpan } from './analytics.ts';
 import { isIsoDate } from './import-range.ts';
 import { UPLOAD_FILES_MAX } from './upload.ts';
+import { SEARCH_QUERY_MAX } from './search.ts';
 import { THEME_PREFS } from './theme.ts';
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const id = z.number().int().positive();
@@ -128,6 +129,22 @@ export const ARG_SCHEMAS = {
   getFopTaxOverview: z.tuple([z.strictObject({ year: z.number().int().min(2000).max(2100), quarter: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]), participantId: id.optional() })]),
   getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
+  // The text at most SEARCH_QUERY_MAX characters; real days, from ≤ to; an amount range in hryvnia kopecks, min ≤ max.
+  searchOverview: z.tuple([
+    z
+      .strictObject({
+        query: z.string().max(SEARCH_QUERY_MAX),
+        from: isoDate.optional(),
+        to: isoDate.optional(),
+        amount: z
+          .strictObject({ min: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER), max: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) })
+          .refine((a) => a.min <= a.max)
+          .optional(),
+        participantId: id.optional(),
+        providers: providers.optional(),
+      })
+      .refine((q) => q.from === undefined || q.to === undefined || q.from <= q.to),
+  ]),
   addReserve: z.tuple([reserve]),
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),

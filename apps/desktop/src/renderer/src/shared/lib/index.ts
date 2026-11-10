@@ -10,3 +10,4 @@ export { EXPAND_TRANSITION } from './transitions.ts';
 export { DRAG_THRESHOLD, useDragScroll, type UseDragScrollReturn } from './useDragScroll.ts';
 export { useIntro, type UseIntroReturn } from './useIntro.ts';
 export { useAsyncData, type Loadable, type UseAsyncDataOptions, type UseAsyncDataReturn } from './useAsyncData.ts';
+export { parseSearch, type ParsedSearch } from './searchQuery.ts';

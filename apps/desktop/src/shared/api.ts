@@ -280,6 +280,8 @@ export type BalanceApi = {
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
+  /** The global search: transactions, payees and regular payments of the view matching the text, amount and dates. */
+  searchOverview(q: SearchOverviewQuery): Promise<SearchOverview>;
   /** The FOP tax screen's base: a quarter and the year to date on the business accounts. A quarter after this one → error. */
   getFopTaxOverview(q: FopTaxQuery): Promise<FopTaxOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
@@ -370,7 +372,8 @@ export type BalanceApi = {
 // and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), InsightsOverview, which
 // carries payees' descriptions (the Insights screen), and
 // RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
-// description (nothing else).
+// description, and SearchOverview, which carries each found transaction's description and comment and each payee's and
+// regular payment's description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 // providers: a bank view, those banks' accounts only (non-empty, each once; spec core-bank-view); absent — every bank.
 
@@ -802,6 +805,84 @@ export type CategoryOverview = {
 };
 
 export type RecurringOverviewQuery = { participantId?: number; providers?: ProviderId[] };
+
+/**
+ * The global search (spec desktop-global-search). `query` — the text left once the renderer took the dates and the
+ * amount out ('' — none); `from` / `to` — days in the system time zone (absent — SEARCH_MONTHS back / today);
+ * `amount` — the absolute amount's range in hryvnia kopecks by today's rates (the renderer turns «250» in the main
+ * currency into ±1 of it).
+ */
+export type SearchOverviewQuery = {
+  query: string;
+  from?: string;
+  to?: string;
+  amount?: { min: number; max: number };
+  participantId?: number;
+  providers?: ProviderId[];
+};
+
+/** A found transaction: a body line of a category screen (spending or a refund), newest first. */
+export type SearchTransactionView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD and HH:mm. */
+  date: string;
+  time: string;
+  /** The bank's description, cut as on the category screen ('' — none). */
+  merchant: string;
+  comment: string | null;
+  category: string;
+  categoryId: CategoryId | null;
+  scope: Scope;
+  participantId: number;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  refund: boolean;
+};
+
+/** A payee among the found transactions: grouped as the category screen's «Where» (payeeKey). */
+export type SearchPayeeView = {
+  /** payeeKey of its description: the category screen's merchant filter. */
+  key: string;
+  /** Its most frequent spelling. */
+  name: string;
+  /** Of its newest transaction: where it opens. */
+  category: string;
+  categoryId: CategoryId | null;
+  scope: Scope;
+  month: string;
+  lines: number;
+  /** Spending minus refunds of the found transactions, hryvnia kopecks (lines without a rate left out). */
+  net: number;
+};
+
+/** A regular payment (as on the regular payments screen, not hidden) whose description matches the text. */
+export type SearchRecurringView = {
+  key: string;
+  name: string;
+  category: string;
+  categoryId: CategoryId | null;
+  /** The usual payment in hryvnia kopecks; null — no rate. */
+  uah: number | null;
+  currency: number;
+  amount: number;
+  active: boolean;
+};
+
+export type SearchOverview = {
+  /** At most SEARCH_TRANSACTIONS_MAX, newest first. */
+  transactions: SearchTransactionView[];
+  /** Every match, before the limit. */
+  total: number;
+  /** Only with text: at most SEARCH_PAYEES_MAX, the most transactions first. */
+  payees: SearchPayeeView[];
+  /** Only with text: at most SEARCH_RECURRING_MAX, active first. */
+  recurring: SearchRecurringView[];
+  rates: RatesView | null;
+};
 
 /** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
 export type RecurringMark = 'mandatory' | 'hidden';

@@ -11,12 +11,19 @@ import { useCategoryChoice } from './composables/useCategoryChoice.ts';
 import { useCategoryDetail } from './composables/useCategoryDetail.ts';
 import { useCategoryLimit } from './composables/useCategoryLimit.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
+import type { ListOpen } from './types.ts';
 
-const { categoryId, scope, period } = defineProps<{ categoryId: CategoryId; scope: Scope; period: DetailPeriod }>();
+const { categoryId, scope, period, open = { q: '', merchant: null } } = defineProps<{
+  categoryId: CategoryId;
+  scope: Scope;
+  period: DetailPeriod;
+  /** The list's search and payee filter the link asked for (the global search). */
+  open?: Readonly<ListOpen>;
+}>();
 
 const base = useCategoryDetail(() => categoryId, () => scope, () => period);
 const { state, view } = base;
-const { summary, label, none, months, people, banks, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope));
+const { summary, label, none, months, people, banks, merchants, moreMerchants, when, rows, total, merchant, merchantName, query, sort, pickMerchant } = useCategoryView(base, toRef(() => scope), () => open);
 const choice = useCategoryChoice(() => (key: string) => {
   const row = rows.value.find((r) => r.key === key);
   return row ? { key, merchant: row.merchant } : null;

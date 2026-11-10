@@ -1,12 +1,14 @@
 // Read side of the screen in the data process: the same core aggregates as the MCP tools (spendingSummary, balancesAt),
 // mapped to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
-// and income screens) and the payees of insightsOverview (the Insights screen). The import worker writes the same
+// and income screens), the payees of insightsOverview (the Insights screen) and the results of searchOverview (the
+// global search) — the channels listed in .agents/project/desktop-import.md. The import worker writes the same
 // file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
-import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/category-lines';
+import { categoryLines, latestLines, linesOfCategories, periodLines } from '@mono/core/read/category-lines';
+import { normalizeSearch } from '@mono/core/read/search';
 import { incomeLines } from '@mono/core/read/income-lines';
 import { ACTIVE_DAYS, findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
@@ -55,6 +57,7 @@ import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantKey, merchantText, monthsWindow } from './category.ts';
 import { payeeMonths } from './explain.ts';
 import { INSIGHT_MAX } from '../shared/insights.ts';
+import { SEARCH_MONTHS, SEARCH_PAYEES_MAX, SEARCH_RECURRING_MAX, SEARCH_TRANSACTIONS_MAX } from '../shared/search.ts';
 import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
@@ -115,6 +118,10 @@ import type {
   RatesView,
   SpendingCategoryView,
   RecentOperations,
+  SearchOverview,
+  SearchOverviewQuery,
+  SearchPayeeView,
+  SearchTransactionView,
   SpendingOverview,
   SpendingOverviewQuery,
   InsightDriver,
@@ -308,6 +315,36 @@ function viewOf(q: ViewFilters): ViewFilters {
 /** Only the banks of a view: the family's per-person queries keep them (each person within the same banks). */
 function banksOf(q: ViewFilters): Pick<ViewFilters, 'providers'> {
   return q.providers !== undefined ? { providers: q.providers } : {};
+}
+
+/**
+ * The payees of the search's matches (newest first in): grouped by merchantKey as the category screen's «Where», the
+ * most found first; each opens where its newest transaction is. Lines without a description are no payee.
+ */
+export function searchPayees(found: ReadonlyArray<SearchTransactionView>): SearchPayeeView[] {
+  const by = new Map<string, { newest: SearchTransactionView; lines: number; net: number; spellings: Map<string, number> }>();
+  for (const l of found) {
+    if (l.merchant === '') continue;
+    const key = merchantKey(l.merchant);
+    const p = by.get(key) ?? { newest: l, lines: 0, net: 0, spellings: new Map<string, number>() };
+    p.lines += 1;
+    p.net -= l.uah ?? 0;
+    p.spellings.set(l.merchant, (p.spellings.get(l.merchant) ?? 0) + 1);
+    by.set(key, p);
+  }
+  return [...by]
+    .map(([key, p]) => ({
+      key,
+      name: [...p.spellings].reduce((a, b) => (b[1] > a[1] ? b : a))[0],
+      category: p.newest.category,
+      categoryId: p.newest.categoryId,
+      scope: p.newest.scope,
+      month: p.newest.date.slice(0, 7),
+      lines: p.lines,
+      net: p.net,
+    }))
+    .sort((a, b) => b.lines - a.lines || b.net - a.net || a.key.localeCompare(b.key))
+    .slice(0, SEARCH_PAYEES_MAX);
 }
 
 function rateMap(r: RatesView | null): Map<number, FxRate> {
@@ -1139,6 +1176,94 @@ export class DataService {
     const hidden = found.filter((p) => p.mark === 'hidden').sort(newest).map(view);
     const total = (ps: RecurringPaymentView[]) => ps.reduce((s, p) => s + (p.uah ?? 0), 0);
     return { since, active, ended, hidden, monthly: total(active), mandatory: total(active.filter((p) => p.mark === 'mandatory')), rates };
+  }
+
+  /**
+   * The global search (spec desktop-global-search): every operation of the period the category screens list (core
+   * periodLines, both scopes, the view's person and banks), matched in JS with core's normalizeSearch on the text the
+   * screen shows — the description through merchantText and the comment, never counter_name — and on the absolute
+   * amount in hryvnia by today's rates. With text, also the payees of the matches and the regular payments (core
+   * findRecurring over 13 months, as the regular payments screen) whose description matches. Nothing is kept.
+   */
+  async searchOverview(q: SearchOverviewQuery): Promise<SearchOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const needle = normalizeSearch(q.query);
+    const from = q.from ?? `${addMonths(today.slice(0, 7), -SEARCH_MONTHS)}-01`;
+    const to = q.to === undefined || q.to > today ? today : q.to;
+    const empty: SearchOverview = { transactions: [], total: 0, payees: [], recurring: [], rates };
+    if ((needle === '' && q.amount === undefined && q.from === undefined && q.to === undefined) || from > to) return empty;
+
+    const jarTitles = await this.jarTitles(db);
+    const lines = await periodLines(db, { from, to, tz, ...viewOf(q) });
+    const found: SearchTransactionView[] = [];
+    for (const l of lines) {
+      const merchant = merchantText(l.description, jarTitles);
+      const comment = l.comment?.trim() || null;
+      if (needle !== '' && !normalizeSearch(`${merchant} ${comment ?? ''}`).includes(needle)) continue;
+      const uah = toUah(l.amount, l.currency, fx);
+      if (q.amount !== undefined && (uah === null || Math.abs(uah) < q.amount.min || Math.abs(uah) > q.amount.max)) continue;
+      const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+      found.push({
+        key: l.id,
+        date,
+        time,
+        merchant,
+        comment,
+        category: l.category,
+        categoryId: CATEGORY_ID.get(l.category) ?? null,
+        scope: l.scope === 'business' ? 'business' : 'personal',
+        participantId: l.participantId,
+        uah,
+        currency: l.currency,
+        amount: l.amount,
+        refund: l.amount > 0,
+      });
+    }
+    const transactions = found.slice(0, SEARCH_TRANSACTIONS_MAX);
+    if (needle === '') return { ...empty, transactions, total: found.length };
+    return {
+      transactions,
+      total: found.length,
+      payees: searchPayees(found),
+      recurring: await this.searchRecurring(db, q, needle, jarTitles, today, tz, fx, now),
+      rates,
+    };
+  }
+
+  /** The search's regular payments: as the regular payments screen lists them (not hidden), the description matching. */
+  private async searchRecurring(
+    db: Db,
+    q: SearchOverviewQuery,
+    needle: string,
+    jarTitles: ReadonlyArray<string>,
+    today: string,
+    tz: string,
+    fx: Map<number, FxRate>,
+    now: number,
+  ): Promise<SearchOverview['recurring']> {
+    const since = `${addMonths(today.slice(0, 7), -12)}-01`;
+    const found = await findRecurring(db, { from: since, to: today, tz, ...viewOf(q) }, now);
+    return found
+      .filter((p) => p.mark !== 'hidden' && (p.active || now - p.last <= ENDED_DAYS * 86_400))
+      .map((p) => ({ p, name: merchantText(p.description, jarTitles) }))
+      .filter(({ name }) => normalizeSearch(name).includes(needle))
+      .sort((a, b) => Number(b.p.active) - Number(a.p.active) || b.p.last - a.p.last || a.p.id.localeCompare(b.p.id))
+      .slice(0, SEARCH_RECURRING_MAX)
+      .map(({ p, name }) => ({
+        key: p.id,
+        name,
+        category: p.category,
+        categoryId: CATEGORY_ID.get(p.category) ?? null,
+        uah: toUah(p.amount, p.currency, fx),
+        currency: p.currency,
+        amount: p.amount,
+        active: p.active,
+      }));
   }
 
   /**

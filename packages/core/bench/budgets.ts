@@ -9,6 +9,7 @@ export type BenchCase =
   | '12 months by day'
   | 'spending block set'
   | 'balances at two instants'
+  | 'search over 36 months'
   | 'full re-derivation'
   | 'end of a routine auto-sync';
 
@@ -19,6 +20,7 @@ export const BUDGETS_MS: Readonly<Record<BenchCase, number>> = {
   '12 months by day': 150,
   'spending block set': 120,
   'balances at two instants': 5,
+  'search over 36 months': 2500,
   'full re-derivation': 3000,
   'end of a routine auto-sync': 250,
 };
