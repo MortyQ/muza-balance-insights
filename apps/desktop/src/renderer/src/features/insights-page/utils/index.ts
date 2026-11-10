@@ -87,6 +87,43 @@ function signalsGlance(v: InsightsOverview): GlanceView {
   };
 }
 
+/**
+ * The running month's forecast (spec desktop-insights-page «Month-end forecast»): the figure, its range and a «?» with
+ * the formula in the user's numbers; null for a finished month or without a usual.
+ */
+export function forecastGlance(v: InsightsOverview, fmt: MoneyFormat): GlanceView | null {
+  const f = v.forecast;
+  if (!f) return null;
+  const label = t('insights.glance.forecast');
+  return {
+    key: 'forecast',
+    label,
+    value: fmt.money(f.value),
+    also: fmt.approx(f.value),
+    note: '',
+    tone: 'neutral',
+    meter: null,
+    range: f.low === f.high ? null : t('insights.glance.forecastRange', { low: fmt.money(f.low), high: fmt.money(f.high) }),
+    help: {
+      label: t('insights.budget.helpLabel', { name: label }),
+      title: label,
+      lines: [
+        t('insights.glance.forecastHelp.what'),
+        t('insights.glance.forecastHelp.formula', {
+          spent: fmt.money(f.spent),
+          regular: fmt.money(f.regular),
+          perDay: fmt.money(f.perDay),
+          days: t('insights.glance.forecastHelp.days', f.daysLeft),
+          value: fmt.money(f.value),
+        }),
+        t('insights.glance.forecastHelp.regular', { n: f.regularCount }),
+        t('insights.glance.forecastHelp.typical'),
+        t('insights.glance.forecastHelp.range', { low: fmt.money(f.perDayLow), high: fmt.money(f.perDayHigh) }),
+      ],
+    },
+  };
+}
+
 /** A tooltip's amount followed by its «Show also» currencies: «69 € · ≈ 3 541 ₴». */
 function withAlso(fmt: MoneyFormat, kopecks: number): string {
   const also = fmt.approxInline(kopecks);
@@ -343,7 +380,8 @@ export function feedItems(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, y
 
 /** The whole screen from one answer; `year` — this year, for the one-offs' dates. */
 export function insightsPageView(v: InsightsOverview, fmt: MoneyFormat, scope: Scope, year: number): InsightsPageView {
-  const glance = [spentGlance(v, fmt), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
+  const forecast = forecastGlance(v, fmt);
+  const glance = [spentGlance(v, fmt), ...(forecast ? [forecast] : []), incomeGlance(v, fmt), keptGlance(v), signalsGlance(v)];
   const health = healthView(v, budgetView(v.budget, v.period.incomplete, fmt), fmt);
   const feed = v.usual ? feedItems(v, fmt, scope, year) : [];
   if (!v.usual) {

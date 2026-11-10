@@ -31,6 +31,7 @@ import { budgetView, figures, limitView, periodPosition, suggestions, type Owner
 import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
 import { regularIncome, type RegularSeries } from './income-regular.ts';
+import { monthForecast } from './forecast.ts';
 import { rulesFor } from '@mono/core/providers/rules';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
@@ -820,7 +821,7 @@ export class DataService {
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
     const { limitsOver, limitsAhead, monthlyLimits } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
     const standing = healthStanding(budget, monthlyLimits > 0 ? limitsStanding(limitsOver.length, limitsAhead.length) : null);
-    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, health: null, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, health: null, history: [], usual: null, cards: [], newPayees: [], oneOffs: [], forecast: null };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -920,7 +921,24 @@ export class DataService {
       cards,
       newPayees: fresh,
       oneOffs: big,
+      forecast: await this.forecastOf(db, q, found, spent, rates, now),
     };
+  }
+
+  /**
+   * The running month's forecast (data/forecast.ts, change month-forecast): the regular payments of the screen's view
+   * (scope, person, banks) over the 13 months of the regular payments screen, not hidden; null for another month.
+   */
+  private async forecastOf(db: Db, q: SpendingOverviewQuery, found: UsualFound, spent: number, rates: Map<number, FxRate>, now: number): Promise<InsightsOverview['forecast']> {
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    if (q.month !== today.slice(0, 7)) return null;
+    const day = (sec: number) => localDate(sec * 1000, tz);
+    const period = { from: `${addMonths(q.month, -12)}-01`, to: today, tz, scope: q.scope, ...viewOf(q) };
+    const series = (await findRecurring(db, period, now))
+      .filter((p) => p.mark !== 'hidden')
+      .map((p) => ({ uah: toUah(p.amount, p.currency, rates), first: day(p.first), last: day(p.last), next: nextMonthDay(day(p.last)), active: p.active }));
+    return monthForecast({ today, spent, months: found.months.map((month, k) => ({ month, total: found.spent[k]! })), series });
   }
 
   /** Home's «Recent operations»: the month's newest operations «Spending» counts, with the bank's description. */

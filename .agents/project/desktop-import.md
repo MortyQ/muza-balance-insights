@@ -140,7 +140,11 @@
   shown one — each card's driver, new payees and one-offs; payee names cut the same way, since 01.11 with the user's
   ask; it also carries `history` — the left and wants shares of each usual month and of the shown month once finished,
   core `monthShares`, a running month reading the usual months' income once more for it — and a severity on new
-  payees and one-offs, core `insightSeverity`) and `getSpendingOverview`'s
+  payees and one-offs, core `insightSeverity`; `forecast` — the running month only, null otherwise or without a
+  usual: spent so far (no pending holds) + the regular payments of the same scope, person and banks (core
+  `findRecurring` over 13 months, not hidden, active, next date after today within the month) + the typical day × the
+  days left, the typical day the median of the usual months' totals without the regular series spanning them over
+  their days, the range their quartiles; pure part `data/forecast.ts`, change `month-forecast`) and `getSpendingOverview`'s
   `explain.drivers` (home's «Insights» block, since 01.11 with the user's ok: one payee name per unusual category, the
   description cut the same way, from core `linesOfCategories`) are the **only** data
   channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an

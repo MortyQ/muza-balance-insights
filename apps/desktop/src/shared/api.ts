@@ -550,8 +550,29 @@ export type InsightsOverview = {
   standing: HealthStanding;
   /** The user's own references and the cushion and spending items; null without a usual. */
   health: HealthReferences | null;
+  /** The running month's forecast (change month-forecast); null for a finished month or without a usual. */
+  forecast: MonthForecast | null;
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
+};
+
+/**
+ * The running month's spending forecast (data/forecast.ts): `spent` so far + `regular` (the `regularCount` regular
+ * payments still due after today within the month) + `perDay` × `daysLeft`; `low` / `high` take `perDayLow` /
+ * `perDayHigh`, the 25th and 75th percentile of the usual months' per-day spending without regular payments. Hryvnia
+ * kopecks.
+ */
+export type MonthForecast = {
+  value: number;
+  low: number;
+  high: number;
+  spent: number;
+  regular: number;
+  regularCount: number;
+  perDay: number;
+  perDayLow: number;
+  perDayHigh: number;
+  daysLeft: number;
 };
 
 /** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */

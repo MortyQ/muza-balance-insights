@@ -1862,6 +1862,37 @@ describe('DataService.spendingOverview: usual', () => {
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
   });
 
+  it('insightsOverview: the running month\'s forecast — spent + regular payments still due + the typical day × days left', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    // 15 March of 31: 16 days left. The history's 500 ₴ on the 20th is due on 20 March; the 100 ₴ of the 5th was due
+    // before today (late), so it is not added. Both leave the usual months: each keeps only its delivery
+    // (1 000 … 6 000 over the month's days), median 115 ₴ a day, quartiles 73 ₴ and 153 ₴.
+    expect(v.forecast).toEqual({
+      value: 12_000 + 50_000 + 115 * 16,
+      low: 12_000 + 50_000 + 73 * 16,
+      high: 12_000 + 50_000 + 153 * 16,
+      spent: 12_000,
+      regular: 50_000,
+      regularCount: 1,
+      perDay: 115,
+      perDayLow: 73,
+      perDayHigh: 153,
+      daysLeft: 16,
+    });
+    // «Business» has no spending: its regular payments are not this view's, nothing is due.
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'business' })).forecast).toMatchObject({ value: 0, regular: 0, regularCount: 0 });
+    // A finished month has no forecast.
+    expect((await svc.insightsOverview({ month: '2026-02', scope: 'personal' })).forecast).toBeNull();
+  });
+
+  it('insightsOverview: no forecast without a usual', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).forecast).toBeNull();
+  });
+
   it('insightsOverview: the budget structure of a finished month, the reserve now, the kinds; a changed kind moves money', async () => {
     await covered('2025-09-01');
     await history();

@@ -980,7 +980,17 @@
       "noUsual": "No usual yet",
       "noSavings": "Needs 3 months with income",
       "usually": "usually {usual}",
-      "noSignals": "Nothing unusual"
+      "noSignals": "Nothing unusual",
+      "forecast": "Forecast based on your plan",
+      "forecastRange": "from {low} to {high}",
+      "forecastHelp": {
+        "what": "Where this month's spending is heading if the rest of it goes like your usual months.",
+        "formula": "{spent} spent so far + {regular} of regular payments still due + {perDay} a typical day × {days} = {value}.",
+        "days": "{n} day left | {n} days left | {n} days left",
+        "regular": "Regular payments still due: {n}, those expected after today and before the month ends.",
+        "typical": "A typical day is the middle of your usual months' spending a day, with regular payments left out so they are not counted twice. Transactions the bank is still processing are not counted yet.",
+        "range": "The range takes a quieter and a busier usual month: {low} and {high} a day."
+      }
     },
     "severity": {
       "high": "High",

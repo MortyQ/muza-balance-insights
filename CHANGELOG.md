@@ -44,6 +44,13 @@ English interface.
   last and the next expected date, and a mark — «on time», «late by N days» or «amount changed by N%». «Expected in the
   next 30 days» lists what should arrive soon; the dates come from how often each source paid you before.
 
+### Insights
+
+- While a month runs, «The month at a glance» on «Insights» shows «Forecast based on your plan»: what you have spent so
+  far, plus the regular payments still due before the month ends, plus a typical day of your usual months for each day
+  left, with a range from a quieter to a busier month. The «?» beside it shows the sum in your numbers. A finished
+  month shows no forecast.
+
 ### FOP tax
 
 - A new «FOP tax» screen appears in the menu when a Monobank FOP account is connected and turned on. It estimates the

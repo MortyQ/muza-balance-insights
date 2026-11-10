@@ -7,7 +7,7 @@ import type { ChangeChipModel } from '@/shared/ui';
 
 /** One figure of «The month at a glance». `meter` — a running month: share of a usual month spent and of the month passed, 0–100. */
 export interface GlanceView {
-  key: 'spent' | 'income' | 'kept' | 'signals';
+  key: 'spent' | 'income' | 'kept' | 'signals' | 'forecast';
   label: string;
   value: string;
   /** The value in each picked «Show also» currency; empty for a share or a count. */
@@ -17,6 +17,9 @@ export interface GlanceView {
   meter: { value: number; mark: number } | null;
   /** The signals figure: its severities on one bar, high first, each with its count in words; absent elsewhere. */
   split?: GlanceSplitPart[] | null;
+  /** The forecast figure: its range «from … to …» (null when both ends are equal) and the formula with the user's numbers. */
+  range?: string | null;
+  help?: { label: string; title: string; lines: string[] } | null;
 }
 
 /** One part of the signals bar: as wide as its count. */

@@ -388,3 +388,15 @@
   «late». An advance and a salary from one employer stay two sources with no «changed» mark.
 - **The share of regular payments** matches «Regular payments»' monthly sum over the regular income, for the family and
   for one person.
+
+## Check on a live system: month forecast (`openspec/changes/month-forecast`)
+
+- **Forecast against the month's end**: note «Forecast based on your plan» around the 10th and the 20th, then compare
+  with «Spent» once the month is over; the range should hold the result in a usual month. A month with a large one-off
+  in the usual months: the range widens, the figure does not jump.
+- **Regular payments**: the count in the «?» matches the active «Regular payments» of the same «Personal / Business»
+  view due after today this month; one paid early this month is not counted again; a late one is not added.
+- **Stale data**: after a few days without an update the forecast reads low (the days since the last update are not
+  extrapolated); decide whether it needs a note. A regular payment paid today as a pending hold drops out for up to
+  3 days.
+- **Layout**: five figures at narrow, medium and wide windows; the «?» reads well in uk / en / ru.

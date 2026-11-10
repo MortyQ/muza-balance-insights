@@ -310,7 +310,9 @@
   `desktop-insights-page`): route `insights`, side menu item after «General» (`home.nav.insights`, `lucide:lightbulb`),
   the default month filter (the home month), person, banks and `useScopeStore`; one IPC `getInsightsOverview`, quiet
   reload on `syncStatus.version`. `utils/index.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
-  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, income, the
+  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, a running
+  month's «Forecast based on your plan» (`forecastGlance`: the figure, a range line, a `VHelpHint` with the formula in
+  the user's numbers; five figures lay out as 3 then 5 columns), income, the
   kept share, the signals figure — every feed item split by severity on one bar), «Financial health» (`HealthBlock`,
   spec `desktop-insights-health`, `utils/health.ts`: `SharesChart` — the left or wants share by month as ECharts bars
   coloured by each month's standing, the guide dashed, the user's usual line and ± band, unusual months outlined with
