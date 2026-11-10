@@ -28,6 +28,8 @@ import type {
   ConnectionMethod,
   ConnectionView,
   DataStatus,
+  FopTaxOverview,
+  FopTaxQuery,
   IncomeOverview,
   IncomeOverviewQuery,
   MonthOverview,
@@ -64,6 +66,7 @@ export type DataMethods = {
   categoryOverview: { args: [CategoryOverviewQuery]; result: CategoryOverview };
   incomeOverview: { args: [IncomeOverviewQuery]; result: IncomeOverview };
   recurringOverview: { args: [RecurringOverviewQuery]; result: RecurringOverview };
+  fopTaxOverview: { args: [FopTaxQuery]; result: FopTaxOverview };
   allowanceOverview: { args: [AllowanceQuery]; result: AllowanceOverview };
   analyticsOverview: { args: [AnalyticsQuery]; result: AnalyticsOverview };
   setRecurringMark: { args: [RecurringMarkQuery]; result: void };
@@ -157,6 +160,7 @@ export const DATA_ARG_SCHEMAS = {
   categoryOverview: ARG_SCHEMAS.getCategoryOverview,
   incomeOverview: ARG_SCHEMAS.getIncomeOverview,
   recurringOverview: ARG_SCHEMAS.getRecurringOverview,
+  fopTaxOverview: ARG_SCHEMAS.getFopTaxOverview,
   allowanceOverview: ARG_SCHEMAS.getAllowanceOverview,
   analyticsOverview: ARG_SCHEMAS.getAnalyticsOverview,
   setRecurringMark: ARG_SCHEMAS.setRecurringMark,
@@ -209,6 +213,7 @@ export const RATED_METHODS = [
   'allowanceOverview',
   'analyticsOverview',
   'limitsOverview',
+  'fopTaxOverview',
 ] as const satisfies ReadonlyArray<DataMethod>;
 
 /** `connection`: an unknown connection or account (core ConnectionError); `invalid`: arguments refused; `failed`: anything else. */

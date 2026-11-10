@@ -685,7 +685,8 @@
       "expand": "Expand menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
-      "insights": "Insights"
+      "insights": "Insights",
+      "fopTax": "FOP tax"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
@@ -1784,5 +1785,33 @@
       "help": "What is left to save, divided by the months to the date, the current one included.",
       "helpFormula": "{left} ÷ {months} mo. = {amount}"
     }
+  },
+  "fopTax": {
+    "title": "FOP tax",
+    "intro": "An estimate of the single tax of a sole proprietor (group 3), counted from the income on your FOP accounts.",
+    "year": "Year",
+    "quarter": "Quarter",
+    "quarterShort": "Q{n}",
+    "quarterName": "Q{n} {year}",
+    "rate": "Rate",
+    "custom": "Custom",
+    "percent": "Percent, %",
+    "percentInvalid": "Enter a percent above 0 and up to 100",
+    "base": "Count from",
+    "baseIncome": "Income on FOP accounts",
+    "baseCustom": "Custom amount",
+    "amount": "Amount, ₴",
+    "amountInvalid": "Enter an amount in hryvnias",
+    "quarterIncome": "Income, {period}",
+    "yearIncome": "Income since 1 January",
+    "customIncome": "Your amount",
+    "tax": "Tax",
+    "fromIncome": "{percent} from income",
+    "running": "The quarter is not over yet: the figures grow as income arrives.",
+    "leftOut": "No rate for today, not counted: {amounts}",
+    "excluded": "Refunds and transfers from your own or your family's cards are not income. Income in another currency is converted at today's Monobank rate.",
+    "disclaimer": "This is an estimate, not tax advice. Check the rate and the amount before you pay.",
+    "esv": "The single social contribution (ЄСВ) is not included.",
+    "unavailable": "No FOP account is connected or turned on. Add or turn it on in «People and banks»."
   }
 }

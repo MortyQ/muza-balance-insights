@@ -124,6 +124,8 @@ export const ARG_SCHEMAS = {
     z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() }),
   ]),
   getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional(), providers: providers.optional() })]),
+  // A real quarter; main also refuses one after the current quarter.
+  getFopTaxOverview: z.tuple([z.strictObject({ year: z.number().int().min(2000).max(2100), quarter: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]), participantId: id.optional() })]),
   getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   addReserve: z.tuple([reserve]),

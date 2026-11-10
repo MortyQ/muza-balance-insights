@@ -366,6 +366,18 @@
   check dense lists in both themes — transactions, «Who spent», recent transactions, the budget panel's header, limit
   rows, insight cards; a transaction in a picked currency shows its exact amount.
 
+## Before the 0.1.15 release: FOP tax (`openspec/changes/fop-tax-calculator`)
+
+- **A person checks the tax content**: the rates offered (5%, 1%, 6%), the wording «from income», the disclaimer and
+  the ЄСВ note in uk / en / ru, and the CHANGELOG «### FOP tax» entry. No ЄСВ amount is shown anywhere; that stays so
+  unless a person supplies and checks one.
+- **Foreign-currency FOP income** is folded at today's Monobank rate, not the NBU rate of the day of receipt the tax
+  uses: decide whether that is acceptable for an estimate or needs a note.
+- **Live**: with a FOP account turned on the menu shows «FOP tax»; turning it off in «People and banks» removes the
+  item after the refresh. The quarter's base equals the FOP income on the «Income» screen for those months minus
+  transfers from the owner's own cards; a refund to the FOP card is not in it; Q1–Q4 and the year to date read right
+  for a past year and the current one; the family view and one person's view agree.
+
 ## Check on a live system: regular income (`openspec/changes/income-regular`)
 
 - **Sources against real income**: a month's «Regular sources» lists the salary and the regular clients the user would

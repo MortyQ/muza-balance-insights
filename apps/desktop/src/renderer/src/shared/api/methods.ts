@@ -13,6 +13,7 @@ export const CACHED_READS = [
   'getAllowanceOverview',
   'getAnalyticsOverview',
   'getLimitsOverview',
+  'getFopTaxOverview',
 ] as const satisfies ReadonlyArray<Method>;
 export type CachedRead = (typeof CACHED_READS)[number];
 

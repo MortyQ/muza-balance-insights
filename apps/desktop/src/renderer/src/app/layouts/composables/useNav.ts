@@ -7,7 +7,8 @@ import { navGroups } from '../utils.ts';
 export function useNav() {
   const router = useRouter();
   const route = useRoute();
-  const groups = navGroups(router.getRoutes());
+  // Every item, conditional ones too: the open screen's title comes from here.
+  const groups = navGroups(router.getRoutes(), () => true);
   const current = computed(() => route.meta.navParent ?? (String(route.name) as RouteName));
   const select = (name: RouteName) => {
     if (name !== route.name) void router.push({ name });

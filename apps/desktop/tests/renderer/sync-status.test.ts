@@ -138,7 +138,7 @@ describe('VSegmentedControl alert', () => {
 
 describe('GlobalFilters', () => {
   let pinia: Pinia;
-  const status: DataStatus = { hasData: true, dataUntil: '2026-10-03 11:40', dataFrom: '2026-01-01', lastSyncAt: '2026-10-03 11:45' };
+  const status: DataStatus = { hasData: true, dataUntil: '2026-10-03 11:40', dataFrom: '2026-01-01', lastSyncAt: '2026-10-03 11:45', businessAccounts: false };
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });

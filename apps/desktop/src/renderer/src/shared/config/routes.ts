@@ -5,6 +5,7 @@ export const ROUTE = {
   category: 'category',
   connect: 'connect',
   dbRecovery: 'db-recovery',
+  fopTax: 'fop-tax',
   home: 'home',
   income: 'income',
   insights: 'insights',

@@ -6,6 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
+import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
 vi.mock('@/features/integrations', () => ({ QuickUploadFeature: defineComponent(() => () => h('div', { 'data-test': 'quick-upload' })) }));
@@ -14,6 +15,7 @@ const { default: MasterLayout } = await import('@/app/layouts/MasterLayout.vue')
 const { layoutOf, navGroups, navItems } = await import('@/app/layouts/utils.ts');
 const { routes } = await import('@/app/router/routes.ts');
 const { i18n } = await import('@/shared/lib');
+const { useSyncStatusStore } = await import('@/entities/sync-status');
 
 const page = (name: string) => defineComponent(() => () => h('main', { 'data-page': name }, name));
 let homeSetups = 0;
@@ -49,6 +51,16 @@ describe('navGroups', () => {
     expect(navGroups([r('x')])).toEqual([]);
   });
 
+  it('an item with a condition only while it holds; none holds by default', () => {
+    const routes = [
+      { name: 'a', meta: { nav: { label: 'home.nav.general' as const, icon: 'i-a', order: 0 } } },
+      { name: 'f', meta: { nav: { label: 'home.nav.fopTax' as const, icon: 'i-f', order: 1, when: 'business' as const } } },
+    ];
+    expect(navGroups(routes)[0]?.items.map((i) => i.id)).toEqual(['a']);
+    expect(navGroups(routes, () => false)[0]?.items.map((i) => i.id)).toEqual(['a']);
+    expect(navGroups(routes, (c) => c === 'business')[0]?.items.map((i) => i.id)).toEqual(['a', 'f']);
+  });
+
   it('the app: «General» (home), «Insights», «Analytics», «Regular payments», «Planning», in the default layout; the other screens are on their own', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     expect(navGroups(router.getRoutes())).toEqual([
@@ -66,7 +78,7 @@ describe('navGroups', () => {
     expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
     // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
-    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning']);
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning', 'fop-tax']);
   });
 });
 
@@ -75,6 +87,8 @@ describe('navItems', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const items = navItems(router.getRoutes(), (key) => `t:${key}`);
     expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning']);
+    // «FOP tax» only with an enabled business account.
+    expect(navItems(router.getRoutes(), (key) => key, () => true).map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning', 'fop-tax']);
     expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
     expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income']));
     expect(items[1]?.activeFor).toEqual([]);
@@ -88,9 +102,11 @@ describe('MasterLayout', () => {
       { path: '/second', name: 'second', component: page('second'), meta: { nav: { label: 'home.nav.label', icon: 'lucide:list', order: 1 } } },
       { path: '/settings', name: 'settings', component: page('settings'), meta: { layout: 'empty' } },
       { path: '/sub', name: 'category', component: page('sub'), meta: { navParent: 'home' } },
+      { path: '/fop', name: 'fop-tax', component: page('fop'), meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 2, when: 'business' } } },
     ];
     const router = createRouter({ history: createMemoryHistory(), routes: test });
     await router.push(path);
+    setActivePinia(createPinia());
     const w = mount(MasterLayout, { global: { plugins: [router, i18n] } });
     await flushPromises();
     return { w, router };
@@ -115,6 +131,25 @@ describe('MasterLayout', () => {
     expect(main.find('[data-test="layout-scroll"]').exists()).toBe(true);
     expect(main.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it('a conditional item: hidden without a business account, shown once the data status has one, gone when it goes', async () => {
+    const { w } = await mountAt('/');
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second']);
+    const status = useSyncStatusStore();
+    status.status = { hasData: true, dataUntil: null, dataFrom: null, lastSyncAt: null, businessAccounts: true };
+    await nextTick();
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second', '/fop']);
+    status.status = { ...status.status, businessAccounts: false };
+    await nextTick();
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second']);
+    w.unmount();
+  });
+
+  it('a conditional screen opened directly keeps its title', async () => {
+    const { w } = await mountAt('/fop');
+    expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.fopTax'));
     w.unmount();
   });
 

@@ -324,6 +324,7 @@ app.whenReady().then(async () => {
     getCategoryOverview: (q) => data.categoryOverview(q),
     getIncomeOverview: (q) => data.incomeOverview(q),
     getRecurringOverview: (q) => data.recurringOverview(q),
+    getFopTaxOverview: (q) => data.fopTaxOverview(q),
     setRecurringMark: (q) => data.setRecurringMark(q),
     setOperationCategory: (q) => data.setOperationCategory(q),
     getAllowanceOverview: (q) => data.allowanceOverview(q),

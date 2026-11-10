@@ -280,6 +280,8 @@ export type BalanceApi = {
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
+  /** The FOP tax screen's base: a quarter and the year to date on the business accounts. A quarter after this one → error. */
+  getFopTaxOverview(q: FopTaxQuery): Promise<FopTaxOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
   /**
@@ -1018,6 +1020,37 @@ export type AllowanceOverview = {
   rates: RatesView | null;
 };
 
+/** A quarter of a year (1–4); the person of the global filter. The bank filter does not apply. */
+export type FopTaxQuery = { year: number; quarter: Quarter; participantId?: number };
+export type Quarter = 1 | 2 | 3 | 4;
+
+/** The income on the business accounts over [from, to] (system time zone), in hryvnia kopecks at today's rates. */
+export type FopTaxPeriod = {
+  from: string;
+  to: string;
+  /** Hryvnia kopecks: no refunds, no own or family transfers. */
+  total: number;
+  lines: number;
+  /** Account currencies without a rate: left out of `total`. */
+  leftOut: Array<{ currency: number; total: number }>;
+  /** The period is not over, or the data does not reach its end yet. */
+  incomplete: boolean;
+};
+
+export type FopTaxOverview = {
+  year: number;
+  quarter: Quarter;
+  /** An enabled business account (Monobank: FOP) of the view; false — no figures to show. */
+  available: boolean;
+  /** Today's quarter: the picker offers nothing after it. */
+  current: { year: number; quarter: Quarter };
+  /** The picked quarter. */
+  base: FopTaxPeriod;
+  /** 1 January to the end of the picked quarter, cut at today. */
+  yearToDate: FopTaxPeriod;
+  rates: RatesView | null;
+};
+
 export type IncomeOverviewQuery = { period: DetailPeriod; participantId?: number; providers?: ProviderId[] };
 
 /** Where a credit came from, by its shape (core incomeSource): another bank, a named sender, a transfer, family, other. */
@@ -1307,4 +1340,6 @@ export type DataStatus = {
   /** Date (system time zone) the data starts at; null = never imported. */
   dataFrom: string | null;
   lastSyncAt: string | null;
+  /** An enabled business account (the provider's rule; Monobank: FOP) exists: the FOP tax screen is offered. */
+  businessAccounts: boolean;
 };

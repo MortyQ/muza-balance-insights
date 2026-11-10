@@ -150,6 +150,16 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['setRecurringMark', [{ key: '', mark: null }]],
     ['setRecurringMark', [{ key: 't1', mark: 'optional' }]],
     ['setRecurringMark', [{ key: 't1', mark: 'mandatory', extra: 1 }]],
+    ['getFopTaxOverview', []],
+    ['getFopTaxOverview', [{ year: 2026 }]],
+    ['getFopTaxOverview', [{ year: 2026, quarter: 5 }]],
+    ['getFopTaxOverview', [{ year: 2026, quarter: 0 }]],
+    ['getFopTaxOverview', [{ year: 2026.5, quarter: 1 }]],
+    ['getFopTaxOverview', [{ year: 1999, quarter: 1 }]],
+    ['getFopTaxOverview', [{ year: '2026', quarter: 1 }]],
+    ['getFopTaxOverview', [{ year: 2026, quarter: 1, participantId: 0 }]],
+    // The bank filter does not apply to a tax base.
+    ['getFopTaxOverview', [{ year: 2026, quarter: 1, providers: ['monobank'] }]],
     ['getLimitsOverview', []],
     ['getLimitsOverview', [{ month: '2026-9' }]],
     ['getLimitsOverview', [{ month: '2026-09', participantId: 0 }]],
@@ -372,6 +382,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
     const inc = { period: { kind: 'day', date: '2026-09-30' }, participantId: 2 };
     await expect(ipc.handlers.get('balance:getIncomeOverview')!(good, inc)).resolves.toEqual({ m: 'getIncomeOverview', a: [inc] });
+    const fop = { year: 2026, quarter: 4, participantId: 2 };
+    await expect(ipc.handlers.get('balance:getFopTaxOverview')!(good, fop)).resolves.toEqual({ m: 'getFopTaxOverview', a: [fop] });
     const an = { from: '2023-09', to: '2026-09', participantId: 2 }; // 37 months: the most
     await expect(ipc.handlers.get('balance:getAnalyticsOverview')!(good, an)).resolves.toEqual({ m: 'getAnalyticsOverview', a: [an] });
     await expect(ipc.handlers.get('balance:getMonthOverview')!(good, { month: '2026-09' })).resolves.toEqual({

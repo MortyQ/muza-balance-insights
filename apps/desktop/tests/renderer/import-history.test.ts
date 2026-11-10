@@ -114,7 +114,7 @@ describe('ImportFeature', () => {
 });
 
 describe('HomeNotices: no data', () => {
-  const status = (o: Partial<DataStatus>): DataStatus => ({ hasData: true, dataUntil: '2026-10-05 10:00', dataFrom: '2026-06-10', lastSyncAt: null, ...o });
+  const status = (o: Partial<DataStatus>): DataStatus => ({ hasData: true, dataUntil: '2026-10-05 10:00', dataFrom: '2026-06-10', lastSyncAt: null, businessAccounts: false, ...o });
 
   async function mountNotices(s: DataStatus | null) {
     useSyncStatusStore().status = s;

@@ -44,6 +44,14 @@ English interface.
   last and the next expected date, and a mark — «on time», «late by N days» or «amount changed by N%». «Expected in the
   next 30 days» lists what should arrive soon; the dates come from how often each source paid you before.
 
+### FOP tax
+
+- A new «FOP tax» screen appears in the menu when a Monobank FOP account is connected and turned on. It estimates the
+  single tax of a group 3 sole proprietor from the income on your FOP accounts: pick a year and a quarter (the current
+  one at first) and a rate — 5%, 1%, 6% or your own — and see the tax for the quarter and for the year since 1 January.
+  Refunds and transfers from your own or your family's cards are not counted as income. You can also type your own
+  amount instead. The figure is an estimate, not tax advice, and the single social contribution (ЄСВ) is not included.
+
 ### Fixes
 
 - Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget
