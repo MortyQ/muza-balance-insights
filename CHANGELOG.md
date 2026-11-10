@@ -37,6 +37,13 @@ English interface.
   it: the reserve stops reducing «Free» and «Available per day» at once and stays in the list, dimmed. Untick it to
   count it again.
 
+### Income
+
+- The «Income» screen for a month shows what you can count on: «Regular income: … a month» and how much of it your
+  regular payments take. «Regular sources» lists each sender who pays you about once a month with the usual amount, the
+  last and the next expected date, and a mark — «on time», «late by N days» or «amount changed by N%». «Expected in the
+  next 30 days» lists what should arrive soon; the dates come from how often each source paid you before.
+
 ### Fixes
 
 - Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget

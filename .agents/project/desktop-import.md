@@ -148,6 +148,14 @@
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
   block's (same fold), its lines come from core `categoryLines`; the income figure is the balances' «In» (all scopes,
   same fold), its lines come from core `incomeLines` (the same rows as `incomeSummary`, one query: `incomeRowsSql`).
+  A month's view also carries `regular` (a day or a week: null; `DataService.regularIncome`, pure part in
+  `data/income-regular.ts`): computed for today whatever month is shown — core `findRecurring` `kind: 'income'` over the
+  last 13 months, same view (person, banks), not hidden, the last payment (`latest` when the amount changed, else the
+  series' last) at most 40 days old; each source's name is the income list's sender (the provider's `namedSender`, else
+  the description, through `merchantText`), usual amount at today's rates (null without one), `next` a calendar month
+  after the last, `late` days once it passed, `change` the last against the usual in whole per cent beyond ±10%;
+  `monthly` the usual amounts together, `coveredByPayments` the active regular payments' (not hidden) monthly sum over
+  it in per cent (null at 0), `expected` — next within today..today + 30. Canary test in `tests/data.test.ts`.
   `getRecurringOverview({ participantId? })` (the regular payments screen; `DataService.recurringOverview`): core
   `findRecurring` over the last 13 months (from the first day of the month a year back to today, system time zone), all
   scopes; `active` (last payment ≤ 40 days ago, hryvnia desc), `ended` (40–120 days, newest first), `monthly` = the

@@ -232,8 +232,12 @@
   filter's month); quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
   summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
-  (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
-  tested (`tests/renderer/income-detail.test.ts`).
+  (family view), «When», the list (always «+», green). A month only, right after the summary: the regular income
+  (`IncomeOverview.regular`, spec `desktop-income-regular`) — `RegularIncomeHeader` (monthly figure, the share regular
+  payments take, «No regular income found»), `RegularSources` (typical amount through `MoneyStack`, «about monthly»,
+  last, next, a mark: «on time» / «late by N days» / «amount changed by N%»), `ExpectedIncome` (next 30 days, with a
+  `VHelpHint`); view functions `regularHeaderView`, `regularSourcesView`, `regularMark`, `expectedView`. Colour —
+  `INCOME_COLOR` (`--success`). `utils.ts` is pure and tested (`tests/renderer/income-detail.test.ts`).
 - **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
   route `budget` (`/budget`, `meta.navParent: 'home'` — no menu item, like the category screen), opened from home's
   «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's

@@ -203,6 +203,9 @@
   are split by amount (±10% of a group's median `operation_amount`), and each group's series is the run back from its
   newest payment while gaps are 25–35 days or a skipped month (55–70); at least 3 payments and 2 one-month gaps.
   `active` — the last payment at most 40 days old. The desktop puts the next payment a calendar month after the last.
+  `lastOperationAmount` — the series' last payment; `latest` — the payee's newest payment after the series that fits
+  none of its series (an amount that changed beyond ±10%), given to the series with the nearest usual amount, else null
+  (the income screen's «amount changed» and its last date).
 - «What's unusual» detectors: `detectInsights` (`packages/core/src/read/insights.ts`), pure over the sums the caller
   folds (the shown month by category, the usual month's medians, income). Kept: a difference of at least
   `INSIGHT_MIN` (500 ₴) and `INSIGHT_SHARE` (20%) of the usual; a usual under `INSIGHT_BASE` (1 000 ₴), or none, is

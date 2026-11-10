@@ -6,9 +6,11 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, RouterView } from 'vue-router';
-import type { DetailPeriod, IncomeLineView, IncomeOverview, IncomeOverviewQuery, PeopleView } from '@contract/api.ts';
+import type { DetailPeriod, IncomeLineView, IncomeOverview, IncomeOverviewQuery, PeopleView, RegularIncome, RegularIncomeSource } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { banksView, lineRows, listTotal, monthsView, noneText, peopleView, sendersView, sourcesView, summaryView, whenView } from '@/features/income-detail/utils.ts';
+import {
+  banksView, expectedView, lineRows, listTotal, monthsView, noneText, peopleView, regularHeaderView, regularMark, regularSourcesView, sendersView, sourcesView, summaryView, whenView,
+} from '@/features/income-detail/utils.ts';
 import { incomeLink, periodRequest } from '@/shared/config';
 import { formatMoney } from '@/shared/lib';
 
@@ -30,6 +32,24 @@ const LINES: IncomeLineView[] = [
   line({ key: 'd', date: '2026-09-02', time: '08:15', weekday: 3, sender: 'VIGADANA  osoba', uah: 5_000, amount: 5_000, pending: true, hold: true }),
 ];
 
+const source = (o: Partial<RegularIncomeSource>): RegularIncomeSource => ({
+  key: 's', name: 'Vigadana Firma', participantId: 1, uah: 4_000_000, currency: 980, amount: 4_000_000, last: '2026-09-25', next: '2026-10-25', late: null, change: null, ...o,
+});
+
+const REGULAR: RegularIncome = {
+  today: '2026-10-07',
+  monthly: 4_000_000 + 40_000 + 500_000,
+  coveredByPayments: 30,
+  sources: [
+    source({ key: 'firma' }),
+    source({ key: 'osoba', name: 'Vigadana Osoba', uah: 500_000, amount: 500_000, last: '2026-08-27', next: '2026-09-27', late: 10 }),
+    source({ key: 'client', name: 'Imaginary Client', uah: 40_000, currency: 840, amount: 1_000, last: '2026-09-10', next: '2026-10-10', change: 25 }),
+    source({ key: 'zloty', name: 'Zloty Client', uah: null, currency: 985, amount: 50_000, last: '2026-09-15', next: '2026-10-15' }),
+  ],
+  expected: [],
+};
+REGULAR.expected = [REGULAR.sources[2]!, REGULAR.sources[3]!, REGULAR.sources[0]!];
+
 const VIEW: IncomeOverview = {
   range: { kind: 'month', month: '2026-09' },
   period: { from: '2026-09-01', to: '2026-09-30', days: 30, incomplete: false, dataUntil: '2026-10-05', coveredDays: 30, pendingHolds: 1 },
@@ -49,6 +69,7 @@ const VIEW: IncomeOverview = {
   lines: LINES,
   rates: RATES,
   leftOut: [],
+  regular: REGULAR,
 };
 
 const PEOPLE = [{ id: 1, name: 'Сергей', color: 'var(--series-blue)' }, { id: 2, name: 'Аня', color: 'var(--series-orange)' }];
@@ -146,6 +167,7 @@ const WEEK: IncomeOverview = {
   summary: { ...VIEW.summary, total: 300_000, lines: 1, prev: { total: 15_000, lines: 1 }, median: 300_000, perDay: 42_857, activeDays: 1, spending: 90_000 },
   months: [],
   lines: LINES.slice(0, 1),
+  regular: null,
 };
 const DAY: IncomeOverview = {
   ...WEEK,
@@ -170,6 +192,34 @@ describe('income screen of a week or a day', () => {
     ]);
     expect(monthsView(WEEK, FMT)).toBeNull();
     expect(whenView(WEEK.lines, WEEK, '', FMT)).toMatchObject({ days: null, peak: 'Больше всего: пт · утро 6–12' });
+  });
+
+  it('regular income: the header, each source with its mark, what is expected; none found', () => {
+    expect(regularHeaderView(REGULAR, FMT)).toEqual({
+      title: `Регулярный доход: ${uah(4_540_000)} в месяц`, also: '', covered: '≈ 30% из него уходит на регулярные платежи',
+    });
+    expect(regularSourcesView(REGULAR, FMT).map((r) => [r.name, r.amount, r.often, r.last, r.next, r.mark])).toEqual([
+      ['Vigadana Firma', uah(4_000_000), 'примерно раз в месяц', '25 сентября', '25 октября', { text: 'вовремя', tone: 'ok' }],
+      ['Vigadana Osoba', uah(500_000), 'примерно раз в месяц', '27 августа', '27 сентября', { text: 'опаздывает на 10 дней', tone: 'late' }],
+      ['Imaginary Client', uah(40_000), 'примерно раз в месяц', '10 сентября', '10 октября', { text: 'сумма изменилась на +25%', tone: 'changed' }],
+      ['Zloty Client', formatMoney(50_000, 985), 'примерно раз в месяц', '15 сентября', '15 октября', { text: 'вовремя', tone: 'ok' }],
+    ]);
+    expect(regularMark({ late: 1, change: -15 }).text).toBe('опаздывает на 1 день');
+    expect(regularMark({ late: null, change: -15 }).text).toBe('сумма изменилась на −15%');
+    expect(expectedView(REGULAR, FMT).map((e) => [e.name, e.date, e.amount])).toEqual([
+      ['Imaginary Client', '10 октября', uah(40_000)],
+      ['Zloty Client', '15 октября', formatMoney(50_000, 985)],
+      ['Vigadana Firma', '25 октября', uah(4_000_000)],
+    ]);
+    const none: RegularIncome = { today: '2026-10-07', monthly: 0, coveredByPayments: null, sources: [], expected: [] };
+    expect(regularHeaderView(none, FMT)).toEqual({ title: 'Регулярных поступлений не найдено', also: '', covered: '' });
+    expect(regularSourcesView(none, FMT)).toEqual([]);
+  });
+
+  it('regular income with «Show also» dollars: the figure and a dollar source\'s own amount', () => {
+    const fmt = moneyFormat(RATES, { main: 980, also: { ...NONE, usd: true } });
+    expect(regularHeaderView(REGULAR, fmt).also).toBe(`≈ ${formatMoney(113_500, 840)}`);
+    expect(regularSourcesView(REGULAR, fmt)[2]!.also).toEqual([formatMoney(1_000, 840)]);
   });
 
   it('a day: weekday and date, no change, no «per day», the parts of the day only; the period\'s own «no income»', () => {
@@ -243,6 +293,27 @@ describe('income screen mounted', () => {
 
     await w.find('button[aria-label^="Снять фильтр"]').trigger('click');
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
+  });
+
+  it('a month shows the regular income after the summary: the header, the sources with marks, what is expected; a week — none', async () => {
+    let w = await mountScreen();
+    const text = w.text();
+    for (const x of [`Регулярный доход: ${uah(4_540_000)} в месяц`, '≈ 30% из него уходит на регулярные платежи', 'Регулярные источники', 'опаздывает на 10 дней', 'сумма изменилась на +25%', 'Ожидается в ближайшие 30 дней']) {
+      expect(text).toContain(x);
+    }
+    expect(text.indexOf('Регулярный доход')).toBeGreaterThan(text.indexOf('Поступило за месяц'));
+    expect(w.findAll('[data-test="regular-source"]')).toHaveLength(4);
+    expect(w.findAll('[data-test="expected-income"]')).toHaveLength(3);
+    expect(w.find('button[aria-label*="Ожидается в ближайшие 30 дней"]').exists()).toBe(true);
+
+    current = { ...VIEW, regular: { today: '2026-10-07', monthly: 0, coveredByPayments: null, sources: [], expected: [] } };
+    w = await mountScreen();
+    expect(w.text()).toContain('Регулярных поступлений не найдено');
+    expect(w.text()).not.toContain('Ожидается в ближайшие 30 дней');
+
+    current = WEEK;
+    w = await mountScreen({ kind: 'week', from: '2026-09-21' });
+    expect(w.text()).not.toContain('Регулярный доход');
   });
 
   it('«Show also» hryvnia with euros main: quiet lines under the people, the sources, the senders and the rows', async () => {

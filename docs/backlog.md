@@ -365,3 +365,14 @@
 - «Show also» currencies everywhere (`openspec/changes/currency-everywhere`): with one and with two picked currencies,
   check dense lists in both themes — transactions, «Who spent», recent transactions, the budget panel's header, limit
   rows, insight cards; a transaction in a picked currency shows its exact amount.
+
+## Check on a live system: regular income (`openspec/changes/income-regular`)
+
+- **Sources against real income**: a month's «Regular sources» lists the salary and the regular clients the user would
+  name, none of the one-off transfers; the names read as on the income list; «Regular income» equals their usual
+  amounts together.
+- **Late and changed marks**: a salary paid a few days late reads «late by N days» and drops the mark on payment; a
+  raise (one payment more than 10% above the usual) reads «amount changed by N%» and moves the next date on, instead of
+  «late». An advance and a salary from one employer stay two sources with no «changed» mark.
+- **The share of regular payments** matches «Regular payments»' monthly sum over the regular income, for the family and
+  for one person.

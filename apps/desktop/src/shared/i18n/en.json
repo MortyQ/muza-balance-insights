@@ -916,6 +916,21 @@
     "noneDay": "No income that day.",
     "noneWeek": "No income that week.",
     "open": "Open income",
+    "regular": {
+      "changed": "amount changed by {pct}%",
+      "covered": "≈ {pct}% of it goes to regular payments",
+      "expected": "Expected in the next 30 days",
+      "expectedHelp": "Based on how often this source paid you before.",
+      "expectedNone": "Nothing expected in the next 30 days.",
+      "last": "last {date}",
+      "late": "late by {n} day | late by {n} days | late by {n} days",
+      "monthly": "Regular income: {amount} a month",
+      "next": "next {date}",
+      "none": "No regular income found",
+      "often": "about monthly",
+      "onTime": "on time",
+      "sources": "Regular sources"
+    },
     "sources": {
       "source": {
         "family": "From family",

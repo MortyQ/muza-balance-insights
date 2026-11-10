@@ -7,6 +7,7 @@ import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/data/category.ts';
 import { DataService, nextMonthDay } from '../src/data/data.ts';
+import { amountChange } from '../src/data/income-regular.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/data/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
@@ -1266,6 +1267,77 @@ describe('DataService.incomeOverview (the income screen)', () => {
     const json = JSON.stringify(await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } }));
     expect(json).toContain(CANARIES[1]);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+    expect(json).not.toMatch(/\*{4}|UA\d{2}/);
+  });
+});
+
+describe('DataService.incomeOverview: regular income', () => {
+  const IN = { mcc: 4829 };
+  const income = 'поступления';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden
+    for (const id of ['uah', 'jar1']) await synced(id);
+    // On time: next on 10 April.
+    for (const d of ['2026-01-10', '2026-02-10', '2026-03-10']) await tx('uah', d, 3_000_000, income, { ...IN, description: 'Від: Salary Co' });
+    // Late: expected on 5 March, nothing by the 15th.
+    for (const d of ['2025-12-05', '2026-01-05', '2026-02-05']) await tx('uah', d, 500_000, income, { ...IN, description: 'Від: Late Client' });
+    // A raise: the March payment fits no series, so it is the last one, 25% above the usual.
+    for (const d of ['2025-12-12', '2026-01-12', '2026-02-12']) await tx('uah', d, 200_000, income, { ...IN, description: 'Від: Vigadana Osoba' });
+    await tx('uah', '2026-03-12', 250_000, income, { ...IN, description: 'Від: Vigadana Osoba' });
+    // Bank text with a card number and a jar title.
+    for (const d of ['2026-01-03', '2026-02-03', '2026-03-03']) await tx('uah', d, 10_000, income, { ...IN, description: 'From 537541******1234 to CANARY-JAR Dream' });
+    // A regular payment: 30% of the regular income.
+    for (const d of ['2026-01-01', '2026-02-01', '2026-03-01']) await tx('uah', d, -1_113_000, 'коммунальные', { mcc: 4900, description: 'Power Co' });
+  });
+
+  it('a month: each source with its usual amount, last and next date; late, changed, on time; monthly and the share regular payments take', async () => {
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    expect(r.today).toBe('2026-03-15');
+    expect(r.sources.map((s) => [s.name, s.uah, s.amount, s.currency, s.last, s.next, s.late, s.change])).toEqual([
+      ['Salary Co', 3_000_000, 3_000_000, 980, '2026-03-10', '2026-04-10', null, null],
+      ['Late Client', 500_000, 500_000, 980, '2026-02-05', '2026-03-05', 10, null],
+      ['Vigadana Osoba', 200_000, 200_000, 980, '2026-03-12', '2026-04-12', null, 25],
+      ['From •• 1234 to •••', 10_000, 10_000, 980, '2026-03-03', '2026-04-03', null, null],
+    ]);
+    expect(r.monthly).toBe(3_710_000);
+    expect(r.coveredByPayments).toBe(30);
+    expect(r.expected.map((s) => [s.name, s.next])).toEqual([
+      ['From •• 1234 to •••', '2026-04-03'],
+      ['Salary Co', '2026-04-10'],
+      ['Vigadana Osoba', '2026-04-12'],
+    ]);
+  });
+
+  it('amountChange: more than 10% either way, whole signed per cent', () => {
+    expect([amountChange(100_000, 110_000), amountChange(100_000, 111_000), amountChange(100_000, 85_000), amountChange(0, 5)]).toEqual([null, 11, -15, null]);
+  });
+
+  it('a past month shows today\'s regular income too; a week or a day — none', async () => {
+    expect((await svc.incomeOverview({ period: { kind: 'month', month: '2026-01' } })).regular?.monthly).toBe(3_710_000);
+    expect((await svc.incomeOverview({ period: { kind: 'week', from: '2026-03-02' } })).regular).toBeNull();
+    expect((await svc.incomeOverview({ period: { kind: 'day', date: '2026-03-04' } })).regular).toBeNull();
+  });
+
+  it('a person with no regular income: no sources, nothing expected, no share', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, participantId: her })).regular;
+    expect(r).toEqual({ today: '2026-03-15', monthly: 0, coveredByPayments: null, sources: [], expected: [] });
+  });
+
+  it('a source without a rate: listed with its own amount, out of monthly', async () => {
+    await account('pln', 'white', 985, 0);
+    await synced('pln');
+    for (const d of ['2026-01-04', '2026-02-04', '2026-03-04']) await tx('pln', d, 50_000, income, { ...IN, description: 'Від: Zloty Client' });
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    expect(r.sources.at(-1)).toMatchObject({ name: 'Zloty Client', uah: null, currency: 985, amount: 50_000 });
+    expect(r.monthly).toBe(3_710_000);
+  });
+
+  it('carries the sender names only — never a counterparty name, card number, IBAN or jar title', async () => {
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    const json = JSON.stringify(r);
+    for (const c of CANARIES) expect(json).not.toContain(c);
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);
   });
 });

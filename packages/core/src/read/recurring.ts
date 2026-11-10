@@ -44,6 +44,14 @@ export type RecurringPayment = {
   /** The operation currency and the usual payment in it (what the series is matched by). */
   operationCurrency: number;
   operationAmount: number;
+  /** The last payment in the operation currency (minor units, positive). */
+  lastOperationAmount: number;
+  /**
+   * The payee's newest payment after the series that fits none of the payee's series (an amount that changed by more
+   * than the tolerance), given to the series whose usual amount is nearest; null — none. Amounts positive: `amount` in
+   * the account currency, `operationAmount` in the operation currency.
+   */
+  latest: { id: string; time: number; amount: number; operationAmount: number } | null;
   payments: number;
   /** Unix seconds: the first and the last payment of the series (the next is due a calendar month after the last). */
   first: number;
@@ -219,11 +227,14 @@ export async function findRecurring(
 
   const found: RecurringPayment[] = [];
   for (const lines of byPayee.values()) {
+    const payee: RecurringPayment[] = [];
+    const inSeries = new Set<string>();
     for (const group of amountGroups(lines)) {
       const series = trailingSeries(group);
       if (!series) continue;
+      for (const l of series) inSeries.add(l.id);
       const last = series[series.length - 1]!;
-      found.push({
+      payee.push({
         id: last.id,
         description: last.description,
         category: last.category,
@@ -234,6 +245,8 @@ export async function findRecurring(
         amount: median(series.filter((l) => l.currency === last.currency).map((l) => l.amount)),
         operationCurrency: last.opCurrency,
         operationAmount: median(series.map((l) => l.opAmount)),
+        lastOperationAmount: last.opAmount,
+        latest: null,
         payments: series.length,
         first: series[0]!.time,
         last: last.time,
@@ -241,6 +254,15 @@ export async function findRecurring(
         mark: marks.get(last.payee) ?? null,
       });
     }
+    // The newest stray payment (in no series) goes to the series with the nearest usual amount that it came after.
+    const stray = lines.filter((l) => !inSeries.has(l.id)).at(-1);
+    if (stray) {
+      const target = payee
+        .filter((p) => p.last < stray.time)
+        .reduce<RecurringPayment | null>((a, p) => (!a || Math.abs(p.operationAmount - stray.opAmount) < Math.abs(a.operationAmount - stray.opAmount) ? p : a), null);
+      if (target) target.latest = { id: stray.id, time: stray.time, amount: stray.amount, operationAmount: stray.opAmount };
+    }
+    found.push(...payee);
   }
   return found.sort((a, b) => Number(b.active) - Number(a.active) || b.amount - a.amount || a.id.localeCompare(b.id));
 }

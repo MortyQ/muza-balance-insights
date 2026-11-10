@@ -1095,6 +1095,45 @@ export type IncomeOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; total: number }>;
+  /** What the user can count on each month (a month's view only; null — a day or a week). */
+  regular: RegularIncome | null;
+};
+
+/**
+ * One active regular income source (core findRecurring, `kind: 'income'`): a sender who pays about once a month. Its
+ * name is cut as the income list's sender (a named transfer's name, else the description through merchantText).
+ */
+export type RegularIncomeSource = {
+  /** The last payment's transaction id. */
+  key: string;
+  name: string;
+  participantId: number;
+  /** The usual payment in hryvnia kopecks by today's rate; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and the usual payment in its minor units. */
+  currency: number;
+  amount: number;
+  /** YYYY-MM-DD, system time zone: the last payment and the next one expected (a calendar month after the last). */
+  last: string;
+  next: string;
+  /** Days since the expected date once it has passed; null — not late. */
+  late: number | null;
+  /** The last payment against the usual one, whole per cent (signed), when they differ by more than 10%; else null. */
+  change: number | null;
+};
+
+/** The income screen's regular income: computed for today, whatever month is shown. */
+export type RegularIncome = {
+  /** Today, YYYY-MM-DD, system time zone. */
+  today: string;
+  /** The active sources' usual payments together, hryvnia kopecks (a source without a rate counts nowhere). */
+  monthly: number;
+  /** The active regular payments' monthly sum over `monthly`, whole per cent; null — no regular income. */
+  coveredByPayments: number | null;
+  /** By hryvnia desc (no rate last). */
+  sources: RegularIncomeSource[];
+  /** The sources expected from today to 30 days on, soonest first. */
+  expected: RegularIncomeSource[];
 };
 
 /** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */

@@ -8,7 +8,7 @@ import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
 import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/category-lines';
 import { incomeLines } from '@mono/core/read/income-lines';
-import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
+import { ACTIVE_DAYS, findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
 import {
@@ -30,13 +30,15 @@ import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput }
 import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
+import { regularIncome, type RegularSeries } from './income-regular.ts';
+import { rulesFor } from '@mono/core/providers/rules';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
 import { migrate, type Db } from '@mono/core/storage/db';
 import { refreshCrossing } from '@mono/core/derive/derived';
 import { listConnections, listParticipants } from '@mono/core/people/participants';
 import { getSettings, setSetting } from '@mono/core/people/settings';
-import type { ProviderId } from '@mono/core/providers/types';
+import { PROVIDER_IDS, type ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
@@ -1443,6 +1445,8 @@ export class DataService {
       };
     });
 
+    const regular = q.period.kind === 'month' ? await this.regularIncome(db, thisDay, filters, rates, jarTitles, names, now) : null;
+
     const participants = await listParticipants(db);
     const family = q.participantId === undefined && participants.length > 1 ? participants.map((p) => p.id) : null;
     const stats = incomeStats(lines, family);
@@ -1469,7 +1473,52 @@ export class DataService {
       lines,
       rates: today,
       leftOut,
+      regular,
     };
+  }
+
+  /**
+   * The income screen's regular income (income-regular.ts): the active regular income sources and the active regular
+   * payments (not hidden) of the last 13 months, as recurringOverview and allowanceOverview read them, same view. A
+   * source's name is the income list's sender (a named transfer's name, else the description through merchantText).
+   */
+  private async regularIncome(
+    db: Db,
+    today: string,
+    filters: { tz: string } & ViewFilters,
+    fx: Map<number, FxRate>,
+    jarTitles: ReadonlyArray<string>,
+    names: ReturnType<typeof accountNames>,
+    now: number,
+  ): Promise<IncomeOverview['regular']> {
+    const period = { from: `${addMonths(today.slice(0, 7), -12)}-01`, to: today, ...filters };
+    const day = (sec: number) => localDate(sec * 1000, filters.tz);
+    // A payment after the series that fits none (an amount that changed) is the source's last one.
+    const lastSec = (p: RecurringPayment) => p.latest?.time ?? p.last;
+    const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter(
+      (p) => p.mark !== 'hidden' && now - lastSec(p) <= ACTIVE_DAYS * 86_400,
+    );
+    const series = income.map((p): RegularSeries => {
+      const provider = names.get(p.accountId)?.provider;
+      const known = PROVIDER_IDS.find((id) => id === provider);
+      const sender = known ? rulesFor(known).namedSender(p.description)?.name.trim() : undefined;
+      const last = day(lastSec(p));
+      return {
+        key: p.id,
+        name: merchantText(sender || p.description, jarTitles),
+        participantId: p.participantId,
+        uah: toUah(p.amount, p.currency, fx),
+        currency: p.currency,
+        amount: p.amount,
+        usualOperation: p.operationAmount,
+        lastOperation: p.latest?.operationAmount ?? p.lastOperationAmount,
+        last,
+        next: nextMonthDay(last),
+      };
+    });
+    const payments = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark !== 'hidden');
+    const paymentsMonthly = payments.reduce((s, p) => s + (toUah(p.amount, p.currency, fx) ?? 0), 0);
+    return regularIncome(series, today, paymentsMonthly);
   }
 
   /**

@@ -88,19 +88,19 @@ describe('findRecurring', () => {
     const [p] = await findRecurring(db, PERIOD, NOW);
     expect(p).toMatchObject({
       id: ids[3], description: 'Streamio', category: 'связь и цифровые сервисы', mcc: 5815, accountId: 'uah', currency: 980,
-      amount: 19_900, operationCurrency: 980, operationAmount: 19_900, payments: 4, active: true,
+      amount: 19_900, operationCurrency: 980, operationAmount: 19_900, lastOperationAmount: 19_900, payments: 4, active: true,
     });
     expect(p!.first).toBe(kyivStartOfDay('2025-12-05') + 3600);
     expect(p!.last).toBe(kyivStartOfDay('2026-03-05') + 3600);
   });
 
-  it('an amount that drifts within ±10% stays one series; the usual amount is the median', async () => {
+  it('an amount that drifts within ±10% stays one series; the usual amount is the median, the last one is kept', async () => {
     await tx('uah', '2025-12-10', -40_000, { description: 'Power Co', category: 'коммунальные', mcc: 4900 });
-    await tx('uah', '2026-01-10', -43_000, { description: 'Power Co', category: 'коммунальные', mcc: 4900 });
-    await tx('uah', '2026-02-10', -41_000, { description: 'Power Co', category: 'коммунальные', mcc: 4900 });
+    await tx('uah', '2026-01-10', -41_000, { description: 'Power Co', category: 'коммунальные', mcc: 4900 });
+    await tx('uah', '2026-02-10', -43_000, { description: 'Power Co', category: 'коммунальные', mcc: 4900 });
     const found = await findRecurring(db, PERIOD, NOW);
     expect(found).toHaveLength(1);
-    expect(found[0]).toMatchObject({ amount: 41_000, payments: 3, category: 'коммунальные' });
+    expect(found[0]).toMatchObject({ amount: 41_000, payments: 3, category: 'коммунальные', operationAmount: 41_000, lastOperationAmount: 43_000 });
   });
 
   it('coffee at one price bought whenever is not regular', async () => {
@@ -237,5 +237,20 @@ describe('findRecurring: regular income', () => {
     for (const d of ['2026-01-03', '2026-01-09', '2026-02-20', '2026-03-01']) await tx('uah', d, 30_000, { ...IN, description: 'Від: Friend' });
     expect((await findRecurring(db, { ...PERIOD, kind: 'income' }, NOW)).map((p) => p.description)).toEqual(['Від: Salary Co']);
     expect((await findRecurring(db, PERIOD, NOW)).map((p) => p.description)).toEqual(['Streamio']);
+  });
+
+  it('a raise after the series: the newest payment that fits no series is its latest; two series of one sender keep none', async () => {
+    const salary = { ...IN, description: 'Від: Salary Co' };
+    await monthly('uah', '2026-02', 3, 100_000, salary, 10);
+    const raise = await tx('uah', '2026-03-10', 125_000, salary);
+    const [p] = await findRecurring(db, { ...PERIOD, kind: 'income' }, NOW);
+    expect(p).toMatchObject({ amount: 100_000, operationAmount: 100_000, lastOperationAmount: 100_000, payments: 3 });
+    expect(p!.latest).toEqual({ id: raise, time: kyivStartOfDay('2026-03-10') + 3600, amount: 125_000, operationAmount: 125_000 });
+
+    // An advance and a salary from one sender: two series, nothing stray.
+    await db.execute(`DELETE FROM transactions WHERE id = '${raise}'`);
+    await monthly('uah', '2026-03', 3, 40_000, salary, 1);
+    const both = await findRecurring(db, { ...PERIOD, kind: 'income' }, NOW);
+    expect(both.map((x) => [x.amount, x.latest])).toEqual([[100_000, null], [40_000, null]]);
   });
 });
