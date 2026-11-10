@@ -193,6 +193,8 @@ export interface InsightLine {
   color: string;
   /** «1 450 € · usually 410 €». */
   caption: string;
+  /** This month's amount in the picked «also» currencies, one line («≈ 2 400 ₴»); '' — none picked. */
+  also: string;
   /** The change in money first («+1 040 € (×3,5)»), its tone; neutral for income. */
   chip: ChangeChipModel;
   /** This month against the usual on one scale: the fill and the usual's mark, % of the larger. */

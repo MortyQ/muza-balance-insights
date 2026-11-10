@@ -37,7 +37,10 @@ const { view } = defineProps<{ view: HomeInsightsView }>();
             <span class="truncate">{{ d.name }}</span>
             <span class="truncate text-xs text-foreground-muted">{{ d.caption }}</span>
           </span>
-          <span class="shrink-0 tabular-nums" :class="DRIVER_TONE[d.tone]">{{ d.amount }}</span>
+          <span class="flex shrink-0 flex-col items-end">
+            <span class="tabular-nums" :class="DRIVER_TONE[d.tone]">{{ d.amount }}</span>
+            <span v-if="d.also" class="text-xs text-foreground-muted tabular-nums" data-test="driver-also">{{ d.also }}</span>
+          </span>
         </component>
       </li>
     </ul>

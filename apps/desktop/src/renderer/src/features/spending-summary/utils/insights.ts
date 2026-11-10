@@ -46,6 +46,7 @@ function lineOf(i: SpendingInsight, v: SpendingOverview, fmt: MoneyFormat, scope
     icon: income ? 'lucide:wallet' : CATEGORY_ICON[i.categoryId ?? 'other'],
     color: colorOf(i, v),
     caption: captionOf(i, fmt),
+    also: fmt.approxInline(i.now),
     chip: {
       text: i.percent === null ? `${sign}${fmt.money(i.amount)}` : changeText({ kind: i.direction, diff: i.amount, pct: i.percent }, fmt.money, true),
       tone,

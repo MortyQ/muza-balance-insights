@@ -8,6 +8,8 @@ export interface DriverRowView {
   name: string;
   caption: string;
   amount: string;
+  /** The difference in the picked «also» currencies, one line; '' — none picked. */
+  also: string;
   tone: 'up' | 'down';
   /** The category's screen; null — an unknown category word. */
   to: RouteLocationRaw | null;
