@@ -651,7 +651,7 @@ export class DataService {
 
   /**
    * The view's monthly limits in the feed (a person: theirs and the family's), each against its owner's «Personal»
-   * spending of every bank, pending holds left out; the budget's flexible part too. Over: spent above the amount. Ahead
+   * spending of every bank, pending holds included; the budget's flexible part too. Over: spent above the amount. Ahead
    * (the current month only): not over yet, in attention for its pace or its forecast — the «Budget» screen's rule
    * (core limitState). Severity against the usual month, as the feed's.
    */
@@ -673,7 +673,7 @@ export class DataService {
     const pos = periodPosition('month', today, q.month, current);
     const sumsOf = new Map<number | null, Sums>();
     for (const o of new Set(goals.map((g) => g.participantId))) {
-      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', holds: 'final', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
+      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
       sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
     }
     const limitsOver: LimitOverView[] = [];
@@ -1193,7 +1193,7 @@ export class DataService {
     const to = current ? today : bounds.to;
     const sumsOf = async (owner: number | null): Promise<OwnerSums> => {
       const q = { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) } as const;
-      const grid = await spendingGrid(db, { ...q, holds: 'final' }, now);
+      const grid = await spendingGrid(db, { ...q, holds: 'all' }, now);
       const held = await spendingGrid(db, { ...q, holds: 'pending' }, now);
       const fold = (cells: readonly SpendingCell[], a: string, b: string) =>
         foldByCategory(cellGroups(cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory;

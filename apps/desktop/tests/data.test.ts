@@ -2,6 +2,7 @@
 // names, descriptions, card numbers, IBANs and jar titles never reach the renderer.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
+import { rescope } from '@mono/core/derive/scope';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/data/category.ts';
@@ -1036,6 +1037,19 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect((await svc.limitsOverview({ month: '2026-03' })).budget!.fixed.map((r) => r.categoryId)).toEqual(['rent']);
   });
 
+  it('a tax paid from a personal card: personal by default, in «Spending»; the budget switch decides only the budget', async () => {
+    // Stored business by the old default; the next derivation makes it personal.
+    await tx('uah', '2026-03-05', -70_000, 'налоги и госплатежи', { mcc: 4829, description: 'ГУК Вигадана обл/12345678', scope: 'business' });
+    await rescope(db, { from: kyivStartOfDay('2026-03-05'), to: kyivStartOfDay('2026-03-06') });
+    const spending = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(spending.categories.find((c) => c.category === 'налоги и госплатежи')?.net).toBe(70_000);
+    await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }], countTaxes: false });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: false, flexible: { spent: 220_000 } });
+    const id = (await svc.limitsOverview({ month: '2026-03' })).budget!.id;
+    await svc.saveGoal(id, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }], countTaxes: true });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: true, flexible: { spent: 290_000 } });
+  });
+
   it('suggestions from the usual months: flexible categories without a monthly limit, largest first', async () => {
     expect((await svc.limitsOverview({ month: '2026-03' })).suggestions).toEqual([{ categoryId: 'cafes', amount: 400_000 }, { categoryId: 'groceries', amount: 50_000 }]);
     await svc.addSuggestedLimits({});
@@ -1076,15 +1090,25 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).monthlyLimits).toBe(2);
   });
 
-  it('a pending hold from today: left out of the limit and the budget, given apart; no «Limit exceeded» for it', async () => {
+  it('a pending hold from today: counted in the limit and the budget at once, and named in their note', async () => {
     await tx('uah', '2026-03-15', -20_000, 'кафе и рестораны', { hold: true });
     await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
     await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 300_000, participantId: null, fixed: [] });
     const v = await svc.limitsOverview({ month: '2026-03' });
-    expect(v.limits[0]!.figures).toMatchObject({ spent: 190_000, state: 'attention', pending: { count: 1, amount: 20_000 } });
-    expect(v.budget!.flexible).toMatchObject({ spent: 1_250_000 + 220_000, pending: { count: 1, amount: 20_000 } });
-    // With the hold the cafes would be 210 000 of 200 000: the feed waits for the bank.
-    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([]);
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 210_000, state: 'exceeded', pending: { count: 1, amount: 20_000 } });
+    expect(v.budget!.flexible).toMatchObject({ spent: 1_250_000 + 240_000, pending: { count: 1, amount: 20_000 } });
+    // 210 000 of 200 000 with the hold: the feed says so too.
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([
+      expect.objectContaining({ spent: 210_000, over: 10_000 }),
+    ]);
+  });
+
+  it('a hold the bank cancelled counts nowhere', async () => {
+    await tx('uah', '2026-03-15', -20_000, 'кафе и рестораны', { hold: true });
+    await db.execute(`UPDATE transactions SET is_cancelled = 1 WHERE local_date = '2026-03-15' AND hold = 1`);
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 190_000, pending: null });
   });
 
   it('the Insights read lists a monthly limit in attention for its pace or forecast, never a past one', async () => {
