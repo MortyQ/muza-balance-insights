@@ -1122,11 +1122,16 @@ export type AllowanceOverview = {
   rates: RatesView | null;
 };
 
-/** A quarter of a year (1–4); the person of the global filter. The bank filter does not apply. */
-export type FopTaxQuery = { year: number; quarter: Quarter; participantId?: number };
+/** What the FOP tax is counted from: the income on the business accounts, or all income of the view. */
+export type FopTaxBase = 'business' | 'all';
+/**
+ * Days from..to (YYYY-MM-DD, system time zone; `to` is cut at today, `from` after today is refused); `yearToDate` — also
+ * 1 January of `to`'s year to `to`. The person of the global filter. The bank filter does not apply.
+ */
+export type FopTaxQuery = { from: string; to: string; base: FopTaxBase; yearToDate?: boolean; participantId?: number };
 export type Quarter = 1 | 2 | 3 | 4;
 
-/** The income on the business accounts over [from, to] (system time zone), in hryvnia kopecks at today's rates. */
+/** The income of the base over [from, to] (system time zone), in hryvnia kopecks at today's rates. */
 export type FopTaxPeriod = {
   from: string;
   to: string;
@@ -1140,16 +1145,12 @@ export type FopTaxPeriod = {
 };
 
 export type FopTaxOverview = {
-  year: number;
-  quarter: Quarter;
-  /** An enabled business account (Monobank: FOP) of the view; false — no figures to show. */
+  /** An enabled business account (Monobank: FOP) of the view: the «business» base is offered. */
   available: boolean;
-  /** Today's quarter: the picker offers nothing after it. */
-  current: { year: number; quarter: Quarter };
-  /** The picked quarter. */
+  /** The picked days. */
   base: FopTaxPeriod;
-  /** 1 January to the end of the picked quarter, cut at today. */
-  yearToDate: FopTaxPeriod;
+  /** 1 January to the picked end, cut at today; null — not asked. */
+  yearToDate: FopTaxPeriod | null;
   rates: RatesView | null;
 };
 
@@ -1442,6 +1443,4 @@ export type DataStatus = {
   /** Date (system time zone) the data starts at; null = never imported. */
   dataFrom: string | null;
   lastSyncAt: string | null;
-  /** An enabled business account (the provider's rule; Monobank: FOP) exists: the FOP tax screen is offered. */
-  businessAccounts: boolean;
 };

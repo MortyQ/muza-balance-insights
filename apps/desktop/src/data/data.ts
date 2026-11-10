@@ -63,7 +63,6 @@ import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
 import { fopTaxBounds } from './fop-tax.ts';
-import { quarterOf } from '../shared/quarters.ts';
 import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
@@ -1855,12 +1854,11 @@ export class DataService {
       dataUntil: newest === null ? null : localDateTime(newest * 1000),
       dataFrom: await firstDataDate(db, systemTimeZone()),
       lastSyncAt: last === null ? null : localDateTime(last * 1000),
-      businessAccounts: (await this.businessAccounts(db)).length > 0,
     };
   }
 
-  /** The enabled business accounts (the provider's isBusinessAccount; Monobank: FOP) and their owners. */
-  private async businessAccounts(db: Db): Promise<Array<{ id: string; participantId: number }>> {
+  /** The enabled accounts, their owners and whether each is a business account (the provider's isBusinessAccount; Monobank: FOP). */
+  private async enabledAccounts(db: Db): Promise<Array<{ id: string; participantId: number; business: boolean }>> {
     const rs = await db.execute(
       `SELECT a.id, a.type, c.provider, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id
        WHERE a.id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
@@ -1868,25 +1866,23 @@ export class DataService {
     return rs.rows.flatMap((r) => {
       const known = PROVIDER_IDS.find((id) => id === String(r.provider));
       const business = known !== undefined && rulesFor(known).isBusinessAccount({ type: r.type === null ? null : String(r.type) });
-      return business ? [{ id: String(r.id), participantId: Number(r.participant_id) }] : [];
+      return [{ id: String(r.id), participantId: Number(r.participant_id), business }];
     });
   }
 
   /**
-   * The FOP tax screen: the income of the picked quarter and of the year to its end on the enabled business accounts
-   * of the view (a person's, or the family's), all scopes, at today's rates. Core incomeSummary of the whole family,
-   * grouped by account: refunds, own transfers and family transfers stay out; then only the business accounts' groups.
-   * The bank filter does not apply. A quarter that starts after today is refused.
+   * The FOP tax screen: the income of the picked days (and, when asked, of the year to their end) on the enabled
+   * accounts of the view (a person's, or the family's) — the business ones only for the «business» base —, all scopes,
+   * at today's rates. Core incomeSummary of the whole family, grouped by account: refunds, own transfers and family
+   * transfers stay out; then only the base's accounts' groups. The bank filter does not apply.
    */
   async fopTaxOverview(q: FopTaxQuery): Promise<FopTaxOverview> {
     const db = await this.conn();
     const now = this.d.nowSec();
     const tz = systemTimeZone();
-    const today = localDate(now * 1000, tz);
-    const bounds = fopTaxBounds(q.year, q.quarter, today);
-    const ids = new Set(
-      (await this.businessAccounts(db)).filter((a) => q.participantId === undefined || a.participantId === q.participantId).map((a) => a.id),
-    );
+    const bounds = fopTaxBounds(q.from, q.to, localDate(now * 1000, tz));
+    const view = (await this.enabledAccounts(db)).filter((a) => q.participantId === undefined || a.participantId === q.participantId);
+    const ids = new Set(view.filter((a) => q.base === 'all' || a.business).map((a) => a.id));
     const todayRates = await this.d.rates();
     const fx = rateMap(todayRates);
     const base = async (p: { from: string; to: string }): Promise<FopTaxPeriod> => {
@@ -1903,12 +1899,9 @@ export class DataService {
       return { ...empty, leftOut: [...out].map(([currency, total]) => ({ currency, total })), incomplete: s.period.incomplete };
     };
     return {
-      year: q.year,
-      quarter: q.quarter,
-      available: ids.size > 0,
-      current: quarterOf(today),
-      base: await base(bounds.quarter),
-      yearToDate: await base(bounds.year),
+      available: view.some((a) => a.business),
+      base: await base(bounds.period),
+      yearToDate: q.yearToDate ? await base(bounds.year) : null,
       rates: todayRates,
     };
   }

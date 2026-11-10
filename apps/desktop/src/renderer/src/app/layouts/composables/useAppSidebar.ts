@@ -1,10 +1,8 @@
 import { computed, onScopeDispose, ref, type ComputedRef, type Ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSyncStatusStore } from '@/entities/sync-status';
 import { ROUTE } from '@/shared/config';
 import { t } from '@/shared/lib';
 import { createSidebar, type SidebarInstance, type SidebarNavItem } from '@/shared/ui';
-import type { NavCondition } from '../types.ts';
 import { navItems } from '../utils.ts';
 
 /** Where the fold choice is kept on this computer (a convenience, like the spending block's menu). */
@@ -36,11 +34,8 @@ export function useMedia(query: string): Readonly<Ref<boolean>> {
 /** The app navigation of the default layout: entries from the routes, texts in the current language, the width's forced icons. */
 export function useAppSidebar(): UseAppSidebarReturn {
   const routes = useRouter().getRoutes();
-  const syncStatus = useSyncStatusStore();
-  // A conditional item follows the data status: it comes and goes when the status refreshes (an import, an account switched).
-  const holds = (c: NavCondition) => c === 'business' && syncStatus.status?.businessAccounts === true;
   const sidebar = createSidebar({
-    items: computed(() => navItems(routes, (key) => t(key), holds)),
+    items: computed(() => navItems(routes, (key) => t(key))),
     brandName: 'Balance Insights',
     logoUrl: LOGO_URL,
     storageKey: SIDEBAR_STORAGE_KEY,

@@ -40,7 +40,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/fop-tax',
     name: ROUTE.fopTax,
     component: () => import('@/pages/fop-tax').then((m) => m.FopTaxPage),
-    meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 5, when: 'business' }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 5 }, periodFilter: 'none' },
   },
   {
     // Opened from a row of «Spending»; an unknown category goes home.

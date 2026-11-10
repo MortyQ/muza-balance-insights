@@ -74,10 +74,10 @@ afterEach(() => db.close());
 
 describe('DataService (main → renderer view types)', () => {
   it('status: empty database → no data; after an import → Kyiv date-time and date the data reaches / starts at', async () => {
-    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null, businessAccounts: false });
+    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
     await account('uah', 'black', 980, 0);
     await synced('uah');
-    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01', businessAccounts: false });
+    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01' });
   });
 
   it('lastSyncSec: null before any import, then the epoch seconds of the latest sync', async () => {
@@ -95,7 +95,7 @@ describe('DataService (main → renderer view types)', () => {
     await synced('uah');
     await db.execute({ sql: 'INSERT INTO sync_state VALUES (?, ?, ?, ?)', args: ['old', kyivStartOfDay('2025-06-01'), kyivStartOfDay('2025-07-01'), kyivStartOfDay('2025-07-01') + 60] });
     await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'old'`);
-    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01', businessAccounts: false });
+    expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 23:00', dataFrom: '2026-01-01', lastSyncAt: '2026-03-10 23:01' });
     expect(await svc.lastSyncSec()).toBe(SYNCED_TO + 60);
 
     // The last sync is only the disabled account's: auto-sync's gap reads from enabled ones.
@@ -103,7 +103,7 @@ describe('DataService (main → renderer view types)', () => {
     expect(await svc.lastSyncSec()).toBe(SYNCED_TO + 60);
 
     await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'uah'`);
-    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null, businessAccounts: false });
+    expect(await svc.status()).toEqual({ hasData: false, dataUntil: null, dataFrom: null, lastSyncAt: null });
     expect(await svc.lastSyncSec()).toBeNull();
   });
 
@@ -803,7 +803,7 @@ describe('DataService in the system time zone, not Kyiv', () => {
       await account('uah', 'black', 980, 0);
       await synced('uah');
       // SYNCED_TO is 23:00 in Kyiv = 22:00 in Berlin; the data starts at 00:00 on 1 Jan in Kyiv = 23:00 on 31 Dec in Berlin.
-      expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 22:00', dataFrom: '2025-12-31', lastSyncAt: '2026-03-10 22:01', businessAccounts: false });
+      expect(await svc.status()).toEqual({ hasData: true, dataUntil: '2026-03-10 22:00', dataFrom: '2025-12-31', lastSyncAt: '2026-03-10 22:01' });
     });
 
     it('month overview: at 23:10 on the month\'s last day the month is still the current one (balance «now»)', async () => {
@@ -1273,7 +1273,8 @@ describe('DataService.incomeOverview (the income screen)', () => {
 
 describe('DataService.fopTaxOverview (the FOP tax screen)', () => {
   const IN = 'поступления';
-  const Q1 = { year: 2026, quarter: 1 } as const;
+  // Q1 2026; today is 15 March: the end is cut at today.
+  const Q1 = { from: '2026-01-01', to: '2026-03-31', base: 'business', yearToDate: true } as const;
   beforeEach(async () => {
     await account('uah', 'black', 980, 0);
     await account('fop', 'fop', 980, 0);
@@ -1288,29 +1289,30 @@ describe('DataService.fopTaxOverview (the FOP tax screen)', () => {
     await tx('fop', '2025-11-20', 10_000, IN, { mcc: 6012, scope: 'business' });
   });
 
-  it('status offers the screen while an enabled FOP account exists; turned off — not', async () => {
-    expect((await svc.status()).businessAccounts).toBe(true);
-    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id IN ('fop', 'fopusd')`);
-    expect((await svc.status()).businessAccounts).toBe(false);
-    expect(await svc.fopTaxOverview(Q1)).toMatchObject({ available: false, base: { total: 0, lines: 0 } });
-  });
-
-  it('the base: FOP accounts only, no refunds, no own transfers, all scopes, foreign at today\'s rate', async () => {
+  it('the FOP base: FOP accounts only, no refunds, no own transfers, all scopes, foreign at today\'s rate', async () => {
     const v = await svc.fopTaxOverview(Q1);
-    expect(v).toMatchObject({ year: 2026, quarter: 1, available: true, current: { year: 2026, quarter: 1 } });
-    // The quarter runs: cut at today.
+    expect(v.available).toBe(true);
     expect(v.base).toEqual({ from: '2026-01-01', to: '2026-03-15', total: 30_000 + 50_000 + 4_000, lines: 3, leftOut: [], incomplete: true });
     expect(v.yearToDate).toMatchObject({ from: '2026-01-01', to: '2026-03-15', total: 84_000 });
     expect(v.rates).toEqual(RATES);
   });
 
-  it('quarter bounds: a past quarter whole, the year to its end; a quarter after this one is refused', async () => {
-    const q4 = await svc.fopTaxOverview({ year: 2025, quarter: 4 });
-    expect(q4.base).toMatchObject({ from: '2025-10-01', to: '2025-12-31', total: 10_000, lines: 1 });
-    expect(q4.yearToDate).toMatchObject({ from: '2025-01-01', to: '2025-12-31', total: 10_000 });
-    const q3 = await svc.fopTaxOverview({ year: 2025, quarter: 3 });
-    expect(q3.base).toMatchObject({ from: '2025-07-01', to: '2025-09-30', total: 0 });
-    await expect(svc.fopTaxOverview({ year: 2026, quarter: 2 })).rejects.toThrow(/after today/);
+  it('the «all» base: every enabled account of the view, the same exclusions', async () => {
+    const v = await svc.fopTaxOverview({ ...Q1, base: 'all' });
+    expect(v.base.total).toBe(84_000 + 40_000);
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'uah'`);
+    expect((await svc.fopTaxOverview({ ...Q1, base: 'all' })).base.total).toBe(84_000);
+  });
+
+  it('a month, a range and a past year; no year to date unless asked; refusals', async () => {
+    expect((await svc.fopTaxOverview({ from: '2026-02-01', to: '2026-02-28', base: 'business' })).base).toMatchObject({ total: 50_000, lines: 1 });
+    expect((await svc.fopTaxOverview({ from: '2026-02-01', to: '2026-02-28', base: 'business' })).yearToDate).toBeNull();
+    expect((await svc.fopTaxOverview({ from: '2026-01-15', to: '2026-01-25', base: 'all' })).base.total).toBe(30_000);
+    const y = await svc.fopTaxOverview({ from: '2025-01-01', to: '2025-12-31', base: 'business', yearToDate: true });
+    expect(y.base).toMatchObject({ from: '2025-01-01', to: '2025-12-31', total: 10_000 });
+    expect(y.yearToDate).toMatchObject({ from: '2025-01-01', to: '2025-12-31', total: 10_000 });
+    await expect(svc.fopTaxOverview({ from: '2026-04-01', to: '2026-06-30', base: 'business' })).rejects.toThrow(/after today/);
+    await expect(svc.fopTaxOverview({ from: '2026-02-01', to: '2026-01-31', base: 'business' })).rejects.toThrow(/after its end/);
   });
 
   it('a currency without a rate is left out and named', async () => {
@@ -1322,7 +1324,7 @@ describe('DataService.fopTaxOverview (the FOP tax screen)', () => {
     expect(v.base.total).toBe(84_000);
   });
 
-  it('a person: their FOP accounts only; a family transfer to the FOP card is not income', async () => {
+  it('a person: their accounts only; a family transfer to the FOP card is not income', async () => {
     const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
     const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
     await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
@@ -1335,16 +1337,14 @@ describe('DataService.fopTaxOverview (the FOP tax screen)', () => {
     expect(await svc.fopTaxOverview({ ...Q1, participantId: her })).toMatchObject({ available: false, base: { total: 0 } });
   });
 
-  it('no FOP account: unavailable, nothing counted', async () => {
-    await db.execute(`DELETE FROM transactions WHERE account_id IN ('fop', 'fopusd')`);
-    await db.execute(`DELETE FROM sync_state WHERE account_id IN ('fop', 'fopusd')`);
-    await db.execute(`DELETE FROM accounts WHERE id IN ('fop', 'fopusd')`);
-    expect((await svc.status()).businessAccounts).toBe(false);
+  it('no FOP account (or turned off): not available, the FOP base empty, all income still counted', async () => {
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id IN ('fop', 'fopusd')`);
     expect(await svc.fopTaxOverview(Q1)).toMatchObject({ available: false, base: { total: 0, lines: 0 }, yearToDate: { total: 0 } });
+    expect((await svc.fopTaxOverview({ ...Q1, base: 'all' })).base.total).toBe(40_000);
   });
 
   it('carries no bank text', async () => {
-    const json = JSON.stringify(await svc.fopTaxOverview(Q1));
+    const json = JSON.stringify(await svc.fopTaxOverview({ ...Q1, base: 'all' }));
     for (const c of CANARIES) expect(json).not.toContain(c);
     expect(json).not.toContain('Imaginary');
   });

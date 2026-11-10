@@ -11,12 +11,7 @@ export interface RouteNav {
   icon: string;
   /** Lower comes first. */
   order: number;
-  /** Shown only while this holds (absent: always): `business` — an enabled business account (FOP) exists. */
-  when?: NavCondition;
 }
-
-/** What a menu item may wait for (the sync-status store's DataStatus says whether it holds). */
-export type NavCondition = 'business';
 
 declare module 'vue-router' {
   interface RouteMeta {

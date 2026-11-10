@@ -215,12 +215,12 @@
   `byProvider` and every other figure folds the cells merged back (`mergeCells`, so nothing changes), each bank's series
   is `bankSeries`; `SpendingCategoryView.banks` — one more `spendingGrid` over the shown month with `byProvider`, folded
   per category and bank (`bankParts` in `data/spending.ts`). Banks in the registry's order (`byRegistry`).
-  `getFopTaxOverview({ year, quarter, participantId? })` (the FOP tax screen; `DataService.fopTaxOverview`, periods in
-  `data/fop-tax.ts`): the enabled business accounts of the view (the provider's `isBusinessAccount`; Monobank: FOP),
-  core `incomeSummary` of the whole family grouped by account over the quarter and over 1 January → the quarter's end
-  (both cut at today; a quarter starting after today → error), only those accounts' groups — so refunds, own and family
-  transfers stay out —, all scopes, today's rates (unrated in `leftOut`); `available` — such an account in the view. No
-  bank filter, no bank text. `DataStatus.businessAccounts` — any enabled business account (the menu item).
+  `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (the FOP tax screen; `DataService.fopTaxOverview`,
+  periods in `data/fop-tax.ts`): the enabled accounts of the view — for `base: 'business'` only the business ones (the
+  provider's `isBusinessAccount`; Monobank: FOP) —, core `incomeSummary` of the whole family grouped by account over
+  `from..to` and, with `yearToDate`, over 1 January → `to` (cut at today; a start after today or after the end → error),
+  only those accounts' groups — so refunds, own and family transfers stay out —, all scopes, today's rates (unrated in
+  `leftOut`); `available` — a business account in the view. No bank filter, no bank text.
   `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/read/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`

@@ -282,16 +282,16 @@
   `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
-  `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`) with `when: 'business'` — the side menu
-  shows it only while `DataStatus.businessAccounts` (an enabled FOP account); `navGroups` / `navItems` take `holds`
-  (`useAppSidebar` reads the sync-status store, `useNav` lists every item for the title). `periodFilter: 'none'`: its
-  own `QuarterPicker` (year `VSelect`, Q1–Q4 `VSegmentedControl`, later quarters disabled, today's at first). One IPC
-  `getFopTaxOverview({ year, quarter, participantId? })` (cached read; the bank filter does not apply). `RatePicker`:
-  `FOP_RATES` 5 / 1 / 6 and «Custom» percent (`percentValue`), base «Income on FOP accounts» or «Custom amount»
-  (`amountMinor`); `TaxResult` rows through `MoneyStack` (`taxView`: the quarter and the year to date, or the typed
-  amount alone; `taxMinor` = percent × base rounded to a kopeck, in the renderer). Always under it: what is not income,
-  «ЄСВ not included», the disclaimer — no ЄСВ amount anywhere. `available: false` → a notice instead of the pickers.
-  Quarters: `src/shared/quarters.ts` (shared with main). Tested in `tests/renderer/fop-tax.test.ts`, `layouts.test.ts`.
+  `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
+  its own `PeriodPicker` (`PeriodPick`: kind Month / Quarter / Year / «Dates» — `VMonthPicker`, year `VSelect` + Q1–Q4
+  `VSegmentedControl` with later quarters disabled, two `VDatepicker`s; nothing after today; today's quarter at first;
+  `periodBounds` → days). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
+  bank filter does not apply; `yearToDate` for a quarter only). `RatePicker`: presets `FOP_RATES` 5 / 6 and an own
+  percent field (`percentValue`; a valid one unmarks the preset, a preset click clears it), base «Income on FOP
+  accounts» (only while `available`; the default then) / «All income» / «Custom amount» (`amountMinor`; hides the
+  period); `TaxResult` rows through `MoneyStack` (`taxView`; `taxMinor` = percent × base rounded to a kopeck, in the
+  renderer). Always under it: what is not income, «ЄСВ not included», the disclaimer — no ЄСВ amount anywhere. Quarters:
+  `src/shared/quarters.ts` (shared with main). Tested in `tests/renderer/fop-tax.test.ts`, `layouts.test.ts`.
 - **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route
   `recurring` (`/recurring`), its own side menu item (`home.nav.recurring`, after «Analytics») and
   `meta.periodFilter: 'none'` — the global filters show the person and the currency, no period (the screen always

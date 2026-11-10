@@ -53,11 +53,12 @@ English interface.
 
 ### FOP tax
 
-- A new «FOP tax» screen appears in the menu when a Monobank FOP account is connected and turned on. It estimates the
-  single tax of a group 3 sole proprietor from the income on your FOP accounts: pick a year and a quarter (the current
-  one at first) and a rate — 5%, 1%, 6% or your own — and see the tax for the quarter and for the year since 1 January.
-  Refunds and transfers from your own or your family's cards are not counted as income. You can also type your own
-  amount instead. The figure is an estimate, not tax advice, and the single social contribution (ЄСВ) is not included.
+- A new «FOP tax» screen in the menu: a quick estimate of the single tax of a group 3 sole proprietor. Pick a rate — 5%,
+  6% or your own percent —, what to count from — the income on your FOP accounts (when a Monobank FOP account is
+  connected), all your income, or an amount you type — and a period: a month, a quarter (with the year since 1 January),
+  a year or any dates. The tax updates at once. Refunds and transfers between your own or your family's accounts are not
+  counted as income. The figure is an estimate, not tax advice, and the single social contribution (ЄСВ) is not
+  included.
 
 ### Search
 
