@@ -164,7 +164,9 @@
   it with any change that can give a stored row another category (an MCC row, a keyword, a hint, a rule's order).
   `rederiveCore` records it in `derived_state` (`category_rules`); `rulesChanged(db)` (`derive/rederive.ts`) compares,
   a missing row reads as 1. The end of a desktop import and a statement upload run one full pass while it differs, so
-  stored categories catch up without a recategorize. 2: MCC 4111 and 4789 → «такси и транспорт».
+  stored categories catch up without a recategorize. It covers scope too: bump it with a change that can give a stored
+  row another scope (a scope rule or its default). 2: MCC 4111 and 4789 → «такси и транспорт». 3: `treasury_business`
+  off by default.
 
 - В логах вместо маскированного номера карты писать тип и валюту счёта (например, `black/UAH`).
 
@@ -175,11 +177,13 @@
   1. `scope_overrides` — исключения; шаблон сопоставляется с `counter_name`, а если его нет — с исходным
      `description` (у казначейства и 9311/9399 контрагента нет). Заводит пользователь (`scope-overrides:*`);
   2. счёт `type = fop` → `business`;
-  3. платёж в казначейство (`ГУК…`) с любой карты → `business` — **настройка, по умолчанию включена**
-     (через казначейство идут и личные платежи: штрафы, госпошлины — их исключать оверрайдами);
+  3. treasury payment (`ГУК…`) from any card → `business` — **a setting, off by default since
+     `taxes-personal`** (10.11.2026): taxes from personal cards are personal spending and show in «Spending»; a
+     business account's stay business by rule 2. Turned on, personal treasury payments (fines, fees) are excepted with
+     overrides;
   4. остальное → `personal` (в т.ч. 9311/9399 с личных карт).
 - Internal-переводы ФОП ↔ личные в траты не входят ни в одном scope.
-- Настройки — таблица `settings` в БД + CLI (только пользователь): «казначейство → business» (вкл. по умолчанию),
+- Настройки — таблица `settings` в БД + CLI (только пользователь): «казначейство → business» (off by default),
   «раскрывать полные имена» (выкл. по умолчанию).
 - Порядок: 1) scope; 2) `spendingSummary(groupBy)`, `comparePeriods`, `incomeSummary`, `getBalances`,
   `getSyncStatus`; 3) нормализация мерчанта, `merchant_key`, `topMerchants`, `searchTransactions`,
@@ -271,8 +275,9 @@
 - **Pending holds in a spending read** (`SpendingFilters.holds`, `holdsWhere` in `read/filters.ts`; spec
   `core-spending-limits`): `'all'` (default) counts every operation; `'final'` leaves out the holds of the last
   `RESYNC_OVERLAP_SEC`, the same ones `pendingHolds` counts; `'pending'` keeps only them (their commission and fee lines
-  ride along), so final + pending = all. Needs `nowSec` (`spendingSummary`, `spendingGrid`). The desktop reads limits,
-  the budget and the Insights month with `'final'` and shows the pending part apart; «Spending» keeps `'all'`.
+  ride along), so final + pending = all. Needs `nowSec` (`spendingSummary`, `spendingGrid`). The desktop reads limits
+  and the budget (and the Insights limit signals) with `'all'` and names the pending part in a note (`'pending'`;
+  change `budget-pending-spent`); the Insights month keeps `'final'`; «Spending» keeps `'all'`.
 - **Cash withdrawals as spending** (`cash_is_spending` in `people/settings.ts`, on by default; spec
   `core-cash-withdrawals`): off, `spendingLinesSql` excludes the body of every «наличные» line as it does an internal
   one, the commission line stays — so every spending read follows: home, analytics, budget, limits, kinds and 50/30/20,

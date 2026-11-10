@@ -10,6 +10,8 @@ export interface GlanceView {
   key: 'spent' | 'income' | 'kept' | 'signals';
   label: string;
   value: string;
+  /** The value in each picked «Show also» currency; empty for a share or a count. */
+  also: string[];
   note: string;
   tone: 'up' | 'down' | 'good' | 'bad' | 'neutral';
   meter: { value: number; mark: number } | null;
@@ -49,6 +51,8 @@ export interface InsightCardView {
   severityLabel: string;
   text: string;
   chip: ChangeChipModel;
+  /** The chip's amount in each picked «Show also» currency: «≈ +300 $». */
+  also: string[];
   tone: 'up' | 'down' | 'neutral';
   bars: InsightBarsView | null;
   /** «Mostly …: +X, N% of the change»; null — no main driver. */
@@ -65,6 +69,8 @@ export interface SignalRowView {
   name: string;
   caption: string;
   amount: string;
+  /** `amount` in each picked «Show also» currency. */
+  also: string[];
   to: RouteLocationRaw | null;
 }
 

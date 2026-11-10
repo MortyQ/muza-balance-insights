@@ -12,7 +12,10 @@ const { parts } = defineProps<{ parts: ReadonlyArray<DayPartView> }>();
     <div v-for="p in parts" :key="p.label" class="flex items-center gap-2.5">
       <span class="w-20 shrink-0 text-xs text-foreground-secondary">{{ p.label }}</span>
       <VShareBar :value="p.width" :color="p.strong ? 'var(--cat)' : SOFT_BAR" class="grow" />
-      <span class="shrink-0 whitespace-nowrap text-right text-xs font-bold tabular-nums">{{ p.amount }}</span>
+      <span class="flex shrink-0 flex-col items-end">
+        <span class="whitespace-nowrap text-right text-xs font-bold tabular-nums">{{ p.amount }}</span>
+        <span v-for="c in p.also ?? []" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+      </span>
     </div>
   </div>
 </template>

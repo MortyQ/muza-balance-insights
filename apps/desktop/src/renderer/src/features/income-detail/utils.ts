@@ -37,6 +37,7 @@ export function summaryView(v: Readonly<IncomeOverview>, who: string, fmt: Money
     {
       label: t('income.summary.avg'),
       value: s.lines > 0 ? fmt.money(Math.round(s.total / s.lines)) : '—',
+      also: s.lines > 0 ? fmt.approx(Math.round(s.total / s.lines)) : [],
       note: s.median === null ? '' : t('income.summary.median', { amount: fmt.money(s.median) }),
     },
   ];
@@ -44,18 +45,21 @@ export function summaryView(v: Readonly<IncomeOverview>, who: string, fmt: Money
     stats.push({
       label: t('income.summary.perDay'),
       value: s.perDay === null ? '—' : fmt.money(s.perDay),
+      also: s.perDay === null ? [] : fmt.approx(s.perDay),
       note: t('income.summary.activeDays', { n: s.activeDays, days: v.period.days }),
     });
   }
   stats.push({
     label: t('income.summary.spent'),
     value: fmt.money(s.spending),
+    also: fmt.approx(s.spending),
     note: s.total > 0 ? t('income.summary.spentShare', { pct: Math.round((s.spending / s.total) * 100) }) : '',
   });
   if (largest && largest.uah !== null) {
     stats.push({
       label: t('income.summary.largest'),
       value: fmt.money(largest.uah),
+      also: fmt.approx(largest.uah),
       note: t('income.summary.largestWhere', { sender: largest.sender || t('entities.operations.noDescription'), date: dayMonth(largest.date), time: largest.time }),
     });
   }
@@ -109,6 +113,7 @@ export function sourcesView(v: Readonly<IncomeOverview>, fmt: MoneyFormat): Sour
       source: s.source,
       label: t(`income.sources.source.${s.source}`),
       amount: fmt.money(s.total),
+      also: fmt.approx(s.total),
       caption: [t('home.spending.ops', s.lines), `${v.summary.total > 0 ? Math.round((s.total / v.summary.total) * 100) : 0}%`].join(' · '),
       width: pct(s.total, max),
     }));
@@ -168,7 +173,8 @@ export function lineRows(
       marks: marksOf(l),
       amount: `+${amountOf(l)}`,
       incoming: true,
-      original: l.operation ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
+      also: l.uah === null ? [] : fmt.alsoFor(l.uah, [...(l.operation ? [l.operation] : []), { amount: l.amount, currency: l.currency }]),
+      original: l.operation && !fmt.shows(l.operation.currency) ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
     };
   });
   return { rows, shown };
@@ -176,6 +182,12 @@ export function lineRows(
 
 /** The list's total: the month's own figure while nothing filters it (no rounding drift), else the shown lines'. */
 export function listTotal(v: Readonly<IncomeOverview>, shown: ReadonlyArray<IncomeLineView>, filtered: boolean, fmt: MoneyFormat): string {
-  if (!filtered) return fmt.money(v.summary.total);
-  return fmt.money(shown.reduce((s, l) => s + (l.uah ?? 0), 0));
+  const k = filtered ? shown.reduce((s, l) => s + (l.uah ?? 0), 0) : v.summary.total;
+  return withAlso(fmt, k);
+}
+
+/** A figure in the main currency followed by its «Show also» currencies on the same line: «69 € · ≈ 3 541 ₴». */
+function withAlso(fmt: MoneyFormat, kopecks: number): string {
+  const also = fmt.approxInline(kopecks);
+  return also ? `${fmt.money(kopecks)} · ${also}` : fmt.money(kopecks);
 }

@@ -259,6 +259,26 @@ describe('insights screen', () => {
     w.unmount();
   });
 
+  it('«Show also» picked: a line per currency under the glance figures, the cards\' change, the signals; bar titles inline', async () => {
+    const off = await mountPage();
+    expect(off.findAll('[data-test="money-also"]')).toHaveLength(0);
+    off.unmount();
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setAlso('eur', true);
+    const w = await mountPage();
+    const eur = (k: number) => plain(formatMoney(Math.round(k / 50), 978));
+    const lines = (sel: string) => w.get(sel).findAll('[data-test="money-also"]').map((e) => plain(e.text()));
+    expect(lines('[data-test="glance-spent"]')).toEqual([`≈ ${eur(1_500_000)}`]);
+    expect(lines('[data-test="glance-income"]')).toEqual([`≈ ${eur(2_000_000)}`]);
+    expect(lines('[data-test="glance-kept"]')).toEqual([]);
+    expect(lines('[data-test="insight-card-high"]')).toEqual([`≈ +${eur(300_000)}`]);
+    expect(lines('[data-test="insight-card-medium"]')).toEqual([`≈ −${eur(60_000)}`]);
+    expect(lines('[data-test="signal-card-high"]')).toEqual([`≈ ${eur(400_000)}`]);
+    const title = w.get('[data-test="insight-card-high"] [data-test="insight-bars"] [title]').attributes('title')!;
+    expect(plain(title)).toContain(`· ≈ ${eur(300_000)}`);
+    w.unmount();
+  });
+
   it('a monthly limit over: a «Limit exceeded» card placed among the others by money, opening the budget', async () => {
     answer = { ...OVERVIEW, limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 750_000, over: 350_000, severity: 'high' }] };
     const w = await mountPage();

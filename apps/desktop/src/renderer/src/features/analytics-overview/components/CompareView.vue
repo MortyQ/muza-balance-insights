@@ -25,7 +25,10 @@ const GRID = 'grid grid-cols-[11rem_minmax(0,1fr)_9rem_12rem] items-center gap-4
             :style="{ '--l': `${r.left}%`, '--w': `${r.width}%` }"
           />
         </span>
-        <span role="cell" class="text-right font-semibold tabular-nums whitespace-nowrap" :class="r.up ? 'text-danger' : 'text-success'">{{ r.delta }}</span>
+        <span role="cell" class="flex flex-col items-end text-right tabular-nums whitespace-nowrap">
+          <span class="font-semibold" :class="r.up ? 'text-danger' : 'text-success'">{{ r.delta }}</span>
+          <span v-for="c in r.also" :key="c" class="text-xs text-foreground-muted" data-test="money-also">{{ c }}</span>
+        </span>
         <span role="cell" class="text-right text-foreground-secondary tabular-nums whitespace-nowrap">{{ r.span }}</span>
       </div>
     </div>

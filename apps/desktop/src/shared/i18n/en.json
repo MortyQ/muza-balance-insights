@@ -31,7 +31,9 @@
       "noCompare": "Not enough history to compare",
       "all": "All categories in «Compare»",
       "more": "more",
-      "less": "less"
+      "less": "less",
+      "moreTitle": "Spent more",
+      "lessTitle": "Spent less"
     },
     "views": {
       "title": "Categories",
@@ -70,7 +72,7 @@
     "help": {
       "kpis": "Income, spending, what was left and the share of income kept over the picked months, against the same number of months right before them. Personal and business spending together.",
       "flow": "Income and spending by day for one month, by month for a range. For one month the amounts add up from the 1st, and the dashed line is the usual month by the same day: the average of up to 3 months before.",
-      "changes": "The categories whose spending grew most against the period before, and the one that fell most.",
+      "changes": "The three categories whose spending grew most against the period before, and the three where it fell most.",
       "views": "Every category with spending in the period. The heatmap colours each cell by its spending per day against the category's own average; the other views show the same sums as small charts, lines, or against the period before.",
       "kpisName": "Totals"
     }
@@ -448,12 +450,12 @@
         "expected": "How much you could have spent by today, spending evenly.",
         "expectedFormula": "{amount} × {passed} of {days} days = {expected}",
         "forecastTitle": "How the forecast is counted",
-        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period. Payments the bank has not finalised yet are left out until it does.",
+        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period. Payments the bank has not finalised yet are already counted.",
         "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
       },
-      "pending": "+ {n} pending, {amount} | + {n} pending, {amount} | + {n} pending, {amount}",
-      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do.",
+      "pending": "incl. {n} pending, {amount} | incl. {n} pending, {amount} | incl. {n} pending, {amount}",
+      "pendingHint": "Payments the bank has not finalised yet are already counted. The bank may still change their amounts; cancelled ones drop out.",
       "ahead": "{amount} ahead of plan (×{times})",
       "aheadSoft": "A little ahead of plan",
       "under": "{amount} under plan",
@@ -1120,7 +1122,7 @@
         "over": "{n} over",
         "ahead": "{n} forecast over",
         "within": "all within",
-        "help": "This view's monthly limits and monthly budget: «Personal» spending, without holds the bank has not finalised."
+        "help": "This view's monthly limits and monthly budget: «Personal» spending, holds the bank has not finalised included."
       },
       "tiles": {
         "usual": "Your usual",
@@ -1384,6 +1386,8 @@
     "touchIdReason": "unlock the app"
   },
   "recurring": {
+    "active": "Active",
+    "notSeen": "not seen for {n} month | not seen for {n} months | not seen for {n} months",
     "actions": "Actions: {name}",
     "count": "{n} regular payment | {n} regular payments | {n} regular payments",
     "empty": "No regular payments found in the last 13 months.",
@@ -1658,7 +1662,7 @@
       "title": "How the budget works",
       "budget": "Set one amount for the month and add your fixed costs — rent, phone. They are set aside first, and the pace and «per day» count on the rest.",
       "limits": "A category limit is an amount per day, week or month. The marker on the bar shows where you would be today spending evenly.",
-      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out. Payments the bank has not finalised yet are left out until it does."
+      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out. Payments the bank has not finalised yet count right away."
     },
     "budget": {
       "title": "Budget for {month}",
@@ -1695,7 +1699,7 @@
       "usual": "Usually {amount}",
       "period": "Period",
       "owner": "Whose",
-      "counted": "Refunds lower spending and transfers between your own accounts are left out; payments the bank has not finalised yet are left out until it does.",
+      "counted": "Refunds lower spending and transfers between your own accounts are left out; payments the bank has not finalised yet count right away.",
       "failed": "Could not save. Perhaps such a limit already exists.",
       "save": "Save",
       "cancel": "Cancel",

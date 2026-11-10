@@ -18,6 +18,7 @@ const { today } = storeToRefs(useMonthStore());
         <span class="text-2xl font-bold tabular-nums" :class="{ 'text-danger': view.short }">{{ view.amount }}</span>
         <span class="text-sm text-foreground-secondary">{{ view.short ? $t('home.allowance.short') : view.until }}</span>
       </p>
+      <p v-for="c in view.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</p>
       <p v-if="view.short" class="text-xs text-foreground-muted">{{ view.until }}</p>
       <p class="text-xs text-foreground-muted">{{ view.income }}</p>
     </div>

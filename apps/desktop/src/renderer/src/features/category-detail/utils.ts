@@ -40,6 +40,7 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     {
       label: t('category.summary.avg'),
       value: s.purchases > 0 ? fmt.money(Math.round(s.gross / s.purchases)) : '—',
+      also: s.purchases > 0 ? fmt.approx(Math.round(s.gross / s.purchases)) : [],
       note: s.median === null ? '' : t('category.summary.median', { amount: fmt.money(s.median) }),
     },
   ];
@@ -47,6 +48,7 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     stats.push({
       label: t('category.summary.perDay'),
       value: s.perDay === null ? '—' : fmt.money(s.perDay),
+      also: s.perDay === null ? [] : fmt.approx(s.perDay),
       note: t('category.summary.activeDays', { n: s.activeDays, days: v.period.days }),
     });
   }
@@ -59,11 +61,12 @@ export function summaryView(v: Readonly<CategoryOverview>, who: string, scope: s
     stats.push({
       label: t('category.summary.largest'),
       value: fmt.money(-largest.uah),
+      also: fmt.approx(-largest.uah),
       note: t('category.summary.largestWhere', { merchant: largest.merchant || t('entities.operations.noDescription'), date: dayMonth(largest.date), time: largest.time }),
     });
   }
   if (s.cashback > 0) {
-    stats.push({ label: t('category.summary.cashback'), value: `+${fmt.money(s.cashback)}`, note: t('category.summary.cashbackLines', s.cashbackLines), tone: 'good' });
+    stats.push({ label: t('category.summary.cashback'), value: `+${fmt.money(s.cashback)}`, also: fmt.approx(s.cashback), note: t('category.summary.cashbackLines', s.cashbackLines), tone: 'good' });
   }
   return {
     name: categoryName(v),
@@ -189,7 +192,8 @@ export function lineRows(
       marks: marksOf(l, fmt),
       amount: `${l.refund ? '+' : '−'}${amountOf(l)}`,
       incoming: l.refund,
-      original: l.operation ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
+      also: l.uah === null ? [] : fmt.alsoFor(l.uah, [...(l.operation ? [l.operation] : []), { amount: l.amount, currency: l.currency }]),
+      original: l.operation && !fmt.shows(l.operation.currency) ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
       actions: lineActions(l),
     };
   });
@@ -198,6 +202,12 @@ export function lineRows(
 
 /** The list's total: the category's own figure while nothing filters it (no rounding drift), else the shown lines'. */
 export function listTotal(v: Readonly<CategoryOverview>, shown: ReadonlyArray<CategoryLineView>, filtered: boolean, fmt: MoneyFormat): string {
-  if (!filtered) return fmt.money(v.summary.net);
-  return fmt.money(-shown.reduce((s, l) => s + (l.uah ?? 0), 0));
+  const k = filtered ? -shown.reduce((s, l) => s + (l.uah ?? 0), 0) : v.summary.net;
+  return withAlso(fmt, k);
+}
+
+/** A figure in the main currency followed by its «Show also» currencies on the same line: «69 € · ≈ 3 541 ₴». */
+function withAlso(fmt: MoneyFormat, kopecks: number): string {
+  const also = fmt.approxInline(kopecks);
+  return also ? `${fmt.money(kopecks)} · ${also}` : fmt.money(kopecks);
 }

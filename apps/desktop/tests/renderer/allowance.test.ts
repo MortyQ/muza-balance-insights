@@ -96,6 +96,21 @@ describe('available per day: helpers', () => {
     );
     expect(owned.map((r) => r.owner)).toEqual([{ name: 'Аня', color: 'red' }, { common: true }]);
   });
+
+  it('«Show also» picked: the per-day figure and each reserve get a line per currency, a reserve\'s own one not repeated', async () => {
+    const fmt = moneyFormat(RATES, { main: 980, also: { ...NONE, usd: true, eur: true } });
+    expect(allowanceView(VIEW, FMT, 2026).also).toEqual([]);
+    expect(allowanceView(VIEW, fmt, 2026).also).toEqual([`≈ ${formatMoney(Math.round(70_000 / 40), 840)}`, `≈ ${formatMoney(Math.round(70_000 / 45), 978)}`]);
+    const [eur, own] = reserveRows({ ...VIEW, reserves: [reserve({ currency: 978, amount: 50_000, uah: 2_250_000 }), reserve({ id: 2 })] }, fmt, 2026);
+    expect(eur).toMatchObject({ approx: `≈ ${uah(2_250_000)}`, also: [`≈ ${formatMoney(Math.round(2_250_000 / 40), 840)}`] });
+    expect(own!.also).toEqual([`≈ ${formatMoney(Math.round(300_000 / 40), 840)}`, `≈ ${formatMoney(Math.round(300_000 / 45), 978)}`]);
+    expect(reserveRows(VIEW, FMT, 2026)[0]!.also).toEqual([]);
+    const { default: ReserveRow } = await import('@/features/daily-allowance/components/ReserveRow.vue');
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const w = mount(ReserveRow, { props: { row: eur! }, global: { plugins: [i18n] } });
+    expect(w.findAll('[data-test="money-also"]').map((e) => e.text())).toEqual(eur!.also);
+    w.unmount();
+  });
 });
 
 let current: AllowanceOverview = VIEW;

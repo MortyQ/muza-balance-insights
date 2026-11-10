@@ -23,6 +23,7 @@ const { view, rows, cards, fmt } = defineProps<{ view: AnalyticsOverview; rows: 
         </span>
       </div>
       <div class="mt-2 text-lg font-bold tabular-nums">{{ c.total }}</div>
+      <div v-for="a in c.also" :key="a" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ a }}</div>
       <div class="text-xs text-foreground-muted">{{ c.avg }}</div>
       <div class="mt-2 h-20" aria-hidden="true"><VChart v-if="rows[i]" :option="miniOption(view, rows[i], fmt)" /></div>
     </li>

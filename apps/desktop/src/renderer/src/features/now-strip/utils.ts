@@ -4,7 +4,7 @@ import type { MoneyFormat } from '@/entities/currency-display';
 import { categoryLink, type LinkPeriod } from '@/shared/config';
 import { change, changeText, monthShortName, shortDate, t } from '@/shared/lib';
 import type { ChangeChipModel } from '@/shared/ui';
-import { MIN_BAR, SHOWN_CATEGORIES } from './constants.ts';
+import { MIN_BAR, PERCENT_MIN_BASE, SHOWN_CATEGORIES } from './constants.ts';
 import type { CategoryBreakdown, CategoryRow, NowPrefs, NowStripView, WeekBar } from './types.ts';
 
 type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -45,7 +45,8 @@ export function nowChip(now: number, base: number | null, against: 'usual' | 'we
   if (c.kind === 'same') return { text: t(SAME[against]), tone: 'neutral', arrow: null, sr: '' };
   const dir = c.kind === 'up' ? 'up' : 'down';
   const title = t(against === 'usual' ? 'home.now.baseUsual' : 'home.now.baseWeek', { base: fmt.money(base) });
-  return { text: changeText(c, fmt.money, true), tone: dir, arrow: dir, sr: t(SR[against][dir]), title };
+  const text = base < PERCENT_MIN_BASE[against] ? `${dir === 'up' ? '+' : '−'}${fmt.money(c.diff)}` : changeText(c, fmt.money, true);
+  return { text, tone: dir, arrow: dir, sr: t(SR[against][dir]), title };
 }
 
 /** A category against the same days last week: «+120 ₴» (no percent: the row has no room), «same», «new»; null — no comparison. */

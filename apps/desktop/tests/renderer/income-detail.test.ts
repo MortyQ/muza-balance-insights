@@ -98,6 +98,21 @@ describe('income screen helpers', () => {
     expect(whenView(LINES.filter((l) => l.key === 'b' || l.key === 'd'), VIEW, 'Vigadana Osoba', FMT).title).toBe('Когда: Vigadana Osoba');
   });
 
+  it('«Show also» hryvnia with euros main: a line under each person, source, sender, part of the day and figure; tooltips carry it', () => {
+    const eur = moneyFormat(RATES, { main: 978, also: { ...NONE, uah: true } });
+    expect(peopleView(VIEW, PEOPLE, eur).map((p) => p.also)).toEqual([[`≈ ${uah(345_000)}`], [`≈ ${uah(15_000)}`]]);
+    expect(banksView(VIEW, eur)[0]!.also).toEqual([`≈ ${uah(360_000)}`]);
+    expect(sourcesView(VIEW, eur).map((s) => s.also)).toEqual([[`≈ ${uah(300_000)}`], [`≈ ${uah(40_000)}`], [`≈ ${uah(20_000)}`]]);
+    expect(sendersView(VIEW, null, eur)[0]!.also).toEqual([`≈ ${uah(300_000)}`]);
+    const when = whenView(LINES, VIEW, '', eur);
+    expect(when.dayParts[0]!.also).toEqual([`≈ ${uah(305_000)}`]);
+    expect(when.weekdays![4]!.title).toContain(` · ≈ ${uah(300_000)}`);
+    expect(summaryView(VIEW, '', eur).stats.map((x) => x.also ?? [])).toEqual([
+      [], [`≈ ${uah(90_000)}`], [`≈ ${uah(12_000)}`], [`≈ ${uah(270_000)}`], [`≈ ${uah(300_000)}`],
+    ]);
+    expect(sourcesView(VIEW, FMT).every((s) => s.also.length === 0)).toBe(true);
+  });
+
   it('the list: a plus and green, marks, the original currency; a sender filter case-insensitively, a search, by amount', () => {
     const all = lineRows(LINES, { sender: null, query: '', sort: 'date' }, PEOPLE, FMT).rows;
     expect(all.map((r) => [r.key, r.amount, r.incoming, r.marks.map((m) => m.text)])).toEqual([
@@ -228,6 +243,18 @@ describe('income screen mounted', () => {
 
     await w.find('button[aria-label^="Снять фильтр"]').trigger('click');
     expect(w.findAll('[role="row"]')).toHaveLength(LINES.length + 1);
+  });
+
+  it('«Show also» hryvnia with euros main: quiet lines under the people, the sources, the senders and the rows', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    useCurrencyDisplayStore().setAlso('uah', true);
+    const w = await mountScreen();
+    const lines = w.findAll('[data-test="money-also"]').map((x) => x.text());
+    for (const k of [345_000, 15_000, 40_000, 12_000]) expect(lines).toContain(`≈ ${uah(k)}`);
+    // The operation in hryvnia: its own amount, without «≈».
+    expect(lines).toContain(uah(15_000));
+    w.unmount();
   });
 
   it('the first load shows a skeleton; follows the global person filter; one person — no «Who received»', async () => {

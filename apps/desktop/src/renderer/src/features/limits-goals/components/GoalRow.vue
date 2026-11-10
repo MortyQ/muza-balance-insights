@@ -23,6 +23,7 @@ const C = 2 * Math.PI * R;
     <div class="flex min-w-0 flex-1 flex-col gap-0.5">
       <span class="truncate font-semibold">{{ row.name }}<template v-if="row.owner"> · <span class="font-normal text-foreground-muted">{{ row.owner }}</span></template></span>
       <span class="text-sm tabular-nums text-foreground-secondary">{{ row.progress }}<template v-if="row.percent !== null"> · {{ row.percent }}%</template></span>
+      <span v-for="c in row.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
       <span v-if="row.need" class="flex items-center gap-1 text-xs tabular-nums" :class="row.tone === 'late' ? 'text-danger' : row.tone === 'met' ? 'text-success' : 'text-foreground-muted'" data-test="goal-need">
         {{ row.need }}
         <VHelpHint v-if="row.help" :label="row.help.title" :title="row.help.title">

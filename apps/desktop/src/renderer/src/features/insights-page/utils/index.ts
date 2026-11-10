@@ -3,7 +3,7 @@ import type { CategoryId } from '@contract/categories.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { budgetLink, categoryLink, incomeLink } from '@/shared/config';
-import { change, changeText, dayMonthName, i18n, monthName, monthShortName, t } from '@/shared/lib';
+import { change, changeText, dayMonthName, formatMoney, i18n, monthName, monthShortName, t } from '@/shared/lib';
 import { monthsText, percent } from './format.ts';
 import { healthView } from './health.ts';
 import type { BudgetCardView, BudgetPartView, BudgetRowView, FeedItemView, FeedKind, GlanceView, InsightBarsView, InsightCardView, InsightsPageView, SignalCardView, SignalRowView } from '../types.ts';
@@ -14,10 +14,14 @@ const monthNo = (ym: string) => Number(ym.slice(5, 7));
 const monthText = (ym: string) => `${monthShortName(monthNo(ym))} ${ym.slice(0, 4)}`;
 
 
+/** A change in each picked «Show also» currency: «≈ +300 $». */
+const signedAlso = (fmt: MoneyFormat, sign: '+' | '−', kopecks: number): string[] =>
+  fmt.alsoParts(kopecks).map((p) => `≈ ${sign}${formatMoney(p.minor, p.currency)}`);
+
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
 function spentGlance(v: InsightsOverview, fmt: MoneyFormat): GlanceView {
-  const base = { key: 'spent', label: t('insights.glance.spent'), value: fmt.money(v.spent) } as const;
+  const base = { key: 'spent', label: t('insights.glance.spent'), value: fmt.money(v.spent), also: fmt.approx(v.spent) } as const;
   const u = v.usual;
   if (!u || u.total <= 0) return { ...base, note: '', tone: 'neutral', meter: null };
   if (v.period.incomplete) {
@@ -38,13 +42,13 @@ function spentGlance(v: InsightsOverview, fmt: MoneyFormat): GlanceView {
 function incomeGlance(v: InsightsOverview, fmt: MoneyFormat): GlanceView {
   const label = t('insights.glance.income');
   const income = v.usual?.income;
-  if (!income) return { key: 'income', label, value: '—', note: t(v.period.incomplete ? 'insights.glance.monthEnd' : 'insights.glance.noUsual'), tone: 'neutral', meter: null };
+  if (!income) return { key: 'income', label, value: '—', also: [], note: t(v.period.incomplete ? 'insights.glance.monthEnd' : 'insights.glance.noUsual'), tone: 'neutral', meter: null };
   const c = change(income.now, income.usual);
   const note =
     !c || c.kind === 'same' || c.kind === 'new'
       ? t('insights.glance.asUsual', { usual: fmt.money(income.usual) })
       : t(c.kind === 'up' ? 'insights.glance.above' : 'insights.glance.below', { diff: changeText(c, fmt.money), usual: fmt.money(income.usual) });
-  return { key: 'income', label, value: fmt.money(income.now), note, tone: 'neutral', meter: null };
+  return { key: 'income', label, value: fmt.money(income.now), also: fmt.approx(income.now), note, tone: 'neutral', meter: null };
 }
 
 function keptGlance(v: InsightsOverview): GlanceView {
@@ -52,9 +56,9 @@ function keptGlance(v: InsightsOverview): GlanceView {
   const s = v.usual?.savings;
   if (!s) {
     const why = v.period.incomplete ? 'insights.glance.monthEnd' : 'insights.glance.noSavings';
-    return { key: 'kept', label, value: '—', note: t(why), tone: 'neutral', meter: null };
+    return { key: 'kept', label, value: '—', also: [], note: t(why), tone: 'neutral', meter: null };
   }
-  return { key: 'kept', label, value: percent(s.rate), note: t('insights.glance.usually', { usual: percent(s.usual) }), tone: s.rate >= s.usual ? 'good' : 'bad', meter: null };
+  return { key: 'kept', label, value: percent(s.rate), also: [], note: t('insights.glance.usually', { usual: percent(s.usual) }), tone: s.rate >= s.usual ? 'good' : 'bad', meter: null };
 }
 
 /** Every feed item's severity: the cards, the limits (over and ahead), new payees and one-offs. */
@@ -75,11 +79,18 @@ function signalsGlance(v: InsightsOverview): GlanceView {
     key: 'signals',
     label: t('insights.glance.signals'),
     value: v.usual ? String(all.length) : '—',
+    also: [],
     note: v.usual && parts.length === 0 ? t('insights.glance.noSignals') : '',
     tone: parts[0]?.severity === 'high' ? 'up' : 'neutral',
     meter: null,
     split: v.usual && parts.length > 0 ? parts : null,
   };
+}
+
+/** A tooltip's amount followed by its «Show also» currencies: «69 € · ≈ 3 541 ₴». */
+function withAlso(fmt: MoneyFormat, kopecks: number): string {
+  const also = fmt.approxInline(kopecks);
+  return also ? `${fmt.money(kopecks)} · ${also}` : fmt.money(kopecks);
 }
 
 /** The usual months and the shown one on one scale, the usual (median) as a line. */
@@ -93,7 +104,7 @@ export function barsView(c: InsightCard, fmt: MoneyFormat): InsightBarsView | nu
       label: monthShortName(monthNo(s.month)),
       height: s.value > 0 ? Math.max(4, (s.value / max) * 100) : 0,
       now: s.month === shown,
-      title: `${monthName(monthNo(s.month))} ${s.month.slice(0, 4)} — ${fmt.money(Math.max(0, s.value))}`,
+      title: `${monthName(monthNo(s.month))} ${s.month.slice(0, 4)} — ${withAlso(fmt, Math.max(0, s.value))}`,
     })),
     usual: (c.usual / max) * 100,
     label: t('insights.card.chart', { usual: fmt.money(c.usual) }),
@@ -126,6 +137,7 @@ export function cardView(c: InsightCard, fmt: MoneyFormat, scope: Scope): Insigh
       arrow: c.direction,
       sr: '',
     },
+    also: signedAlso(fmt, sign, c.amount),
     tone,
     bars: barsView(c, fmt),
     driver: c.driver ? t('insights.card.driver', { name: c.driver.name, amount: `${sign}${fmt.money(c.driver.amount)}`, share: c.driver.share }) : null,
@@ -140,6 +152,7 @@ function payeeRow(p: NewPayeeView, fmt: MoneyFormat, scope: Scope): SignalRowVie
     name: p.name,
     caption: `${t('insights.filter.signal.payee')} · ${categoryName(p)}`,
     amount: fmt.money(p.amount),
+    also: fmt.approx(p.amount),
     to: p.categoryId ? categoryLink(p.categoryId, scope) : null,
   };
 }
@@ -152,6 +165,7 @@ function oneOffRow(o: OneOffView, fmt: MoneyFormat, scope: Scope, year: number):
     name: o.name || category,
     caption: `${t('insights.filter.signal.oneOff')} · ${dayMonthName(o.date, year)} · ${category}`,
     amount: fmt.money(o.amount),
+    also: fmt.approx(o.amount),
     to: o.categoryId ? categoryLink(o.categoryId, scope) : null,
   };
 }
@@ -274,6 +288,7 @@ export function limitCard(l: LimitOverView, fmt: MoneyFormat): InsightCardView {
     severityLabel: t(`insights.severity.${l.severity}`),
     text: t('insights.limit.text', { spent: fmt.money(l.spent), amount: fmt.money(l.amount) }),
     chip: { text: `+${fmt.money(l.over)}`, tone: 'up', arrow: 'up', sr: '' },
+    also: signedAlso(fmt, '+', l.over),
     tone: 'up',
     bars: null,
     driver: null,
@@ -292,6 +307,7 @@ export function limitAheadCard(l: LimitAheadView, fmt: MoneyFormat): InsightCard
     severityLabel: t(`insights.severity.${l.severity}`),
     text: t('insights.limitAhead.text', { forecast: fmt.money(l.forecast), amount: fmt.money(l.amount), perDay: fmt.money(l.perDay) }),
     chip: { text: `+${fmt.money(l.over)}`, tone: 'up', arrow: 'up', sr: t('insights.limitAhead.chip') },
+    also: signedAlso(fmt, '+', l.over),
     tone: 'up',
     bars: null,
     driver: null,

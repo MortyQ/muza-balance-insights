@@ -9,6 +9,8 @@ export interface SourceView {
   source: IncomeSourceId;
   label: string;
   amount: string;
+  /** One line per picked «Show also» currency; none — no line. */
+  also: ReadonlyArray<string>;
   caption: string;
   width: number;
 }

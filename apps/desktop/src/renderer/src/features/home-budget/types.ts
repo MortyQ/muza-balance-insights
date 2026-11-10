@@ -14,15 +14,21 @@ export interface FixedChipView {
 export interface BudgetRowView {
   title: string;
   total: string;
+  /** The total in each picked «Show also» currency other than the budget's own. */
+  totalAlso: string[];
   fixedTitle: string;
+  /** The fixed costs paid of their total in each picked «Show also» currency: «≈ 90 $ of 150 $». */
+  fixedAlso: string[];
   /** Paid share of the fixed costs, 0–100. */
   fixedPaid: number;
   fixed: FixedChipView[];
   flexibleTitle: string;
+  /** The flexible part's spent of its amount in each picked «Show also» currency. */
+  flexibleAlso: string[];
   flexible: LimitLook;
   /** A running month: per day by the budget and the days left. */
-  perDay: { amount: string; days: string } | null;
-  result: { within: boolean; text: string; left: string } | null;
+  perDay: { amount: string; also: string[]; days: string } | null;
+  result: { within: boolean; text: string; left: string; leftAlso: string[] } | null;
 }
 
 /** A limit that needs attention, for the «Limits» slide. */
@@ -31,6 +37,8 @@ export interface AttentionLimitView {
   icon: string;
   name: string;
   look: LimitLook;
+  /** `look.spentOf` in each picked «Show also» currency: «≈ 90 $ of 150 $». */
+  also: string[];
 }
 
 export interface UseHomeBudgetReturn {

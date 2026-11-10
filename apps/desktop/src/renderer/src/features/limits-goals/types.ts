@@ -16,6 +16,8 @@ export interface LimitRowView {
   owner: string | null;
   /** null — no rate for its currency. */
   look: LimitLook | null;
+  /** `look.spentOf` in each picked «Show also» currency: «≈ 90 $ of 150 $». */
+  also: string[];
 }
 
 export interface FixedRowView {
@@ -31,12 +33,16 @@ export interface BudgetPanelView {
   id: number;
   title: string;
   total: string;
+  /** The total in each picked «Show also» currency other than the budget's own. */
+  totalAlso: string[];
   fixed: FixedRowView[];
   /** «Paid 1 282 of 1 410 €». */
   fixedSummary: string;
   fixedTakesAll: boolean;
   flexibleTitle: string;
   flexible: LimitLook;
+  /** `flexible.spentOf` in each picked «Show also» currency. */
+  flexibleAlso: string[];
   /** A past month: «Within the budget · 57 € left» / «Over by 65 €»; null while it runs. */
   result: { within: boolean; text: string } | null;
   /** «Taxes are not counted in this budget»; null while they are. */
@@ -57,6 +63,8 @@ export interface GoalRowView {
   percent: number | null;
   /** «31 000 of 50 000 ₴ · jar». */
   progress: string;
+  /** The progress of the target in each picked «Show also» currency; empty — none or its jar is gone. */
+  also: string[];
   /** «by June · 2 715 ₴ a month», «met», «overdue», '' — no date. */
   need: string;
   tone: 'ok' | 'met' | 'late' | 'gone';

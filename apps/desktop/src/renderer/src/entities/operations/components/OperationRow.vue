@@ -47,6 +47,7 @@ const MARK_TONE: Record<MarkView['tone'], string> = {
       </span>
       <span role="cell" class="flex flex-col items-end">
         <span class="whitespace-nowrap font-bold tabular-nums" :class="{ 'text-success': row.incoming }">{{ row.amount }}</span>
+        <span v-for="c in row.also ?? []" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
         <span v-if="row.original" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ row.original }}</span>
       </span>
       <span v-if="withActions" role="cell" class="flex justify-end">

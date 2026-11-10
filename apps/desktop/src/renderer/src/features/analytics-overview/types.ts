@@ -15,10 +15,12 @@ export type Column = { label: string; idx: number[]; days: number; state: Analyt
 export type HeatCell = { text: string; title: string; background: string; strong: boolean; running: boolean };
 export type HeatRow = { key: string; name: string; color: string; avg: string; cells: HeatCell[] };
 
-export type KpiView = { key: 'income' | 'spending' | 'left' | 'rate'; label: string; value: string; note: string; tone: 'good' | 'bad' | 'neutral' };
-export type ChangeRow = { key: string; name: string; delta: string; why: string; up: boolean };
-export type CompareRow = { key: string; name: string; left: number; width: number; up: boolean; delta: string; span: string };
-export type MiniCard = { key: string; name: string; color: string; total: string; avg: string; chip: string; up: boolean | null };
+/** `also` — the value in each picked «Show also» currency (none for the rate). */
+export type KpiView = { key: 'income' | 'spending' | 'left' | 'rate'; label: string; value: string; also: string[]; note: string; tone: 'good' | 'bad' | 'neutral' };
+/** `also` — the change in each picked «Show also» currency. */
+export type ChangeRow = { key: string; name: string; delta: string; also: string[]; why: string; up: boolean };
+export type CompareRow = { key: string; name: string; left: number; width: number; up: boolean; delta: string; also: string[]; span: string };
+export type MiniCard = { key: string; name: string; color: string; total: string; also: string[]; avg: string; chip: string; up: boolean | null };
 export type GapPolygon = { points: Array<[number, number]>; positive: boolean };
 
 export interface UseAnalyticsReturn {

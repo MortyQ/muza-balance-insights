@@ -32,6 +32,7 @@ function pick(what: 'edit' | 'delete') {
     <span class="flex shrink-0 flex-col items-end gap-0.5">
       <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>
       <span v-if="row.approx" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ row.approx }}</span>
+      <span v-for="c in row.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
     </span>
     <VPopover v-model:open="open" icon="lucide:ellipsis" :label="$t('home.allowance.reserves.actions', { name: row.name })">
       <div class="flex flex-col">

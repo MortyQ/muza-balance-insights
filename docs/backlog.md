@@ -293,6 +293,12 @@
 - Home's budget row at every window width; the empty row's wording; the «Limits» slide's order.
 - Savings goals: a jar's own target offered; the need per month to a date; a closed jar.
 - The «?» explanations: readable, the numbers match the screen, nothing cut in a narrow window.
+- Pending payments in spent (`openspec/changes/budget-pending-spent`): after an update, today's purchases still
+  processed by the bank move the budget and limit figures at once, no restart; the «incl. N pending» note reads
+  clearly; a hold the bank cancels leaves the figure at the next update.
+- Taxes as personal spending (`openspec/changes/taxes-personal`): after the first update with this version, past taxes
+  paid from a personal card show in «Spending» and their category; the budget's «Count taxes» switch still moves only
+  the budget; taxes from a FOP account stay under «Business».
 
 ## Check on a live system: figure accuracy (`openspec/changes/figure-accuracy`)
 
@@ -350,3 +356,6 @@
 - **The Czech-language export** (`číslo účtu, datum splatnosti, …`) is refused as an unknown format; a reader for it
   once a real one is seen.
 - **«Foreign payment - fee»** stays a row of its own; consider making it the commission of its payment.
+- «Show also» currencies everywhere (`openspec/changes/currency-everywhere`): with one and with two picked currencies,
+  check dense lists in both themes — transactions, «Who spent», recent transactions, the budget panel's header, limit
+  rows, insight cards; a transaction in a picked currency shows its exact amount.

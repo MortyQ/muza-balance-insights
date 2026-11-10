@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import type { RouteLocationRaw } from 'vue-router';
+import { MoneyStack } from '@/entities/currency-display';
 import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VIcon } from '@/shared/ui';
 import type { AttentionLimitView } from '../types.ts';
@@ -17,7 +18,7 @@ const { limits, to } = defineProps<{ limits: ReadonlyArray<AttentionLimitView>; 
         <div class="flex items-center gap-2 text-sm">
           <VIcon :icon="l.icon" class="size-4 text-foreground-muted" />
           <span class="min-w-0 flex-1 truncate">{{ l.name }}</span>
-          <span class="tabular-nums">{{ l.look.spentOf }}</span>
+          <MoneyStack :amount="l.look.spentOf" :also="l.also" :strong="false" />
         </div>
         <LimitBar :fill="l.look.fill" :pace="l.look.pace" :state="l.look.state" />
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1">

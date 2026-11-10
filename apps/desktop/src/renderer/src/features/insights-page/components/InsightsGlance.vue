@@ -13,6 +13,7 @@ const { items } = defineProps<{ items: ReadonlyArray<GlanceView> }>();
     <VCard v-for="g in items" :key="g.key" padding="md" :data-test="`glance-${g.key}`">
       <div class="text-sm text-foreground-muted">{{ g.label }}</div>
       <div class="mt-1 text-xl font-bold tabular-nums">{{ g.value }}</div>
+      <div v-for="c in g.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</div>
       <div v-if="g.meter" class="relative mt-2 h-1.5 rounded-full bg-surface-sunken" role="presentation">
         <div class="h-full rounded-full" :class="g.tone === 'up' ? 'bg-[color-mix(in_oklch,var(--series-orange)_70%,transparent)]' : 'bg-[color-mix(in_oklch,var(--foreground)_40%,transparent)]'" :style="{ width: `${g.meter.value}%` }" />
         <div class="absolute -top-1 h-3.5 w-0.5 rounded-full bg-foreground-secondary" :style="{ left: `calc(${g.meter.mark}% - 1px)` }" />

@@ -12,7 +12,9 @@ export interface RecurringRowView {
   icon: string;
   /** The usual payment in the screen's currency, or in the account's when it has no rate. */
   amount: string;
-  /** The operation's own currency («10 $») when it differs from the account's; '' — none. */
+  /** The usual payment in each picked «Show also» currency: exact in the operation's or the account's own, else «≈». */
+  also: string[];
+  /** The operation's own currency («10 $») when it differs from the account's and no «also» line shows it; '' — none. */
   operation: string;
   /** «next 5 April» for an active one, «last 4 January» for a stopped one. */
   when: string;

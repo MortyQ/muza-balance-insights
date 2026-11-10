@@ -19,4 +19,13 @@ export interface MoneyFormat {
   approxInline(kopecks: number): string;
   /** The same currencies as numbers: minor units of each, in `approx` order. */
   alsoParts(kopecks: number): Array<{ currency: number; minor: number }>;
+  /** The picked «also» currencies shown (each with a rate, never the main one), in menu order. */
+  alsoCurrencies: ReadonlyArray<number>;
+  /**
+   * The «also» lines of one operation: a picked currency the operation is known in (its own amount, or its account's)
+   * is that exact amount, without «≈»; any other is `approx`. Amounts are absolute.
+   */
+  alsoFor(kopecks: number, exact: ReadonlyArray<{ amount: number; currency: number }>): string[];
+  /** Whether `currency` already shows on screen: the main one or a picked «also» one. */
+  shows(currency: number): boolean;
 }

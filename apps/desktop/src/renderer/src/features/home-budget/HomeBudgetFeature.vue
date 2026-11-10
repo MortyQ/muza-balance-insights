@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { MoneyStack } from '@/entities/currency-display';
 import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VIcon } from '@/shared/ui';
 import { useHomeBudget } from './composables/useHomeBudget.ts';
@@ -21,11 +22,14 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
     >
       <div class="flex min-w-0 flex-col gap-0.5">
         <span class="text-xs text-foreground-muted">{{ row.title }}</span>
-        <span class="text-2xl font-extrabold tabular-nums">{{ row.total }}</span>
+        <MoneyStack :amount="row.total" :also="row.totalAlso" align="start" :strong="false"><span class="text-2xl font-extrabold">{{ row.total }}</span></MoneyStack>
         <span class="text-xs font-semibold text-primary">{{ $t('home.budget.open') }}</span>
       </div>
       <div class="flex min-w-0 flex-col gap-1.5" data-test="home-budget-fixed">
-        <span class="text-xs text-foreground-muted tabular-nums">{{ row.fixedTitle }}</span>
+        <span class="flex flex-col">
+          <span class="text-xs text-foreground-muted tabular-nums">{{ row.fixedTitle }}</span>
+          <span v-for="c in row.fixedAlso" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+        </span>
         <div class="flex h-1.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
           <i class="block h-full bg-success" :style="{ width: `${row.fixedPaid}%` }" />
         </div>
@@ -42,7 +46,10 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
       </div>
       <div class="flex min-w-0 flex-col gap-1.5" data-test="home-budget-flexible">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <span class="text-xs text-foreground-muted tabular-nums">{{ row.flexibleTitle }}</span>
+          <span class="flex flex-col">
+            <span class="text-xs text-foreground-muted tabular-nums">{{ row.flexibleTitle }}</span>
+            <span v-for="c in row.flexibleAlso" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+          </span>
           <LimitStateChip v-if="!row.result" :state="row.flexible.state" :text="row.flexible.stateText" />
           <span v-else class="text-xs font-semibold" :class="row.result.within ? 'text-success' : 'text-danger'" data-test="home-budget-result">{{ row.result.text }}</span>
         </div>
@@ -53,12 +60,12 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
       <div class="flex min-w-0 flex-col gap-0.5" data-test="home-budget-day">
         <template v-if="row.perDay">
           <span class="text-xs text-foreground-muted">{{ $t('home.budget.perDay') }}</span>
-          <span class="text-2xl font-extrabold tabular-nums">{{ row.perDay.amount }}</span>
+          <MoneyStack :amount="row.perDay.amount" :also="row.perDay.also" align="start" :strong="false"><span class="text-2xl font-extrabold">{{ row.perDay.amount }}</span></MoneyStack>
           <span class="text-xs text-foreground-muted">{{ row.perDay.days }}</span>
         </template>
         <template v-else-if="row.result">
           <span class="text-xs text-foreground-muted">{{ $t('home.budget.left') }}</span>
-          <span class="text-2xl font-extrabold tabular-nums">{{ row.result.left }}</span>
+          <MoneyStack :amount="row.result.left" :also="row.result.leftAlso" align="start" :strong="false"><span class="text-2xl font-extrabold">{{ row.result.left }}</span></MoneyStack>
         </template>
       </div>
     </RouterLink>

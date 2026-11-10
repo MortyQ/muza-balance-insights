@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MoneyStack } from '@/entities/currency-display';
 import { LimitBar, LimitStateChip, PendingNote } from '@/entities/goal';
 import { VButton, VHelpHint, VIcon } from '@/shared/ui';
 import type { LimitRowView } from '../types.ts';
@@ -17,7 +18,7 @@ const emit = defineEmits<{ edit: [] }>();
         <span class="truncate font-semibold">{{ row.name }}</span>
         <span class="text-xs text-foreground-muted">{{ row.periodText }}<template v-if="row.owner"> · {{ row.owner }}</template></span>
       </div>
-      <span v-if="row.look" class="shrink-0 font-semibold tabular-nums">{{ row.look.spentOf }}</span>
+      <MoneyStack v-if="row.look" class="font-semibold" :amount="row.look.spentOf" :also="row.also" :strong="false" />
       <VButton variant="link" size="sm" :text="$t('limits.edit')" data-test="limit-edit" @click="emit('edit')" />
     </div>
     <template v-if="row.look">

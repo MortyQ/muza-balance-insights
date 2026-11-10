@@ -19,7 +19,10 @@ const emit = defineEmits<{ pick: [key: string] }>();
         <span class="truncate font-semibold" :title="item.name">{{ item.name }}</span>
         <span class="truncate text-xs text-foreground-muted">{{ item.caption }}</span>
       </span>
-      <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ item.amount }}</span>
+      <span class="flex shrink-0 flex-col items-end">
+        <span class="whitespace-nowrap text-right font-bold tabular-nums">{{ item.amount }}</span>
+        <span v-for="c in item.also ?? []" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+      </span>
     </span>
     <VShareBar :value="item.width" color="var(--cat)" size="sm" class="w-full" />
   </button>

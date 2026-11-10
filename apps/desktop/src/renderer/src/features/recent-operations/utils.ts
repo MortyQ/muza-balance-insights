@@ -16,6 +16,7 @@ export function recentRows(v: RecentOperations, fmt: MoneyFormat, scope: Scope):
       name: l.merchant || category,
       caption: `${category} · ${shortDate(`${l.date} ${l.time}`)}`,
       amount: l.refund ? `+${money}` : money,
+      also: l.uah === null ? [] : fmt.alsoFor(l.uah, [{ amount: l.amount, currency: l.currency }]),
       refund: l.refund,
       pending: l.pending,
       to: l.categoryId ? categoryLink(l.categoryId, scope) : null,

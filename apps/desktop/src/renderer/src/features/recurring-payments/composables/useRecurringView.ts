@@ -18,7 +18,7 @@ export function useRecurringView({ view, fmt }: Pick<UseRecurringReturn, 'view' 
   const rows = (list: 'active' | 'ended' | 'hidden') => {
     const v = view.value;
     if (!v) return [];
-    return v[list].map((p) => rowView(p, { fmt: fmt.value, currentYear: currentYear.value, active: list === 'active', person: personOf(p.participantId) }));
+    return v[list].map((p) => rowView(p, { fmt: fmt.value, currentYear: currentYear.value, today: monthStore.today, active: list === 'active', person: personOf(p.participantId) }));
   };
 
   return {

@@ -92,6 +92,22 @@ beforeEach(() => {
 });
 
 describe('the «Budget» screen', () => {
+  it('«Show also» picked: a line per currency under the limit, the goal, the budget\'s total and its flexible part', async () => {
+    const off = await mountScreen();
+    expect(off.findAll('[data-test="money-also"]')).toHaveLength(0);
+    off.unmount();
+    answer = { ...OVERVIEW, rates: { list: [{ currency: 840, rate: 40 }], fetchedAt: 0, saved: false } };
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setAlso('usd', true);
+    const w = await mountScreen();
+    const usd = (k: number) => plain(formatMoney(Math.round(k / 40), 840));
+    const lines = (sel: string) => w.get(sel).findAll('[data-test="money-also"]').map((e) => plain(e.text()));
+    expect(lines('[data-test="limit-row"]')).toEqual([`≈ ${usd(30_000)} из ${usd(20_000)}`]);
+    expect(lines('[data-test="goal-row"]')).toEqual([`≈ ${usd(3_100_000)} из ${usd(5_000_000)}`]);
+    expect(lines('[data-test="budget-panel"]')).toEqual([`≈ ${usd(5_000_000)}`, `≈ ${usd(2_300_000)} из ${usd(3_640_000)}`]);
+    w.unmount();
+  });
+
   it('a savings goal: progress of the target from its jar, what is needed a month to its date, with the formula', async () => {
     const w = await mountScreen();
     const row = w.get('[data-test="goal-row"]');
@@ -150,8 +166,8 @@ describe('the «Budget» screen', () => {
     const w = await mountScreen();
     const rows = w.findAll('[data-test="limit-row"]');
     expect(rows[0]!.find('[data-test="pending-note"]').exists()).toBe(false);
-    expect(plain(rows[1]!.get('[data-test="pending-note"]').text())).toBe(`+ 1 в ожидании, ${uah(60_000)}`);
-    expect(plain(w.get('[data-test="budget-panel"] [data-test="pending-note"]').text())).toBe(`+ 2 в ожидании, ${uah(65_000)}`);
+    expect(plain(rows[1]!.get('[data-test="pending-note"]').text())).toBe(`в т.ч. 1 в ожидании, ${uah(60_000)}`);
+    expect(plain(w.get('[data-test="budget-panel"] [data-test="pending-note"]').text())).toBe(`в т.ч. 2 в ожидании, ${uah(65_000)}`);
     w.unmount();
   });
 

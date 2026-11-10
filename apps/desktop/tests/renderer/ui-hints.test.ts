@@ -40,7 +40,7 @@ describe('hints on marks and figures', () => {
   });
 
   it('the analytics totals have one «?»', () => {
-    const items = (['income', 'spending'] as const).map((key) => ({ key, label: key, value: '1 ₴', note: '', tone: 'neutral' as const }));
+    const items = (['income', 'spending'] as const).map((key) => ({ key, label: key, value: '1 ₴', also: [], note: '', tone: 'neutral' as const }));
     const w = mount(AnalyticsKpis, { props: { items }, global: { plugins: [i18n] } });
     expect(w.findAll('button[aria-haspopup]').map((b) => b.attributes('aria-label'))).toEqual(['Как считается «Итоги»']);
   });

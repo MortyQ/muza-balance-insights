@@ -9,9 +9,33 @@ English interface.
 
 - The tile beside «Today» and «This week» always shows its slides in one order: «What's unusual», then «Limits», then
   «Recent transactions». With nothing unusual and no limit to watch, it opens on «Recent transactions».
+- «Today» and «This week» say a change in per cent only when the usual day or last week is large enough; otherwise the
+  chip shows the difference in money alone, so one purchase on a quiet day no longer reads as «+400%».
+
+### Analytics and regular payments
+
+- «What changed» in «Analytics» lists the three largest increases and the three largest decreases under «Spent more»
+  and «Spent less»; a decrease is shown in a calm blue instead of green.
+- «Regular payments» heads its first list «Active», and a payment no longer seen says for how long: «last 16 Jun · not
+  seen for 4 months».
+
+### Currencies
+
+- The currencies switched on under «Show also» now appear under every amount in tables and lists: transactions, «Who
+  spent», payees, banks, recent transactions, limits, the budget, regular payments, analytics and insights. A
+  transaction made in one of those currencies shows its exact amount, without «≈». Charts show them in their tooltips.
+
+### Budget and limits
+
+- Purchases the bank is still processing now count against the monthly budget and category limits as soon as they are
+  downloaded, so the figures move right after an update. The note under the bar says how much of the amount is still
+  pending: the bank may change those amounts, and cancelled ones drop out.
 
 ### Fixes
 
+- Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget
+  structure», including the ones downloaded before; they appear after the next update. Whether they count against the
+  monthly budget is still up to its «Count taxes» switch. Payments from a business account stay business.
 - A limit's warning label, such as «€99 ahead of plan (×1.4)», is readable in the dark theme again.
 
 ## 0.1.14 — 2026-11-07

@@ -217,6 +217,26 @@ describe('category screen helpers', () => {
     expect(noneText({ ...VIEW, lines: [] })).toBe('В сентябре трат в этой категории нет.');
     expect(noneText(VIEW)).toBe('');
   });
+
+  it('«Show also» hryvnia with euros main: a line under each part, name, figure and part of the day; tooltips carry it', () => {
+    const eur = moneyFormat(RATES, { main: 978, also: { ...NONE, uah: true } });
+    expect(peopleView(VIEW, PEOPLE, eur).map((p) => [p.amount, p.also])).toEqual([
+      [formatMoney(1_804, 978), [`≈ ${uah(81_200)}`]],
+      [formatMoney(1_329, 978), [`≈ ${uah(59_800)}`]],
+    ]);
+    expect(banksView(VIEW, eur)[0]!.also).toEqual([`≈ ${uah(141_000)}`]);
+    expect(merchantsView(VIEW, null, eur).map((m) => m.also)).toEqual([[`≈ ${uah(64_000)}`], [`≈ ${uah(77_000)}`]]);
+    const when = whenView(LINES, VIEW, '', eur);
+    expect(when.dayParts[0]!.also).toEqual([`≈ ${uah(77_000)}`]);
+    expect(when.weekdays![5]!.title).toBe(`сб — ${formatMoney(1_422, 978)} · ≈ ${uah(64_000)}`);
+    expect(when.days![18]!.title).toContain(` · ≈ ${uah(64_000)}`);
+    expect(monthsView(VIEW, eur)!.bars.at(-1)!.title).toContain(` · ≈ ${uah(141_000)}`);
+    const s = summaryView(VIEW, '', '', eur);
+    expect(s.stats.map((x) => x.also ?? [])).toEqual([[], [`≈ ${uah(41_000)}`], [`≈ ${uah(4_700)}`], [], [`≈ ${uah(64_000)}`], [`≈ ${uah(600)}`]]);
+    // Nothing picked: no line, tooltips as before.
+    expect(peopleView(VIEW, PEOPLE, FMT).every((p) => p.also === undefined)).toBe(true);
+    expect(whenView(LINES, VIEW, '', FMT).weekdays![5]!.title).toBe(`сб — ${uah(64_000)}`);
+  });
 });
 
 // The week of 14–20 September (lines a, b, c fall in it), compared with the same days of last week.
@@ -406,6 +426,18 @@ describe('category screen mounted', () => {
     expect(w.text()).toContain(`Итого по списку: ${uah(141_000)}`);
   });
 
+  it('«Show also» hryvnia with euros main: quiet lines under the people, the places, the parts of the day and the rows', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    useCurrencyDisplayStore().setAlso('uah', true);
+    const w = await mountScreen();
+    const lines = w.findAll('[data-test="money-also"]').map((x) => x.text());
+    for (const k of [81_200, 59_800, 77_000, 4_700]) expect(lines).toContain(`≈ ${uah(k)}`);
+    // The operation in hryvnia: its own amount, without «≈».
+    expect(lines).toContain(uah(64_000));
+    w.unmount();
+  });
+
   it('the category\'s limit with its pace and state while the month runs; none for a past month', async () => {
     const w = await mountScreen();
     const bar = w.find('[data-test="category-limit"]');
@@ -418,7 +450,7 @@ describe('category screen mounted', () => {
     // A hold from today: left out of the bar, said apart.
     limits = { ...LIMITS, limits: [{ ...LIMITS.limits[0]!, figures: { ...LIMITS.limits[0]!.figures, pending: { count: 1, amount: 40_000 } } }] };
     const held = await mountScreen();
-    expect(held.get('[data-test="category-limit"] [data-test="pending-note"]').text()).toBe(`+ 1 в ожидании, ${uah(40_000)}`);
+    expect(held.get('[data-test="category-limit"] [data-test="pending-note"]').text()).toBe(`в т.ч. 1 в ожидании, ${uah(40_000)}`);
     held.unmount();
     limits = LIMITS;
     current = { ...VIEW, thisMonth: '2026-10' };

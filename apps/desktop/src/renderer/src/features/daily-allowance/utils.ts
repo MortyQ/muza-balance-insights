@@ -26,6 +26,7 @@ export function reserveRows(
     name: r.name,
     amount: formatMoney(r.amount, r.currency),
     approx: r.currency !== fmt.currency && r.uah !== null ? `≈ ${fmt.money(r.uah)}` : '',
+    also: r.uah === null ? [] : fmt.approx(r.uah).filter((_, i) => fmt.alsoCurrencies[i] !== r.currency),
     term:
       r.until === null
         ? t('home.allowance.reserves.noEnd')
@@ -61,6 +62,7 @@ export function allowanceView(v: AllowanceOverview, fmt: MoneyFormat, currentYea
   ];
   return {
     amount: v.free < 0 ? fmt.money(-v.free) : fmt.money(v.perDay),
+    also: fmt.approx(v.free < 0 ? -v.free : v.perDay),
     short: v.free < 0,
     until: toIncome ? t('home.allowance.untilIncome', { date: day(v.until), days }) : t('home.allowance.untilMonthEnd', { days }),
     income,

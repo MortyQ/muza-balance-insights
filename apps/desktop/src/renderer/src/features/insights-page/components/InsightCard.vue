@@ -22,6 +22,9 @@ const { card } = defineProps<{ card: InsightCardView }>();
             <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="SEVERITY_CHIP[card.severity]" data-test="severity">{{ card.severityLabel }}</span>
             <VChangeChip :chip="card.chip" size="sm" class="ml-auto" />
           </div>
+          <p v-if="card.also.length > 0" class="-mt-1 flex flex-wrap justify-end gap-x-3">
+            <span v-for="c in card.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+          </p>
           <p class="text-sm text-foreground-secondary">{{ card.text }}</p>
           <p v-if="card.driver" class="flex items-start gap-1.5 text-sm" data-test="insight-driver">
             <VIcon icon="lucide:store" class="mt-0.5 size-3.5 shrink-0 text-foreground-muted" />
