@@ -56,3 +56,16 @@ A read only: amounts and dates, no description, name, card number or IBAN. Nothi
 - A FOP account that receives a refund the core does not pair counts it as income (core's refund rules).
 - A business account of a bank other than Monobank depends on that provider's `isBusinessAccount` (none today).
 - Rates and the ЄСВ wording must be checked by a person before the release (`docs/backlog.md`).
+
+## Revision (10.11.2026)
+
+- **Query by days**, not by quarter: the renderer turns Month / Quarter / Year / «Dates» into `from..to` (pure,
+  `features/fop-tax/utils.ts`, on `src/shared/quarters.ts`); main cuts `to` at today and refuses `from` after today or
+  `from > to` (like other date reads). `yearToDate: true` adds the year from 1 January to `to`.
+- **«All income»** = the same `incomeSummary` grouped by account, keeping every enabled account of the view instead
+  of the business ones; the exclusions (refunds, own and family transfers) are the same.
+- **Menu**: the route's `when` is dropped. `RouteNav.when` / `NavCondition` and `DataStatus.businessAccounts` have no
+  other user, so they go too (smaller menu code, one less status field).
+- **Screen layout**: one card — the period row (a `VSegmented`-like kind switch, then the pickers of that kind), the
+  base switch, the rate row (5% · 6% chips and a percent field), then the result big: the tax, «5% from income», the
+  base under it with the picked «also» currencies.

@@ -12,3 +12,9 @@
 ## 3. Checks
 
 - [x] 3.1 Each package's typecheck and tests; the user runs `pnpm test` and `pnpm typecheck` at the root
+
+## 4. Revision: standalone calculator
+
+- [ ] 4.1 Data: `FopTaxQuery` → `{ from, to, base, yearToDate?, participantId? }`; «All income» over every enabled account of the view; drop `DataStatus.businessAccounts`; verify `tests/data.test.ts` (all vs FOP base, month and range bounds, refusals), `tests/ipc.test.ts`
+- [ ] 4.2 Screen: the menu item always shown (drop `RouteNav.when`); period kind Month / Quarter / Year / «Dates» with their pickers; base switch; presets 5% and 6% plus own percent; keys in `uk.json`, `en.json`, `ru.json`; verify `tests/renderer/fop-tax.test.ts`, `tests/renderer/layouts.test.ts`
+- [ ] 4.3 `CHANGELOG.md` «### FOP tax» reworded (flagged for human review); `.agents/project/desktop-renderer.md`, `desktop-import.md`; each package's typecheck and tests, then the root ones
