@@ -21,7 +21,7 @@ const { rows, currency, owners, owner, today, save, remove } = defineProps<{
 
 // One form at a time: 'new', a reserve's id, or none.
 const editing = ref<'new' | number | null>(null);
-const failed = ref<'save' | 'delete' | null>(null);
+const failed = ref<'save' | 'delete' | 'done' | null>(null);
 const full = computed(() => rows.length >= RESERVES_MAX);
 const fresh = computed<ReserveInput>(() => ({ name: '', currency: currency as ReserveCurrency, amount: 0, until: null, participantId: owner }));
 
@@ -35,6 +35,16 @@ async function submit(id: number | null, input: ReserveInput) {
 }
 async function drop(id: number) {
   failed.value = (await remove(id)) ? null : 'delete';
+}
+// «Done» is saved at once: it changes «Free» the user is looking at. Not saved: the rows are drawn anew, so the box
+// shows the stored mark again.
+const redraw = ref(0);
+async function mark(row: ReserveRowView, done: boolean) {
+  if (await save(row.id, { ...row.input, done })) failed.value = null;
+  else {
+    failed.value = 'done';
+    redraw.value++;
+  }
 }
 </script>
 
@@ -53,11 +63,12 @@ async function drop(id: number) {
             @cancel="editing = null"
           />
         </li>
-        <ReserveRow v-else :row="r" @edit="open" @delete="drop" />
+        <ReserveRow v-else :key="redraw" :row="r" @edit="open" @delete="drop" @done="(done) => mark(r, done)" />
       </template>
     </ul>
     <p v-else-if="editing !== 'new'" class="text-sm text-foreground-muted">{{ $t('home.allowance.reserves.empty') }}</p>
     <p v-if="failed === 'delete'" class="text-xs text-danger">{{ $t('home.allowance.reserves.deleteFailed') }}</p>
+    <p v-if="failed === 'done'" class="text-xs text-danger">{{ $t('home.allowance.reserves.doneFailed') }}</p>
     <ReserveForm
       v-if="editing === 'new'"
       :start="fresh"

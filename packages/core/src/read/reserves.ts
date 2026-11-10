@@ -21,8 +21,10 @@ export type ReserveInput = {
   until: string | null;
   /** Whose it is: counted for that person and the family; null — common, counted for the family only. */
   participantId: number | null;
+  /** Marked done (paid or no longer needed): listed, never taken off. Absent — kept as stored (a new one: not done). */
+  done?: boolean;
 };
-export type Reserve = ReserveInput & { id: number };
+export type Reserve = Omit<ReserveInput, 'done'> & { id: number; done: boolean };
 
 export class ReserveError extends Error {
   override name = 'ReserveError';
@@ -43,7 +45,8 @@ function checked(r: ReserveInput): ReserveInput {
   if (!Number.isInteger(r.amount) || r.amount < 0 || r.amount > RESERVE_AMOUNT_MAX) throw new ReserveError(`amount: 0 … ${RESERVE_AMOUNT_MAX}`);
   if (r.until !== null && !isDate(r.until)) throw new ReserveError('until: YYYY-MM-DD | null');
   if (r.participantId !== null && !Number.isInteger(r.participantId)) throw new ReserveError('participantId: an id | null');
-  return { name, currency: r.currency, amount: r.amount, until: r.until, participantId: r.participantId };
+  if (r.done !== undefined && typeof r.done !== 'boolean') throw new ReserveError('done: a boolean');
+  return { name, currency: r.currency, amount: r.amount, until: r.until, participantId: r.participantId, done: r.done };
 }
 
 /** The input checked against the database too: an unknown person → ReserveError. */
@@ -63,11 +66,14 @@ const reserveOf = (r: Record<string, unknown>): Reserve => ({
   amount: Number(r.amount),
   until: r.until === null || r.until === undefined ? null : String(r.until),
   participantId: r.participant_id === null || r.participant_id === undefined ? null : Number(r.participant_id),
+  done: r.done_at !== null && r.done_at !== undefined,
 });
+
+const COLUMNS = 'id, name, currency, amount, until, participant_id, done_at';
 
 /** Every reserve, oldest first. */
 export async function listReserves(db: Db): Promise<Reserve[]> {
-  const rs = await db.execute('SELECT id, name, currency, amount, until, participant_id FROM reserves ORDER BY id');
+  const rs = await db.execute(`SELECT ${COLUMNS} FROM reserves ORDER BY id`);
   return rs.rows.map(reserveOf);
 }
 
@@ -77,21 +83,29 @@ export async function addReserve(db: Db, input: ReserveInput, nowSec: number): P
   const n = Number((await db.execute('SELECT COUNT(*) AS n FROM reserves')).rows[0]?.n ?? 0);
   if (n >= RESERVES_MAX) throw new ReserveError(`at most ${RESERVES_MAX} reserves`);
   const rs = await db.execute({
-    sql: 'INSERT INTO reserves (name, currency, amount, until, participant_id, created_at) VALUES (?, ?, ?, ?, ?, ?) RETURNING id',
-    args: [r.name, r.currency, r.amount, r.until, r.participantId, nowSec],
+    sql: `INSERT INTO reserves (name, currency, amount, until, participant_id, created_at, done_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+          RETURNING ${COLUMNS}`,
+    args: [r.name, r.currency, r.amount, r.until, r.participantId, nowSec, r.done === true ? nowSec : null],
   });
-  return { id: Number(rs.rows[0]?.id), ...r };
+  return reserveOf(rs.rows[0]!);
 }
 
-/** Replaces a reserve's fields; an unknown id, an unknown person or an invalid input → ReserveError. */
-export async function updateReserve(db: Db, id: number, input: ReserveInput): Promise<Reserve> {
+/**
+ * Replaces a reserve's fields; an unknown id, an unknown person or an invalid input → ReserveError. `done`: true marks
+ * it done at `nowSec` (one already done keeps its moment), false makes it active again, absent leaves it as it is.
+ */
+export async function updateReserve(db: Db, id: number, input: ReserveInput, nowSec: number): Promise<Reserve> {
   const r = await stored(db, input);
+  const done = r.done === undefined ? null : r.done ? 1 : 0;
   const rs = await db.execute({
-    sql: 'UPDATE reserves SET name = ?, currency = ?, amount = ?, until = ?, participant_id = ? WHERE id = ? RETURNING id',
-    args: [r.name, r.currency, r.amount, r.until, r.participantId, id],
+    sql: `UPDATE reserves SET name = ?, currency = ?, amount = ?, until = ?, participant_id = ?,
+            done_at = CASE ? WHEN 1 THEN COALESCE(done_at, ?) WHEN 0 THEN NULL ELSE done_at END
+          WHERE id = ? RETURNING ${COLUMNS}`,
+    args: [r.name, r.currency, r.amount, r.until, r.participantId, done, nowSec, id],
   });
-  if (rs.rows.length === 0) throw new ReserveError('unknown reserve');
-  return { id, ...r };
+  const row = rs.rows[0];
+  if (row === undefined) throw new ReserveError('unknown reserve');
+  return reserveOf(row);
 }
 
 /** Deletes a reserve; an unknown id → ReserveError. */

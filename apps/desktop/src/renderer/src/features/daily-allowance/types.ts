@@ -39,8 +39,10 @@ export interface ReserveRowView {
   also: string[];
   /** «no end» / «until 1 December» / «ended 1 December». */
   term: string;
-  /** Counted now (not ended). */
+  /** Counted now (not done, not ended). */
   active: boolean;
+  /** Marked done: listed, not taken off. */
+  done: boolean;
   /** Whose, shown in a family view of several: the person, or common; null — not shown. */
   owner: { name: string; color: string } | { common: true } | null;
   /** As saved: the form starts from it. */

@@ -282,6 +282,14 @@ function reserveFor(r: { participantId: number | null }, participantId: number |
   return participantId === undefined || r.participantId === participantId;
 }
 
+/**
+ * A reserve is taken off (the balance card's `reserved`, «Free» and «Available per day») while it is not marked done
+ * and has no end or its last day is `today` or later. The one rule for both, so they never disagree.
+ */
+function reserveActive(r: { done: boolean; until: string | null }, today: string): boolean {
+  return !r.done && (r.until === null || r.until >= today);
+}
+
 /** The core filters of a screen's view: whose and which banks (spec core-bank-view), each only when asked for. */
 type ViewFilters = { participantId?: number; providers?: ProviderId[] };
 
@@ -1148,9 +1156,12 @@ export class DataService {
     return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
   }
 
-  /** Every reserve as of `today`: a reserve counts through its last day; one without a rate is listed, not taken off. */
+  /**
+   * Every reserve as of `today`: active by reserveActive (a done one is listed, not taken off); one without a rate is
+   * listed, not taken off.
+   */
   private async reservesOn(db: Db, today: string, fx: Map<number, FxRate>): Promise<AllowanceOverview['reserves']> {
-    return (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
+    return (await listReserves(db)).map((r) => ({ ...r, active: reserveActive(r, today), uah: toUah(r.amount, r.currency, fx) }));
   }
 
   /** Reserves of «Available per day» (core reserves.ts). */
@@ -1159,7 +1170,7 @@ export class DataService {
   }
 
   async updateReserve(id: number, r: ReserveInput): Promise<void> {
-    await updateReserve(await this.conn(), id, r);
+    await updateReserve(await this.conn(), id, r, this.d.nowSec());
   }
 
   async deleteReserve(id: number): Promise<void> {

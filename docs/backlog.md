@@ -48,6 +48,12 @@
 - A medium window (45–64rem): icons only, tooltips on hover; widening restores the stored choice.
 - Fold, relaunch: the menu opens folded.
 
+## To check live: reserve «Done» (reserve-done)
+
+- On the planning screen tick «Done» on a reserve: «Free» on the balance card and «Available per day» grow by it at
+  once, the row stays dimmed; untick it and both drop back; the tooltip reads well in uk / en / ru; the mark survives a
+  restart and an edit of the reserve; the family view and a person's view agree.
+
 ## To check live: month pace (desktop-month-pace)
 
 - The balances block at three widths: the pace beside the month panel (wide), under them (medium, narrow), folding

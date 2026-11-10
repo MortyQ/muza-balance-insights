@@ -27,6 +27,7 @@ const reserve = z.strictObject({
   amount: z.number().int().min(0).max(RESERVE_AMOUNT_MAX),
   until: z.string().refine(isIsoDate).nullable(),
   participantId: id.nullable(),
+  done: z.boolean().optional(),
 });
 const goalCurrency = z.union(RESERVE_CURRENCIES.map((c) => z.literal(c)));
 const goalAmount = z.number().int().min(1).max(RESERVE_AMOUNT_MAX);

@@ -31,6 +31,12 @@ English interface.
   downloaded, so the figures move right after an update. The note under the bar says how much of the amount is still
   pending: the bank may change those amounts, and cancelled ones drop out.
 
+### Planning
+
+- Each reserve under «Available per day» has a «Done» checkbox. Tick it once you have paid for it or no longer need
+  it: the reserve stops reducing «Free» and «Available per day» at once and stays in the list, dimmed. Untick it to
+  count it again.
+
 ### Fixes
 
 - Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget

@@ -190,6 +190,22 @@ describe('DataService.monthOverview', () => {
     expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
   });
 
+  it('reserves: a done one is not set against the balance, for the family nor its person; unmarked, it is again', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await synced('uah');
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    const gift = { name: 'Подарунок', currency: 980 as const, amount: 3_000, until: null, participantId: me };
+    await svc.addReserve({ name: 'Ремонт', currency: 980, amount: 10_000, until: null, participantId: me });
+    await svc.addReserve(gift);
+    const id = (await svc.allowanceOverview({})).reserves[1]!.id;
+    await svc.updateReserve(id, { ...gift, done: true });
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.reserved).toBe(10_000);
+    expect(v.people.map((p) => p.reserved)).toEqual([10_000]);
+    await svc.updateReserve(id, { ...gift, done: false });
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
+  });
+
   it('a past month: balanceAt is its last day, the balance comes from the last operation before its end', async () => {
     await account('uah', 'black', 980, 90_000);
     await synced('uah');
@@ -1462,6 +1478,24 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     expect(after.reserves.map((r) => r.name)).toEqual(['Оренда', 'Відпустка']);
     expect(after.free).toBe(240_000 - 10_000);
     await expect(svc.deleteReserve(study!.id)).rejects.toThrow();
+  });
+
+  it('reserves: a done one is listed, not active and not taken off «Free»; a change without the mark keeps it; unmarked, taken off again', async () => {
+    const flat = { name: 'Квартира', currency: 980 as const, amount: 50_000, until: null, participantId: null };
+    await svc.addReserve(flat);
+    const id = (await svc.allowanceOverview({})).reserves[0]!.id;
+    await svc.updateReserve(id, { ...flat, done: true });
+    const done = await svc.allowanceOverview({});
+    expect(done.reserves.map((r) => [r.name, r.done, r.active, r.uah])).toEqual([['Квартира', true, false, 50_000]]);
+    expect(done.free).toBe(240_000);
+
+    await svc.updateReserve(id, { ...flat, amount: 60_000 });
+    expect((await svc.allowanceOverview({})).reserves[0]).toMatchObject({ amount: 60_000, done: true, active: false });
+
+    await svc.updateReserve(id, { ...flat, done: false });
+    const again = await svc.allowanceOverview({});
+    expect(again.reserves[0]).toMatchObject({ done: false, active: true });
+    expect(again.free).toBe(240_000 - 50_000);
   });
 
   it('reserves of a person: their own listed and taken off; a common one only for the family', async () => {

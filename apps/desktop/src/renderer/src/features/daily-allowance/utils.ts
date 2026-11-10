@@ -30,10 +30,11 @@ export function reserveRows(
     term:
       r.until === null
         ? t('home.allowance.reserves.noEnd')
-        : t(r.active ? 'home.allowance.reserves.until' : 'home.allowance.reserves.expired', { date: dayMonthName(r.until, currentYear) }),
+        : t(r.until >= v.today ? 'home.allowance.reserves.until' : 'home.allowance.reserves.expired', { date: dayMonthName(r.until, currentYear) }),
     active: r.active,
+    done: r.done,
     owner: ownerOf(r.participantId),
-    input: { name: r.name, currency: r.currency, amount: r.amount, until: r.until, participantId: r.participantId },
+    input: { name: r.name, currency: r.currency, amount: r.amount, until: r.until, participantId: r.participantId, done: r.done },
   }));
 }
 

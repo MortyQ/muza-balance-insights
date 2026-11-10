@@ -176,11 +176,14 @@
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
   core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
   — the last day it counts or null; migration 14: `participant_id` — whose, or null for common; a removed person's become
-  common; with one person only, the reserves so far became theirs; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
+  common; with one person only, the reserves so far became theirs; migration 22: `done_at` — when marked done, epoch
+  seconds, null — active; at most `RESERVES_MAX`, done ones included; database only, so encrypted and gone with «Delete all data»,
   never in the analysis copy or an MCP tool). Whose counts where (`reserveFor` in `data/data.ts`): the family view —
-  all; a person — their own only, never a common one. `reserves` in the answer lists the view's: `active` (no end, or
-  `until` ≥ today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
-  `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits (`src/shared/allowance.ts`
+  all; a person — their own only, never a common one. `reserves` in the answer lists the view's (`done` among them): `active`
+  (`reserveActive`: not done, and no end or `until` ≥ today — the one rule for `allowanceOverview` and the balance
+  card's `reserved`) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
+  `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits; `done` optional in the input: true
+  marks it done now (one already done keeps its moment), false active again, absent kept as stored (`src/shared/allowance.ts`
   re-exports core's). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers

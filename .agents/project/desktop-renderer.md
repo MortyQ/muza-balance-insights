@@ -268,7 +268,8 @@
   per day (or what is short), «until … · n days», the income line (next / late / none) and the count's lines
   (`AllowanceBreakdown`: money, each active reserve, each mandatory payment, free, per day); `reserveMinor` — an amount typed in
   whole units; `reserveRows` — the reserves list (own currency, ≈ the screen's, the term). Under the count `ReserveList`:
-  `ReserveRow` (`VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
+  `ReserveRow` (a «Done» `VCheckbox` with its `VTooltip` hint, saved at once with the row's input and `done`, the boxes
+  drawn anew when that fails; a row not active — done or ended — `opacity-60`; `VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
   «No end» `VCheckbox` or the last day `VDatepicker`; «Whose» `VSelect` — each person and «Common» — in a family of
   several only, at first the picked person or common; one person: no field, theirs; checked on submit); a row says
   whose (`ReserveRowView.owner`) in a family view of several, «Add a reserve» up to `RESERVES_MAX`;

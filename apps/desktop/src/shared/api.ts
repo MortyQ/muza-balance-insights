@@ -1,6 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { ProviderId } from '@mono/core/providers/types';
-import type { ReserveInput } from './allowance.ts';
+import type { Reserve, ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
 import type { CategoryId, KindCategoryId } from './categories.ts';
@@ -993,9 +993,8 @@ export type AllowancePayment = { key: string; name: string; uah: number | null; 
  * mandatory payments due before the next regular income, over the days until it. Hryvnia kopecks.
  */
 /** A reserve as «Available per day» counts it. */
-export type AllowanceReserveView = ReserveInput & {
-  id: number;
-  /** No end, or its last day is today or later: taken off. */
+export type AllowanceReserveView = Reserve & {
+  /** Not marked done, and no end or its last day is today or later: taken off. */
   active: boolean;
   /** The amount in hryvnia kopecks at today's rate; null — no rate (not taken off). */
   uah: number | null;
