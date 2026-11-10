@@ -3,8 +3,12 @@
 import type { Db } from '../storage/db.ts';
 
 export const SETTING_DEFAULTS = {
-  /** Treasury payments («ГУК…») from any card count as business. Personal ones (fines, fees) → scope overrides. */
-  treasury_business: true,
+  /**
+   * Treasury payments («ГУК…») from any card count as business. Off by default: taxes paid from a personal card are
+   * personal spending (a business account's stay business by its own rule); on → the other way round, with scope
+   * overrides for the exceptions.
+   */
+  treasury_business: false,
   /** Tool outputs show full counter_name instead of the mask «О. Т.». Never a tool parameter. */
   reveal_full_names: false,
   /**

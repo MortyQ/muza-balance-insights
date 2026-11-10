@@ -3,7 +3,7 @@
 //      (treasury and MCC 9311/9399 payments have none) — exceptions, e.g. a personal fine paid to the treasury;
 //   2. a business account (the provider's rule; Monobank: type fop) → business;
 //   3. treasury payment (the provider's rule; Monobank: «ГУК…») from any card → business, if the setting
-//      treasury_business is on (default);
+//      treasury_business is on (off by default: taxes from personal cards are personal spending);
 //   4. everything else → personal (incl. MCC 9311/9399 from personal cards).
 // A refund paired with its purchase (refund_pair_id, credit side) takes the purchase's scope, like the category.
 // Internal transfers get a scope too, but they never count as spending in either scope.
