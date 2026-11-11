@@ -13,7 +13,7 @@ const period = defineModel<PeriodPick>({ required: true });
 </script>
 
 <template>
-  <div class="flex flex-col gap-1" data-test="period-picker">
+  <div class="flex flex-col items-start gap-1" data-test="period-picker">
     <span class="text-xs text-foreground-muted" aria-hidden="true">{{ $t('fopTax.period') }}</span>
     <VMonthRangePicker v-model="period" :min :max :presets :label="$t('fopTax.period')" />
   </div>

@@ -41,7 +41,8 @@ stay out of the base and be named.
 
 ### Requirement: The period is picked
 The screen SHALL pick the period with the same month range picker as the «Analytics» screen: one month or a range of
-whole months, never after this month, with quick picks for this and last month, quarter and year. This quarter so far
+whole months, never after this month, with quick picks for this and last month, this and last quarter, each
+quarter of this year that is over, and this and last year. This quarter so far
 SHALL be picked at first; the end SHALL be cut at today and a running period marked. A custom amount SHALL hide it.
 
 #### Scenario: Default period

@@ -52,7 +52,10 @@ describe('FOP tax helpers', () => {
       ['y', '2026-01', '2026-01'],
       ['ly', '2025-01', '2025-12'],
     ]);
-    expect(fopPresets('2026-11').range.find((x) => x.id === 'lq')).toMatchObject({ from: '2026-07', to: '2026-09' });
+    const nov = fopPresets('2026-11').range;
+    expect(nov.find((x) => x.id === 'lq')).toMatchObject({ from: '2026-07', to: '2026-09' });
+    expect(nov.map((x) => x.label)).toEqual(['Этот квартал', 'Прошлый квартал', '1 квартал 2026', '2 квартал 2026', '3 квартал 2026', 'Этот год', '2025 год']);
+    expect(nov.find((x) => x.id === 'q2')).toMatchObject({ from: '2026-04', to: '2026-06' });
   });
 
   it('a typed percent and amount; the tax rounded to a kopeck', () => {

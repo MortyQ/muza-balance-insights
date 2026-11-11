@@ -36,7 +36,10 @@ export function periodName(p: PeriodPick, thisMonth: string): string {
   return `${monthShortName(monthNum(p.from))} ${yearNum(p.from)} – ${monthShortName(monthNum(p.to))} ${yearNum(p.to)}`;
 }
 
-/** The picker's quick picks: this and last month; this and last quarter, this and last year (never past this month). */
+/**
+ * The picker's quick picks: this and last month; this and last quarter, each quarter of this year already over, this
+ * and last year (never past this month).
+ */
 export function fopPresets(thisMonth: string): { month: MonthRangePreset[]; range: MonthRangePreset[] } {
   const y = yearNum(thisMonth);
   const m = monthNum(thisMonth);
@@ -51,6 +54,12 @@ export function fopPresets(thisMonth: string): { month: MonthRangePreset[]; rang
     range: [
       { id: 'q', label: t('fopTax.preset.thisQuarter'), from: ym(y, qStart), to: thisMonth },
       { id: 'lq', label: t('fopTax.preset.lastQuarter'), ...lastQ },
+      ...Array.from({ length: (qStart - 1) / 3 }, (_, i) => ({
+        id: `q${i + 1}`,
+        label: t('fopTax.quarterName', { n: i + 1, year: y }),
+        from: ym(y, i * 3 + 1),
+        to: ym(y, i * 3 + 3),
+      })),
       { id: 'y', label: t('fopTax.preset.thisYear'), from: ym(y, 1), to: thisMonth },
       { id: 'ly', label: t('fopTax.preset.lastYear', { year: y - 1 }), from: ym(y - 1, 1), to: ym(y - 1, 12) },
     ],

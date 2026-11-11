@@ -284,7 +284,7 @@
 - **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
   `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
   its own `PeriodPicker` — the «Analytics» `VMonthRangePicker` (`PeriodPick`: YYYY-MM from–to; nothing after this
-  month; presets `fopPresets`: this / last month, quarter, year; this quarter so far at first; `periodBounds` → days,
+  month; presets `fopPresets`: this / last month, this / last quarter, each ended quarter of this year, this / last year; this quarter so far at first; `periodBounds` → days,
   `quarterOfPick` → the year-to-date row). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
   bank filter does not apply; `yearToDate` for a quarter only). `RatePicker`: presets `FOP_RATES` 5 / 6 and an own
   percent field (`percentValue`; a valid one unmarks the preset, a preset click clears it), base «Income on FOP
