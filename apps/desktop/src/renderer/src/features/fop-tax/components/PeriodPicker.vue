@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { Quarter } from '@contract/api.ts';
 import { t } from '@/shared/lib';
-import { VDatepicker, VMonthPicker, VSegmentedControl, VSelect, type SegmentOption, type VSelectOption } from '@/shared/ui';
+import { VDatepicker, VMonthPicker, VSegmentedControl, VSelect, type IsoDateRange, type SegmentOption, type VSelectOption } from '@/shared/ui';
 import { PERIOD_KINDS } from '../constants.ts';
 import type { PeriodKind, PeriodPick } from '../types.ts';
 
@@ -30,17 +30,13 @@ const year = computed<string | number | null>({
 });
 const quarter = computed({ get: () => period.value.quarter, set: (q: Quarter) => (period.value.quarter = q) });
 const month = computed({ get: () => period.value.month, set: (m: string) => (period.value.month = m) });
-// A cleared date keeps the last one: the period always has both ends.
-const from = computed<string | null>({
-  get: () => period.value.from,
-  set: (d) => {
-    if (d) period.value.from = d;
-  },
-});
-const to = computed<string | null>({
-  get: () => period.value.to,
-  set: (d) => {
-    if (d) period.value.to = d;
+// One range: taken once both ends are picked (a half-picked or cleared range keeps the last whole one).
+const dates = computed<IsoDateRange>({
+  get: () => ({ start: period.value.from, end: period.value.to }),
+  set: (r) => {
+    if (!r.start || !r.end) return;
+    period.value.from = r.start <= r.end ? r.start : r.end;
+    period.value.to = r.start <= r.end ? r.end : r.start;
   },
 });
 const firstMonth = computed(() => `${years[years.length - 1]}-01`);
@@ -57,10 +53,16 @@ const firstDay = computed(() => `${years[years.length - 1]}-01-01`);
         <span class="text-xs text-foreground-muted" aria-hidden="true">{{ $t('fopTax.quarter') }}</span>
         <VSegmentedControl v-model="quarter" :options="quarterOptions" :aria-label="$t('fopTax.quarter')" />
       </div>
-      <template v-if="kind === 'dates'">
-        <VDatepicker v-model="from" :label="$t('fopTax.from')" :min="firstDay" :max="today" class="w-48" data-test="period-from" />
-        <VDatepicker v-model="to" :label="$t('fopTax.to')" :min="period.from" :max="today" class="w-48" data-test="period-to" />
-      </template>
+      <VDatepicker
+        v-if="kind === 'dates'"
+        v-model:dates="dates"
+        range
+        :label="$t('fopTax.dates')"
+        :min="firstDay"
+        :max="today"
+        class="w-full max-w-[22rem]"
+        data-test="period-dates"
+      />
     </div>
   </div>
 </template>

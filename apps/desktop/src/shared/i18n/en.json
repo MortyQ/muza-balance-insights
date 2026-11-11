@@ -1830,8 +1830,7 @@
       "dates": "Dates"
     },
     "yearName": "{year}",
-    "from": "From",
-    "to": "To"
+    "dates": "Period: from — to"
   },
   "search": {
     "open": "Search",

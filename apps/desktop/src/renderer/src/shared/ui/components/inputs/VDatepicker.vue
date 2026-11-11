@@ -69,8 +69,8 @@ const maxValue = computed(() => isoToCalendarDate(max) ?? undefined);
 
 // Single-date value: bound with a plain v-model. Unused (and untouched) in range mode.
 const single = defineModel<string | null>({ default: null });
-// Range value: bound with v-model:range. Unused (and untouched) in single mode.
-const rangeValue = defineModel<IsoDateRange>("range", { default: () => ({ start: null, end: null }) });
+// Range value: bound with v-model:dates (not "range": that name is the mode prop). Unused (and untouched) in single mode.
+const rangeValue = defineModel<IsoDateRange>("dates", { default: () => ({ start: null, end: null }) });
 
 const calendarValue = computed<CalendarDate | undefined>({
   get: () => isoToCalendarDate(single.value) ?? undefined,

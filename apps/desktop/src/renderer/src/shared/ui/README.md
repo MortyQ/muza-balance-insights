@@ -35,7 +35,7 @@ management and positioning we then style ourselves in BEM + `--ui-*` tokens, sam
 - `VSelect` keeps muzakit's `options` / `placeholder` / `disabled` / `label` props and v-model, for a single,
   non-searchable select only — multiple selection, search/tagging and the floating label are dropped (reka-ui's
   `SelectPortal` + `SelectContent[position=popper]` replace muzakit's manual fixed-position teleport).
-- `VDatepicker` keeps a single-date v-model and adds a named `range` v-model (`{ start, end }`), both as ISO
+- `VDatepicker` keeps a single-date v-model and adds a named `dates` v-model (`{ start, end }`, with the `range` prop), both as ISO
   `YYYY-MM-DD` strings — the public value type never touches `@internationalized/date`; `components/inputs/calendarDate.ts`
   holds the pure ISO ⇄ `CalendarDate` conversions (tested in `apps/desktop/tests/renderer/calendarDate.test.ts`).
 - `VSheet` (2026-10-26; muzakit has no drawer): reka-ui's `Dialog` — a modal panel at the right edge, a bottom sheet

@@ -138,7 +138,7 @@ describe('FOP tax screen mounted', () => {
     expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-01-01', to: '2026-12-31', base: 'business' });
     await click(w, 'period-kind', 'Даты');
     expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-11-01', to: '2026-11-10', base: 'business' });
-    expect(w.find('[data-test="period-from"]').exists()).toBe(true);
+    expect(w.find('[data-test="period-dates"]').exists()).toBe(true);
   });
 
   it('own percent: a valid one counts and unmarks the preset; an invalid one says so; a preset click clears it', async () => {
