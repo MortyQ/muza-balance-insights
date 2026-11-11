@@ -68,8 +68,11 @@ describe('now strip helpers', () => {
   });
 
   it('chips: the amount and the percent with the sign and the arrow, «as usual» under 3%, none without a base or with a base of 0', () => {
-    expect(nowChip(72_000, 52_000, 'usual', OFF)).toEqual({ text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(52_000)}` });
-    expect(nowChip(322_000, 360_000, 'week', OFF)).toEqual({ text: `−${uah(38_000)} (11%)`, tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе', title: `Те же дни прошлой недели: ${uah(360_000)}` });
+    expect(nowChip(720_000, 520_000, 'usual', OFF)).toEqual({ text: `+${uah(200_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(520_000)}` });
+    // A small base (a usual day under 1 000 ₴, a week under 5 000 ₴): the money alone, no percent.
+    expect(nowChip(72_000, 52_000, 'usual', OFF)?.text).toBe(`+${uah(20_000)}`);
+    expect(nowChip(322_000, 360_000, 'week', OFF)?.text).toBe(`−${uah(38_000)}`);
+    expect(nowChip(3_220_000, 3_600_000, 'week', OFF)).toEqual({ text: `−${uah(380_000)} (11%)`, tone: 'down', arrow: 'down', sr: 'меньше, чем на прошлой неделе', title: `Те же дни прошлой недели: ${uah(3_600_000)}` });
     expect(nowChip(52_500, 52_000, 'usual', OFF)).toEqual({ text: 'как обычно', tone: 'neutral', arrow: null, sr: '' });
     expect(nowChip(100, null, 'week', OFF)).toBeNull();
     expect(nowChip(100, 0, 'usual', OFF)).toBeNull();
@@ -89,7 +92,7 @@ describe('now strip helpers', () => {
       amount: uah(72_000),
       ops: '3 транзакции',
       conv: '',
-      chip: { text: `+${uah(20_000)} (38%)`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(52_000)}` },
+      chip: { text: `+${uah(20_000)}`, tone: 'up', arrow: 'up', sr: 'больше, чем в обычный день', title: `Обычный день: ${uah(52_000)}` },
       context: `к обычному дню ≈ ${uah(52_000)}`,
       until: '',
     });
@@ -231,7 +234,7 @@ describe('now strip mounted', () => {
     const week = w.get('[data-test="now-week"]');
     expect(today.attributes('aria-label')).toBe('Сегодня · сб, 3 окт');
     expect([today, week].map((t) => t.classes())).toEqual([expect.arrayContaining(['@[79rem]:col-span-4']), expect.arrayContaining(['@[79rem]:col-span-4'])]);
-    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)} (38%)`]) expect(today.text()).toContain(s);
+    for (const s of ['Сегодня · сб, 3 окт', uah(72_000), `+${uah(20_000)}`]) expect(today.text()).toContain(s);
     for (const s of ['Эта неделя · пн–сб', 'к прошлой неделе, пн–сб']) expect(week.text()).toContain(s);
     expect(today.findAll('[data-test="tile-categories"] li')).toHaveLength(2);
     expect(week.findAll('[data-test="tile-categories"] li')).toHaveLength(4);

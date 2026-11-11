@@ -2,10 +2,12 @@
 // names, descriptions, card numbers, IBANs and jar titles never reach the renderer.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '@mono/core/storage/db';
+import { rescope } from '@mono/core/derive/scope';
 import { kyivStartOfDay, toKyivDateTime } from '@mono/core/shared/format';
 import { insertAccountRow, memoryDb } from '@mono/core/test-helpers';
 import { last12Months } from '../src/data/category.ts';
-import { DataService, nextMonthDay } from '../src/data/data.ts';
+import { DataService, nextMonthDay, searchPayees } from '../src/data/data.ts';
+import { amountChange } from '../src/data/income-regular.ts';
 import type { RatesView } from '../src/shared/api.ts';
 import { shiftDate } from '../src/data/now.ts';
 import { inTimeZone } from './helpers/time-zone.ts';
@@ -186,6 +188,22 @@ describe('DataService.monthOverview', () => {
     expect((await svc.monthOverview({ month: '2026-02' })).reserved).toBeNull();
 
     rates = null;
+    expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
+  });
+
+  it('reserves: a done one is not set against the balance, for the family nor its person; unmarked, it is again', async () => {
+    await account('uah', 'black', 980, 100_000);
+    await synced('uah');
+    const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
+    const gift = { name: 'Подарунок', currency: 980 as const, amount: 3_000, until: null, participantId: me };
+    await svc.addReserve({ name: 'Ремонт', currency: 980, amount: 10_000, until: null, participantId: me });
+    await svc.addReserve(gift);
+    const id = (await svc.allowanceOverview({})).reserves[1]!.id;
+    await svc.updateReserve(id, { ...gift, done: true });
+    const v = await svc.monthOverview({ month: '2026-03' });
+    expect(v.reserved).toBe(10_000);
+    expect(v.people.map((p) => p.reserved)).toEqual([10_000]);
+    await svc.updateReserve(id, { ...gift, done: false });
     expect((await svc.monthOverview({ month: '2026-03' })).reserved).toBe(13_000);
   });
 
@@ -1036,6 +1054,19 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect((await svc.limitsOverview({ month: '2026-03' })).budget!.fixed.map((r) => r.categoryId)).toEqual(['rent']);
   });
 
+  it('a tax paid from a personal card: personal by default, in «Spending»; the budget switch decides only the budget', async () => {
+    // Stored business by the old default; the next derivation makes it personal.
+    await tx('uah', '2026-03-05', -70_000, 'налоги и госплатежи', { mcc: 4829, description: 'ГУК Вигадана обл/12345678', scope: 'business' });
+    await rescope(db, { from: kyivStartOfDay('2026-03-05'), to: kyivStartOfDay('2026-03-06') });
+    const spending = await svc.spendingOverview({ month: '2026-03', scope: 'personal' });
+    expect(spending.categories.find((c) => c.category === 'налоги и госплатежи')?.net).toBe(70_000);
+    await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }], countTaxes: false });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: false, flexible: { spent: 220_000 } });
+    const id = (await svc.limitsOverview({ month: '2026-03' })).budget!.id;
+    await svc.saveGoal(id, { type: 'budget', currency: 980, amount: 3_000_000, participantId: null, fixed: [{ categoryId: 'rent', amount: 1_250_000 }], countTaxes: true });
+    expect((await svc.limitsOverview({ month: '2026-03' })).budget).toMatchObject({ countTaxes: true, flexible: { spent: 290_000 } });
+  });
+
   it('suggestions from the usual months: flexible categories without a monthly limit, largest first', async () => {
     expect((await svc.limitsOverview({ month: '2026-03' })).suggestions).toEqual([{ categoryId: 'cafes', amount: 400_000 }, { categoryId: 'groceries', amount: 50_000 }]);
     await svc.addSuggestedLimits({});
@@ -1076,15 +1107,25 @@ describe('DataService.limitsOverview (the «Budget» screen)', () => {
     expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).monthlyLimits).toBe(2);
   });
 
-  it('a pending hold from today: left out of the limit and the budget, given apart; no «Limit exceeded» for it', async () => {
+  it('a pending hold from today: counted in the limit and the budget at once, and named in their note', async () => {
     await tx('uah', '2026-03-15', -20_000, 'кафе и рестораны', { hold: true });
     await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
     await svc.saveGoal(null, { type: 'budget', currency: 980, amount: 300_000, participantId: null, fixed: [] });
     const v = await svc.limitsOverview({ month: '2026-03' });
-    expect(v.limits[0]!.figures).toMatchObject({ spent: 190_000, state: 'attention', pending: { count: 1, amount: 20_000 } });
-    expect(v.budget!.flexible).toMatchObject({ spent: 1_250_000 + 220_000, pending: { count: 1, amount: 20_000 } });
-    // With the hold the cafes would be 210 000 of 200 000: the feed waits for the bank.
-    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([]);
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 210_000, state: 'exceeded', pending: { count: 1, amount: 20_000 } });
+    expect(v.budget!.flexible).toMatchObject({ spent: 1_250_000 + 240_000, pending: { count: 1, amount: 20_000 } });
+    // 210 000 of 200 000 with the hold: the feed says so too.
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).limitsOver.filter((l) => l.categoryId === 'cafes')).toEqual([
+      expect.objectContaining({ spent: 210_000, over: 10_000 }),
+    ]);
+  });
+
+  it('a hold the bank cancelled counts nowhere', async () => {
+    await tx('uah', '2026-03-15', -20_000, 'кафе и рестораны', { hold: true });
+    await db.execute(`UPDATE transactions SET is_cancelled = 1 WHERE local_date = '2026-03-15' AND hold = 1`);
+    await svc.saveGoal(null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 200_000, participantId: null });
+    const v = await svc.limitsOverview({ month: '2026-03' });
+    expect(v.limits[0]!.figures).toMatchObject({ spent: 190_000, pending: null });
   });
 
   it('the Insights read lists a monthly limit in attention for its pace or forecast, never a past one', async () => {
@@ -1226,6 +1267,156 @@ describe('DataService.incomeOverview (the income screen)', () => {
     const json = JSON.stringify(await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } }));
     expect(json).toContain(CANARIES[1]);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+    expect(json).not.toMatch(/\*{4}|UA\d{2}/);
+  });
+});
+
+describe('DataService.fopTaxOverview (the FOP tax screen)', () => {
+  const IN = 'поступления';
+  // Q1 2026; today is 15 March: the end is cut at today.
+  const Q1 = { from: '2026-01-01', to: '2026-03-31', base: 'business', yearToDate: true } as const;
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('fop', 'fop', 980, 0);
+    await account('fopusd', 'fop', 840, 0);
+    for (const id of ['uah', 'fop', 'fopusd']) await synced(id);
+    await tx('fop', '2026-01-20', 30_000, IN, { mcc: 6012, scope: 'business', description: 'Imaginary Client' });
+    await tx('fop', '2026-02-10', 50_000, IN, { mcc: 6012, scope: 'business', description: 'Imaginary Client' });
+    await tx('fopusd', '2026-03-02', 100, IN, { mcc: 6012, scope: 'business' }); // 1 $ = 40 ₴
+    await tx('fop', '2026-02-11', 5_000, IN, { mcc: 4829, rule: 'pair', scope: 'business' }); // from the owner's own card
+    await tx('fop', '2026-02-12', 2_000, 'кафе и рестораны', { mcc: 4829, scope: 'business' }); // a refund
+    await tx('uah', '2026-02-15', 40_000, IN, { mcc: 4829, description: 'Imaginary Salary' }); // a personal card
+    await tx('fop', '2025-11-20', 10_000, IN, { mcc: 6012, scope: 'business' });
+  });
+
+  it('the FOP base: FOP accounts only, no refunds, no own transfers, all scopes, foreign at today\'s rate', async () => {
+    const v = await svc.fopTaxOverview(Q1);
+    expect(v.available).toBe(true);
+    expect(v.base).toEqual({ from: '2026-01-01', to: '2026-03-15', total: 30_000 + 50_000 + 4_000, lines: 3, leftOut: [], incomplete: true });
+    expect(v.yearToDate).toMatchObject({ from: '2026-01-01', to: '2026-03-15', total: 84_000 });
+    expect(v.rates).toEqual(RATES);
+  });
+
+  it('the «all» base: every enabled account of the view, the same exclusions', async () => {
+    const v = await svc.fopTaxOverview({ ...Q1, base: 'all' });
+    expect(v.base.total).toBe(84_000 + 40_000);
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id = 'uah'`);
+    expect((await svc.fopTaxOverview({ ...Q1, base: 'all' })).base.total).toBe(84_000);
+  });
+
+  it('a month, a range and a past year; no year to date unless asked; refusals', async () => {
+    expect((await svc.fopTaxOverview({ from: '2026-02-01', to: '2026-02-28', base: 'business' })).base).toMatchObject({ total: 50_000, lines: 1 });
+    expect((await svc.fopTaxOverview({ from: '2026-02-01', to: '2026-02-28', base: 'business' })).yearToDate).toBeNull();
+    expect((await svc.fopTaxOverview({ from: '2026-01-15', to: '2026-01-25', base: 'all' })).base.total).toBe(30_000);
+    const y = await svc.fopTaxOverview({ from: '2025-01-01', to: '2025-12-31', base: 'business', yearToDate: true });
+    expect(y.base).toMatchObject({ from: '2025-01-01', to: '2025-12-31', total: 10_000 });
+    expect(y.yearToDate).toMatchObject({ from: '2025-01-01', to: '2025-12-31', total: 10_000 });
+    await expect(svc.fopTaxOverview({ from: '2026-04-01', to: '2026-06-30', base: 'business' })).rejects.toThrow(/after today/);
+    await expect(svc.fopTaxOverview({ from: '2026-02-01', to: '2026-01-31', base: 'business' })).rejects.toThrow(/after its end/);
+  });
+
+  it('a currency without a rate is left out and named', async () => {
+    await account('foppln', 'fop', 985, 0);
+    await synced('foppln');
+    await tx('foppln', '2026-03-03', 3_000, IN, { mcc: 6012, scope: 'business' });
+    const v = await svc.fopTaxOverview(Q1);
+    expect(v.base.leftOut).toEqual([{ currency: 985, total: 3_000 }]);
+    expect(v.base.total).toBe(84_000);
+  });
+
+  it('a person: their accounts only; a family transfer to the FOP card is not income', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const conn = Number((await db.execute({ sql: `INSERT INTO connections (participant_id, provider, created_at) VALUES (?, 'monobank', 0) RETURNING id`, args: [her] })).rows[0]?.id);
+    await insertAccountRow(db, { id: 'hers', connection_id: conn, kind: 'card', type: 'white', currency_code: 980, balance: 0, updated_at: SYNCED_TO });
+    await synced('hers');
+    await tx('hers', '2026-03-05', -15_000, 'семье', { family: true });
+    await tx('fop', '2026-03-05', 15_000, IN, { family: true, mcc: 4829, scope: 'business' });
+    const me = Number((await db.execute('SELECT id FROM participants ORDER BY id LIMIT 1')).rows[0]?.id);
+    expect((await svc.fopTaxOverview({ ...Q1, participantId: me })).base.total).toBe(84_000);
+    expect((await svc.fopTaxOverview(Q1)).base.total).toBe(84_000);
+    expect(await svc.fopTaxOverview({ ...Q1, participantId: her })).toMatchObject({ available: false, base: { total: 0 } });
+  });
+
+  it('no FOP account (or turned off): not available, the FOP base empty, all income still counted', async () => {
+    await db.execute(`UPDATE accounts SET sync_choice = 0 WHERE id IN ('fop', 'fopusd')`);
+    expect(await svc.fopTaxOverview(Q1)).toMatchObject({ available: false, base: { total: 0, lines: 0 }, yearToDate: { total: 0 } });
+    expect((await svc.fopTaxOverview({ ...Q1, base: 'all' })).base.total).toBe(40_000);
+  });
+
+  it('carries no bank text', async () => {
+    const json = JSON.stringify(await svc.fopTaxOverview({ ...Q1, base: 'all' }));
+    for (const c of CANARIES) expect(json).not.toContain(c);
+    expect(json).not.toContain('Imaginary');
+  });
+});
+
+describe('DataService.incomeOverview: regular income', () => {
+  const IN = { mcc: 4829 };
+  const income = 'поступления';
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden
+    for (const id of ['uah', 'jar1']) await synced(id);
+    // On time: next on 10 April.
+    for (const d of ['2026-01-10', '2026-02-10', '2026-03-10']) await tx('uah', d, 3_000_000, income, { ...IN, description: 'Від: Salary Co' });
+    // Late: expected on 5 March, nothing by the 15th.
+    for (const d of ['2025-12-05', '2026-01-05', '2026-02-05']) await tx('uah', d, 500_000, income, { ...IN, description: 'Від: Late Client' });
+    // A raise: the March payment fits no series, so it is the last one, 25% above the usual.
+    for (const d of ['2025-12-12', '2026-01-12', '2026-02-12']) await tx('uah', d, 200_000, income, { ...IN, description: 'Від: Vigadana Osoba' });
+    await tx('uah', '2026-03-12', 250_000, income, { ...IN, description: 'Від: Vigadana Osoba' });
+    // Bank text with a card number and a jar title.
+    for (const d of ['2026-01-03', '2026-02-03', '2026-03-03']) await tx('uah', d, 10_000, income, { ...IN, description: 'From 537541******1234 to CANARY-JAR Dream' });
+    // A regular payment: 30% of the regular income.
+    for (const d of ['2026-01-01', '2026-02-01', '2026-03-01']) await tx('uah', d, -1_113_000, 'коммунальные', { mcc: 4900, description: 'Power Co' });
+  });
+
+  it('a month: each source with its usual amount, last and next date; late, changed, on time; monthly and the share regular payments take', async () => {
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    expect(r.today).toBe('2026-03-15');
+    expect(r.sources.map((s) => [s.name, s.uah, s.amount, s.currency, s.last, s.next, s.late, s.change])).toEqual([
+      ['Salary Co', 3_000_000, 3_000_000, 980, '2026-03-10', '2026-04-10', null, null],
+      ['Late Client', 500_000, 500_000, 980, '2026-02-05', '2026-03-05', 10, null],
+      ['Vigadana Osoba', 200_000, 200_000, 980, '2026-03-12', '2026-04-12', null, 25],
+      ['From •• 1234 to •••', 10_000, 10_000, 980, '2026-03-03', '2026-04-03', null, null],
+    ]);
+    expect(r.monthly).toBe(3_710_000);
+    expect(r.coveredByPayments).toBe(30);
+    expect(r.expected.map((s) => [s.name, s.next])).toEqual([
+      ['From •• 1234 to •••', '2026-04-03'],
+      ['Salary Co', '2026-04-10'],
+      ['Vigadana Osoba', '2026-04-12'],
+    ]);
+  });
+
+  it('amountChange: more than 10% either way, whole signed per cent', () => {
+    expect([amountChange(100_000, 110_000), amountChange(100_000, 111_000), amountChange(100_000, 85_000), amountChange(0, 5)]).toEqual([null, 11, -15, null]);
+  });
+
+  it('a past month shows today\'s regular income too; a week or a day — none', async () => {
+    expect((await svc.incomeOverview({ period: { kind: 'month', month: '2026-01' } })).regular?.monthly).toBe(3_710_000);
+    expect((await svc.incomeOverview({ period: { kind: 'week', from: '2026-03-02' } })).regular).toBeNull();
+    expect((await svc.incomeOverview({ period: { kind: 'day', date: '2026-03-04' } })).regular).toBeNull();
+  });
+
+  it('a person with no regular income: no sources, nothing expected, no share', async () => {
+    const her = Number((await db.execute(`INSERT INTO participants (label, color, created_at) VALUES ('Вигадана', 'aqua', 0) RETURNING id`)).rows[0]?.id);
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' }, participantId: her })).regular;
+    expect(r).toEqual({ today: '2026-03-15', monthly: 0, coveredByPayments: null, sources: [], expected: [] });
+  });
+
+  it('a source without a rate: listed with its own amount, out of monthly', async () => {
+    await account('pln', 'white', 985, 0);
+    await synced('pln');
+    for (const d of ['2026-01-04', '2026-02-04', '2026-03-04']) await tx('pln', d, 50_000, income, { ...IN, description: 'Від: Zloty Client' });
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    expect(r.sources.at(-1)).toMatchObject({ name: 'Zloty Client', uah: null, currency: 985, amount: 50_000 });
+    expect(r.monthly).toBe(3_710_000);
+  });
+
+  it('carries the sender names only — never a counterparty name, card number, IBAN or jar title', async () => {
+    const r = (await svc.incomeOverview({ period: { kind: 'month', month: '2026-03' } })).regular!;
+    const json = JSON.stringify(r);
+    for (const c of CANARIES) expect(json).not.toContain(c);
     expect(json).not.toMatch(/\*{4}|UA\d{2}/);
   });
 });
@@ -1440,6 +1631,24 @@ describe('DataService.allowanceOverview («Available per day»)', () => {
     await expect(svc.deleteReserve(study!.id)).rejects.toThrow();
   });
 
+  it('reserves: a done one is listed, not active and not taken off «Free»; a change without the mark keeps it; unmarked, taken off again', async () => {
+    const flat = { name: 'Квартира', currency: 980 as const, amount: 50_000, until: null, participantId: null };
+    await svc.addReserve(flat);
+    const id = (await svc.allowanceOverview({})).reserves[0]!.id;
+    await svc.updateReserve(id, { ...flat, done: true });
+    const done = await svc.allowanceOverview({});
+    expect(done.reserves.map((r) => [r.name, r.done, r.active, r.uah])).toEqual([['Квартира', true, false, 50_000]]);
+    expect(done.free).toBe(240_000);
+
+    await svc.updateReserve(id, { ...flat, amount: 60_000 });
+    expect((await svc.allowanceOverview({})).reserves[0]).toMatchObject({ amount: 60_000, done: true, active: false });
+
+    await svc.updateReserve(id, { ...flat, done: false });
+    const again = await svc.allowanceOverview({});
+    expect(again.reserves[0]).toMatchObject({ done: false, active: true });
+    expect(again.free).toBe(240_000 - 50_000);
+  });
+
   it('reserves of a person: their own listed and taken off; a common one only for the family', async () => {
     const me = (await svc.monthOverview({ month: '2026-03' })).people[0]!.participantId;
     await svc.addReserve({ name: 'Моє', currency: 980, amount: 10_000, until: null, participantId: me });
@@ -1498,6 +1707,105 @@ describe('DataService.recentOperations', () => {
     expect(earlier.lines.map((l) => l.amount)).toEqual([-1_000]);
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0]!, CANARIES[2]!, CANARIES[3]!, CANARIES[4]!]) expect(json).not.toContain(c);
+  });
+});
+
+describe('DataService.searchOverview (the global search)', () => {
+  beforeEach(async () => {
+    await account('uah', 'black', 980, 0);
+    await account('usd', 'white', 840, 0);
+    await account('jar1', null, 980, 0); // its title is in a description: hidden, and never matched
+    for (const id of ['uah', 'usd']) await synced(id);
+    for (const d of ['2026-01-05', '2026-02-05', '2026-03-05']) await tx('uah', d, -19_900, 'связь и цифровые сервисы', { mcc: 5815, description: 'Streamio' });
+    await tx('uah', '2026-03-02', -25_000, 'продукты', { description: 'Fictional Market' });
+    await tx('uah', '2026-03-03', -25_080, 'продукты', { description: 'fictional  market' });
+    await tx('uah', '2026-03-04', 1_000, 'продукты', { description: 'Fictional Market' }); // a refund
+    await tx('usd', '2026-03-06', -625, 'кафе и рестораны', { mcc: 5812, description: 'Cafe Imaginary' }); // 6.25 $ = 250 ₴
+    await tx('uah', '2026-03-07', -5_000, 'переводы людям', { mcc: 4829, description: `Переказ на картку 444411******0000 ${CANARIES[4]}` });
+    await tx('uah', '2026-03-08', -3_000, 'кафе и рестораны', { mcc: 5812, description: 'Бар Вигаданий' });
+    await db.execute(`UPDATE transactions SET comment = 'Обід з командою' WHERE description = 'Бар Вигаданий'`);
+    await tx('uah', '2026-03-09', 100_000, 'поступления', { mcc: 4829, description: 'Fictional Market payout' }); // income: not a category line
+  });
+
+  it('text: the description as the screen shows it and the comment, case-insensitive, newest first; nothing without a query', async () => {
+    const v = await svc.searchOverview({ query: 'FICTIONAL market' });
+    expect(v.transactions.map((t) => [t.date, t.merchant, t.categoryId, t.amount, t.uah, t.refund, t.scope])).toEqual([
+      ['2026-03-04', 'Fictional Market', 'groceries', 1_000, 1_000, true, 'personal'],
+      ['2026-03-03', 'fictional  market', 'groceries', -25_080, -25_080, false, 'personal'],
+      ['2026-03-02', 'Fictional Market', 'groceries', -25_000, -25_000, false, 'personal'],
+    ]);
+    expect(v.total).toBe(3);
+    expect(v.rates).toEqual(RATES);
+    expect((await svc.searchOverview({ query: 'з командою' })).transactions.map((t) => [t.merchant, t.comment])).toEqual([['Бар Вигаданий', 'Обід з командою']]);
+    expect((await svc.searchOverview({ query: 'бар вигаданий' })).transactions).toHaveLength(1);
+    expect(await svc.searchOverview({ query: '  ' })).toEqual({ transactions: [], total: 0, payees: [], recurring: [], rates: RATES });
+  });
+
+  it('payees: grouped as the category screen\'s «Where», with category, month and net; regular payments by name', async () => {
+    const v = await svc.searchOverview({ query: 'fictional' });
+    expect(v.payees).toEqual([
+      { key: 'fictional market', name: 'Fictional Market', category: 'продукты', categoryId: 'groceries', scope: 'personal', month: '2026-03', lines: 3, net: 49_080 },
+    ]);
+    const s = await svc.searchOverview({ query: 'stream' });
+    expect(s.recurring.map((r) => [r.name, r.categoryId, r.uah, r.active])).toEqual([['Streamio', 'telecom', 19_900, true]]);
+    expect(s.transactions).toHaveLength(3);
+    expect(s.payees.map((p) => [p.name, p.lines, p.month])).toEqual([['Streamio', 3, '2026-03']]);
+  });
+
+  it('amount: the absolute amount in hryvnia within the range (the renderer sends 250 ₴ ± 1 ₴), any currency by today\'s rate', async () => {
+    const v = await svc.searchOverview({ query: '', amount: { min: 24_900, max: 25_100 } });
+    expect(v.transactions.map((t) => [t.merchant, t.currency, t.amount, t.uah])).toEqual([
+      ['Cafe Imaginary', 840, -625, -25_000],
+      ['fictional  market', 980, -25_080, -25_080],
+      ['Fictional Market', 980, -25_000, -25_000],
+    ]);
+    expect(v.payees).toEqual([]); // no text: transactions only
+    rates = null;
+    expect((await svc.searchOverview({ query: '', amount: { min: 24_900, max: 25_100 } })).transactions.map((t) => t.currency)).toEqual([980, 980]);
+  });
+
+  it('dates: only the days asked for; a range past today ends today', async () => {
+    const v = await svc.searchOverview({ query: '', from: '2026-03-02', to: '2026-03-03' });
+    expect(v.transactions.map((t) => t.date)).toEqual(['2026-03-03', '2026-03-02']);
+    expect((await svc.searchOverview({ query: 'streamio', from: '2026-02-01', to: '2026-02-28' })).transactions.map((t) => t.date)).toEqual(['2026-02-05']);
+    expect((await svc.searchOverview({ query: '', from: '2026-03-08', to: '2026-12-31' })).transactions.map((t) => t.date)).toEqual(['2026-03-08']);
+    expect((await svc.searchOverview({ query: '', from: '2026-04-01', to: '2026-04-30' })).transactions).toEqual([]);
+  });
+
+  it('the view: a person and banks', async () => {
+    const other = await svc.searchOverview({ query: 'fictional', providers: ['abank'] });
+    expect(other.transactions).toEqual([]);
+    const mono = await svc.searchOverview({ query: 'fictional', providers: ['monobank'] });
+    expect(mono.transactions).toHaveLength(3);
+    expect(mono.transactions[0]!.participantId).toBeGreaterThan(0);
+  });
+
+  it('limits: at most 50 transactions (newest first) with the total, at most 10 payees', async () => {
+    for (let i = 0; i < 60; i += 1) await tx('uah', `2026-02-${String((i % 27) + 1).padStart(2, '0')}`, -(100 + i), 'продукты', { description: `Shop Fictional ${i % 12}` });
+    const v = await svc.searchOverview({ query: 'shop fictional' });
+    expect(v.total).toBe(60);
+    expect(v.transactions).toHaveLength(50);
+    expect(v.transactions.map((t) => t.date)).toEqual([...v.transactions.map((t) => t.date)].sort().reverse());
+    expect(v.payees).toHaveLength(10);
+    expect(v.payees.every((p) => p.lines === 5)).toBe(true);
+  });
+
+  it('searchPayees: a line without a description is no payee', () => {
+    const line = { key: 'x', date: '2026-03-01', time: '10:00', merchant: '', comment: null, category: 'продукты', categoryId: 'groceries' as const, scope: 'personal' as const, participantId: 1, uah: -100, currency: 980, amount: -100, refund: false };
+    expect(searchPayees([line])).toEqual([]);
+  });
+
+  it('canary: never a name, card number, IBAN or jar title — and none of them is matched', async () => {
+    const v = await svc.searchOverview({ query: 'переказ' });
+    expect(v.transactions.map((t) => t.merchant)).toEqual(['Переказ на картку •• 0000 •••']);
+    for (const q of [{ query: 'переказ' }, { query: '', from: '2026-01-01', to: '2026-03-15' }, { query: 'stream' }]) {
+      const json = JSON.stringify(await svc.searchOverview(q));
+      for (const c of [CANARIES[0]!, CANARIES[2]!, CANARIES[3]!, CANARIES[4]!, '444411']) expect(json).not.toContain(c);
+    }
+    // No oracle: the counterparty's name, the jar title, the IBAN and the full card number find nothing.
+    for (const query of ['Ivanka Fictional', 'CANARY-JAR', 'UA00CANARY', '444411']) {
+      expect((await svc.searchOverview({ query })).transactions, query).toEqual([]);
+    }
   });
 });
 
@@ -1651,6 +1959,37 @@ describe('DataService.spendingOverview: usual', () => {
     expect(v.health!.strong).toEqual({ n: 5, standing: 'outside' });
     const json = JSON.stringify(v);
     for (const c of [CANARIES[0], CANARIES[2], CANARIES[3], CANARIES[4]]) expect(json).not.toContain(c);
+  });
+
+  it('insightsOverview: the running month\'s forecast — spent + regular payments still due + the typical day × days left', async () => {
+    await covered('2025-09-01');
+    await history();
+    const v = await svc.insightsOverview({ month: '2026-03', scope: 'personal' });
+    // 15 March of 31: 16 days left. The history's 500 ₴ on the 20th is due on 20 March; the 100 ₴ of the 5th was due
+    // before today (late), so it is not added. Both leave the usual months: each keeps only its delivery
+    // (1 000 … 6 000 over the month's days), median 115 ₴ a day, quartiles 73 ₴ and 153 ₴.
+    expect(v.forecast).toEqual({
+      value: 12_000 + 50_000 + 115 * 16,
+      low: 12_000 + 50_000 + 73 * 16,
+      high: 12_000 + 50_000 + 153 * 16,
+      spent: 12_000,
+      regular: 50_000,
+      regularCount: 1,
+      perDay: 115,
+      perDayLow: 73,
+      perDayHigh: 153,
+      daysLeft: 16,
+    });
+    // «Business» has no spending: its regular payments are not this view's, nothing is due.
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'business' })).forecast).toMatchObject({ value: 0, regular: 0, regularCount: 0 });
+    // A finished month has no forecast.
+    expect((await svc.insightsOverview({ month: '2026-02', scope: 'personal' })).forecast).toBeNull();
+  });
+
+  it('insightsOverview: no forecast without a usual', async () => {
+    await covered('2026-01-01');
+    await history();
+    expect((await svc.insightsOverview({ month: '2026-03', scope: 'personal' })).forecast).toBeNull();
   });
 
   it('insightsOverview: the budget structure of a finished month, the reserve now, the kinds; a changed kind moves money', async () => {

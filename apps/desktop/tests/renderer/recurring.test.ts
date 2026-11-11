@@ -8,7 +8,7 @@ import { createMemoryHistory, createRouter } from 'vue-router';
 import { createPinia, setActivePinia } from 'pinia';
 import type { PeopleView, RecurringMarkQuery, RecurringOverview, RecurringOverviewQuery, RecurringPaymentView } from '@contract/api.ts';
 import { moneyFormat } from '@/entities/currency-display';
-import { rowView, summaryView, teaserView } from '@/features/recurring-payments/utils.ts';
+import { endedWhen, rowView, summaryView, teaserView } from '@/features/recurring-payments/utils.ts';
 import { dayMonthName as dayText, formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
@@ -54,17 +54,33 @@ describe('regular payments helpers', () => {
   });
 
   it('a row: category icon and name, the person only when given, the operation currency, next or last', () => {
-    const active = rowView(VIEW.active[0]!, { fmt: FMT, currentYear: 2026, active: true, person: { name: 'Аня', color: 'var(--series-orange)' } });
+    const active = rowView(VIEW.active[0]!, { fmt: FMT, currentYear: 2026, today: '2026-10-03', active: true, person: { name: 'Аня', color: 'var(--series-orange)' } });
     expect(active).toEqual({
-      key: 'a', name: 'Codehub', caption: 'Связь и цифровые сервисы · Аня', icon: 'lucide:smartphone', amount: uah(40_000),
+      key: 'a', name: 'Codehub', caption: 'Связь и цифровые сервисы · Аня', icon: 'lucide:smartphone', amount: uah(40_000), also: [],
       operation: formatMoney(1_000, 840, { minorUnits: true }), when: 'следующий 5 октября', person: { name: 'Аня', color: 'var(--series-orange)' },
       mandatory: false,
     });
-    expect(rowView({ ...VIEW.active[0]!, mark: 'mandatory' }, { fmt: FMT, currentYear: 2026, active: true, person: null }).mandatory).toBe(true);
-    const ended = rowView(VIEW.ended[0]!, { fmt: FMT, currentYear: 2026, active: false, person: null });
-    expect(ended).toMatchObject({ caption: 'Спорт', icon: 'lucide:dumbbell', operation: '', when: 'последний 4 июля', person: null });
+    expect(rowView({ ...VIEW.active[0]!, mark: 'mandatory' }, { fmt: FMT, currentYear: 2026, today: '2026-10-03', active: true, person: null }).mandatory).toBe(true);
+    const ended = rowView(VIEW.ended[0]!, { fmt: FMT, currentYear: 2026, today: '2026-10-03', active: false, person: null });
+    expect(ended).toMatchObject({ caption: 'Спорт', icon: 'lucide:dumbbell', operation: '', when: 'последний 4 июля · не было 3 месяца', person: null });
     // No rate: the account's own currency.
-    expect(rowView(payment({ uah: null, currency: 826, amount: 1_500 }), { fmt: FMT, currentYear: 2026, active: true, person: null }).amount).toBe(formatMoney(1_500, 826));
+    expect(rowView(payment({ uah: null, currency: 826, amount: 1_500 }), { fmt: FMT, currentYear: 2026, today: '2026-10-03', active: true, person: null }).amount).toBe(formatMoney(1_500, 826));
+  });
+
+  it('a row with «Show also» picked: one line per currency, exact in the operation\'s own, which then is not repeated', async () => {
+    const fmt = moneyFormat(RATES, { main: 980, also: { ...NONE, usd: true, eur: true } });
+    const row = rowView(VIEW.active[0]!, { fmt, currentYear: 2026, today: '2026-10-03', active: true, person: null });
+    expect(row.also).toEqual([formatMoney(1_000, 840), `≈ ${formatMoney(Math.round(40_000 / 45), 978)}`]);
+    expect(row.operation).toBe('');
+    // A payment in hryvnia only: both lines approximate.
+    expect(rowView(VIEW.active[1]!, { fmt, currentYear: 2026, today: '2026-10-03', active: true, person: null }).also).toEqual([
+      `≈ ${formatMoney(Math.round(19_900 / 40), 840)}`, `≈ ${formatMoney(Math.round(19_900 / 45), 978)}`,
+    ]);
+    const { default: RecurringRow } = await import('@/features/recurring-payments/components/RecurringRow.vue');
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const w = mount(RecurringRow, { props: { row }, global: { plugins: [i18n] } });
+    expect(w.findAll('[data-test="money-also"]').map((e) => e.text())).toEqual(row.also);
+    w.unmount();
   });
 });
 
@@ -242,5 +258,12 @@ describe('regular payments line on home', () => {
     useMonthStore().set('2020-01', null);
     const past = await mountLine();
     expect(past.w.find('section').exists()).toBe(false);
+  });
+});
+
+describe('a stopped payment says how long it has not been seen', () => {
+  it('whole months of 30 days since the last payment; under a month — the date alone', () => {
+    expect(endedWhen('2026-06-16', '2026-10-20', 2026)).toBe('последний 16 июня · не было 4 месяца');
+    expect(endedWhen('2026-09-25', '2026-10-20', 2026)).toBe('последний 25 сентября');
   });
 });

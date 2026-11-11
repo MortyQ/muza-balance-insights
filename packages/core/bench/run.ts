@@ -12,6 +12,8 @@ import { balancesAt } from '../src/read/status.ts';
 import { startOfDayIn } from '../src/shared/format.ts';
 import { incomeSummary } from '../src/read/income.ts';
 import { spendingGrid, spendingSummary } from '../src/read/spending.ts';
+import { periodLines } from '../src/read/category-lines.ts';
+import { normalizeSearch } from '../src/read/search.ts';
 import { BUDGETS_MS, type BenchCase } from './budgets.ts';
 import { DEFAULT_BENCH, generateDataset, loadDataset } from './generate.ts';
 
@@ -21,6 +23,8 @@ const PREV = { from: '2026-08-01', to: '2026-08-31', tz: TZ };
 const YEAR = { from: '2025-10-01', to: '2026-09-30', tz: TZ };
 // The six usual months before the shown one (main/usual.ts), as one span.
 const USUAL = { from: '2026-03-01', to: '2026-08-31', tz: TZ };
+// The desktop's search without dates: 36 whole months back and the current one (apps/desktop SEARCH_MONTHS).
+const SEARCH_SPAN = { from: '2023-09-01', to: '2026-09-30', tz: TZ };
 const PEOPLE = [undefined, 1, 2] as const;
 
 function arg(name: string): string | undefined {
@@ -55,6 +59,14 @@ const CASES: Record<BenchCase, { runs: number; fn: (db: Db, now: number) => Prom
       for (const endSec of [startOfDayIn('2026-10-01', TZ), startOfDayIn('2026-09-01', TZ)]) {
         for (const p of PEOPLE) await balancesAt(db, { endSec, ...(p === undefined ? {} : { participantId: p }) });
       }
+    },
+  },
+  // The desktop's global search (data/data.ts searchOverview): every operation of the span, matched in JS.
+  'search over 36 months': {
+    runs: 3,
+    fn: async (db) => {
+      const needle = normalizeSearch('market');
+      return (await periodLines(db, SEARCH_SPAN)).filter((l) => normalizeSearch(`${l.description} ${l.comment ?? ''}`).includes(needle));
     },
   },
   'full re-derivation': { runs: 2, fn: (db) => rederiveCore(db) },

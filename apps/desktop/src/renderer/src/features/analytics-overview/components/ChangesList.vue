@@ -18,8 +18,11 @@ const emit = defineEmits<{ open: [key: string]; all: [] }>();
     <p v-if="!canCompare" class="mt-3 text-sm text-foreground-muted">{{ $t('analytics.changes.noCompare') }}</p>
     <p v-else-if="rows.length === 0" class="mt-3 text-sm text-foreground-muted">{{ $t('analytics.changes.none') }}</p>
     <ul v-else class="mt-2 flex flex-col">
-      <li v-for="r in rows" :key="r.key" class="border-b border-border-subtle last:border-b-0">
-        <!-- Spending more is the warning colour here, less the calm one: the reverse of income. -->
+      <li v-for="(r, i) in rows" :key="r.key" class="border-b border-border-subtle last:border-b-0">
+        <p v-if="i === 0 || rows[i - 1]!.up !== r.up" class="pt-3 pb-1 text-xs font-semibold text-foreground-muted" data-test="change-group">
+          {{ r.up ? $t('analytics.changes.moreTitle') : $t('analytics.changes.lessTitle') }}
+        </p>
+        <!-- Spending more is the warning colour here, less a cool neutral one (not «good» green): the reverse of income. -->
         <button
           type="button"
           data-test="change"
@@ -28,7 +31,7 @@ const emit = defineEmits<{ open: [key: string]; all: [] }>();
         >
           <span
             class="grid size-7 shrink-0 place-items-center rounded-lg"
-            :class="r.up ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'"
+            :class="r.up ? 'bg-danger-subtle text-danger' : 'bg-info-subtle text-info'"
             aria-hidden="true"
           >
             <VIcon :icon="r.up ? 'lucide:arrow-up-right' : 'lucide:arrow-down-right'" class="size-4" />
@@ -38,9 +41,10 @@ const emit = defineEmits<{ open: [key: string]; all: [] }>();
             <span v-if="r.why" class="block text-xs text-foreground-muted">{{ r.why }}</span>
           </span>
           <span class="text-right tabular-nums whitespace-nowrap">
-            <span class="block font-semibold" :class="r.up ? 'text-danger' : 'text-success'">
+            <span class="block font-semibold" :class="r.up ? 'text-danger' : 'text-info'">
               <span class="sr-only">{{ r.up ? $t('analytics.changes.more') : $t('analytics.changes.less') }}</span>{{ r.delta }}
             </span>
+            <span v-for="c in r.also" :key="c" class="block text-xs text-foreground-muted" data-test="money-also">{{ c }}</span>
           </span>
         </button>
       </li>

@@ -22,6 +22,13 @@ export function fromUah(kopecks: number, currency: GoalCurrency, rates: RatesVie
 
 const money = (minor: number, currency: number) => formatMoney(minor, currency);
 
+/** «≈ 90 $ of 150 $» per picked «Show also» currency: a part of a whole, as `spentOf` says it in the main one. */
+function alsoOf(fmt: MoneyFormat, part: number, whole: number): string[] {
+  const wholes = fmt.alsoParts(whole);
+  return fmt.alsoParts(part).map((p, i) =>
+    `≈ ${t('entities.goal.spentOf', { spent: formatMoney(p.minor, p.currency), amount: formatMoney(wholes[i]!.minor, p.currency) })}`);
+}
+
 function fixedRow(r: MonthBudgetView['fixed'][number], fmt: MoneyFormat): FixedRowView {
   return {
     categoryId: r.categoryId,
@@ -38,11 +45,13 @@ export function budgetPanel(b: MonthBudgetView, month: string, current: boolean,
     id: b.id,
     title: t('limits.budget.title', { month: monthName(Number(month.slice(5, 7))) }),
     total: money(b.amountMinor, b.currency),
+    totalAlso: fmt.alsoParts(b.total).filter((p) => p.currency !== b.currency).map((p) => `≈ ${formatMoney(p.minor, p.currency)}`),
     fixed: b.fixed.map((r) => fixedRow(r, fmt)),
     fixedSummary: t('limits.budget.fixedSummary', { paid: fmt.money(b.fixedPaid), amount: fmt.money(b.fixedTotal) }),
     fixedTakesAll: b.fixedTakesAll,
     flexibleTitle: t('limits.budget.flexibleOf', { amount: fmt.money(flexibleAmount) }),
     flexible: limitLook(b.flexible, fmt, current),
+    flexibleAlso: alsoOf(fmt, b.flexible.spent, b.flexible.amount),
     result: b.result
       ? {
           within: b.result.within,
@@ -77,6 +86,7 @@ export function goalRow(g: SavingGoalView, fmt: MoneyFormat, ownerName: (id: num
       g.progress === null
         ? t('limits.goals.jarGone')
         : t('limits.goals.progress', { money: fmt.money(g.progress), target: fmt.money(g.target), source }),
+    also: g.progress === null ? [] : alsoOf(fmt, g.progress, g.target),
     need:
       tone === 'met' ? t('limits.goals.met')
         : tone === 'late' ? t('limits.goals.late', { date: by, left: fmt.money(g.left ?? 0) })
@@ -104,6 +114,7 @@ export function limitsScreenView(v: LimitsOverview, fmt: MoneyFormat, ownerName:
     periodText: t(`limits.period.${l.period}`),
     owner: ownerName(l.owner),
     look: l.figures ? limitLook(l.figures, fmt, v.current) : null,
+    also: l.figures ? alsoOf(fmt, l.figures.spent, l.figures.amount) : [],
   }));
   return {
     current: v.current,

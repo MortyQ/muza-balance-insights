@@ -1,5 +1,6 @@
 // Every spending line of one category in a period — the rows behind a figure of spendingSummary, for the desktop's
-// category screen — and the newest operations of a period, for home's «Recent operations». The same lines by construction (spendingLinesSql), so they sum to that figure. Unlike the
+// category screen —, the newest operations of a period, for home's «Recent operations», and every operation of a
+// period, for the desktop's search. The same lines by construction (spendingLinesSql), so they sum to that figure. Unlike the
 // summaries, the answer carries the bank's text (description, comment, counter_name): it is for the user's own
 // screen, never for an MCP tool or the anonymised copy.
 import type { Db } from '../storage/db.ts';
@@ -75,13 +76,27 @@ export async function latestLines(db: Db, q: Period & SpendingFilters, limit: nu
   return { period, lines: rows.map((r) => ({ ...lineOf(r), category: String(r.category) })) };
 }
 
+/** A body line with its category and scope: what the desktop's search matches and links to. */
+export type ScopedLine = LatestLine & { scope: string };
+
+/**
+ * Every operation of the period across every category, newest first: body lines only, each with its category and
+ * scope; filters as in spendingSummary. The desktop's search matches them in JS (SQLite does not fold Cyrillic case), on
+ * the text the screen shows, so it needs them all; no period info, one read.
+ */
+export async function periodLines(db: Db, q: Period & SpendingFilters): Promise<ScopedLine[]> {
+  validateFilters(q);
+  const rows = await linesOf(db, q, "kind = 'body'", [], null);
+  return rows.map((r) => ({ ...lineOf(r), category: String(r.category), scope: String(r.scope) }));
+}
+
 type Row = Record<string, unknown>;
 
 async function linesOf(db: Db, q: Period & SpendingFilters, where: string, args: Array<string | number>, limit: number | null): Promise<Row[]> {
   const from = await spendingLinesSql(db, q);
   const rs = await db.execute({
     sql: `${from.sql}
-          SELECT l.id, l.kind, l.time, l.account_id, c.participant_id, l.currency, l.amount, l.op_currency, l.op_amount, l.mcc, l.category,
+          SELECT l.id, l.kind, l.time, l.account_id, c.participant_id, l.currency, l.amount, l.op_currency, l.op_amount, l.mcc, l.category, l.scope,
                  t.description, t.comment, t.counter_name, t.hold, t.cashback_amount, t.refund_pair_id
           FROM (SELECT * FROM lines WHERE ${SPENDING_LINE_SQL} AND ${where}) l
           JOIN transactions t ON t.id = l.id

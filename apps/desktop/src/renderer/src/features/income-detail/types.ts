@@ -9,8 +9,41 @@ export interface SourceView {
   source: IncomeSourceId;
   label: string;
   amount: string;
+  /** One line per picked «Show also» currency; none — no line. */
+  also: ReadonlyArray<string>;
   caption: string;
   width: number;
+}
+
+/** The regular income's header: the monthly figure and the share regular payments take ('' — none). */
+export interface RegularHeaderView {
+  title: string;
+  also: string;
+  covered: string;
+}
+
+/** How a regular source stands: on time, late, or its last amount changed. */
+export type RegularMarkTone = 'ok' | 'late' | 'changed';
+
+/** A row of «Regular sources». */
+export interface RegularSourceView {
+  key: string;
+  name: string;
+  amount: string;
+  also: ReadonlyArray<string>;
+  often: string;
+  last: string;
+  next: string;
+  mark: { text: string; tone: RegularMarkTone };
+}
+
+/** A row of «Expected in the next 30 days». */
+export interface ExpectedIncomeView {
+  key: string;
+  name: string;
+  amount: string;
+  also: ReadonlyArray<string>;
+  date: string;
 }
 
 export interface UseIncomeDetailReturn {
@@ -35,6 +68,8 @@ export interface UseIncomeViewReturn {
   /** «By bank»: the banks with a positive part. */
   banks: ComputedRef<PartView[]>;
   sources: ComputedRef<SourceView[]>;
+  /** The regular income (a month only); null — another period. */
+  regular: ComputedRef<{ header: RegularHeaderView; sources: RegularSourceView[]; expected: ExpectedIncomeView[] } | null>;
   senders: ComputedRef<ShareItemView[]>;
   moreSenders: ComputedRef<string>;
   when: ComputedRef<WhenView | null>;

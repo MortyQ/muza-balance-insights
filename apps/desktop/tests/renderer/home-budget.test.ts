@@ -45,6 +45,7 @@ async function mountRow(month: YearMonth = '2026-11') {
 }
 
 beforeEach(() => {
+  localStorage.clear();
   setActivePinia(createPinia());
   answer = OVERVIEW;
 });
@@ -63,10 +64,29 @@ describe('home budget row', () => {
     expect(router.currentRoute.value.name).toBe('budget');
   });
 
+  it('«Show also» hryvnia with euros main: a line under the total, the fixed and flexible parts and per day', async () => {
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    useCurrencyDisplayStore().setAlso('uah', true);
+    const w = await mountRow();
+    expect(w.findAll('[data-test="money-also"]').map((x) => plain(x.text()))).toEqual([
+      `≈ ${uah(10_000_000)}`,
+      `≈ ${uah(6_250_000)} из ${uah(6_800_000)}`,
+      `≈ ${uah(1_150_000)} из ${uah(3_200_000)}`,
+      `≈ ${uah(97_619)}`,
+    ]);
+    // The budget's own currency is not repeated.
+    useCurrencyDisplayStore().setAlso('uah', false);
+    useCurrencyDisplayStore().setMain(980);
+    useCurrencyDisplayStore().setAlso('eur', true);
+    await flushPromises();
+    expect(w.findAll('[data-test="money-also"]')).toHaveLength(3);
+  });
+
   it('pending holds of the flexible part: a quiet note under the bar', async () => {
     answer = { ...OVERVIEW, budget: { ...BUDGET, flexible: { ...BUDGET.flexible, pending: { count: 3, amount: 120_000 } } } };
     const w = await mountRow();
-    expect(plain(w.get('[data-test="home-budget-flexible"] [data-test="pending-note"]').text())).toBe(`+ 3 в ожидании, ${uah(120_000)}`);
+    expect(plain(w.get('[data-test="home-budget-flexible"] [data-test="pending-note"]').text())).toBe(`в т.ч. 3 в ожидании, ${uah(120_000)}`);
   });
 
   it('a past month: the result instead of the pace', async () => {

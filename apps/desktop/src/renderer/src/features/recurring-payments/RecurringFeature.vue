@@ -17,7 +17,7 @@ const { summary, active, ended, hidden } = useRecurringView({ view, fmt });
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
         <RecurringSummary :summary />
       </VCard>
-      <VCard v-if="active.length > 0" padding="md"><RecurringList :rows="active" @mark="setMark" /></VCard>
+      <VCard v-if="active.length > 0" padding="md"><RecurringList :rows="active" :title="$t('recurring.active')" @mark="setMark" /></VCard>
       <p v-else class="text-foreground-muted">{{ $t('recurring.empty') }}</p>
       <VCard v-if="ended.length > 0" padding="md"><RecurringList :rows="ended" :title="$t('recurring.ended')" @mark="setMark" /></VCard>
       <!-- Hidden: folded away, each can come back. -->

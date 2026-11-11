@@ -88,17 +88,17 @@ describe('computeScope (pure)', () => {
 });
 
 describe('rescope (DB pass)', () => {
-  it('marks FOP rows (any currency) and treasury payments business, the rest personal; writes only changes', async () => {
+  it('marks FOP rows (any currency) business, the rest personal — treasury from a card too, by default; writes only changes', async () => {
     await tx('shop', 'black', 1, -1_000);
     await tx('fop-fee', 'fop', 2, -500, { mcc: 4829 });
     await tx('fop-usd', 'fopusd', 3, 10_000, { mcc: 4829 });
     await tx('tax', 'white', 4, -70_000, { mcc: 4829, description: 'ГУК Вигадана обл/12345678' });
     await tx('gov', 'black', 5, -300, { mcc: 9399 });
-    expect(await rescope(db)).toBe(3);
+    expect(await rescope(db)).toBe(2);
     expect(await scopeOf('shop')).toBe('personal');
     expect(await scopeOf('fop-fee')).toBe('business');
     expect(await scopeOf('fop-usd')).toBe('business');
-    expect(await scopeOf('tax')).toBe('business');
+    expect(await scopeOf('tax')).toBe('personal');
     expect(await scopeOf('gov')).toBe('personal');
     expect(await rescope(db)).toBe(0);
   });
@@ -143,25 +143,33 @@ describe('rescope (DB pass)', () => {
 });
 
 describe('settings', () => {
-  it('defaults without rows: treasury_business on, reveal_full_names off, cash_is_spending on', async () => {
-    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: false, cash_is_spending: true });
+  it('defaults without rows: treasury_business off, reveal_full_names off, cash_is_spending on', async () => {
+    expect(await getSettings(db)).toEqual({ treasury_business: false, reveal_full_names: false, cash_is_spending: true });
   });
 
-  it('set validates key and value; the default value removes the row; turning treasury off re-scopes it', async () => {
+  it('a tax from a personal card is personal by default; from a FOP account — business', async () => {
+    await tx('tax', 'white', 1, -70_000, { mcc: 4829, description: 'ГУК Вигадана обл/12345678' });
+    await tx('fop-tax', 'fop', 1, -70_000, { mcc: 4829, description: 'ГУК Вигадана обл/12345678' });
+    await rescope(db);
+    expect(await scopeOf('tax')).toBe('personal');
+    expect(await scopeOf('fop-tax')).toBe('business');
+  });
+
+  it('set validates key and value; the default value removes the row; turning treasury on re-scopes it', async () => {
     await tx('tax', 'white', 1, -70_000, { mcc: 4829, description: 'ГУК Вигадана обл/12345678' });
     await rescope(db);
-    await expect(setSetting(db, 'treasury', 'off')).rejects.toThrow(SettingsError);
+    await expect(setSetting(db, 'treasury', 'on')).rejects.toThrow(SettingsError);
     await expect(setSetting(db, 'treasury_business', 'no')).rejects.toThrow(SettingsError);
 
-    await setSetting(db, 'treasury_business', 'off');
-    expect((await getSettings(db)).treasury_business).toBe(false);
-    expect(await rescope(db)).toBe(1);
-    expect(await scopeOf('tax')).toBe('personal');
-
     await setSetting(db, 'treasury_business', 'on');
+    expect((await getSettings(db)).treasury_business).toBe(true);
+    expect(await rescope(db)).toBe(1);
+    expect(await scopeOf('tax')).toBe('business');
+
+    await setSetting(db, 'treasury_business', 'off');
     expect((await db.execute('SELECT COUNT(*) AS n FROM settings')).rows[0]?.n).toBe(0);
     await setSetting(db, 'reveal_full_names', 'on');
-    expect(await getSettings(db)).toEqual({ treasury_business: true, reveal_full_names: true, cash_is_spending: true });
+    expect(await getSettings(db)).toEqual({ treasury_business: false, reveal_full_names: true, cash_is_spending: true });
   });
 });
 
@@ -173,6 +181,8 @@ describe('scope overrides', () => {
     await tx('fop-tax', 'fop', 3, -9_000, { mcc: 4829, description: 'ГУК Вигадана обл/12345678' });
     await tx('card-tax', 'black', 4, -1_500, { mcc: 9311, description: 'Вигадана Податкова' });
     await tx('p2p', 'black', 5, -800, { mcc: 4829, description: 'Вигаданий Опис', counterName: 'Тестова Особа' });
+    // The treasury rule on (the user's choice; off by default): overrides make the exceptions.
+    await setSetting(db, 'treasury_business', 'on');
     await recategorize(db);
     await rescope(db);
   });

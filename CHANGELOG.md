@@ -9,9 +9,72 @@ English interface.
 
 - The tile beside «Today» and «This week» always shows its slides in one order: «What's unusual», then «Limits», then
   «Recent transactions». With nothing unusual and no limit to watch, it opens on «Recent transactions».
+- «Today» and «This week» say a change in per cent only when the usual day or last week is large enough; otherwise the
+  chip shows the difference in money alone, so one purchase on a quiet day no longer reads as «+400%».
+
+### Analytics and regular payments
+
+- «What changed» in «Analytics» lists the three largest increases and the three largest decreases under «Spent more»
+  and «Spent less»; a decrease is shown in a calm blue instead of green.
+- «Regular payments» heads its first list «Active», and a payment no longer seen says for how long: «last 16 Jun · not
+  seen for 4 months».
+
+### Currencies
+
+- The currencies switched on under «Show also» now appear under every amount in tables and lists: transactions, «Who
+  spent», payees, banks, recent transactions, limits, the budget, regular payments, analytics and insights. A
+  transaction made in one of those currencies shows its exact amount, without «≈». Charts show them in their tooltips.
+
+### Budget and limits
+
+- Purchases the bank is still processing now count against the monthly budget and category limits as soon as they are
+  downloaded, so the figures move right after an update. The note under the bar says how much of the amount is still
+  pending: the bank may change those amounts, and cancelled ones drop out.
+
+### Planning
+
+- Each reserve under «Available per day» has a «Done» checkbox. Tick it once you have paid for it or no longer need
+  it: the reserve stops reducing «Free» and «Available per day» at once and stays in the list, dimmed. Untick it to
+  count it again.
+
+### Income
+
+- The «Income» screen for a month shows what you can count on: «Regular income: … a month» and how much of it your
+  regular payments take. «Regular sources» lists each sender who pays you about once a month with the usual amount, the
+  last and the next expected date, and a mark — «on time», «late by N days» or «amount changed by N%». «Expected in the
+  next 30 days» lists what should arrive soon; the dates come from how often each source paid you before.
+
+### Insights
+
+- While a month runs, «The month at a glance» on «Insights» shows «Forecast based on your plan»: what you have spent so
+  far, plus the regular payments still due before the month ends, plus a typical day of your usual months for each day
+  left, with a range from a quieter to a busier month. The «?» beside it shows the sum in your numbers. A finished
+  month shows no forecast.
+
+### FOP tax
+
+- A new «FOP tax» screen in the menu: a quick estimate of the single tax of a group 3 sole proprietor. Pick a rate — 5%,
+  6% or your own percent —, what to count from — the income on your FOP accounts (when a Monobank FOP account is
+  connected), all your income, or an amount you type — and a period — one month or a range of months, with quick picks
+  for this and last month, this and last quarter, each quarter of this year, and this and last year (a quarter also shows the year since 1 January). The tax updates at once. Refunds and transfers between your own or your family's accounts are not
+  counted as income. The figure is an estimate, not tax advice, and the single social contribution (ЄСВ) is not
+  included.
+
+### Search
+
+- A search field at the top of every data screen, also opened with Cmd+K (Ctrl+K on Windows and Linux): «Search
+  transactions by name, amount or date». Type a payee or a comment, an amount such as «250» (anything within 1 of it
+  in your main currency), or a date such as «12 Oct», «5–11 Oct» or «October 2026» — or several at once. Results come
+  in groups: «Transactions», «Payees», «Categories» and «Regular payments»; the arrow keys and Enter pick one.
+- A transaction opens its category for its month with the list searched by its description; a payee opens its category
+  with the payee filter on; a category opens its screen; a regular payment opens «Regular payments». The search follows
+  the person and banks picked at the top. With nothing found it says «No transactions match “…”».
 
 ### Fixes
 
+- Taxes and government fees paid from a personal card now show in «Spending», in their category and in «Budget
+  structure», including the ones downloaded before; they appear after the next update. Whether they count against the
+  monthly budget is still up to its «Count taxes» switch. Payments from a business account stay business.
 - A limit's warning label, such as «€99 ahead of plan (×1.4)», is readable in the dark theme again.
 
 ## 0.1.14 — 2026-11-07

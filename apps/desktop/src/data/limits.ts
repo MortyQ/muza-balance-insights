@@ -19,8 +19,8 @@ export type Sums = ReadonlyMap<string, number>;
 /** Category word → the pending holds' net and how many operations (core `holds: 'pending'`). */
 export type PendingSums = ReadonlyMap<string, { net: number; purchases: number }>;
 /**
- * One owner's spending of today, this week and the shown month (a past month: the month only), pending holds left
- * out, and the pending holds of the same periods apart.
+ * One owner's spending of today, this week and the shown month (a past month: the month only), pending holds
+ * included, and the pending holds of the same periods apart (the note: how much of it the bank may still change).
  */
 export type OwnerSums = { day: Sums; week: Sums; month: Sums; pending: { day: PendingSums; week: PendingSums; month: PendingSums } };
 

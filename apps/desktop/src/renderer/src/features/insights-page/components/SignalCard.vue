@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { MoneyStack } from '@/entities/currency-display';
 import { VCard, VIcon } from '@/shared/ui';
 import { SEVERITY_CHIP } from '../constants.ts';
 import type { SignalCardView } from '../types.ts';
@@ -26,7 +27,7 @@ const { signal } = defineProps<{ signal: SignalCardView }>();
         <span class="truncate text-xs text-foreground-muted">{{ signal.caption }}</span>
       </span>
       <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="SEVERITY_CHIP[signal.severity]" data-test="severity">{{ signal.severityLabel }}</span>
-      <span class="shrink-0 text-sm font-semibold tabular-nums">{{ signal.amount }}</span>
+      <MoneyStack class="text-sm font-semibold" :amount="signal.amount" :also="signal.also" :strong="false" />
     </component>
   </VCard>
 </template>

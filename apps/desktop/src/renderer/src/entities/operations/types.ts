@@ -28,6 +28,8 @@ export interface PartView {
   name: string;
   color: string;
   amount: string;
+  /** One line per picked «Show also» currency («≈ 1 200 ₴»); none — no line. */
+  also?: ReadonlyArray<string>;
   caption: string;
   width: number;
 }
@@ -37,6 +39,8 @@ export interface PersonView {
   name: string;
   color: string;
   amount: string;
+  /** One line per picked «Show also» currency («≈ 1 200 ₴»); none — no line. */
+  also?: ReadonlyArray<string>;
   caption: string;
   width: number;
 }
@@ -47,6 +51,8 @@ export interface ShareItemView {
   key: string;
   name: string;
   amount: string;
+  /** One line per picked «Show also» currency («≈ 1 200 ₴»); none — no line. */
+  also?: ReadonlyArray<string>;
   caption: string;
   width: number;
   pressed: boolean;
@@ -55,6 +61,8 @@ export interface ShareItemView {
 export interface DayPartView {
   label: string;
   amount: string;
+  /** One line per picked «Show also» currency («≈ 1 200 ₴»); none — no line. */
+  also?: ReadonlyArray<string>;
   width: number;
   strong: boolean;
 }
@@ -93,6 +101,8 @@ export interface LineRowView {
   incoming: boolean;
   /** The operation's own amount when its currency differs, or the account currency's when it has no rate; '' — none. */
   original: string;
+  /** One line per picked «Show also» currency (exact in the operation's own currency, else «≈»); none — no line. */
+  also?: ReadonlyArray<string>;
   /** What the row's menu offers (a right click or its «⋮»); none — no menu. */
   actions?: ReadonlyArray<MenuItem>;
 }
@@ -114,12 +124,18 @@ export interface PersonRef {
 /** How an amount is written: the home-wide currency choice (MoneyFormat of entities/currency-display fits). */
 export interface Money {
   money(kopecks: number): string;
+  /** «≈ 100 $» per picked «Show also» currency; absent — none. */
+  approx?(kopecks: number): string[];
+  /** The same on one line: «≈ 100 $ · 80 €»; '' or absent — none. */
+  approxInline?(kopecks: number): string;
 }
 
 /** One figure of the summary grid: its label, value and the small line under it ('' — none). */
 export interface StatView {
   label: string;
   value: string;
+  /** One line per picked «Show also» currency («≈ 1 200 ₴»); none — no line. */
+  also?: ReadonlyArray<string>;
   note: string;
   tone?: 'good';
 }

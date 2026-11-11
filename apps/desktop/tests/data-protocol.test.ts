@@ -19,6 +19,7 @@ describe('data protocol', () => {
     expect(DATA_ARG_SCHEMAS.monthOverview).toBe(ARG_SCHEMAS.getMonthOverview);
     expect(DATA_ARG_SCHEMAS.setAccountEnabled).toBe(ARG_SCHEMAS.setAccountEnabled);
     expect(DATA_ARG_SCHEMAS.connectionAccounts).toBe(ARG_SCHEMAS.listConnectionAccounts);
+    expect(DATA_ARG_SCHEMAS.searchOverview).toBe(ARG_SCHEMAS.searchOverview);
   });
 
   it('a call names a listed method only; there is no message with SQL', () => {

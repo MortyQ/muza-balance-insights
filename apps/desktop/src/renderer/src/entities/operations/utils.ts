@@ -31,6 +31,17 @@ export const pct = (value: number, max: number): number => (max > 0 ? Math.round
 /** A bar with a value never vanishes; one without stays flat. */
 const barHeight = (value: number, max: number) => (value > 0 && max > 0 ? Math.max(MIN_BAR, pct(value, max)) : 0);
 
+/** The «Show also» lines of an amount (`approx` of the format), spread into a view; nothing picked — no field. */
+const alsoOf = (fmt: Money, kopecks: number): { also?: string[] } => {
+  const also = fmt.approx?.(kopecks) ?? [];
+  return also.length > 0 ? { also } : {};
+};
+/** A tooltip's text followed by the «Show also» currencies of its amount: «Mon — 100 € · ≈ 4 000 ₴». */
+const withInline = (fmt: Money, kopecks: number, text: string): string => {
+  const also = fmt.approxInline?.(kopecks) ?? '';
+  return also ? `${text} · ${also}` : text;
+};
+
 /** Names (merchants, senders) match regardless of case and spaces (as main groups them). */
 export const nameKey = (s: string): string => s.toLocaleLowerCase('uk').replace(/\s+/g, ' ').trim();
 
@@ -91,12 +102,13 @@ export function monthsView(
   const shown = months.find((m) => m.month === picked);
   const bars = months.map((m): BarView => {
     const amount = m.value === null ? t('entities.operations.months.noData') : fmt.money(m.value);
+    const title = `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.month === thisMonth ? t('entities.operations.months.soFar', { amount }) : amount}`;
     return {
       key: m.month,
       label: monthShortName(monthNo(m.month)),
       height: m.value === null ? 0 : barHeight(m.value, max),
       strong: m.month === picked,
-      title: `${monthName(monthNo(m.month))} ${m.month.slice(0, 4)} — ${m.month === thisMonth ? t('entities.operations.months.soFar', { amount }) : amount}`,
+      title: m.value === null ? title : withInline(fmt, m.value, title),
     };
   });
   if (avg === null) return { bars, avg: null, avgLabel: '', caption: '' };
@@ -123,7 +135,7 @@ export function partBars(
   const max = Math.max(0, ...parts.map((p) => p.value));
   return parts
     .filter((p) => p.value > 0)
-    .map((p) => ({ key: p.key, name: p.name, color: p.color, amount: fmt.money(p.value), caption: countCaption(p.value, p.count, fmt), width: pct(p.value, max) }))
+    .map((p) => ({ key: p.key, name: p.name, color: p.color, amount: fmt.money(p.value), ...alsoOf(fmt, p.value), caption: countCaption(p.value, p.count, fmt), width: pct(p.value, max) }))
     .sort((a, b) => b.width - a.width);
 }
 
@@ -157,6 +169,7 @@ export function shareItems(
       key,
       name: m.name || t('entities.operations.noDescription'),
       amount: fmt.money(m.value),
+      ...alsoOf(fmt, m.value),
       caption: [countCaption(m.value, m.count, fmt), `${share}%`].join(' · '),
       width: pct(m.value, max),
       pressed: picked === key,
@@ -227,15 +240,15 @@ export function whenView<L extends WhenLine>(
       label: weekdayShort(i + 1),
       height: barHeight(n, wMax),
       strong: wMax > 0 && n === wMax,
-      title: `${weekdayShort(i + 1)} — ${fmt.money(n)}`,
+      title: withInline(fmt, n, `${weekdayShort(i + 1)} — ${fmt.money(n)}`),
     })),
-    dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
+    dayParts: w.dayParts.map((n, i): DayPartView => ({ label: partName(i), amount: fmt.money(n), ...alsoOf(fmt, n), width: pct(Math.max(0, n), pMax), strong: pMax > 0 && n === pMax })),
     days: !parts.days ? null : w.days.map((n, i) => ({
       key: String(i + 1),
       label: String(i + 1),
       height: barHeight(n, dMax),
       strong: n > 0,
-      title: t('entities.operations.when.dayTitle', { day: i + 1, month: monthShortName(monthNo(month)), amount: fmt.money(n) }),
+      title: withInline(fmt, n, t('entities.operations.when.dayTitle', { day: i + 1, month: monthShortName(monthNo(month)), amount: fmt.money(n) })),
     })),
     peak:
       pMax <= 0

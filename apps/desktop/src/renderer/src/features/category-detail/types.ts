@@ -15,6 +15,12 @@ export interface UseCategoryDetailReturn {
   fmt: ComputedRef<MoneyFormat>;
 }
 
+/** What a link opens the list with: the search text ('' — none) and the payee filter (a payeeKey; null — none). */
+export interface ListOpen {
+  q: string;
+  merchant: string | null;
+}
+
 export interface UseCategoryViewReturn {
   summary: ComputedRef<SummaryView | null>;
   /** The figure's label for the period («Spent this month»). */

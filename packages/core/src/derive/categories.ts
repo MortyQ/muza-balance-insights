@@ -58,11 +58,13 @@ const HINTS_ARE_CATEGORIES: [Exclude<keyof typeof CATEGORY, CategoryHint | Deriv
 void HINTS_ARE_CATEGORIES;
 
 /**
- * The version of the category rules. Bump it with any change that can give a stored operation another category (an MCC
- * row, a keyword, a hint): the next import then runs one full re-derivation (rederive.ts `rulesChanged`).
+ * The version of the derivation rules. Bump it with any change that can give a stored operation another category (an
+ * MCC row, a keyword, a hint) or another scope (a scope rule or its default): the next import then runs one full
+ * re-derivation (rederive.ts `rulesChanged`).
  * 2: MCC 4111 and 4789 → transport.
+ * 3: treasury_business off by default — taxes from personal cards become personal.
  */
-export const CATEGORY_RULES_VERSION = 2;
+export const CATEGORY_RULES_VERSION = 3;
 
 /**
  * MCCs seen in real data (phase 3 reports). Anything else falls back to «другое».

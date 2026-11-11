@@ -2,7 +2,7 @@ import type { AnalyticsCategory, AnalyticsOverview } from '@contract/api.ts';
 import { categoryColor, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { CHART_TOOLTIP, dayMonth } from '@/entities/operations';
-import { monthName, monthShortName, t } from '@/shared/lib';
+import { formatMoney, monthName, monthShortName, t } from '@/shared/lib';
 import type { ChartOption } from '@/shared/ui';
 import { FLOW_BANK_FILL, HEAT_EVEN } from './constants.ts';
 import type { CategoryRow, ChangeRow, Column, CompareRow, FlowBank, GapPolygon, HeatRow, KpiView, LinesMode, MiniCard } from './types.ts';
@@ -10,6 +10,14 @@ import type { CategoryRow, ChangeRow, Column, CompareRow, FlowBank, GapPolygon, 
 const sum = (xs: readonly number[]): number => xs.reduce((s, x) => s + x, 0);
 const decimal = new Intl.NumberFormat('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const signed = (fmt: MoneyFormat, v: number): string => `${v >= 0 ? '+' : '−'}${fmt.money(Math.abs(v))}`;
+/** A change in each picked «Show also» currency: «≈ +300 $» / «≈ −30 €»; `plus` false — no «+» (a balance). */
+const signedAlso = (fmt: MoneyFormat, v: number, plus = true): string[] =>
+  fmt.alsoParts(Math.abs(v)).map((p) => `≈ ${v >= 0 ? (plus ? '+' : '') : '−'}${formatMoney(p.minor, p.currency)}`);
+/** A tooltip's amount followed by its «Show also» currencies: «69 € · ≈ 3 541 ₴». */
+const withAlso = (fmt: MoneyFormat, kopecks: number): string => {
+  const also = fmt.approxInline(kopecks);
+  return also ? `${fmt.money(kopecks)} · ${also}` : fmt.money(kopecks);
+};
 const percent = (share: number): string => `${decimal.format(Math.round(share * 1000) / 10)}%`;
 const monthOfKey = (key: string): number => Number(key.slice(5, 7));
 const delta = (c: Readonly<{ total: number; prev: number | null }>): number => c.total - (c.prev ?? 0);
@@ -113,7 +121,7 @@ export function heatRows(rows: readonly CategoryRow[], cols: readonly Column[], 
         else if (ratio < 1 - HEAT_EVEN) background = `color-mix(in oklch, var(--heat-cold) ${Math.round(Math.min(60, 15 + (1 - ratio) * 60))}%, var(--surface))`;
         return {
           text: c.state === 'none' ? '' : v === 0 ? '—' : thousands(v),
-          title: `${r.name}, ${c.label}: ${fmt.money(sum(c.idx.map((i) => r.net[i] ?? 0)))}`,
+          title: `${r.name}, ${c.label}: ${withAlso(fmt, sum(c.idx.map((i) => r.net[i] ?? 0)))}`,
           background,
           strong: c.state !== 'none' && ratio > 1.4,
           running: c.state === 'running',
@@ -152,13 +160,14 @@ export function kpiView(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): KpiVi
   const shown = v.buckets.filter((b) => b.state !== 'none').length || 1;
   const perKey = v.unit === 'day' ? 'analytics.kpi.perDay' : 'analytics.kpi.perMonth';
   return [
-    { key: 'income', label: t('analytics.kpi.income'), value: fmt.money(income), note: vs(income, prev?.income), tone: prev && income > prev.income ? 'good' : 'neutral' },
-    { key: 'spending', label: t('analytics.kpi.spending'), value: fmt.money(spending), note: vs(spending, prev?.spending), tone: prev && spending > prev.spending ? 'bad' : 'neutral' },
-    { key: 'left', label: t('analytics.kpi.left'), value: signed(fmt, left).replace(/^\+/, ''), note: t(perKey, { amount: fmt.money(Math.round(left / shown)) }), tone: left < 0 ? 'bad' : 'neutral' },
+    { key: 'income', label: t('analytics.kpi.income'), value: fmt.money(income), also: fmt.approx(income), note: vs(income, prev?.income), tone: prev && income > prev.income ? 'good' : 'neutral' },
+    { key: 'spending', label: t('analytics.kpi.spending'), value: fmt.money(spending), also: fmt.approx(spending), note: vs(spending, prev?.spending), tone: prev && spending > prev.spending ? 'bad' : 'neutral' },
+    { key: 'left', label: t('analytics.kpi.left'), value: signed(fmt, left).replace(/^\+/, ''), also: signedAlso(fmt, left, false), note: t(perKey, { amount: fmt.money(Math.round(left / shown)) }), tone: left < 0 ? 'bad' : 'neutral' },
     {
       key: 'rate',
       label: t('analytics.kpi.rate'),
       value: rate === null ? '—' : percent(rate),
+      also: [],
       note: prevRate === null ? '' : t('analytics.kpi.wasRate', { rate: percent(prevRate) }),
       tone: rate !== null && prevRate !== null ? (rate < prevRate ? 'bad' : 'good') : 'neutral',
     },
@@ -174,17 +183,25 @@ function peakText(v: Readonly<AnalyticsOverview>, net: readonly number[]): strin
   return t('analytics.changes.peak', { when });
 }
 
-/** The 4 largest increases, then the largest decrease (else the 5th increase). Empty without a comparison. */
+/**
+ * The 3 largest increases, then the 3 largest decreases; a side with fewer leaves its places to the other (6 rows at
+ * most). Empty without a comparison.
+ */
+/** «What changed»: increases and decreases shown on each side. */
+const CHANGES_PER_SIDE = 3;
+
 export function changesView(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): ChangeRow[] {
   if (!v.compare) return [];
   const up = v.categories.filter((c) => delta(c) > 0).sort((a, b) => delta(b) - delta(a));
   const down = v.categories.filter((c) => delta(c) < 0).sort((a, b) => delta(a) - delta(b));
-  const first = down[0];
-  const picked = first ? [...up.slice(0, 4), first] : up.slice(0, 5);
+  const ups = Math.max(CHANGES_PER_SIDE, CHANGES_PER_SIDE * 2 - down.length);
+  const downs = Math.max(CHANGES_PER_SIDE, CHANGES_PER_SIDE * 2 - up.length);
+  const picked = [...up.slice(0, ups), ...down.slice(0, downs)];
   return picked.map((c) => ({
     key: c.categoryId ?? c.category,
     name: categoryName(c),
     delta: diffText(fmt, c.total, c.prev ?? 0),
+    also: signedAlso(fmt, delta(c)),
     why: peakText(v, c.net),
     up: delta(c) > 0,
   }));
@@ -205,6 +222,7 @@ export function compareRows(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat): C
       left: d >= 0 ? 50 : 50 - width,
       width,
       delta: diffText(fmt, c.total, c.prev ?? 0),
+      also: signedAlso(fmt, d),
       span: t('analytics.views.was', { was: fmt.money(c.prev ?? 0), now: fmt.money(c.total) }),
     };
   });
@@ -219,6 +237,7 @@ export function miniCards(v: Readonly<AnalyticsOverview>, rows: readonly Categor
     name: r.name,
     color: r.color,
     total: fmt.money(r.total),
+    also: fmt.approx(r.total),
     avg: t(perKey, { amount: fmt.money(Math.round(r.total / shown)) }),
     chip: r.prev === null || r.prev <= 0 ? '' : diffText(fmt, r.total, r.prev),
     up: r.prev === null || r.prev <= 0 ? null : r.total >= r.prev,
@@ -341,7 +360,7 @@ export function flowChartOption(v: Readonly<AnalyticsOverview>, fmt: MoneyFormat
       formatter: (ps: AxisParam[]) => {
         const x = ps[0]?.value[0] ?? 0;
         const head = bucketTitle(v.buckets[x]?.key ?? '', v.unit);
-        return [head, ...ps.flatMap((p) => (p.seriesName && p.value[1] !== null ? [`${p.seriesName}: ${fmt.money(p.value[1])}`] : []))].join('\n');
+        return [head, ...ps.flatMap((p) => (p.seriesName && p.value[1] !== null ? [`${p.seriesName}: ${withAlso(fmt, p.value[1])}`] : []))].join('\n');
       },
     },
     series: [
@@ -391,7 +410,7 @@ export function linesOption(
       trigger: 'axis',
       formatter: (ps: AxisParam[]) => {
         const x = ps[0]?.value[0] ?? 0;
-        const value = (y: number) => (share ? `${decimal.format(Math.round(y * 10) / 10)}%` : fmt.money(y));
+        const value = (y: number) => (share ? `${decimal.format(Math.round(y * 10) / 10)}%` : withAlso(fmt, y));
         return [bucketTitle(v.buckets[x]?.key ?? '', v.unit), ...ps.flatMap((p) => (p.seriesName && p.value[1] !== null ? [`${p.seriesName}: ${value(p.value[1])}`] : []))].join('\n');
       },
     },
@@ -428,7 +447,7 @@ export function miniOption(v: Readonly<AnalyticsOverview>, row: Readonly<Categor
     tooltip: {
       ...CHART_TOOLTIP,
       trigger: 'item',
-      formatter: (p: { dataIndex: number }) => `${bucketTitle(v.buckets[p.dataIndex]?.key ?? '', v.unit)}: ${fmt.money(row.net[p.dataIndex] ?? 0)}`,
+      formatter: (p: { dataIndex: number }) => `${bucketTitle(v.buckets[p.dataIndex]?.key ?? '', v.unit)}: ${withAlso(fmt, row.net[p.dataIndex] ?? 0)}`,
     },
     series: [
       {

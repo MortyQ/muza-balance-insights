@@ -6,6 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import { defineComponent, h, nextTick } from 'vue';
 import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-router';
+import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
 vi.mock('@/features/integrations', () => ({ QuickUploadFeature: defineComponent(() => () => h('div', { 'data-test': 'quick-upload' })) }));
@@ -59,6 +60,7 @@ describe('navGroups', () => {
           { label: 'home.nav.analytics', icon: 'lucide:chart-column', id: 'analytics' },
           { label: 'home.nav.recurring', icon: 'lucide:repeat', id: 'recurring' },
           { label: 'home.nav.planning', icon: 'lucide:calculator', id: 'planning' },
+          { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', id: 'fop-tax' },
         ],
       },
     ]);
@@ -66,7 +68,7 @@ describe('navGroups', () => {
     expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
     // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
-    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning']);
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning', 'fop-tax']);
   });
 });
 
@@ -74,7 +76,7 @@ describe('navItems', () => {
   it('the side menu as sidebar entries: translated, opening their route, standing for the screens that name them as parent', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const items = navItems(router.getRoutes(), (key) => `t:${key}`);
-    expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning']);
+    expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning', 'fop-tax']);
     expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
     expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income']));
     expect(items[1]?.activeFor).toEqual([]);
@@ -88,9 +90,11 @@ describe('MasterLayout', () => {
       { path: '/second', name: 'second', component: page('second'), meta: { nav: { label: 'home.nav.label', icon: 'lucide:list', order: 1 } } },
       { path: '/settings', name: 'settings', component: page('settings'), meta: { layout: 'empty' } },
       { path: '/sub', name: 'category', component: page('sub'), meta: { navParent: 'home' } },
+      { path: '/fop', name: 'fop-tax', component: page('fop'), meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 2 } } },
     ];
     const router = createRouter({ history: createMemoryHistory(), routes: test });
     await router.push(path);
+    setActivePinia(createPinia());
     const w = mount(MasterLayout, { global: { plugins: [router, i18n] } });
     await flushPromises();
     return { w, router };
@@ -102,7 +106,7 @@ describe('MasterLayout', () => {
   it('the default layout: the sidebar from the routes with the open one current, the title, the filters, the screen', async () => {
     const { w } = await mountAt('/');
     expect(w.find('[data-test="filters"]').exists()).toBe(true);
-    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second']);
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second', '/fop']);
     expect(entry(w, '/').attributes('aria-current')).toBe('page');
     expect(entry(w, '/second').attributes('aria-current')).toBeUndefined();
     expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.general'));
@@ -113,8 +117,22 @@ describe('MasterLayout', () => {
     expect(main.classes()).not.toContain('bg-surface');
     expect(main.get('[data-test="layout-header"]').find('[data-test="filters"]').exists()).toBe(true);
     expect(main.find('[data-test="layout-scroll"]').exists()).toBe(true);
+    // Nothing on a screen widens the scroll area: no sideways scroll.
+    expect(main.get('[data-test="layout-content"]').classes()).toContain('overflow-x-clip');
     expect(main.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it('«FOP tax» is always in the menu', async () => {
+    const { w } = await mountAt('/');
+    expect(entries(w).map((e) => e.attributes('href'))).toEqual(['/', '/second', '/fop']);
+    w.unmount();
+  });
+
+  it('a screen opened directly keeps its title', async () => {
+    const { w } = await mountAt('/fop');
+    expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.fopTax'));
     w.unmount();
   });
 

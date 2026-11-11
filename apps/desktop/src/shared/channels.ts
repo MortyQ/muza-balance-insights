@@ -26,6 +26,8 @@ export const METHODS = [
   'getCategoryOverview',
   'getIncomeOverview',
   'getRecurringOverview',
+  'searchOverview',
+  'getFopTaxOverview',
   'setRecurringMark',
   'setOperationCategory',
   'getAllowanceOverview',

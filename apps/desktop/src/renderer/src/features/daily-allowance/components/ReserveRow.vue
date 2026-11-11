@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { VAvatar, VPopover } from '@/shared/ui';
+import { VAvatar, VCheckbox, VPopover, VTooltip } from '@/shared/ui';
 import type { ReserveRowView } from '../types.ts';
 
 const { row } = defineProps<{ row: ReserveRowView }>();
-const emit = defineEmits<{ edit: [id: number]; delete: [id: number] }>();
+const emit = defineEmits<{ edit: [id: number]; delete: [id: number]; done: [done: boolean] }>();
 
 const open = ref(false);
 function pick(what: 'edit' | 'delete') {
@@ -32,7 +32,17 @@ function pick(what: 'edit' | 'delete') {
     <span class="flex shrink-0 flex-col items-end gap-0.5">
       <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>
       <span v-if="row.approx" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ row.approx }}</span>
+      <span v-for="c in row.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
     </span>
+    <VTooltip :text="$t('home.allowance.reserves.doneHint')" placement="top" wrapper-class="inline-flex shrink-0">
+      <VCheckbox
+        :model-value="row.done"
+        :label="$t('home.allowance.reserves.done')"
+        :aria-description="$t('home.allowance.reserves.doneHint')"
+        data-test="reserve-done"
+        @update:model-value="(v) => emit('done', v === true)"
+      />
+    </VTooltip>
     <VPopover v-model:open="open" icon="lucide:ellipsis" :label="$t('home.allowance.reserves.actions', { name: row.name })">
       <div class="flex flex-col">
         <button

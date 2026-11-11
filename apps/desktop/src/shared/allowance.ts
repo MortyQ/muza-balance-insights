@@ -4,6 +4,7 @@ export {
   RESERVE_CURRENCIES,
   RESERVE_NAME_MAX,
   RESERVES_MAX,
+  type Reserve,
   type ReserveCurrency,
   type ReserveInput,
 } from '@mono/core/read/reserves';

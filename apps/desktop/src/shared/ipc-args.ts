@@ -11,6 +11,7 @@ import { PIN_RE } from './lock.ts';
 import { ANALYTICS_MAX_MONTHS, monthSpan } from './analytics.ts';
 import { isIsoDate } from './import-range.ts';
 import { UPLOAD_FILES_MAX } from './upload.ts';
+import { SEARCH_QUERY_MAX } from './search.ts';
 import { THEME_PREFS } from './theme.ts';
 export const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 export const id = z.number().int().positive();
@@ -27,6 +28,7 @@ const reserve = z.strictObject({
   amount: z.number().int().min(0).max(RESERVE_AMOUNT_MAX),
   until: z.string().refine(isIsoDate).nullable(),
   participantId: id.nullable(),
+  done: z.boolean().optional(),
 });
 const goalCurrency = z.union(RESERVE_CURRENCIES.map((c) => z.literal(c)));
 const goalAmount = z.number().int().min(1).max(RESERVE_AMOUNT_MAX);
@@ -123,8 +125,28 @@ export const ARG_SCHEMAS = {
     z.strictObject({ period: detailPeriod, category: z.enum(CATEGORY_IDS), scope: z.enum(['personal', 'business']), participantId: id.optional(), providers: providers.optional() }),
   ]),
   getIncomeOverview: z.tuple([z.strictObject({ period: detailPeriod, participantId: id.optional(), providers: providers.optional() })]),
+  // A real quarter; main also refuses one after the current quarter.
+  getFopTaxOverview: z.tuple([
+    z.strictObject({ from: isoDate, to: isoDate, base: z.enum(['business', 'all']), yearToDate: z.boolean().optional(), participantId: id.optional() }),
+  ]),
   getRecurringOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
   getAllowanceOverview: z.tuple([z.strictObject({ participantId: id.optional(), providers: providers.optional() })]),
+  // The text at most SEARCH_QUERY_MAX characters; real days, from ≤ to; an amount range in hryvnia kopecks, min ≤ max.
+  searchOverview: z.tuple([
+    z
+      .strictObject({
+        query: z.string().max(SEARCH_QUERY_MAX),
+        from: isoDate.optional(),
+        to: isoDate.optional(),
+        amount: z
+          .strictObject({ min: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER), max: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER) })
+          .refine((a) => a.min <= a.max)
+          .optional(),
+        participantId: id.optional(),
+        providers: providers.optional(),
+      })
+      .refine((q) => q.from === undefined || q.to === undefined || q.from <= q.to),
+  ]),
   addReserve: z.tuple([reserve]),
   updateReserve: z.tuple([id, reserve]),
   deleteReserve: z.tuple([id]),

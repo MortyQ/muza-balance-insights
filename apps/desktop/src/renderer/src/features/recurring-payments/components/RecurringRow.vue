@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { RecurringMark } from '@contract/api.ts';
+import { MoneyStack } from '@/entities/currency-display';
 import { t } from '@/shared/lib';
 import { VAvatar, VIcon, VPopover } from '@/shared/ui';
 import type { RecurringRowView } from '../types.ts';
@@ -39,7 +40,7 @@ function pick(mark: RecurringMark | null) {
       </span>
     </span>
     <span class="flex shrink-0 flex-col items-end gap-0.5">
-      <span class="whitespace-nowrap font-bold tabular-nums">{{ row.amount }}</span>
+      <MoneyStack :amount="row.amount" :also="row.also" />
       <span v-if="row.operation" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums">{{ row.operation }}</span>
       <span class="whitespace-nowrap text-xs text-foreground-muted">{{ row.when }}</span>
     </span>

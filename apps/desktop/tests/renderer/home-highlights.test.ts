@@ -157,6 +157,25 @@ describe('home highlights', () => {
     w.unmount();
   });
 
+  it('«Show also» hryvnia with euros main: a hryvnia operation\'s exact amount under its row; a limit\'s spent of its amount', async () => {
+    spending = { ...SPENDING, insights: null } as unknown as SpendingOverview;
+    limits = {
+      ...LIMITS,
+      rates: { list: [{ currency: 978, rate: 40 }], fetchedAt: 0, saved: false },
+      limits: [{ id: 1, categoryId: 'cafes', period: 'month', owner: null, currency: 980, amountMinor: 100_000, figures: fig('attention', 85_000) }],
+    } as unknown as typeof LIMITS;
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setMain(978);
+    useCurrencyDisplayStore().setAlso('uah', true);
+    const w = await mountTile();
+    expect(w.findAll('[data-test="recent-row"]').map((r) => r.findAll('[data-test="money-also"]').map((x) => x.text()))).toEqual([
+      [formatMoney(12_000, 980)],
+      [formatMoney(3_000, 980)],
+    ]);
+    expect(w.get('[data-test="attention-limit"] [data-test="money-also"]').text()).toBe(`≈ ${formatMoney(85_000, 980)} из ${formatMoney(100_000, 980)}`);
+    w.unmount();
+  });
+
   it('nothing unusual: «Recent operations» alone, no dots', async () => {
     spending = { ...SPENDING, insights: null };
     const w = await mountTile();

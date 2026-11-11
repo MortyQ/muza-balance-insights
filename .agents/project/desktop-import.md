@@ -140,14 +140,32 @@
   shown one — each card's driver, new payees and one-offs; payee names cut the same way, since 01.11 with the user's
   ask; it also carries `history` — the left and wants shares of each usual month and of the shown month once finished,
   core `monthShares`, a running month reading the usual months' income once more for it — and a severity on new
-  payees and one-offs, core `insightSeverity`) and `getSpendingOverview`'s
+  payees and one-offs, core `insightSeverity`; `forecast` — the running month only, null otherwise or without a
+  usual: spent so far (no pending holds) + the regular payments of the same scope, person and banks (core
+  `findRecurring` over 13 months, not hidden, active, next date after today within the month) + the typical day × the
+  days left, the typical day the median of the usual months' totals without the regular series spanning them over
+  their days, the range their quartiles; pure part `data/forecast.ts`, change `month-forecast`), `getSpendingOverview`'s
   `explain.drivers` (home's «Insights» block, since 01.11 with the user's ok: one payee name per unusual category, the
-  description cut the same way, from core `linesOfCategories`) are the **only** data
+  description cut the same way, from core `linesOfCategories`) and `searchOverview({ query, from?, to?, amount?,
+  participantId?, providers? })` (the global search, since 10.11 with the user's plan; `DataService.searchOverview`:
+  core `periodLines` — every operation the category screens list, both scopes, the view —, matched with core
+  `normalizeSearch` on `merchantText` and the comment only, never on `counter_name`; `amount` — a hryvnia kopeck range
+  against the line by today's rates; at most 50 transactions newest first with the total, and with text up to 10 payees
+  by `merchantKey` and 10 regular payments by name, core `findRecurring` as the regular payments screen; never kept by
+  the read cache) are the **only** data
   channels that carry the bank's text: each line's description (a card number cut to its last 4 digits, jar titles hidden; for an
   income line the sender's name of a «Від: …» transfer, else the description) and comment — never `counter_name`, an
   IBAN, a card number or a jar title (canary tests in `tests/data.test.ts`). The category figure is the spending
   block's (same fold), its lines come from core `categoryLines`; the income figure is the balances' «In» (all scopes,
   same fold), its lines come from core `incomeLines` (the same rows as `incomeSummary`, one query: `incomeRowsSql`).
+  A month's view also carries `regular` (a day or a week: null; `DataService.regularIncome`, pure part in
+  `data/income-regular.ts`): computed for today whatever month is shown — core `findRecurring` `kind: 'income'` over the
+  last 13 months, same view (person, banks), not hidden, the last payment (`latest` when the amount changed, else the
+  series' last) at most 40 days old; each source's name is the income list's sender (the provider's `namedSender`, else
+  the description, through `merchantText`), usual amount at today's rates (null without one), `next` a calendar month
+  after the last, `late` days once it passed, `change` the last against the usual in whole per cent beyond ±10%;
+  `monthly` the usual amounts together, `coveredByPayments` the active regular payments' (not hidden) monthly sum over
+  it in per cent (null at 0), `expected` — next within today..today + 30. Canary test in `tests/data.test.ts`.
   `getRecurringOverview({ participantId? })` (the regular payments screen; `DataService.recurringOverview`): core
   `findRecurring` over the last 13 months (from the first day of the month a year back to today, system time zone), all
   scopes; `active` (last payment ≤ 40 days ago, hryvnia desc), `ended` (40–120 days, newest first), `monthly` = the
@@ -176,11 +194,14 @@
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
   core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
   — the last day it counts or null; migration 14: `participant_id` — whose, or null for common; a removed person's become
-  common; with one person only, the reserves so far became theirs; at most `RESERVES_MAX`; database only, so encrypted and gone with «Delete all data»,
+  common; with one person only, the reserves so far became theirs; migration 22: `done_at` — when marked done, epoch
+  seconds, null — active; at most `RESERVES_MAX`, done ones included; database only, so encrypted and gone with «Delete all data»,
   never in the analysis copy or an MCP tool). Whose counts where (`reserveFor` in `data/data.ts`): the family view —
-  all; a person — their own only, never a common one. `reserves` in the answer lists the view's: `active` (no end, or
-  `until` ≥ today) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
-  `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits (`src/shared/allowance.ts`
+  all; a person — their own only, never a common one. `reserves` in the answer lists the view's (`done` among them): `active`
+  (`reserveActive`: not done, and no end or `until` ≥ today — the one rule for `allowanceOverview` and the balance
+  card's `reserved`) ones are taken off at today's rate (`uah`; without a rate null and not taken off). IPC `addReserve`,
+  `updateReserve(id, r)`, `deleteReserve(id)` — zod and core check the same limits; `done` optional in the input: true
+  marks it done now (one already done keeps its moment), false active again, absent kept as stored (`src/shared/allowance.ts`
   re-exports core's). Bank text: the income's and payments'
   descriptions through `merchantText` (canary test).
   `getAnalyticsOverview({ from, to, participantId? })` (the analytics screen; `DataService.analyticsOverview`, pure helpers
@@ -194,6 +215,12 @@
   `byProvider` and every other figure folds the cells merged back (`mergeCells`, so nothing changes), each bank's series
   is `bankSeries`; `SpendingCategoryView.banks` — one more `spendingGrid` over the shown month with `byProvider`, folded
   per category and bank (`bankParts` in `data/spending.ts`). Banks in the registry's order (`byRegistry`).
+  `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (the FOP tax screen; `DataService.fopTaxOverview`,
+  periods in `data/fop-tax.ts`): the enabled accounts of the view — for `base: 'business'` only the business ones (the
+  provider's `isBusinessAccount`; Monobank: FOP) —, core `incomeSummary` of the whole family grouped by account over
+  `from..to` and, with `yearToDate`, over 1 January → `to` (cut at today; a start after today or after the end → error),
+  only those accounts' groups — so refunds, own and family transfers stay out —, all scopes, today's rates (unrated in
+  `leftOut`); `available` — a business account in the view. No bank filter, no bank text.
   `DataStatus` (IPC `getSyncStatus`) несёт также
   `dataFrom` — the date in the system time zone of `MIN(oldest_synced_time)` по включённым счетам (`firstDataDate` в `packages/core/src/read/status.ts`),
   пара к `dataUntil`; ей пользуется нижняя граница выбора месяца в `entities/period`. `DataService.status` / `lastSyncSec`

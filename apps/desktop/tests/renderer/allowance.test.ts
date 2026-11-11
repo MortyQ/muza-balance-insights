@@ -18,7 +18,7 @@ const FMT = moneyFormat(RATES, { main: 980, also: NONE });
 const EUR = moneyFormat(RATES, { main: 978, also: NONE });
 
 const reserve = (o: Partial<AllowanceReserveView>): AllowanceReserveView => ({
-  id: 1, name: 'Подушка', currency: 980, amount: 300_000, until: null, participantId: null, active: true, uah: 300_000, ...o,
+  id: 1, name: 'Подушка', currency: 980, amount: 300_000, until: null, participantId: null, done: false, active: true, uah: 300_000, ...o,
 });
 const VIEW: AllowanceOverview = {
   today: '2026-10-07',
@@ -95,6 +95,32 @@ describe('available per day: helpers', () => {
       id === null ? { common: true } : { name: 'Аня', color: 'red' },
     );
     expect(owned.map((r) => r.owner)).toEqual([{ name: 'Аня', color: 'red' }, { common: true }]);
+  });
+
+  it('a done reserve: listed, not active, its term still by its date, no line in the count; the form keeps the mark', () => {
+    const reserves = [reserve({ id: 1, name: 'Ремонт', until: '2026-12-01', done: true, active: false })];
+    expect(reserveRows({ ...VIEW, reserves }, FMT, 2026)[0]).toMatchObject({
+      active: false,
+      done: true,
+      term: 'до 1 декабря включительно',
+      input: { name: 'Ремонт', done: true },
+    });
+    expect(allowanceView({ ...VIEW, reserves }, FMT, 2026).lines.map((l) => l.label)).not.toContain('Резерв: Ремонт');
+  });
+
+  it('«Show also» picked: the per-day figure and each reserve get a line per currency, a reserve\'s own one not repeated', async () => {
+    const fmt = moneyFormat(RATES, { main: 980, also: { ...NONE, usd: true, eur: true } });
+    expect(allowanceView(VIEW, FMT, 2026).also).toEqual([]);
+    expect(allowanceView(VIEW, fmt, 2026).also).toEqual([`≈ ${formatMoney(Math.round(70_000 / 40), 840)}`, `≈ ${formatMoney(Math.round(70_000 / 45), 978)}`]);
+    const [eur, own] = reserveRows({ ...VIEW, reserves: [reserve({ currency: 978, amount: 50_000, uah: 2_250_000 }), reserve({ id: 2 })] }, fmt, 2026);
+    expect(eur).toMatchObject({ approx: `≈ ${uah(2_250_000)}`, also: [`≈ ${formatMoney(Math.round(2_250_000 / 40), 840)}`] });
+    expect(own!.also).toEqual([`≈ ${formatMoney(Math.round(300_000 / 40), 840)}`, `≈ ${formatMoney(Math.round(300_000 / 45), 978)}`]);
+    expect(reserveRows(VIEW, FMT, 2026)[0]!.also).toEqual([]);
+    const { default: ReserveRow } = await import('@/features/daily-allowance/components/ReserveRow.vue');
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const w = mount(ReserveRow, { props: { row: eur! }, global: { plugins: [i18n] } });
+    expect(w.findAll('[data-test="money-also"]').map((e) => e.text())).toEqual(eur!.also);
+    w.unmount();
   });
 });
 
@@ -213,6 +239,42 @@ describe('available per day: the block mounted', () => {
     Array.from(document.body.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Удалить')!.click();
     await flushPromises();
     expect(deleteReserve).toHaveBeenCalledWith(1);
+    w.unmount();
+  });
+
+  it('«Done»: a checkbox with its hint on each row, saved at once with the rest of the reserve; a done row dimmed and ticked', async () => {
+    current = { ...VIEW, reserves: [reserve({ id: 1 }), reserve({ id: 2, name: 'Ремонт', done: true, active: false })] };
+    const w = await mountBlock();
+    const [first, second] = w.findAll('li');
+    expect(first!.classes()).not.toContain('opacity-60');
+    expect(second!.classes()).toContain('opacity-60');
+    expect(second!.text()).toContain('Ремонт');
+    const boxes = w.findAll<HTMLInputElement>('[data-test="reserve-done"]');
+    expect(boxes.map((b) => b.element.checked)).toEqual([false, true]);
+    expect(first!.text()).toContain('Выполнено');
+    expect(boxes[0]!.attributes('aria-description')).toBe(
+      'Отметь как выполненный, когда уже оплатил или он больше не нужен. Тогда он не уменьшает «Свободно».',
+    );
+
+    current = { ...current, reserves: [reserve({ id: 1, done: true, active: false }), current.reserves[1]!] };
+    await boxes[0]!.setValue(true);
+    await flushPromises();
+    expect(w.findAll('li')[0]!.classes()).toContain('opacity-60');
+    expect(updateReserve).toHaveBeenLastCalledWith(1, { name: 'Подушка', currency: 980, amount: 300_000, until: null, participantId: null, done: true });
+    expect(getAllowanceOverview).toHaveBeenCalledTimes(2);
+
+    current = { ...current, reserves: [current.reserves[0]!, reserve({ id: 2, name: 'Ремонт' })] };
+    await w.findAll<HTMLInputElement>('[data-test="reserve-done"]')[1]!.setValue(false);
+    await flushPromises();
+    expect(updateReserve).toHaveBeenLastCalledWith(2, expect.objectContaining({ name: 'Ремонт', done: false }));
+    expect(w.findAll('li')[1]!.classes()).not.toContain('opacity-60');
+
+    // Not saved: said so, and the box shows the stored mark again.
+    updateReserve.mockRejectedValueOnce(new Error('boom'));
+    await w.findAll<HTMLInputElement>('[data-test="reserve-done"]')[1]!.setValue(true);
+    await flushPromises();
+    expect(w.text()).toContain('Не удалось изменить отметку «Выполнено».');
+    expect(w.findAll<HTMLInputElement>('[data-test="reserve-done"]')[1]!.element.checked).toBe(false);
     w.unmount();
   });
 

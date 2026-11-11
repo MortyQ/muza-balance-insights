@@ -1,4 +1,4 @@
-import type { DetailPeriod, IncomeLineView, IncomeOverview } from '@contract/api.ts';
+import type { DetailPeriod, IncomeLineView, IncomeOverview, RegularIncome, RegularIncomeSource } from '@contract/api.ts';
 import { accountName, bankOf } from '@/entities/bank';
 import type { MoneyFormat } from '@/entities/currency-display';
 import {
@@ -6,9 +6,9 @@ import {
   type LineRowView, type MarkView, type MonthsView, type PartView, type PersonRef, type PersonView, type ShareItemView, type SortKey, type StatView, type SummaryView,
   type WhenView,
 } from '@/entities/operations';
-import { formatMoney, monthName, t } from '@/shared/lib';
+import { dayMonthName, formatMoney, monthName, t } from '@/shared/lib';
 import { INCOME_COLOR, PERIOD_TEXT, TOP_SENDERS } from './constants.ts';
-import type { SourceView } from './types.ts';
+import type { ExpectedIncomeView, RegularHeaderView, RegularSourceView, SourceView } from './types.ts';
 
 const received = (l: Readonly<IncomeLineView>) => l.uah;
 
@@ -37,6 +37,7 @@ export function summaryView(v: Readonly<IncomeOverview>, who: string, fmt: Money
     {
       label: t('income.summary.avg'),
       value: s.lines > 0 ? fmt.money(Math.round(s.total / s.lines)) : '—',
+      also: s.lines > 0 ? fmt.approx(Math.round(s.total / s.lines)) : [],
       note: s.median === null ? '' : t('income.summary.median', { amount: fmt.money(s.median) }),
     },
   ];
@@ -44,18 +45,21 @@ export function summaryView(v: Readonly<IncomeOverview>, who: string, fmt: Money
     stats.push({
       label: t('income.summary.perDay'),
       value: s.perDay === null ? '—' : fmt.money(s.perDay),
+      also: s.perDay === null ? [] : fmt.approx(s.perDay),
       note: t('income.summary.activeDays', { n: s.activeDays, days: v.period.days }),
     });
   }
   stats.push({
     label: t('income.summary.spent'),
     value: fmt.money(s.spending),
+    also: fmt.approx(s.spending),
     note: s.total > 0 ? t('income.summary.spentShare', { pct: Math.round((s.spending / s.total) * 100) }) : '',
   });
   if (largest && largest.uah !== null) {
     stats.push({
       label: t('income.summary.largest'),
       value: fmt.money(largest.uah),
+      also: fmt.approx(largest.uah),
       note: t('income.summary.largestWhere', { sender: largest.sender || t('entities.operations.noDescription'), date: dayMonth(largest.date), time: largest.time }),
     });
   }
@@ -109,6 +113,7 @@ export function sourcesView(v: Readonly<IncomeOverview>, fmt: MoneyFormat): Sour
       source: s.source,
       label: t(`income.sources.source.${s.source}`),
       amount: fmt.money(s.total),
+      also: fmt.approx(s.total),
       caption: [t('home.spending.ops', s.lines), `${v.summary.total > 0 ? Math.round((s.total / v.summary.total) * 100) : 0}%`].join(' · '),
       width: pct(s.total, max),
     }));
@@ -168,7 +173,8 @@ export function lineRows(
       marks: marksOf(l),
       amount: `+${amountOf(l)}`,
       incoming: true,
-      original: l.operation ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
+      also: l.uah === null ? [] : fmt.alsoFor(l.uah, [...(l.operation ? [l.operation] : []), { amount: l.amount, currency: l.currency }]),
+      original: l.operation && !fmt.shows(l.operation.currency) ? formatMoney(Math.abs(l.operation.amount), l.operation.currency) : '',
     };
   });
   return { rows, shown };
@@ -176,6 +182,55 @@ export function lineRows(
 
 /** The list's total: the month's own figure while nothing filters it (no rounding drift), else the shown lines'. */
 export function listTotal(v: Readonly<IncomeOverview>, shown: ReadonlyArray<IncomeLineView>, filtered: boolean, fmt: MoneyFormat): string {
-  if (!filtered) return fmt.money(v.summary.total);
-  return fmt.money(shown.reduce((s, l) => s + (l.uah ?? 0), 0));
+  const k = filtered ? shown.reduce((s, l) => s + (l.uah ?? 0), 0) : v.summary.total;
+  return withAlso(fmt, k);
+}
+
+/** A figure in the main currency followed by its «Show also» currencies on the same line: «69 € · ≈ 3 541 ₴». */
+function withAlso(fmt: MoneyFormat, kopecks: number): string {
+  const also = fmt.approxInline(kopecks);
+  return also ? `${fmt.money(kopecks)} · ${also}` : fmt.money(kopecks);
+}
+
+/** «Regular income: 40 000 ₴ a month», «≈ 30% of it goes to regular payments»; none found — the empty words. */
+export function regularHeaderView(r: Readonly<RegularIncome>, fmt: MoneyFormat): RegularHeaderView {
+  if (r.sources.length === 0) return { title: t('income.regular.none'), also: '', covered: '' };
+  return {
+    title: t('income.regular.monthly', { amount: fmt.money(r.monthly) }),
+    also: fmt.approxInline(r.monthly),
+    covered: r.coveredByPayments === null ? '' : t('income.regular.covered', { pct: r.coveredByPayments }),
+  };
+}
+
+/** A source's typical amount: hryvnia by today's rate with the «Show also» lines, else its own currency. */
+function sourceAmount(s: Readonly<RegularIncomeSource>, fmt: MoneyFormat): { amount: string; also: string[] } {
+  if (s.uah === null) return { amount: formatMoney(s.amount, s.currency), also: [] };
+  return { amount: fmt.money(s.uah), also: fmt.alsoFor(s.uah, [{ currency: s.currency, amount: s.amount }]) };
+}
+
+/** On time, late by N days (the expected date has passed), or the amount changed by N% (signed). */
+export function regularMark(s: Readonly<Pick<RegularIncomeSource, 'late' | 'change'>>): RegularSourceView['mark'] {
+  if (s.late !== null) return { text: t('income.regular.late', s.late), tone: 'late' };
+  if (s.change !== null) return { text: t('income.regular.changed', { pct: `${s.change > 0 ? '+' : '−'}${Math.abs(s.change)}` }), tone: 'changed' };
+  return { text: t('income.regular.onTime'), tone: 'ok' };
+}
+
+/** «Regular sources»: each active source with its typical amount, how often, the last and the next date, its mark. */
+export function regularSourcesView(r: Readonly<RegularIncome>, fmt: MoneyFormat): RegularSourceView[] {
+  const year = Number(r.today.slice(0, 4));
+  return r.sources.map((s) => ({
+    key: s.key,
+    name: s.name || t('entities.operations.noDescription'),
+    ...sourceAmount(s, fmt),
+    often: t('income.regular.often'),
+    last: dayMonthName(s.last, year),
+    next: dayMonthName(s.next, year),
+    mark: regularMark(s),
+  }));
+}
+
+/** «Expected in the next 30 days»: the sources due, soonest first. */
+export function expectedView(r: Readonly<RegularIncome>, fmt: MoneyFormat): ExpectedIncomeView[] {
+  const year = Number(r.today.slice(0, 4));
+  return r.expected.map((s) => ({ key: s.key, name: s.name || t('entities.operations.noDescription'), ...sourceAmount(s, fmt), date: dayMonthName(s.next, year) }));
 }

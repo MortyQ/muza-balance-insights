@@ -74,6 +74,7 @@ const OVERVIEW: InsightsOverview = {
     reserve: { months: 2.4, money: 2_160_000, usualEssential: 900_000 },
     kinds: { essential: ['groceries', 'rent'], wants: ['cafes'], savings: ['investments'], fixed: ['rent'] },
   },
+  forecast: null,
   rates: { list: [{ currency: 978, rate: 50 }], fetchedAt: 0, saved: false },
 };
 
@@ -249,6 +250,49 @@ describe('insights screen', () => {
     w.unmount();
   });
 
+  it('a running month\'s forecast: the figure after «Spent», its range, the formula in the user\'s numbers, «Show also»', async () => {
+    answer = {
+      ...OVERVIEW,
+      period: { ...OVERVIEW.period, incomplete: true, coveredDays: 10 },
+      spent: 600_000,
+      usual: { ...OVERVIEW.usual!, income: null, savings: null },
+      forecast: { value: 1_050_000, low: 950_000, high: 1_170_000, spent: 600_000, regular: 50_000, regularCount: 1, perDay: 20_000, perDayLow: 15_000, perDayHigh: 26_000, daysLeft: 20 },
+    };
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setAlso('eur', true);
+    const w = await mountPage();
+    const m = (k: number) => plain(formatMoney(k, 980));
+    expect(w.findAll('[data-test^="glance-"]').map((g) => g.attributes('data-test'))).toEqual(['glance-spent', 'glance-forecast', 'glance-income', 'glance-kept', 'glance-signals']);
+    const card = w.get('[data-test="glance-forecast"]');
+    expect(plain(card.text())).toMatch(new RegExp(`^Прогноз по твоему плану${m(1_050_000)}`));
+    expect(plain(card.get('[data-test="forecast-range"]').text())).toBe(`от ${m(950_000)} до ${m(1_170_000)}`);
+    expect(card.findAll('[data-test="money-also"]').map((e) => plain(e.text()))).toEqual([`≈ ${plain(formatMoney(21_000, 978))}`]);
+    const trigger = card.get('[aria-label="Как считается «Прогноз по твоему плану»"]');
+    await trigger.trigger('click');
+    await flushPromises();
+    const help = plain(document.body.textContent ?? '');
+    expect(help).toContain(`${m(600_000)} уже потрачено + ${m(50_000)} регулярных платежей ещё впереди + ${m(20_000)} за обычный день × 20 оставшихся дней = ${m(1_050_000)}.`);
+    expect(help).toContain('Регулярных платежей ещё впереди: 1');
+    expect(help).toContain(`${m(15_000)} и ${m(26_000)} в день`);
+    w.unmount();
+  });
+
+  it('the forecast: no range when both ends meet; none for a finished month', async () => {
+    answer = {
+      ...OVERVIEW,
+      period: { ...OVERVIEW.period, incomplete: true },
+      forecast: { value: 600_000, low: 600_000, high: 600_000, spent: 600_000, regular: 0, regularCount: 0, perDay: 0, perDayLow: 0, perDayHigh: 0, daysLeft: 0 },
+    };
+    const running = await mountPage();
+    expect(running.get('[data-test="glance-forecast"]').find('[data-test="forecast-range"]').exists()).toBe(false);
+    running.unmount();
+    answer = OVERVIEW;
+    const past = await mountPage();
+    expect(past.find('[data-test="glance-forecast"]').exists()).toBe(false);
+    expect(past.findAll('[data-test^="glance-"]')).toHaveLength(4);
+    past.unmount();
+  });
+
   it('every amount in the main currency by the answer\'s rates', async () => {
     const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
     useCurrencyDisplayStore().setMain(978);
@@ -256,6 +300,26 @@ describe('insights screen', () => {
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
     expect(plain(w.findAll('[data-test^="insight-card"]')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
     expect(plain(w.get('[data-test="signal-card-high"]').text())).toContain(plain(formatMoney(8_000, 978)));
+    w.unmount();
+  });
+
+  it('«Show also» picked: a line per currency under the glance figures, the cards\' change, the signals; bar titles inline', async () => {
+    const off = await mountPage();
+    expect(off.findAll('[data-test="money-also"]')).toHaveLength(0);
+    off.unmount();
+    const { useCurrencyDisplayStore } = await import('@/entities/currency-display');
+    useCurrencyDisplayStore().setAlso('eur', true);
+    const w = await mountPage();
+    const eur = (k: number) => plain(formatMoney(Math.round(k / 50), 978));
+    const lines = (sel: string) => w.get(sel).findAll('[data-test="money-also"]').map((e) => plain(e.text()));
+    expect(lines('[data-test="glance-spent"]')).toEqual([`≈ ${eur(1_500_000)}`]);
+    expect(lines('[data-test="glance-income"]')).toEqual([`≈ ${eur(2_000_000)}`]);
+    expect(lines('[data-test="glance-kept"]')).toEqual([]);
+    expect(lines('[data-test="insight-card-high"]')).toEqual([`≈ +${eur(300_000)}`]);
+    expect(lines('[data-test="insight-card-medium"]')).toEqual([`≈ −${eur(60_000)}`]);
+    expect(lines('[data-test="signal-card-high"]')).toEqual([`≈ ${eur(400_000)}`]);
+    const title = w.get('[data-test="insight-card-high"] [data-test="insight-bars"] [title]').attributes('title')!;
+    expect(plain(title)).toContain(`· ≈ ${eur(300_000)}`);
     w.unmount();
   });
 

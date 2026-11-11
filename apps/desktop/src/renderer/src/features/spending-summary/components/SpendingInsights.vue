@@ -43,6 +43,7 @@ const { insights, wide = false } = defineProps<{ insights: InsightsView; wide?: 
           <span class="flex min-w-0 flex-col" aria-hidden="true">
             <span class="truncate text-sm font-semibold" :title="l.name">{{ l.name }}</span>
             <span class="truncate text-xs text-foreground-muted tabular-nums">{{ l.caption }}</span>
+            <span v-if="l.also" class="truncate text-xs text-foreground-muted tabular-nums" data-test="insight-also">{{ l.also }}</span>
           </span>
           <VChangeChip :chip="l.chip" size="sm" aria-hidden="true" />
           <VIcon v-if="l.to" icon="lucide:chevron-right" class="size-3.5 text-foreground-muted" />

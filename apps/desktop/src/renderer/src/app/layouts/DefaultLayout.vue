@@ -42,10 +42,15 @@ const scrolled = useScrolled(area);
         <GlobalFilters class="min-w-0 flex-1" />
       </div>
       <div ref="area" class="min-h-0 flex-1 overflow-y-auto px-4 min-[45rem]:px-8" data-test="layout-scroll">
-        <div class="mx-auto w-full max-w-[100rem] pt-6 pb-6">
-          <Transition name="swap" mode="out-in">
-            <slot />
-          </Transition>
+        <!-- overflow-x clip: nothing on a screen may widen the scroll area and scroll it sideways (a focus or a scroll
+             into view would scroll it then). The clip reaches 1rem into the area's padding, so cards keep their
+             shadows; popovers are portalled, so nothing that may overflow is cut. -->
+        <div class="-mx-4 overflow-x-clip px-4" data-test="layout-content">
+          <div class="mx-auto w-full max-w-[100rem] pt-6 pb-6">
+            <Transition name="swap" mode="out-in">
+              <slot />
+            </Transition>
+          </div>
         </div>
       </div>
     </div>

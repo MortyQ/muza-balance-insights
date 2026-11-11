@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { MoneyStack } from '@/entities/currency-display';
 import { VShareBar } from '@/shared/ui';
 import type { SourceView } from '../types.ts';
 
@@ -14,7 +15,7 @@ const { sources } = defineProps<{ sources: ReadonlyArray<SourceView> }>();
           <span class="truncate font-semibold">{{ s.label }}</span>
           <span class="truncate text-xs text-foreground-muted">{{ s.caption }}</span>
         </span>
-        <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ s.amount }}</span>
+        <MoneyStack :amount="s.amount" :also="s.also" />
       </div>
       <VShareBar :value="s.width" color="var(--cat)" />
     </div>

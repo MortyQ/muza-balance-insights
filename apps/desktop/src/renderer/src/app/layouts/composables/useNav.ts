@@ -7,6 +7,7 @@ import { navGroups } from '../utils.ts';
 export function useNav() {
   const router = useRouter();
   const route = useRoute();
+  // The open screen's title comes from here too.
   const groups = navGroups(router.getRoutes());
   const current = computed(() => route.meta.navParent ?? (String(route.name) as RouteName));
   const select = (name: RouteName) => {

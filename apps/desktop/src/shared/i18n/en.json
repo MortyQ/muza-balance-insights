@@ -31,7 +31,9 @@
       "noCompare": "Not enough history to compare",
       "all": "All categories in «Compare»",
       "more": "more",
-      "less": "less"
+      "less": "less",
+      "moreTitle": "Spent more",
+      "lessTitle": "Spent less"
     },
     "views": {
       "title": "Categories",
@@ -70,7 +72,7 @@
     "help": {
       "kpis": "Income, spending, what was left and the share of income kept over the picked months, against the same number of months right before them. Personal and business spending together.",
       "flow": "Income and spending by day for one month, by month for a range. For one month the amounts add up from the 1st, and the dashed line is the usual month by the same day: the average of up to 3 months before.",
-      "changes": "The categories whose spending grew most against the period before, and the one that fell most.",
+      "changes": "The three categories whose spending grew most against the period before, and the three where it fell most.",
       "views": "Every category with spending in the period. The heatmap colours each cell by its spending per day against the category's own average; the other views show the same sums as small charts, lines, or against the period before.",
       "kpisName": "Totals"
     }
@@ -448,12 +450,12 @@
         "expected": "How much you could have spent by today, spending evenly.",
         "expectedFormula": "{amount} × {passed} of {days} days = {expected}",
         "forecastTitle": "How the forecast is counted",
-        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period. Payments the bank has not finalised yet are left out until it does.",
+        "forecast": "If you keep spending as so far, how much you will have spent by the end of the period. Payments the bank has not finalised yet are already counted.",
         "forecastFormula": "{spent} ÷ {passed} days × {days} = {forecast}",
         "forecastEarly": "In the first quarter of the period the forecast does not change the state: it is too rough yet."
       },
-      "pending": "+ {n} pending, {amount} | + {n} pending, {amount} | + {n} pending, {amount}",
-      "pendingHint": "Payments the bank has not finalised yet. They count once the bank finalises them; cancelled ones never do.",
+      "pending": "incl. {n} pending, {amount} | incl. {n} pending, {amount} | incl. {n} pending, {amount}",
+      "pendingHint": "Payments the bank has not finalised yet are already counted. The bank may still change their amounts; cancelled ones drop out.",
       "ahead": "{amount} ahead of plan (×{times})",
       "aheadSoft": "A little ahead of plan",
       "under": "{amount} under plan",
@@ -488,6 +490,9 @@
         "dateMissing": "Pick the last day or «No end»",
         "delete": "Delete",
         "deleteFailed": "Could not delete the reserve.",
+        "done": "Done",
+        "doneFailed": "Could not change the «Done» mark.",
+        "doneHint": "Mark as done when you have paid it or no longer need it. It no longer reduces «Free».",
         "edit": "Edit",
         "empty": "No reserves yet.",
         "expired": "ended {date}",
@@ -680,7 +685,8 @@
       "expand": "Expand menu",
       "openMenu": "Open menu",
       "closeMenu": "Close menu",
-      "insights": "Insights"
+      "insights": "Insights",
+      "fopTax": "FOP tax"
     },
     "notices": {
       "allAccountsOff": "All accounts are off: there is nothing to download or count. Turn on the ones you need in «Connections».",
@@ -911,6 +917,21 @@
     "noneDay": "No income that day.",
     "noneWeek": "No income that week.",
     "open": "Open income",
+    "regular": {
+      "changed": "amount changed by {pct}%",
+      "covered": "≈ {pct}% of it goes to regular payments",
+      "expected": "Expected in the next 30 days",
+      "expectedHelp": "Based on how often this source paid you before.",
+      "expectedNone": "Nothing expected in the next 30 days.",
+      "last": "last {date}",
+      "late": "late by {n} day | late by {n} days | late by {n} days",
+      "monthly": "Regular income: {amount} a month",
+      "next": "next {date}",
+      "none": "No regular income found",
+      "often": "about monthly",
+      "onTime": "on time",
+      "sources": "Regular sources"
+    },
     "sources": {
       "source": {
         "family": "From family",
@@ -959,7 +980,17 @@
       "noUsual": "No usual yet",
       "noSavings": "Needs 3 months with income",
       "usually": "usually {usual}",
-      "noSignals": "Nothing unusual"
+      "noSignals": "Nothing unusual",
+      "forecast": "Forecast based on your plan",
+      "forecastRange": "from {low} to {high}",
+      "forecastHelp": {
+        "what": "Where this month's spending is heading if the rest of it goes like your usual months.",
+        "formula": "{spent} spent so far + {regular} of regular payments still due + {perDay} a typical day × {days} = {value}.",
+        "days": "{n} day left | {n} days left | {n} days left",
+        "regular": "Regular payments still due: {n}, those expected after today and before the month ends.",
+        "typical": "A typical day is the middle of your usual months' spending a day, with regular payments left out so they are not counted twice. Transactions the bank is still processing are not counted yet.",
+        "range": "The range takes a quieter and a busier usual month: {low} and {high} a day."
+      }
     },
     "severity": {
       "high": "High",
@@ -1120,7 +1151,7 @@
         "over": "{n} over",
         "ahead": "{n} forecast over",
         "within": "all within",
-        "help": "This view's monthly limits and monthly budget: «Personal» spending, without holds the bank has not finalised."
+        "help": "This view's monthly limits and monthly budget: «Personal» spending, holds the bank has not finalised included."
       },
       "tiles": {
         "usual": "Your usual",
@@ -1384,6 +1415,8 @@
     "touchIdReason": "unlock the app"
   },
   "recurring": {
+    "active": "Active",
+    "notSeen": "not seen for {n} month | not seen for {n} months | not seen for {n} months",
     "actions": "Actions: {name}",
     "count": "{n} regular payment | {n} regular payments | {n} regular payments",
     "empty": "No regular payments found in the last 13 months.",
@@ -1658,7 +1691,7 @@
       "title": "How the budget works",
       "budget": "Set one amount for the month and add your fixed costs — rent, phone. They are set aside first, and the pace and «per day» count on the rest.",
       "limits": "A category limit is an amount per day, week or month. The marker on the bar shows where you would be today spending evenly.",
-      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out. Payments the bank has not finalised yet are left out until it does."
+      "counted": "Only «Personal» spending of every bank counts, as in «Spending»: refunds lower it, transfers between your own accounts are left out. Payments the bank has not finalised yet count right away."
     },
     "budget": {
       "title": "Budget for {month}",
@@ -1695,7 +1728,7 @@
       "usual": "Usually {amount}",
       "period": "Period",
       "owner": "Whose",
-      "counted": "Refunds lower spending and transfers between your own accounts are left out; payments the bank has not finalised yet are left out until it does.",
+      "counted": "Refunds lower spending and transfers between your own accounts are left out; payments the bank has not finalised yet count right away.",
       "failed": "Could not save. Perhaps such a limit already exists.",
       "save": "Save",
       "cancel": "Cancel",
@@ -1761,6 +1794,64 @@
       "helpTitle": "How «a month» is counted",
       "help": "What is left to save, divided by the months to the date, the current one included.",
       "helpFormula": "{left} ÷ {months} mo. = {amount}"
+    }
+  },
+  "fopTax": {
+    "title": "FOP tax",
+    "intro": "A quick estimate of the single tax of a sole proprietor (group 3): pick the rate, what to count from and the period.",
+    "quarterName": "Q{n} {year}",
+    "rate": "Rate",
+    "percent": "Own percent, %",
+    "percentInvalid": "Enter a percent above 0 and up to 100",
+    "base": "Count from",
+    "baseCustom": "Custom amount",
+    "amount": "Amount, ₴",
+    "amountInvalid": "Enter an amount in hryvnias",
+    "yearIncome": "Income since 1 January",
+    "customIncome": "Your amount",
+    "tax": "Tax",
+    "fromIncome": "{percent} from income",
+    "running": "The period is not over yet: the figures grow as income arrives.",
+    "leftOut": "No rate for today, not counted: {amounts}",
+    "excluded": "Refunds and transfers between your own or your family's accounts are not income. Income in another currency is converted at today's Monobank rate.",
+    "disclaimer": "This is an estimate, not tax advice. Check the rate and the amount before you pay.",
+    "esv": "The single social contribution (ЄСВ) is not included.",
+    "baseBusiness": "Income on FOP accounts",
+    "baseAll": "All income",
+    "periodIncome": "Income, {period}",
+    "period": "Period",
+    "yearName": "{year}",
+    "preset": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisQuarter": "This quarter",
+      "lastQuarter": "Last quarter",
+      "thisYear": "This year",
+      "lastYear": "{year}"
+    }
+  },
+  "search": {
+    "open": "Search",
+    "shortcutMac": "⌘K",
+    "shortcutOther": "Ctrl+K",
+    "title": "Search",
+    "placeholder": "Search transactions by name, amount or date",
+    "label": "Search transactions",
+    "hint": "For example: a payee, an amount like «250» or a date like «12 Oct», «5–11 Oct», «October 2026».",
+    "empty": "No transactions match “{query}”",
+    "failed": "The search failed. Try again.",
+    "searching": "Searching…",
+    "range": "{from} – {to}",
+    "amount": "{amount} ± 1",
+    "more": "Showing {shown} of {total}",
+    "lines": "{n} transaction | {n} transactions | {n} transactions",
+    "active": "Active",
+    "ended": "Ended",
+    "group": {
+      "transactions": "Transactions",
+      "payees": "Payees",
+      "categories": "Categories",
+      "recurring": "Regular payments"
     }
   }
 }

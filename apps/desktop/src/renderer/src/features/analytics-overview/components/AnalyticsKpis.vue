@@ -14,6 +14,7 @@ const TONE: Readonly<Record<KpiView['tone'], string>> = { good: 'text-success', 
         <VHelpHint v-if="i === 0" :label="$t('common.helpLabel', { name: $t('analytics.help.kpisName') })">{{ $t('analytics.help.kpis') }}</VHelpHint>
       </div>
       <div class="mt-1 text-xl font-bold tabular-nums">{{ k.value }}</div>
+      <div v-for="c in k.also" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</div>
       <div v-if="k.note" class="mt-1 text-xs" :class="TONE[k.tone]">{{ k.note }}</div>
     </VCard>
   </div>

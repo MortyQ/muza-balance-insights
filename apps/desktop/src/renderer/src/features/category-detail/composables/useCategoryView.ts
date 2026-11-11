@@ -1,23 +1,29 @@
-import { computed, ref, watch, type Ref } from 'vue';
+import { computed, ref, toValue, watch, type MaybeRefOrGetter, type Ref } from 'vue';
 import type { Scope } from '@contract/api.ts';
 import type { SortKey } from '@/entities/operations';
 import { colorVar, useParticipantStore } from '@/entities/participant';
 import { t } from '@/shared/lib';
-import type { UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
+import type { ListOpen, UseCategoryDetailReturn, UseCategoryViewReturn } from '../types.ts';
 import { banksView, lineRows, listTotal, merchantKey, merchantsView, monthsView, moreMerchantsText, noneText, peopleView, spentLabel, summaryView, whenView } from '../utils.ts';
 
-/** Everything the screen shows for the loaded answer, plus the list's own filter, search and order. */
-export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<Ref<Scope>>): UseCategoryViewReturn {
+/**
+ * Everything the screen shows for the loaded answer, plus the list's own filter, search and order. `open` — what the
+ * link asked the list to open with (the global search: a search text or a payee); every new list starts from it.
+ */
+export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<Ref<Scope>>, open: MaybeRefOrGetter<ListOpen> = { q: '', merchant: null }): UseCategoryViewReturn {
   const { view, family, who, fmt } = base;
   const participant = useParticipantStore();
-  const merchant = ref<string | null>(null);
-  const query = ref('');
+  const merchant = ref<string | null>(toValue(open).merchant);
+  const query = ref(toValue(open).q);
   const sort = ref<SortKey>('date');
-  // Another period, person or category is another list: the filter and the search start over.
-  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId, participant.banksKey], () => {
-    merchant.value = null;
-    query.value = '';
-  });
+  function restart(): void {
+    const o = toValue(open);
+    merchant.value = o.merchant;
+    query.value = o.q;
+  }
+  // Another period, person or category is another list: the filter and the search start over (from the link's).
+  watch(() => [JSON.stringify(view.value?.range), view.value?.categoryId, participant.selectedId, participant.banksKey], restart);
+  watch(() => JSON.stringify(toValue(open)), restart);
 
   const people = computed(() => participant.people.map((p) => ({ id: p.id, name: p.label, color: colorVar(p.color) })));
   const summary = computed(() => (view.value ? summaryView(view.value, who.value, t(`home.spending.scope.${scope.value}`), fmt.value) : null));
@@ -34,7 +40,10 @@ export function useCategoryView(base: UseCategoryDetailReturn, scope: Readonly<R
   const total = computed(() =>
     view.value ? listTotal(view.value, list.value.shown, merchant.value !== null || query.value.trim() !== '', fmt.value) : '',
   );
-  const merchantName = computed(() => merchants.value.find((m) => m.key === merchant.value)?.name ?? '');
+  // A payee beyond «Where»'s top ones (a link's filter) is named by its own lines.
+  const merchantName = computed(
+    () => merchants.value.find((m) => m.key === merchant.value)?.name ?? view.value?.lines.find((l) => merchant.value !== null && merchantKey(l.merchant) === merchant.value)?.merchant ?? '',
+  );
   // «When» follows the merchant filter like the list does (not the search: that is the list's own).
   const when = computed(() => {
     const v = view.value;

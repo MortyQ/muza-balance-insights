@@ -10,6 +10,7 @@ import { moneyFormat } from '@/entities/currency-display';
 import {
   bucketTitle, categoryRows, changesView, columns, comparedText, compareRows, flowChartOption, flowList, gapPolygons, heatRows, kpiView, linesOption, miniCards, miniOption, weekGroups,
 } from '@/features/analytics-overview/utils.ts';
+import { formatMoney } from '@/shared/lib';
 
 const FMT = moneyFormat(null, { main: 980, also: { uah: false, usd: false, eur: false, czk: false } });
 const MONTHS = ['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'];
@@ -102,11 +103,11 @@ describe('analytics view builders', () => {
     expect(kpiView(MONTH_VIEW, FMT)[2]!.note).toContain('в день');
   });
 
-  it('what changed: the 4 largest increases, then the largest decrease; where the peak was', () => {
+  it('what changed: the 3 largest increases, then the 3 largest decreases; where the peak was', () => {
     const v = changesView(RANGE, FMT);
-    expect(v.map((r) => r.key)).toEqual(['travel', 'cafes', 'groceries', 'marketplaces', 'home']);
+    expect(v.map((r) => r.key)).toEqual(['travel', 'cafes', 'groceries', 'home', 'health', 'utilities']);
     expect(v[0]).toMatchObject({ up: true, why: 'пик — июнь', delta: `+${FMT.money(k(27))} (79%)` });
-    expect(v[4]).toMatchObject({ up: false, delta: `−${FMT.money(k(12))} (13%)` });
+    expect(v[3]).toMatchObject({ up: false, delta: `−${FMT.money(k(12))} (13%)` });
     expect(changesView({ ...RANGE, compare: null }, FMT)).toEqual([]);
     expect(changesView(MONTH_VIEW, FMT)[0]!.why).toBe('пик — 1 сен');
   });
@@ -215,6 +216,36 @@ describe('analytics chart options', () => {
     expect(o.series[0]!.data[0]!.itemStyle.opacity).toBe(0.45);
     expect(o.series[0]!.markLine.data[0]!.yAxis).toBe(row.total / 12);
   });
+
+  it('«Show also» picked: a line per currency under the totals and the changes; tooltips add them inline, axes do not', async () => {
+    const fmt = moneyFormat({ list: [{ currency: 840, rate: 40 }], fetchedAt: 0, saved: false }, { main: 980, also: { uah: false, usd: true, eur: false, czk: false } });
+    const usd = (kop: number) => formatMoney(Math.round(kop / 40), 840);
+    const kpis = kpiView(RANGE, fmt);
+    expect(kpis.map((x) => x.also)).toEqual([[`≈ ${usd(k(1072))}`], [`≈ ${usd(k(905))}`], [`≈ ${usd(k(167))}`], []]);
+    expect(kpiView({ ...RANGE, totals: { ...RANGE.totals, income: k(800) } }, fmt)[2]!.also).toEqual([`≈ −${usd(k(105))}`]);
+    expect(kpiView(RANGE, FMT).every((x) => x.also.length === 0)).toBe(true);
+    const changes = changesView(RANGE, fmt);
+    expect(changes[0]!.also).toEqual([`≈ +${usd(k(27))}`]);
+    expect(changes[4]!.also).toEqual([`≈ −${usd(k(12))}`]);
+    expect(compareRows(RANGE, fmt)[0]!.also).toEqual([`≈ +${usd(k(27))}`]);
+    const rows = categoryRows(RANGE.categories);
+    expect(miniCards(RANGE, rows, fmt)[0]!.also).toEqual([`≈ ${usd(k(211))}`]);
+    const travel = rows.find((r) => r.key === 'travel')!;
+    const mini = miniOption(RANGE, travel, fmt) as unknown as { tooltip: { formatter: (p: { dataIndex: number }) => string } };
+    expect(mini.tooltip.formatter({ dataIndex: 8 })).toBe(`${bucketTitle(RANGE.buckets[8]!.key, 'month')}: ${fmt.money(travel.net[8]!)} · ≈ ${usd(travel.net[8]!)}`);
+    const flow = flowChartOption(RANGE, fmt) as unknown as { yAxis: { axisLabel: { formatter: (y: number) => string } }; tooltip: { formatter: (ps: Array<{ seriesName?: string; value: [number, number | null] }>) => string } };
+    expect(flow.tooltip.formatter([{ seriesName: 'Доходы', value: [0, k(82)] }])).toContain(`${fmt.money(k(82))} · ≈ ${usd(k(82))}`);
+    expect(flow.yAxis.axisLabel.formatter(k(82))).toBe(fmt.money(k(82)));
+    const { default: AnalyticsKpis } = await import('@/features/analytics-overview/components/AnalyticsKpis.vue');
+    const { default: ChangesList } = await import('@/features/analytics-overview/components/ChangesList.vue');
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const w = mount(AnalyticsKpis, { props: { items: kpis }, global: { plugins: [i18n] } });
+    expect(w.findAll('[data-test="money-also"]').map((e) => e.text())).toEqual(kpis.flatMap((x) => x.also));
+    w.unmount();
+    const c = mount(ChangesList, { props: { rows: changes, vs: '', canCompare: true }, global: { plugins: [i18n] } });
+    expect(c.findAll('[data-test="money-also"]').map((e) => e.text())).toEqual(changes.flatMap((x) => x.also));
+    c.unmount();
+  });
 });
 
 let answer: AnalyticsOverview = RANGE;
@@ -278,7 +309,8 @@ describe('the analytics screen mounted', () => {
     expect(getAnalyticsOverview.mock.calls[0]?.[0]).toEqual({ from, to });
     expect(w.findAll('[data-test="kpi"]')).toHaveLength(4);
     for (const s of ['Доход и расходы', 'Что изменилось', 'Для сравнения: окт 2024 – сен 2025', 'Категории']) expect(w.text()).toContain(s);
-    expect(w.findAll('[data-test="change"]')).toHaveLength(5);
+    expect(w.findAll('[data-test="change"]')).toHaveLength(6);
+    expect(w.findAll('[data-test="change-group"]').map((g) => g.text())).toEqual(['Потрачено больше', 'Потрачено меньше']);
     expect(w.find('[role="table"][aria-label="Тепловая карта"]').exists()).toBe(true);
     // The heatmap shows every category (9) under its header row, no «Other N».
     expect(w.findAll('[role="table"] [role="row"]')).toHaveLength(10);

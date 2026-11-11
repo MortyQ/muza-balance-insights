@@ -10,6 +10,8 @@ export interface RecentRowView {
   /** The category's name and when: «Кафе и рестораны · 05.03, 14:20». */
   caption: string;
   amount: string;
+  /** One line per picked «Show also» currency (exact in the account's own currency, else «≈»). */
+  also: string[];
   refund: boolean;
   pending: boolean;
   /** The operation's category screen; null — an unknown category word. */

@@ -3,6 +3,9 @@ import type { DetailPeriod } from '@contract/api.ts';
 import { bankOf, BankMark } from '@/entities/bank';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PartBars, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
 import { VCard, VInfoNotice } from '@/shared/ui';
+import ExpectedIncome from './components/ExpectedIncome.vue';
+import RegularIncomeHeader from './components/RegularIncomeHeader.vue';
+import RegularSources from './components/RegularSources.vue';
 import SourceBars from './components/SourceBars.vue';
 import { useIncomeDetail } from './composables/useIncomeDetail.ts';
 import { useIncomeView } from './composables/useIncomeView.ts';
@@ -12,7 +15,7 @@ const { period } = defineProps<{ period: DetailPeriod }>();
 
 const base = useIncomeDetail(() => period);
 const { state, view } = base;
-const { summary, label, none, months, people, banks, sources, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
+const { summary, label, none, months, people, banks, sources, regular, senders, moreSenders, when, rows, total, sender, senderName, query, sort, pickSender } = useIncomeView(base);
 </script>
 
 <template>
@@ -26,6 +29,16 @@ const { summary, label, none, months, people, banks, sources, senders, moreSende
       <VCard padding="md" :class="{ 'opacity-60': state.status === 'loading' }">
         <DetailSummary :summary :label />
       </VCard>
+      <!-- A month only: what the user can count on, computed for today whatever month is shown. -->
+      <div v-if="regular" class="grid gap-4 @3xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <VCard padding="md" class="min-w-0">
+          <div class="flex flex-col gap-3">
+            <RegularIncomeHeader :header="regular.header" />
+            <RegularSources v-if="regular.sources.length > 0" :sources="regular.sources" />
+          </div>
+        </VCard>
+        <VCard v-if="regular.sources.length > 0" padding="md" class="min-w-0"><ExpectedIncome :expected="regular.expected" /></VCard>
+      </div>
       <p v-if="none" class="text-foreground-muted">{{ none }}</p>
       <VCard v-if="months" padding="md"><MonthsChart :months :title="$t('entities.operations.months.title')" /></VCard>
       <!-- As on the category screen: the senders on the left, «Where from», «When», «Who received» and «By bank» stacked on the right. -->

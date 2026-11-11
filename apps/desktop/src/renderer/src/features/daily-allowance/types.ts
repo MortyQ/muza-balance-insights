@@ -14,6 +14,8 @@ export interface BreakdownLine {
 export interface AllowanceView {
   /** The sum per day, or what is short: in the screen's currency. */
   amount: string;
+  /** `amount` in each picked «Show also» currency. */
+  also: string[];
   /** Short of money: `amount` is the shortfall. */
   short: boolean;
   /** «until 10 April · 26 days» / «until the month's end · 17 days». */
@@ -33,10 +35,14 @@ export interface ReserveRowView {
   amount: string;
   /** ≈ in the screen's currency when that differs (and has a rate); '' — none. */
   approx: string;
+  /** In each picked «Show also» currency other than its own (its own is `amount`). */
+  also: string[];
   /** «no end» / «until 1 December» / «ended 1 December». */
   term: string;
-  /** Counted now (not ended). */
+  /** Counted now (not done, not ended). */
   active: boolean;
+  /** Marked done: listed, not taken off. */
+  done: boolean;
   /** Whose, shown in a family view of several: the person, or common; null — not shown. */
   owner: { name: string; color: string } | { common: true } | null;
   /** As saved: the form starts from it. */

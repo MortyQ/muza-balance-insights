@@ -30,6 +30,7 @@ export function homeInsightsView(v: SpendingOverview, fmt: MoneyFormat, scope: S
         name: d.name,
         caption: t('home.insights.share', { category, share: d.share }),
         amount: `${d.direction === 'up' ? '+' : '−'}${fmt.money(d.amount)}`,
+        also: fmt.approxInline(d.amount),
         tone: d.direction,
         to: d.categoryId ? categoryLink(d.categoryId, scope) : null,
       };

@@ -81,6 +81,15 @@ describe('insightsView', () => {
     expect(v.note).toBe('Сравнение с медианой целых месяцев за 5 месяцев: месяц ещё идёт');
   });
 
+  it('the picked «also» currency under the caption: now, approximate; none picked — empty', () => {
+    const rates = { list: [{ currency: 978, rate: 45 }], fetchedAt: 0, saved: false };
+    const eur = moneyFormat(rates, { main: 978, also: { uah: true, usd: false, eur: false, czk: false } });
+    const line = (fmt: typeof FMT) =>
+      insightsView(of([ins({ type: 'category-rare', amount: 90_000, category: 'доставка', categoryId: 'delivery', now: 90_000 })]), fmt, 'personal')!.lines[0]!;
+    expect(line(eur).also).toBe(`≈ ${uah(90_000)}`);
+    expect(line(FMT).also).toBe('');
+  });
+
   it('nothing found or no usual: null', () => {
     expect(insightsView(of([]), FMT, 'personal')).toBeNull();
     expect(insightsView(view(null), FMT, 'personal')).toBeNull();

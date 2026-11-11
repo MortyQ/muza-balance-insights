@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
+import { MoneyStack } from '@/entities/currency-display';
 import { VIcon } from '@/shared/ui';
 import type { RecentRowView } from '../types.ts';
 
@@ -28,7 +29,7 @@ const { rows } = defineProps<{ rows: ReadonlyArray<RecentRowView> }>();
               {{ r.caption }}<template v-if="r.pending"> · <span :title="$t('entities.operations.mark.pendingHint')" data-test="recent-pending">{{ $t('home.recent.pending') }}<span class="sr-only">: {{ $t('entities.operations.mark.pendingHint') }}</span></span></template>
             </span>
           </span>
-          <span class="shrink-0 tabular-nums" :class="{ 'text-success': r.refund }">{{ r.amount }}</span>
+          <MoneyStack :amount="r.amount" :also="r.also" :strong="false"><span :class="{ 'text-success': r.refund }">{{ r.amount }}</span></MoneyStack>
         </component>
       </li>
     </ul>

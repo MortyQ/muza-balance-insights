@@ -13,12 +13,15 @@ export const CACHED_READS = [
   'getAllowanceOverview',
   'getAnalyticsOverview',
   'getLimitsOverview',
+  'getFopTaxOverview',
 ] as const satisfies ReadonlyArray<Method>;
 export type CachedRead = (typeof CACHED_READS)[number];
 
 /** Calls that change none of the data the cached reads show: they pass through. */
 export const PASS_THROUGH = [
   'listPeople',
+  // The global search: never kept (its answer carries bank text and is asked per keystroke).
+  'searchOverview',
   'getCategoryKinds',
   'getCashCounts',
   'listConnectionAccounts',

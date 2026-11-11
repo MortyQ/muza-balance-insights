@@ -1,14 +1,16 @@
 // Read side of the screen in the data process: the same core aggregates as the MCP tools (spendingSummary, balancesAt),
 // mapped to the narrow view types of src/shared/api.ts. Only categories, amounts, dates and account name parts leave —
 // never names, card numbers or IBANs; descriptions only in the lines of categoryOverview and incomeOverview (the category
-// and income screens) and the payees of insightsOverview (the Insights screen). The import worker writes the same
+// and income screens), the payees of insightsOverview (the Insights screen) and the results of searchOverview (the
+// global search) — the channels listed in .agents/project/desktop-import.md. The import worker writes the same
 // file; WAL lets both work.
 import { ENABLED_ACCOUNT_IDS_SQL, LIVE_ACCOUNT_IDS_SQL } from '@mono/core/people/accounts';
 import { CATEGORY } from '@mono/core/derive/categories';
 import { categorySources, setOperationCategory, setPayeeCategory } from '@mono/core/commands/categories';
-import { categoryLines, latestLines, linesOfCategories } from '@mono/core/read/category-lines';
+import { categoryLines, latestLines, linesOfCategories, periodLines } from '@mono/core/read/category-lines';
+import { normalizeSearch } from '@mono/core/read/search';
 import { incomeLines } from '@mono/core/read/income-lines';
-import { findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
+import { ACTIVE_DAYS, findRecurring, setRecurringMark, type RecurringPayment } from '@mono/core/read/recurring';
 import { addReserve, deleteReserve, listReserves, updateReserve, type ReserveInput } from '@mono/core/read/reserves';
 import { categoryKinds, kindMap, resetCategoryKinds, setCategoryKind, type KindChoice } from '@mono/core/read/category-kinds';
 import {
@@ -30,13 +32,16 @@ import { addGoal, deleteGoal, listGoals, updateGoal, type Goal, type GoalInput }
 import { budgetView, figures, limitView, periodPosition, suggestions, type OwnerSums, type Sums } from './limits.ts';
 import { savingProgress } from '@mono/core/read/savings-goals';
 import { allowance, type AllowanceSeries } from './allowance.ts';
+import { regularIncome, type RegularSeries } from './income-regular.ts';
+import { monthForecast } from './forecast.ts';
+import { rulesFor } from '@mono/core/providers/rules';
 import { ensureDefaultConnection } from '@mono/core/people/connections';
 import { RESYNC_OVERLAP_SEC } from '@mono/core/shared/constants';
 import { migrate, type Db } from '@mono/core/storage/db';
 import { refreshCrossing } from '@mono/core/derive/derived';
 import { listConnections, listParticipants } from '@mono/core/people/participants';
 import { getSettings, setSetting } from '@mono/core/people/settings';
-import type { ProviderId } from '@mono/core/providers/types';
+import { PROVIDER_IDS, type ProviderId } from '@mono/core/providers/types';
 import { startOfDayIn } from '@mono/core/shared/format';
 import { toUah, type FxRate } from '@mono/core/read/fx';
 import { balancesAt, balancesOf, firstDataDate, type BalancesAt } from '@mono/core/read/status';
@@ -52,10 +57,12 @@ import { usualMonths, usualOf } from './usual.ts';
 import { incomeStats, lineStats, merchantKey, merchantText, monthsWindow } from './category.ts';
 import { payeeMonths } from './explain.ts';
 import { INSIGHT_MAX } from '../shared/insights.ts';
+import { SEARCH_MONTHS, SEARCH_PAYEES_MAX, SEARCH_RECURRING_MAX, SEARCH_TRANSACTIONS_MAX } from '../shared/search.ts';
 import { bankSeries, bucketState, daysOf, foldCells, foldIncome, mergeCells, monthsBetween, previousRange, runningTotals, usualCurve } from './analytics.ts';
 import { addMonths } from '../shared/analytics.ts';
 import { isoWeekday, median, shiftDate, sumAmounts, sumDays, usualDay, USUAL_WINDOW, weekDays } from './now.ts';
 import { periodBounds, periodCompare } from './period.ts';
+import { fopTaxBounds } from './fop-tax.ts';
 import type { CategoryId, KindCategoryId } from '../shared/categories.ts';
 import type {
   AllowanceOverview,
@@ -88,6 +95,9 @@ import type {
   IncomeLineView,
   IncomeOverview,
   IncomeOverviewQuery,
+  FopTaxOverview,
+  FopTaxPeriod,
+  FopTaxQuery,
   RecurringOverview,
   RecurringMarkQuery,
   OperationCategoryQuery,
@@ -107,6 +117,10 @@ import type {
   RatesView,
   SpendingCategoryView,
   RecentOperations,
+  SearchOverview,
+  SearchOverviewQuery,
+  SearchPayeeView,
+  SearchTransactionView,
   SpendingOverview,
   SpendingOverviewQuery,
   InsightDriver,
@@ -282,6 +296,14 @@ function reserveFor(r: { participantId: number | null }, participantId: number |
   return participantId === undefined || r.participantId === participantId;
 }
 
+/**
+ * A reserve is taken off (the balance card's `reserved`, «Free» and «Available per day») while it is not marked done
+ * and has no end or its last day is `today` or later. The one rule for both, so they never disagree.
+ */
+function reserveActive(r: { done: boolean; until: string | null }, today: string): boolean {
+  return !r.done && (r.until === null || r.until >= today);
+}
+
 /** The core filters of a screen's view: whose and which banks (spec core-bank-view), each only when asked for. */
 type ViewFilters = { participantId?: number; providers?: ProviderId[] };
 
@@ -292,6 +314,36 @@ function viewOf(q: ViewFilters): ViewFilters {
 /** Only the banks of a view: the family's per-person queries keep them (each person within the same banks). */
 function banksOf(q: ViewFilters): Pick<ViewFilters, 'providers'> {
   return q.providers !== undefined ? { providers: q.providers } : {};
+}
+
+/**
+ * The payees of the search's matches (newest first in): grouped by merchantKey as the category screen's «Where», the
+ * most found first; each opens where its newest transaction is. Lines without a description are no payee.
+ */
+export function searchPayees(found: ReadonlyArray<SearchTransactionView>): SearchPayeeView[] {
+  const by = new Map<string, { newest: SearchTransactionView; lines: number; net: number; spellings: Map<string, number> }>();
+  for (const l of found) {
+    if (l.merchant === '') continue;
+    const key = merchantKey(l.merchant);
+    const p = by.get(key) ?? { newest: l, lines: 0, net: 0, spellings: new Map<string, number>() };
+    p.lines += 1;
+    p.net -= l.uah ?? 0;
+    p.spellings.set(l.merchant, (p.spellings.get(l.merchant) ?? 0) + 1);
+    by.set(key, p);
+  }
+  return [...by]
+    .map(([key, p]) => ({
+      key,
+      name: [...p.spellings].reduce((a, b) => (b[1] > a[1] ? b : a))[0],
+      category: p.newest.category,
+      categoryId: p.newest.categoryId,
+      scope: p.newest.scope,
+      month: p.newest.date.slice(0, 7),
+      lines: p.lines,
+      net: p.net,
+    }))
+    .sort((a, b) => b.lines - a.lines || b.net - a.net || a.key.localeCompare(b.key))
+    .slice(0, SEARCH_PAYEES_MAX);
 }
 
 function rateMap(r: RatesView | null): Map<number, FxRate> {
@@ -651,7 +703,7 @@ export class DataService {
 
   /**
    * The view's monthly limits in the feed (a person: theirs and the family's), each against its owner's «Personal»
-   * spending of every bank, pending holds left out; the budget's flexible part too. Over: spent above the amount. Ahead
+   * spending of every bank, pending holds included; the budget's flexible part too. Over: spent above the amount. Ahead
    * (the current month only): not over yet, in attention for its pace or its forecast — the «Budget» screen's rule
    * (core limitState). Severity against the usual month, as the feed's.
    */
@@ -673,7 +725,7 @@ export class DataService {
     const pos = periodPosition('month', today, q.month, current);
     const sumsOf = new Map<number | null, Sums>();
     for (const o of new Set(goals.map((g) => g.participantId))) {
-      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', holds: 'final', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
+      const head = await spendingSummary(db, { ...monthBounds(q.month), tz, scope: 'personal', ...(o !== null ? { participantId: o } : {}), groupBy: 'category' }, now);
       sumsOf.set(o, new Map([...foldByCategory(head, rates).byCategory].map(([k, v]) => [k, v.net])));
     }
     const limitsOver: LimitOverView[] = [];
@@ -805,7 +857,7 @@ export class DataService {
     const budget = await this.budgetOf(db, q, { cur, found, incomplete, kinds, rates, now });
     const { limitsOver, limitsAhead, monthlyLimits } = await this.limitSignalsOf(db, q, kinds, found?.usual.total ?? 0, rates, now);
     const standing = healthStanding(budget, monthlyLimits > 0 ? limitsStanding(limitsOver.length, limitsAhead.length) : null);
-    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, health: null, history: [], usual: null, cards: [], newPayees: [], oneOffs: [] };
+    if (!found) return { ...base, budget, limitsOver, limitsAhead, monthlyLimits, standing, health: null, history: [], usual: null, cards: [], newPayees: [], oneOffs: [], forecast: null };
 
     const { usual, months } = found;
     const ranked = rankedCategories(cur).map(([category, a]) => ({ category, net: a.net }));
@@ -905,7 +957,24 @@ export class DataService {
       cards,
       newPayees: fresh,
       oneOffs: big,
+      forecast: await this.forecastOf(db, q, found, spent, rates, now),
     };
+  }
+
+  /**
+   * The running month's forecast (data/forecast.ts, change month-forecast): the regular payments of the screen's view
+   * (scope, person, banks) over the 13 months of the regular payments screen, not hidden; null for another month.
+   */
+  private async forecastOf(db: Db, q: SpendingOverviewQuery, found: UsualFound, spent: number, rates: Map<number, FxRate>, now: number): Promise<InsightsOverview['forecast']> {
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    if (q.month !== today.slice(0, 7)) return null;
+    const day = (sec: number) => localDate(sec * 1000, tz);
+    const period = { from: `${addMonths(q.month, -12)}-01`, to: today, tz, scope: q.scope, ...viewOf(q) };
+    const series = (await findRecurring(db, period, now))
+      .filter((p) => p.mark !== 'hidden')
+      .map((p) => ({ uah: toUah(p.amount, p.currency, rates), first: day(p.first), last: day(p.last), next: nextMonthDay(day(p.last)), active: p.active }));
+    return monthForecast({ today, spent, months: found.months.map((month, k) => ({ month, total: found.spent[k]! })), series });
   }
 
   /** Home's «Recent operations»: the month's newest operations «Spending» counts, with the bank's description. */
@@ -1109,6 +1178,94 @@ export class DataService {
   }
 
   /**
+   * The global search (spec desktop-global-search): every operation of the period the category screens list (core
+   * periodLines, both scopes, the view's person and banks), matched in JS with core's normalizeSearch on the text the
+   * screen shows — the description through merchantText and the comment, never counter_name — and on the absolute
+   * amount in hryvnia by today's rates. With text, also the payees of the matches and the regular payments (core
+   * findRecurring over 13 months, as the regular payments screen) whose description matches. Nothing is kept.
+   */
+  async searchOverview(q: SearchOverviewQuery): Promise<SearchOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const today = localDate(now * 1000, tz);
+    const rates = await this.d.rates();
+    const fx = rateMap(rates);
+    const needle = normalizeSearch(q.query);
+    const from = q.from ?? `${addMonths(today.slice(0, 7), -SEARCH_MONTHS)}-01`;
+    const to = q.to === undefined || q.to > today ? today : q.to;
+    const empty: SearchOverview = { transactions: [], total: 0, payees: [], recurring: [], rates };
+    if ((needle === '' && q.amount === undefined && q.from === undefined && q.to === undefined) || from > to) return empty;
+
+    const jarTitles = await this.jarTitles(db);
+    const lines = await periodLines(db, { from, to, tz, ...viewOf(q) });
+    const found: SearchTransactionView[] = [];
+    for (const l of lines) {
+      const merchant = merchantText(l.description, jarTitles);
+      const comment = l.comment?.trim() || null;
+      if (needle !== '' && !normalizeSearch(`${merchant} ${comment ?? ''}`).includes(needle)) continue;
+      const uah = toUah(l.amount, l.currency, fx);
+      if (q.amount !== undefined && (uah === null || Math.abs(uah) < q.amount.min || Math.abs(uah) > q.amount.max)) continue;
+      const [date, time] = localDateTime(l.time * 1000, tz).split(' ') as [string, string];
+      found.push({
+        key: l.id,
+        date,
+        time,
+        merchant,
+        comment,
+        category: l.category,
+        categoryId: CATEGORY_ID.get(l.category) ?? null,
+        scope: l.scope === 'business' ? 'business' : 'personal',
+        participantId: l.participantId,
+        uah,
+        currency: l.currency,
+        amount: l.amount,
+        refund: l.amount > 0,
+      });
+    }
+    const transactions = found.slice(0, SEARCH_TRANSACTIONS_MAX);
+    if (needle === '') return { ...empty, transactions, total: found.length };
+    return {
+      transactions,
+      total: found.length,
+      payees: searchPayees(found),
+      recurring: await this.searchRecurring(db, q, needle, jarTitles, today, tz, fx, now),
+      rates,
+    };
+  }
+
+  /** The search's regular payments: as the regular payments screen lists them (not hidden), the description matching. */
+  private async searchRecurring(
+    db: Db,
+    q: SearchOverviewQuery,
+    needle: string,
+    jarTitles: ReadonlyArray<string>,
+    today: string,
+    tz: string,
+    fx: Map<number, FxRate>,
+    now: number,
+  ): Promise<SearchOverview['recurring']> {
+    const since = `${addMonths(today.slice(0, 7), -12)}-01`;
+    const found = await findRecurring(db, { from: since, to: today, tz, ...viewOf(q) }, now);
+    return found
+      .filter((p) => p.mark !== 'hidden' && (p.active || now - p.last <= ENDED_DAYS * 86_400))
+      .map((p) => ({ p, name: merchantText(p.description, jarTitles) }))
+      .filter(({ name }) => normalizeSearch(name).includes(needle))
+      .sort((a, b) => Number(b.p.active) - Number(a.p.active) || b.p.last - a.p.last || a.p.id.localeCompare(b.p.id))
+      .slice(0, SEARCH_RECURRING_MAX)
+      .map(({ p, name }) => ({
+        key: p.id,
+        name,
+        category: p.category,
+        categoryId: CATEGORY_ID.get(p.category) ?? null,
+        uah: toUah(p.amount, p.currency, fx),
+        currency: p.currency,
+        amount: p.amount,
+        active: p.active,
+      }));
+  }
+
+  /**
    * «Available per day» (allowance.ts): the cards' own money now (balancesAt now, no jars), the reserve, the regular
    * income and mandatory payments of the last 13 months (findRecurring, active only).
    */
@@ -1148,9 +1305,12 @@ export class DataService {
     return { today, money, leftOut, reserves, ...allowance({ today, money, reserve, income, mandatory }), rates };
   }
 
-  /** Every reserve as of `today`: a reserve counts through its last day; one without a rate is listed, not taken off. */
+  /**
+   * Every reserve as of `today`: active by reserveActive (a done one is listed, not taken off); one without a rate is
+   * listed, not taken off.
+   */
   private async reservesOn(db: Db, today: string, fx: Map<number, FxRate>): Promise<AllowanceOverview['reserves']> {
-    return (await listReserves(db)).map((r) => ({ ...r, active: r.until === null || r.until >= today, uah: toUah(r.amount, r.currency, fx) }));
+    return (await listReserves(db)).map((r) => ({ ...r, active: reserveActive(r, today), uah: toUah(r.amount, r.currency, fx) }));
   }
 
   /** Reserves of «Available per day» (core reserves.ts). */
@@ -1159,7 +1319,7 @@ export class DataService {
   }
 
   async updateReserve(id: number, r: ReserveInput): Promise<void> {
-    await updateReserve(await this.conn(), id, r);
+    await updateReserve(await this.conn(), id, r, this.d.nowSec());
   }
 
   async deleteReserve(id: number): Promise<void> {
@@ -1193,7 +1353,7 @@ export class DataService {
     const to = current ? today : bounds.to;
     const sumsOf = async (owner: number | null): Promise<OwnerSums> => {
       const q = { from, to, tz, unit: 'day', scope: 'personal', ...(owner !== null ? { participantId: owner } : {}) } as const;
-      const grid = await spendingGrid(db, { ...q, holds: 'final' }, now);
+      const grid = await spendingGrid(db, { ...q, holds: 'all' }, now);
       const held = await spendingGrid(db, { ...q, holds: 'pending' }, now);
       const fold = (cells: readonly SpendingCell[], a: string, b: string) =>
         foldByCategory(cellGroups(cells, (c) => c.bucket >= a && c.bucket <= b, (c) => c.category), rates).byCategory;
@@ -1432,6 +1592,8 @@ export class DataService {
       };
     });
 
+    const regular = q.period.kind === 'month' ? await this.regularIncome(db, thisDay, filters, rates, jarTitles, names, now) : null;
+
     const participants = await listParticipants(db);
     const family = q.participantId === undefined && participants.length > 1 ? participants.map((p) => p.id) : null;
     const stats = incomeStats(lines, family);
@@ -1458,7 +1620,52 @@ export class DataService {
       lines,
       rates: today,
       leftOut,
+      regular,
     };
+  }
+
+  /**
+   * The income screen's regular income (income-regular.ts): the active regular income sources and the active regular
+   * payments (not hidden) of the last 13 months, as recurringOverview and allowanceOverview read them, same view. A
+   * source's name is the income list's sender (a named transfer's name, else the description through merchantText).
+   */
+  private async regularIncome(
+    db: Db,
+    today: string,
+    filters: { tz: string } & ViewFilters,
+    fx: Map<number, FxRate>,
+    jarTitles: ReadonlyArray<string>,
+    names: ReturnType<typeof accountNames>,
+    now: number,
+  ): Promise<IncomeOverview['regular']> {
+    const period = { from: `${addMonths(today.slice(0, 7), -12)}-01`, to: today, ...filters };
+    const day = (sec: number) => localDate(sec * 1000, filters.tz);
+    // A payment after the series that fits none (an amount that changed) is the source's last one.
+    const lastSec = (p: RecurringPayment) => p.latest?.time ?? p.last;
+    const income = (await findRecurring(db, { ...period, kind: 'income' }, now)).filter(
+      (p) => p.mark !== 'hidden' && now - lastSec(p) <= ACTIVE_DAYS * 86_400,
+    );
+    const series = income.map((p): RegularSeries => {
+      const provider = names.get(p.accountId)?.provider;
+      const known = PROVIDER_IDS.find((id) => id === provider);
+      const sender = known ? rulesFor(known).namedSender(p.description)?.name.trim() : undefined;
+      const last = day(lastSec(p));
+      return {
+        key: p.id,
+        name: merchantText(sender || p.description, jarTitles),
+        participantId: p.participantId,
+        uah: toUah(p.amount, p.currency, fx),
+        currency: p.currency,
+        amount: p.amount,
+        usualOperation: p.operationAmount,
+        lastOperation: p.latest?.operationAmount ?? p.lastOperationAmount,
+        last,
+        next: nextMonthDay(last),
+      };
+    });
+    const payments = (await findRecurring(db, period, now)).filter((p) => p.active && p.mark !== 'hidden');
+    const paymentsMonthly = payments.reduce((s, p) => s + (toUah(p.amount, p.currency, fx) ?? 0), 0);
+    return regularIncome(series, today, paymentsMonthly);
   }
 
   /**
@@ -1647,6 +1854,55 @@ export class DataService {
       dataUntil: newest === null ? null : localDateTime(newest * 1000),
       dataFrom: await firstDataDate(db, systemTimeZone()),
       lastSyncAt: last === null ? null : localDateTime(last * 1000),
+    };
+  }
+
+  /** The enabled accounts, their owners and whether each is a business account (the provider's isBusinessAccount; Monobank: FOP). */
+  private async enabledAccounts(db: Db): Promise<Array<{ id: string; participantId: number; business: boolean }>> {
+    const rs = await db.execute(
+      `SELECT a.id, a.type, c.provider, c.participant_id FROM accounts a JOIN connections c ON c.id = a.connection_id
+       WHERE a.id IN (${ENABLED_ACCOUNT_IDS_SQL})`,
+    );
+    return rs.rows.flatMap((r) => {
+      const known = PROVIDER_IDS.find((id) => id === String(r.provider));
+      const business = known !== undefined && rulesFor(known).isBusinessAccount({ type: r.type === null ? null : String(r.type) });
+      return [{ id: String(r.id), participantId: Number(r.participant_id), business }];
+    });
+  }
+
+  /**
+   * The FOP tax screen: the income of the picked days (and, when asked, of the year to their end) on the enabled
+   * accounts of the view (a person's, or the family's) — the business ones only for the «business» base —, all scopes,
+   * at today's rates. Core incomeSummary of the whole family, grouped by account: refunds, own transfers and family
+   * transfers stay out; then only the base's accounts' groups. The bank filter does not apply.
+   */
+  async fopTaxOverview(q: FopTaxQuery): Promise<FopTaxOverview> {
+    const db = await this.conn();
+    const now = this.d.nowSec();
+    const tz = systemTimeZone();
+    const bounds = fopTaxBounds(q.from, q.to, localDate(now * 1000, tz));
+    const view = (await this.enabledAccounts(db)).filter((a) => q.participantId === undefined || a.participantId === q.participantId);
+    const ids = new Set(view.filter((a) => q.base === 'all' || a.business).map((a) => a.id));
+    const todayRates = await this.d.rates();
+    const fx = rateMap(todayRates);
+    const base = async (p: { from: string; to: string }): Promise<FopTaxPeriod> => {
+      const empty: FopTaxPeriod = { ...p, total: 0, lines: 0, leftOut: [], incomplete: false };
+      if (ids.size === 0) return empty;
+      const s = await incomeSummary(db, { ...p, tz, groupBy: 'account' }, now);
+      const out = new Map<number, number>();
+      for (const g of s.groups) {
+        if (!ids.has(g.key)) continue;
+        const u = toUah(g.total, g.currency, fx);
+        if (u === null) out.set(g.currency, (out.get(g.currency) ?? 0) + g.total);
+        else (empty.total += u), (empty.lines += g.lines);
+      }
+      return { ...empty, leftOut: [...out].map(([currency, total]) => ({ currency, total })), incomplete: s.period.incomplete };
+    };
+    return {
+      available: view.some((a) => a.business),
+      base: await base(bounds.period),
+      yearToDate: q.yearToDate ? await base(bounds.year) : null,
+      rates: todayRates,
     };
   }
 

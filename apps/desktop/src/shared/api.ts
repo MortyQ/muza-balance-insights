@@ -1,6 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { ProviderId } from '@mono/core/providers/types';
-import type { ReserveInput } from './allowance.ts';
+import type { Reserve, ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
 import type { CategoryId, KindCategoryId } from './categories.ts';
@@ -280,6 +280,10 @@ export type BalanceApi = {
   getCategoryOverview(q: CategoryOverviewQuery): Promise<CategoryOverview>;
   getIncomeOverview(q: IncomeOverviewQuery): Promise<IncomeOverview>;
   getRecurringOverview(q: RecurringOverviewQuery): Promise<RecurringOverview>;
+  /** The global search: transactions, payees and regular payments of the view matching the text, amount and dates. */
+  searchOverview(q: SearchOverviewQuery): Promise<SearchOverview>;
+  /** The FOP tax screen's base: a quarter and the year to date on the business accounts. A quarter after this one → error. */
+  getFopTaxOverview(q: FopTaxQuery): Promise<FopTaxOverview>;
   /** Marks the payee of a regular payment (or clears the mark); the caller reloads the screen. Unknown key → error. */
   setRecurringMark(q: RecurringMarkQuery): Promise<void>;
   /**
@@ -368,7 +372,8 @@ export type BalanceApi = {
 // and income screens), RecentOperations, which carries each operation's description (home's «Recent operations»), InsightsOverview, which
 // carries payees' descriptions (the Insights screen), and
 // RecurringOverview and AllowanceOverview, which carry each regular payment's and income's
-// description (nothing else).
+// description, and SearchOverview, which carries each found transaction's description and comment and each payee's and
+// regular payment's description (nothing else).
 // participantId: one participant's view; absent — the whole family.
 // providers: a bank view, those banks' accounts only (non-empty, each once; spec core-bank-view); absent — every bank.
 
@@ -548,8 +553,29 @@ export type InsightsOverview = {
   standing: HealthStanding;
   /** The user's own references and the cushion and spending items; null without a usual. */
   health: HealthReferences | null;
+  /** The running month's forecast (change month-forecast); null for a finished month or without a usual. */
+  forecast: MonthForecast | null;
   /** Today's rates every amount of this answer was folded by; null — never fetched. */
   rates: RatesView | null;
+};
+
+/**
+ * The running month's spending forecast (data/forecast.ts): `spent` so far + `regular` (the `regularCount` regular
+ * payments still due after today within the month) + `perDay` × `daysLeft`; `low` / `high` take `perDayLow` /
+ * `perDayHigh`, the 25th and 75th percentile of the usual months' per-day spending without regular payments. Hryvnia
+ * kopecks.
+ */
+export type MonthForecast = {
+  value: number;
+  low: number;
+  high: number;
+  spent: number;
+  regular: number;
+  regularCount: number;
+  perDay: number;
+  perDayLow: number;
+  perDayHigh: number;
+  daysLeft: number;
 };
 
 /** A monthly limit over in the shown month: its category (null — the monthly budget's flexible part), how much over. */
@@ -780,6 +806,84 @@ export type CategoryOverview = {
 
 export type RecurringOverviewQuery = { participantId?: number; providers?: ProviderId[] };
 
+/**
+ * The global search (spec desktop-global-search). `query` — the text left once the renderer took the dates and the
+ * amount out ('' — none); `from` / `to` — days in the system time zone (absent — SEARCH_MONTHS back / today);
+ * `amount` — the absolute amount's range in hryvnia kopecks by today's rates (the renderer turns «250» in the main
+ * currency into ±1 of it).
+ */
+export type SearchOverviewQuery = {
+  query: string;
+  from?: string;
+  to?: string;
+  amount?: { min: number; max: number };
+  participantId?: number;
+  providers?: ProviderId[];
+};
+
+/** A found transaction: a body line of a category screen (spending or a refund), newest first. */
+export type SearchTransactionView = {
+  /** The transaction's id. */
+  key: string;
+  /** System time zone: YYYY-MM-DD and HH:mm. */
+  date: string;
+  time: string;
+  /** The bank's description, cut as on the category screen ('' — none). */
+  merchant: string;
+  comment: string | null;
+  category: string;
+  categoryId: CategoryId | null;
+  scope: Scope;
+  participantId: number;
+  /** Hryvnia kopecks by today's rate, sign kept (< 0 spending, > 0 a refund); null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and its minor units, sign kept. */
+  currency: number;
+  amount: number;
+  refund: boolean;
+};
+
+/** A payee among the found transactions: grouped as the category screen's «Where» (payeeKey). */
+export type SearchPayeeView = {
+  /** payeeKey of its description: the category screen's merchant filter. */
+  key: string;
+  /** Its most frequent spelling. */
+  name: string;
+  /** Of its newest transaction: where it opens. */
+  category: string;
+  categoryId: CategoryId | null;
+  scope: Scope;
+  month: string;
+  lines: number;
+  /** Spending minus refunds of the found transactions, hryvnia kopecks (lines without a rate left out). */
+  net: number;
+};
+
+/** A regular payment (as on the regular payments screen, not hidden) whose description matches the text. */
+export type SearchRecurringView = {
+  key: string;
+  name: string;
+  category: string;
+  categoryId: CategoryId | null;
+  /** The usual payment in hryvnia kopecks; null — no rate. */
+  uah: number | null;
+  currency: number;
+  amount: number;
+  active: boolean;
+};
+
+export type SearchOverview = {
+  /** At most SEARCH_TRANSACTIONS_MAX, newest first. */
+  transactions: SearchTransactionView[];
+  /** Every match, before the limit. */
+  total: number;
+  /** Only with text: at most SEARCH_PAYEES_MAX, the most transactions first. */
+  payees: SearchPayeeView[];
+  /** Only with text: at most SEARCH_RECURRING_MAX, active first. */
+  recurring: SearchRecurringView[];
+  rates: RatesView | null;
+};
+
 /** The user's mark on a regular payment's payee: must be paid, or not a regular payment at all. */
 export type RecurringMark = 'mandatory' | 'hidden';
 
@@ -993,9 +1097,8 @@ export type AllowancePayment = { key: string; name: string; uah: number | null; 
  * mandatory payments due before the next regular income, over the days until it. Hryvnia kopecks.
  */
 /** A reserve as «Available per day» counts it. */
-export type AllowanceReserveView = ReserveInput & {
-  id: number;
-  /** No end, or its last day is today or later: taken off. */
+export type AllowanceReserveView = Reserve & {
+  /** Not marked done, and no end or its last day is today or later: taken off. */
   active: boolean;
   /** The amount in hryvnia kopecks at today's rate; null — no rate (not taken off). */
   uah: number | null;
@@ -1016,6 +1119,38 @@ export type AllowanceOverview = {
   /** money − reserve − mandatory; < 0 — short of that much. */
   free: number;
   perDay: number;
+  rates: RatesView | null;
+};
+
+/** What the FOP tax is counted from: the income on the business accounts, or all income of the view. */
+export type FopTaxBase = 'business' | 'all';
+/**
+ * Days from..to (YYYY-MM-DD, system time zone; `to` is cut at today, `from` after today is refused); `yearToDate` — also
+ * 1 January of `to`'s year to `to`. The person of the global filter. The bank filter does not apply.
+ */
+export type FopTaxQuery = { from: string; to: string; base: FopTaxBase; yearToDate?: boolean; participantId?: number };
+export type Quarter = 1 | 2 | 3 | 4;
+
+/** The income of the base over [from, to] (system time zone), in hryvnia kopecks at today's rates. */
+export type FopTaxPeriod = {
+  from: string;
+  to: string;
+  /** Hryvnia kopecks: no refunds, no own or family transfers. */
+  total: number;
+  lines: number;
+  /** Account currencies without a rate: left out of `total`. */
+  leftOut: Array<{ currency: number; total: number }>;
+  /** The period is not over, or the data does not reach its end yet. */
+  incomplete: boolean;
+};
+
+export type FopTaxOverview = {
+  /** An enabled business account (Monobank: FOP) of the view: the «business» base is offered. */
+  available: boolean;
+  /** The picked days. */
+  base: FopTaxPeriod;
+  /** 1 January to the picked end, cut at today; null — not asked. */
+  yearToDate: FopTaxPeriod | null;
   rates: RatesView | null;
 };
 
@@ -1096,6 +1231,45 @@ export type IncomeOverview = {
   rates: RatesView | null;
   /** Account currencies without any rate: left out of every sum. Minor units of that currency. */
   leftOut: Array<{ currency: number; total: number }>;
+  /** What the user can count on each month (a month's view only; null — a day or a week). */
+  regular: RegularIncome | null;
+};
+
+/**
+ * One active regular income source (core findRecurring, `kind: 'income'`): a sender who pays about once a month. Its
+ * name is cut as the income list's sender (a named transfer's name, else the description through merchantText).
+ */
+export type RegularIncomeSource = {
+  /** The last payment's transaction id. */
+  key: string;
+  name: string;
+  participantId: number;
+  /** The usual payment in hryvnia kopecks by today's rate; null — no rate for the currency. */
+  uah: number | null;
+  /** The account currency and the usual payment in its minor units. */
+  currency: number;
+  amount: number;
+  /** YYYY-MM-DD, system time zone: the last payment and the next one expected (a calendar month after the last). */
+  last: string;
+  next: string;
+  /** Days since the expected date once it has passed; null — not late. */
+  late: number | null;
+  /** The last payment against the usual one, whole per cent (signed), when they differ by more than 10%; else null. */
+  change: number | null;
+};
+
+/** The income screen's regular income: computed for today, whatever month is shown. */
+export type RegularIncome = {
+  /** Today, YYYY-MM-DD, system time zone. */
+  today: string;
+  /** The active sources' usual payments together, hryvnia kopecks (a source without a rate counts nowhere). */
+  monthly: number;
+  /** The active regular payments' monthly sum over `monthly`, whole per cent; null — no regular income. */
+  coveredByPayments: number | null;
+  /** By hryvnia desc (no rate last). */
+  sources: RegularIncomeSource[];
+  /** The sources expected from today to 30 days on, soonest first. */
+  expected: RegularIncomeSource[];
 };
 
 /** The analytics screen: whole months `YYYY-MM`, from ≤ to, at most ANALYTICS_MAX_MONTHS (src/shared/analytics.ts). One month = from === to. */

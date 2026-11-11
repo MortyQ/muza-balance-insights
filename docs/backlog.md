@@ -41,12 +41,31 @@
 - Погода (Open-Meteo): запросы из main по списку разрешённых адресов.
 - Обновление Node с 22.
 
+## To check live: global search (global-search)
+
+- Cmd+K on macOS and Ctrl+K on Windows / Linux open the sheet with the field focused; Escape and a click outside close
+  it; the button in the filters row fits beside the sync status at every width.
+- Speed on 36 months of real data: the bench (40 000 fictional operations) reads the lines in about 0.6 s per search, so
+  a pause after typing is expected; check it stays usable, or cache the lines in the data process.
+- Real descriptions: «Скасування. …», card transfers (only the last 4 digits), jar transfers (the title hidden), a
+  comment found by its words; amounts in dollars or euros as the main currency (±1 of it).
+- Dates typed in each language: «12 жовт», «5–11 окт», «October 2026»; a payee whose name contains a short month name
+  («Лист…») stays text.
+- Opening a result: the category screen shows that month with the list searched or filtered; picking another month
+  in the filter keeps the search (the list's field shows it and clears it).
+
 ## To check live: app shell (desktop-app-shell)
 
 - The sidebar under the title bar: macOS traffic lights and the Windows / Linux overlay buttons do not cover it.
 - A narrow window (< 45rem): the menu button opens the drawer; a pick, Escape and a click outside close it.
 - A medium window (45–64rem): icons only, tooltips on hover; widening restores the stored choice.
 - Fold, relaunch: the menu opens folded.
+
+## To check live: reserve «Done» (reserve-done)
+
+- On the planning screen tick «Done» on a reserve: «Free» on the balance card and «Available per day» grow by it at
+  once, the row stays dimmed; untick it and both drop back; the tooltip reads well in uk / en / ru; the mark survives a
+  restart and an edit of the reserve; the family view and a person's view agree.
 
 ## To check live: month pace (desktop-month-pace)
 
@@ -293,6 +312,12 @@
 - Home's budget row at every window width; the empty row's wording; the «Limits» slide's order.
 - Savings goals: a jar's own target offered; the need per month to a date; a closed jar.
 - The «?» explanations: readable, the numbers match the screen, nothing cut in a narrow window.
+- Pending payments in spent (`openspec/changes/budget-pending-spent`): after an update, today's purchases still
+  processed by the bank move the budget and limit figures at once, no restart; the «incl. N pending» note reads
+  clearly; a hold the bank cancels leaves the figure at the next update.
+- Taxes as personal spending (`openspec/changes/taxes-personal`): after the first update with this version, past taxes
+  paid from a personal card show in «Spending» and their category; the budget's «Count taxes» switch still moves only
+  the budget; taxes from a FOP account stay under «Business».
 
 ## Check on a live system: figure accuracy (`openspec/changes/figure-accuracy`)
 
@@ -350,3 +375,41 @@
 - **The Czech-language export** (`číslo účtu, datum splatnosti, …`) is refused as an unknown format; a reader for it
   once a real one is seen.
 - **«Foreign payment - fee»** stays a row of its own; consider making it the commission of its payment.
+- «Show also» currencies everywhere (`openspec/changes/currency-everywhere`): with one and with two picked currencies,
+  check dense lists in both themes — transactions, «Who spent», recent transactions, the budget panel's header, limit
+  rows, insight cards; a transaction in a picked currency shows its exact amount.
+
+## Before the 0.1.15 release: FOP tax (`openspec/changes/fop-tax-calculator`)
+
+- **A person checks the tax content**: the rates offered (5%, 6%, own percent), the wording «from income», the disclaimer and
+  the ЄСВ note in uk / en / ru, and the CHANGELOG «### FOP tax» entry. No ЄСВ amount is shown anywhere; that stays so
+  unless a person supplies and checks one.
+- **Foreign-currency FOP income** is folded at today's Monobank rate, not the NBU rate of the day of receipt the tax
+  uses: decide whether that is acceptable for an estimate or needs a note.
+- **Live**: «FOP tax» is always in the menu; without a FOP account «All income» is picked and the FOP base is not
+  offered. A month or a range of months reads the same income as the «Income» screen for those days. The quarter's base equals the FOP income on the «Income» screen for those months minus
+  transfers from the owner's own cards; a refund to the FOP card is not in it; Q1–Q4 and the year to date read right
+  for a past year and the current one; the family view and one person's view agree.
+
+## Check on a live system: regular income (`openspec/changes/income-regular`)
+
+- **Sources against real income**: a month's «Regular sources» lists the salary and the regular clients the user would
+  name, none of the one-off transfers; the names read as on the income list; «Regular income» equals their usual
+  amounts together.
+- **Late and changed marks**: a salary paid a few days late reads «late by N days» and drops the mark on payment; a
+  raise (one payment more than 10% above the usual) reads «amount changed by N%» and moves the next date on, instead of
+  «late». An advance and a salary from one employer stay two sources with no «changed» mark.
+- **The share of regular payments** matches «Regular payments»' monthly sum over the regular income, for the family and
+  for one person.
+
+## Check on a live system: month forecast (`openspec/changes/month-forecast`)
+
+- **Forecast against the month's end**: note «Forecast based on your plan» around the 10th and the 20th, then compare
+  with «Spent» once the month is over; the range should hold the result in a usual month. A month with a large one-off
+  in the usual months: the range widens, the figure does not jump.
+- **Regular payments**: the count in the «?» matches the active «Regular payments» of the same «Personal / Business»
+  view due after today this month; one paid early this month is not counted again; a late one is not added.
+- **Stale data**: after a few days without an update the forecast reads low (the days since the last update are not
+  extrapolated); decide whether it needs a note. A regular payment paid today as a pending hold drops out for up to
+  3 days.
+- **Layout**: five figures at narrow, medium and wide windows; the «?» reads well in uk / en / ru.

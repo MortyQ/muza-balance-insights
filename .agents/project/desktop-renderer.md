@@ -178,8 +178,10 @@
   request as the block, shared while in flight by `shared/api/balance.ts`).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
-  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date),
-  written by `categoryLink(id, scope, period?)` and read back by `categoryRequest`), default layout without its
+  unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date), and
+  the list's `query.q` (its search) / `query.merchant` (a payee key), written by `categoryLink(id, scope, period?,
+  filter?)` and read back by `categoryRequest`; the list starts every new period, person or bank view from them —
+  `useCategoryView`'s `open`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
   The feature takes a `period: DetailPeriod` prop: the page passes the link's day or week (`periodRequest` of
@@ -232,8 +234,12 @@
   filter's month); quiet reload on `syncStatus.version`. Built like the category screen from `entities/operations`:
   summary (lines, average + median, per day, the month's spending as a share of the income, the largest), 12 months,
   «Where from» (`SourceBars`, by core income source), «From» (senders, filter the list and «When»), «Who received»
-  (family view), «When», the list (always «+», green). Colour — `INCOME_COLOR` (`--success`). `utils.ts` is pure and
-  tested (`tests/renderer/income-detail.test.ts`).
+  (family view), «When», the list (always «+», green). A month only, right after the summary: the regular income
+  (`IncomeOverview.regular`, spec `desktop-income-regular`) — `RegularIncomeHeader` (monthly figure, the share regular
+  payments take, «No regular income found»), `RegularSources` (typical amount through `MoneyStack`, «about monthly»,
+  last, next, a mark: «on time» / «late by N days» / «amount changed by N%»), `ExpectedIncome` (next 30 days, with a
+  `VHelpHint`); view functions `regularHeaderView`, `regularSourcesView`, `regularMark`, `expectedView`. Colour —
+  `INCOME_COLOR` (`--success`). `utils.ts` is pure and tested (`tests/renderer/income-detail.test.ts`).
 - **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
   route `budget` (`/budget`, `meta.navParent: 'home'` — no menu item, like the category screen), opened from home's
   «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
@@ -268,12 +274,24 @@
   per day (or what is short), «until … · n days», the income line (next / late / none) and the count's lines
   (`AllowanceBreakdown`: money, each active reserve, each mandatory payment, free, per day); `reserveMinor` — an amount typed in
   whole units; `reserveRows` — the reserves list (own currency, ≈ the screen's, the term). Under the count `ReserveList`:
-  `ReserveRow` (`VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
+  `ReserveRow` (a «Done» `VCheckbox` with its `VTooltip` hint, saved at once with the row's input and `done`, the boxes
+  drawn anew when that fails; a row not active — done or ended — `opacity-60`; `VPopover` menu «Edit» / «Delete»), one `ReserveForm` at a time (name, amount, currency `VSelect`,
   «No end» `VCheckbox` or the last day `VDatepicker`; «Whose» `VSelect` — each person and «Common» — in a family of
   several only, at first the picked person or common; one person: no field, theirs; checked on submit); a row says
   whose (`ReserveRowView.owner`) in a family view of several, «Add a reserve» up to `RESERVES_MAX`;
   `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
+- **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
+  `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
+  its own `PeriodPicker` — the «Analytics» `VMonthRangePicker` (`PeriodPick`: YYYY-MM from–to; nothing after this
+  month; presets `fopPresets`: this / last month, this / last quarter, each ended quarter of this year, this / last year; this quarter so far at first; `periodBounds` → days,
+  `quarterOfPick` → the year-to-date row). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
+  bank filter does not apply; `yearToDate` for a quarter only). `RatePicker`: presets `FOP_RATES` 5 / 6 and an own
+  percent field (`percentValue`; a valid one unmarks the preset, a preset click clears it), base «Income on FOP
+  accounts» (only while `available`; the default then) / «All income» / «Custom amount» (`amountMinor`; hides the
+  period); `TaxResult` rows through `MoneyStack` (`taxView`; `taxMinor` = percent × base rounded to a kopeck, in the
+  renderer). Always under it: what is not income, «ЄСВ not included», the disclaimer — no ЄСВ amount anywhere. Quarters:
+  `src/shared/quarters.ts` (shared with main). Tested in `tests/renderer/fop-tax.test.ts`, `layouts.test.ts`.
 - **Regular payments screen** (`features/recurring-payments`, `RecurringFeature.vue`; `pages/recurring`): route
   `recurring` (`/recurring`), its own side menu item (`home.nav.recurring`, after «Analytics») and
   `meta.periodFilter: 'none'` — the global filters show the person and the currency, no period (the screen always
@@ -294,7 +312,9 @@
   `desktop-insights-page`): route `insights`, side menu item after «General» (`home.nav.insights`, `lucide:lightbulb`),
   the default month filter (the home month), person, banks and `useScopeStore`; one IPC `getInsightsOverview`, quiet
   reload on `syncStatus.version`. `utils/index.ts` `insightsPageView`: «The month at a glance» (`InsightsGlance`: spent vs
-  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, income, the
+  the usual month — a running month a meter of the usual month spent with a mark at the month passed —, a running
+  month's «Forecast based on your plan» (`forecastGlance`: the figure, a range line, a `VHelpHint` with the formula in
+  the user's numbers; five figures lay out as 3 then 5 columns), income, the
   kept share, the signals figure — every feed item split by severity on one bar), «Financial health» (`HealthBlock`,
   spec `desktop-insights-health`, `utils/health.ts`: `SharesChart` — the left or wants share by month as ECharts bars
   coloured by each month's standing, the guide dashed, the user's usual line and ± band, unusual months outlined with
@@ -341,6 +361,16 @@
   `details` model (not remembered, closed when the strip hides); the period is remembered (`useNowPrefsStore`,
   `localStorage` `now.categories`, `parsePrefs`, default the week). Categories and numbers only: the lines with the
   bank's text stay on the category screen, which each row opens for that day or week.
+- **Global search** (`features/global-search`, `GlobalSearchFeature`, mounted in `widgets/global-filters` while there
+  is data; spec `desktop-global-search`): a field-like button (Cmd+K / Ctrl+K anywhere) opens a `VSheet` with a
+  combobox input (`search.placeholder`), the arrows and Enter walk the rows. The input is taken apart by `parseSearch`
+  (`shared/lib/searchQuery.ts`: dates in uk / en / ru, one amount, the text) and sent after a 200 ms pause as one
+  `searchOverview` (`desktop-import.md`) with the global person and banks; the amount in the main currency becomes a
+  hryvnia range ±1 (`amountRange`). Groups: «Transactions», «Payees», «Categories» (found here by their translated
+  name), «Regular payments»; a transaction → `categoryLink(id, scope, undefined, { q: description })` and the global
+  month set to its month, a payee → `{ merchant: key }`, a regular payment → the recurring route. Not a cached read
+  (`PASS_THROUGH`); a closed sheet drops the answer and the text. Tests: `tests/renderer/global-search.test.ts`,
+  `search-query.test.ts`.
 - **Currency choice** (`entities/currency-display`): the home-wide main currency (₴ / $ / € / Kč) and the «≈» currencies.
   `useCurrencyDisplayStore` holds `choice { main, also }` (`localStorage` `home.currencies`; the old `{ usd, eur }` and
   the old `spending.view` `usd` / `eur` are read once and saved at once, as hryvnia main with the same «≈» ones) and

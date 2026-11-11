@@ -56,9 +56,17 @@ export function moneyFormat(rates: RatesView | null, choice: Readonly<CurrencyCh
   const alsoParts = (k: number) => also.map((c) => ({ currency: c.currency, minor: Math.round(k / c.rate) }));
   const parts = (k: number) => alsoParts(k).map((p) => formatMoney(p.minor, p.currency));
   const convert = (k: number) => Math.round(k / rate);
+  const alsoCurrencies: number[] = also.map((c) => c.currency);
   return {
     currency,
     convert,
+    alsoCurrencies,
+    alsoFor: (k, exact) =>
+      also.map((c) => {
+        const e = exact.find((x) => x.currency === c.currency);
+        return e ? formatMoney(Math.abs(e.amount), c.currency) : `≈ ${formatMoney(Math.round(Math.abs(k) / c.rate), c.currency)}`;
+      }),
+    shows: (c) => c === currency || alsoCurrencies.includes(c),
     money: (k) => formatMoney(convert(k), currency),
     approx: (k) => parts(k).map((p) => `≈ ${p}`),
     alsoParts,

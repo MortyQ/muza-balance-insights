@@ -14,7 +14,10 @@ defineSlots<{ mark(props: { part: PartView }): unknown }>();
         <span class="truncate font-semibold" :title="part.name">{{ part.name }}</span>
         <span class="truncate text-xs text-foreground-muted">{{ part.caption }}</span>
       </span>
-      <span class="shrink-0 whitespace-nowrap text-right font-bold tabular-nums">{{ part.amount }}</span>
+      <span class="flex shrink-0 flex-col items-end">
+        <span class="whitespace-nowrap text-right font-bold tabular-nums">{{ part.amount }}</span>
+        <span v-for="c in part.also ?? []" :key="c" class="whitespace-nowrap text-xs text-foreground-muted tabular-nums" data-test="money-also">{{ c }}</span>
+      </span>
     </div>
     <VShareBar :value="part.width" color="var(--c)" />
   </div>

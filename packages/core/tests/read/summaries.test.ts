@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Db } from '../../src/storage/db.ts';
-import { categoryLines, latestLines, linesOfCategories } from '../../src/read/category-lines.ts';
+import { categoryLines, latestLines, linesOfCategories, periodLines } from '../../src/read/category-lines.ts';
 import { incomeLines } from '../../src/read/income-lines.ts';
 import { kyivStartOfDay } from '../../src/shared/format.ts';
 import { spendingByCategory } from '../../src/read/queries.ts';
@@ -194,6 +194,14 @@ describe('spendingSummary', () => {
     expect((await latestLines(db, Q, 2, NOW)).lines.map((l) => l.category)).toEqual(['путешествия', 'налоги и госплатежи']);
     expect((await latestLines(db, { ...Q, scope: 'business' }, 20, NOW)).lines.map((l) => l.category)).toEqual(['налоги и госплатежи']);
     await expect(latestLines(db, Q, 0, NOW)).rejects.toThrow(RangeError);
+  });
+
+  it('periodLines: every operation of the period (latestLines without a limit), each with its scope', async () => {
+    const all = await periodLines(db, Q);
+    expect(all.map((l) => [l.category, l.amount])).toEqual((await latestLines(db, Q, 1_000, NOW)).lines.map((l) => [l.category, l.amount]));
+    expect(all.find((l) => l.category === 'налоги и госплатежи')?.scope).toBe('business');
+    expect(all.find((l) => l.category === 'продукты')?.scope).toBe('personal');
+    expect((await periodLines(db, { ...Q, scope: 'business' })).map((l) => l.category)).toEqual(['налоги и госплатежи']);
   });
 
   it('linesOfCategories: body lines of the named categories only, with their category, in one read', async () => {

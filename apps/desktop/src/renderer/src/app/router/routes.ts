@@ -36,6 +36,13 @@ export const routes: RouteRecordRaw[] = [
     meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 4 }, periodFilter: 'none' },
   },
   {
+    // In the menu only while an enabled business account (FOP) exists; opened without one it says so.
+    path: '/fop-tax',
+    name: ROUTE.fopTax,
+    component: () => import('@/pages/fop-tax').then((m) => m.FopTaxPage),
+    meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 5 }, periodFilter: 'none' },
+  },
+  {
     // Opened from a row of «Spending»; an unknown category goes home.
     path: '/category/:id',
     name: ROUTE.category,
