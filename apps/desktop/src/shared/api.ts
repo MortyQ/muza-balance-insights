@@ -1,5 +1,6 @@
 // Types of window.balance as the renderer sees it (implemented by the preload + main handlers). Plain types only.
 import type { ProviderId } from '@mono/core/providers/types';
+import type { AppCurrency } from '@mono/core/shared/currency';
 import type { Reserve, ReserveInput } from './allowance.ts';
 import type { AutoSyncSettings } from './auto-sync.ts';
 import type { AccountName } from './account-name.ts';
@@ -890,8 +891,6 @@ export type RecurringMark = 'mandatory' | 'hidden';
 /** `key` — a CategoryLineView's key; `payee` — for every debit of its payee. */
 export type OperationCategoryQuery = { key: string; category: CategoryId | null; payee: boolean };
 
-/** The currencies a limit or a goal is set in: hryvnia, dollar, euro (as reserves). */
-export type GoalCurrency = 980 | 840 | 978;
 export type LimitPeriod = 'day' | 'week' | 'month';
 /** on track · from 80% spent or a forecast over the limit · over the limit. */
 export type LimitStateName = 'ok' | 'attention' | 'exceeded';
@@ -928,7 +927,7 @@ export type CategoryLimitView = {
   categoryId: KindCategoryId;
   period: LimitPeriod;
   owner: number | null;
-  currency: GoalCurrency;
+  currency: AppCurrency;
   /** As typed, minor units of `currency`. */
   amountMinor: number;
   figures: LimitFiguresView | null;
@@ -938,7 +937,7 @@ export type CategoryLimitView = {
 export type MonthBudgetView = {
   id: number;
   owner: number | null;
-  currency: GoalCurrency;
+  currency: AppCurrency;
   amountMinor: number;
   /** Hryvnia kopecks by today's rate. */
   total: number;
@@ -959,7 +958,7 @@ export type SavingGoalView = {
   id: number;
   name: string;
   owner: number | null;
-  currency: GoalCurrency;
+  currency: AppCurrency;
   amountMinor: number;
   until: string | null;
   source: 'jar' | 'own';
@@ -1007,9 +1006,9 @@ export type LimitsOverviewQuery = { month: string; participantId?: number };
 
 /** A plan as the screen sends it; `id` null — a new one. */
 export type GoalPayload =
-  | { type: 'limit'; categoryId: KindCategoryId; period: LimitPeriod; currency: GoalCurrency; amount: number; participantId: number | null }
-  | { type: 'budget'; currency: GoalCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }>; countTaxes?: boolean }
-  | { type: 'saving'; name: string; currency: GoalCurrency; amount: number; participantId: number | null; until: string | null; source: 'jar' | 'own'; accountId: string | null };
+  | { type: 'limit'; categoryId: KindCategoryId; period: LimitPeriod; currency: AppCurrency; amount: number; participantId: number | null }
+  | { type: 'budget'; currency: AppCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }>; countTaxes?: boolean }
+  | { type: 'saving'; name: string; currency: AppCurrency; amount: number; participantId: number | null; until: string | null; source: 'jar' | 'own'; accountId: string | null };
 
 /** A spending category's kind (core read/category-kinds.ts): essential, a want or savings. */
 export type CategoryKind = 'essential' | 'wants' | 'savings';

@@ -240,7 +240,7 @@
   `FIXED_VERY_HIGH` 60, `DEBT_HIGH` 30, `RESERVE_MIN` 3, `RESERVE_GOOD` 6) are common advice, never a grade.
 - **Limits, the monthly budget, savings goals** (migration v20: `goals`, one table with a CHECK per type, and
   `goal_fixed`; `read/goals.ts` — plain writes like `reserves.ts`; specs `core-spending-limits`, `core-savings-goals`):
-  a limit is a category, an amount in 980 | 840 | 978, a period (day, Monday–Sunday week, month) and an owner (a person
+  a limit is a category, an amount in one of the app's currencies (`APP_CURRENCIES`, `shared/currency.ts`: 980 | 840 | 978 | 203 — the one list for the home switch, plans and reserves; the tables' CHECK follows it, migration v23), a period (day, Monday–Sunday week, month) and an owner (a person
   or the family, null); one per category, period and owner; at most `LIMITS_MAX` limits and `SAVINGS_MAX` goals. The
   monthly budget is one total and its own fixed rows (`goal_fixed`: a category and the amount the user typed — nothing
   is filled in): `budgetParts` sets the rows aside at their amounts, the rest is the flexible part, counted against

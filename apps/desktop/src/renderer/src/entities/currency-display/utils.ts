@@ -1,11 +1,16 @@
 import { currencyAlpha } from '@mono/core/shared/currency';
 import type { RatesView } from '@contract/api.ts';
+import { APP_CURRENCIES, type AppCurrency, type AppCurrencyKey, isAppCurrency } from '@contract/currencies.ts';
 import { localDateTime } from '@contract/dates.ts';
 import { currencySymbol, formatMoney, shortDate, UAH } from '@/shared/lib';
+import type { VSelectOption } from '@/shared/ui';
 import { CURRENCIES } from './constants.ts';
-import type { CurrencyChoice, CurrencyKey, MainCurrency, MoneyFormat } from './types.ts';
+import type { CurrencyChoice, MoneyFormat } from './types.ts';
 
-const MAINS: ReadonlyArray<number> = CURRENCIES.map((c) => c.currency);
+/** A flag per currency of the app's list. `fromEntries` loses the key type; every key of the list is set, hence the `as`. */
+function flagsOf(f: (k: AppCurrencyKey) => boolean): Record<AppCurrencyKey, boolean> {
+  return Object.fromEntries(APP_CURRENCIES.map((c) => [c.key, f(c.key)])) as Record<AppCurrencyKey, boolean>;
+}
 
 /**
  * The choice from storage. The new shape `{ main, also }`; the old `{ usd, eur }` (also spending.view's, whose other
@@ -13,7 +18,7 @@ const MAINS: ReadonlyArray<number> = CURRENCIES.map((c) => c.currency);
  * a parsed JSON object's fields after the object / array guard.
  */
 export function parseCurrencyChoice(raw: string | null): CurrencyChoice {
-  const d: CurrencyChoice = { main: UAH as MainCurrency, also: { uah: false, usd: false, eur: false, czk: false } };
+  const d: CurrencyChoice = { main: UAH as AppCurrency, also: flagsOf(() => false) };
   if (raw === null) return d;
   let v: unknown;
   try {
@@ -23,13 +28,12 @@ export function parseCurrencyChoice(raw: string | null): CurrencyChoice {
   }
   if (typeof v !== 'object' || v === null || Array.isArray(v)) return d;
   const o = v as Record<string, unknown>;
-  const flags = (src: unknown): Record<CurrencyKey, boolean> => {
+  const flags = (src: unknown): Record<AppCurrencyKey, boolean> => {
     const s = typeof src === 'object' && src !== null && !Array.isArray(src) ? (src as Record<string, unknown>) : {};
-    const f = (k: CurrencyKey) => s[k] === true;
-    return { uah: f('uah'), usd: f('usd'), eur: f('eur'), czk: f('czk') };
+    return flagsOf((k) => s[k] === true);
   };
   if ('main' in o) {
-    return typeof o.main === 'number' && MAINS.includes(o.main) ? { main: o.main as MainCurrency, also: flags(o.also) } : d;
+    return typeof o.main === 'number' && isAppCurrency(o.main) ? { main: o.main, also: flags(o.also) } : d;
   }
   return { main: d.main, also: { ...flags(o), uah: false } };
 }
@@ -93,4 +97,12 @@ export function shortLabel(currency: number): string {
 /** When the rates were fetched (epoch seconds), in the system time zone: «05.10, 10:00». */
 export function rateDate(epochSec: number): string {
   return shortDate(localDateTime(epochSec * 1000));
+}
+
+/**
+ * The currency choices of a plan or reserve form: the app's currencies with a rate, as the switch offers them, plus
+ * `keep` (the form's current one) even without a rate, so a saved plan keeps its currency.
+ */
+export function currencyOptions(rates: RatesView | null, keep: AppCurrency): VSelectOption[] {
+  return CURRENCIES.filter((c) => c.currency === keep || hasRate(rates, c.currency)).map((c) => ({ label: currencySymbol(c.currency), value: c.currency }));
 }

@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import type { RatesView } from '@contract/api.ts';
-import { moneyFormat, parseCurrencyChoice, rateDate, shownText } from '@/entities/currency-display';
+import { APP_CURRENCY_CODES } from '@contract/currencies.ts';
+import { currencyOptions, moneyFormat, parseCurrencyChoice, rateDate, shownText } from '@/entities/currency-display';
 import { formatMoney } from '@/shared/lib';
 import { inTimeZone } from '../helpers/time-zone.ts';
 
@@ -33,6 +34,16 @@ describe('parseCurrencyChoice', () => {
   it('the old { usd, eur } (and spending.view) value: hryvnia main, the same «≈» currencies', () => {
     expect(parseCurrencyChoice('{"usd":true,"eur":false}')).toEqual({ main: 980, also: { uah: false, usd: true, eur: false, czk: false } });
     expect(parseCurrencyChoice('{"split":false,"mark":true,"usd":false,"eur":true}')).toEqual({ main: 980, also: { uah: false, usd: false, eur: true, czk: false } });
+  });
+});
+
+describe('currencyOptions', () => {
+  it('the switch\'s currencies: the app list with a rate, plus the form\'s own one without', () => {
+    const all: RatesView = { ...RATES, list: [...RATES.list, { currency: 203, rate: 180 }] };
+    expect(currencyOptions(all, 980).map((o) => o.value)).toEqual([...APP_CURRENCY_CODES]);
+    expect(currencyOptions(RATES, 980).map((o) => o.value)).toEqual([980, 840, 978]);
+    expect(currencyOptions(RATES, 203).map((o) => o.value)).toEqual([980, 840, 978, 203]);
+    expect(currencyOptions(null, 840).map((o) => o.value)).toEqual([980, 840]);
   });
 });
 

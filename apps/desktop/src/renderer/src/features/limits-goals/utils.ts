@@ -1,5 +1,6 @@
-import type { GoalCurrency, LimitsOverview, MonthBudgetView, RatesView, SavingGoalView } from '@contract/api.ts';
+import type { LimitsOverview, MonthBudgetView, RatesView, SavingGoalView } from '@contract/api.ts';
 import type { KindCategoryId } from '@contract/categories.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { limitLook } from '@/entities/goal';
@@ -9,13 +10,13 @@ import type { BudgetPanelView, FixedRowView, GoalRowView, LimitRowView, LimitsSc
 export const nameOf = (id: KindCategoryId) => categoryName({ category: id, categoryId: id });
 
 /** Kopecks per minor unit of a goal currency; hryvnia 1; null — no rate. */
-export function rateOf(rates: RatesView | null, currency: GoalCurrency): number | null {
+export function rateOf(rates: RatesView | null, currency: AppCurrency): number | null {
   if (currency === UAH) return 1;
   return rates?.list.find((r) => r.currency === currency)?.rate ?? null;
 }
 
 /** Hryvnia kopecks → minor units of `currency` (null without a rate). */
-export function fromUah(kopecks: number, currency: GoalCurrency, rates: RatesView | null): number | null {
+export function fromUah(kopecks: number, currency: AppCurrency, rates: RatesView | null): number | null {
   const r = rateOf(rates, currency);
   return r === null ? null : Math.round(kopecks / r);
 }
@@ -135,19 +136,19 @@ const median = (xs: ReadonlyArray<number>) => {
 };
 
 /** A typical whole amount in `currency` from kopecks: rounded to 100 units; null without a rate or history. */
-export function roundUnits(kopecks: number, currency: GoalCurrency, rates: RatesView | null): number | null {
+export function roundUnits(kopecks: number, currency: AppCurrency, rates: RatesView | null): number | null {
   const minor = fromUah(kopecks, currency, rates);
   if (minor === null || minor <= 0) return null;
   return Math.max(100, Math.round(minor / 100 / 100) * 100);
 }
 
 /** The usual month of all spending (median of the whole months), in whole units of `currency`. */
-export function usualTotal(v: LimitsOverview, currency: GoalCurrency): number | null {
+export function usualTotal(v: LimitsOverview, currency: AppCurrency): number | null {
   return v.past.total.length >= 3 ? roundUnits(median(v.past.total), currency, v.rates) : null;
 }
 
 /** Past whole months' flexible spending — all but the listed fixed categories and savings —, minor units of `currency`. */
-export function pastFlexible(v: LimitsOverview, fixed: ReadonlyArray<KindCategoryId>, currency: GoalCurrency): Array<{ month: string; minor: number }> {
+export function pastFlexible(v: LimitsOverview, fixed: ReadonlyArray<KindCategoryId>, currency: AppCurrency): Array<{ month: string; minor: number }> {
   const savings = v.kinds.filter((k) => k.kind === 'savings').map((k) => k.categoryId);
   const out = new Set<KindCategoryId>([...fixed, ...savings]);
   return v.past.months.flatMap((month, i) => {
@@ -158,7 +159,7 @@ export function pastFlexible(v: LimitsOverview, fixed: ReadonlyArray<KindCategor
 }
 
 /** A category's past whole months in minor units of `currency`, scaled to a week or a day for those periods. */
-export function pastOf(v: LimitsOverview, id: KindCategoryId, period: 'day' | 'week' | 'month', currency: GoalCurrency): Array<{ month: string; minor: number }> {
+export function pastOf(v: LimitsOverview, id: KindCategoryId, period: 'day' | 'week' | 'month', currency: AppCurrency): Array<{ month: string; minor: number }> {
   const scale = period === 'month' ? 1 : period === 'week' ? 7 / 30.44 : 1 / 30.44;
   return v.past.months.flatMap((month, i) => {
     const minor = fromUah((v.past.byCategory[id]?.[i] ?? 0) * scale, currency, v.rates);

@@ -13,6 +13,13 @@ describe('parseCsv', () => {
     ]);
   });
 
+  it('another separator: `;` splits, a comma stays in the field', () => {
+    expect(parseCsv('a;b,5;"c;d"\r\n1;2;3\r\n', ';')).toEqual([
+      ['a', 'b,5', 'c;d'],
+      ['1', '2', '3'],
+    ]);
+  });
+
   it('a line break inside quotes stays in the field; CRLF ends a row; a trailing empty line is not a row', () => {
     expect(parseCsv('"Date of \r\ntransaction",x\r\n1,2\r\n\r\n')).toEqual([
       ['Date of \r\ntransaction', 'x'],

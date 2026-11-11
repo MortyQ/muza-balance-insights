@@ -124,7 +124,9 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 
 - Files only (`access.token: null`): `providers/csob/{info,rules,descriptions,categories,iban,statement}.ts`, ids
   `'prefixed'`, one card type `card` (the export names no card or product).
-- Its reader `csob-account-csv-en` (`csv`) takes the English payment history: a title line `Payment history
+- Its reader `csob-account-csv-en` (`csv`) takes the English payment history, comma-separated with quoted fields or
+  semicolon-separated with bare fields (the export seen on 2026-11-11; `parseCsv(text, ';')`, whichever finds the
+  header): a title line `Payment history
   <account>/<bank code> on …`, an empty line, a 24-column header (score 2 with the title, 1 with the header alone);
   rows newest first, dated without a time (midnight, Europe/Prague); trailing rows that fill only the balance are
   skipped. One file is one account and one currency (another one refuses the file as `bad-row`); its IBAN is computed
@@ -133,7 +135,8 @@ The folder layout of `packages/core/src` and where new code goes: `core-layout.m
 - **Direction**: a signed amount keeps its sign; an unsigned one takes it from the type (`CREDIT_TYPES` /
   `DEBIT_TYPES`); an unknown type with an unsigned amount refuses the file. No self-check of balances yet
   (`docs/backlog.md`).
-- **The bank category** is the `category` column, except for a transfer type whose category is generic («Income»,
+- **The bank category** is the `category` column, except for a card refund (always its type, «Card transaction -
+  refund»: the bank files refunds under «Income», and a refund must not read as income) and a transfer type whose category is generic («Income»,
   «Outgoing unclassified», «Bank transactions», empty): then the type (a standing order without its number). Transfer
   types are transfers (income or p2p by sign); the rest take the category table's hint. No merchant keywords.
 - Masking keeps no ČSOB text: every description is `[other]`.

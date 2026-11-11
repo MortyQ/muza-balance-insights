@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { GoalCurrency, GoalPayload, LimitsOverview } from '@contract/api.ts';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES } from '@contract/allowance.ts';
+import type { GoalPayload, LimitsOverview } from '@contract/api.ts';
+import { RESERVE_AMOUNT_MAX } from '@contract/allowance.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { KIND_CATEGORY_IDS, type KindCategoryId } from '@contract/categories.ts';
 import { goalMinor } from '@/entities/goal';
+import { currencyOptions, useCurrencyDisplayStore } from '@/entities/currency-display';
 import { currencySymbol, formatMoney, t } from '@/shared/lib';
 import { VButton, VInput, VSelect, VSheet, VSwitch, type VSelectOption } from '@/shared/ui';
 import type { SheetStart } from '../types.ts';
@@ -24,7 +26,7 @@ const emit = defineEmits<{ save: [id: number | null, g: GoalPayload]; delete: [i
 
 const FAMILY = 'family';
 const total = ref('');
-const currency = ref<GoalCurrency>(980);
+const currency = ref<AppCurrency>(980);
 const rows = ref<Array<{ categoryId: KindCategoryId; amount: string }>>([]);
 const owner = ref<number | string>(FAMILY);
 const countTaxes = ref(true);
@@ -56,7 +58,8 @@ watch(countTaxes, (on) => {
   if (!on) rows.value = rows.value.filter((r) => r.categoryId !== 'taxes');
 });
 
-const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
+const currencyStore = useCurrencyDisplayStore();
+const currencies = computed(() => currencyOptions(currencyStore.rates ?? null, currency.value));
 const ownerOptions = computed<VSelectOption[]>(() => [...owners.map((p) => ({ label: p.name, value: p.id })), { label: t('limits.owner.family'), value: FAMILY }]);
 const free = computed<VSelectOption[]>(() =>
   KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && (countTaxes.value || id !== 'taxes') && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),

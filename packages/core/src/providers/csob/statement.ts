@@ -1,4 +1,5 @@
-// ČSOB's payment history (internet banking → account → export), as a CSV text document in English. A title line
+// ČSOB's payment history (internet banking → account → export), as a CSV text document in English: comma-separated with
+// quoted fields, or (the export seen on 2026-11-11) semicolon-separated with bare fields and decimal commas. A title line
 // `Payment history <account>/<bank code> on <date time>.`, an empty line, then a 24-column header; one row per
 // operation, newest first, a date without a time; trailing rows that fill only the balance are skipped. One file is one
 // account, its IBAN computed from the Czech account number. Amounts may come signed or not (the sample seen was
@@ -8,7 +9,7 @@ import { currencyNumeric } from '../../shared/currency.ts';
 import { toMinor } from '../../shared/money.ts';
 import { columnsByHeader, gridOf, localAmount, wallTime } from '../statement-kit.ts';
 import type { NormalizedTx, StatementDocument, StatementReadResult, StatementReader } from '../types.ts';
-import { CREDIT_TYPES, DEBIT_TYPES, GENERIC_CATEGORIES, TRANSFER_TYPES, typeName } from './descriptions.ts';
+import { CARD_REFUND, CREDIT_TYPES, DEBIT_TYPES, GENERIC_CATEGORIES, TRANSFER_TYPES, typeName } from './descriptions.ts';
 import { czIban, czIbanOfSlashed } from './iban.ts';
 
 const ZONE = 'Europe/Prague';
@@ -50,16 +51,19 @@ const HEADER_SEARCH = 6;
 
 type Table = { rows: string[][]; headerAt: number; columns: Record<Field, number>; title: boolean };
 
+/** The export comes comma-separated (quoted) or semicolon-separated (bare): whichever finds the header. */
 function tableOf(doc: StatementDocument): Table | null {
   if (doc.format !== 'text') return null;
-  const rows = gridOf(doc);
-  if (!rows) return null;
-  for (let i = 0; i < Math.min(rows.length, HEADER_SEARCH); i++) {
-    const found = columnsByHeader(rows[i] ?? [], COLUMNS);
-    if (!found) continue;
-    const columns = Object.fromEntries(Object.entries(found).map(([f, c]) => [f, (c as { index: number }).index])) as Record<Field, number>;
-    const title = rows.slice(0, i).some((r) => TITLE_RE.test((r[0] ?? '').trim()));
-    return { rows, headerAt: i, columns, title };
+  for (const separator of [',', ';'] as const) {
+    const rows = gridOf(doc, separator);
+    if (!rows) continue;
+    for (let i = 0; i < Math.min(rows.length, HEADER_SEARCH); i++) {
+      const found = columnsByHeader(rows[i] ?? [], COLUMNS);
+      if (!found) continue;
+      const columns = Object.fromEntries(Object.entries(found).map(([f, c]) => [f, (c as { index: number }).index])) as Record<Field, number>;
+      const title = rows.slice(0, i).some((r) => TITLE_RE.test((r[0] ?? '').trim()));
+      return { rows, headerAt: i, columns, title };
+    }
   }
   return null;
 }
@@ -116,7 +120,8 @@ function readRow(cells: readonly string[], c: Record<Field, number>): Row | null
   const value = sign * Math.abs(amount.minor);
 
   const category = cell('category');
-  const bankCategory = category === '' || (TRANSFER_TYPES.has(type) && GENERIC_CATEGORIES.has(category)) ? type : category;
+  // A card refund is money back whatever category the bank gives it (it files them under «Income»): its type is kept.
+  const bankCategory = category === '' || type === CARD_REFUND || (TRANSFER_TYPES.has(type) && GENERIC_CATEGORIES.has(category)) ? type : category;
 
   const foreign = original(cell('original'));
   let txCurrency = currencyCode;

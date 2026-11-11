@@ -58,3 +58,22 @@ export function toMajor(minor: number, code: number): number {
   const abs = Math.abs(minor);
   return Number(`${sign}${Math.trunc(abs / div)}.${String(abs % div).padStart(exp, '0')}`);
 }
+
+/**
+ * The app's own currencies, in menu order: the home currency switch, budgets, limits, savings goals and reserves. The
+ * one list: a currency added here reaches all of them (the database checks no currency list of its own, v23). Each key
+ * names the currency in stored choices and in the dictionaries (`entities.currencyDisplay.<key>`).
+ */
+export const APP_CURRENCIES = [
+  { key: 'uah', code: 980 },
+  { key: 'usd', code: 840 },
+  { key: 'eur', code: 978 },
+  { key: 'czk', code: 203 },
+] as const;
+export type AppCurrencyKey = (typeof APP_CURRENCIES)[number]['key'];
+export type AppCurrency = (typeof APP_CURRENCIES)[number]['code'];
+export const APP_CURRENCY_CODES: ReadonlyArray<AppCurrency> = APP_CURRENCIES.map((c) => c.code);
+
+export function isAppCurrency(code: number): code is AppCurrency {
+  return APP_CURRENCY_CODES.some((c) => c === code);
+}

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { t, UAH } from '@/shared/lib';
 import { VPopover, VSegmentedControl, VSwitch, type SegmentOption } from '@/shared/ui';
 import { CURRENCIES } from '../constants.ts';
 import { useCurrencyDisplayStore } from '../store/useCurrencyDisplayStore.ts';
-import type { MainCurrency } from '../types.ts';
 import { hasRate, rateDate, shortLabel, shownText } from '../utils.ts';
 
 const store = useCurrencyDisplayStore();
@@ -12,9 +12,9 @@ const id = useId();
 const rates = computed(() => store.rates ?? null);
 const shown = computed(() => shownText(rates.value, store.choice));
 const rated = computed(() => CURRENCIES.filter((c) => hasRate(rates.value, c.currency)));
-const options = computed<SegmentOption<MainCurrency>[]>(() => rated.value.map((c) => ({ label: shortLabel(c.currency), tooltip: t(c.label), value: c.currency })));
+const options = computed<SegmentOption<AppCurrency>[]>(() => rated.value.map((c) => ({ label: shortLabel(c.currency), tooltip: t(c.label), value: c.currency })));
 // A main currency without a rate falls back to hryvnia on screen, so the control shows hryvnia too.
-const main = computed<MainCurrency>({
+const main = computed<AppCurrency>({
   get: () => (hasRate(rates.value, store.choice.main) ? store.choice.main : UAH),
   set: (v) => store.setMain(v),
 });

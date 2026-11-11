@@ -1,0 +1,78 @@
+{
+  "reader": "csob-account-csv-en",
+  "result": {
+    "ok": true,
+    "statements": [
+      {
+        "kind": "card",
+        "currencyCode": 203,
+        "account": {
+          "iban": "CZ6203000000000123456789",
+          "cards": [],
+          "type": null
+        },
+        "rows": [
+          {
+            "time": 1790719200,
+            "amount": -50000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -50000,
+            "bankCategory": "El. banking standing order",
+            "raw": "{\"date\":\"30.09.2026\",\"amount\":\"-500,00\",\"currency\":\"CZK\",\"balance\":\"10307,00\",\"counterAccount\":\"19-2000145399\",\"counterBank\":\"0800\",\"counterName\":\"Test Landlord\",\"type\":\"El. banking standing order number 7\",\"note\":\"\",\"category\":\"Outgoing unclassified\",\"original\":\"\",\"id\":\"TESTTRANS-0-0005\"}",
+            "description": "Test Landlord",
+            "balance": 1030700,
+            "counterIban": "CZ6508000000192000145399",
+            "counterName": "Test Landlord"
+          },
+          {
+            "time": 1790805600,
+            "amount": -30000,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -30000,
+            "bankCategory": "Bank transactions",
+            "raw": "{\"date\":\"01.10.2026\",\"amount\":\"-300,00\",\"currency\":\"CZK\",\"balance\":\"10007,00\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Foreign payment - fee\",\"note\":\"\",\"category\":\"Bank transactions\",\"original\":\"\",\"id\":\"TESTTRANS-0-0004\"}",
+            "description": "Foreign payment - fee",
+            "balance": 1000700
+          },
+          {
+            "time": 1790805600,
+            "amount": 6100000,
+            "currencyCode": 840,
+            "hold": false,
+            "operationAmount": 300000,
+            "bankCategory": "Incoming foreign payment",
+            "raw": "{\"date\":\"01.10.2026\",\"amount\":\"61000,00\",\"currency\":\"CZK\",\"balance\":\"71007,00\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"TEST EMPLOYER LTD\",\"type\":\"Incoming foreign payment\",\"note\":\"\",\"category\":\"Income\",\"original\":\"3 000,00 USD\",\"id\":\"TESTTRANS-0-0003\"}",
+            "description": "TEST EMPLOYER LTD",
+            "balance": 7100700,
+            "counterName": "TEST EMPLOYER LTD"
+          },
+          {
+            "time": 1790892000,
+            "amount": 34300,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": 34300,
+            "bankCategory": "Card transaction - refund",
+            "raw": "{\"date\":\"02.10.2026\",\"amount\":\"343,00\",\"currency\":\"CZK\",\"balance\":\"71350,00\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Card transaction - refund\",\"note\":\"Amount: 343 CZK 28.09.2026, Place: TEST SHOP\",\"category\":\"Income\",\"original\":\"343,00 CZK\",\"id\":\"TESTTRANS-0-0002\"}",
+            "description": "TEST SHOP",
+            "balance": 7135000
+          },
+          {
+            "time": 1790978400,
+            "amount": -123450,
+            "currencyCode": 203,
+            "hold": false,
+            "operationAmount": -123450,
+            "bankCategory": "Groceries",
+            "raw": "{\"date\":\"03.10.2026\",\"amount\":\"-1234,50\",\"currency\":\"CZK\",\"balance\":\"70115,50\",\"counterAccount\":\"\",\"counterBank\":\"\",\"counterName\":\"\",\"type\":\"Debit card transaction\",\"note\":\"Amount: 1234,50 CZK 01.10.2026, Place: TEST MARKET PRAHA\",\"category\":\"Groceries\",\"original\":\"\",\"id\":\"TESTTRANS-0-0001\"}",
+            "description": "TEST MARKET PRAHA",
+            "balance": 7011550
+          }
+        ],
+        "closingBalance": 7011550
+      }
+    ]
+  }
+}

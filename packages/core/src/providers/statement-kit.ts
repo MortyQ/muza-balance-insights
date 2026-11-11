@@ -8,13 +8,13 @@ import { excelSerialToUnix } from '../shared/excel-date.ts';
 import type { StatementDocument } from './types.ts';
 
 /**
- * The document's table as cell texts: a CSV text, or the first sheet of a workbook (an empty cell → ''). Null when it
- * is a PDF, not CSV, or a workbook without sheets.
+ * The document's table as cell texts: a CSV text (split on `separator`), or the first sheet of a workbook (an empty
+ * cell → ''). Null when it is a PDF, not CSV, or a workbook without sheets.
  */
-export function gridOf(doc: StatementDocument): string[][] | null {
+export function gridOf(doc: StatementDocument, separator: ',' | ';' = ','): string[][] | null {
   if (doc.format === 'text') {
     try {
-      return parseCsv(doc.text);
+      return parseCsv(doc.text, separator);
     } catch {
       return null;
     }

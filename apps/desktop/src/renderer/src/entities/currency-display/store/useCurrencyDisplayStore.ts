@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { RatesView } from '@contract/api.ts';
+import type { AppCurrency, AppCurrencyKey } from '@contract/currencies.ts';
 import { LEGACY_KEY, STORAGE_KEY } from '../constants.ts';
-import type { CurrencyChoice, CurrencyKey, MainCurrency } from '../types.ts';
+import type { CurrencyChoice } from '../types.ts';
 import { parseCurrencyChoice } from '../utils.ts';
 
 function save(choice: CurrencyChoice): void {
@@ -35,12 +36,12 @@ export const useCurrencyDisplayStore = defineStore('currency-display', () => {
   const choice = ref<CurrencyChoice>(read());
   const rates = ref<RatesView | null | undefined>(undefined);
 
-  function setMain(main: MainCurrency): void {
+  function setMain(main: AppCurrency): void {
     choice.value = { ...choice.value, main };
     save(choice.value);
   }
 
-  function setAlso(key: CurrencyKey, value: boolean): void {
+  function setAlso(key: AppCurrencyKey, value: boolean): void {
     choice.value = { ...choice.value, also: { ...choice.value.also, [key]: value } };
     save(choice.value);
   }
