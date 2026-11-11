@@ -1,11 +1,9 @@
 // Reserves: money the user keeps aside from what «Available per day» spreads over the days — a name of their own, an
 // amount in a main currency (counted at today's rate by the app), an optional last day, whose it is (or common). Like recurring marks, they live
 // in this database only: never an MCP tool, never the analysis copy.
+import { APP_CURRENCY_CODES, type AppCurrency, isAppCurrency } from '../shared/currency.ts';
 import type { Db } from '../storage/db.ts';
 
-/** The currencies a reserve is kept in: hryvnia, dollar, euro. */
-export const RESERVE_CURRENCIES = [980, 840, 978] as const;
-export type ReserveCurrency = (typeof RESERVE_CURRENCIES)[number];
 /** The largest amount: 100 million of the currency, minor units. */
 export const RESERVE_AMOUNT_MAX = 10_000_000_000;
 export const RESERVE_NAME_MAX = 60;
@@ -14,7 +12,7 @@ export const RESERVES_MAX = 20;
 
 export type ReserveInput = {
   name: string;
-  currency: ReserveCurrency;
+  currency: AppCurrency;
   /** Minor units of `currency`, 0 … RESERVE_AMOUNT_MAX. */
   amount: number;
   /** YYYY-MM-DD, the last day it counts; null — no end. */
@@ -41,7 +39,7 @@ function isDate(v: string): boolean {
 function checked(r: ReserveInput): ReserveInput {
   const name = r.name.trim();
   if (name.length < 1 || [...name].length > RESERVE_NAME_MAX) throw new ReserveError(`name: 1 … ${RESERVE_NAME_MAX} characters`);
-  if (!RESERVE_CURRENCIES.includes(r.currency)) throw new ReserveError(`currency: ${RESERVE_CURRENCIES.join(' | ')}`);
+  if (!isAppCurrency(r.currency)) throw new ReserveError(`currency: ${APP_CURRENCY_CODES.join(' | ')}`);
   if (!Number.isInteger(r.amount) || r.amount < 0 || r.amount > RESERVE_AMOUNT_MAX) throw new ReserveError(`amount: 0 … ${RESERVE_AMOUNT_MAX}`);
   if (r.until !== null && !isDate(r.until)) throw new ReserveError('until: YYYY-MM-DD | null');
   if (r.participantId !== null && !Number.isInteger(r.participantId)) throw new ReserveError('participantId: an id | null');
@@ -62,7 +60,7 @@ async function stored(db: Db, input: ReserveInput): Promise<ReserveInput> {
 const reserveOf = (r: Record<string, unknown>): Reserve => ({
   id: Number(r.id),
   name: String(r.name),
-  currency: Number(r.currency) as ReserveCurrency,
+  currency: Number(r.currency) as AppCurrency,
   amount: Number(r.amount),
   until: r.until === null || r.until === undefined ? null : String(r.until),
   participantId: r.participant_id === null || r.participant_id === undefined ? null : Number(r.participant_id),

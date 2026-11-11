@@ -1,5 +1,6 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { GoalCurrency, GoalPayload, LimitPeriod, LimitsOverview } from '@contract/api.ts';
+import type { GoalPayload, LimitPeriod, LimitsOverview } from '@contract/api.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import type { KindCategoryId } from '@contract/categories.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
 import type { GoalHelp, LimitLook } from '@/entities/goal';
@@ -93,7 +94,7 @@ export interface UseLimitsGoalsReturn {
   /** Whom a plan can belong to, in a family of several; empty — no choice. */
   owners: ComputedRef<Array<{ id: number; name: string }>>;
   defaultOwner: ComputedRef<number | null>;
-  defaultCurrency: ComputedRef<GoalCurrency>;
+  defaultCurrency: ComputedRef<AppCurrency>;
   save: (id: number | null, g: GoalPayload) => Promise<boolean>;
   remove: (id: number) => Promise<boolean>;
   addSuggested: () => Promise<boolean>;

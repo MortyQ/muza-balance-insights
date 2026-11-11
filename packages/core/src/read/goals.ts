@@ -2,17 +2,18 @@
 // goals. Plain writes like reserves.ts: nothing derived depends on them, every read counts them at query time. The
 // checks here come before the table's: a refused plan stores nothing.
 import { CATEGORY } from '../derive/categories.ts';
+import { APP_CURRENCY_CODES, type AppCurrency, isAppCurrency } from '../shared/currency.ts';
 import type { Db } from '../storage/db.ts';
 import { DEFAULT_KINDS } from './category-kinds.ts';
 import { LIMIT_PERIODS, type LimitPeriod } from './limits.ts';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, type ReserveCurrency } from './reserves.ts';
+import { RESERVE_AMOUNT_MAX } from './reserves.ts';
 
 export const GOAL_NAME_MAX = 60;
 /** How many limits (the budget included) and savings goals there can be. */
 export const LIMITS_MAX = 50;
 export const SAVINGS_MAX = 20;
 
-type Owner = { currency: ReserveCurrency; amount: number; participantId: number | null };
+type Owner = { currency: AppCurrency; amount: number; participantId: number | null };
 export type LimitInput = Owner & { type: 'limit'; category: string; period: LimitPeriod };
 /** `countTaxes` false: taxes stay out of the flexible part and cannot be a fixed row. */
 export type BudgetInput = Owner & { type: 'budget'; fixed: Array<{ category: string; amount: number }>; countTaxes: boolean };
@@ -34,7 +35,7 @@ const amountOk = (n: number) => Number.isInteger(n) && n > 0 && n <= RESERVE_AMO
 
 /** The input as stored (a name trimmed); an invalid one → GoalError. */
 function checked(g: GoalInput): GoalInput {
-  if (!RESERVE_CURRENCIES.includes(g.currency)) throw new GoalError(`currency: ${RESERVE_CURRENCIES.join(' | ')}`);
+  if (!isAppCurrency(g.currency)) throw new GoalError(`currency: ${APP_CURRENCY_CODES.join(' | ')}`);
   if (!amountOk(g.amount)) throw new GoalError(`amount: 1 … ${RESERVE_AMOUNT_MAX}`);
   if (g.participantId !== null && !Number.isInteger(g.participantId)) throw new GoalError('participantId: an id | null');
   switch (g.type) {
@@ -152,7 +153,7 @@ export async function listGoals(db: Db): Promise<Goal[]> {
   const fixed = await db.execute('SELECT goal_id, category, amount FROM goal_fixed ORDER BY rowid');
   const rowsOf = (id: number) => fixed.rows.filter((r) => Number(r.goal_id) === id).map((r) => ({ category: String(r.category), amount: Number(r.amount) }));
   return rs.rows.map((r): Goal => {
-    const base = { id: Number(r.id), currency: Number(r.currency) as ReserveCurrency, amount: Number(r.amount), participantId: r.participant_id === null ? null : Number(r.participant_id) };
+    const base = { id: Number(r.id), currency: Number(r.currency) as AppCurrency, amount: Number(r.amount), participantId: r.participant_id === null ? null : Number(r.participant_id) };
     if (r.type === 'limit') return { ...base, type: 'limit', category: String(r.category), period: String(r.period) as LimitPeriod };
     if (r.type === 'budget') return { ...base, type: 'budget', fixed: rowsOf(base.id), countTaxes: Number(r.count_taxes) !== 0 };
     return {

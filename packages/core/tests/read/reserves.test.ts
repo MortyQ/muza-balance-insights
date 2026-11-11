@@ -140,7 +140,7 @@ describe('migration v14', () => {
 
   it('one person: the reserves so far become theirs', async () => {
     const old = await at13(['Я']);
-    expect(await migrate(old, 0)).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22]);
+    expect(await migrate(old, 0)).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
     const me = Number((await old.execute('SELECT id FROM participants')).rows[0]?.id);
     expect((await listReserves(old))[0]?.participantId).toBe(me);
     old.close();
@@ -148,7 +148,7 @@ describe('migration v14', () => {
 
   it('a family: they stay common', async () => {
     const old = await at13(['Я', 'Вигадана']);
-    expect(await migrate(old, 0)).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22]);
+    expect(await migrate(old, 0)).toEqual([14, 15, 16, 17, 18, 19, 20, 21, 22, 23]);
     expect((await listReserves(old))[0]?.participantId).toBeNull();
     old.close();
   });

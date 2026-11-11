@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { RESERVES_MAX, type ReserveCurrency, type ReserveInput } from '@contract/allowance.ts';
+import { RESERVES_MAX, type ReserveInput } from '@contract/allowance.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { VButton } from '@/shared/ui';
 import type { ReserveRowView } from '../types.ts';
 import ReserveForm from './ReserveForm.vue';
@@ -23,7 +24,7 @@ const { rows, currency, owners, owner, today, save, remove } = defineProps<{
 const editing = ref<'new' | number | null>(null);
 const failed = ref<'save' | 'delete' | 'done' | null>(null);
 const full = computed(() => rows.length >= RESERVES_MAX);
-const fresh = computed<ReserveInput>(() => ({ name: '', currency: currency as ReserveCurrency, amount: 0, until: null, participantId: owner }));
+const fresh = computed<ReserveInput>(() => ({ name: '', currency: currency as AppCurrency, amount: 0, until: null, participantId: owner }));
 
 function open(what: 'new' | number) {
   failed.value = null;

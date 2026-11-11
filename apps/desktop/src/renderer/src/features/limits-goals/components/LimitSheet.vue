@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { GoalCurrency, GoalPayload, LimitPeriod, LimitsOverview } from '@contract/api.ts';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES } from '@contract/allowance.ts';
+import type { GoalPayload, LimitPeriod, LimitsOverview } from '@contract/api.ts';
+import { RESERVE_AMOUNT_MAX } from '@contract/allowance.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { KIND_CATEGORY_IDS, type KindCategoryId } from '@contract/categories.ts';
 import { goalMinor } from '@/entities/goal';
+import { currencyOptions, useCurrencyDisplayStore } from '@/entities/currency-display';
 import { currencySymbol, t } from '@/shared/lib';
 import { VButton, VInput, VSegmentedControl, VSelect, VSheet, type VSelectOption } from '@/shared/ui';
 import type { SheetStart } from '../types.ts';
@@ -24,7 +26,7 @@ const emit = defineEmits<{ save: [id: number | null, g: GoalPayload]; delete: [i
 const FAMILY = 'family';
 const category = ref<KindCategoryId>('cafes');
 const amount = ref('');
-const currency = ref<GoalCurrency>(980);
+const currency = ref<AppCurrency>(980);
 const period = ref<LimitPeriod>('month');
 const owner = ref<number | string>(FAMILY);
 const tried = ref(false);
@@ -52,7 +54,8 @@ const categories = computed<VSelectOption[]>(() =>
     value: id,
   })),
 );
-const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
+const currencyStore = useCurrencyDisplayStore();
+const currencies = computed(() => currencyOptions(currencyStore.rates ?? null, currency.value));
 const periods = computed(() => (['day', 'week', 'month'] as const).map((p) => ({ value: p, label: t(`limits.period.${p}`) })));
 const ownerOptions = computed<VSelectOption[]>(() => [...owners.map((p) => ({ label: p.name, value: p.id })), { label: t('limits.owner.family'), value: FAMILY }]);
 

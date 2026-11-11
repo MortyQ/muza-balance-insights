@@ -3,6 +3,13 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
+## 0.1.16 — unreleased
+
+### Budget and limits
+
+- The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,
+  Czech koruna included, and a new one starts in the currency the switch shows.
+
 ## 0.1.15 — 2026-11-11
 
 ### Home

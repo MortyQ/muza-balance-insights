@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { GoalCurrency, GoalPayload, LimitsOverview } from '@contract/api.ts';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX } from '@contract/allowance.ts';
+import type { GoalPayload, LimitsOverview } from '@contract/api.ts';
+import { RESERVE_AMOUNT_MAX, RESERVE_NAME_MAX } from '@contract/allowance.ts';
+import { type AppCurrency, isAppCurrency } from '@contract/currencies.ts';
 import { accountName } from '@/entities/bank';
 import { goalMinor } from '@/entities/goal';
-import { currencySymbol, formatMoney, t } from '@/shared/lib';
+import { currencyOptions, useCurrencyDisplayStore } from '@/entities/currency-display';
+import { formatMoney, t } from '@/shared/lib';
 import { VButton, VCheckbox, VDatepicker, VInput, VSegmentedControl, VSelect, VSheet, type VSelectOption } from '@/shared/ui';
 import type { SheetStart } from '../types.ts';
 
@@ -22,7 +24,7 @@ const emit = defineEmits<{ save: [id: number | null, g: GoalPayload]; delete: [i
 const FAMILY = 'family';
 const name = ref('');
 const amount = ref('');
-const currency = ref<GoalCurrency>(980);
+const currency = ref<AppCurrency>(980);
 const source = ref<'jar' | 'own'>('jar');
 const jar = ref<string | null>(null);
 const noDate = ref(true);
@@ -36,8 +38,8 @@ const confirming = ref(false);
 watch(jar, (id) => {
   const j = overview.jars.find((x) => x.id === id);
   if (!j || j.goal === null || amount.value !== '') return;
-  if ((RESERVE_CURRENCIES as readonly number[]).includes(j.currency)) {
-    currency.value = j.currency as GoalCurrency;
+  if (isAppCurrency(j.currency)) {
+    currency.value = j.currency;
     amount.value = String(Math.round(j.goal / 100));
   }
 });
@@ -60,7 +62,8 @@ watch(
   { immediate: true },
 );
 
-const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
+const currencyStore = useCurrencyDisplayStore();
+const currencies = computed(() => currencyOptions(currencyStore.rates ?? null, currency.value));
 const sources = computed(() => [
   { value: 'jar' as const, label: t('limits.goals.sourceJar'), disabled: overview.jars.length === 0 },
   { value: 'own' as const, label: t('limits.goals.sourceOwn') },

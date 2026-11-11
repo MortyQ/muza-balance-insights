@@ -1,6 +1,7 @@
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import type { GoalCurrency, GoalPayload } from '@contract/api.ts';
+import type { GoalPayload } from '@contract/api.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
 import { useCurrencyDisplayStore, useMoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
 import { useMonthStore } from '@/entities/period';
@@ -56,8 +57,7 @@ export function useLimitsGoals(): UseLimitsGoalsReturn {
     fmt,
     owners: computed(() => (participant.multiple ? participant.people.map((p) => ({ id: p.id, name: p.label })) : [])),
     defaultOwner: computed(() => participant.selectedId),
-    // Goals keep to hryvnia, dollars and euros: a koruna main currency starts a new goal in hryvnia.
-    defaultCurrency: computed<GoalCurrency>(() => (currencies.choice.main === 203 ? 980 : currencies.choice.main)),
+    defaultCurrency: computed<AppCurrency>(() => currencies.choice.main),
     save: (id: number | null, g: GoalPayload) => done(() => api.saveGoal(id, g)),
     remove: (id: number) => done(() => api.deleteGoal(id)),
     addSuggested: () => done(() => api.addSuggested(participantId() !== null ? { participantId: participantId()! } : {})),

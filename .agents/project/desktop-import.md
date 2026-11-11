@@ -192,7 +192,7 @@
   `leftOut`) − the reserve − the active regular payments marked mandatory whose next date is before `until`, over
   `days`. `until` — the next regular income (`findRecurring` `kind: 'income'`, each person's largest with a rate, the
   earliest still to come), else — none, or due today or earlier (`overdue`) — the next month's first day. The reserves are
-  core `reserves.ts` (table `reserves`, migration 13: name, currency 980 | 840 | 978, amount in its minor units, `until`
+  core `reserves.ts` (table `reserves`, migration 13: name, currency — one of `APP_CURRENCIES` (core `shared/currency.ts`; koruna since migration 23), amount in its minor units, `until`
   — the last day it counts or null; migration 14: `participant_id` — whose, or null for common; a removed person's become
   common; with one person only, the reserves so far became theirs; migration 22: `done_at` — when marked done, epoch
   seconds, null — active; at most `RESERVES_MAX`, done ones included; database only, so encrypted and gone with «Delete all data»,

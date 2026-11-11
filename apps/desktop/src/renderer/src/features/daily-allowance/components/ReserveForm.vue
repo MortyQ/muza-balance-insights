@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX, type ReserveCurrency, type ReserveInput } from '@contract/allowance.ts';
-import { currencySymbol, t } from '@/shared/lib';
+import { RESERVE_AMOUNT_MAX, RESERVE_NAME_MAX, type ReserveInput } from '@contract/allowance.ts';
+import type { AppCurrency } from '@contract/currencies.ts';
+import { currencyOptions, useCurrencyDisplayStore } from '@/entities/currency-display';
+import { t } from '@/shared/lib';
 import { VButton, VCheckbox, VDatepicker, VInput, VSelect, type VSelectOption } from '@/shared/ui';
 import { reserveMinor } from '../utils.ts';
 
@@ -19,7 +21,7 @@ const emit = defineEmits<{ save: [r: ReserveInput]; cancel: [] }>();
 
 const name = ref(start.name);
 const amount = ref(start.amount > 0 ? String(start.amount / 100) : '');
-const currency = ref<ReserveCurrency>(start.currency);
+const currency = ref<AppCurrency>(start.currency);
 const noEnd = ref(start.until === null);
 const until = ref<string | null>(start.until);
 const tried = ref(false);
@@ -31,7 +33,8 @@ const ownerOptions = computed<VSelectOption[]>(() => [
   { label: t('home.allowance.reserves.common'), value: COMMON },
 ]);
 
-const currencies: VSelectOption[] = RESERVE_CURRENCIES.map((c) => ({ label: currencySymbol(c), value: c }));
+const currencyStore = useCurrencyDisplayStore();
+const currencies = computed(() => currencyOptions(currencyStore.rates ?? null, currency.value));
 const minor = computed(() => reserveMinor(amount.value, RESERVE_AMOUNT_MAX));
 const nameOk = computed(() => {
   const n = [...name.value.trim()].length;

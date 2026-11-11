@@ -2,9 +2,10 @@
 // (src/main/ipc.ts), and the data process checks its calls with the same pieces (src/shared/data-protocol.ts).
 import { z } from 'zod';
 import { PROVIDER_IDS } from '@mono/core/providers/types';
-import { RESERVE_AMOUNT_MAX, RESERVE_CURRENCIES, RESERVE_NAME_MAX } from './allowance.ts';
+import { RESERVE_AMOUNT_MAX, RESERVE_NAME_MAX } from './allowance.ts';
 import type { Method } from './channels.ts';
 import { CATEGORY_IDS, KIND_CATEGORY_IDS } from './categories.ts';
+import { APP_CURRENCY_CODES } from './currencies.ts';
 import { COLOR_KEYS } from './colors.ts';
 import { LOCALES } from './locale.ts';
 import { PIN_RE } from './lock.ts';
@@ -24,13 +25,13 @@ export const providers = z
 // A reserve of «Available per day»: core (reserves.ts) checks the same again.
 const reserve = z.strictObject({
   name: z.string().refine((v) => v.trim().length > 0 && [...v.trim()].length <= RESERVE_NAME_MAX),
-  currency: z.union(RESERVE_CURRENCIES.map((c) => z.literal(c))),
+  currency: z.union(APP_CURRENCY_CODES.map((c) => z.literal(c))),
   amount: z.number().int().min(0).max(RESERVE_AMOUNT_MAX),
   until: z.string().refine(isIsoDate).nullable(),
   participantId: id.nullable(),
   done: z.boolean().optional(),
 });
-const goalCurrency = z.union(RESERVE_CURRENCIES.map((c) => z.literal(c)));
+const goalCurrency = z.union(APP_CURRENCY_CODES.map((c) => z.literal(c)));
 const goalAmount = z.number().int().min(1).max(RESERVE_AMOUNT_MAX);
 const kindCategory = z.enum(KIND_CATEGORY_IDS);
 const goal = z.discriminatedUnion('type', [

@@ -1,13 +1,12 @@
 import type { MessageKey } from '@contract/i18n/index.ts';
-import type { CurrencyKey, MainCurrency } from './types.ts';
+import { APP_CURRENCIES, type AppCurrency, type AppCurrencyKey } from '@contract/currencies.ts';
 
-/** The currencies of the switch, in menu order. */
-export const CURRENCIES: ReadonlyArray<{ currency: MainCurrency; key: CurrencyKey; label: MessageKey }> = [
-  { currency: 980, key: 'uah', label: 'entities.currencyDisplay.uah' },
-  { currency: 840, key: 'usd', label: 'entities.currencyDisplay.usd' },
-  { currency: 978, key: 'eur', label: 'entities.currencyDisplay.eur' },
-  { currency: 203, key: 'czk', label: 'entities.currencyDisplay.czk' },
-];
+/** The currencies of the switch, in menu order: the app's one list (core's `APP_CURRENCIES`). */
+export const CURRENCIES: ReadonlyArray<{ currency: AppCurrency; key: AppCurrencyKey; label: MessageKey }> = APP_CURRENCIES.map((c) => ({
+  currency: c.code,
+  key: c.key,
+  label: `entities.currencyDisplay.${c.key}` as const,
+}));
 
 /** localStorage key of the choice (a convenience: defaults when storage is unavailable). */
 export const STORAGE_KEY = 'home.currencies';
