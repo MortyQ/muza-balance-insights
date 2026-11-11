@@ -23,6 +23,20 @@ describe('csob-account-csv-en', () => {
     expect(csobAccountReader.detect({ format: 'pdf', items: [] } as unknown as StatementDocument)).toBe(0);
   });
 
+  it('the semicolon export: bare fields, decimal commas, the same rows as the comma one', () => {
+    const rows: Row[] = [
+      { date: '02.10.2026', amount: '-1234,50', type: 'Debit card transaction', category: 'Groceries', note: 'Amount: 1234,50 CZK, Place: TEST MARKET PRAHA' },
+      { date: '01.10.2026', amount: '61000,00', type: 'Incoming foreign payment', category: 'Income', original: '3 000,00 USD' },
+    ];
+    const semi = csobDocument(rows, { semicolons: true });
+    expect(csobAccountReader.detect(semi)).toBe(2);
+    expect(csobAccountReader.detect(csobDocument(rows, { semicolons: true, title: false }))).toBe(1);
+    const a = statementOf(semi).rows.map(({ raw: _raw, ...r }) => r);
+    const b = statementOf(csobDocument(rows)).rows.map(({ raw: _raw, ...r }) => r);
+    expect(a).toEqual(b);
+    expect(a.map((r) => [r.amount, r.currencyCode, r.operationAmount])).toEqual([[6_100_000, 840, 300_000], [-123_450, 203, -123_450]]);
+  });
+
   it('leaves a Monobank CSV alone, and Monobank leaves ČSOB alone', () => {
     const url = new URL('../monobank/fixtures/conformance/card-uk.document.json', import.meta.url);
     const mono = JSON.parse(fs.readFileSync(url, 'utf8')) as StatementDocument;
@@ -101,6 +115,11 @@ describe('csob-account-csv-en', () => {
   it('the description is the note\'s place, else the counterparty, else the type', () => {
     expect(one({ date: '01.10.2026', amount: '99', type: 'Debit card transaction', note: 'Amount: 99,00 CZK, Place: TEST MARKET PRAHA' }).description).toBe('TEST MARKET PRAHA');
     expect(one({ date: '01.10.2026', amount: '99', type: 'Debit card transaction' }).description).toBe('Debit card transaction');
+  });
+
+  it('a card refund stores its type whatever the category, so the rules count it as a refund, not income', () => {
+    expect(one({ date: '01.10.2026', amount: '343', type: 'Card transaction - refund', category: 'Income' }).bankCategory).toBe('Card transaction - refund');
+    expect(one({ date: '01.10.2026', amount: '343', type: 'Card transaction - refund', category: 'Groceries' }).bankCategory).toBe('Card transaction - refund');
   });
 
   it('a transfer with a generic category stores its type; one with its own category keeps it', () => {

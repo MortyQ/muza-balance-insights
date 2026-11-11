@@ -1,11 +1,12 @@
-// A CSV reader for statement files (RFC 4180): comma-separated, a field in double quotes may hold commas, line
-// breaks and doubled quotes. A leading BOM is dropped; an empty last line is not a row. Banks write nothing fancier.
+// A CSV reader for statement files (RFC 4180): comma-separated (or another separator a bank uses, ČSOB's `;`), a field
+// in double quotes may hold separators, line breaks and doubled quotes. A leading BOM is dropped; an empty last line is
+// not a row. Banks write nothing fancier.
 
 export class CsvError extends Error {
   override name = 'CsvError';
 }
 
-export function parseCsv(input: string): string[][] {
+export function parseCsv(input: string, separator: ',' | ';' = ','): string[][] {
   const text = input.startsWith('﻿') ? input.slice(1) : input;
   const rows: string[][] = [];
   let row: string[] = [];
@@ -36,7 +37,7 @@ export function parseCsv(input: string): string[][] {
     }
     if (ch === '"' && field === '') {
       quoted = true;
-    } else if (ch === ',') {
+    } else if (ch === separator) {
       row.push(field);
       field = '';
     } else if (ch === '\r' && text[i + 1] === '\n') {

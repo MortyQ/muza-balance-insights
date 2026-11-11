@@ -73,12 +73,16 @@ export function rowCells(r: Row): string[] {
 }
 
 const quote = (c: string) => `"${c.replace(/"/g, '""')}"`;
-const line = (cells: readonly string[]) => cells.map(quote).join(',');
 
-/** A whole document; rows newest first, as the bank writes them. */
-export function csobDocument(rows: readonly Row[], opts: { title?: boolean; trailing?: number } = {}): StatementDocument {
+/**
+ * A whole document; rows newest first, as the bank writes them. `semicolons`: the other export the bank gives —
+ * `;` between bare fields (the title unquoted too), as seen on 2026-11-11.
+ */
+export function csobDocument(rows: readonly Row[], opts: { title?: boolean; trailing?: number; semicolons?: boolean } = {}): StatementDocument {
+  const line = (cells: readonly string[]) => (opts.semicolons ? cells.join(';') : cells.map(quote).join(','));
+  const title = `Payment history ${ACCOUNT} on 07.10.2026 12:00:00.`;
   const lines: string[] = [];
-  if (opts.title !== false) lines.push(quote(`Payment history ${ACCOUNT} on 07.10.2026 12:00:00.`), '');
+  if (opts.title !== false) lines.push(opts.semicolons ? title : quote(title), '');
   lines.push(line(HEADER));
   for (const r of rows) lines.push(line(rowCells(r)));
   for (let i = 0; i < (opts.trailing ?? 0); i++) {

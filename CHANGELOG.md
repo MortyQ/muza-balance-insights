@@ -10,6 +10,12 @@ English interface.
 - The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,
   Czech koruna included, and a new one starts in the currency the switch shows.
 
+### Statements
+
+- ČSOB statements exported with semicolons between the columns upload like the comma-separated ones; before, such a
+  file was refused as an unknown format, so none of its transactions, incoming payments included, reached the app.
+- A ČSOB card refund counts as money back on the purchase, not as income.
+
 ## 0.1.15 — 2026-11-11
 
 ### Home
