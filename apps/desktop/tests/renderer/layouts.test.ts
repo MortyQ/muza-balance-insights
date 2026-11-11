@@ -117,6 +117,8 @@ describe('MasterLayout', () => {
     expect(main.classes()).not.toContain('bg-surface');
     expect(main.get('[data-test="layout-header"]').find('[data-test="filters"]').exists()).toBe(true);
     expect(main.find('[data-test="layout-scroll"]').exists()).toBe(true);
+    // Nothing on a screen widens the scroll area: no sideways scroll.
+    expect(main.get('[data-test="layout-content"]').classes()).toContain('overflow-x-clip');
     expect(main.find('aside.sidebar').exists()).toBe(false);
     expect(w.find('[data-page="home"]').exists()).toBe(true);
     w.unmount();
