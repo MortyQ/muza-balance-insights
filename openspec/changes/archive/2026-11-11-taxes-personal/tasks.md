@@ -13,7 +13,7 @@
 
 ## 3. Checks
 
-- [ ] 3.1 Run each package's typecheck and vitest from its folder (core, mcp, desktop), then `pnpm --filter @mono/mcp recategorize` once to re-scope the MCP database; ask the user to run `pnpm test` and `pnpm typecheck` at the root
+- [x] 3.1 Run each package's typecheck and vitest from its folder (core, mcp, desktop), then `pnpm --filter @mono/mcp recategorize` once to re-scope the MCP database; ask the user to run `pnpm test` and `pnpm typecheck` at the root
 
 ## Workflow follow-up
 
