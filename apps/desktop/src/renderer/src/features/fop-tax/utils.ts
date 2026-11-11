@@ -1,52 +1,60 @@
 import type { FopTaxOverview, Quarter } from '@contract/api.ts';
-import { quarterBounds } from '@contract/quarters.ts';
 import type { MoneyFormat } from '@/entities/currency-display';
-import { formatMoney, fullDate, i18n, monthName, t } from '@/shared/lib';
-import { AMOUNT_MAX, PERCENT_MAX, YEARS_BACK } from './constants.ts';
+import { formatMoney, i18n, monthName, monthShortName, t } from '@/shared/lib';
+import type { MonthRangePreset } from '@/shared/ui';
+import { AMOUNT_MAX, PERCENT_MAX } from './constants.ts';
 import type { BaseChoice, FopTaxView, PeriodPick, TaxRowView } from './types.ts';
 
-/** The years the picker offers: this one and YEARS_BACK before it, newest first. */
-export function yearOptions(current: number): number[] {
-  return Array.from({ length: YEARS_BACK + 1 }, (_, i) => current - i);
-}
-
-/** A quarter is offered unless it is after today's. */
-export function quarterAllowed(year: number, quarter: Quarter, current: { year: number; quarter: Quarter }): boolean {
-  return year < current.year || (year === current.year && quarter <= current.quarter);
-}
-
 const lastDay = (year: number, month: number) => new Date(Date.UTC(year, month, 0)).getUTCDate();
+const monthNum = (ym: string) => Number(ym.slice(5, 7));
+const yearNum = (ym: string) => Number(ym.slice(0, 4));
+const ym = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 
-/** The picked period's first and last day (main cuts the end at today). */
+/** The picked months' first and last day (main cuts the end at today). */
 export function periodBounds(p: PeriodPick): { from: string; to: string } {
-  switch (p.kind) {
-    case 'month': {
-      const [y, m] = p.month.split('-').map(Number) as [number, number];
-      return { from: `${p.month}-01`, to: `${p.month}-${String(lastDay(y, m)).padStart(2, '0')}` };
-    }
-    case 'quarter':
-      return quarterBounds(p.year, p.quarter);
-    case 'year':
-      return { from: `${p.year}-01-01`, to: `${p.year}-12-31` };
-    case 'dates':
-      return { from: p.from, to: p.to };
-  }
+  return { from: `${p.from}-01`, to: `${p.to}-${String(lastDay(yearNum(p.to), monthNum(p.to))).padStart(2, '0')}` };
 }
 
-/** The period in words: «September 2026», «Q4 2026», «2026», «15 March 2026 – 20 June 2026». */
-export function periodName(p: PeriodPick): string {
-  switch (p.kind) {
-    case 'month': {
-      const [y, m] = p.month.split('-').map(Number) as [number, number];
-      return `${monthName(m)} ${y}`;
-    }
-    case 'quarter':
-      return t('fopTax.quarterName', { n: p.quarter, year: p.year });
-    case 'year':
-      return t('fopTax.yearName', { year: p.year });
-    case 'dates':
-      return p.from === p.to ? fullDate(p.from) : `${fullDate(p.from)} – ${fullDate(p.to)}`;
-  }
+/**
+ * The quarter the pick is: its first month to its last, or to this month while the quarter runs; null — not a quarter.
+ * A quarter also shows the year to date.
+ */
+export function quarterOfPick(p: PeriodPick, thisMonth: string): { year: number; quarter: Quarter } | null {
+  const m = monthNum(p.from);
+  if ((m - 1) % 3 !== 0 || yearNum(p.to) !== yearNum(p.from)) return null;
+  const end = ym(yearNum(p.from), m + 2);
+  return p.to === end || (p.to === thisMonth && p.to < end) ? { year: yearNum(p.from), quarter: ((m - 1) / 3 + 1) as Quarter } : null;
+}
+
+/** The pick in words: «September 2026», «Q4 2026», «2026», «Mar 2026 – Jun 2026». */
+export function periodName(p: PeriodPick, thisMonth: string): string {
+  if (p.from === p.to) return `${monthName(monthNum(p.from))} ${yearNum(p.from)}`;
+  const q = quarterOfPick(p, thisMonth);
+  if (q) return t('fopTax.quarterName', { n: q.quarter, year: q.year });
+  const y = yearNum(p.from);
+  if (p.from === ym(y, 1) && (p.to === ym(y, 12) || (p.to === thisMonth && yearNum(thisMonth) === y))) return t('fopTax.yearName', { year: y });
+  return `${monthShortName(monthNum(p.from))} ${yearNum(p.from)} – ${monthShortName(monthNum(p.to))} ${yearNum(p.to)}`;
+}
+
+/** The picker's quick picks: this and last month; this and last quarter, this and last year (never past this month). */
+export function fopPresets(thisMonth: string): { month: MonthRangePreset[]; range: MonthRangePreset[] } {
+  const y = yearNum(thisMonth);
+  const m = monthNum(thisMonth);
+  const last = m === 1 ? ym(y - 1, 12) : ym(y, m - 1);
+  const qStart = Math.floor((m - 1) / 3) * 3 + 1;
+  const lastQ = qStart === 1 ? { from: ym(y - 1, 10), to: ym(y - 1, 12) } : { from: ym(y, qStart - 3), to: ym(y, qStart - 1) };
+  return {
+    month: [
+      { id: 'this', label: t('fopTax.preset.thisMonth'), from: thisMonth, to: thisMonth },
+      { id: 'last', label: t('fopTax.preset.lastMonth'), from: last, to: last },
+    ],
+    range: [
+      { id: 'q', label: t('fopTax.preset.thisQuarter'), from: ym(y, qStart), to: thisMonth },
+      { id: 'lq', label: t('fopTax.preset.lastQuarter'), ...lastQ },
+      { id: 'y', label: t('fopTax.preset.thisYear'), from: ym(y, 1), to: thisMonth },
+      { id: 'ly', label: t('fopTax.preset.lastYear', { year: y - 1 }), from: ym(y - 1, 1), to: ym(y - 1, 12) },
+    ],
+  };
 }
 
 /** A typed percent («5», «5,5», «0.5»): above 0, at most PERCENT_MAX, up to two decimals; null — not one. */

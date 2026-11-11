@@ -283,9 +283,9 @@
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
   `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
-  its own `PeriodPicker` (`PeriodPick`: kind Month / Quarter / Year / «Dates» — `VMonthPicker`, year `VSelect` + Q1–Q4
-  `VSegmentedControl` with later quarters disabled, two `VDatepicker`s; nothing after today; today's quarter at first;
-  `periodBounds` → days). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
+  its own `PeriodPicker` — the «Analytics» `VMonthRangePicker` (`PeriodPick`: YYYY-MM from–to; nothing after this
+  month; presets `fopPresets`: this / last month, quarter, year; this quarter so far at first; `periodBounds` → days,
+  `quarterOfPick` → the year-to-date row). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
   bank filter does not apply; `yearToDate` for a quarter only). `RatePicker`: presets `FOP_RATES` 5 / 6 and an own
   percent field (`percentValue`; a valid one unmarks the preset, a preset click clears it), base «Income on FOP
   accounts» (only while `available`; the default then) / «All income» / «Custom amount» (`amountMinor`; hides the

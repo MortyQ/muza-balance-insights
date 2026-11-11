@@ -8,7 +8,7 @@ import type { FopTaxOverview, FopTaxQuery } from '@contract/api.ts';
 import { quarterBounds, quarterOf } from '@contract/quarters.ts';
 import { moneyFormat } from '@/entities/currency-display';
 import type { PeriodPick } from '@/features/fop-tax/types.ts';
-import { amountMinor, percentValue, periodBounds, periodName, quarterAllowed, taxMinor, taxView, yearOptions } from '@/features/fop-tax/utils.ts';
+import { amountMinor, fopPresets, percentValue, periodBounds, periodName, quarterOfPick, taxMinor, taxView } from '@/features/fop-tax/utils.ts';
 import { formatMoney } from '@/shared/lib';
 
 const uah = (k: number) => formatMoney(k, 980);
@@ -22,30 +22,37 @@ const VIEW: FopTaxOverview = {
   yearToDate: { from: '2026-01-01', to: '2026-11-10', total: 40_000_000, lines: 15, leftOut: [], incomplete: true },
   rates: RATES,
 };
-const pick = (o: Partial<PeriodPick>): PeriodPick => ({ kind: 'quarter', month: '2026-11', year: 2026, quarter: 4, from: '2026-11-01', to: '2026-11-10', ...o });
+const pick = (from: string, to = from): PeriodPick => ({ from, to });
 
 describe('FOP tax helpers', () => {
-  it('quarters: of a date, their bounds, the ones offered, the years', () => {
+  it('quarters of a date and their bounds', () => {
     expect(quarterOf('2026-11-10')).toEqual({ year: 2026, quarter: 4 });
     expect(quarterOf('2026-03-31')).toEqual({ year: 2026, quarter: 1 });
     expect(quarterBounds(2024, 1)).toEqual({ from: '2024-01-01', to: '2024-03-31' });
-    expect(quarterBounds(2026, 2)).toEqual({ from: '2026-04-01', to: '2026-06-30' });
     expect(quarterBounds(2026, 4)).toEqual({ from: '2026-10-01', to: '2026-12-31' });
-    const now = { year: 2026, quarter: 2 } as const;
-    expect([1, 2, 3, 4].map((q) => quarterAllowed(2026, q as 1 | 2 | 3 | 4, now))).toEqual([true, true, false, false]);
-    expect(quarterAllowed(2025, 4, now)).toBe(true);
-    expect(yearOptions(2026)).toEqual([2026, 2025, 2024, 2023]);
   });
 
-  it('a period of each kind: its days and its name', () => {
-    expect(periodBounds(pick({ kind: 'month', month: '2024-02' }))).toEqual({ from: '2024-02-01', to: '2024-02-29' });
-    expect(periodBounds(pick({ kind: 'quarter', year: 2025, quarter: 3 }))).toEqual({ from: '2025-07-01', to: '2025-09-30' });
-    expect(periodBounds(pick({ kind: 'year', year: 2025 }))).toEqual({ from: '2025-01-01', to: '2025-12-31' });
-    expect(periodBounds(pick({ kind: 'dates', from: '2026-03-15', to: '2026-06-20' }))).toEqual({ from: '2026-03-15', to: '2026-06-20' });
-    expect(periodName(pick({ kind: 'month', month: '2026-09' }))).toBe('Сентябрь 2026');
-    expect(periodName(pick({}))).toBe('4 квартал 2026');
-    expect(periodName(pick({ kind: 'year', year: 2025 }))).toBe('2025 год');
-    expect(periodName(pick({ kind: 'dates', from: '2026-03-15', to: '2026-06-20' }))).toContain(' – ');
+  it('a month pick: its days, whether it is a quarter, its name; the quick picks', () => {
+    expect(periodBounds(pick('2024-02'))).toEqual({ from: '2024-02-01', to: '2024-02-29' });
+    expect(periodBounds(pick('2026-03', '2026-06'))).toEqual({ from: '2026-03-01', to: '2026-06-30' });
+    expect(quarterOfPick(pick('2025-07', '2025-09'), '2026-11')).toEqual({ year: 2025, quarter: 3 });
+    expect(quarterOfPick(pick('2026-10', '2026-11'), '2026-11')).toEqual({ year: 2026, quarter: 4 });
+    expect(quarterOfPick(pick('2026-08', '2026-10'), '2026-11')).toBeNull();
+    expect(quarterOfPick(pick('2026-10'), '2026-12')).toBeNull();
+    expect(periodName(pick('2026-09'), '2026-11')).toBe('Сентябрь 2026');
+    expect(periodName(pick('2026-10', '2026-11'), '2026-11')).toBe('4 квартал 2026');
+    expect(periodName(pick('2025-01', '2025-12'), '2026-11')).toBe('2025 год');
+    expect(periodName(pick('2026-01', '2026-11'), '2026-11')).toBe('2026 год');
+    expect(periodName(pick('2026-03', '2026-06'), '2026-11')).toBe('мар 2026 – июн 2026');
+    const p = fopPresets('2026-01');
+    expect(p.month.map((x) => [x.from, x.to])).toEqual([['2026-01', '2026-01'], ['2025-12', '2025-12']]);
+    expect(p.range.map((x) => [x.id, x.from, x.to])).toEqual([
+      ['q', '2026-01', '2026-01'],
+      ['lq', '2025-10', '2025-12'],
+      ['y', '2026-01', '2026-01'],
+      ['ly', '2025-01', '2025-12'],
+    ]);
+    expect(fopPresets('2026-11').range.find((x) => x.id === 'lq')).toMatchObject({ from: '2026-07', to: '2026-09' });
   });
 
   it('a typed percent and amount; the tax rounded to a kopeck', () => {
@@ -115,7 +122,7 @@ describe('FOP tax screen mounted', () => {
 
   it('asks for the current quarter with the year to date, FOP income; 5% at first, then 6%', async () => {
     const w = await mountScreen();
-    expect(getFopTaxOverview.mock.calls[0]?.[0]).toEqual({ from: '2026-10-01', to: '2026-12-31', base: 'business', yearToDate: true });
+    expect(getFopTaxOverview.mock.calls[0]?.[0]).toEqual({ from: '2026-10-01', to: '2026-11-30', base: 'business', yearToDate: true });
     expect(taxes(w)).toEqual([uah(500_000), uah(2_000_000)]);
     expect(w.text()).toContain('5% от дохода');
     expect(w.text()).toContain('Доход, 4 квартал 2026');
@@ -125,20 +132,17 @@ describe('FOP tax screen mounted', () => {
     expect(taxes(w)).toEqual([uah(600_000), uah(2_400_000)]);
   });
 
-  it('period kinds: a month, a year, dates; a quarter of this year after today is not offered', async () => {
+  it('the period: the analytics month range picker; a quarter asks for the year to date, other picks do not', async () => {
     const w = await mountScreen();
-    const quarters = w.get('[data-test="quarter-picker"]').findAll('button[aria-pressed]');
-    expect(quarters.map((b) => b.attributes('disabled') === undefined)).toEqual([true, true, true, true]);
-    await quarters[0]!.trigger('click');
+    expect(w.get('[data-test="period-picker"]').text()).toContain('окт 2026 – ноя 2026');
+    const picker = w.getComponent({ name: 'VMonthRangePicker' });
+    picker.vm.$emit('update:modelValue', { from: '2026-09', to: '2026-09' });
     await flushPromises();
-    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-01-01', to: '2026-03-31', base: 'business', yearToDate: true });
-    await click(w, 'period-kind', 'Месяц');
-    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-11-01', to: '2026-11-30', base: 'business' });
-    await click(w, 'period-kind', 'Год');
-    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-01-01', to: '2026-12-31', base: 'business' });
-    await click(w, 'period-kind', 'Даты');
-    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-11-01', to: '2026-11-10', base: 'business' });
-    expect(w.find('[data-test="period-dates"]').exists()).toBe(true);
+    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-09-01', to: '2026-09-30', base: 'business' });
+    expect(w.text()).toContain('Доход, Сентябрь 2026');
+    picker.vm.$emit('update:modelValue', { from: '2026-07', to: '2026-09' });
+    await flushPromises();
+    expect(getFopTaxOverview.mock.calls.at(-1)?.[0]).toEqual({ from: '2026-07-01', to: '2026-09-30', base: 'business', yearToDate: true });
   });
 
   it('own percent: a valid one counts and unmarks the preset; an invalid one says so; a preset click clears it', async () => {

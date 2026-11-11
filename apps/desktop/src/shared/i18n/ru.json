@@ -1799,9 +1799,6 @@
   "fopTax": {
     "title": "Налог ФОП",
     "intro": "Быстрая оценка единого налога ФОП 3-й группы: выбери ставку, с чего считать и период.",
-    "year": "Год",
-    "quarter": "Квартал",
-    "quarterShort": "{n} кв.",
     "quarterName": "{n} квартал {year}",
     "rate": "Ставка",
     "percent": "Свой процент, %",
@@ -1823,14 +1820,15 @@
     "baseAll": "Весь доход",
     "periodIncome": "Доход, {period}",
     "period": "Период",
-    "kind": {
-      "month": "Месяц",
-      "quarter": "Квартал",
-      "year": "Год",
-      "dates": "Даты"
-    },
     "yearName": "{year} год",
-    "dates": "Период: с — по"
+    "preset": {
+      "thisMonth": "Этот месяц",
+      "lastMonth": "Прошлый месяц",
+      "thisQuarter": "Этот квартал",
+      "lastQuarter": "Прошлый квартал",
+      "thisYear": "Этот год",
+      "lastYear": "{year} год"
+    }
   },
   "search": {
     "open": "Поиск",

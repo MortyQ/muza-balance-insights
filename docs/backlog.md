@@ -387,7 +387,7 @@
 - **Foreign-currency FOP income** is folded at today's Monobank rate, not the NBU rate of the day of receipt the tax
   uses: decide whether that is acceptable for an estimate or needs a note.
 - **Live**: «FOP tax» is always in the menu; without a FOP account «All income» is picked and the FOP base is not
-  offered. Month, year and «Dates» read the same income as the «Income» screen for those days. The quarter's base equals the FOP income on the «Income» screen for those months minus
+  offered. A month or a range of months reads the same income as the «Income» screen for those days. The quarter's base equals the FOP income on the «Income» screen for those months minus
   transfers from the owner's own cards; a refund to the FOP card is not in it; Q1–Q4 and the year to date read right
   for a past year and the current one; the family view and one person's view agree.
 

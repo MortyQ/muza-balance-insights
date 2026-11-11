@@ -1799,9 +1799,6 @@
   "fopTax": {
     "title": "FOP tax",
     "intro": "A quick estimate of the single tax of a sole proprietor (group 3): pick the rate, what to count from and the period.",
-    "year": "Year",
-    "quarter": "Quarter",
-    "quarterShort": "Q{n}",
     "quarterName": "Q{n} {year}",
     "rate": "Rate",
     "percent": "Own percent, %",
@@ -1823,14 +1820,15 @@
     "baseAll": "All income",
     "periodIncome": "Income, {period}",
     "period": "Period",
-    "kind": {
-      "month": "Month",
-      "quarter": "Quarter",
-      "year": "Year",
-      "dates": "Dates"
-    },
     "yearName": "{year}",
-    "dates": "Period: from — to"
+    "preset": {
+      "thisMonth": "This month",
+      "lastMonth": "Last month",
+      "thisQuarter": "This quarter",
+      "lastQuarter": "Last quarter",
+      "thisYear": "This year",
+      "lastYear": "{year}"
+    }
   },
   "search": {
     "open": "Search",

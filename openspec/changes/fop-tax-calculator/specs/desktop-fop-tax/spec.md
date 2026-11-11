@@ -40,22 +40,28 @@ stay out of the base and be named.
 - **THEN** the «FOP accounts income» base does not change and the «All income» base includes the salary
 
 ### Requirement: The period is picked
-The screen SHALL offer the period kinds Month, Quarter, Year and «Dates» (a start and an end day), the current quarter
-at first, never a period that starts after today; a period's end SHALL be cut at today, and a period that is not over
-SHALL be marked as running. For a quarter the screen SHALL also show the year from 1 January to that quarter's end.
-With a custom amount the period SHALL not be asked.
+The screen SHALL pick the period with the same month range picker as the «Analytics» screen: one month or a range of
+whole months, never after this month, with quick picks for this and last month, quarter and year. This quarter so far
+SHALL be picked at first; the end SHALL be cut at today and a running period marked. A custom amount SHALL hide it.
 
 #### Scenario: Default period
 - **WHEN** the screen opens on 10 November 2026
-- **THEN** Q4 2026 is picked, running, with the year from 1 January to today under it
+- **THEN** October–November 2026 is picked as «Q4 2026», running, with the year from 1 January to today under it
 
 #### Scenario: A month
-- **WHEN** the user picks Month and September 2026
+- **WHEN** the user picks September 2026
 - **THEN** the base and the tax are those of 1–30 September 2026 and no year row is shown
 
-#### Scenario: Dates
-- **WHEN** the user picks «Dates» from 15 March to 20 June 2026
-- **THEN** the base is the income of those days, both included
+#### Scenario: A range of months
+- **WHEN** the user picks March to June 2026
+- **THEN** the base is the income of 1 March to 30 June 2026
+
+### Requirement: Year to date for a quarter
+A pick that is one calendar quarter (or this quarter so far) SHALL also show the year from 1 January to its end.
+
+#### Scenario: A past quarter
+- **WHEN** the user picks July to September 2026
+- **THEN** a second row shows the income and tax from 1 January to 30 September 2026
 
 ### Requirement: Rates
 The screen SHALL offer the rates 5% and 6% and a field for the user's own percent (above 0, at most 100, up to two

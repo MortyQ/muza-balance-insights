@@ -59,13 +59,14 @@ A read only: amounts and dates, no description, name, card number or IBAN. Nothi
 
 ## Revision (10.11.2026)
 
-- **Query by days**, not by quarter: the renderer turns Month / Quarter / Year / «Dates» into `from..to` (pure,
-  `features/fop-tax/utils.ts`, on `src/shared/quarters.ts`); main cuts `to` at today and refuses `from` after today or
+- **Query by days**, not by quarter: the renderer turns the picked months into `from..to` (pure,
+  `features/fop-tax/utils.ts`); main cuts `to` at today and refuses `from` after today or
   `from > to` (like other date reads). `yearToDate: true` adds the year from 1 January to `to`.
 - **«All income»** = the same `incomeSummary` grouped by account, keeping every enabled account of the view instead
   of the business ones; the exclusions (refunds, own and family transfers) are the same.
 - **Menu**: the route's `when` is dropped. `RouteNav.when` / `NavCondition` and `DataStatus.businessAccounts` have no
   other user, so they go too (smaller menu code, one less status field).
-- **Screen layout**: one card — the period row (a `VSegmented`-like kind switch, then the pickers of that kind), the
-  base switch, the rate row (5% · 6% chips and a percent field), then the result big: the tax, «5% from income», the
+- **Period picker**: `VMonthRangePicker` of `shared/ui`, as on «Analytics» (the user's standard), with the screen's own
+  presets (`fopPresets`); `quarterOfPick` decides the year-to-date row and the «Q4 2026» name.
+- **Screen layout**: one card — the base switch, the period picker, the rate row (5% · 6% chips and a percent field), then the result big: the tax, «5% from income», the
   base under it with the picked «also» currencies.

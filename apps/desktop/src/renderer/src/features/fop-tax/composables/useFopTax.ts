@@ -1,17 +1,15 @@
 import { computed, ref, watch } from 'vue';
-import type { Quarter } from '@contract/api.ts';
-import { quarterOf } from '@contract/quarters.ts';
 import { useMoneyFormat } from '@/entities/currency-display';
 import { useParticipantStore } from '@/entities/participant';
 import { useSyncStatusStore } from '@/entities/sync-status';
 import { localToday, useAsyncData } from '@/shared/lib';
 import { useFopTaxRequest } from '../api/useFopTaxRequest.ts';
 import type { BaseChoice, PeriodPick, RatePreset, UseFopTaxReturn } from '../types.ts';
-import { FOP_RATES } from '../constants.ts';
-import { amountMinor, percentValue, periodBounds, periodName, quarterAllowed as allowed, taxView, yearOptions } from '../utils.ts';
+import { FOP_RATES, YEARS_BACK } from '../constants.ts';
+import { amountMinor, fopPresets, percentValue, periodBounds, periodName, quarterOfPick, taxView } from '../utils.ts';
 
 /**
- * The FOP tax screen: the picked period (today's quarter at first) and base for the global filter's person, reloaded
+ * The FOP tax screen: the picked months (today's quarter so far at first) and base for the global filter's person, reloaded
  * when any changes and quietly when the data changes. The base defaults to the FOP accounts' income while the view has
  * one, all income otherwise. Nothing is remembered.
  */
@@ -21,35 +19,15 @@ export function useFopTax(): UseFopTaxReturn {
   const participant = useParticipantStore();
 
   const today = localToday(new Date());
-  const current = quarterOf(today);
-  const period = ref<PeriodPick>({
-    kind: 'quarter',
-    month: today.slice(0, 7),
-    year: current.year,
-    quarter: current.quarter,
-    from: `${today.slice(0, 7)}-01`,
-    to: today,
-  });
+  const thisMonth = today.slice(0, 7);
+  const minMonth = `${Number(today.slice(0, 4)) - YEARS_BACK}-01`;
+  const presets = computed(() => fopPresets(thisMonth));
+  const quarterNow = presets.value.range.find((p) => p.id === 'q')!;
+  const period = ref<PeriodPick>({ from: quarterNow.from, to: quarterNow.to });
   const rate = ref<RatePreset>(FOP_RATES[0]);
   const percentText = ref('');
   const picked = ref<BaseChoice | null>(null);
   const amountText = ref('');
-
-  const quarterAllowed = (q: Quarter) => allowed(period.value.year, q, current);
-  // Back to this year with a quarter still ahead: the latest one allowed.
-  watch(
-    () => period.value.year,
-    () => {
-      if (!quarterAllowed(period.value.quarter)) period.value.quarter = current.quarter;
-    },
-  );
-  // Dates: the end never before the start.
-  watch(
-    () => period.value.from,
-    (from) => {
-      if (period.value.to < from) period.value.to = from;
-    },
-  );
 
   // Until the first answer, the FOP base is assumed: one without a FOP account switches to all income.
   const available = ref(true);
@@ -67,7 +45,7 @@ export function useFopTax(): UseFopTaxReturn {
     return {
       ...periodBounds(p),
       base: base.value === 'business' ? ('business' as const) : ('all' as const),
-      ...(p.kind === 'quarter' ? { yearToDate: true } : {}),
+      ...(quarterOfPick(p, thisMonth) ? { yearToDate: true } : {}),
       ...(id !== null ? { participantId: id } : {}),
     };
   };
@@ -87,7 +65,7 @@ export function useFopTax(): UseFopTaxReturn {
   const percent = computed(() => typed.value ?? rate.value);
   const amount = computed(() => amountMinor(amountText.value));
   const view = computed(() =>
-    taxView(state.value.data ?? null, { percent: percent.value, base: base.value, amount: amount.value, period: periodName(period.value) }, fmt.value),
+    taxView(state.value.data ?? null, { percent: percent.value, base: base.value, amount: amount.value, period: periodName(period.value, thisMonth) }, fmt.value),
   );
 
   return {
@@ -98,9 +76,9 @@ export function useFopTax(): UseFopTaxReturn {
     base,
     businessOffered,
     amountText,
-    today,
-    years: computed(() => yearOptions(current.year)),
-    quarterAllowed,
+    minMonth,
+    thisMonth,
+    presets,
     presetShown: computed(() => (typed.value === null ? rate.value : null)),
     percentError: computed(() => percentText.value.trim() !== '' && typed.value === null),
     amountError: computed(() => base.value === 'custom' && amountText.value.trim() !== '' && amount.value === null),

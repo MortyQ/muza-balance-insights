@@ -5,7 +5,7 @@ import RatePicker from './components/RatePicker.vue';
 import TaxResult from './components/TaxResult.vue';
 import { useFopTax } from './composables/useFopTax.ts';
 
-const { period, rate, percentText, base, businessOffered, amountText, today, years, quarterAllowed, presetShown, percentError, amountError, view } = useFopTax();
+const { period, rate, percentText, base, businessOffered, amountText, minMonth, thisMonth, presets, presetShown, percentError, amountError, view } = useFopTax();
 </script>
 
 <template>
@@ -23,7 +23,7 @@ const { period, rate, percentText, base, businessOffered, amountText, today, yea
         :preset-shown
       />
       <!-- A typed amount has no period. -->
-      <PeriodPicker v-if="base !== 'custom'" v-model="period" :years :allowed="quarterAllowed" :today />
+      <PeriodPicker v-if="base !== 'custom'" v-model="period" :min="minMonth" :max="thisMonth" :presets />
       <TaxResult :view />
     </div>
     <!-- Always under the figures: an estimate, the single social contribution left out. -->

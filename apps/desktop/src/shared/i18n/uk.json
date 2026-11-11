@@ -1799,9 +1799,6 @@
   "fopTax": {
     "title": "Податок ФОП",
     "intro": "Швидка оцінка єдиного податку ФОП 3-ї групи: обери ставку, звідки рахувати й період.",
-    "year": "Рік",
-    "quarter": "Квартал",
-    "quarterShort": "{n} кв.",
     "quarterName": "{n} квартал {year}",
     "rate": "Ставка",
     "percent": "Свій відсоток, %",
@@ -1823,14 +1820,15 @@
     "baseAll": "Увесь дохід",
     "periodIncome": "Дохід, {period}",
     "period": "Період",
-    "kind": {
-      "month": "Місяць",
-      "quarter": "Квартал",
-      "year": "Рік",
-      "dates": "Дати"
-    },
     "yearName": "{year} рік",
-    "dates": "Період: з — по"
+    "preset": {
+      "thisMonth": "Цей місяць",
+      "lastMonth": "Минулий місяць",
+      "thisQuarter": "Цей квартал",
+      "lastQuarter": "Минулий квартал",
+      "thisYear": "Цей рік",
+      "lastYear": "{year} рік"
+    }
   },
   "search": {
     "open": "Пошук",

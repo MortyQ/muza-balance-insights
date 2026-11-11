@@ -1,22 +1,15 @@
 import type { ComputedRef, Ref } from 'vue';
-import type { FopTaxOverview, Quarter } from '@contract/api.ts';
+import type { FopTaxOverview } from '@contract/api.ts';
 import type { Loadable } from '@/shared/lib';
-import type { FOP_RATES, PERIOD_KINDS } from './constants.ts';
+import type { MonthRangePreset } from '@/shared/ui';
+import type { FOP_RATES } from './constants.ts';
 
 /** A rate preset (per cent). */
 export type RatePreset = (typeof FOP_RATES)[number];
 /** What the tax is counted from: the FOP accounts' income, all income of the view, or an amount the user types. */
 export type BaseChoice = 'business' | 'all' | 'custom';
-export type PeriodKind = (typeof PERIOD_KINDS)[number];
-
-/** The picked period, every kind's own fields kept so switching back restores them. */
+/** The picked whole months, YYYY-MM, from ≤ to (the analytics screen's month range). */
 export interface PeriodPick {
-  kind: PeriodKind;
-  /** YYYY-MM. */
-  month: string;
-  year: number;
-  quarter: Quarter;
-  /** YYYY-MM-DD, from ≤ to. */
   from: string;
   to: string;
 }
@@ -53,11 +46,10 @@ export interface UseFopTaxReturn {
   /** «FOP accounts income» is offered: the view has a business account. */
   businessOffered: ComputedRef<boolean>;
   amountText: Ref<string>;
-  today: string;
-  /** The years offered, newest first. */
-  years: ComputedRef<number[]>;
-  /** Quarters after today's are not offered. */
-  quarterAllowed: (q: Quarter) => boolean;
+  /** The picker's bounds, YYYY-MM: YEARS_BACK Januaries back to this month. */
+  minMonth: string;
+  thisMonth: string;
+  presets: ComputedRef<{ month: MonthRangePreset[]; range: MonthRangePreset[] }>;
   /** The preset marked: null while a typed percent counts instead. */
   presetShown: ComputedRef<RatePreset | null>;
   /** A custom percent is typed and is not a valid one. */

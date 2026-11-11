@@ -4,7 +4,5 @@ export const FOP_RATES = [5, 6] as const;
 export const PERCENT_MAX = 100;
 /** A typed amount, hryvnias: at most this (keeps kopecks a safe integer). */
 export const AMOUNT_MAX = 1_000_000_000_000;
-/** How many years back the year picker goes (the import reaches 36 months back). */
+/** How many years back the period picker goes (the import reaches 36 months back): from January of that year. */
 export const YEARS_BACK = 3;
-/** The period kinds, in the order offered. */
-export const PERIOD_KINDS = ['month', 'quarter', 'year', 'dates'] as const;

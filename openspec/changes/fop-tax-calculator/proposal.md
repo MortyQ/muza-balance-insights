@@ -57,7 +57,8 @@ calculator. Changes to the plan above:
 - The «FOP tax» item is always in the side menu; `when: 'business'` and `DataStatus.businessAccounts` go.
 - The base is picked: «FOP accounts income» (only with a business account in the view; the default then), «All
   income» (the view's income, same exclusions; the default otherwise), «Custom amount».
-- The period is picked: Month, Quarter, Year or «Dates» (start and end day). The year to date stays for a quarter only.
+- The period is picked with the «Analytics» month range picker (one month or a range of months, quick picks for this
+  and last month, quarter and year). The year to date stays for a quarter only.
 - Rate presets are 5% and 6% (1% goes), plus the user's own percent in a field next to them.
 - IPC: `getFopTaxOverview({ from, to, base: 'business' | 'all', participantId? })` → the base of `from..to` and, when
   asked, of the year to `to` (`yearToDate: boolean`); `available` says whether the view has a business account.
