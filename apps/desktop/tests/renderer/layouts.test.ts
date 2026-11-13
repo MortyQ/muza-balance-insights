@@ -9,6 +9,7 @@ import { createMemoryHistory, createRouter, type RouteRecordRaw } from 'vue-rout
 import { createPinia, setActivePinia } from 'pinia';
 
 vi.mock('@/widgets/global-filters', () => ({ GlobalFilters: defineComponent(() => () => h('header', { 'data-test': 'filters' })) }));
+vi.mock('@/pages/budget', () => ({ BudgetPage: defineComponent(() => () => h('main', { 'data-page': 'budget' }, 'budget')) }));
 vi.mock('@/features/integrations', () => ({ QuickUploadFeature: defineComponent(() => () => h('div', { 'data-test': 'quick-upload' })) }));
 
 const { default: MasterLayout } = await import('@/app/layouts/MasterLayout.vue');
@@ -50,7 +51,7 @@ describe('navGroups', () => {
     expect(navGroups([r('x')])).toEqual([]);
   });
 
-  it('the app: «General» (home), «Insights», «Analytics», «Regular payments», «Planning», in the default layout; the other screens are on their own', () => {
+  it('the app: «General» (home), «Insights», «Analytics», «Regular payments», «Budget», «Planning», in the default layout; the other screens are on their own', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     expect(navGroups(router.getRoutes())).toEqual([
       {
@@ -59,16 +60,17 @@ describe('navGroups', () => {
           { label: 'home.nav.insights', icon: 'lucide:lightbulb', id: 'insights' },
           { label: 'home.nav.analytics', icon: 'lucide:chart-column', id: 'analytics' },
           { label: 'home.nav.recurring', icon: 'lucide:repeat', id: 'recurring' },
+          { label: 'home.nav.budget', icon: 'lucide:wallet', id: 'budget' },
           { label: 'home.nav.planning', icon: 'lucide:calculator', id: 'planning' },
           { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', id: 'fop-tax' },
         ],
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', 'spending-categories': 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
-    // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
+    expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', budget: 'default', planning: 'default', category: 'default', 'spending-categories': 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    // The global filters offer whole months on analytics, no period on regular payments, the budget and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
-    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning', 'fop-tax']);
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'budget', 'planning', 'fop-tax']);
   });
 });
 
@@ -76,10 +78,30 @@ describe('navItems', () => {
   it('the side menu as sidebar entries: translated, opening their route, standing for the screens that name them as parent', () => {
     const router = createRouter({ history: createMemoryHistory(), routes });
     const items = navItems(router.getRoutes(), (key) => `t:${key}`);
-    expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning', 'fop-tax']);
+    expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'budget', 'planning', 'fop-tax']);
     expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
     expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income', 'spending-categories']));
     expect(items[1]?.activeFor).toEqual([]);
+    // «Budget» is an entry of its own: no screen stands for it, and home no longer stands for it.
+    expect(items.find((i) => i.id === 'budget')).toMatchObject({ label: 't:home.nav.budget', to: { name: 'budget' }, activeFor: [] });
+    expect(items[0]?.activeFor).not.toContain('budget');
+  });
+});
+
+describe('the «Budget» entry', () => {
+  it('sits between «Regular payments» and «Planning»; the screen is titled «Budget» with its entry current', async () => {
+    const router = createRouter({ history: createMemoryHistory(), routes });
+    await router.push('/budget');
+    setActivePinia(createPinia());
+    const w = mount(MasterLayout, { global: { plugins: [router, i18n] } });
+    await flushPromises();
+    const hrefs = w.findAll('aside.sidebar .sidebar-nav .sidebar-item').map((e) => e.attributes('href'));
+    expect(hrefs.slice(hrefs.indexOf('/recurring'), hrefs.indexOf('/planning') + 1)).toEqual(['/recurring', '/budget', '/planning']);
+    expect(w.get('aside.sidebar .sidebar-nav a[href="/budget"]').attributes('aria-current')).toBe('page');
+    expect(w.get('aside.sidebar .sidebar-nav a[href="/"]').attributes('aria-current')).toBeUndefined();
+    expect(w.get('[data-test="screen-title"]').text()).toBe(i18n.global.t('home.nav.budget'));
+    expect(w.find('[data-page="budget"]').exists()).toBe(true);
+    w.unmount();
   });
 });
 

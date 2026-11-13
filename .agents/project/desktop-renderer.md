@@ -250,22 +250,25 @@
   `VHelpHint`); view functions `regularHeaderView`, `regularSourcesView`, `regularMark`, `expectedView`. Colour —
   `INCOME_COLOR` (`--success`). `utils.ts` is pure and tested (`tests/renderer/income-detail.test.ts`).
 - **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
-  route `budget` (`/budget`, `meta.navParent: 'home'` — no menu item, like the category screen), opened from home's
-  «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
+  route `budget` (`/budget`, `meta.nav` order 4, `home.nav.budget`, `lucide:wallet`, `periodFilter: 'none'` — a menu
+  entry between «Regular payments» and «Planning»), also opened from home's «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
   «Set a budget»). One IPC `getLimitsOverview` (the global month and person; banks are ignored on purpose), quiet
   reloads; a write (`saveGoal`, `deleteGoal`, `addSuggestedLimits`) refreshes the data status. Blocks: `BudgetPanel`
   (the total, the fixed rows paid of their amounts, the flexible part with `LimitBar`, the state, the forecast, «per day
   by the budget»), the category limits (`LimitRow`, exceeded → attention → on track) or suggestions with «Suggest
   limits», savings goals (`GoalRow`: a ring, money of the target, need per month). Sheets (`VSheet`): `BudgetSheet` (the
-  total with chips from the usual month, the fixed rows the user adds, types and removes — nothing preset —, whose; a
-  live result beside the form and `PastBars` of the flexible part; «Save» waits for every amount), `LimitSheet`
+  total with chips from the usual month, the fixed rows the user adds, types and removes — nothing preset —, the «Count
+  taxes» switch and «Exclude from the budget» (a `VSelect` of the categories that are not fixed rows, not excluded and
+  not taxes, and removable chips of the excluded ones but taxes; both are one list, `excluded`, the switch being its
+  taxes entry; an excluded category is not offered as a fixed row and the other way round; the chips are the sheet's own
+  markup, `shared/ui` has no chip), whose; a live result beside the form and `PastBars` of the flexible part; «Save» waits for every amount), `LimitSheet`
   (category, amount, currency, period, whose, the suggestion's chips, `PastBars`), `GoalSheet` (name, a jar — its bank
   target offered — or «cards and jars», target, date, whose); deleting asks in the sheet. `entities/goal`: `limitLook`
   (the bar's fill and pace marker, the state in words — never colour alone —, the «?» explanations with the user's
   numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. Tested in `tests/renderer/limits-goals.test.ts`.
 - **Home's «Budget» row** (`features/home-budget`, spec `desktop-home-tiles`): over the whole width between the first
   row and «Today» / «This week»; one link to the «Budget» screen: the total, the fixed costs paid, the flexible part's
-  bar and state, per day by the budget (a past month: the result); without a budget in the current month an empty row
+  bar and state, «Not counted: …» under it when the budget excludes categories (`excludedNote`, the budget panel has the same line), per day by the budget (a past month: the result); without a budget in the current month an empty row
   with «Set a budget», no close button. The same read gives the highlights tile its «Limits» slide (`LimitsSlide`:
   limits in attention or exceeded; always between «What's unusual» and «Recent transactions»). «Month pace» no longer shows «Available per
   day». The category screen shows its limit (`CategoryLimitBar`, the same read, the current month only). Tested in
@@ -275,7 +278,7 @@
   (`localStorage` `help.seen.<id>`, a convenience) and brought back by «How it works». The Insights screen's
   «Financial health» checklist (`HealthChecklist`; `budgetView` feeds its income bar and «?» texts): each figure with a
   «?»; a «Limit exceeded» card joins the feed by money (`limitCard`).
-- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
+- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 5, icon `lucide:calculator`,
   `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
 - **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about
   now (the month filter does not apply). One IPC `getAllowanceOverview({ participantId? })`, reloaded
@@ -291,7 +294,7 @@
   `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
-  `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
+  `fop-tax`, `meta.nav` order 6 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
   its own `PeriodPicker` — the «Analytics» `VMonthRangePicker` (`PeriodPick`: YYYY-MM from–to; nothing after this
   month; presets `fopPresets`: this / last month, this / last quarter, each ended quarter of this year, this / last year; this quarter so far at first; `periodBounds` → days,
   `quarterOfPick` → the year-to-date row). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the

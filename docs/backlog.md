@@ -423,3 +423,16 @@
   current in the menu; the back link returns to home.
 - **Both themes and a narrow window**: names, shares, change chips and amounts do not collide or clip; the heading and
   the «Personal / Business» switch wrap cleanly.
+
+## Check on a live system: budget exclusions (`openspec/changes/budget-exclusions`)
+
+- **The migration on a real budget**: a budget saved with «Count taxes» off opens with the switch off and its figures
+  unchanged; one saved with it on opens with nothing excluded.
+- **The sheet with several exclusions**: three or four categories excluded, taken back and re-added; the chips wrap
+  cleanly in a narrow sheet, in both themes; the live result and the past months' chart follow each change; a fixed
+  cost is not offered for an excluded category and the other way round.
+- **The note**: «Not counted: …» reads well on the budget screen and on home with one, three and no exclusions, in
+  uk / en / ru.
+- **The menu**: «Budget» sits between «Regular payments» and «Planning» and is current on its screen. The global
+  month filter is hidden there (`periodFilter: 'none'`) though the screen still follows the month picked on home —
+  decide whether a past month should stay reachable from the screen itself.

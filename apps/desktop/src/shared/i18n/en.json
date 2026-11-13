@@ -677,6 +677,7 @@
     },
     "nav": {
       "analytics": "Analytics",
+      "budget": "Budget",
       "general": "General",
       "label": "Home sections",
       "planning": "Planning",

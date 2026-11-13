@@ -14,6 +14,11 @@ English interface.
 
 - The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,
   Czech koruna included, and a new one starts in the currency the switch shows.
+- The monthly budget can leave out any categories, not only taxes: under «Count taxes» the budget sheet has «Exclude from
+  the budget». An excluded category counts neither against the flexible part nor as a fixed cost, but stays in
+  «Spending», in «Budget structure» and under its own limit. The budget on its screen and on home says what it leaves
+  out («Not counted: …»). A budget that had «Count taxes» off keeps leaving taxes out.
+- «Budget» is now an entry of the menu, between «Regular payments» and «Planning»; home's «Budget» row still opens it.
 
 ### Statements
 

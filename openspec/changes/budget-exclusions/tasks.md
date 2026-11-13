@@ -29,13 +29,13 @@
 
 ## 4. «Budget» in the menu
 
-- [ ] 4.1 The `/budget` route: `meta.nav` between «Regular payments» and «Planning», no `navParent`,
+- [x] 4.1 The `/budget` route: `meta.nav` between «Regular payments» and «Planning», no `navParent`,
       `periodFilter: 'none'`; the menu text in three dictionaries
-- [ ] 4.2 Tests: `tests/renderer/layouts.test.ts` (the entry, its order, current on the screen), home's row still opens it
-- [ ] 4.3 `.agents/project/desktop-renderer.md` and `CHANGELOG.md` under 0.1.16
+- [x] 4.2 Tests: `tests/renderer/layouts.test.ts` (the entry, its order, current on the screen), home's row still opens it
+- [x] 4.3 `.agents/project/desktop-renderer.md` and `CHANGELOG.md` under 0.1.16
 
 ## 5. Checks
 
-- [ ] 5.1 `docs/backlog.md`: check on a live system — the migration on a real budget with taxes off, the sheet with
+- [x] 5.1 `docs/backlog.md`: check on a live system — the migration on a real budget with taxes off, the sheet with
       several exclusions in both themes
-- [ ] 5.2 `pnpm test` and `pnpm typecheck` at the root
+- [x] 5.2 `pnpm test` and `pnpm typecheck` at the root
