@@ -42,7 +42,7 @@ const goal = z.discriminatedUnion('type', [
     amount: goalAmount,
     participantId: id.nullable(),
     fixed: z.array(z.strictObject({ categoryId: kindCategory, amount: goalAmount })).max(KIND_CATEGORY_IDS.length),
-    countTaxes: z.boolean().optional(),
+    excluded: z.array(kindCategory).max(KIND_CATEGORY_IDS.length).refine((ids) => new Set(ids).size === ids.length),
   }),
   z.strictObject({
     type: z.literal('saving'),

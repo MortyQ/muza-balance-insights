@@ -80,7 +80,7 @@ export function limitView(
   };
 }
 
-/** The monthly budget: the typed fixed rows set aside, the rest against every category neither fixed here nor savings (nor taxes, while it does not count them). */
+/** The monthly budget: the typed fixed rows set aside, the rest against every category neither fixed here nor savings nor among the budget's exclusions. */
 export function budgetView(
   g: Extract<Goal, { type: 'budget' }>,
   idOf: (word: string) => KindCategoryId,
@@ -110,7 +110,7 @@ export function budgetView(
     fixedTotal: parts.fixedTotal,
     fixedPaid,
     fixedTakesAll: parts.fixedTakesAll,
-    countTaxes: !g.excluded.includes(CATEGORY.taxes),
+    excluded: g.excluded.map(idOf),
     flexible: figures(parts.flexibleAmount, parts.flexibleSpent, 'month', pos, pendingOf(pending, flexibleWords)),
     result: current ? null : { within: left >= 0, left },
   };

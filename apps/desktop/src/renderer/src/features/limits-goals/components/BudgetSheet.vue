@@ -41,7 +41,7 @@ watch(
     currency.value = s.goal.currency;
     rows.value = s.goal.fixed.map((r) => ({ categoryId: r.categoryId, amount: String(r.amount / 100) }));
     owner.value = s.goal.participantId ?? FAMILY;
-    countTaxes.value = s.goal.countTaxes ?? true;
+    countTaxes.value = !s.goal.excluded.includes('taxes');
     confirming.value = false;
   },
   { immediate: true },
@@ -84,7 +84,7 @@ function save() {
     amount: totalMinor.value,
     participantId: typeof owner.value === 'number' ? owner.value : null,
     fixed: rows.value.map((r, i) => ({ categoryId: r.categoryId, amount: rowMinor.value[i]! })),
-    countTaxes: countTaxes.value,
+    excluded: countTaxes.value ? [] : ['taxes'],
   });
 }
 </script>

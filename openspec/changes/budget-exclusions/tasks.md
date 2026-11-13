@@ -12,11 +12,11 @@
 
 ## 2. Desktop data: flexible spending without the excluded
 
-- [ ] 2.1 `shared/api.ts`, `shared/ipc-args.ts`: `excluded` on the budget payload and view, `countTaxes` removed; the
+- [x] 2.1 `shared/api.ts`, `shared/ipc-args.ts`: `excluded` on the budget payload and view, `countTaxes` removed; the
       schema refuses unknown and repeated ids
-- [ ] 2.2 `data/data.ts`, `data/limits.ts`: flexible spending leaves the excluded categories out (pace, forecast,
+- [x] 2.2 `data/data.ts`, `data/limits.ts`: flexible spending leaves the excluded categories out (pace, forecast,
       per day, pending note, Insights limit signals follow)
-- [ ] 2.3 Tests: `tests/data.test.ts` (an excluded category, taxes as one, a limit on an excluded category still
+- [x] 2.3 Tests: `tests/data.test.ts` (an excluded category, taxes as one, a limit on an excluded category still
       counts), `tests/ipc.test.ts`
 
 ## 3. Budget sheet and the «not counted» note

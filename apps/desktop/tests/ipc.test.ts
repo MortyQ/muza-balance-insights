@@ -172,6 +172,7 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['saveGoal', [null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 0, participantId: null }]],
     ['saveGoal', [null, { type: 'budget', currency: 978, amount: 100, participantId: null, fixed: [{ categoryId: 'rent', amount: 0 }] }]],
     ['saveGoal', [null, { type: 'budget', currency: 978, amount: 100, participantId: null }]],
+    ['saveGoal', [null, { type: 'budget', currency: 978, amount: 100, participantId: null, fixed: [] }]],
     ['saveGoal', [null, { type: 'saving', name: ' ', currency: 980, amount: 100, participantId: null, until: null, source: 'own', accountId: null }]],
     ['saveGoal', [null, { type: 'saving', name: 'x', currency: 980, amount: 100, participantId: null, until: null, source: 'card', accountId: null }]],
     ['saveGoal', [null, { type: 'limit', categoryId: 'cafes', period: 'month', currency: 980, amount: 100, participantId: null, extra: 1 }]],
@@ -190,7 +191,10 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
     ['getCashCounts', [true]],
     ['setCashCounts', []],
     ['setCashCounts', ['off']],
-    ['saveGoal', [null, { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [], countTaxes: 'no' }]],
+    ['saveGoal', [null, { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [], excluded: 'no' }]],
+    ['saveGoal', [null, { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [], excluded: ['taxes', 'taxes'] }]],
+    ['saveGoal', [null, { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [], excluded: ['rentals'] }]],
+    ['saveGoal', [null, { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [], excluded: [], countTaxes: false }]],
     ['setOperationCategory', []],
     ['setOperationCategory', [{ key: 't1', category: 'rent' }]],
     ['setOperationCategory', [{ key: '', category: 'rent', payee: false }]],
@@ -392,6 +396,8 @@ describe('registerIpc (no generic channels, zod on every argument)', () => {
       m: 'getNowOverview',
       a: [{ participantId: 2 }],
     });
+    const budget = { type: 'budget', currency: 980, amount: 100, participantId: null, fixed: [{ categoryId: 'rent', amount: 50 }], excluded: ['taxes', 'travel'] };
+    await expect(ipc.handlers.get('balance:saveGoal')!(good, null, budget)).resolves.toEqual({ m: 'saveGoal', a: [null, budget] });
     const cat = { period: { kind: 'week', from: '2026-09-28' }, category: 'transport', scope: 'personal', participantId: 2 };
     await expect(ipc.handlers.get('balance:getCategoryOverview')!(good, cat)).resolves.toEqual({ m: 'getCategoryOverview', a: [cat] });
     const inc = { period: { kind: 'day', date: '2026-09-30' }, participantId: 2 };

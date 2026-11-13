@@ -30,7 +30,7 @@ const OVERVIEW: LimitsOverview = {
       { categoryId: 'rent', amountMinor: 1_250_000, amount: 1_250_000, paid: 1_250_000 },
       { categoryId: 'utilities', amountMinor: 110_000, amount: 110_000, paid: 0 },
     ],
-    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false, countTaxes: true,
+    fixedTotal: 1_360_000, fixedPaid: 1_250_000, fixedTakesAll: false, excluded: [],
     flexible: fig(3_640_000, 2_300_000, 'attention'), result: null,
   },
   limits: [
@@ -224,9 +224,9 @@ describe('the «Budget» screen', () => {
     expect(names().some((n) => n.startsWith('Налоги'))).toBe(false);
     sheet.querySelector<HTMLButtonElement>('[data-test="budget-save"]')!.click();
     await flushPromises();
-    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', countTaxes: false, fixed: [{ categoryId: 'rent', amount: 1_250_000 }, { categoryId: 'utilities', amount: 110_000 }] }));
+    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', excluded: ['taxes'], fixed: [{ categoryId: 'rent', amount: 1_250_000 }, { categoryId: 'utilities', amount: 110_000 }] }));
     w.unmount();
-    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, countTaxes: false } };
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, excluded: ['taxes'] } };
     const off = await mountScreen();
     expect(off.get('[data-test="budget-taxes-off"]').text()).toBe('Налоги в этом бюджете не учитываются.');
     off.unmount();
