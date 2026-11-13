@@ -433,6 +433,5 @@
   cost is not offered for an excluded category and the other way round.
 - **The note**: «Not counted: …» reads well on the budget screen and on home with one, three and no exclusions, in
   uk / en / ru.
-- **The menu**: «Budget» sits between «Regular payments» and «Planning» and is current on its screen. The global
-  month filter is hidden there (`periodFilter: 'none'`) though the screen still follows the month picked on home —
-  decide whether a past month should stay reachable from the screen itself.
+- **The menu**: «Budget» sits between «Regular payments» and «Planning» and is current on its screen; the global
+  month filter is shown there and a past month shows its result.

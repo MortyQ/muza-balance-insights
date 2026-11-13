@@ -52,8 +52,8 @@ Follows `.agents/project/core-layout.md` (a migration; plain writes in `read/goa
    taxes included, on the budget screen and home's budget slide.
 
 6. **Menu.** The `/budget` route gets `meta.nav` («Budget», after «Regular payments», before «Planning») and loses
-   `navParent`; the header then titles the screen «Budget». The global period filter is hidden there
-   (`periodFilter: 'none'`), since the budget always shows the current month — as «Planning» does. Home's row and
+   `navParent`; the header then titles the screen «Budget». The global month filter stays, as before:
+   the screen follows the picked month (a past month shows its result). Home's row and
    `budgetLink` are unchanged.
 
 ## Risks / Trade-offs

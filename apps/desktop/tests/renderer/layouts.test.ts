@@ -70,7 +70,7 @@ describe('navGroups', () => {
     expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', budget: 'default', planning: 'default', category: 'default', 'spending-categories': 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
     // The global filters offer whole months on analytics, no period on regular payments, the budget and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
-    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'budget', 'planning', 'fop-tax']);
+    expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning', 'fop-tax']);
   });
 });
 

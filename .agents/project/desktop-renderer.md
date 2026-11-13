@@ -250,7 +250,7 @@
   `VHelpHint`); view functions `regularHeaderView`, `regularSourcesView`, `regularMark`, `expectedView`. Colour —
   `INCOME_COLOR` (`--success`). `utils.ts` is pure and tested (`tests/renderer/income-detail.test.ts`).
 - **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
-  route `budget` (`/budget`, `meta.nav` order 4, `home.nav.budget`, `lucide:wallet`, `periodFilter: 'none'` — a menu
+  route `budget` (`/budget`, `meta.nav` order 4, `home.nav.budget`, `lucide:wallet`, the month filter as on home — a menu
   entry between «Regular payments» and «Planning»), also opened from home's «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
   «Set a budget»). One IPC `getLimitsOverview` (the global month and person; banks are ignored on purpose), quiet
   reloads; a write (`saveGoal`, `deleteGoal`, `addSuggestedLimits`) refreshes the data status. Blocks: `BudgetPanel`

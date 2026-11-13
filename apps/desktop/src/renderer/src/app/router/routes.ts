@@ -34,7 +34,7 @@ export const routes: RouteRecordRaw[] = [
     path: '/budget',
     name: ROUTE.budget,
     component: () => import('@/pages/budget').then((m) => m.BudgetPage),
-    meta: { nav: { label: 'home.nav.budget', icon: 'lucide:wallet', order: 4 }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.budget', icon: 'lucide:wallet', order: 4 } },
   },
   {
     path: '/planning',
