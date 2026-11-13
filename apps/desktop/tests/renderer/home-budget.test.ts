@@ -89,6 +89,15 @@ describe('home budget row', () => {
     expect(plain(w.get('[data-test="home-budget-flexible"] [data-test="pending-note"]').text())).toBe(`в т.ч. 3 в ожидании, ${uah(120_000)}`);
   });
 
+  it('the exclusions are named under the flexible part; none, no line', async () => {
+    const w = await mountRow();
+    expect(w.find('[data-test="home-budget-excluded"]').exists()).toBe(false);
+    w.unmount();
+    answer = { ...OVERVIEW, budget: { ...BUDGET, excluded: ['taxes', 'travel'] } };
+    const named = await mountRow();
+    expect(named.get('[data-test="home-budget-flexible"] [data-test="home-budget-excluded"]').text()).toBe('Не учитывается: Налоги и госплатежи, Путешествия и отпуск');
+  });
+
   it('a past month: the result instead of the pace', async () => {
     answer = { ...OVERVIEW, current: false, budget: { ...BUDGET, result: { within: true, left: 285_000 } } };
     const w = await mountRow('2026-10');

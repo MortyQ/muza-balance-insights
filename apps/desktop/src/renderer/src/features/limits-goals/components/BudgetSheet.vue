@@ -13,7 +13,8 @@ import { nameOf, pastFlexible, usualTotal } from '../utils.ts';
 import PastBars from './PastBars.vue';
 
 // The monthly budget in one sheet: one total for all spending, the user's own fixed costs (a category and the amount
-// they type, nothing filled in), whether taxes count, whose; beside the form, the live result — the total, each fixed row taken off, the
+// they type, nothing filled in), the categories it leaves out (taxes through the switch, the rest through the choice
+// below it), whose; beside the form, the live result — the total, each fixed row taken off, the
 // flexible part and its average per day, and the past months' flexible spending against it.
 const { start, overview, owners, failed = false } = defineProps<{
   start: SheetStart | null;
@@ -29,8 +30,9 @@ const total = ref('');
 const currency = ref<AppCurrency>(980);
 const rows = ref<Array<{ categoryId: KindCategoryId; amount: string }>>([]);
 const owner = ref<number | string>(FAMILY);
-const countTaxes = ref(true);
+const excluded = ref<KindCategoryId[]>([]);
 const adding = ref<KindCategoryId | null>(null);
+const excluding = ref<KindCategoryId | null>(null);
 const confirming = ref(false);
 
 watch(
@@ -41,7 +43,7 @@ watch(
     currency.value = s.goal.currency;
     rows.value = s.goal.fixed.map((r) => ({ categoryId: r.categoryId, amount: String(r.amount / 100) }));
     owner.value = s.goal.participantId ?? FAMILY;
-    countTaxes.value = !s.goal.excluded.includes('taxes');
+    excluded.value = [...s.goal.excluded];
     confirming.value = false;
   },
   { immediate: true },
@@ -53,16 +55,32 @@ watch(adding, (id) => {
   adding.value = null;
 });
 
-// Taxes left out: they cannot be a fixed cost either.
-watch(countTaxes, (on) => {
-  if (!on) rows.value = rows.value.filter((r) => r.categoryId !== 'taxes');
+watch(excluding, (id) => {
+  if (id === null) return;
+  excluded.value = [...excluded.value, id];
+  excluding.value = null;
 });
+
+// The switch is the list's taxes entry. Taxes left out cannot be a fixed cost either.
+const countTaxes = computed({
+  get: () => !excluded.value.includes('taxes'),
+  set: (on: boolean) => {
+    excluded.value = on ? excluded.value.filter((id) => id !== 'taxes') : [...excluded.value, 'taxes'];
+    if (!on) rows.value = rows.value.filter((r) => r.categoryId !== 'taxes');
+  },
+});
+// The chips: everything excluded but taxes, which the switch shows.
+const chosen = computed(() => excluded.value.filter((id) => id !== 'taxes'));
 
 const currencyStore = useCurrencyDisplayStore();
 const currencies = computed(() => currencyOptions(currencyStore.rates ?? null, currency.value));
 const ownerOptions = computed<VSelectOption[]>(() => [...owners.map((p) => ({ label: p.name, value: p.id })), { label: t('limits.owner.family'), value: FAMILY }]);
 const free = computed<VSelectOption[]>(() =>
-  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && (countTaxes.value || id !== 'taxes') && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),
+  KIND_CATEGORY_IDS.filter((id) => id !== 'fees' && id !== 'transferFees' && !excluded.value.includes(id) && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),
+);
+// Not a fixed cost, not excluded yet, not taxes (the switch owns them); fees can be left out though they cannot be fixed.
+const excludable = computed<VSelectOption[]>(() =>
+  KIND_CATEGORY_IDS.filter((id) => id !== 'taxes' && !excluded.value.includes(id) && !rows.value.some((r) => r.categoryId === id)).map((id) => ({ label: nameOf(id), value: id })),
 );
 
 const totalMinor = computed(() => goalMinor(total.value, RESERVE_AMOUNT_MAX));
@@ -72,7 +90,7 @@ const flexibleMinor = computed(() => (totalMinor.value === null ? null : totalMi
 const complete = computed(() => totalMinor.value !== null && rowMinor.value.every((m) => m !== null));
 const usual = computed(() => usualTotal(overview, currency.value));
 const chips = computed(() => (usual.value ? [usual.value, Math.round(usual.value * 0.9), Math.round(usual.value * 0.8)] : []));
-const past = computed(() => pastFlexible(overview, [...rows.value.map((r) => r.categoryId), ...(countTaxes.value ? [] : ['taxes' as const])], currency.value));
+const past = computed(() => pastFlexible(overview, [...rows.value.map((r) => r.categoryId), ...excluded.value], currency.value));
 const money = (minor: number) => formatMoney(minor, currency.value);
 const signed = (minor: number) => `${minor < 0 ? '−' : ''}${money(Math.abs(minor))}`;
 
@@ -84,7 +102,7 @@ function save() {
     amount: totalMinor.value,
     participantId: typeof owner.value === 'number' ? owner.value : null,
     fixed: rows.value.map((r, i) => ({ categoryId: r.categoryId, amount: rowMinor.value[i]! })),
-    excluded: countTaxes.value ? [] : ['taxes'],
+    excluded: [...excluded.value],
   });
 }
 </script>
@@ -128,6 +146,18 @@ function save() {
         </label>
         <VSwitch id="budget-count-taxes" v-model="countTaxes" role="switch" data-test="budget-count-taxes" />
       </div>
+
+      <section class="flex flex-col gap-2" data-test="budget-excluded-section">
+        <h3 class="text-sm font-bold">{{ $t('limits.sheet.excludeTitle') }}</h3>
+        <p class="text-xs text-foreground-muted">{{ $t('limits.sheet.excludeHint') }}</p>
+        <ul v-if="chosen.length > 0" class="flex flex-wrap gap-1.5">
+          <li v-for="id in chosen" :key="id" class="flex items-center gap-1 rounded-full bg-surface-sunken py-0.5 pl-2.5 pr-1 text-xs font-semibold text-foreground-secondary" data-test="excluded-chip">
+            {{ nameOf(id) }}
+            <VButton type="button" variant="neutral" size="sm" icon="lucide:x" :aria-label="$t('limits.sheet.excludeTake', { name: nameOf(id) })" data-test="excluded-remove" @click="excluded = excluded.filter((x) => x !== id)" />
+          </li>
+        </ul>
+        <VSelect v-model="excluding" :options="excludable" :placeholder="$t('limits.sheet.excludeTitle')" :label="$t('limits.sheet.excludeTitle')" data-test="excluded-add" />
+      </section>
 
       <VSelect v-if="owners.length > 0" v-model="owner" :options="ownerOptions" :label="$t('limits.sheet.owner')" />
 

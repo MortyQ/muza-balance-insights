@@ -21,11 +21,11 @@
 
 ## 3. Budget sheet and the «not counted» note
 
-- [ ] 3.1 `BudgetSheet.vue`: «Exclude from the budget» — the choice and the removable chips; the switch derived from
+- [x] 3.1 `BudgetSheet.vue`: «Exclude from the budget» — the choice and the removable chips; the switch derived from
       the list; fixed-cost choices and `pastFlexible` follow the list
-- [ ] 3.2 Budget panel and home's budget slide: «Not counted: …» instead of the taxes note
-- [ ] 3.3 Texts in `uk.json`, `en.json` and `ru.json`
-- [ ] 3.4 Renderer tests: excluding and taking back, a fixed cost not offered, reopening, the note
+- [x] 3.2 Budget panel and home's budget slide: «Not counted: …» instead of the taxes note
+- [x] 3.3 Texts in `uk.json`, `en.json` and `ru.json`
+- [x] 3.4 Renderer tests: excluding and taking back, a fixed cost not offered, reopening, the note
 
 ## 4. «Budget» in the menu
 

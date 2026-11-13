@@ -211,7 +211,7 @@ describe('the «Budget» screen', () => {
       budget: { ...OVERVIEW.budget!, fixed: [...OVERVIEW.budget!.fixed, { categoryId: 'taxes', amountMinor: 50_000, amount: 50_000, paid: 0 }] },
     };
     const w = await mountScreen();
-    expect(w.find('[data-test="budget-taxes-off"]').exists()).toBe(false);
+    expect(w.find('[data-test="budget-excluded"]').exists()).toBe(false);
     await w.get('[data-test="budget-edit"]').trigger('click');
     await flushPromises();
     const sheet = document.querySelector('[data-test="budget-sheet"]')!;
@@ -226,10 +226,63 @@ describe('the «Budget» screen', () => {
     await flushPromises();
     expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', excluded: ['taxes'], fixed: [{ categoryId: 'rent', amount: 1_250_000 }, { categoryId: 'utilities', amount: 110_000 }] }));
     w.unmount();
-    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, excluded: ['taxes'] } };
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, excluded: ['taxes', 'travel'] } };
     const off = await mountScreen();
-    expect(off.get('[data-test="budget-taxes-off"]').text()).toBe('Налоги в этом бюджете не учитываются.');
+    expect(off.get('[data-test="budget-excluded"]').text()).toBe('Не учитывается: Налоги и госплатежи, Путешествия и отпуск');
     off.unmount();
+  });
+
+  it('«Exclude from the budget»: a choice without fixed rows and taxes, chips that can be taken back, saved with the budget, reopened', async () => {
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, excluded: ['travel'] } };
+    const w = await mountScreen();
+    await w.get('[data-test="budget-edit"]').trigger('click');
+    await flushPromises();
+    const sheet = () => document.querySelector('[data-test="budget-sheet"]')!;
+    const chips = () => [...sheet().querySelectorAll('[data-test="excluded-chip"]')].map((c) => c.textContent?.trim());
+    expect(chips()).toEqual(['Путешествия и отпуск']);
+    // The switch shows taxes only: on, and no chip for them.
+    expect(sheet().querySelector<HTMLInputElement>('[data-test="budget-count-taxes"]')!.checked).toBe(true);
+    const select = (label: string) => w.findAllComponents({ name: 'VSelect' }).find((c) => c.props('label') === label)!;
+    const options = (label: string) => (select(label).props('options') as Array<{ value: string }>).map((o) => o.value);
+    // Not offered: a fixed row, an excluded category, taxes (the switch owns them).
+    expect(options('Исключить из бюджета')).not.toEqual(expect.arrayContaining(['rent']));
+    expect(options('Исключить из бюджета')).not.toContain('utilities');
+    expect(options('Исключить из бюджета')).not.toContain('travel');
+    expect(options('Исключить из бюджета')).not.toContain('taxes');
+    expect(options('Исключить из бюджета')).toContain('cafes');
+    // An excluded category is not offered as a fixed cost either.
+    expect(options('Добавить фиксированную трату')).not.toContain('travel');
+    expect(options('Добавить фиксированную трату')).toContain('cafes');
+
+    select('Исключить из бюджета').vm.$emit('update:modelValue', 'cafes');
+    await flushPromises();
+    expect(chips()).toEqual(['Путешествия и отпуск', 'Кафе и рестораны']);
+    expect(options('Добавить фиксированную трату')).not.toContain('cafes');
+    // Taken back: it counts again and can be a fixed cost.
+    sheet().querySelectorAll<HTMLButtonElement>('[data-test="excluded-remove"]')[0]!.click();
+    await flushPromises();
+    expect(chips()).toEqual(['Кафе и рестораны']);
+    expect(options('Добавить фиксированную трату')).toContain('travel');
+    sheet().querySelector<HTMLButtonElement>('[data-test="budget-save"]')!.click();
+    await flushPromises();
+    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ type: 'budget', excluded: ['cafes'] }));
+    w.unmount();
+  });
+
+  it('«Count taxes» off with other exclusions: taxes join the list without a chip, the others stay', async () => {
+    answer = { ...OVERVIEW, budget: { ...OVERVIEW.budget!, excluded: ['taxes', 'travel'] } };
+    const w = await mountScreen();
+    await w.get('[data-test="budget-edit"]').trigger('click');
+    await flushPromises();
+    const sheet = document.querySelector('[data-test="budget-sheet"]')!;
+    expect(sheet.querySelector<HTMLInputElement>('[data-test="budget-count-taxes"]')!.checked).toBe(false);
+    expect([...sheet.querySelectorAll('[data-test="excluded-chip"]')].map((c) => c.textContent?.trim())).toEqual(['Путешествия и отпуск']);
+    sheet.querySelector<HTMLInputElement>('[data-test="budget-count-taxes"]')!.click();
+    await flushPromises();
+    sheet.querySelector<HTMLButtonElement>('[data-test="budget-save"]')!.click();
+    await flushPromises();
+    expect(saveGoal).toHaveBeenLastCalledWith(1, expect.objectContaining({ excluded: ['travel'] }));
+    w.unmount();
   });
 
   it('the limit sheet offers «Cash» only while cash withdrawals count as spending', async () => {

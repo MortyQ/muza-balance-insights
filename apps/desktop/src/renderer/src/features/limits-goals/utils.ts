@@ -9,6 +9,9 @@ import type { BudgetPanelView, FixedRowView, GoalRowView, LimitRowView, LimitsSc
 
 export const nameOf = (id: KindCategoryId) => categoryName({ category: id, categoryId: id });
 
+/** «Not counted: Taxes, Travel» — the budget's exclusions by name; none → null. */
+export const excludedNote = (ids: ReadonlyArray<KindCategoryId>): string | null => (ids.length === 0 ? null : t('limits.budget.excluded', { names: ids.map(nameOf).join(', ') }));
+
 /** Kopecks per minor unit of a goal currency; hryvnia 1; null — no rate. */
 export function rateOf(rates: RatesView | null, currency: AppCurrency): number | null {
   if (currency === UAH) return 1;
@@ -61,7 +64,7 @@ export function budgetPanel(b: MonthBudgetView, month: string, current: boolean,
             : t('limits.budget.over', { amount: fmt.money(-b.result.left) }),
         }
       : null,
-    taxesNote: b.excluded.includes('taxes') ? t('limits.budget.taxesOff') : null,
+    excludedNote: excludedNote(b.excluded),
     help: {
       title: t('limits.budget.helpTitle'),
       lines: [

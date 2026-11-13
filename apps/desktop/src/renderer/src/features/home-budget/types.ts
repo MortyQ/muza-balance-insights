@@ -26,6 +26,8 @@ export interface BudgetRowView {
   /** The flexible part's spent of its amount in each picked «Show also» currency. */
   flexibleAlso: string[];
   flexible: LimitLook;
+  /** «Not counted: Taxes, Travel»; null — nothing is left out. */
+  excludedNote: string | null;
   /** A running month: per day by the budget and the days left. */
   perDay: { amount: string; also: string[]; days: string } | null;
   result: { within: boolean; text: string; left: string; leftAlso: string[] } | null;

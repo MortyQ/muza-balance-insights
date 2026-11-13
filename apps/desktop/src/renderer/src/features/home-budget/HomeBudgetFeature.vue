@@ -56,6 +56,7 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
         <LimitBar :fill="row.flexible.fill" :pace="row.flexible.pace" :state="row.flexible.state" />
         <span v-if="row.flexible.paceText" class="text-xs text-foreground-muted tabular-nums">{{ row.flexible.paceText }}</span>
         <PendingNote v-if="row.flexible.pending" :note="row.flexible.pending" />
+        <span v-if="row.excludedNote" class="text-xs text-foreground-muted" data-test="home-budget-excluded">{{ row.excludedNote }}</span>
       </div>
       <div class="flex min-w-0 flex-col gap-0.5" data-test="home-budget-day">
         <template v-if="row.perDay">

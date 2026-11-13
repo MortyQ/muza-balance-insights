@@ -902,7 +902,8 @@
       "emptyText": "Set one amount, mark rent and other fixed costs — and see how much you can spend a day on the rest.",
       "set": "Set a budget",
       "limitsTitle": "Limits",
-      "allLimits": "All limits"
+      "allLimits": "All limits",
+      "excluded": "Not counted: {names}"
     }
   },
   "income": {
@@ -1715,7 +1716,7 @@
       "emptyTitle": "No monthly budget yet",
       "emptyText": "One amount for everything; fixed costs are set aside first, the rest is shown by day.",
       "create": "Set a budget",
-      "taxesOff": "Taxes are not counted in this budget."
+      "excluded": "Not counted: {names}"
     },
     "suggest": {
       "text": "This is what usually goes in a month. Set limits at that level?",
@@ -1764,7 +1765,10 @@
       "pastTitle": "Flexible spending in past months",
       "saveBudget": "Save the budget",
       "countTaxes": "Count taxes",
-      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure»."
+      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure».",
+      "excludeTitle": "Exclude from the budget",
+      "excludeHint": "Left out of the flexible part and not a fixed cost. These categories stay in «Spending» and under their own limits.",
+      "excludeTake": "Count {name} in the budget again"
     },
     "goals": {
       "title": "Savings goals",
