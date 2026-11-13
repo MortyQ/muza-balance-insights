@@ -64,6 +64,13 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/income').then((m) => m.IncomePage),
     meta: { navParent: ROUTE.home },
   },
+  {
+    // Opened from home's «N more categories» row; no menu item of its own.
+    path: '/spending/categories',
+    name: ROUTE.spendingCategories,
+    component: () => import('@/pages/spending-categories').then((m) => m.SpendingCategoriesPage),
+    meta: { navParent: ROUTE.home },
+  },
   { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage), meta: { layout: 'empty' } },
   { path: '/settings', name: ROUTE.settings, component: () => import('@/pages/settings').then((m) => m.SettingsPage), meta: { layout: 'empty' } },
   {

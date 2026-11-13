@@ -4,7 +4,7 @@ import { bankOf } from '@/entities/bank';
 import { CATEGORY_ICON, categoryName } from '@/entities/category';
 import type { MoneyFormat } from '@/entities/currency-display';
 import { t } from '@/shared/lib';
-import { BELOW_TOP_COLOR, CATEGORY_COLORS, REST_COLOR, TOP } from '../constants.ts';
+import { BELOW_TOP_COLOR, CATEGORY_COLORS, REST_COLOR, REST_KEY, TOP } from '../constants.ts';
 import type { BarSegment, BlockPerson, RowView, SpendingPrefs, SpendingSplit } from '../types.ts';
 import { amountChip, opsView } from './chips.ts';
 import { partial, prevIn } from './month.ts';
@@ -89,7 +89,10 @@ function sumPrev(prevs: ReadonlyArray<SpendingAmounts | null>): SpendingAmounts 
   return { net, purchases };
 }
 
-/** The rows of the list for the family (pick null) or one picked person; colours stay those of the family's rank. */
+/**
+ * The rows of the list for the family (pick null) or one picked person; colours stay those of the family's rank.
+ * `all` — every category its own row, no «N more categories» row (the «All categories» screen).
+ */
 export function rowsFor(
   view: Readonly<SpendingOverview>,
   pick: number | null,
@@ -97,6 +100,7 @@ export function rowsFor(
   prefs: Readonly<SpendingPrefs>,
   fmt: MoneyFormat,
   banksOn = false,
+  all = false,
 ): RowView[] {
   const split = effectiveSplit(prefs.split, { people: view.people.length, banksOn, pick });
   const lines: Line[] = view.categories
@@ -119,11 +123,11 @@ export function rowsFor(
     .filter((l) => l.net > 0)
     .sort((a, b) => b.net - a.net);
 
-  const top = lines.slice(0, TOP);
-  const rest = lines.slice(TOP);
+  const top = all ? lines : lines.slice(0, TOP);
+  const rest = all ? [] : lines.slice(TOP);
   if (rest.length > 0) {
     top.push({
-      key: 'rest',
+      key: REST_KEY,
       categoryId: null,
       name: t('home.spending.rest', rest.length),
       icon: CATEGORY_ICON.rest,

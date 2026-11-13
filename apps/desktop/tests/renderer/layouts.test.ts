@@ -65,7 +65,7 @@ describe('navGroups', () => {
       },
     ]);
     const layouts = Object.fromEntries(router.getRoutes().map((r) => [r.name, layoutOf(r)]));
-    expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
+    expect(layouts).toMatchObject({ home: 'default', insights: 'default', analytics: 'default', recurring: 'default', planning: 'default', category: 'default', 'spending-categories': 'default', connect: 'empty', settings: 'empty', 'db-recovery': 'empty', lock: 'empty' });
     // The global filters offer whole months on analytics, no period on regular payments and planning, one month elsewhere.
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'range').map((r) => r.name)).toEqual(['analytics']);
     expect(router.getRoutes().filter((r) => r.meta.periodFilter === 'none').map((r) => r.name)).toEqual(['recurring', 'planning', 'fop-tax']);
@@ -78,7 +78,7 @@ describe('navItems', () => {
     const items = navItems(router.getRoutes(), (key) => `t:${key}`);
     expect(items.map((i) => i.id)).toEqual(['home', 'insights', 'analytics', 'recurring', 'planning', 'fop-tax']);
     expect(items[0]).toMatchObject({ label: 't:home.nav.general', icon: 'lucide:layout-dashboard', to: { name: 'home' } });
-    expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income']));
+    expect(items[0]?.activeFor).toEqual(expect.arrayContaining(['category', 'income', 'spending-categories']));
     expect(items[1]?.activeFor).toEqual([]);
   });
 });

@@ -5,6 +5,11 @@ English interface.
 
 ## 0.1.16 — unreleased
 
+### Home
+
+- «Spending» names every category of the month on a new «All categories» screen: the «N more categories» row opens it,
+  and each category there shows its amount, share, transactions and change, and opens as on home.
+
 ### Budget and limits
 
 - The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,

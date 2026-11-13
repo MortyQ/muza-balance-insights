@@ -6,12 +6,15 @@ import { useCategoryRows } from './useCategoryRows.ts';
 import { usePick } from './usePick.ts';
 import { useSummaryView } from './useSummaryView.ts';
 
-/** What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. */
-export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>): UseSpendingViewReturn {
+/**
+ * What the block shows for the loaded view, the in-block pick (family view only) and the menu choices. `all` — every
+ * category its own row (the «All categories» screen).
+ */
+export function useSpendingView(base: UseSpendingReturn, prefs: Readonly<Ref<SpendingPrefs>>, all = false): UseSpendingViewReturn {
   const { month, state, view } = base;
   const { blockPick, who, people, onPick } = usePick(base);
   const hasData = computed(() => !!view.value && view.value.categories.some((c) => c.net > 0));
-  const { rows, categories } = useCategoryRows(base, blockPick, who, hasData, prefs);
+  const { rows, categories } = useCategoryRows(base, blockPick, who, hasData, prefs, all);
   const { summary } = useSummaryView(base, blockPick, who, rows);
 
   const subtitle = computed(() => [monthName(Number(month.value.slice(5, 7))), who.value].filter(Boolean).join(' · '));

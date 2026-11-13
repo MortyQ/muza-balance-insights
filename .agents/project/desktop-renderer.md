@@ -176,6 +176,15 @@
   the rows stand in two columns from 60rem. The note says the median of how
   many months, and that the month still runs. It is a slide of the highlights tile (`useSpendingInsights`, the same
   request as the block, shared while in flight by `shared/api/balance.ts`).
+- **«All categories» screen** (`features/spending-summary`, `SpendingCategoriesFeature.vue`; `pages/spending-categories`;
+  spec `desktop-spending-categories`): route `spending-categories` (`/spending/categories`, `meta.navParent: 'home'` — no
+  menu item), `spendingCategoriesLink()` in `shared/config`. Home's «N more categories» row (`REST_KEY`) links to it
+  (`useCategoryRows`). The screen reads the same `getSpendingOverview` answer as the block (`useSpending`) and builds
+  its rows with the same `rowsFor`, option `all`: every category with spending its own row, no `rest` row; colours as
+  in the block (the family's top seven `--category-N`, the others `--category-other`; one bar scale). Back link
+  (`BackLink`), heading, month and total, the scope switch (home-wide `entities/scope`), `SpendingNotices`, the list;
+  no ring, no «Show more». The block's view settings (`useSpendingPrefsStore`) are read, not changed here; a person
+  picked inside home's block is not carried over (the global person filter is).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date), and

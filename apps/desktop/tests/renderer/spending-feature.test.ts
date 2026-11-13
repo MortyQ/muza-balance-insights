@@ -71,20 +71,21 @@ beforeEach(() => {
 
 let router: Router;
 
-async function mountBlock(attachTo?: Element) {
+async function mountBlock(attachTo?: Element, screen = false) {
   const { i18n } = await import('@/shared/lib/i18n.ts');
   const { useParticipantStore } = await import('@/entities/participant');
   useParticipantStore().view = PEOPLE;
-  const { SpendingFeature } = await import('@/features/spending-summary');
+  const { SpendingFeature, SpendingCategoriesFeature } = await import('@/features/spending-summary');
   router = createRouter({
     history: createMemoryHistory(),
     routes: [
       { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
       { path: '/category/:id', name: 'category', component: defineComponent(() => () => h('div')) },
+      { path: '/spending/categories', name: 'spending-categories', component: defineComponent(() => () => h('div')) },
     ],
   });
   await router.push('/');
-  const w = mount(SpendingFeature, { global: { plugins: [i18n, router] }, ...(attachTo ? { attachTo } : {}) });
+  const w = mount(screen ? SpendingCategoriesFeature : SpendingFeature, { global: { plugins: [i18n, router] }, ...(attachTo ? { attachTo } : {}) });
   await flushPromises();
   return w;
 }
@@ -342,5 +343,77 @@ describe('spending tiles', () => {
   it('«What\'s unusual» is never inside «Spending by category»', async () => {
     const w = await mountBlock();
     expect(w.get('[data-test="spending-tile"]').text()).not.toContain('Что необычного');
+  });
+});
+
+// Fifteen categories (invented amounts) for the «more categories» row and the «All categories» screen.
+const IDS = ['groceries', 'cafes', 'gifts', 'transport', 'health', 'clothing', 'beauty', 'pets', 'sport', 'travel', 'utilities', 'telecom', 'education', 'charity', 'delivery'] as const;
+const NAMES: Record<(typeof IDS)[number], string> = { groceries: 'Продукты', cafes: 'Кафе и рестораны', gifts: 'Цветы и подарки', transport: 'Такси и транспорт', health: 'Аптеки и здоровье', clothing: 'Одежда', beauty: 'Красота', pets: 'Зоотовары', sport: 'Спорт', travel: 'Путешествия и отпуск', utilities: 'Коммунальные', telecom: 'Связь и цифровые сервисы', education: 'Образование', charity: 'Благотворительность', delivery: 'Доставка' };
+const MANY: SpendingOverview = {
+  ...VIEW,
+  total: { net: 12_000, purchases: 30, prev: null },
+  people: [part(1, 12_000, 30, null)],
+  categories: IDS.map((id, i) => ({ category: id, categoryId: id, net: (15 - i) * 100, purchases: 2, prev: null, people: [part(1, (15 - i) * 100, 2, null)], banks: [] })),
+};
+const rowsOf = (w: Awaited<ReturnType<typeof mountBlock>>) => w.findAll('a[href*="/category/"]');
+
+describe('home: the «more categories» row', () => {
+  it('opens the «All categories» screen; the named rows still open their categories', async () => {
+    current = MANY;
+    const w = await mountBlock();
+    await w.get('[data-test="spending-more"]').trigger('click'); // the tile lists four rows first
+    const more = w.findAll('a').find((a) => a.text().includes('Ещё 8 категорий'));
+    expect(more).toBeTruthy();
+    await more!.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('spending-categories');
+  });
+});
+
+describe('«All categories» screen', () => {
+  it('lists every category of the month by name, each opening its category, with no «more» row; follows the scope', async () => {
+    current = MANY;
+    const w = await mountBlock(undefined, true);
+    expect(w.text()).toContain('Все категории');
+    expect(w.text()).not.toContain('Ещё');
+    expect(rowsOf(w)).toHaveLength(15);
+    for (const id of IDS) expect(w.text()).toContain(NAMES[id]);
+    expect(w.findComponent(CategoryRing).exists()).toBe(false);
+
+    const small = rowsOf(w)[11]!; // the twelfth
+    expect(small.text()).toContain(NAMES.telecom);
+    await small.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'telecom' }, query: { scope: 'personal' } });
+
+    const { useScopeStore } = await import('@/entities/scope');
+    await w.findAll('button').find((b) => b.text() === 'Бизнес')!.trigger('click');
+    await flushPromises();
+    expect(useScopeStore().scope).toBe('business');
+    expect(getSpendingOverview.mock.calls.at(-1)?.[0]).toMatchObject({ scope: 'business' });
+  });
+
+  it('follows the global month and person', async () => {
+    current = MANY;
+    const w = await mountBlock(undefined, true);
+    const { useParticipantStore } = await import('@/entities/participant');
+    useParticipantStore().select(2);
+    await flushPromises();
+    expect(getSpendingOverview.mock.calls.at(-1)?.[0]).toMatchObject({ participantId: 2 });
+    const { useMonthStore } = await import('@/entities/period');
+    const store = useMonthStore();
+    const before = getSpendingOverview.mock.calls.length;
+    store.month = '2026-08';
+    await flushPromises();
+    expect(getSpendingOverview.mock.calls.length).toBeGreaterThan(before);
+    expect(getSpendingOverview.mock.calls.at(-1)?.[0]).toMatchObject({ month: '2026-08' });
+    expect(w.exists()).toBe(true);
+  });
+
+  it('a month with no spending says so instead of a list', async () => {
+    current = EMPTY;
+    const w = await mountBlock(undefined, true);
+    expect(w.text()).toContain('Трат за этот месяц нет.');
+    expect(rowsOf(w)).toHaveLength(0);
   });
 });

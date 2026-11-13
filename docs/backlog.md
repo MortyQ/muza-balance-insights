@@ -413,3 +413,13 @@
   extrapolated); decide whether it needs a note. A regular payment paid today as a pending hold drops out for up to
   3 days.
 - **Layout**: five figures at narrow, medium and wide windows; the «?» reads well in uk / en / ru.
+
+## Check on a live system: all categories page (`openspec/changes/all-categories-page`)
+
+- **A long month**: the list shows every category of a month with fifteen or more, biggest first; the amounts add up
+  to the total in the heading; the eighth and later categories read well in their muted colour with each bar split
+  choice («Together», «By people», «By banks»).
+- **From home**: «N more categories» opens the screen for the same month, scope, person and banks; «General» stays
+  current in the menu; the back link returns to home.
+- **Both themes and a narrow window**: names, shares, change chips and amounts do not collide or clip; the heading and
+  the «Personal / Business» switch wrap cleanly.

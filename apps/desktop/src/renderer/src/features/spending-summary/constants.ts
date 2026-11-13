@@ -13,6 +13,9 @@ export const TOP = 7;
 /** Category colours by rank in the family's order (theme.css `--category-N`, apart from the people's colours); the rest is grey. */
 export const CATEGORY_COLORS: ReadonlyArray<string> = Array.from({ length: TOP }, (_, i) => `var(--category-${i + 1})`);
 
+/** The key of the «N more categories» row. */
+export const REST_KEY = 'rest';
+
 /** «N more categories». */
 export const REST_COLOR = 'var(--border-strong)';
 
