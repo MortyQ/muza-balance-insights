@@ -2,13 +2,13 @@
 
 ## 1. Core: budget exclusions
 
-- [ ] 1.1 Migration `v24`: table `goal_excluded (goal_id, category)` with cascade; a taxes row for every budget with
+- [x] 1.1 Migration `v24`: table `goal_excluded (goal_id, category)` with cascade; a taxes row for every budget with
       `count_taxes = 0`; appended to `storage/migrations.ts`; the migration lists in tests
-- [ ] 1.2 `read/goals.ts`: `BudgetInput.excluded` instead of `countTaxes` — checks (a spending category, once, not a
+- [x] 1.2 `read/goals.ts`: `BudgetInput.excluded` instead of `countTaxes` — checks (a spending category, once, not a
       fixed row), written and read with the budget, `count_taxes` written as 1 and not read
-- [ ] 1.3 Core tests: add / update / list / delete with exclusions, the refusals, the migration on a budget saved with
+- [x] 1.3 Core tests: add / update / list / delete with exclusions, the refusals, the migration on a budget saved with
       taxes off, on and before v21
-- [ ] 1.4 `.agents/project/domain-rules.md`: the budget's exclusions
+- [x] 1.4 `.agents/project/domain-rules.md`: the budget's exclusions
 
 ## 2. Desktop data: flexible spending without the excluded
 

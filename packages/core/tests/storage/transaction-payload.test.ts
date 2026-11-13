@@ -64,7 +64,7 @@ describe('migration v16', () => {
     const db = await v15(':memory:', 60, 200);
     const before = await rows(db, 'SELECT * FROM transactions ORDER BY id');
 
-    expect(await migrate(db, 0)).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
+    expect(await migrate(db, 0)).toEqual([16, 17, 18, 19, 20, 21, 22, 23, 24]);
 
     expect(await rows(db, 'SELECT * FROM transactions ORDER BY id')).toEqual(
       // bank_category and transfer_fee: migration v17, which runs right after.
@@ -133,7 +133,7 @@ describe('compaction after migration v16', () => {
     const ok: CompactionResult[] = [];
     const a = await openLibsql(`file:${compacted}`);
     open.push(a);
-    expect(await migrate(a, 0, (r) => ok.push(r))).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
+    expect(await migrate(a, 0, (r) => ok.push(r))).toEqual([16, 17, 18, 19, 20, 21, 22, 23, 24]);
     expect(ok).toEqual([{ ok: true }]);
     expect(await rows(a, 'PRAGMA freelist_count')).toEqual([{ freelist_count: 0 }]);
     a.close();
@@ -142,10 +142,10 @@ describe('compaction after migration v16', () => {
     const bad: CompactionResult[] = [];
     const b = await openLibsql(`file:${failed}`);
     open.push(b);
-    expect(await migrate(vacuumFails(b), 0, (r) => bad.push(r))).toEqual([16, 17, 18, 19, 20, 21, 22, 23]);
+    expect(await migrate(vacuumFails(b), 0, (r) => bad.push(r))).toEqual([16, 17, 18, 19, 20, 21, 22, 23, 24]);
     expect(bad).toHaveLength(1);
     expect(bad[0]?.ok).toBe(false);
-    expect(await rows(b, 'SELECT MAX(version) AS v FROM schema_migrations')).toEqual([{ v: 23 }]);
+    expect(await rows(b, 'SELECT MAX(version) AS v FROM schema_migrations')).toEqual([{ v: 24 }]);
     expect(await rows(b, 'SELECT COUNT(*) AS n FROM transaction_raw')).toEqual([{ n: 1500 }]);
     // Not retried on the next launch.
     const again: CompactionResult[] = [];

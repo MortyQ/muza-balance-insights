@@ -1,7 +1,6 @@
-// The user's plans (goals, goal_fixed — v20): category limits, the monthly budget with its own fixed costs, savings
+// The user's plans (goals, goal_fixed — v20, goal_excluded — v24): category limits, the monthly budget with its own fixed costs, savings
 // goals. Plain writes like reserves.ts: nothing derived depends on them, every read counts them at query time. The
 // checks here come before the table's: a refused plan stores nothing.
-import { CATEGORY } from '../derive/categories.ts';
 import { APP_CURRENCY_CODES, type AppCurrency, isAppCurrency } from '../shared/currency.ts';
 import type { Db } from '../storage/db.ts';
 import { DEFAULT_KINDS } from './category-kinds.ts';
@@ -15,8 +14,8 @@ export const SAVINGS_MAX = 20;
 
 type Owner = { currency: AppCurrency; amount: number; participantId: number | null };
 export type LimitInput = Owner & { type: 'limit'; category: string; period: LimitPeriod };
-/** `countTaxes` false: taxes stay out of the flexible part and cannot be a fixed row. */
-export type BudgetInput = Owner & { type: 'budget'; fixed: Array<{ category: string; amount: number }>; countTaxes: boolean };
+/** `excluded`: spending categories the budget counts neither as flexible spending nor as fixed rows (taxes among them, when «count taxes» is off). */
+export type BudgetInput = Owner & { type: 'budget'; fixed: Array<{ category: string; amount: number }>; excluded: string[] };
 export type SavingInput = Owner & { type: 'saving'; name: string; until: string | null; source: 'jar' | 'own'; accountId: string | null };
 export type GoalInput = LimitInput | BudgetInput | SavingInput;
 export type Goal = GoalInput & { id: number };
@@ -24,6 +23,9 @@ export type Goal = GoalInput & { id: number };
 export class GoalError extends Error {
   override name = 'GoalError';
 }
+
+/** The categories in the category list's order (the one stable order the read gives). */
+const inOrder = (words: string[]): string[] => [...DEFAULT_KINDS.keys()].filter((w) => words.includes(w));
 
 function isDate(v: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
@@ -48,12 +50,18 @@ function checked(g: GoalInput): GoalInput {
       for (const r of g.fixed) {
         if (!DEFAULT_KINDS.has(r.category)) throw new GoalError('fixed: not a spending category');
         if (seen.has(r.category)) throw new GoalError('fixed: a category once');
-        if (!g.countTaxes && r.category === CATEGORY.taxes) throw new GoalError('fixed: taxes while the budget does not count them');
         if (!amountOk(r.amount)) throw new GoalError('fixed: an amount for every row');
         seen.add(r.category);
       }
-      if (typeof g.countTaxes !== 'boolean') throw new GoalError('countTaxes: true | false');
-      return { ...g, fixed: g.fixed.map((r) => ({ ...r })) };
+      if (!Array.isArray(g.excluded)) throw new GoalError('excluded: a list of categories');
+      const out = new Set<string>();
+      for (const c of g.excluded) {
+        if (!DEFAULT_KINDS.has(c)) throw new GoalError('excluded: not a spending category');
+        if (out.has(c)) throw new GoalError('excluded: a category once');
+        if (seen.has(c)) throw new GoalError('excluded: a fixed row cannot be excluded');
+        out.add(c);
+      }
+      return { ...g, fixed: g.fixed.map((r) => ({ ...r })), excluded: inOrder(g.excluded) };
     }
     case 'saving': {
       const name = g.name.trim();
@@ -102,7 +110,7 @@ function columns(g: GoalInput): Array<string | number | null> {
     g.type === 'saving' ? g.until : null,
     g.type === 'saving' ? g.source : null,
     g.type === 'saving' ? g.accountId : null,
-    g.type === 'budget' && !g.countTaxes ? 0 : 1,
+    1,
   ];
 }
 
@@ -110,6 +118,12 @@ async function writeFixed(db: Db, id: number, g: GoalInput): Promise<void> {
   await db.execute({ sql: 'DELETE FROM goal_fixed WHERE goal_id = ?', args: [id] });
   if (g.type !== 'budget') return;
   for (const r of g.fixed) await db.execute({ sql: 'INSERT INTO goal_fixed (goal_id, category, amount) VALUES (?, ?, ?)', args: [id, r.category, r.amount] });
+}
+
+async function writeExcluded(db: Db, id: number, g: GoalInput): Promise<void> {
+  await db.execute({ sql: 'DELETE FROM goal_excluded WHERE goal_id = ?', args: [id] });
+  if (g.type !== 'budget') return;
+  for (const c of g.excluded) await db.execute({ sql: 'INSERT INTO goal_excluded (goal_id, category) VALUES (?, ?)', args: [id, c] });
 }
 
 /** Adds a plan; an invalid or a second one → GoalError, nothing stored. */
@@ -122,6 +136,7 @@ export async function addGoal(db: Db, input: GoalInput, nowSec: number): Promise
   });
   const id = Number(rs.rows[0]?.id);
   await writeFixed(db, id, g);
+  await writeExcluded(db, id, g);
   return { ...g, id };
 }
 
@@ -137,25 +152,29 @@ export async function updateGoal(db: Db, id: number, input: GoalInput): Promise<
     args: [...columns(g), id],
   });
   await writeFixed(db, id, g);
+  await writeExcluded(db, id, g);
   return { ...g, id };
 }
 
-/** Deletes a plan with its fixed rows; an unknown id → GoalError. */
+/** Deletes a plan with its fixed and excluded rows; an unknown id → GoalError. */
 export async function deleteGoal(db: Db, id: number): Promise<void> {
   await db.execute({ sql: 'DELETE FROM goal_fixed WHERE goal_id = ?', args: [id] });
+  await db.execute({ sql: 'DELETE FROM goal_excluded WHERE goal_id = ?', args: [id] });
   const rs = await db.execute({ sql: 'DELETE FROM goals WHERE id = ? RETURNING id', args: [id] });
   if (rs.rows.length === 0) throw new GoalError('unknown goal');
 }
 
-/** Every plan, oldest first, the budget's fixed rows in their order of entry. */
+/** Every plan, oldest first, the budget's fixed rows in their order of entry and its exclusions in the category list's order. */
 export async function listGoals(db: Db): Promise<Goal[]> {
-  const rs = await db.execute('SELECT id, type, category, period, currency, amount, participant_id, name, until, source, account_id, count_taxes FROM goals ORDER BY id');
+  const rs = await db.execute('SELECT id, type, category, period, currency, amount, participant_id, name, until, source, account_id FROM goals ORDER BY id');
   const fixed = await db.execute('SELECT goal_id, category, amount FROM goal_fixed ORDER BY rowid');
+  const excluded = await db.execute('SELECT goal_id, category FROM goal_excluded');
+  const excludedOf = (id: number) => inOrder(excluded.rows.filter((r) => Number(r.goal_id) === id).map((r) => String(r.category)));
   const rowsOf = (id: number) => fixed.rows.filter((r) => Number(r.goal_id) === id).map((r) => ({ category: String(r.category), amount: Number(r.amount) }));
   return rs.rows.map((r): Goal => {
     const base = { id: Number(r.id), currency: Number(r.currency) as AppCurrency, amount: Number(r.amount), participantId: r.participant_id === null ? null : Number(r.participant_id) };
     if (r.type === 'limit') return { ...base, type: 'limit', category: String(r.category), period: String(r.period) as LimitPeriod };
-    if (r.type === 'budget') return { ...base, type: 'budget', fixed: rowsOf(base.id), countTaxes: Number(r.count_taxes) !== 0 };
+    if (r.type === 'budget') return { ...base, type: 'budget', fixed: rowsOf(base.id), excluded: excludedOf(base.id) };
     return {
       ...base,
       type: 'saving',

@@ -95,7 +95,7 @@ export function budgetView(
   if (total === null) return null;
   const fixed = g.fixed.map((r) => ({ categoryId: idOf(r.category), amountMinor: r.amount, amount: toUah(r.amount, g.currency, rates) ?? 0, paid: month.get(r.category) ?? 0, word: r.category }));
   const listed = new Set(g.fixed.map((r) => r.category));
-  const flexibleWords = [...kinds].filter(([w, k]) => !listed.has(w) && k.kind !== 'savings' && (g.countTaxes || w !== CATEGORY.taxes)).map(([w]) => w);
+  const flexibleWords = [...kinds].filter(([w, k]) => !listed.has(w) && k.kind !== 'savings' && !g.excluded.includes(w)).map(([w]) => w);
   const flexibleSpent = sum(month, flexibleWords);
   const parts = budgetParts({ amount: total, fixed: fixed.map((r) => ({ category: r.word, amount: r.amount, paid: r.paid })), flexibleSpent });
   const fixedPaid = fixed.reduce((s, r) => s + r.paid, 0);
@@ -110,7 +110,7 @@ export function budgetView(
     fixedTotal: parts.fixedTotal,
     fixedPaid,
     fixedTakesAll: parts.fixedTakesAll,
-    countTaxes: g.countTaxes,
+    countTaxes: !g.excluded.includes(CATEGORY.taxes),
     flexible: figures(parts.flexibleAmount, parts.flexibleSpent, 'month', pos, pendingOf(pending, flexibleWords)),
     result: current ? null : { within: left >= 0, left },
   };
