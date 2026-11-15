@@ -13,6 +13,17 @@ English interface.
   button is gone.
 - A category opened from «All categories» goes back to «All categories» instead of home.
 
+### Insights
+
+- «What's unusual» is one calm list instead of cards of different shapes: each row has an icon, a title with one
+  sentence, and the amount or change on the right. Severity is a small coloured dot; the word «High» shows only on high
+  rows.
+- A row opens to show more: the months chart, the payee and the link. High rows start opened, the others folded.
+- The months chart now explains itself: a caption and a legend say which bar is this month, which are the other months,
+  and what the dashed line is («Your usual month: …»).
+- The filters fit one row: the severity buttons and, at its end, a «Kind» list.
+- «How it was counted» is folded under the list until you open it.
+
 ### Budget and limits
 
 - The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,

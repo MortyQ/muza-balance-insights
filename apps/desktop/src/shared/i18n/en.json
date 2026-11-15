@@ -1014,7 +1014,13 @@
       "income": "Income",
       "driver": "Mostly {name}: {amount}, {share}% of the change",
       "open": "Open transactions",
-      "chart": "The usual months and this one; the line is the usual, {usual}"
+      "chart": "The usual months and this one; the line is the usual, {usual}",
+      "chartCaption": "Previous months and this one",
+      "legend": {
+        "now": "This month",
+        "other": "Other months",
+        "usual": "Your usual month: {usual}"
+      }
     },
     "feed": {
       "title": "What's unusual",

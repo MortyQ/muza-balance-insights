@@ -16,6 +16,9 @@ export const TONE_FILL = {
   neutral: 'bg-[color-mix(in_oklch,var(--foreground)_55%,transparent)]',
 } as const;
 
+/** The other months' bars: a quiet grey. */
+export const OTHER_FILL = 'bg-[color-mix(in_oklch,var(--foreground)_22%,transparent)]';
+
 /** A severity mark: a soft tint, the stronger the more it weighs. */
 export const SEVERITY_CHIP: Readonly<Record<InsightSeverity, string>> = {
   high: 'bg-[color-mix(in_oklch,var(--series-orange)_18%,transparent)] text-[color-mix(in_oklch,var(--series-orange)_72%,var(--foreground))]',

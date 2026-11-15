@@ -340,9 +340,17 @@
   ▲ / ▼, a running month's forecast hatched, three tiles (usual, trend, the month or its forecast), legends in words,
   growing to the checklist's height; `HealthChecklist` — the income bar and the items in three groups with a circle,
   an icon, the standing in words and, for a share, its direction against the usual; standings and references come
-  from the data process), then one feed (`feedItems`: `InsightCard`s and `SignalCard`s — new payees, one-offs —
-  ranked by money; `InsightBars` CSS bars, no ECharts per card) with `FeedFilters` (severity and kind,
-  `useFeedFilter`, `localStorage` `insights.feedFilter`), and «How it was counted». «Strong signals» → «Show» sets the
+  from the data process), then one feed: `feedItems` (insights, limits, new payees, one-offs, ranked by money) as one
+  `VCard` list of `FeedRow`s divided by hairlines (`feedRow` in `utils/feed.ts` gives an insight and a signal one shape:
+  icon, title with its one sentence, the amount or change chip with its «≈» lines; severity is a dot with an `sr-only`
+  word, the word chip only on «High»). A row with details (`hasDetails`: the months chart, the payee line or the link)
+  is a disclosure — a real `<button>` with `aria-expanded` / `aria-controls`, details in `FeedDetails` shown with
+  `v-show`; «High» rows start opened, the rest folded; a row without details is a plain `<div>`, not a button. A signal's
+  category link lives in its details like an insight's («Open transactions»). `InsightBars` (CSS bars, no ECharts per
+  row) carries its caption and a legend of three entries (this month, other months, the dashed usual month with its
+  value). `FeedFilters`: one row — the severity toggles with counts and the «Kind» `VSelect` at its end (`useFeedFilter`,
+  `localStorage` `insights.feedFilter`, the stored shape unchanged). «How it was counted» is one folded disclosure
+  under the feed. Open/close adds only a chevron turn, still under `motion-reduce`. «Strong signals» → «Show» sets the
   filter to high and scrolls to the feed. Under 3 whole months: a card with «Download history» (`importLink()`)
   instead of the feed. Home's «Insights» block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec

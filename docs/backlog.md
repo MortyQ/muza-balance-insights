@@ -445,3 +445,14 @@
   themes, on home, on the «Budget» screen and on the category screen.
 - **The bar past the limit**: the solid part, the hatched part and the tick at the limit at 1.1×, 1.6× and 3× the limit;
   the pace marker; the hatching in both themes; a thick bar in the budget panel.
+
+## To check live: «What's unusual» feed (feedback-polish, third group)
+
+- **The list in both themes**: one card of rows, hairlines between them; the severity dot's three tints read apart; the
+  «High» chip; the change chips and «≈» lines line up on the right.
+- **A narrow window**: the filter row wraps (the «Kind» list under the severity buttons), titles truncate, the chart
+  stays inside the row, the legend wraps.
+- **A screen reader on the disclosures**: each row with details reads as a button, expanded or collapsed, with the
+  severity word in its name; Enter and Space toggle it; the folded details are not read; «How it was counted» the same.
+- **The «Kind» list**: the keyboard opens it and picks; the severity count stays the month's while a kind is picked.
+- **Reduced motion**: with it on, the chevron turns without animation.

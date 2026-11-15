@@ -20,13 +20,13 @@
 
 ## 3. Insights: a clearer «What's unusual»
 
-- [ ] 3.1 Spec delta `specs/desktop-insights-page/spec.md`, strict validation
-- [ ] 3.2 `FeedRow` and `FeedDetails`: one list, one row shape, details on demand, high rows opened
-- [ ] 3.3 The chart's caption and legend; texts in three dictionaries
-- [ ] 3.4 Filters: severity toggles and the «Kind» select; the remembered filter unchanged
-- [ ] 3.5 «How it was counted» folded
-- [ ] 3.6 Renderer tests rewritten for the rows: keyboard, `aria-expanded`, filters, links, the legend
-- [ ] 3.7 `.agents/project/desktop-renderer.md`, `CHANGELOG.md`, `docs/backlog.md`
+- [x] 3.1 Spec delta `specs/desktop-insights-page/spec.md`, strict validation
+- [x] 3.2 `FeedRow` and `FeedDetails`: one list, one row shape, details on demand, high rows opened
+- [x] 3.3 The chart's caption and legend; texts in three dictionaries
+- [x] 3.4 Filters: severity toggles and the «Kind» select; the remembered filter unchanged
+- [x] 3.5 «How it was counted» folded
+- [x] 3.6 Renderer tests rewritten for the rows: keyboard, `aria-expanded`, filters, links, the legend
+- [x] 3.7 `.agents/project/desktop-renderer.md`, `CHANGELOG.md`, `docs/backlog.md`
 
 ## 4. Checks
 

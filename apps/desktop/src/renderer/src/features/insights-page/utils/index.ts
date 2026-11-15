@@ -145,6 +145,7 @@ export function barsView(c: InsightCard, fmt: MoneyFormat): InsightBarsView | nu
     })),
     usual: (c.usual / max) * 100,
     label: t('insights.card.chart', { usual: fmt.money(c.usual) }),
+    usualText: fmt.money(c.usual),
   };
 }
 
