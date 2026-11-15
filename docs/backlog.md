@@ -413,3 +413,46 @@
   extrapolated); decide whether it needs a note. A regular payment paid today as a pending hold drops out for up to
   3 days.
 - **Layout**: five figures at narrow, medium and wide windows; the «?» reads well in uk / en / ru.
+
+## Check on a live system: all categories page (`openspec/changes/all-categories-page`)
+
+- **A long month**: the list shows every category of a month with fifteen or more, biggest first; the amounts add up
+  to the total in the heading; the eighth and later categories read well in their muted colour with each bar split
+  choice («Together», «By people», «By banks»).
+- **From home**: «N more categories» opens the screen for the same month, scope, person and banks; «General» stays
+  current in the menu; the back link returns to home.
+- **Both themes and a narrow window**: names, shares, change chips and amounts do not collide or clip; the heading and
+  the «Personal / Business» switch wrap cleanly.
+
+## Check on a live system: budget exclusions (`openspec/changes/budget-exclusions`)
+
+- **The migration on a real budget**: a budget saved with «Count taxes» off opens with the switch off and its figures
+  unchanged; one saved with it on opens with nothing excluded.
+- **The sheet with several exclusions**: three or four categories excluded, taken back and re-added; the chips wrap
+  cleanly in a narrow sheet, in both themes; the live result and the past months' chart follow each change; a fixed
+  cost is not offered for an excluded category and the other way round.
+- **The note**: «Not counted: …» reads well on the budget screen and on home with one, three and no exclusions, in
+  uk / en / ru.
+- **The menu**: «Budget» sits between «Regular payments» and «Planning» and is current on its screen; the global
+  month filter is shown there and a past month shows its result.
+
+## To check live: budget bars (feedback-polish, first group)
+
+- **The past months' chart** in the budget and limit sheets: every month has a bar, the amount's dashed line crosses
+  them, the bars over the amount are orange.
+- **The «well ahead» look** (`--warning-strong`): a limit at twice its plan by today or with a forecast at one and a half
+  limits; the bar and chip read as orange-red, distinct from the amber «attention» and the red «exceeded» in both
+  themes, on home, on the «Budget» screen and on the category screen.
+- **The bar past the limit**: the solid part, the hatched part and the tick at the limit at 1.1×, 1.6× and 3× the limit;
+  the pace marker; the hatching in both themes; a thick bar in the budget panel.
+
+## To check live: «What's unusual» feed (feedback-polish, third group)
+
+- **The list in both themes**: one card of rows, hairlines between them; the severity dot's three tints read apart; the
+  «High» chip; the change chips and «≈» lines line up on the right.
+- **A narrow window**: the filter row wraps (the «Kind» list under the severity buttons), titles truncate, the chart
+  stays inside the row, the legend wraps.
+- **A screen reader on the disclosures**: each row with details reads as a button, expanded or collapsed, with the
+  severity word in its name; Enter and Space toggle it; the folded details are not read; «How it was counted» the same.
+- **The «Kind» list**: the keyboard opens it and picks; the severity count stays the month's while a kind is picked.
+- **Reduced motion**: with it on, the chevron turns without animation.

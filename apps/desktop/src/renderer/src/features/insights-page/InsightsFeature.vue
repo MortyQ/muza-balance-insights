@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef } from 'vue';
+import { computed, nextTick, ref, useId, useTemplateRef } from 'vue';
 import { RouterLink } from 'vue-router';
 import { DetailSkeleton } from '@/entities/operations';
 import { importLink } from '@/shared/config';
 import { VButton, VCard, VIcon, VInfoNotice } from '@/shared/ui';
 import FeedFilters from './components/FeedFilters.vue';
 import HealthBlock from './components/HealthBlock.vue';
-import InsightCard from './components/InsightCard.vue';
+import FeedRow from './components/FeedRow.vue';
 import InsightsGlance from './components/InsightsGlance.vue';
-import SignalCard from './components/SignalCard.vue';
 import { useFeedFilter } from './composables/useFeedFilter.ts';
 import { useInsightsPage } from './composables/useInsightsPage.ts';
-import { filterFeed } from './utils/feed.ts';
+import { feedRow, filterFeed } from './utils/feed.ts';
 
 // The Insights screen (specs desktop-insights-page, desktop-insights-health): the month at a glance, financial health,
 // then one feed of every signal ranked by money with its filters, and how it was counted.
@@ -19,6 +18,8 @@ const { state, view } = useInsightsPage();
 const { filter, set, reset } = useFeedFilter();
 const shown = computed(() => (view.value ? filterFeed(view.value.feed, filter.value) : []));
 const feedEl = useTemplateRef<HTMLElement>('feed');
+const basisOpen = ref(false);
+const basisId = useId();
 
 /** «Strong signals» → «Show»: the feed filtered to high items, scrolled into view. */
 async function showStrong(): Promise<void> {
@@ -74,16 +75,27 @@ async function showStrong(): Promise<void> {
                   <VButton variant="link" size="sm" :text="$t('insights.filter.reset')" data-test="feed-reset" @click="reset" />
                 </div>
               </VCard>
-              <template v-for="item in shown" :key="item.key">
-                <InsightCard v-if="item.card" :card="item.card" />
-                <SignalCard v-else-if="item.signal" :signal="item.signal" />
-              </template>
+              <VCard v-else padding="none">
+                <ul class="flex flex-col divide-y divide-border-subtle" data-test="feed-list">
+                  <FeedRow v-for="item in shown" :key="item.key" :row="feedRow(item)" />
+                </ul>
+              </VCard>
             </template>
           </section>
 
           <VCard padding="md" data-test="insights-basis">
-            <h2 class="text-sm font-bold">{{ $t('insights.basis.title') }}</h2>
-            <ul class="mt-2 flex list-disc flex-col gap-1 pl-4 text-xs text-foreground-muted">
+            <button
+              type="button"
+              class="flex w-full items-center justify-between gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-border-focus"
+              :aria-expanded="basisOpen"
+              :aria-controls="basisId"
+              data-test="basis-toggle"
+              @click="basisOpen = !basisOpen"
+            >
+              <h2 class="text-sm font-bold">{{ $t('insights.basis.title') }}</h2>
+              <VIcon icon="lucide:chevron-down" class="size-4 shrink-0 text-foreground-muted transition-transform motion-reduce:transition-none" :class="{ 'rotate-180': basisOpen }" aria-hidden="true" />
+            </button>
+            <ul v-show="basisOpen" :id="basisId" class="mt-2 flex list-disc flex-col gap-1 pl-4 text-xs text-foreground-muted" data-test="basis-list">
               <li v-for="(line, i) in view.basis" :key="i">{{ line }}</li>
             </ul>
           </VCard>

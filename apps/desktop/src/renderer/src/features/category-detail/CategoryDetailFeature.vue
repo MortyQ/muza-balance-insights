@@ -4,6 +4,7 @@ import type { DetailPeriod, Scope } from '@contract/api.ts';
 import type { CategoryId } from '@contract/categories.ts';
 import { bankOf, BankMark } from '@/entities/bank';
 import { BackLink, DetailSkeleton, DetailSummary, MonthsChart, OperationList, PartBars, PeopleBars, ShareList, WhenCharts } from '@/entities/operations';
+import { type CategoryOrigin, spendingCategoriesLink } from '@/shared/config';
 import { VCard, VInfoNotice } from '@/shared/ui';
 import CategoryLimitBar from './components/CategoryLimitBar.vue';
 import CategoryPicker from './components/CategoryPicker.vue';
@@ -13,12 +14,14 @@ import { useCategoryLimit } from './composables/useCategoryLimit.ts';
 import { useCategoryView } from './composables/useCategoryView.ts';
 import type { ListOpen } from './types.ts';
 
-const { categoryId, scope, period, open = { q: '', merchant: null } } = defineProps<{
+const { categoryId, scope, period, open = { q: '', merchant: null }, from = null } = defineProps<{
   categoryId: CategoryId;
   scope: Scope;
   period: DetailPeriod;
   /** The list's search and payee filter the link asked for (the global search). */
   open?: Readonly<ListOpen>;
+  /** The screen the link came from: «All categories» sends the back link there (absent — home). */
+  from?: CategoryOrigin | null;
 }>();
 
 const base = useCategoryDetail(() => categoryId, () => scope, () => period);
@@ -38,7 +41,8 @@ const limit = useCategoryLimit(
 
 <template>
   <div class="@container flex flex-col gap-4" :style="{ '--cat': summary?.color ?? 'var(--category-other)' }">
-    <BackLink :label="$t('category.back')" />
+    <BackLink v-if="from === 'categories'" :label="$t('home.spending.all.title')" :to="spendingCategoriesLink()" />
+    <BackLink v-else :label="$t('category.back')" />
 
     <VInfoNotice v-if="state.status === 'error'" :card="false" icon="lucide:circle-alert" tone="danger" :subtitle="$t('category.failed')" />
 

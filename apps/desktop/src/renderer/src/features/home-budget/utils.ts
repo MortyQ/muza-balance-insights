@@ -32,6 +32,7 @@ export function budgetRow(b: MonthBudgetView, month: string, current: boolean, f
     flexibleTitle: t('home.budget.flexible', { spent: fmt.money(b.flexible.spent), amount: fmt.money(b.flexible.amount) }),
     flexibleAlso: alsoOf(fmt, b.flexible.spent, b.flexible.amount),
     flexible,
+    excludedNote: b.excluded.length === 0 ? null : t('home.budget.excluded', { names: b.excluded.map((id) => categoryName({ category: id, categoryId: id })).join(', ') }),
     perDay: current ? { amount: flexible.perDay, also: fmt.approx(b.flexible.perDay), days: t('home.budget.daysLeft', b.flexible.daysLeft) } : null,
     result: b.result
       ? {

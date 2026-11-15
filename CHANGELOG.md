@@ -5,10 +5,39 @@ English interface.
 
 ## 0.1.16 — unreleased
 
+### Home
+
+- «Spending» names every category of the month on a new «All categories» screen: the «N more categories» row opens it,
+  and each category there shows its amount, share, transactions and change, and opens as on home.
+- «Spending» lists its seven largest categories at once, with the «N more categories» row below them; the «Show more»
+  button is gone.
+- A category opened from «All categories» goes back to «All categories» instead of home.
+
+### Insights
+
+- «What's unusual» is one calm list instead of cards of different shapes: each row has an icon, a title with one
+  sentence, and the amount or change on the right. Severity is a small coloured dot; the word «High» shows only on high
+  rows.
+- A row opens to show more: the months chart, the payee and the link. High rows start opened, the others folded.
+- The months chart now explains itself: a caption and a legend say which bar is this month, which are the other months,
+  and what the dashed line is («Your usual month: …»).
+- The filters fit one row: the severity buttons and, at its end, a «Kind» list.
+- «How it was counted» is folded under the list until you open it.
+
 ### Budget and limits
 
 - The monthly budget, limits, savings goals and reserves offer the same currencies as the currency switch at the top,
   Czech koruna included, and a new one starts in the currency the switch shows.
+- The monthly budget can leave out any categories, not only taxes: under «Count taxes» the budget sheet has «Exclude from
+  the budget». An excluded category counts neither against the flexible part nor as a fixed cost, but stays in
+  «Spending», in «Budget structure» and under its own limit. The budget on its screen and on home says what it leaves
+  out («Not counted: …»). A budget that had «Count taxes» off keeps leaving taxes out.
+- «Budget» is now an entry of the menu, between «Regular payments» and «Planning»; home's «Budget» row still opens it.
+- The chart of past months in the budget and limit sheets shows its bars again; it was empty.
+- A limit or the budget far ahead of its plan — spending at twice the plan by today, or a forecast of one and a half
+  limits — gets its own orange-red bar and label between «attention» and «exceeded»; the words are the same as before.
+- Once a limit is exceeded, its bar is drawn to the scale of what was spent: the part within the limit solid, the part
+  above it hatched, with a tick at the limit, so how far past it you are can be seen at a glance.
 
 ### Statements
 

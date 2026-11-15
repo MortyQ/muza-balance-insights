@@ -3,12 +3,13 @@
 // severity, bars and drivers, the payee lists, «How it was counted», the calm and early states, the scope. Fictional
 // fixtures only; the texts read in Russian (setup-locale).
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { flushPromises, mount } from '@vue/test-utils';
+import { flushPromises, mount, type DOMWrapper, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
 import type { InsightCardView, InsightsOverview, PeopleView, SpendingOverviewQuery } from '@contract/api.ts';
 import { formatMoney } from '@/shared/lib';
+import { VSelect } from '@/shared/ui';
 
 const series = (values: number[], now: number) => [
   ...['2025-09', '2025-10', '2025-11', '2025-12', '2026-01'].map((month, i) => ({ month, value: values[i]! })),
@@ -91,6 +92,15 @@ const PEOPLE: PeopleView = {
 
 let router: Router;
 
+const ROW = '[data-test="feed-row"]';
+const rowsOf = (w: VueWrapper) => w.findAll(ROW);
+const idsOf = (w: VueWrapper) => rowsOf(w).map((r) => `${r.attributes('data-kind')}-${r.attributes('data-severity')}`);
+const insightRows = (w: VueWrapper) => w.findAll(`${ROW}[data-kind="insight"]`);
+const head = (r: DOMWrapper<Element>) => r.get('[data-test="feed-row-head"]');
+const opened = (r: DOMWrapper<Element>) => head(r).attributes('aria-expanded') === 'true';
+/** The «Kind» select picks a value as a click on its option would. */
+const pickKind = (w: VueWrapper, kind: string) => w.getComponent(VSelect).vm.$emit('update:modelValue', kind);
+
 /** Money is formatted with no-break spaces: compared as plain ones. */
 const plain = (s: string) => s.replace(/\s/gu, ' ');
 
@@ -151,33 +161,101 @@ describe('insights screen', () => {
     early.unmount();
   });
 
-  it('the feed: every item ranked by money, a one-off and a new payee among the cards', async () => {
+  it('the feed: one list of rows of one shape, every item ranked by money, a one-off and a new payee among the insights', async () => {
     const w = await mountPage();
-    const items = w.findAll('article').map((a) => a.attributes('data-test'));
     // 400 000 one-off, cafes +300 000, the new payee 90 000, groceries −60 000.
-    expect(items).toEqual(['signal-card-high', 'insight-card-high', 'signal-card-low', 'insight-card-medium']);
-    const oneOff = plain(w.findAll('article')[0]!.text());
+    expect(idsOf(w)).toEqual(['signal-high', 'insight-high', 'signal-low', 'insight-medium']);
+    expect(w.findAll('article')).toHaveLength(0);
+    expect(w.findAll('[data-test="feed-list"]')).toHaveLength(1);
+    const oneOff = plain(rowsOf(w)[0]!.text());
     expect(oneOff).toContain('Разовый платёж · 14 февраля · Маркетплейсы');
     expect(oneOff).toContain('4 000 ₴');
-    expect(w.findAll('article')[2]!.text()).toContain('Fictional Studio');
+    expect(rowsOf(w)[2]!.text()).toContain('Fictional Studio');
     w.unmount();
   });
 
-  it('a card: severity, the change, the bars and the driver; it opens its category', async () => {
+  it('a row: the severity as a dot with its word for screen readers, the word chip only on «High»; the change; it opens its category', async () => {
     const w = await mountPage();
-    const cards = w.findAll('[data-test^="insight-card"]');
-    expect(cards).toHaveLength(2);
-    expect(cards[0]!.get('[data-test="severity"]').text()).toBe('Высокий');
-    expect(cards[1]!.get('[data-test="severity"]').text()).toBe('Средний');
-    expect(plain(cards[0]!.text())).toContain('+3 000 ₴ (×2,0)');
-    expect(plain(cards[0]!.get('[data-test="insight-driver"]').text())).toBe('В основном Fictional Cafe: +2 000 ₴, 67% изменения');
-    expect(cards[1]!.find('[data-test="insight-driver"]').exists()).toBe(false);
-    // Six bars, the usual line at 300 000 of 600 000.
-    expect(cards[0]!.findAll('[data-test="insight-bars"] [title]')).toHaveLength(6);
-    expect(cards[0]!.get('[data-test="usual-line"]').attributes('style')).toContain('bottom: 50%');
-    await cards[0]!.get('[data-test="insight-open"]').trigger('click');
+    const rows = insightRows(w);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.get('[data-test="severity"]').text()).toBe('Высокий');
+    expect(rows[0]!.get('[data-test="severity"]').classes()).not.toContain('sr-only');
+    expect(rows[1]!.get('[data-test="severity"]').text()).toBe('Средний');
+    expect(rows[1]!.get('[data-test="severity"]').classes()).toContain('sr-only');
+    expect(rows[1]!.find('[data-test="severity-dot"]').attributes('aria-hidden')).toBe('true');
+    expect(plain(rows[0]!.text())).toContain('+3 000 ₴ (×2,0)');
+    expect(plain(rows[0]!.text())).toContain(`${plain(formatMoney(600_000, 980))} в этом месяце`);
+    // Six bars, the usual line at 300 000 of 600 000; the payee line.
+    expect(rows[0]!.findAll('[data-test="insight-bars"] [title]')).toHaveLength(6);
+    expect(rows[0]!.get('[data-test="usual-line"]').attributes('style')).toContain('bottom: 50%');
+    expect(plain(rows[0]!.get('[data-test="insight-driver"]').text())).toBe('В основном Fictional Cafe: +2 000 ₴, 67% изменения');
+    expect(rows[1]!.find('[data-test="insight-driver"]').exists()).toBe(false);
+    await rows[0]!.get('[data-test="insight-open"]').trigger('click');
     await flushPromises();
     expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'cafes' }, query: { scope: 'personal' } });
+    w.unmount();
+  });
+
+  it('details on demand: a row with details is a button with aria-expanded and aria-controls; «High» starts opened, the rest folded', async () => {
+    const w = await mountPage();
+    const [oneOff, cafes, studio, groceries] = rowsOf(w);
+    expect(idsOf(w)).toEqual(['signal-high', 'insight-high', 'signal-low', 'insight-medium']);
+    for (const r of [oneOff!, cafes!, studio!, groceries!]) {
+      expect(head(r).element.tagName).toBe('BUTTON');
+      expect(head(r).attributes('aria-controls')).toBe(r.get('[data-test="feed-details"]').attributes('id'));
+    }
+    expect([oneOff, cafes, studio, groceries].map((r) => opened(r!))).toEqual([true, true, false, false]);
+    expect(cafes!.get('[data-test="feed-details"]').isVisible()).toBe(true);
+    expect(groceries!.get('[data-test="feed-details"]').isVisible()).toBe(false);
+    // Click opens a folded row and folds it again.
+    await head(groceries!).trigger('click');
+    expect(opened(groceries!)).toBe(true);
+    expect(groceries!.get('[data-test="feed-details"]').isVisible()).toBe(true);
+    await head(groceries!).trigger('click');
+    expect(opened(groceries!)).toBe(false);
+    w.unmount();
+  });
+
+  it('details on demand: the header is a real button, so Enter and Space (a click in the browser) toggle it', async () => {
+    const w = await mountPage();
+    const groceries = rowsOf(w)[3]!;
+    const button = head(groceries);
+    expect(button.element.tagName).toBe('BUTTON');
+    expect(button.attributes('type')).toBe('button');
+    // happy-dom does not turn a key into a click: the browser's own button does that, so the click stands for it.
+    await button.trigger('click');
+    expect(opened(groceries)).toBe(true);
+    await button.trigger('click');
+    expect(opened(groceries)).toBe(false);
+    w.unmount();
+  });
+
+  it('a signal row links to its category from its details; a row without details is not a button', async () => {
+    const w = await mountPage();
+    const studio = rowsOf(w)[2]!;
+    expect(opened(studio)).toBe(false);
+    await head(studio).trigger('click');
+    await studio.get('[data-test="insight-open"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'sport' } });
+    w.unmount();
+    answer = { ...OVERVIEW, newPayees: [{ name: 'Fictional Kiosk', category: 'разное', categoryId: null, amount: 90_000, severity: 'low' }], oneOffs: [], cards: [] };
+    const bare = await mountPage();
+    const row = rowsOf(bare)[0]!;
+    expect(row.text()).toContain('Fictional Kiosk');
+    expect(row.find('button').exists()).toBe(false);
+    expect(row.find('[aria-expanded]').exists()).toBe(false);
+    expect(row.find('[data-test="feed-details"]').exists()).toBe(false);
+    bare.unmount();
+  });
+
+  it('the chart explains itself: a caption and a legend of three entries, the usual month named with its value', async () => {
+    const w = await mountPage();
+    const cafes = insightRows(w)[0]!;
+    expect(cafes.get('[data-test="bars-caption"]').text()).toBe('Прошлые месяцы и этот');
+    const legend = cafes.get('[data-test="bars-legend"]');
+    expect(legend.findAll('li').map((l) => plain(l.text()))).toEqual(['Этот месяц', 'Другие месяцы', `Твой обычный месяц: ${plain(formatMoney(300_000, 980))}`]);
+    expect(plain(cafes.get('[data-test="insight-bars"]').attributes('aria-label')!)).toContain(plain(formatMoney(300_000, 980)));
     w.unmount();
   });
 
@@ -202,7 +280,7 @@ describe('insights screen', () => {
     };
     const w = await mountPage();
     // 100 000 over: after the cafes' +300 000, before the groceries' −60 000.
-    const cards = w.findAll('[data-test^="insight-card"]');
+    const cards = insightRows(w);
     expect(cards).toHaveLength(3);
     const ahead = cards[1]!;
     expect(ahead.text()).toContain('Прогноз выше лимита: бюджет на гибкие траты');
@@ -221,7 +299,7 @@ describe('insights screen', () => {
     answer = { ...OVERVIEW, cards: [], newPayees: [], oneOffs: [] };
     const w = await mountPage();
     expect(w.find('[data-test="insights-calm"]').exists()).toBe(true);
-    expect(w.findAll('article')).toHaveLength(0);
+    expect(rowsOf(w)).toHaveLength(0);
     expect(w.find('[data-test="feed-filters"]').exists()).toBe(false);
     expect(w.get('[data-test="glance-signals"]').text()).toContain('Ничего необычного');
     w.unmount();
@@ -298,8 +376,8 @@ describe('insights screen', () => {
     useCurrencyDisplayStore().setMain(978);
     const w = await mountPage();
     expect(plain(w.get('[data-test="glance-spent"]').text())).toContain(plain(`(${formatMoney(24_000, 978)})`));
-    expect(plain(w.findAll('[data-test^="insight-card"]')[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
-    expect(plain(w.get('[data-test="signal-card-high"]').text())).toContain(plain(formatMoney(8_000, 978)));
+    expect(plain(insightRows(w)[0]!.text())).toContain(plain(`+${formatMoney(6_000, 978)} (×2,0)`));
+    expect(plain(w.get(`${ROW}[data-kind="signal"][data-severity="high"]`).text())).toContain(plain(formatMoney(8_000, 978)));
     w.unmount();
   });
 
@@ -315,10 +393,10 @@ describe('insights screen', () => {
     expect(lines('[data-test="glance-spent"]')).toEqual([`≈ ${eur(1_500_000)}`]);
     expect(lines('[data-test="glance-income"]')).toEqual([`≈ ${eur(2_000_000)}`]);
     expect(lines('[data-test="glance-kept"]')).toEqual([]);
-    expect(lines('[data-test="insight-card-high"]')).toEqual([`≈ +${eur(300_000)}`]);
-    expect(lines('[data-test="insight-card-medium"]')).toEqual([`≈ −${eur(60_000)}`]);
-    expect(lines('[data-test="signal-card-high"]')).toEqual([`≈ ${eur(400_000)}`]);
-    const title = w.get('[data-test="insight-card-high"] [data-test="insight-bars"] [title]').attributes('title')!;
+    expect(lines(`${ROW}[data-kind="insight"][data-severity="high"]`)).toEqual([`≈ +${eur(300_000)}`]);
+    expect(lines(`${ROW}[data-kind="insight"][data-severity="medium"]`)).toEqual([`≈ −${eur(60_000)}`]);
+    expect(lines(`${ROW}[data-kind="signal"][data-severity="high"]`)).toEqual([`≈ ${eur(400_000)}`]);
+    const title = w.get(`${ROW}[data-kind="insight"][data-severity="high"] [data-test="insight-bars"] [title]`).attributes('title')!;
     expect(plain(title)).toContain(`· ≈ ${eur(300_000)}`);
     w.unmount();
   });
@@ -327,7 +405,7 @@ describe('insights screen', () => {
     answer = { ...OVERVIEW, limitsOver: [{ categoryId: 'cafes', amount: 400_000, spent: 750_000, over: 350_000, severity: 'high' }] };
     const w = await mountPage();
     // 350 000 over outweighs the cafes' +300 000 and the groceries' −60 000: first of the cards.
-    const cards = w.findAll('[data-test^="insight-card"]');
+    const cards = insightRows(w);
     expect(cards).toHaveLength(3);
     const limit = cards[0]!;
     expect(limit.text()).toContain('Лимит превышен: Кафе и рестораны');
@@ -418,7 +496,7 @@ describe('insights screen', () => {
     await w.get('[data-test="health-show-signals"]').trigger('click');
     await flushPromises();
     expect(w.get('[data-test="filter-severity-high"]').attributes('aria-pressed')).toBe('true');
-    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high', 'insight-card-high']);
+    expect(idsOf(w)).toEqual(['signal-high', 'insight-high']);
     w.unmount();
   });
 
@@ -515,23 +593,59 @@ describe('insights screen', () => {
     await w.get('[data-test="filter-severity-high"]').trigger('click');
     expect(w.get('[data-test="filter-severity-high"]').attributes('aria-pressed')).toBe('true');
     expect(w.get('[data-test="filter-severity-all"]').attributes('aria-pressed')).toBe('false');
-    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high', 'insight-card-high']);
-    await w.get('[data-test="filter-kind-oneOffs"]').trigger('click');
-    expect(w.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-high']);
+    expect(idsOf(w)).toEqual(['signal-high', 'insight-high']);
+    pickKind(w, 'oneOffs');
+    await flushPromises();
+    expect(idsOf(w)).toEqual(['signal-high']);
     // The severity counts stay those of the month.
     expect(plain(w.get('[data-test="filter-severity-high"]').text())).toBe('Высокие 2');
+    w.unmount();
+  });
+
+  it('filters in one row: the «Kind» select at its end offers the seven choices, «All kinds» first, and filters with the severity', async () => {
+    const w = await mountPage();
+    expect(w.findAll('[data-test="feed-filters"] [role="group"]')).toHaveLength(1);
+    expect(w.findAll('[data-test="feed-filters"] [aria-pressed]')).toHaveLength(4);
+    const select = w.getComponent(VSelect);
+    expect(select.props('options').map((o) => o.value)).toEqual(['all', 'up', 'down', 'income', 'limits', 'payees', 'oneOffs']);
+    expect(select.props('options')[0]!.label).toBe('Все виды');
+    expect(w.get('[data-test="filter-kind"] label').text()).toBe('Вид');
+    pickKind(w, 'up');
+    await flushPromises();
+    expect(idsOf(w)).toEqual(['insight-high']);
+    await w.get('[data-test="filter-severity-medium"]').trigger('click');
+    expect(rowsOf(w)).toHaveLength(0);
+    w.unmount();
+  });
+
+  it('«How it was counted» is one folded disclosure under the feed, opened by its button, with the same lines inside', async () => {
+    const w = await mountPage();
+    const toggle = w.get('[data-test="basis-toggle"]');
+    const list = w.get('[data-test="basis-list"]');
+    expect(toggle.element.tagName).toBe('BUTTON');
+    expect(toggle.attributes('aria-expanded')).toBe('false');
+    expect(toggle.attributes('aria-controls')).toBe(list.attributes('id'));
+    expect(list.isVisible()).toBe(false);
+    await toggle.trigger('click');
+    expect(toggle.attributes('aria-expanded')).toBe('true');
+    expect(list.isVisible()).toBe(true);
+    expect(list.text()).toContain('медиана 5 целых месяцев');
+    await toggle.trigger('click');
+    expect(list.isVisible()).toBe(false);
     w.unmount();
   });
 
   it('a filter with nothing in it says so and resets both rows', async () => {
     const w = await mountPage();
     await w.get('[data-test="filter-severity-medium"]').trigger('click');
-    await w.get('[data-test="filter-kind-payees"]').trigger('click');
-    expect(w.findAll('article')).toHaveLength(0);
+    pickKind(w, 'payees');
+    await flushPromises();
+    expect(rowsOf(w)).toHaveLength(0);
     expect(w.get('[data-test="feed-empty"]').text()).toContain('Под этот фильтр сигналов нет.');
     await w.get('[data-test="feed-reset"]').trigger('click');
-    expect(w.findAll('article')).toHaveLength(4);
-    expect(w.get('[data-test="filter-kind-all"]').attributes('aria-pressed')).toBe('true');
+    expect(rowsOf(w)).toHaveLength(4);
+    expect(w.getComponent(VSelect).props('modelValue')).toBe('all');
+    expect(w.get('[data-test="filter-severity-all"]').attributes('aria-pressed')).toBe('true');
     w.unmount();
   });
 
@@ -543,12 +657,12 @@ describe('insights screen', () => {
     answer = { ...OVERVIEW, month: '2026-01' };
     const again = await mountPage();
     expect(again.get('[data-test="filter-severity-low"]').attributes('aria-pressed')).toBe('true');
-    expect(again.findAll('article').map((a) => a.attributes('data-test'))).toEqual(['signal-card-low']);
+    expect(idsOf(again)).toEqual(['signal-low']);
     again.unmount();
     localStorage.setItem('insights.feedFilter', '{"severity":"huge","kind":7}');
     const bad = await mountPage();
     expect(bad.get('[data-test="filter-severity-all"]').attributes('aria-pressed')).toBe('true');
-    expect(bad.get('[data-test="filter-kind-all"]').attributes('aria-pressed')).toBe('true');
+    expect(bad.getComponent(VSelect).props('modelValue')).toBe('all');
     bad.unmount();
   });
 

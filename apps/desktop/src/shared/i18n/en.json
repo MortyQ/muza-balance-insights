@@ -677,6 +677,7 @@
     },
     "nav": {
       "analytics": "Analytics",
+      "budget": "Budget",
       "general": "General",
       "label": "Home sections",
       "planning": "Planning",
@@ -835,6 +836,10 @@
       "pending": "Transactions still being processed by the bank: {count} — their amounts may still change.",
       "perDayShort": "{amount} a day",
       "personShare": "{pct}% · {ops}",
+      "all": {
+        "back": "General",
+        "title": "All categories"
+      },
       "rest": "{n} more category | {n} more categories | {n} more categories",
       "scope": {
         "business": "Business",
@@ -854,8 +859,6 @@
       "title": "Spending",
       "together": "together · {ops}",
       "whole": "Whole family",
-      "showMore": "Show {n} more | Show {n} more | Show {n} more",
-      "showLess": "Show less",
       "whoSpent": "Who spent what",
       "opsMoreHint": "{n} more transaction than in {month} | {n} more transactions than in {month} | {n} more transactions than in {month}",
       "opsLessHint": "{n} fewer transaction than in {month} | {n} fewer transactions than in {month} | {n} fewer transactions than in {month}",
@@ -898,7 +901,8 @@
       "emptyText": "Set one amount, mark rent and other fixed costs — and see how much you can spend a day on the rest.",
       "set": "Set a budget",
       "limitsTitle": "Limits",
-      "allLimits": "All limits"
+      "allLimits": "All limits",
+      "excluded": "Not counted: {names}"
     }
   },
   "income": {
@@ -1010,7 +1014,13 @@
       "income": "Income",
       "driver": "Mostly {name}: {amount}, {share}% of the change",
       "open": "Open transactions",
-      "chart": "The usual months and this one; the line is the usual, {usual}"
+      "chart": "The usual months and this one; the line is the usual, {usual}",
+      "chartCaption": "Previous months and this one",
+      "legend": {
+        "now": "This month",
+        "other": "Other months",
+        "usual": "Your usual month: {usual}"
+      }
     },
     "feed": {
       "title": "What's unusual",
@@ -1711,7 +1721,7 @@
       "emptyTitle": "No monthly budget yet",
       "emptyText": "One amount for everything; fixed costs are set aside first, the rest is shown by day.",
       "create": "Set a budget",
-      "taxesOff": "Taxes are not counted in this budget."
+      "excluded": "Not counted: {names}"
     },
     "suggest": {
       "text": "This is what usually goes in a month. Set limits at that level?",
@@ -1760,7 +1770,10 @@
       "pastTitle": "Flexible spending in past months",
       "saveBudget": "Save the budget",
       "countTaxes": "Count taxes",
-      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure»."
+      "countTaxesHint": "Off: taxes and government payments stay out of this budget. They still count in «Spending» and in «Budget structure».",
+      "excludeTitle": "Exclude from the budget",
+      "excludeHint": "Left out of the flexible part and not a fixed cost. These categories stay in «Spending» and under their own limits.",
+      "excludeTake": "Count {name} in the budget again"
     },
     "goals": {
       "title": "Savings goals",

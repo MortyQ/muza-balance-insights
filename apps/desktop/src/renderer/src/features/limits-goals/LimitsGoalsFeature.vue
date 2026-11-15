@@ -25,7 +25,7 @@ const start = ref<SheetStart | null>(null);
 const failed = ref(false);
 
 function newBudget() {
-  start.value = { id: null, goal: { type: 'budget', currency: defaultCurrency.value, amount: 0, participantId: defaultOwner.value, fixed: [] } };
+  start.value = { id: null, goal: { type: 'budget', currency: defaultCurrency.value, amount: 0, participantId: defaultOwner.value, fixed: [], excluded: [] } };
   failed.value = false;
   sheet.value = 'budget';
 }
@@ -34,7 +34,7 @@ function editBudget() {
   if (!b) return;
   start.value = {
     id: b.id,
-    goal: { type: 'budget', currency: b.currency, amount: b.amountMinor, participantId: b.owner, fixed: b.fixed.map((r) => ({ categoryId: r.categoryId, amount: r.amountMinor })), countTaxes: b.countTaxes },
+    goal: { type: 'budget', currency: b.currency, amount: b.amountMinor, participantId: b.owner, fixed: b.fixed.map((r) => ({ categoryId: r.categoryId, amount: r.amountMinor })), excluded: b.excluded },
   };
   failed.value = false;
   sheet.value = 'budget';

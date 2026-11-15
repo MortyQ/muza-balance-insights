@@ -239,13 +239,17 @@
   essential month, one decimal, null under 3 months or a zero median. Guides (`BUDGET_GUIDE` 50/30/20, `FIXED_HIGH` 50,
   `FIXED_VERY_HIGH` 60, `DEBT_HIGH` 30, `RESERVE_MIN` 3, `RESERVE_GOOD` 6) are common advice, never a grade.
 - **Limits, the monthly budget, savings goals** (migration v20: `goals`, one table with a CHECK per type, and
-  `goal_fixed`; `read/goals.ts` — plain writes like `reserves.ts`; specs `core-spending-limits`, `core-savings-goals`):
+  `goal_fixed`, `goal_excluded` — v24; `read/goals.ts` — plain writes like `reserves.ts`; specs `core-spending-limits`, `core-savings-goals`):
   a limit is a category, an amount in one of the app's currencies (`APP_CURRENCIES`, `shared/currency.ts`: 980 | 840 | 978 | 203 — the one list for the home switch, plans and reserves; the tables' CHECK follows it, migration v23), a period (day, Monday–Sunday week, month) and an owner (a person
   or the family, null); one per category, period and owner; at most `LIMITS_MAX` limits and `SAVINGS_MAX` goals. The
   monthly budget is one total and its own fixed rows (`goal_fixed`: a category and the amount the user typed — nothing
   is filled in): `budgetParts` sets the rows aside at their amounts, the rest is the flexible part, counted against
-  every category neither in the rows nor of the savings kind (nor taxes while `count_taxes` is off — migration v21; then
-  taxes cannot be a row), plus what a row spent above its amount. The «Fixed» flag
+  every category neither in the rows, nor of the savings kind, nor among the budget's **exclusions** (`goal_excluded`,
+  migration v24: a category the budget counts neither as flexible spending nor as a row; each once, a spending category,
+  never also a row — checked in `read/goals.ts` before any write, read back in the category list's order; they change
+  nothing else: category limits, «Spending» and the 50/30/20 split still count the category), plus what a row spent
+  above its amount. «Count taxes» off is the taxes exclusion: v24 moved every budget saved with it off into the table;
+  `goals.count_taxes` stays in the schema, written as 1 and never read. The «Fixed» flag
   of the kinds does not change the budget. `limitState` (`read/limits.ts`) — spent, left, per cent, expected by today,
   the forecast (none for a day limit), per day (left ÷ days left, today counted), the state: exceeded above the amount,
   attention when spending runs well ahead of the pace (≥ `PACE_RATIO` 1.3 × the expected amount and ≥ `PACE_SHARE` 5% of

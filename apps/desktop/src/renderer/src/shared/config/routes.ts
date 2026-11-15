@@ -13,6 +13,7 @@ export const ROUTE = {
   recurring: 'recurring',
   planning: 'planning',
   settings: 'settings',
+  spendingCategories: 'spending-categories',
 } as const satisfies Record<string, string>;
 
 export type RouteName = (typeof ROUTE)[keyof typeof ROUTE];

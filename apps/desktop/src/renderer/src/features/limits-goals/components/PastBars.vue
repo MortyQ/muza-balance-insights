@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { formatMoney, monthShortName, t } from '@/shared/lib';
 
 // The past whole months against an amount (a sheet's preview): a bar per month, oldest first, warning-coloured where it
-// would have gone over, the amount as a dashed line; how many months would have gone over in words.
+// would have gone over, the amount as a dashed line (a bar's % height needs its column to have the row's full height); how many months would have gone over in words.
 const { months, amount, currency } = defineProps<{
   months: ReadonlyArray<{ month: string; minor: number }>;
   /** Minor units of `currency`; null — nothing typed yet. */
@@ -24,7 +24,7 @@ const over = computed(() => bars.value.list.filter((b) => b.over).length);
 <template>
   <figure v-if="months.length > 0" class="flex flex-col gap-2" data-test="past-bars">
     <div class="relative flex h-28 items-end gap-2" aria-hidden="true">
-      <div v-for="b in bars.list" :key="b.month" class="flex flex-1 flex-col items-center gap-1">
+      <div v-for="b in bars.list" :key="b.month" class="flex h-full flex-1 flex-col items-center justify-end" data-test="past-bar">
         <div class="w-full rounded-md" :class="b.over ? 'bg-warning' : 'bg-primary/70'" :style="{ height: `${b.height}%` }" :title="`${b.label}: ${formatMoney(b.minor, currency)}`" />
       </div>
       <div v-if="bars.line !== null" class="absolute inset-x-0 border-t border-dashed border-foreground/60" :style="{ bottom: `${bars.line}%` }" />

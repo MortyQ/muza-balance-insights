@@ -1,6 +1,6 @@
 import type { LimitFiguresView } from '@contract/api.ts';
 import { t, times } from '@/shared/lib';
-import { STATE_LOOK, type StateLookName } from './constants.ts';
+import { STATE_LOOK, STRONG_FORECAST, STRONG_PACE, type StateLookName } from './constants.ts';
 import type { LimitLook, Money } from './types.ts';
 
 /** An amount typed in whole units («4 000», «4000») → minor units; null — not a whole positive number or over `max`. */
@@ -30,20 +30,34 @@ function stateWords(f: LimitFiguresView, money: Money, running: boolean): { stat
   return { state: 'ok', text: t(STATE_LOOK.ok.label) };
 }
 
+/** The «well ahead» look: an attention state far ahead by pace, or with a forecast well over the amount. */
+function isStrong(f: LimitFiguresView, state: StateLookName, showForecast: boolean): boolean {
+  if (state !== 'attention') return false;
+  const byPace = f.reason === 'pace' && f.expected > 0 && f.spent >= STRONG_PACE * f.expected;
+  const byForecast = showForecast && f.forecast !== null && f.forecast >= STRONG_FORECAST * f.amount;
+  return byPace || byForecast;
+}
+
 /**
  * A limit's look from its figures: spent of the amount, the pace marker (a month or a week that runs), the state in
- * words, and «?» explanations with the user's numbers. `running` — the period is the current one.
+ * words, and «?» explanations with the user's numbers. `running` — the period is the current one. Past the limit the
+ * bar is to the scale of what was spent: `fill` is the limit's share of it, `over` the rest, `pace` on the same scale.
  */
 export function limitLook(f: LimitFiguresView, money: Money, running: boolean): LimitLook {
   const words = stateWords(f, money, running);
   const showPace = running && f.days > 1;
   const showForecast = showPace && f.forecast !== null && f.forecastShown;
+  const state = isStrong(f, words.state, showForecast) ? 'strong' : words.state;
+  const past = state === 'exceeded' && f.spent > f.amount;
+  const fill = past ? (f.amount / f.spent) * 100 : f.amount > 0 ? clamp((f.spent / f.amount) * 100) : 0;
+  const pace = showPace ? clamp((f.daysPassed / f.days) * 100) : null;
   return {
-    fill: f.amount > 0 ? clamp((f.spent / f.amount) * 100) : 0,
-    pace: showPace ? clamp((f.daysPassed / f.days) * 100) : null,
-    state: words.state,
+    fill,
+    over: past ? 100 - fill : 0,
+    pace: pace !== null && past ? (pace * fill) / 100 : pace,
+    state,
     stateText: words.text,
-    stateIcon: STATE_LOOK[words.state].icon,
+    stateIcon: STATE_LOOK[state].icon,
     spentOf: t('entities.goal.spentOf', { spent: money.money(f.spent), amount: money.money(f.amount) }),
     paceText: showForecast
       ? t('entities.goal.paceLine', { expected: money.money(f.expected), forecast: money.money(f.forecast!) })

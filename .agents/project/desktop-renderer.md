@@ -163,8 +163,8 @@
   with the «Now» strip and the category screen.
   Tiles (spec `desktop-home-tiles`): the block's tile over the whole row — header, notices, the summary column (ring,
   compare note, stats as soft tiles, member card) and the category rows (`CategoryRow`: icon in a soft circle, name
-  with share and operations, chip, amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the
-  rest in place). «Who spent what» (`PeopleList`, each person with a share bar — `PersonRowView.share`) is not mounted
+  with share and operations, chip, amount, the bar under them; `CategoryList` lists every row `rowsFor` gives — the
+  seven named categories and the «N more categories» link, no fold). «Who spent what» (`PeopleList`, each person with a share bar — `PersonRowView.share`) is not mounted
   since 01.11, so the in-block person pick (`usePick`) stays `null`; the scope switch writes `entities/scope`.
   «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
   detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
@@ -176,11 +176,22 @@
   the rows stand in two columns from 60rem. The note says the median of how
   many months, and that the month still runs. It is a slide of the highlights tile (`useSpendingInsights`, the same
   request as the block, shared while in flight by `shared/api/balance.ts`).
+- **«All categories» screen** (`features/spending-summary`, `SpendingCategoriesFeature.vue`; `pages/spending-categories`;
+  spec `desktop-spending-categories`): route `spending-categories` (`/spending/categories`, `meta.navParent: 'home'` — no
+  menu item), `spendingCategoriesLink()` in `shared/config`. Home's «N more categories» row (`REST_KEY`) links to it
+  (`useCategoryRows`). The screen reads the same `getSpendingOverview` answer as the block (`useSpending`) and builds
+  its rows with the same `rowsFor`, option `all`: every category with spending its own row, no `rest` row; colours as
+  in the block (the family's top seven `--category-N`, the others `--category-other`; one bar scale). Back link
+  (`BackLink`), heading, month and total, the scope switch (home-wide `entities/scope`), `SpendingNotices`, the list;
+  no ring, no fold. A category opened from here carries `from=categories` (`categoryLink`'s fifth argument,
+  `CategoryOrigin`; `useCategoryRows` with `all`), so its back link (`BackLink` `to`) returns here, labelled «All
+  categories»; without it the link goes home. The block's view settings (`useSpendingPrefsStore`) are read, not changed here; a person
+  picked inside home's block is not carried over (the global person filter is).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date), and
   the list's `query.q` (its search) / `query.merchant` (a payee key), written by `categoryLink(id, scope, period?,
-  filter?)` and read back by `categoryRequest`; the list starts every new period, person or bank view from them —
+  filter?, from?)` and read back by `categoryRequest` (`from`: only `categories`, else null); the list starts every new period, person or bank view from them —
   `useCategoryView`'s `open`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.
@@ -241,22 +252,30 @@
   `VHelpHint`); view functions `regularHeaderView`, `regularSourcesView`, `regularMark`, `expectedView`. Colour —
   `INCOME_COLOR` (`--success`). `utils.ts` is pure and tested (`tests/renderer/income-detail.test.ts`).
 - **«Budget» screen** (`features/limits-goals`, `LimitsGoalsFeature.vue`; `pages/budget`; spec `desktop-limits-goals`):
-  route `budget` (`/budget`, `meta.navParent: 'home'` — no menu item, like the category screen), opened from home's
-  «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
+  route `budget` (`/budget`, `meta.nav` order 4, `home.nav.budget`, `lucide:wallet`, the month filter as on home — a menu
+  entry between «Regular payments» and «Planning»), also opened from home's «Budget» row; `budgetLink(sheet?)` / `budgetRequest` of `shared/config` (`?sheet=budget` opens the budget sheet, home's
   «Set a budget»). One IPC `getLimitsOverview` (the global month and person; banks are ignored on purpose), quiet
   reloads; a write (`saveGoal`, `deleteGoal`, `addSuggestedLimits`) refreshes the data status. Blocks: `BudgetPanel`
   (the total, the fixed rows paid of their amounts, the flexible part with `LimitBar`, the state, the forecast, «per day
   by the budget»), the category limits (`LimitRow`, exceeded → attention → on track) or suggestions with «Suggest
   limits», savings goals (`GoalRow`: a ring, money of the target, need per month). Sheets (`VSheet`): `BudgetSheet` (the
-  total with chips from the usual month, the fixed rows the user adds, types and removes — nothing preset —, whose; a
-  live result beside the form and `PastBars` of the flexible part; «Save» waits for every amount), `LimitSheet`
+  total with chips from the usual month, the fixed rows the user adds, types and removes — nothing preset —, the «Count
+  taxes» switch and «Exclude from the budget» (a `VSelect` of the categories that are not fixed rows, not excluded and
+  not taxes, and removable chips of the excluded ones but taxes; both are one list, `excluded`, the switch being its
+  taxes entry; an excluded category is not offered as a fixed row and the other way round; the chips are the sheet's own
+  markup, `shared/ui` has no chip), whose; a live result beside the form and `PastBars` of the flexible part; «Save» waits for every amount), `LimitSheet`
   (category, amount, currency, period, whose, the suggestion's chips, `PastBars`), `GoalSheet` (name, a jar — its bank
   target offered — or «cards and jars», target, date, whose); deleting asks in the sheet. `entities/goal`: `limitLook`
   (the bar's fill and pace marker, the state in words — never colour alone —, the «?» explanations with the user's
-  numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. Tested in `tests/renderer/limits-goals.test.ts`.
+  numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. A fourth look `strong` («well ahead», `--warning-strong`, spec
+  `desktop-limits-goals`) is an attention state with spent ≥ `STRONG_PACE` (2) × expected by pace, or a shown forecast
+  ≥ `STRONG_FORECAST` (1.5) × the amount; its words are attention's. An exceeded limit's bar is to the scale of what was
+  spent (`LimitLook.fill` = the limit's share, `over` = the hatched rest, `pace` on that scale; `LimitBar` draws the tick
+  at the limit); every `LimitBar` user passes `over`. `PastBars` columns take the row's full height (a bar's % height
+  needs it). Tested in `tests/renderer/limits-goals.test.ts`.
 - **Home's «Budget» row** (`features/home-budget`, spec `desktop-home-tiles`): over the whole width between the first
   row and «Today» / «This week»; one link to the «Budget» screen: the total, the fixed costs paid, the flexible part's
-  bar and state, per day by the budget (a past month: the result); without a budget in the current month an empty row
+  bar and state, «Not counted: …» under it when the budget excludes categories (`excludedNote`, the budget panel has the same line), per day by the budget (a past month: the result); without a budget in the current month an empty row
   with «Set a budget», no close button. The same read gives the highlights tile its «Limits» slide (`LimitsSlide`:
   limits in attention or exceeded; always between «What's unusual» and «Recent transactions»). «Month pace» no longer shows «Available per
   day». The category screen shows its limit (`CategoryLimitBar`, the same read, the current month only). Tested in
@@ -266,7 +285,7 @@
   (`localStorage` `help.seen.<id>`, a convenience) and brought back by «How it works». The Insights screen's
   «Financial health» checklist (`HealthChecklist`; `budgetView` feeds its income bar and «?» texts): each figure with a
   «?»; a «Limit exceeded» card joins the feed by money (`limitCard`).
-- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 3, icon `lucide:calculator`,
+- **Planning screen** (`pages/planning`, route `planning`, `meta.nav` order 5, icon `lucide:calculator`,
   `periodFilter: 'none'`): planners and their settings, not on home. For now one block:
 - **«Available per day»** (`features/daily-allowance`, `AllowanceFeature.vue`): on the planning screen, always about
   now (the month filter does not apply). One IPC `getAllowanceOverview({ participantId? })`, reloaded
@@ -282,7 +301,7 @@
   `useAllowance.saveReserve` / `deleteReserve` call IPC and reload. `dayMonthName` («5 April», the year outside the current one) is in
   `shared/lib`, shared with the regular payments screen. Tested in `tests/renderer/allowance.test.ts`.
 - **FOP tax screen** (`features/fop-tax`, `FopTaxFeature.vue`; `pages/fop-tax`; spec `desktop-fop-tax`): route
-  `fop-tax`, `meta.nav` order 5 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
+  `fop-tax`, `meta.nav` order 6 (`home.nav.fopTax`, `lucide:badge-percent`), always in the menu. `periodFilter: 'none'`:
   its own `PeriodPicker` — the «Analytics» `VMonthRangePicker` (`PeriodPick`: YYYY-MM from–to; nothing after this
   month; presets `fopPresets`: this / last month, this / last quarter, each ended quarter of this year, this / last year; this quarter so far at first; `periodBounds` → days,
   `quarterOfPick` → the year-to-date row). One IPC `getFopTaxOverview({ from, to, base, yearToDate?, participantId? })` (cached read; the
@@ -321,9 +340,17 @@
   ▲ / ▼, a running month's forecast hatched, three tiles (usual, trend, the month or its forecast), legends in words,
   growing to the checklist's height; `HealthChecklist` — the income bar and the items in three groups with a circle,
   an icon, the standing in words and, for a share, its direction against the usual; standings and references come
-  from the data process), then one feed (`feedItems`: `InsightCard`s and `SignalCard`s — new payees, one-offs —
-  ranked by money; `InsightBars` CSS bars, no ECharts per card) with `FeedFilters` (severity and kind,
-  `useFeedFilter`, `localStorage` `insights.feedFilter`), and «How it was counted». «Strong signals» → «Show» sets the
+  from the data process), then one feed: `feedItems` (insights, limits, new payees, one-offs, ranked by money) as one
+  `VCard` list of `FeedRow`s divided by hairlines (`feedRow` in `utils/feed.ts` gives an insight and a signal one shape:
+  icon, title with its one sentence, the amount or change chip with its «≈» lines; severity is a dot with an `sr-only`
+  word, the word chip only on «High»). A row with details (`hasDetails`: the months chart, the payee line or the link)
+  is a disclosure — a real `<button>` with `aria-expanded` / `aria-controls`, details in `FeedDetails` shown with
+  `v-show`; «High» rows start opened, the rest folded; a row without details is a plain `<div>`, not a button. A signal's
+  category link lives in its details like an insight's («Open transactions»). `InsightBars` (CSS bars, no ECharts per
+  row) carries its caption and a legend of three entries (this month, other months, the dashed usual month with its
+  value). `FeedFilters`: one row — the severity toggles with counts and the «Kind» `VSelect` at its end (`useFeedFilter`,
+  `localStorage` `insights.feedFilter`, the stored shape unchanged). «How it was counted» is one folded disclosure
+  under the feed. Open/close adds only a chevron turn, still under `motion-reduce`. «Strong signals» → «Show» sets the
   filter to high and scrolls to the feed. Under 3 whole months: a card with «Download history» (`importLink()`)
   instead of the feed. Home's «Insights» block and «What's unusual» slide link to it («All insights»). Tested in `tests/renderer/insights-page.test.ts`.
 - **Analytics screen** (`features/analytics-overview`, `AnalyticsFeature.vue`; `pages/analytics`; spec

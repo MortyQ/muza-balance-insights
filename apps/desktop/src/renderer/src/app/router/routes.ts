@@ -30,17 +30,24 @@ export const routes: RouteRecordRaw[] = [
     meta: { nav: { label: 'home.nav.recurring', icon: 'lucide:repeat', order: 3 }, periodFilter: 'none' },
   },
   {
+    // Also opened from home's «Budget» row.
+    path: '/budget',
+    name: ROUTE.budget,
+    component: () => import('@/pages/budget').then((m) => m.BudgetPage),
+    meta: { nav: { label: 'home.nav.budget', icon: 'lucide:wallet', order: 4 } },
+  },
+  {
     path: '/planning',
     name: ROUTE.planning,
     component: () => import('@/pages/planning').then((m) => m.PlanningPage),
-    meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 4 }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.planning', icon: 'lucide:calculator', order: 5 }, periodFilter: 'none' },
   },
   {
     // In the menu only while an enabled business account (FOP) exists; opened without one it says so.
     path: '/fop-tax',
     name: ROUTE.fopTax,
     component: () => import('@/pages/fop-tax').then((m) => m.FopTaxPage),
-    meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 5 }, periodFilter: 'none' },
+    meta: { nav: { label: 'home.nav.fopTax', icon: 'lucide:badge-percent', order: 6 }, periodFilter: 'none' },
   },
   {
     // Opened from a row of «Spending»; an unknown category goes home.
@@ -51,17 +58,17 @@ export const routes: RouteRecordRaw[] = [
     beforeEnter: (to) => (isCategoryId(to.params.id) ? true : { name: ROUTE.home }),
   },
   {
-    // Opened from home's «Budget» row; no menu item of its own.
-    path: '/budget',
-    name: ROUTE.budget,
-    component: () => import('@/pages/budget').then((m) => m.BudgetPage),
-    meta: { navParent: ROUTE.home },
-  },
-  {
     // Opened from «Income» of the balances' month panel.
     path: '/income',
     name: ROUTE.income,
     component: () => import('@/pages/income').then((m) => m.IncomePage),
+    meta: { navParent: ROUTE.home },
+  },
+  {
+    // Opened from home's «N more categories» row; no menu item of its own.
+    path: '/spending/categories',
+    name: ROUTE.spendingCategories,
+    component: () => import('@/pages/spending-categories').then((m) => m.SpendingCategoriesPage),
     meta: { navParent: ROUTE.home },
   },
   { path: '/connect', name: ROUTE.connect, component: () => import('@/pages/connect').then((m) => m.ConnectPage), meta: { layout: 'empty' } },

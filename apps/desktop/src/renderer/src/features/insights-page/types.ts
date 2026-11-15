@@ -44,6 +44,8 @@ export interface InsightBarsView {
   usual: number;
   /** What the chart shows, for screen readers. */
   label: string;
+  /** The usual month's amount, named in the legend: «79 €». */
+  usualText: string;
 }
 
 export interface InsightCardView {
@@ -218,6 +220,28 @@ export interface InsightsPageView {
   calm: boolean;
   /** «How it was counted»: one sentence per line. */
   basis: string[];
+}
+
+/** One row of the feed, the same shape for an insight and a signal; what opens is `bars`, `driver` and `to`. */
+export interface FeedRowView {
+  key: string;
+  kind: 'insight' | 'signal';
+  severity: InsightSeverity;
+  severityLabel: string;
+  icon: string;
+  title: string;
+  /** The one sentence under the title: an insight's text, a signal's caption. */
+  text: string;
+  /** An insight's change; null for a signal. */
+  chip: ChangeChipModel | null;
+  /** The amount shown when there is no chip (a signal's). */
+  amount: string;
+  also: string[];
+  tone: 'up' | 'down' | 'neutral';
+  bars: InsightBarsView | null;
+  driver: string | null;
+  to: RouteLocationRaw | null;
+  linkText?: string;
 }
 
 export interface UseInsightsPageReturn {

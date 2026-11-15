@@ -47,7 +47,8 @@ export interface BudgetPanelView {
   /** A past month: «Within the budget · 57 € left» / «Over by 65 €»; null while it runs. */
   result: { within: boolean; text: string } | null;
   /** «Taxes are not counted in this budget»; null while they are. */
-  taxesNote: string | null;
+  /** «Not counted: Taxes, Travel»; null — nothing is left out. */
+  excludedNote: string | null;
   help: GoalHelp;
 }
 

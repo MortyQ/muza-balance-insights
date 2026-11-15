@@ -945,8 +945,8 @@ export type MonthBudgetView = {
   fixedTotal: number;
   fixedPaid: number;
   fixedTakesAll: boolean;
-  /** false: taxes stay out of the flexible part (the budget's own choice). */
-  countTaxes: boolean;
+  /** Categories the budget counts neither as flexible spending nor as fixed rows (taxes among them, when «count taxes» is off), in the category list's order. */
+  excluded: KindCategoryId[];
   /** The flexible part: its amount is total − fixed; spent counts fixed rows' overspend too. */
   flexible: LimitFiguresView;
   /** A past month: whether it stayed within the total, and what was left (below zero — over). */
@@ -1007,7 +1007,7 @@ export type LimitsOverviewQuery = { month: string; participantId?: number };
 /** A plan as the screen sends it; `id` null — a new one. */
 export type GoalPayload =
   | { type: 'limit'; categoryId: KindCategoryId; period: LimitPeriod; currency: AppCurrency; amount: number; participantId: number | null }
-  | { type: 'budget'; currency: AppCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }>; countTaxes?: boolean }
+  | { type: 'budget'; currency: AppCurrency; amount: number; participantId: number | null; fixed: Array<{ categoryId: KindCategoryId; amount: number }>; excluded: KindCategoryId[] }
   | { type: 'saving'; name: string; currency: AppCurrency; amount: number; participantId: number | null; until: string | null; source: 'jar' | 'own'; accountId: string | null };
 
 /** A spending category's kind (core read/category-kinds.ts): essential, a want or savings. */

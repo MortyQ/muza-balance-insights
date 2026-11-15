@@ -16,7 +16,7 @@ const { view } = defineProps<{ view: CategoryLimitView }>();
         <span class="font-semibold tabular-nums">{{ $t('category.limit.title', { period: l.period }) }} · {{ l.look.spentOf }}</span>
         <LimitStateChip :state="l.look.state" :text="l.look.stateText" />
       </div>
-      <LimitBar :fill="l.look.fill" :pace="l.look.pace" :state="l.look.state" color="var(--cat)" />
+      <LimitBar :fill="l.look.fill" :over="l.look.over" :pace="l.look.pace" :state="l.look.state" color="var(--cat)" />
       <p class="text-xs text-foreground-muted tabular-nums">
         <template v-if="l.look.paceText">{{ l.look.paceText }} · </template>{{ $t('limits.perDay', { amount: l.look.perDay }) }}
       </p>

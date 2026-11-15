@@ -65,6 +65,7 @@
     --color-warning-foreground: var(--warning-foreground);
     --color-warning-subtle:     var(--warning-subtle);
     --color-warning-muted:      var(--warning-muted);
+    --color-warning-strong:     var(--warning-strong);
 
     /* ─── Status — Danger ────────────────────────────── */
     --color-danger:            var(--danger);
@@ -298,6 +299,8 @@
     --warning-foreground: oklch(20% 0.01 75);
     --warning-subtle:     oklch(96% 0.05 75);
     --warning-muted:      oklch(91% 0.07 75);
+    /* The «well ahead» bar level, between warning and danger: 4.8:1 on the chip's 12% tint, 4.8:1 on the sunken track. */
+    --warning-strong:     oklch(52% 0.19 45);
 
     --danger:            oklch(55% 0.22 25);
     --danger-hover:      oklch(49% 0.22 25);
@@ -419,6 +422,8 @@
     --warning-foreground: oklch(15% 0.01 75);
     --warning-subtle:     oklch(24% 0.07 75);
     --warning-muted:      oklch(29% 0.09 75);
+    /* 4.6:1 on the chip's 10% tint over a card, 9:1 on the sunken track. */
+    --warning-strong:     oklch(78% 0.16 50);
 
     --danger:            oklch(63% 0.22 25);
     --danger-hover:      oklch(68% 0.22 25);

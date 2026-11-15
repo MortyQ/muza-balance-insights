@@ -22,7 +22,7 @@ const emit = defineEmits<{ edit: [] }>();
       <VButton variant="link" size="sm" :text="$t('limits.edit')" data-test="limit-edit" @click="emit('edit')" />
     </div>
     <template v-if="row.look">
-      <LimitBar :fill="row.look.fill" :pace="row.look.pace" :state="row.look.state" />
+      <LimitBar :fill="row.look.fill" :over="row.look.over" :pace="row.look.pace" :state="row.look.state" />
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground-muted tabular-nums">
         <LimitStateChip :state="row.look.state" :text="row.look.stateText" />
         <span v-if="row.look.paceText">{{ row.look.paceText }}</span>

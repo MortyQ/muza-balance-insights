@@ -45,7 +45,7 @@ describe('currency CHECK', () => {
     await limit(db, 840, 'кафе и рестораны');
     await db.execute('DELETE FROM goals WHERE id = 2');
 
-    expect(await migrate(db, 0)).toEqual([23]);
+    expect(await migrate(db, 0)).toEqual([23, 24]);
     expect((await db.execute('SELECT id, currency FROM reserves')).rows.map((r) => [Number(r.id), Number(r.currency)])).toEqual([[1, 978]]);
     const budget = (await db.execute('SELECT currency, amount, count_taxes FROM goals WHERE id = 1')).rows[0];
     expect([Number(budget?.currency), Number(budget?.amount), Number(budget?.count_taxes)]).toEqual([980, 500, 0]);

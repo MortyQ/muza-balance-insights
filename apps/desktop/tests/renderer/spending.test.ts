@@ -381,3 +381,38 @@ describe('useSpendingPrefsStore', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('rowsFor: all', () => {
+  const IDS: CategoryId[] = ['groceries', 'cafes', 'gifts', 'transport', 'health', 'clothing', 'beauty', 'pets', 'sport', 'travel', 'utilities', 'telecom', 'education', 'charity', 'delivery'];
+  // Fifteen categories, 1500 down to 100 (invented amounts).
+  const big: SpendingOverview = {
+    ...VIEW,
+    total: { net: IDS.reduce((s, _, i) => s + (15 - i) * 100, 0), purchases: 30, prev: null },
+    categories: IDS.map((id, i) => cat(id, id, (15 - i) * 100, 2, null)),
+  };
+
+  it('without it: seven named rows and one «more categories» row', () => {
+    const rows = rowsFor(big, null, P, PREFS, UAH_FMT);
+    expect(rows).toHaveLength(8);
+    expect(rows.at(-1)?.key).toBe('rest');
+  });
+
+  it('every category its own row, biggest first, no rest row; the amounts add up to the total', () => {
+    const rows = rowsFor(big, null, P, PREFS, UAH_FMT, false, true);
+    expect(rows).toHaveLength(15);
+    expect(rows.map((r) => r.categoryId)).toEqual(IDS);
+    expect(rows.some((r) => r.key === 'rest')).toBe(false);
+    expect(rows.map((r) => r.amount)).toEqual(IDS.map((_, i) => uah((15 - i) * 100)));
+    const total = rows.reduce((s, r) => s + Number(r.share.replace('%', '')), 0);
+    expect(total).toBeGreaterThanOrEqual(98);
+    expect(total).toBeLessThanOrEqual(102);
+  });
+
+  it('colours: the top seven keep their rank colour, the eighth and later the muted one; one bar scale', () => {
+    const rows = rowsFor(big, null, P, PREFS, UAH_FMT, false, true);
+    expect(rows.slice(0, 7).map((r) => r.color)).toEqual(Array.from({ length: 7 }, (_, i) => `var(--category-${i + 1})`));
+    expect(rows.slice(7).every((r) => r.color === 'var(--category-other)')).toBe(true);
+    expect(rows[0]!.width).toBe(100);
+    expect(rows[14]!.width).toBeCloseTo(100 / 15, 0);
+  });
+});

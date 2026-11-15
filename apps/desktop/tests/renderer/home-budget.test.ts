@@ -15,7 +15,7 @@ const uah = (k: number) => plain(formatMoney(k, 980));
 const BUDGET: NonNullable<LimitsOverview['budget']> = {
   id: 1, owner: null, currency: 978, amountMinor: 200_000, total: 10_000_000,
   fixed: [{ categoryId: 'rent', amountMinor: 125_000, amount: 6_250_000, paid: 6_250_000 }, { categoryId: 'utilities', amountMinor: 11_000, amount: 550_000, paid: 0 }],
-  fixedTotal: 6_800_000, fixedPaid: 6_250_000, fixedTakesAll: false, countTaxes: true,
+  fixedTotal: 6_800_000, fixedPaid: 6_250_000, fixedTakesAll: false, excluded: [],
   flexible: { amount: 3_200_000, spent: 1_150_000, left: 2_050_000, percent: 36, expected: 1_066_667, forecast: 3_450_000, perDay: 97_619, daysPassed: 10, days: 30, daysLeft: 21, state: 'attention', reason: 'forecast', pace: 'even', forecastShown: true, pending: null },
   result: null,
 };
@@ -87,6 +87,15 @@ describe('home budget row', () => {
     answer = { ...OVERVIEW, budget: { ...BUDGET, flexible: { ...BUDGET.flexible, pending: { count: 3, amount: 120_000 } } } };
     const w = await mountRow();
     expect(plain(w.get('[data-test="home-budget-flexible"] [data-test="pending-note"]').text())).toBe(`в т.ч. 3 в ожидании, ${uah(120_000)}`);
+  });
+
+  it('the exclusions are named under the flexible part; none, no line', async () => {
+    const w = await mountRow();
+    expect(w.find('[data-test="home-budget-excluded"]').exists()).toBe(false);
+    w.unmount();
+    answer = { ...OVERVIEW, budget: { ...BUDGET, excluded: ['taxes', 'travel'] } };
+    const named = await mountRow();
+    expect(named.get('[data-test="home-budget-flexible"] [data-test="home-budget-excluded"]').text()).toBe('Не учитывается: Налоги и госплатежи, Путешествия и отпуск');
   });
 
   it('a past month: the result instead of the pace', async () => {

@@ -333,8 +333,16 @@ describe('the category route', () => {
   it('a link from «Spending» carries the category and the scope; the page reads them back', () => {
     const link = categoryLink('transport', 'business');
     expect(link).toEqual({ name: 'category', params: { id: 'transport' }, query: { scope: 'business' } });
-    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business', period: null, q: '', merchant: null });
-    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal', period: null, q: '', merchant: null });
+    expect(categoryRequest(link.params, link.query)).toEqual({ id: 'transport', scope: 'business', period: null, q: '', merchant: null, from: null });
+    expect(categoryRequest({ id: 'такси' }, { scope: 'all' })).toEqual({ id: null, scope: 'personal', period: null, q: '', merchant: null, from: null });
+  });
+
+  it('a link from «All categories» carries its origin; an unknown origin is ignored', () => {
+    const link = categoryLink('transport', 'personal', undefined, undefined, 'categories');
+    expect(link.query).toEqual({ scope: 'personal', from: 'categories' });
+    expect(categoryRequest(link.params, link.query).from).toBe('categories');
+    expect(categoryRequest({ id: 'transport' }, { from: 'elsewhere' }).from).toBeNull();
+    expect(categoryRequest({ id: 'transport' }, { from: ['categories'] }).from).toBeNull();
   });
 
   it('a link from the search carries the list\'s search or payee filter; empty ones are left out, a long text is cut', () => {
@@ -397,7 +405,7 @@ describe('category screen mounted', () => {
     localStorage.clear();
   });
 
-  async function mountScreen(period: DetailPeriod = { kind: 'month', month: '2026-09' }) {
+  async function mountScreen(period: DetailPeriod = { kind: 'month', month: '2026-09' }, from: 'categories' | null = null) {
     const { i18n } = await import('@/shared/lib/i18n.ts');
     const { useParticipantStore } = await import('@/entities/participant');
     useParticipantStore().view = PEOPLE_VIEW;
@@ -408,11 +416,12 @@ describe('category screen mounted', () => {
       history: createMemoryHistory(),
       routes: [
         { path: '/', name: 'home', component: defineComponent(() => () => h('div')) },
+        { path: '/spending/categories', name: 'spending-categories', component: defineComponent(() => () => h('div')) },
         { path: '/budget', name: 'budget', component: defineComponent(() => () => h('div')) },
       ],
     });
     await router.push('/');
-    const w = mount(CategoryDetailFeature, { props: { categoryId: 'transport', scope: 'personal', period }, global: { plugins: [i18n, router] } });
+    const w = mount(CategoryDetailFeature, { props: { categoryId: 'transport', scope: 'personal', period, from }, global: { plugins: [i18n, router] } });
     await flushPromises();
     return w;
   }
@@ -493,6 +502,19 @@ describe('category screen mounted', () => {
     expect(setOperationCategory).toHaveBeenCalledWith({ key: 'a', category: 'investments', payee: true });
     expect(w.text()).toContain('Категория изменена в 2 транзакциях');
     w.unmount();
+  });
+
+  it('the back link goes home, or to «All categories» when the category was opened from there', async () => {
+    const home = await mountScreen();
+    const back = home.get('a[href]');
+    expect(back.attributes('href')).toBe('/');
+    expect(back.text()).not.toContain('Все категории');
+    home.unmount();
+    const fromList = await mountScreen(undefined, 'categories');
+    const link = fromList.get('a[href]');
+    expect(link.attributes('href')).toBe('/spending/categories');
+    expect(link.text()).toBe('Все категории');
+    fromList.unmount();
   });
 
   it('the first load shows a skeleton in place of the cards; the answer replaces it', async () => {
