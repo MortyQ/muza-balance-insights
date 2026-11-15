@@ -859,8 +859,6 @@
       "title": "Spending",
       "together": "together · {ops}",
       "whole": "Whole family",
-      "showMore": "Show {n} more | Show {n} more | Show {n} more",
-      "showLess": "Show less",
       "whoSpent": "Who spent what",
       "opsMoreHint": "{n} more transaction than in {month} | {n} more transactions than in {month} | {n} more transactions than in {month}",
       "opsLessHint": "{n} fewer transaction than in {month} | {n} fewer transactions than in {month} | {n} fewer transactions than in {month}",

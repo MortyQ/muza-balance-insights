@@ -163,8 +163,8 @@
   with the «Now» strip and the category screen.
   Tiles (spec `desktop-home-tiles`): the block's tile over the whole row — header, notices, the summary column (ring,
   compare note, stats as soft tiles, member card) and the category rows (`CategoryRow`: icon in a soft circle, name
-  with share and operations, chip, amount, the bar under them; `CategoryList` lists `SHOWN_ROWS` (4) and unfolds the
-  rest in place). «Who spent what» (`PeopleList`, each person with a share bar — `PersonRowView.share`) is not mounted
+  with share and operations, chip, amount, the bar under them; `CategoryList` lists every row `rowsFor` gives — the
+  seven named categories and the «N more categories» link, no fold). «Who spent what» (`PeopleList`, each person with a share bar — `PersonRowView.share`) is not mounted
   since 01.11, so the in-block person pick (`usePick`) stays `null`; the scope switch writes `entities/scope`.
   «What's unusual» (`SpendingInsights`): `utils/insights.ts` `insightsView` words `SpendingOverview.insights` — core's
   detectors (`domain-rules.md`), run by the data process over the block's sums and already ranked — the first
@@ -183,13 +183,15 @@
   its rows with the same `rowsFor`, option `all`: every category with spending its own row, no `rest` row; colours as
   in the block (the family's top seven `--category-N`, the others `--category-other`; one bar scale). Back link
   (`BackLink`), heading, month and total, the scope switch (home-wide `entities/scope`), `SpendingNotices`, the list;
-  no ring, no «Show more». The block's view settings (`useSpendingPrefsStore`) are read, not changed here; a person
+  no ring, no fold. A category opened from here carries `from=categories` (`categoryLink`'s fifth argument,
+  `CategoryOrigin`; `useCategoryRows` with `all`), so its back link (`BackLink` `to`) returns here, labelled «All
+  categories»; without it the link goes home. The block's view settings (`useSpendingPrefsStore`) are read, not changed here; a person
   picked inside home's block is not carried over (the global person filter is).
 - **Category screen** (`features/category-detail`, `CategoryDetailFeature.vue`; `pages/category`; spec
   `docs/superpowers/specs/2026-10-05-category-screen-design.md`): route `category` (`/category/:id`, `CategoryId`; an
   unknown id → home by the route's guard; `query.scope` and an optional `query.day` / `query.week` (a real date), and
   the list's `query.q` (its search) / `query.merchant` (a payee key), written by `categoryLink(id, scope, period?,
-  filter?)` and read back by `categoryRequest`; the list starts every new period, person or bank view from them —
+  filter?, from?)` and read back by `categoryRequest` (`from`: only `categories`, else null); the list starts every new period, person or bank view from them —
   `useCategoryView`'s `open`), default layout without its
   own menu item (`meta.navParent: 'home'` keeps «General» current — `useNav`). One IPC `getCategoryOverview` (see
   `desktop-import.md`); person and currency are the global filters; quiet reload on `syncStatus.version`.

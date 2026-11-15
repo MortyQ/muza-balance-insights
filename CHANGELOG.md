@@ -9,6 +9,9 @@ English interface.
 
 - «Spending» names every category of the month on a new «All categories» screen: the «N more categories» row opens it,
   and each category there shows its amount, share, transactions and change, and opens as on home.
+- «Spending» lists its seven largest categories at once, with the «N more categories» row below them; the «Show more»
+  button is gone.
+- A category opened from «All categories» goes back to «All categories» instead of home.
 
 ### Budget and limits
 

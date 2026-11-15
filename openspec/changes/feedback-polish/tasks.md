@@ -12,11 +12,11 @@
 
 ## 2. Spending: seven categories on home, back to the list
 
-- [ ] 2.1 Spec deltas `specs/desktop-home-tiles/spec.md` and `specs/desktop-spending-categories/spec.md`, strict validation
-- [ ] 2.2 `CategoryList` without the fold; unused keys and `SHOWN_ROWS` removed; tests
-- [ ] 2.3 Origin in `categoryLink` / `categoryRequest`; `BackLink` `to`; the category screen's back link and label
+- [x] 2.1 Spec deltas `specs/desktop-home-tiles/spec.md` and `specs/desktop-spending-categories/spec.md`, strict validation
+- [x] 2.2 `CategoryList` without the fold; unused keys and `SHOWN_ROWS` removed; tests
+- [x] 2.3 Origin in `categoryLink` / `categoryRequest`; `BackLink` `to`; the category screen's back link and label
       (three dictionaries); tests
-- [ ] 2.4 `.agents/project/desktop-renderer.md`, `CHANGELOG.md`
+- [x] 2.4 `.agents/project/desktop-renderer.md`, `CHANGELOG.md`
 
 ## 3. Insights: a clearer «What's unusual»
 

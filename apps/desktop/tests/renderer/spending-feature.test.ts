@@ -328,16 +328,22 @@ describe('spending tiles', () => {
     expect(w.get('[data-test="spending-tile"]').classes()).toEqual(expect.arrayContaining(['col-span-full', '@[79rem]:col-span-7']));
   });
 
-  it('4 category rows, the rest unfold in place and fold back', async () => {
+  it('every row is listed at once, with no fold', async () => {
     current = MANY;
     const w = await mountBlock();
-    const rows = () => w.get('[data-test="spending-tile"]').findAll('a[href*="/category/"]');
-    expect(rows()).toHaveLength(4);
-    const more = w.get('[data-test="spending-more"]');
-    expect(more.text()).toBe('Показать ещё 2');
-    await more.trigger('click');
-    expect(rows()).toHaveLength(6);
-    expect(w.get('[data-test="spending-more"]').text()).toBe('Свернуть');
+    const tile = w.get('[data-test="spending-tile"]');
+    expect(tile.findAll('a[href*="/category/"]')).toHaveLength(6);
+    expect(tile.find('[data-test="spending-more"]').exists()).toBe(false);
+    expect(tile.text()).not.toContain('Свернуть');
+  });
+
+  it('a category opened from home carries no origin', async () => {
+    current = MANY;
+    const w = await mountBlock();
+    await w.get('[data-test="spending-tile"]').get('a[href*="/category/"]').trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.name).toBe('category');
+    expect(router.currentRoute.value.query.from).toBeUndefined();
   });
 
   it('«What\'s unusual» is never inside «Spending by category»', async () => {
@@ -358,10 +364,18 @@ const MANY: SpendingOverview = {
 const rowsOf = (w: Awaited<ReturnType<typeof mountBlock>>) => w.findAll('a[href*="/category/"]');
 
 describe('home: the «more categories» row', () => {
+  it('lists seven named categories at once, then the «more categories» row, with no fold', async () => {
+    current = MANY;
+    const w = await mountBlock();
+    const tile = w.get('[data-test="spending-tile"]');
+    expect(tile.findAll('a[href*="/category/"]')).toHaveLength(7);
+    expect(tile.text()).toContain('Ещё 8 категорий');
+    expect(tile.find('[data-test="spending-more"]').exists()).toBe(false);
+  });
+
   it('opens the «All categories» screen; the named rows still open their categories', async () => {
     current = MANY;
     const w = await mountBlock();
-    await w.get('[data-test="spending-more"]').trigger('click'); // the tile lists four rows first
     const more = w.findAll('a').find((a) => a.text().includes('Ещё 8 категорий'));
     expect(more).toBeTruthy();
     await more!.trigger('click');
@@ -384,7 +398,7 @@ describe('«All categories» screen', () => {
     expect(small.text()).toContain(NAMES.telecom);
     await small.trigger('click');
     await flushPromises();
-    expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'telecom' }, query: { scope: 'personal' } });
+    expect(router.currentRoute.value).toMatchObject({ name: 'category', params: { id: 'telecom' }, query: { scope: 'personal', from: 'categories' } });
 
     const { useScopeStore } = await import('@/entities/scope');
     await w.findAll('button').find((b) => b.text() === 'Бизнес')!.trigger('click');

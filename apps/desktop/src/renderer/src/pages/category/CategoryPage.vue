@@ -19,11 +19,11 @@ const open = computed(() => ({ q: request.value.q, merchant: request.value.merch
 
 // Picking a month in the global filter while a day or a week is open switches the screen to that month.
 watch(month, () => {
-  const { id, scope } = request.value;
-  if (id && request.value.period) void router.replace(categoryLink(id, scope));
+  const { id, scope, from } = request.value;
+  if (id && request.value.period) void router.replace(categoryLink(id, scope, undefined, undefined, from ?? undefined));
 });
 </script>
 
 <template>
-  <CategoryDetailFeature v-if="request.id" :category-id="request.id" :scope="request.scope" :period :open></CategoryDetailFeature>
+  <CategoryDetailFeature v-if="request.id" :category-id="request.id" :scope="request.scope" :period :open :from="request.from"></CategoryDetailFeature>
 </template>

@@ -8,7 +8,7 @@ import { rowsFor } from '../utils/index.ts';
 
 /**
  * The category rows for the family or the block's pick, each with the screen it opens; the «N more categories» row
- * opens «All categories». `all` — every category its own row (that screen's list).
+ * opens «All categories». `all` — every category its own row (that screen's list), each opening its category with that screen as the origin.
  */
 export function useCategoryRows(
   base: UseSpendingReturn,
@@ -24,7 +24,7 @@ export function useCategoryRows(
     view.value ? rowsFor(view.value, blockPick.value, people.value, prefs.value, fmt.value, participant.shown.length > 1, all) : [],
   );
   const categories = computed(() => ({
-    rows: rows.value.map((r) => ({ ...r, to: r.categoryId ? categoryLink(r.categoryId, scope.value) : r.key === REST_KEY ? spendingCategoriesLink() : null })),
+    rows: rows.value.map((r) => ({ ...r, to: r.categoryId ? categoryLink(r.categoryId, scope.value, undefined, undefined, all ? 'categories' : undefined) : r.key === REST_KEY ? spendingCategoriesLink() : null })),
     none: hasData.value && rows.value.length === 0 ? t('home.spending.noneBy', { name: who.value }) : '',
   }));
   return { rows, categories };
