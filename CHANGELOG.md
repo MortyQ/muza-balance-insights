@@ -3,7 +3,7 @@
 What changed in each version of the app, newest first. Screen and button names are quoted as they appear in the
 English interface.
 
-## 0.1.16 — unreleased
+## 0.1.16 — 2026-11-15
 
 ### Home
 
