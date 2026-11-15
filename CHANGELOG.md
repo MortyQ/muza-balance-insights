@@ -19,6 +19,11 @@ English interface.
   «Spending», in «Budget structure» and under its own limit. The budget on its screen and on home says what it leaves
   out («Not counted: …»). A budget that had «Count taxes» off keeps leaving taxes out.
 - «Budget» is now an entry of the menu, between «Regular payments» and «Planning»; home's «Budget» row still opens it.
+- The chart of past months in the budget and limit sheets shows its bars again; it was empty.
+- A limit or the budget far ahead of its plan — spending at twice the plan by today, or a forecast of one and a half
+  limits — gets its own orange-red bar and label between «attention» and «exceeded»; the words are the same as before.
+- Once a limit is exceeded, its bar is drawn to the scale of what was spent: the part within the limit solid, the part
+  above it hatched, with a tick at the limit, so how far past it you are can be seen at a glance.
 
 ### Statements
 

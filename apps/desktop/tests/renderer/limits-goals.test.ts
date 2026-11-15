@@ -318,4 +318,34 @@ describe('the «Budget» screen', () => {
     expect(document.querySelector('[data-test="sheet-failed"]')).not.toBeNull();
     w.unmount();
   });
+
+  it('the past months\' chart: every bar sits in a column of the chart\'s full height, with its own height', async () => {
+    const { i18n } = await import('@/shared/lib/i18n.ts');
+    const { default: PastBars } = await import('@/features/limits-goals/components/PastBars.vue');
+    const w = mount(PastBars, {
+      props: { months: [{ month: '2026-02', minor: 500_000 }, { month: '2026-01', minor: 250_000 }, { month: '2025-12', minor: 0 }], amount: 300_000, currency: 980 },
+      global: { plugins: [i18n] },
+    });
+    const columns = w.findAll('[data-test="past-bar"]');
+    expect(columns).toHaveLength(3);
+    // A bar's percentage height resolves only against a column with a definite height.
+    for (const c of columns) expect(c.classes()).toEqual(expect.arrayContaining(['h-full', 'justify-end']));
+    const heights = columns.map((c) => Number.parseFloat(/height: ([\d.]+)%/.exec(c.get('div').attributes('style') ?? '')?.[1] ?? '0'));
+    // Oldest first.
+    expect(heights[0]).toBe(0);
+    expect(heights[1]).toBeGreaterThan(0);
+    expect(heights[2]).toBeGreaterThan(heights[1]!);
+    w.unmount();
+  });
+
+  it('an exceeded limit\'s bar shows the overrun hatched with a tick at the limit; the held one does not', async () => {
+    const w = await mountScreen();
+    const rows = w.findAll('[data-test="limit-row"]');
+    // 300 ₴ of 200 ₴: the limit is two thirds of the scale.
+    expect(rows[0]!.get('[data-test="limit-tick"]').attributes('style')).toMatch(/left: 66\.6/);
+    expect(rows[0]!.get('[data-test="limit-over"]').attributes('style')).toMatch(/width: 33\.3/);
+    expect(rows[1]!.find('[data-test="limit-over"]').exists()).toBe(false);
+    expect(rows[1]!.find('[data-test="limit-tick"]').exists()).toBe(false);
+    w.unmount();
+  });
 });

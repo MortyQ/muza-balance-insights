@@ -20,7 +20,7 @@ const { limits, to } = defineProps<{ limits: ReadonlyArray<AttentionLimitView>; 
           <span class="min-w-0 flex-1 truncate">{{ l.name }}</span>
           <MoneyStack :amount="l.look.spentOf" :also="l.also" :strong="false" />
         </div>
-        <LimitBar :fill="l.look.fill" :pace="l.look.pace" :state="l.look.state" />
+        <LimitBar :fill="l.look.fill" :over="l.look.over" :pace="l.look.pace" :state="l.look.state" />
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
           <LimitStateChip :state="l.look.state" :text="l.look.stateText" />
           <PendingNote v-if="l.look.pending" :note="l.look.pending" />

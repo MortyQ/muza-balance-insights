@@ -265,7 +265,12 @@
   (category, amount, currency, period, whose, the suggestion's chips, `PastBars`), `GoalSheet` (name, a jar — its bank
   target offered — or «cards and jars», target, date, whose); deleting asks in the sheet. `entities/goal`: `limitLook`
   (the bar's fill and pace marker, the state in words — never colour alone —, the «?» explanations with the user's
-  numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. Tested in `tests/renderer/limits-goals.test.ts`.
+  numbers), `LimitBar`, `LimitStateChip`, `goalMinor`. A fourth look `strong` («well ahead», `--warning-strong`, spec
+  `desktop-limits-goals`) is an attention state with spent ≥ `STRONG_PACE` (2) × expected by pace, or a shown forecast
+  ≥ `STRONG_FORECAST` (1.5) × the amount; its words are attention's. An exceeded limit's bar is to the scale of what was
+  spent (`LimitLook.fill` = the limit's share, `over` = the hatched rest, `pace` on that scale; `LimitBar` draws the tick
+  at the limit); every `LimitBar` user passes `over`. `PastBars` columns take the row's full height (a bar's % height
+  needs it). Tested in `tests/renderer/limits-goals.test.ts`.
 - **Home's «Budget» row** (`features/home-budget`, spec `desktop-home-tiles`): over the whole width between the first
   row and «Today» / «This week»; one link to the «Budget» screen: the total, the fixed costs paid, the flexible part's
   bar and state, «Not counted: …» under it when the budget excludes categories (`excludedNote`, the budget panel has the same line), per day by the budget (a past month: the result); without a budget in the current month an empty row

@@ -13,11 +13,13 @@ export interface GoalHelp {
 
 /** A limit's bar and words: spent of the amount, the pace marker, the state in words and an icon. */
 export interface LimitLook {
-  /** Spent, % of the amount, clamped to 0–100 for the bar. */
+  /** Spent, % of the amount, clamped to 0–100 for the bar; past the limit — the limit's share of what was spent. */
   fill: number;
-  /** Where the pace allows by today, % of the bar; null — a day limit or a past month. */
+  /** Past the limit: the share of the bar above the limit (hatched); 0 while not exceeded. */
+  over: number;
+  /** Where the pace allows by today, % of the bar (on the scale of what was spent past the limit); null — a day limit or a past month. */
   pace: number | null;
-  /** The state's look: `ahead` for an on-track limit ahead of its plan. */
+  /** The state's look: `ahead` for an on-track limit ahead of its plan, `strong` for an attention far ahead. */
   state: StateLookName;
   stateText: string;
   stateIcon: string;

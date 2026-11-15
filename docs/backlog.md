@@ -435,3 +435,13 @@
   uk / en / ru.
 - **The menu**: «Budget» sits between «Regular payments» and «Planning» and is current on its screen; the global
   month filter is shown there and a past month shows its result.
+
+## To check live: budget bars (feedback-polish, first group)
+
+- **The past months' chart** in the budget and limit sheets: every month has a bar, the amount's dashed line crosses
+  them, the bars over the amount are orange.
+- **The «well ahead» look** (`--warning-strong`): a limit at twice its plan by today or with a forecast at one and a half
+  limits; the bar and chip read as orange-red, distinct from the amber «attention» and the red «exceeded» in both
+  themes, on home, on the «Budget» screen and on the category screen.
+- **The bar past the limit**: the solid part, the hatched part and the tick at the limit at 1.1×, 1.6× and 3× the limit;
+  the pace marker; the hatching in both themes; a thick bar in the budget panel.

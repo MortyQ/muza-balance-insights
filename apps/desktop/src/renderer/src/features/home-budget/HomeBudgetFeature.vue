@@ -53,7 +53,7 @@ const { row, empty, budgetTo, setTo } = useHomeBudget();
           <LimitStateChip v-if="!row.result" :state="row.flexible.state" :text="row.flexible.stateText" />
           <span v-else class="text-xs font-semibold" :class="row.result.within ? 'text-success' : 'text-danger'" data-test="home-budget-result">{{ row.result.text }}</span>
         </div>
-        <LimitBar :fill="row.flexible.fill" :pace="row.flexible.pace" :state="row.flexible.state" />
+        <LimitBar :fill="row.flexible.fill" :over="row.flexible.over" :pace="row.flexible.pace" :state="row.flexible.state" />
         <span v-if="row.flexible.paceText" class="text-xs text-foreground-muted tabular-nums">{{ row.flexible.paceText }}</span>
         <PendingNote v-if="row.flexible.pending" :note="row.flexible.pending" />
         <span v-if="row.excludedNote" class="text-xs text-foreground-muted" data-test="home-budget-excluded">{{ row.excludedNote }}</span>
